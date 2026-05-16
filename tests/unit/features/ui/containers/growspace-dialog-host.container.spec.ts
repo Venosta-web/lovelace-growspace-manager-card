@@ -1403,9 +1403,20 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should render PLANT_OVERVIEW dialog branch', async () => {
-            mockStore.ui.$activeDialog.set({ 
-                type: 'PLANT_OVERVIEW' as any, 
-                payload: { plantId: 'plant.1' } 
+            mockStore.ui.$activeDialog.set({
+                type: 'PLANT_OVERVIEW' as any,
+                payload: {
+                    plant: {
+                        entity_id: 'sensor.plant_1',
+                        state: 'veg',
+                        attributes: { plant_id: 'plant_1', stage: 'veg' },
+                        context: { id: '', parent_id: null, user_id: null },
+                        last_changed: '',
+                        last_updated: '',
+                    },
+                    editedAttributes: {},
+                    activeTab: 'dashboard',
+                }
             });
             await element.updateComplete;
             element.requestUpdate();

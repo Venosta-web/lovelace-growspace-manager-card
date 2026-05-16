@@ -36,14 +36,13 @@ describe('StrainLibraryDialog Extra Coverage', () => {
 
     describe('Breeder Manager', () => {
         const getBreederOverlay = () => {
-            const overlays = Array.from(element.shadowRoot?.querySelectorAll('.crop-overlay') || []);
-            return overlays.find(o => o.querySelector('.dialog-title')?.textContent?.includes('Breeder Manager'));
+            const dialogs = Array.from(element.shadowRoot?.querySelectorAll('ha-dialog') || []);
+            return dialogs.find(d => d.querySelector('.dialog-title')?.textContent?.includes('Breeder Manager'));
         };
 
         const getBreederEditorOverlay = () => {
-            const overlays = Array.from(element.shadowRoot?.querySelectorAll('.crop-overlay') || []);
-            // Breeder manager is open, editor is inside it if _breederEditorState is set
-            return overlays.find(o => o.querySelector('.dialog-title')?.textContent?.includes('Breeder Manager'));
+            const dialogs = Array.from(element.shadowRoot?.querySelectorAll('ha-dialog') || []);
+            return dialogs.find(d => d.querySelector('.dialog-title')?.textContent?.includes('Breeder Manager'));
         };
 
         it('should open and close breeder manager', async () => {
@@ -182,8 +181,8 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             expect((element as any)._pendingDeleteBreeder).toBe('HSO');
 
             // Cancel delete
-            const confirmOverlay = Array.from(element.shadowRoot?.querySelectorAll('.crop-overlay') || [])
-                .find(o => o.textContent?.includes('Remove Breeder?'));
+            const confirmOverlay = Array.from(element.shadowRoot?.querySelectorAll('ha-dialog') || [])
+                .find(d => d.textContent?.includes('Remove Breeder?'));
 
             const cancelBtn = Array.from(confirmOverlay?.querySelectorAll('button') || [])
                 .find(b => b.textContent?.includes('Cancel'));
@@ -262,8 +261,8 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             const confirmSpy = vi.fn();
             element.addEventListener('delete-breeder', confirmSpy);
 
-            const confirmOverlay = Array.from(element.shadowRoot?.querySelectorAll('.crop-overlay') || [])
-                .find(o => o.textContent?.includes('Remove Breeder?'));
+            const confirmOverlay = Array.from(element.shadowRoot?.querySelectorAll('ha-dialog') || [])
+                .find(d => d.textContent?.includes('Remove Breeder?'));
 
             const confirmBtn = Array.from(confirmOverlay?.querySelectorAll('button') || [])
                 .find(b => b.textContent?.includes('Remove'));
@@ -280,7 +279,7 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (element as any)._pendingDeleteBreeder = 'HSO';
             await element.updateComplete;
 
-            const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('.crop-overlay button') || [])
+            const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('ha-dialog button') || [])
                 .find(b => b.textContent?.includes('Cancel'));
 
             (cancelBtn as HTMLElement).click();
@@ -290,66 +289,7 @@ describe('StrainLibraryDialog Extra Coverage', () => {
     });
 
     describe('Miscellaneous Interactions', () => {
-        it('should handle label printing', async () => {
-            (element as any)._startEdit(mockStrains[0]);
-            await element.updateComplete;
-
-            const printSpy = vi.fn();
-            element.addEventListener('open-print-label', printSpy);
-
-            const printBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.textContent?.includes('Print Label'));
-
-            (printBtn as HTMLElement).click();
-            expect(printSpy).toHaveBeenCalledWith(expect.objectContaining({
-                detail: expect.objectContaining({ strainName: 'Blue Dream' })
-            }));
-        });
-
-        it('should support Ruderalis type selection', async () => {
-            (element as any)._startEdit(mockStrains[0]);
-            await element.updateComplete;
-
-            const options = element.shadowRoot?.querySelectorAll('.type-option');
-            const ruderalisOpt = Array.from(options || []).find(o => o.textContent?.trim() === 'Ruderalis');
-            (ruderalisOpt as HTMLElement).click();
-            await element.updateComplete;
-
-            expect((element as any)._editorState.type).toBe('Ruderalis');
-        });
-
-        it('should handle breeder logo upload in main editor', async () => {
-            (element as any)._startEdit(mockStrains[0]);
-            await element.updateComplete;
-
-            const uploadBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.textContent?.includes('Upload Logo') || b.textContent?.includes('Change Logo'));
-
-            const fileInput = (uploadBtn as HTMLElement).nextElementSibling as HTMLInputElement;
-            const file = new File([''], 'logo.png', { type: 'image/png' });
-
-            Object.defineProperty(fileInput, 'files', { get: () => [file] });
-            fileInput.dispatchEvent(new Event('change'));
-
-            await new Promise(resolve => setTimeout(resolve, 0));
-            expect(PlantUtils.compressImage).toHaveBeenCalledWith(file);
-            expect((element as any)._editorState.breeder_logo).toBe('base64string');
-        });
-
-        it('should handle breeder logo removal in main editor', async () => {
-            (element as any)._startEdit({ ...mockStrains[0], breeder_logo: 'old_logo.jpg' });
-            await element.updateComplete;
-
-            const removeBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.querySelector('path')?.getAttribute('d') === mdiDelete && b.classList.contains('text'));
-
-            (removeBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            expect((element as any)._editorState.breeder_logo).toBe('');
-        });
-
-        it('should handle breeder logo compression error', async () => {
+it('should handle breeder logo compression error', async () => {
             (element as any)._breederDialogOpen = true;
             (element as any)._startBreederEdit('HSO', '');
             await element.updateComplete;

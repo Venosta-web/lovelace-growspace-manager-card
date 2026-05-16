@@ -18,6 +18,8 @@ const mockElements = [
   'plant-dashboard-tab',
   'plant-actions-tab',
   'plant-timeline-tab',
+  'plant-harvest-tab',
+  'plant-genetics-tab',
   'md3-select',
   'md3-number-input',
 ];
@@ -41,6 +43,10 @@ function makeMockStore(overrides: Record<string, unknown> = {}) {
         finishDrying: vi.fn(),
         saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
         scorePhenotype: vi.fn().mockResolvedValue(undefined),
+      },
+      ui: {
+        setActiveDialog: vi.fn(),
+        showToast: vi.fn(),
       },
     },
     ui: {
@@ -252,112 +258,15 @@ describe('PlantOverviewContainer – private method logic', () => {
     expect(call.payload.editingStrain).toBeUndefined();
   });
 
-  // ── _setScore ─────────────────────────────────────────────────────────────
-  it('_setScore sets a score value', () => {
-    (el as any)._scoresEdit = { vigor: null };
-    (el as any)._setScore('vigor', 4);
-    expect((el as any)._scoresEdit.vigor).toBe(4);
-  });
-
-  it('_setScore toggles off when same value clicked', () => {
-    (el as any)._scoresEdit = { vigor: 4 };
-    (el as any)._setScore('vigor', 4);
-    expect((el as any)._scoresEdit.vigor).toBeNull();
-  });
-
-  // ── _skipAndAdvance ───────────────────────────────────────────────────────
-  it('_skipAndAdvance does nothing when already saving', () => {
-    (el as any)._savingHarvest = true;
-    (el as any)._skipAndAdvance();
-    expect(store.actions.plant.harvest).not.toHaveBeenCalled();
-    expect(store.actions.plant.finishDrying).not.toHaveBeenCalled();
-  });
-
-  it('_skipAndAdvance calls finishDryingPlant for dry stage', () => {
-    el.plant = makeMockPlant({}, 'dry');
-    (el as any)._savingHarvest = false;
-    (el as any)._skipAndAdvance();
+  // ── _handleHarvestAdvance ─────────────────────────────────────────────────
+  it('_handleHarvestAdvance calls finishDrying for finish-drying action', () => {
+    (el as any)._handleHarvestAdvance(new CustomEvent('harvest-advance', { detail: { action: 'finish-drying' } }));
     expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
   });
 
-  it('_skipAndAdvance calls finishDryingPlant for drying stage', () => {
-    el.plant = makeMockPlant({}, 'drying');
-    (el as any)._savingHarvest = false;
-    (el as any)._skipAndAdvance();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
-  });
-
-  it('_skipAndAdvance calls harvestPlant for flower stage', () => {
-    el.plant = makeMockPlant({}, 'flower');
-    (el as any)._savingHarvest = false;
-    (el as any)._skipAndAdvance();
+  it('_handleHarvestAdvance calls harvest for harvest action', () => {
+    (el as any)._handleHarvestAdvance(new CustomEvent('harvest-advance', { detail: { action: 'harvest' } }));
     expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
-  });
-
-  // ── _saveHarvestMetrics ───────────────────────────────────────────────────
-  describe('_saveHarvestMetrics', () => {
-    it('returns early when no plant_id', async () => {
-      el.plant = makeMockPlant({ plant_id: undefined });
-      await (el as any)._saveHarvestMetrics();
-      expect(store.actions.plant.saveHarvestMetrics).not.toHaveBeenCalled();
-    });
-
-    it('calls saveHarvestMetrics action with plantId and metrics', async () => {
-      (el as any)._harvestMetricsEdit = { wet_weight: 100 };
-      (el as any)._scoresEdit = { vigor: 3 };
-      await (el as any)._saveHarvestMetrics();
-      expect(store.actions.plant.saveHarvestMetrics).toHaveBeenCalledWith(
-        'test-plant-1',
-        { wet_weight: 100 }
-      );
-      expect(store.actions.plant.scorePhenotype).toHaveBeenCalledWith(
-        'test-plant-1',
-        { vigor: 3 }
-      );
-    });
-
-    it('sets _activeTab to dashboard after saving', async () => {
-      (el as any)._harvestMetricsEdit = {};
-      (el as any)._scoresEdit = {};
-      (el as any)._activeTab = 'harvest';
-      await (el as any)._saveHarvestMetrics();
-      expect((el as any)._activeTab).toBe('dashboard');
-    });
-
-    it('resets _savingHarvest flag on error', async () => {
-      store.actions.plant.saveHarvestMetrics.mockRejectedValue(new Error('fail'));
-      (el as any)._harvestMetricsEdit = { wet_weight: 50 };
-      (el as any)._scoresEdit = {};
-      await (el as any)._saveHarvestMetrics();
-      // Toast is handled inside the action; container just resets loading state
-      expect((el as any)._savingHarvest).toBe(false);
-    });
-  });
-
-  // ── _savePhenotypeScore ───────────────────────────────────────────────────
-  describe('_savePhenotypeScore', () => {
-    it('returns early when no plant_id', async () => {
-      el.plant = makeMockPlant({ plant_id: undefined });
-      await (el as any)._savePhenotypeScore();
-      expect(store.actions.plant.scorePhenotype).not.toHaveBeenCalled();
-    });
-
-    it('calls scorePhenotype action and hides form on success', async () => {
-      (el as any)._scoresEdit = { vigor: 5 };
-      (el as any)._showScoringForm = true;
-      await (el as any)._savePhenotypeScore();
-      expect(store.actions.plant.scorePhenotype).toHaveBeenCalledWith(
-        'test-plant-1',
-        { vigor: 5 }
-      );
-      expect((el as any)._showScoringForm).toBe(false);
-    });
-
-    it('resets _savingScore flag on error', async () => {
-      store.actions.plant.scorePhenotype.mockRejectedValue(new Error('score fail'));
-      await (el as any)._savePhenotypeScore();
-      expect((el as any)._savingScore).toBe(false);
-    });
   });
 });
 
@@ -380,8 +289,8 @@ describe('PlantOverviewContainer – rendering branches', () => {
     await el.updateComplete;
   }
 
-  // ── Harvest tab button (lines 374-375) ────────────────────────────────────
-  it('clicking harvest tab button sets _activeTab to harvest and inits harvest state (lines 374-375)', async () => {
+  // ── Harvest tab button ────────────────────────────────────────────────────
+  it('clicking harvest tab button sets _activeTab to harvest', async () => {
     const plant = makeMockPlant({ harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } }, 'dry');
     await attachElement(plant);
 
@@ -391,8 +300,6 @@ describe('PlantOverviewContainer – rendering branches', () => {
     await el.updateComplete;
 
     expect((el as any)._activeTab).toBe('harvest');
-    expect((el as any)._harvestMetricsEdit).toMatchObject({ wet_weight: 50 });
-    expect((el as any)._scoresEdit.vigor).toBe(3);
   });
 
   // ── Footer: mother stage "Take Clone" button (lines 561-565) ─────────────
@@ -404,7 +311,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
   });
 
   // ── Footer: flower stage Harvest button (lines 576-583) ──────────────────
-  it('footer renders Harvest button for flower stage and clicking calls harvestPlant', async () => {
+  it('footer renders Harvest button for flower stage and clicking opens scoring dialog', async () => {
     await attachElement(makeMockPlant({}, 'flower'));
 
     const shadow = el.shadowRoot!;
@@ -414,7 +321,9 @@ describe('PlantOverviewContainer – rendering branches', () => {
       (b) => b.textContent?.includes('Harvest')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.actions.plant.harvest).toHaveBeenCalled();
+    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'HARVEST_SCORING' })
+    );
   });
 
   // ── Footer: flowering stage Harvest button ────────────────────────────────
@@ -438,122 +347,23 @@ describe('PlantOverviewContainer – rendering branches', () => {
   });
 
 
-  // ── Harvest tab renders (lines 858-1058) ─────────────────────────────────
-  it('renders harvest tab content when _activeTab is harvest', async () => {
+  // ── Harvest tab renders plant-harvest-tab component ─────────────────────
+  it('renders plant-harvest-tab when _activeTab is harvest', async () => {
     await attachElement(makeMockPlant({}, 'dry'));
 
     (el as any)._activeTab = 'harvest';
     await el.updateComplete;
 
-    const shadow = el.shadowRoot!;
-    expect(shadow.innerHTML).toContain('Vigor');
-    expect(shadow.innerHTML).toContain('Wet weight');
-    expect(shadow.innerHTML).toContain('THC');
-    expect(shadow.innerHTML).toContain('Save scores');
+    expect(el.shadowRoot!.querySelector('plant-harvest-tab')).not.toBeNull();
   });
 
-  // ── Harvest tab: skip label changes by stage ──────────────────────────────
-  it('harvest tab shows Skip & begin cure label for dry stage', async () => {
-    await attachElement(makeMockPlant({}, 'dry'));
-    (el as any)._activeTab = 'harvest';
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.textContent).toContain('Skip & begin cure');
-  });
-
-  it('harvest tab shows Skip & finish label for flower stage', async () => {
-    await attachElement(makeMockPlant({}, 'flower'));
-    (el as any)._activeTab = 'harvest';
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.textContent).toContain('Skip & finish');
-  });
-
-  // ── Score Phenotype section rendered in actions tab (lines 1064-1109) ─────
-  it('renders Score Phenotype section in actions tab', async () => {
+  it('renders plant-genetics-tab when _activeTab is genetics', async () => {
     await attachElement(makeMockPlant());
-    (el as any)._activeTab = 'actions';
+
+    (el as any)._activeTab = 'genetics';
     await el.updateComplete;
 
-    expect(el.shadowRoot!.innerHTML).toContain('Score Phenotype');
-  });
-
-  // ── Score Phenotype: expanded form (lines 1078-1088) ─────────────────────
-  it('expanded score form visible when _showScoringForm is true', async () => {
-    await attachElement(makeMockPlant());
-    (el as any)._activeTab = 'actions';
-    (el as any)._showScoringForm = true;
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.innerHTML).toContain('Save scores');
-    expect(el.shadowRoot!.innerHTML).toContain('Cancel');
-  });
-
-  // ── Harvest metrics input handlers (lines 930-1006) ──────────────────────
-  it('harvest tab wet-weight input updates _harvestMetricsEdit', async () => {
-    await attachElement(makeMockPlant({}, 'dry'));
-    (el as any)._activeTab = 'harvest';
-    await el.updateComplete;
-
-    const inputs = el.shadowRoot!.querySelectorAll('input[type="number"]');
-    const wetWeightInput = inputs[0] as HTMLInputElement;
-    wetWeightInput.value = '150';
-    wetWeightInput.dispatchEvent(new Event('input'));
-
-    expect((el as any)._harvestMetricsEdit.wet_weight).toBe(150);
-  });
-
-  it('harvest tab wet-weight empty string sets null', async () => {
-    await attachElement(makeMockPlant({}, 'dry'));
-    (el as any)._activeTab = 'harvest';
-    await el.updateComplete;
-
-    const inputs = el.shadowRoot!.querySelectorAll('input[type="number"]');
-    const wetWeightInput = inputs[0] as HTMLInputElement;
-    wetWeightInput.value = '';
-    wetWeightInput.dispatchEvent(new Event('input'));
-
-    expect((el as any)._harvestMetricsEdit.wet_weight).toBeNull();
-  });
-
-  it('harvest tab terpene profile textarea updates _harvestMetricsEdit', async () => {
-    await attachElement(makeMockPlant({}, 'dry'));
-    (el as any)._activeTab = 'harvest';
-    await el.updateComplete;
-
-    const textarea = el.shadowRoot!.querySelector('textarea') as HTMLTextAreaElement;
-    textarea.value = 'myrcene, limonene';
-    textarea.dispatchEvent(new Event('input'));
-
-    expect((el as any)._harvestMetricsEdit.terpene_profile).toBe('myrcene, limonene');
-  });
-
-  // ── _renderScoreRow star button interactions ──────────────────────────────
-  it('star buttons in harvest tab trigger _setScore on click', async () => {
-    await attachElement(makeMockPlant({}, 'dry'));
-    (el as any)._activeTab = 'harvest';
-    (el as any)._scoresEdit = { vigor: null, structure: null, aroma: null, resin: null, pest_resistance: null };
-    await el.updateComplete;
-
-    // Click the 3rd star (index 2) of the first dimension (vigor)
-    const starBtns = el.shadowRoot!.querySelectorAll('button[aria-label^="Set"]');
-    (starBtns[2] as HTMLButtonElement).click();
-    expect((el as any)._scoresEdit.vigor).toBe(3);
-  });
-
-  it('star buttons fire _starPreview on mouseenter/mouseleave', async () => {
-    await attachElement(makeMockPlant({}, 'dry'));
-    (el as any)._activeTab = 'harvest';
-    await el.updateComplete;
-
-    const starBtns = el.shadowRoot!.querySelectorAll('button[aria-label^="Set"]');
-    const firstStar = starBtns[0] as HTMLButtonElement;
-
-    firstStar.dispatchEvent(new MouseEvent('mouseenter'));
-    expect((el as any)._starPreview.vigor).toBe(1);
-
-    firstStar.dispatchEvent(new MouseEvent('mouseleave'));
-    expect((el as any)._starPreview.vigor).toBeNull();
+    expect(el.shadowRoot!.querySelector('plant-genetics-tab')).not.toBeNull();
   });
 
   // ── Footer: Take Clone click handler (lines 561-565) ─────────────────────
@@ -584,48 +394,17 @@ describe('PlantOverviewContainer – rendering branches', () => {
     expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
   });
 
-  // ── _saveHarvestMetrics called from button in harvest tab ─────────────────
-  it('Save scores button in harvest tab calls _saveHarvestMetrics', async () => {
+  // ── harvest-saved event from harvest tab switches to dashboard ───────────
+  it('harvest-saved event from plant-harvest-tab switches _activeTab to dashboard', async () => {
     await attachElement(makeMockPlant({}, 'dry'));
     (el as any)._activeTab = 'harvest';
     await el.updateComplete;
 
-    const spy = vi.spyOn(el as any, '_saveHarvestMetrics').mockResolvedValue(undefined);
-    const buttons = [...el.shadowRoot!.querySelectorAll('button')];
-    const saveBtn = buttons.find((b) => b.textContent?.includes('Save scores'));
-    saveBtn?.click();
-    expect(spy).toHaveBeenCalled();
-  });
-
-  // ── _savePhenotypeScore called from expanded score form ───────────────────
-  it('Save scores button in score phenotype form calls _savePhenotypeScore', async () => {
-    await attachElement(makeMockPlant());
-    (el as any)._activeTab = 'actions';
-    (el as any)._showScoringForm = true;
+    const harvestTab = el.shadowRoot!.querySelector('plant-harvest-tab')!;
+    harvestTab.dispatchEvent(new CustomEvent('harvest-saved', { bubbles: true, composed: true }));
     await el.updateComplete;
 
-    const spy = vi.spyOn(el as any, '_savePhenotypeScore').mockResolvedValue(undefined);
-    const buttons = [...el.shadowRoot!.querySelectorAll('button')];
-    const saveBtn = buttons.find((b) => b.textContent?.trim() === 'Save scores');
-    saveBtn?.click();
-    expect(spy).toHaveBeenCalled();
-  });
-
-  // ── _initHarvestState initializes from plant attributes ───────────────────
-  it('_initHarvestState populates scores from plant.attributes.scores', async () => {
-    const plant = makeMockPlant({ scores: { vigor: 4, aroma: 2 } });
-    await attachElement(plant);
-
-    expect((el as any)._scoresEdit.vigor).toBe(4);
-    expect((el as any)._scoresEdit.aroma).toBe(2);
-    expect((el as any)._scoresEdit.structure).toBeNull();
-  });
-
-  it('_initHarvestState populates harvest metrics from plant.attributes.harvest_metrics', async () => {
-    const plant = makeMockPlant({ harvest_metrics: { wet_weight: 200, dry_weight: 55 } });
-    await attachElement(plant);
-
-    expect((el as any)._harvestMetricsEdit).toMatchObject({ wet_weight: 200, dry_weight: 55 });
+    expect((el as any)._activeTab).toBe('dashboard');
   });
 
 });

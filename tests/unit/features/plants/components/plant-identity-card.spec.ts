@@ -42,12 +42,13 @@ describe('plant-identity-card', () => {
     `);
     
     const statItems = el.shadowRoot?.querySelectorAll('.stat-item');
-    expect(statItems?.length).to.equal(4);
+    expect(statItems?.length).to.equal(5);
     
     expect(statItems?.[0].querySelector('.stat-value')?.textContent).to.equal('OG Kush');
     expect(statItems?.[1].querySelector('.stat-value')?.textContent).to.equal('Pheno 1');
-    expect(statItems?.[2].querySelector('.stat-value')?.textContent).to.equal('2');
-    expect(statItems?.[3].querySelector('.stat-value')?.textContent).to.equal('3');
+    expect(statItems?.[2].querySelector('.stat-value')?.textContent).to.equal('Unknown');
+    expect(statItems?.[3].querySelector('.stat-value')?.textContent).to.equal('2');
+    expect(statItems?.[4].querySelector('.stat-value')?.textContent).to.equal('3');
   });
 
   it('renders edit mode correctly with edited attributes', async () => {

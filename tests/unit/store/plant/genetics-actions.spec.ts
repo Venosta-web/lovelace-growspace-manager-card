@@ -7,6 +7,12 @@ import {
   deletePollination,
   harvestSeeds,
   fetchGeneticsData,
+  deleteSeedBatch,
+  setPlantSex,
+  sowSeed,
+  getLineageTree,
+  getStrainLineageTree,
+  updateStrainLineageTree,
 } from '../../../../src/store/plant/genetics-actions';
 import { makeFakeCtx } from '../../helpers/fake-ctx';
 
@@ -202,5 +208,126 @@ describe('fetchGeneticsData', () => {
     ctx.dataService.fetchGeneticsData.mockRejectedValue('nope');
     await expect(fetchGeneticsData(ctx)).rejects.toBe('nope');
     expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
+});
+
+describe('deleteSeedBatch', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('calls dataService, toasts, and refreshes on success', async () => {
+    await deleteSeedBatch(ctx, 'batch-1');
+
+    expect(ctx.dataService.deleteSeedBatch).toHaveBeenCalledWith('batch-1');
+    expect(ctx.showToast).toHaveBeenCalledWith('Seed batch deleted', 'success');
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('toasts error and rethrows', async () => {
+    ctx.dataService.deleteSeedBatch.mockRejectedValue(new Error('del-err'));
+    await expect(deleteSeedBatch(ctx, 'batch-1')).rejects.toThrow('del-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
+  });
+});
+
+describe('setPlantSex', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('calls dataService, toasts, and refreshes on success', async () => {
+    await setPlantSex(ctx, 'plant-1', 'female');
+
+    expect(ctx.dataService.setPlantSex).toHaveBeenCalledWith('plant-1', 'female');
+    expect(ctx.showToast).toHaveBeenCalledWith('Plant sex updated', 'success');
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('toasts error and rethrows', async () => {
+    ctx.dataService.setPlantSex.mockRejectedValue(new Error('sex-err'));
+    await expect(setPlantSex(ctx, 'plant-1', 'female')).rejects.toThrow('sex-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('sex-err'), 'error');
+  });
+});
+
+describe('sowSeed', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('calls dataService, toasts, and refreshes on success', async () => {
+    await sowSeed(ctx, 'batch-1', 'plant-1');
+
+    expect(ctx.dataService.sowSeed).toHaveBeenCalledWith('batch-1', 'plant-1');
+    expect(ctx.showToast).toHaveBeenCalledWith('Seed sown — plant linked to batch', 'success');
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('toasts error and rethrows', async () => {
+    ctx.dataService.sowSeed.mockRejectedValue(new Error('sow-err'));
+    await expect(sowSeed(ctx, 'batch-1', 'plant-1')).rejects.toThrow('sow-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('sow-err'), 'error');
+  });
+});
+
+describe('getLineageTree', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('returns data from dataService on success', async () => {
+    const fakeTree = { name: 'Root' } as any;
+    ctx.dataService.getLineageTree.mockResolvedValue(fakeTree);
+
+    const result = await getLineageTree(ctx, 'plant-1');
+
+    expect(ctx.dataService.getLineageTree).toHaveBeenCalledWith('plant-1');
+    expect(result).toBe(fakeTree);
+  });
+
+  it('toasts error and rethrows on failure', async () => {
+    ctx.dataService.getLineageTree.mockRejectedValue(new Error('tree-err'));
+    await expect(getLineageTree(ctx, 'plant-1')).rejects.toThrow('tree-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('tree-err'), 'error');
+  });
+});
+
+describe('getStrainLineageTree', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('returns data from dataService on success', async () => {
+    const fakeTree = { name: 'Strain' } as any;
+    ctx.dataService.getStrainLineageTree.mockResolvedValue(fakeTree);
+
+    const result = await getStrainLineageTree(ctx, 'OG Kush');
+
+    expect(ctx.dataService.getStrainLineageTree).toHaveBeenCalledWith('OG Kush');
+    expect(result).toBe(fakeTree);
+  });
+
+  it('toasts error and rethrows on failure', async () => {
+    ctx.dataService.getStrainLineageTree.mockRejectedValue(new Error('strain-tree-err'));
+    await expect(getStrainLineageTree(ctx, 'OG Kush')).rejects.toThrow('strain-tree-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('strain-tree-err'), 'error');
+  });
+});
+
+describe('updateStrainLineageTree', () => {
+  let ctx: ReturnType<typeof makeFakeCtx>;
+  beforeEach(() => { ctx = makeFakeCtx(); });
+
+  it('returns data from dataService on success', async () => {
+    const parents = [{ name: 'Parent', source: 'library' }] as any;
+    const fakeResult = { lineage: 'json' };
+    ctx.dataService.updateStrainLineageTree.mockResolvedValue(fakeResult);
+
+    const result = await updateStrainLineageTree(ctx, 'OG Kush', parents);
+
+    expect(ctx.dataService.updateStrainLineageTree).toHaveBeenCalledWith('OG Kush', parents);
+    expect(result).toBe(fakeResult);
+  });
+
+  it('toasts error and rethrows on failure', async () => {
+    ctx.dataService.updateStrainLineageTree.mockRejectedValue(new Error('upd-tree-err'));
+    await expect(updateStrainLineageTree(ctx, 'OG Kush', [])).rejects.toThrow('upd-tree-err');
+    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('upd-tree-err'), 'error');
   });
 });

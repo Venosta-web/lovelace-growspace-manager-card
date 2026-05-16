@@ -727,7 +727,7 @@ export async function saveHarvestMetrics(
   try {
     await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
     ctx.showToast('Harvest metrics saved', 'success');
-    await ctx.refreshData();
+    await ctx.refreshData(true);
   } catch (error) {
     ctx.showToast(`Failed to save harvest metrics: ${error}`, 'error');
     throw error;
@@ -748,7 +748,7 @@ export async function scorePhenotype(
   try {
     await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
     ctx.showToast('Scores saved', 'success');
-    await ctx.refreshData();
+    await ctx.refreshData(true);
   } catch (error) {
     ctx.showToast(`Failed to save scores: ${error}`, 'error');
     throw error;

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
+import { SeedsGeneticsTab } from '../../../src/dialogs/seeds-genetics-tab';
 import { GrowspaceDevice, StrainEntry } from '../../../src/types';
 
 vi.mock('../../../src/utils/plant-utils', () => ({
@@ -83,8 +84,18 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
   });
 
   describe('Getters & Helpers', () => {
+    let seedsTab: SeedsGeneticsTab;
+
+    beforeEach(() => {
+      seedsTab = new SeedsGeneticsTab();
+      seedsTab.plants = mockPlants;
+      seedsTab.strains = [];
+      seedsTab.seedBatches = [];
+      seedsTab.pollinationEvents = [];
+    });
+
     it('correctly filters _flowerVegPlants', () => {
-      const filtered = (element as any)._flowerVegPlants;
+      const filtered = (seedsTab as any)._flowerVegPlants;
       expect(filtered.length).toBe(2);
       expect(filtered[0].plant_id).toBe('p1');
       expect(filtered[0].label).toContain('Blue Dream (Pheno 1)');
@@ -96,14 +107,14 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     });
 
     it('returns correct label in _getPlantLabel', () => {
-      expect((element as any)._getPlantLabel('p1')).toBe('Blue Dream (Pheno 1)');
-      expect((element as any)._getPlantLabel('p2')).toBe('OG Kush');
-      expect((element as any)._getPlantLabel('non-existent')).toBe('non-existent');
+      expect((seedsTab as any)._getPlantLabel('p1')).toBe('Blue Dream (Pheno 1)');
+      expect((seedsTab as any)._getPlantLabel('p2')).toBe('OG Kush');
+      expect((seedsTab as any)._getPlantLabel('non-existent')).toBe('non-existent');
     });
   });
 
   describe('Lifecycle', () => {
-    it('triggers _startEdit when editingStrain property changes', async () => {
+    it('switches to editor view when editingStrain property changes', async () => {
       const strain: StrainEntry = {
         strain: 'New Strain',
         phenotype: 'Pheno 1',
@@ -114,22 +125,29 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       element.editingStrain = strain;
       await element.updateComplete;
 
+      // Dialog-level: _view switches to editor
       expect((element as any)._view).toBe('editor');
-      expect((element as any)._editorState.strain).toBe('New Strain');
+      // Editor state is now managed by strain-editor-view (child component) - tested in strain-editor-view.spec.ts
     });
   });
 
   describe('Saving & Events', () => {
-    it('dispatches strain-created-at-source when source is set', async () => {
+    it('forwards strain-created-at-source event from editor to dialog listeners', async () => {
       element.source = 'add-plant-dialog';
       element.returnPayload = { extra: 'data' };
-      (element as any)._editorState = { strain: 'Quick Strain', type: 'Indica' };
+      (element as any)._view = 'editor';
       await element.updateComplete;
 
       const sourceHandler = vi.fn();
       element.addEventListener('strain-created-at-source', sourceHandler);
 
-      (element as any)._handleSave();
+      // Simulate the event from strain-editor-view being forwarded by dialog
+      const editorView = element.shadowRoot?.querySelector('strain-editor-view');
+      editorView?.dispatchEvent(new CustomEvent('strain-created-at-source', {
+        bubbles: true,
+        composed: true,
+        detail: { strain: { strain: 'Quick Strain', type: 'Indica' }, source: 'add-plant-dialog', returnPayload: { extra: 'data' } }
+      }));
 
       expect(sourceHandler).toHaveBeenCalled();
       const detail = sourceHandler.mock.calls[0][0].detail;
@@ -140,18 +158,7 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
   });
 
   describe('Breeder Logic', () => {
-    it('auto-fills breeder logo when breeder name matches existing', async () => {
-      (element as any)._handleEditorChange('breeder', 'HSO');
-      expect((element as any)._editorState.breeder_logo).toBe('hso-logo');
-    });
-
-    it('does not auto-fill logo if breeder name has no logo in library', async () => {
-      // Initialize _editorState
-      (element as any)._editorState = { strain: '', type: 'Hybrid' };
-      (element as any)._handleEditorChange('breeder', 'Dinafem');
-      // In line 1103-1110, it only sets breeder_logo if found, otherwise it stays as is
-      expect((element as any)._editorState.breeder_logo).toBeUndefined();
-    });
+    // auto-fill breeder logo and no-logo tests are now in strain-editor-view.spec.ts
 
     it('correctly aggregates breeders in _getUniqueBreeders', () => {
       const breeders = (element as any)._getUniqueBreeders();
@@ -282,38 +289,21 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       expect(menuBtn.innerHTML).toContain('svg');
     });
 
-    it('handles image selection from library', async () => {
-      (element as any)._isImageSelectorOpen = true;
-      (element as any)._editorState = { strain: '', type: 'Hybrid' };
+    // Image selection and print-label tests are now in strain-editor-view.spec.ts
+    it('forwards open-print-label event from editor', async () => {
+      (element as any)._view = 'editor';
       await element.updateComplete;
 
-      (element as any)._handleSelectLibraryImage('hso-logo');
-      expect((element as any)._editorState.image).toBe('hso-logo');
-      expect((element as any)._editorState.image_crop_meta).toBeUndefined();
-    });
-
-    it('handles image selection with existing crop meta', async () => {
-      (element as any)._editorState = { strain: '', type: 'Hybrid' };
-      element.strains[0].image = 'hso-logo';
-      element.strains[0].image_crop_meta = { x: 10, y: 20, scale: 2 };
-
-      (element as any)._handleSelectLibraryImage('hso-logo');
-      expect((element as any)._editorState.image_crop_meta).toEqual({ x: 10, y: 20, scale: 2 });
-    });
-
-    it('deletes image_crop_meta when selecting new image without meta', async () => {
-      (element as any)._editorState = { strain: '', type: 'Hybrid', image_crop_meta: { x: 0, y: 0, scale: 1 } };
-      (element as any)._handleSelectLibraryImage('new-image-path');
-      expect((element as any)._editorState.image_crop_meta).toBeUndefined();
-    });
-
-    it('dispatches open-print-label', async () => {
-      (element as any)._editorState = { strain: 'Quick Strain', breeder: 'HSO' };
       const printHandler = vi.fn();
       element.addEventListener('open-print-label', printHandler);
-      
-      (element as any)._handlePrintLabel();
-      
+
+      const editorView = element.shadowRoot?.querySelector('strain-editor-view');
+      editorView?.dispatchEvent(new CustomEvent('open-print-label', {
+        bubbles: true,
+        composed: true,
+        detail: { strainName: 'Quick Strain', breeder: 'HSO' }
+      }));
+
       expect(printHandler).toHaveBeenCalled();
       const detail = printHandler.mock.calls[0][0].detail;
       expect(detail.strainName).toBe('Quick Strain');

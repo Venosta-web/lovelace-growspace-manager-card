@@ -238,16 +238,15 @@ export interface BatchPrintLabelsDialogState {
   plantIds: string[];
 }
 
-/** State for the harvest scoring modal shown before actually harvesting a plant. */
 export interface HarvestScoringDialogState {
   /** The plant being harvested. */
   plant: PlantEntity;
   /** Current score values (1–5 or undefined/null for unset). */
   vigor?: number | null;
-  structure?: number | null;
-  aroma?: number | null;
+  internodal_spacing?: number | null;
+  terpene_intensity?: number | null;
   resin?: number | null;
-  pestResistance?: number | null;
+  mold_resistance?: number | null;
 }
 
 export interface SnapshotsDialogState {

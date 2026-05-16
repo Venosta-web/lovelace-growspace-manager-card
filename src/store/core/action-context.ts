@@ -26,5 +26,5 @@ export interface ActionContext {
     action?: { label: string; callback: () => void }
   ) => void;
   closeDialog: () => void;
-  refreshData: () => Promise<void>;
+  refreshData: (force?: boolean) => Promise<void>;
 }

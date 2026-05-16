@@ -211,6 +211,12 @@ export class PlantAPI extends BaseAPI {
     aroma?: number | null;
     resin?: number | null;
     pest_resistance?: number | null;
+    internodal_spacing?: number | null;
+    terpene_intensity?: number | null;
+    mold_resistance?: number | null;
+    yield_potential?: number | null;
+    keeper?: boolean | null;
+    notes?: string | null;
   }): Promise<void> {
     const payload: Record<string, unknown> = { plant_id: params.plant_id };
 
@@ -220,6 +226,12 @@ export class PlantAPI extends BaseAPI {
     if (params.aroma !== undefined) payload.aroma = params.aroma;
     if (params.resin !== undefined) payload.resin = params.resin;
     if (params.pest_resistance !== undefined) payload.pest_resistance = params.pest_resistance;
+    if (params.internodal_spacing !== undefined) payload.internodal_spacing = params.internodal_spacing;
+    if (params.terpene_intensity !== undefined) payload.terpene_intensity = params.terpene_intensity;
+    if (params.mold_resistance !== undefined) payload.mold_resistance = params.mold_resistance;
+    if (params.yield_potential !== undefined) payload.yield_potential = params.yield_potential;
+    if (params.keeper !== undefined) payload.keeper = params.keeper;
+    if (params.notes !== undefined) payload.notes = params.notes;
 
     try {
       await this.callService(DOMAIN, SERVICES.SCORE_PLANT, payload);

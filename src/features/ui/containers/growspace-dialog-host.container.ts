@@ -403,10 +403,22 @@ export class GrowspaceDialogHost extends LitElement {
     if (active.type !== 'PLANT_OVERVIEW') return html``;
     const dialogState = active.payload;
 
+    // Look up the live plant entity from fresh device data so the overview
+    // reflects data saved during the session (e.g. after scoring/metrics save).
+    const dialogPlantId =
+      dialogState.plant.attributes?.plant_id ||
+      dialogState.plant.entity_id.replace('sensor.', '');
+    const allPlants = this._dialogHostController.value.devices.flatMap((d) => d.plants || []);
+    const livePlant =
+      allPlants.find(
+        (p) =>
+          (p.attributes?.plant_id || p.entity_id.replace('sensor.', '')) === dialogPlantId
+      ) || dialogState.plant;
+
     return html`
       <plant-overview-container
         .open=${true}
-        .plant=${dialogState.plant}
+        .plant=${livePlant}
         .editedAttributes=${dialogState.editedAttributes}
         @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
         @update-plant=${(e: CustomEvent) =>

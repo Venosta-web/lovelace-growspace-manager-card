@@ -130,7 +130,7 @@ export class GrowspaceStore {
       hass: this.hass,
       showToast: (msg, type, action) => this.showToast(msg, type, action),
       closeDialog: () => this.ui.closeDialog(),
-      refreshData: () => this.refreshData(),
+      refreshData: (force?: boolean) => this.refreshData(force),
     };
   }
 

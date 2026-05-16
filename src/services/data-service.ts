@@ -405,6 +405,12 @@ export class DataService {
     aroma?: number | null;
     resin?: number | null;
     pest_resistance?: number | null;
+    internodal_spacing?: number | null;
+    terpene_intensity?: number | null;
+    mold_resistance?: number | null;
+    yield_potential?: number | null;
+    keeper?: boolean | null;
+    notes?: string | null;
   }) => this._plantAPI.scorePlant(params);
 
   updateHarvestMetrics = (params: {

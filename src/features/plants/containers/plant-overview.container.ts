@@ -9,7 +9,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import { atom, type ReadableAtom, type WritableAtom } from 'nanostores';
+import { atom, type ReadableAtom } from 'nanostores';
 import {
   mdiClose,
   mdiDna,
@@ -17,7 +17,6 @@ import {
   mdiCheck,
   mdiFlower,
   mdiCannabis,
-  mdiArrowRight,
   mdiContentCopy,
   mdiWater,
   mdiFlask,
@@ -27,11 +26,10 @@ import {
 } from '@mdi/js';
 import { hassContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import type { PlantEntity, PlantOverviewEditedAttributes, GrowspaceEvent, PlantTimelineEvent, StrainEntry } from '../../../types';
+import { PlantStage, type PlantEntity, type PlantOverviewEditedAttributes, type GrowspaceEvent, type PlantTimelineEvent, type StrainEntry } from '../../../types';
 import { getTimelineService } from '../../../services/timeline-service';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
-  createPlantOverviewViewModel,
   createStablePlantOverviewViewModel,
   type PlantOverviewViewModel,
 } from '../viewmodels/plant-overview.viewmodel';
@@ -41,9 +39,10 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import '../components/plant-dashboard-tab';
 import '../components/plant-actions-tab';
 import '../components/plant-timeline-tab';
+import '../components/plant-harvest-tab';
+import '../components/plant-genetics-tab';
 import '../../shared/ui/md3-select';
 import '../../shared/ui/md3-number-input';
-import '../../shared/ui/lineage-tree';
 
 /**
  * Container component for plant overview dialog
@@ -70,22 +69,6 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
 
-  // Harvest/scoring tab state
-  @state() private _harvestMetricsEdit: Record<string, unknown> = {};
-  @state() private _scoresEdit: Record<string, number | null> = {};
-  @state() private _starPreview: Record<string, number | null> = {};
-  @state() private _savingHarvest = false;
-
-  // Score Phenotype in actions tab
-  @state() private _showScoringForm = false;
-  @state() private _savingScore = false;
-
-  // Genetics tab state
-  @state() private _lineageTree: import('../types').LineageNode | null = null;
-  @state() private _lineageLoading = false;
-  @state() private _sexSaving = false;
-  @state() private _seedBatchSearchOpen = false;
-  @state() private _seedBatchSearchQuery = '';
 
   // ViewModel state managed via atoms
   private _plantAtom = atom<PlantEntity | null>(null);
@@ -304,25 +287,10 @@ export class PlantOverviewContainer extends LitElement {
         this._logbookEventsAtom
       );
       this.viewModelController = new StoreController(this, this.viewModel);
-      this._initHarvestState();
     }
 
     // Fetch logbook events asynchronously; the atom update will trigger a re-render
     this._fetchLogbookEvents();
-  }
-
-  private _initHarvestState(): void {
-    const hm = this.plant?.attributes?.harvest_metrics || {};
-    this._harvestMetricsEdit = { ...hm };
-    const rawScores = this.plant?.attributes?.scores || {};
-    this._scoresEdit = {
-      vigor: rawScores.vigor ?? null,
-      structure: rawScores.structure ?? null,
-      aroma: rawScores.aroma ?? null,
-      resin: rawScores.resin ?? null,
-      pest_resistance: rawScores.pest_resistance ?? null,
-    };
-    this._starPreview = {};
   }
 
   private async _fetchLogbookEvents(): Promise<void> {
@@ -345,7 +313,6 @@ export class PlantOverviewContainer extends LitElement {
 
   willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('plant') && this.plant) {
-      this._initHarvestState();
       this._plantAtom.set(this.plant);
 
       // Initialize viewModel on first plant arrival if not already done in connectedCallback
@@ -420,8 +387,18 @@ export class PlantOverviewContainer extends LitElement {
             ${this._activeTab === 'dashboard' ? this._renderDashboard(vm) : nothing}
             ${this._activeTab === 'actions' ? this._renderActions(vm) : nothing}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : nothing}
-            ${this._activeTab === 'harvest' ? this._renderHarvestTab() : nothing}
-            ${this._activeTab === 'genetics' ? this._renderGeneticsTab() : nothing}
+            ${this._activeTab === 'harvest' ? html`
+              <plant-harvest-tab
+                .plant=${this.plant}
+                @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
+                @harvest-advance=${this._handleHarvestAdvance}
+              ></plant-harvest-tab>
+            ` : nothing}
+            ${this._activeTab === 'genetics' ? html`
+              <plant-genetics-tab
+                .plant=${this.plant}
+              ></plant-genetics-tab>
+            ` : nothing}
           </div>
 
           <!-- ACTIONS -->
@@ -560,10 +537,7 @@ export class PlantOverviewContainer extends LitElement {
         ${showHarvestTab ? html`
           <button
             class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
-            @click=${() => {
-              this._activeTab = 'harvest';
-              this._initHarvestState();
-            }}
+            @click=${() => { this._activeTab = 'harvest'; }}
           >
             <svg viewBox="0 0 24 24">
               <path d="${mdiCannabis}"></path>
@@ -573,10 +547,7 @@ export class PlantOverviewContainer extends LitElement {
         ` : nothing}
         <button
           class="tab-btn ${this._activeTab === 'genetics' ? 'active' : ''}"
-          @click=${() => {
-            this._activeTab = 'genetics';
-            this._loadLineageTree();
-          }}
+          @click=${() => { this._activeTab = 'genetics'; }}
         >
           <svg viewBox="0 0 24 24">
             <path d="${mdiDna}"></path>
@@ -672,9 +643,9 @@ export class PlantOverviewContainer extends LitElement {
     return html`
       <plant-actions-tab
         .availableActions=${vm.availableActions}
+        .plant=${this.plant}
         @action-click=${this._handleActionClick}
       ></plant-actions-tab>
-      ${this._renderScorePhenotypeSection()}
     `;
   }
 
@@ -978,11 +949,29 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _handleHarvest(): void {
-    this.store.actions.plant.harvest(this.plant);
+    const stage = (this.plant.state || this.plant.attributes?.stage || '').toLowerCase();
+    if (stage === PlantStage.FLOWER || stage === 'flowering') {
+      this.store.actions.ui.setActiveDialog({
+        type: 'HARVEST_SCORING',
+        payload: { plant: this.plant },
+      });
+      // Close the overview when opening the scoring dialog to keep flow clean
+      this._handleClose();
+    } else {
+      this.store.actions.plant.harvest(this.plant);
+    }
   }
 
   private _handleFinishDrying(): void {
     this.store.actions.plant.finishDrying(this.plant);
+  }
+
+  private _handleHarvestAdvance(e: CustomEvent): void {
+    if (e.detail.action === 'finish-drying') {
+      this._handleFinishDrying();
+    } else {
+      this._handleHarvest();
+    }
   }
 
   private _handleMovePlantEvent(e: CustomEvent): void {
@@ -1117,399 +1106,6 @@ export class PlantOverviewContainer extends LitElement {
     });
   }
 
-  // ── Harvest / Scoring tab ──────────────────────────────────────────────────
-
-  private _setScore(key: string, value: number): void {
-    const current = this._scoresEdit[key];
-    this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
-  }
-
-  private _renderScoreRow(dim: { key: string; label: string; description: string; emoji: string }): TemplateResult {
-    const current = this._scoresEdit[dim.key] as number | null;
-    const preview = this._starPreview[dim.key] as number | null;
-    return html`
-      <div style="display:flex; flex-direction:column; gap:6px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;">
-            <span style="font-size:1.2rem;">${dim.emoji}</span>
-            ${dim.label}
-          </span>
-          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
-            ${current !== null && current !== undefined ? `${current} / 5` : '—'}
-          </span>
-        </div>
-        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
-        <div style="display:flex; gap:6px; margin-top:4px;">
-          ${[1, 2, 3, 4, 5].map(star => html`
-            <button
-              style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
-                filter: ${(current !== null && star <= current) || (preview !== null && star <= preview)
-                  ? 'grayscale(0) opacity(1)'
-                  : 'grayscale(0.6) opacity(0.5)'};"
-              aria-label="Set ${dim.label} score to ${star}"
-              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
-              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
-              @click=${() => this._setScore(dim.key, star)}
-              ?disabled=${this._savingHarvest}
-            >⭐</button>
-          `)}
-        </div>
-      </div>
-    `;
-  }
-
-  private async _loadLineageTree(): Promise<void> {
-    const plantId = this.plant?.attributes?.plant_id;
-    if (!plantId || !this.store) return;
-    this._lineageLoading = true;
-    this._lineageTree = null;
-    try {
-      const tree = await this.store.actions.genetics.getLineageTree(plantId);
-      this._lineageTree = tree;
-    } catch {
-      this._lineageTree = null;
-    } finally {
-      this._lineageLoading = false;
-    }
-  }
-
-  private _renderGeneticsTab(): TemplateResult {
-    const plant = this.plant;
-    const attrs = plant?.attributes ?? {};
-    const sex = (attrs.sex as string) ?? 'unknown';
-    const seedBatchId = attrs.seed_batch_id as string | null ?? null;
-    const generation = (attrs.generation as string) ?? '';
-
-    const sexOptions = [
-      { value: 'unknown', label: 'Unknown' },
-      { value: 'female', label: '♀ Female' },
-      { value: 'male', label: '♂ Male' },
-      { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
-    ];
-
-    return html`
-      <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
-
-        <!-- Identity -->
-        <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Sex</h4>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            ${sexOptions.map(opt => html`
-              <button
-                class="md3-chip ${sex === opt.value ? 'selected' : ''}"
-                style="
-                  padding: 6px 14px;
-                  border-radius: 20px;
-                  border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
-                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
-                  color: ${sex === opt.value ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
-                  font-size: 13px;
-                  cursor: pointer;
-                "
-                ?disabled=${this._sexSaving}
-                @click=${async () => {
-                  if (sex === opt.value) return;
-                  this._sexSaving = true;
-                  try {
-                    await this.store?.actions.genetics.setPlantSex(attrs.plant_id as string, opt.value);
-                  } finally {
-                    this._sexSaving = false;
-                  }
-                }}
-              >${opt.label}</button>
-            `)}
-          </div>
-        </div>
-
-        <!-- Seed batch origin -->
-        <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Origin</h4>
-          ${seedBatchId
-            ? html`
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="
-                    background: rgba(139,195,74,0.15);
-                    border: 1px solid #8bc34a;
-                    border-radius: 16px;
-                    padding: 4px 12px;
-                    font-size: 13px;
-                  ">🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span>
-                  <button
-                    class="md3-button text"
-                    style="font-size: 12px; color: var(--secondary-text-color);"
-                    @click=${async () => {
-                      await this.store?.actions.genetics.sowSeed(seedBatchId, attrs.plant_id as string);
-                    }}
-                  >Unlink</button>
-                </div>
-              `
-            : html`
-                <div>
-                  <button
-                    class="md3-button tonal"
-                    style="font-size: 13px;"
-                    @click=${() => { this._seedBatchSearchOpen = !this._seedBatchSearchOpen; }}
-                  >🔗 Link to seed batch</button>
-                  ${this._seedBatchSearchOpen ? html`
-                    <div style="margin-top: 8px; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px;">
-                      <p style="font-size: 12px; color: var(--secondary-text-color); margin: 0 0 8px;">
-                        To link this plant to a seed batch, use the Seed Inventory panel in Strain Library → Seeds tab, then tap Sow.
-                      </p>
-                    </div>
-                  ` : nothing}
-                </div>
-              `
-          }
-        </div>
-
-        <!-- Lineage tree -->
-        <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;">
-            Lineage
-            <button class="md3-button text" style="font-size:11px;"
-              @click=${() => {
-                const strainName = this.plant?.attributes?.strain;
-                const phenotype = this.plant?.attributes?.phenotype;
-                if (strainName) {
-                  this.dispatchEvent(new CustomEvent('open-strain-editor', {
-                    detail: { strain: strainName, phenotype, focusLineage: true },
-                    bubbles: true,
-                    composed: true,
-                  }));
-                }
-              }}
-            >Edit lineage</button>
-          </h4>
-          <lineage-tree
-            .node=${this._lineageTree}
-            .loading=${this._lineageLoading}
-          ></lineage-tree>
-        </div>
-      </div>
-    `;
-  }
-
-  private _renderHarvestTab(): TemplateResult {
-    const SCORE_DIMENSIONS = [
-      { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
-      { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
-      { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
-      { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
-      { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
-    ];
-    const isSaving = this._savingHarvest;
-    const hm = this._harvestMetricsEdit as Record<string, number | string | null>;
-    const stage = (this.plant?.state || '').toLowerCase();
-    const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
-
-    return html`
-      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
-
-        <!-- Score Grid -->
-        <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
-          ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
-        </div>
-        <p style="font-size:0.8rem; opacity:0.45; margin:8px 0 0; text-align:center;">
-          All fields are optional — you can advance without scoring.
-        </p>
-
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
-
-        <!-- Yield Metrics -->
-        <div>
-          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Yield metrics</p>
-          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">Wet weight (g)</label>
-              <input type="number" min="0" step="0.1" placeholder="e.g. 120"
-                .value=${String(hm.wet_weight ?? '')}
-                @input=${(e: InputEvent) => {
-                  const v = (e.target as HTMLInputElement).value;
-                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
-                }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">Dry weight (g)</label>
-              <input type="number" min="0" step="0.1" placeholder="e.g. 28"
-                .value=${String(hm.dry_weight ?? '')}
-                @input=${(e: InputEvent) => {
-                  const v = (e.target as HTMLInputElement).value;
-                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
-                }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">Trim weight (g)</label>
-              <input type="number" min="0" step="0.1" placeholder="e.g. 5"
-                .value=${String(hm.trim_weight ?? '')}
-                @input=${(e: InputEvent) => {
-                  const v = (e.target as HTMLInputElement).value;
-                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
-                }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-          </div>
-        </div>
-
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
-
-        <!-- Lab Results -->
-        <div>
-          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Lab results</p>
-          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">THC (%)</label>
-              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
-                .value=${String(hm.thc_percentage ?? '')}
-                @input=${(e: InputEvent) => {
-                  const v = (e.target as HTMLInputElement).value;
-                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
-                }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">CBD (%)</label>
-              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
-                .value=${String(hm.cbd_percentage ?? '')}
-                @input=${(e: InputEvent) => {
-                  const v = (e.target as HTMLInputElement).value;
-                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
-                }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px; grid-column: 1 / -1;">
-              <label style="font-size:0.75rem; opacity:0.7;">Terpene profile</label>
-              <textarea rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
-                .value=${String(hm.terpene_profile ?? '')}
-                @input=${(e: InputEvent) => {
-                  this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: (e.target as HTMLTextAreaElement).value };
-                }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box; resize:vertical;"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
-
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <button
-            class="md3-button outlined"
-            @click=${() => this._skipAndAdvance()}
-            ?disabled=${isSaving}
-          >${advanceLabel}</button>
-          <button
-            class="md3-button filled"
-            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
-            @click=${() => this._saveHarvestMetrics()}
-            ?disabled=${isSaving}
-          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _skipAndAdvance(): void {
-    if (this._savingHarvest) return;
-    const stage = (this.plant?.state || '').toLowerCase();
-    if (stage === 'dry' || stage === 'drying') {
-      this._handleFinishDrying();
-    } else {
-      this._handleHarvest();
-    }
-  }
-
-  private async _saveHarvestMetrics(): Promise<void> {
-    if (!this.plant?.attributes?.plant_id) return;
-    this._savingHarvest = true;
-    try {
-      const plantId = this.plant.attributes.plant_id;
-      await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
-      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
-      this._activeTab = 'dashboard';
-    } catch (e) {
-      // Toast is handled inside the action; just catch to prevent unhandled rejection
-      console.error('Failed to save harvest metrics', e);
-    } finally {
-      this._savingHarvest = false;
-    }
-  }
-
-  // ── Score Phenotype (actions tab) ─────────────────────────────────────────
-
-  private _renderScorePhenotypeSection(): TemplateResult {
-    const SCORE_DIMENSIONS = [
-      { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
-      { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
-      { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
-      { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
-      { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
-    ];
-    return html`
-      <div style="background:var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius:12px; padding:16px; grid-column: 1 / -1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:${this._showScoringForm ? '16px' : '0'};">
-          <h3 style="margin:0;">Score Phenotype</h3>
-          <button
-            class="md3-button outlined"
-            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
-          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
-        </div>
-        ${this._showScoringForm ? html`
-          <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
-            ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
-          </div>
-          <div style="display:flex; justify-content:flex-end; margin-top:16px;">
-            <button
-              class="md3-button filled"
-              @click=${() => this._savePhenotypeScore()}
-              ?disabled=${this._savingScore}
-            >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
-          </div>
-        ` : html`
-          <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px; pointer-events:none; opacity:0.7;">
-            ${SCORE_DIMENSIONS.map(dim => {
-              const val = this._scoresEdit[dim.key];
-              return html`
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
-                    <span>${dim.emoji}</span>${dim.label}
-                  </span>
-                  <span style="font-size:0.95rem; opacity:0.7;">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
-                </div>
-              `;
-            })}
-          </div>
-        `}
-      </div>
-    `;
-  }
-
-  private async _savePhenotypeScore(): Promise<void> {
-    if (!this.plant?.attributes?.plant_id) return;
-    this._savingScore = true;
-    try {
-      const plantId = this.plant.attributes.plant_id;
-      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
-      this._showScoringForm = false;
-    } catch (e) {
-      // Toast is handled inside the action; just catch to prevent unhandled rejection
-      console.error('Failed to save phenotype scores', e);
-    } finally {
-      this._savingScore = false;
-    }
-  }
 }
 
 declare global {

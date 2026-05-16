@@ -11,7 +11,7 @@ import '../features/shared/ui/gs-help-tooltip';
 
 /** Score dimension descriptor */
 interface ScoreDimension {
-    key: 'vigor' | 'structure' | 'aroma' | 'resin' | 'pestResistance';
+    key: 'vigor' | 'internodal_spacing' | 'terpene_intensity' | 'resin' | 'mold_resistance';
     label: string;
     description: string;
     emoji: string;
@@ -25,13 +25,13 @@ const SCORE_DIMENSIONS: ScoreDimension[] = [
         emoji: '💪',
     },
     {
-        key: 'structure',
+        key: 'internodal_spacing',
         label: 'Structure',
         description: 'Branch spacing, internodal distance, and bud site density',
         emoji: '🌿',
     },
     {
-        key: 'aroma',
+        key: 'terpene_intensity',
         label: 'Aroma',
         description: 'Terpene expression — potency and complexity of smell',
         emoji: '👃',
@@ -43,7 +43,7 @@ const SCORE_DIMENSIONS: ScoreDimension[] = [
         emoji: '💎',
     },
     {
-        key: 'pestResistance',
+        key: 'mold_resistance',
         label: 'Pest resistance',
         description: 'Resilience against pests and disease during the run',
         emoji: '🛡️',
@@ -65,10 +65,10 @@ export class HarvestScoringDialog extends LitElement {
 
     @state() private _scores: Scores = {
         vigor: null,
-        structure: null,
-        aroma: null,
+        internodal_spacing: null,
+        terpene_intensity: null,
         resin: null,
-        pestResistance: null,
+        mold_resistance: null,
     };
     @state() private _isSubmitting = false;
 
@@ -258,10 +258,10 @@ export class HarvestScoringDialog extends LitElement {
         const ds = this.dialogState;
         this._scores = {
             vigor: ds?.vigor ?? null,
-            structure: ds?.structure ?? null,
-            aroma: ds?.aroma ?? null,
+            internodal_spacing: ds?.internodal_spacing ?? null,
+            terpene_intensity: ds?.terpene_intensity ?? null,
             resin: ds?.resin ?? null,
-            pestResistance: ds?.pestResistance ?? null,
+            mold_resistance: ds?.mold_resistance ?? null,
         };
         // Reset yield/lab fields
         this._wetWeight = '';
@@ -292,10 +292,10 @@ export class HarvestScoringDialog extends LitElement {
             if (hasAnyScore) {
                 await this.store.actions.plant.scorePhenotype(plantId, {
                     vigor: this._scores.vigor as number | null,
-                    structure: this._scores.structure as number | null,
-                    aroma: this._scores.aroma as number | null,
+                    internodal_spacing: this._scores.internodal_spacing as number | null,
+                    terpene_intensity: this._scores.terpene_intensity as number | null,
                     resin: this._scores.resin as number | null,
-                    pest_resistance: this._scores.pestResistance as number | null,
+                    mold_resistance: this._scores.mold_resistance as number | null,
                 });
             }
 

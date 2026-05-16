@@ -6512,6 +6512,18 @@ class PlantAPI extends BaseAPI {
             payload.resin = params.resin;
         if (params.pest_resistance !== undefined)
             payload.pest_resistance = params.pest_resistance;
+        if (params.internodal_spacing !== undefined)
+            payload.internodal_spacing = params.internodal_spacing;
+        if (params.terpene_intensity !== undefined)
+            payload.terpene_intensity = params.terpene_intensity;
+        if (params.mold_resistance !== undefined)
+            payload.mold_resistance = params.mold_resistance;
+        if (params.yield_potential !== undefined)
+            payload.yield_potential = params.yield_potential;
+        if (params.keeper !== undefined)
+            payload.keeper = params.keeper;
+        if (params.notes !== undefined)
+            payload.notes = params.notes;
         try {
             await this.callService(DOMAIN$1, SERVICES.SCORE_PLANT, payload);
         }
@@ -6990,10 +7002,6 @@ class GeneticsAPI extends BaseAPI {
     }
     async importStrainLineageTree(strain_name, tree) {
         await this.sendWebSocket(`${DOMAIN}/import_strain_lineage_tree`, { strain_name, tree });
-    }
-    async scorePlant(data) {
-        const payload = Object.fromEntries(Object.entries(data).filter(([, v]) => v != null));
-        await this.callService(DOMAIN, 'score_plant', payload);
     }
 }
 
@@ -18636,13 +18644,13 @@ const SCORE_DIMENSIONS = [
         emoji: '💪',
     },
     {
-        key: 'structure',
+        key: 'internodal_spacing',
         label: 'Structure',
         description: 'Branch spacing, internodal distance, and bud site density',
         emoji: '🌿',
     },
     {
-        key: 'aroma',
+        key: 'terpene_intensity',
         label: 'Aroma',
         description: 'Terpene expression — potency and complexity of smell',
         emoji: '👃',
@@ -18654,7 +18662,7 @@ const SCORE_DIMENSIONS = [
         emoji: '💎',
     },
     {
-        key: 'pestResistance',
+        key: 'mold_resistance',
         label: 'Pest resistance',
         description: 'Resilience against pests and disease during the run',
         emoji: '🛡️',
@@ -18666,10 +18674,10 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
         this.open = false;
         this._scores = {
             vigor: null,
-            structure: null,
-            aroma: null,
+            internodal_spacing: null,
+            terpene_intensity: null,
             resin: null,
-            pestResistance: null,
+            mold_resistance: null,
         };
         this._isSubmitting = false;
         // Yield metrics
@@ -18690,10 +18698,10 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
         const ds = this.dialogState;
         this._scores = {
             vigor: ds?.vigor ?? null,
-            structure: ds?.structure ?? null,
-            aroma: ds?.aroma ?? null,
+            internodal_spacing: ds?.internodal_spacing ?? null,
+            terpene_intensity: ds?.terpene_intensity ?? null,
             resin: ds?.resin ?? null,
-            pestResistance: ds?.pestResistance ?? null,
+            mold_resistance: ds?.mold_resistance ?? null,
         };
         // Reset yield/lab fields
         this._wetWeight = '';
@@ -18721,10 +18729,10 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
             if (hasAnyScore) {
                 await this.store.actions.plant.scorePhenotype(plantId, {
                     vigor: this._scores.vigor,
-                    structure: this._scores.structure,
-                    aroma: this._scores.aroma,
+                    internodal_spacing: this._scores.internodal_spacing,
+                    terpene_intensity: this._scores.terpene_intensity,
                     resin: this._scores.resin,
-                    pest_resistance: this._scores.pestResistance,
+                    mold_resistance: this._scores.mold_resistance,
                 });
             }
             // 2. Build yield/lab metrics (only include non-empty values)
@@ -25144,6 +25152,894 @@ StrainImportDialog = __decorate([
     t$2('strain-import-dialog')
 ], StrainImportDialog);
 
+let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strains = [];
+        this.seedBatches = [];
+        this.pollinationEvents = [];
+        this.plants = [];
+        this._seedSubView = 'list';
+        this._editingBatchId = null;
+        this._editingEventId = null;
+        this._confirmDeleteEventId = null;
+        this._confirmDeleteBatchId = null;
+        this._sowBatchId = null;
+        this._sowGrowspaceId = '';
+        this._sowQuantity = 1;
+        this._sowSubmitting = false;
+        this._submitError = null;
+        this._selectedEventId = null;
+        this._batchForm = {
+            strain_name: '',
+            breeder: '',
+            quantity: 1,
+            acquisition_date: '',
+            generation: 'F1',
+            parent_1_key: '',
+            parent_2_key: '',
+            notes: '',
+        };
+        this._pollinationForm = {
+            date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
+        };
+        this._harvestForm = { quantity: 1, notes: '' };
+    }
+    get _flowerVegPlants() {
+        const ELIGIBLE_STAGES = ['flower', 'veg'];
+        return this.plants.flatMap((device) => device.plants
+            .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
+            .map((p) => {
+            const stage = p.attributes.stage;
+            const stageDays = p.attributes[`${stage}_days`];
+            const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
+            const strain = p.attributes.strain ?? '';
+            const phenotype = p.attributes.phenotype;
+            const phenoStr = phenotype ? ` (${phenotype})` : '';
+            const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
+            return { plant_id: p.attributes.plant_id, label };
+        }));
+    }
+    _getPlantLabel(plant_id) {
+        for (const device of this.plants) {
+            for (const p of device.plants) {
+                if (p.attributes.plant_id === plant_id) {
+                    const strain = p.attributes.strain ?? '';
+                    const phenotype = p.attributes.phenotype;
+                    return phenotype ? `${strain} (${phenotype})` : (strain || plant_id);
+                }
+            }
+        }
+        return plant_id;
+    }
+    render() {
+        if (this._seedSubView === 'add-batch')
+            return this._renderAddBatchForm();
+        if (this._seedSubView === 'log-pollination')
+            return this._renderLogPollinationForm();
+        if (this._seedSubView === 'harvest')
+            return this._renderHarvestForm();
+        return this._renderSeedList();
+    }
+    _renderSeedList() {
+        return x `
+      <div class="dialog-header">
+        <div class="dialog-icon">
+          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiLeaf}"></path>
+          </svg>
+        </div>
+        <div class="dialog-title-group">
+          <h2 class="dialog-title">Seeds &amp; Genetics</h2>
+        </div>
+        <div class="header-actions" style="display:flex; gap:8px;">
+          <button
+            class="md3-button text close"
+            @click=${() => this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
+            style="min-width:auto; padding:8px; margin-left: auto;"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClose}"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="sd-content">
+        <div class="seeds-section">
+          <div class="seeds-header">
+            <h3>Seed inventory</h3>
+            <button class="md3-button filled" @click=${() => {
+            this._editingBatchId = null;
+            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
+            this._submitError = null;
+            this._seedSubView = 'add-batch';
+        }}>
+              Add batch
+            </button>
+          </div>
+          ${this.seedBatches.length === 0
+            ? x `<p class="empty-state">No seed batches yet.</p>`
+            : this.seedBatches.map(b => x `
+              <div class="seed-batch-card">
+                <div class="seed-batch-card-header">
+                  <div class="seed-batch-name">${b.strain_name}</div>
+                  <button class="seed-batch-edit-btn" title="Edit batch" @click=${() => {
+                const p1Key = b.parent_1_strain
+                    ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
+                    : '';
+                const p2Key = b.parent_2_strain
+                    ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
+                    : '';
+                this._batchForm = {
+                    strain_name: b.strain_name,
+                    breeder: b.breeder,
+                    quantity: b.quantity,
+                    acquisition_date: b.acquisition_date,
+                    generation: b.generation,
+                    parent_1_key: p1Key,
+                    parent_2_key: p2Key,
+                    notes: b.notes ?? '',
+                };
+                this._editingBatchId = b.batch_id;
+                this._submitError = null;
+                this._seedSubView = 'add-batch';
+            }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="${mdiPencil}"></path>
+                    </svg>
+                  </button>
+                </div>
+                <div class="seed-batch-meta">${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}</div>
+                ${(b.parent_1_strain || b.parent_2_strain) ? x `
+                  <div class="seed-batch-parents">
+                    ${b.parent_1_strain ? x `<span class="seed-batch-parent-chip">♀ ${b.parent_1_strain}${b.parent_1_phenotype ? ` (${b.parent_1_phenotype})` : ''}</span>` : E}
+                    ${(b.parent_1_strain && b.parent_2_strain) ? x `<span class="seed-batch-parent-sep">×</span>` : E}
+                    ${b.parent_2_strain ? x `<span class="seed-batch-parent-chip">♂ ${b.parent_2_strain}${b.parent_2_phenotype ? ` (${b.parent_2_phenotype})` : ''}</span>` : E}
+                  </div>
+                ` : E}
+                ${b.lineage ? x `<div class="seed-batch-lineage">${b.lineage}</div>` : E}
+                ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
+                <div class="seed-batch-actions">
+                  <button class="md3-button tonal" style="font-size:12px;" @click=${() => {
+                if (this._sowBatchId === b.batch_id) {
+                    this._sowBatchId = null;
+                }
+                else {
+                    this._sowBatchId = b.batch_id;
+                    this._sowQuantity = 1;
+                    this._sowGrowspaceId = this.plants[0]?.deviceId ?? '';
+                }
+                this._confirmDeleteBatchId = null;
+            }}>🌱 Sow seeds</button>
+                  ${this._confirmDeleteBatchId === b.batch_id
+                ? x `
+                        <span style="font-size:12px; color:var(--secondary-text-color);">Delete?</span>
+                        <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
+                    await this.onDeleteSeedBatch?.(b.batch_id);
+                    this._confirmDeleteBatchId = null;
+                    this.onSeedDataChanged?.();
+                }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
+                        </button>
+                        <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteBatchId = null; }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
+                        </button>
+                      `
+                : x `
+                        <button class="icon-btn danger" title="Delete batch" @click=${() => { this._confirmDeleteBatchId = b.batch_id; this._sowBatchId = null; }}>
+                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
+                        </button>
+                      `}
+                </div>
+                ${this._sowBatchId === b.batch_id ? x `
+                  <div class="sow-form">
+                    <select
+                      class="sow-select"
+                      .value=${this._sowGrowspaceId}
+                      @change=${(e) => { this._sowGrowspaceId = e.target.value; }}
+                    >
+                      ${this.plants.map(g => x `
+                        <option value=${g.deviceId} ?selected=${g.deviceId === this._sowGrowspaceId}>${g.name}</option>
+                      `)}
+                    </select>
+                    <input
+                      type="number"
+                      class="sow-qty"
+                      min="1"
+                      max=${b.quantity}
+                      .value=${String(this._sowQuantity)}
+                      @input=${(e) => { this._sowQuantity = Number(e.target.value); }}
+                      placeholder="Seeds"
+                    />
+                    <button
+                      class="md3-button filled"
+                      style="font-size:12px;"
+                      ?disabled=${this._sowSubmitting || !this._sowGrowspaceId}
+                      @click=${async () => {
+                if (!this._sowGrowspaceId)
+                    return;
+                this._sowSubmitting = true;
+                try {
+                    await this.onSowSeeds?.({
+                        growspace_id: this._sowGrowspaceId,
+                        strain: b.strain_name,
+                        amount: this._sowQuantity,
+                        seed_batch_id: b.batch_id,
+                        generation: b.generation,
+                    });
+                    this._sowBatchId = null;
+                    this.onSeedDataChanged?.();
+                }
+                finally {
+                    this._sowSubmitting = false;
+                }
+            }}
+                    >${this._sowSubmitting ? 'Planting…' : 'Plant'}</button>
+                    <button class="md3-button text" style="font-size:12px;" @click=${() => { this._sowBatchId = null; }}>Cancel</button>
+                  </div>
+                ` : E}
+              </div>
+            `)}
+
+          <div class="seeds-header">
+            <h3>Pollination log</h3>
+            <button class="md3-button tonal" @click=${() => { this._seedSubView = 'log-pollination'; }}>
+              Log pollination
+            </button>
+          </div>
+          ${this.pollinationEvents.length === 0
+            ? x `<p class="empty-state">No pollination events yet.</p>`
+            : this.pollinationEvents.map(e => x `
+              <div class="pollination-card">
+                <div class="pollination-card-header">
+                  <div class="pollination-date">${e.date}</div>
+                  <div class="pollination-card-actions">
+                    <button class="icon-btn" title="Edit" @click=${() => {
+                this._editingEventId = e.event_id;
+                this._pollinationForm = {
+                    date: e.date,
+                    donor_plant_id: e.donor_plant_id,
+                    receiver_plant_id: e.receiver_plant_id,
+                    notes: e.notes ?? '',
+                };
+                this._seedSubView = 'log-pollination';
+            }}>
+                      <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiPencil}"></path></svg>
+                    </button>
+                    ${this._confirmDeleteEventId === e.event_id
+                ? x `
+                          <span class="delete-confirm-text">Delete?</span>
+                          <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
+                    await this.onDeletePollination?.(e.event_id);
+                    this._confirmDeleteEventId = null;
+                    this.onSeedDataChanged?.();
+                }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
+                          </button>
+                          <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteEventId = null; }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
+                          </button>
+                        `
+                : x `
+                          <button class="icon-btn danger" title="Delete" @click=${() => { this._confirmDeleteEventId = e.event_id; }}>
+                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
+                          </button>
+                        `}
+                  </div>
+                </div>
+                <div class="pollination-plants">♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀ ${this._getPlantLabel(e.receiver_plant_id)}</div>
+                ${e.notes ? x `<div class="pollination-notes">${e.notes}</div>` : E}
+                ${e.result_seed_batch_id
+                ? x `<span class="badge success">Seeds harvested</span>`
+                : x `
+                      <button class="md3-button tonal" @click=${() => {
+                    this._selectedEventId = e.event_id;
+                    this._seedSubView = 'harvest';
+                }}>Harvest seeds</button>
+                    `}
+              </div>
+            `)}
+        </div>
+      </div>
+    `;
+    }
+    _renderAddBatchForm() {
+        const isEditing = this._editingBatchId !== null;
+        const uniqueBreeders = [...new Set(this.strains.map((s) => s.breeder).filter(Boolean))].sort();
+        const strainOptions = this.strains
+            .slice()
+            .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
+            .map((s) => ({
+            key: `${s.strain}||${s.phenotype}`,
+            label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
+        }));
+        return x `
+      <datalist id="batch-breeder-suggestions">
+        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
+      </datalist>
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; }}>← Back</button>
+          <h3>${isEditing ? 'Edit seed batch' : 'Add seed batch'}</h3>
+        </div>
+        <label>Strain name
+          <input type="text" .value=${this._batchForm.strain_name}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, strain_name: e.target.value }; }} />
+        </label>
+        <label>Breeder
+          <input type="text" list="batch-breeder-suggestions" .value=${this._batchForm.breeder}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, breeder: e.target.value }; }} />
+        </label>
+        <label>Quantity
+          <input type="number" min="1" .value=${String(this._batchForm.quantity)}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, quantity: parseInt(e.target.value) || 1 }; }} />
+        </label>
+        <label>Acquisition date
+          <input type="date" .value=${this._batchForm.acquisition_date}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, acquisition_date: e.target.value }; }} />
+        </label>
+        <label>Generation
+          <input type="text" placeholder="F1, S1, BX1…" .value=${this._batchForm.generation}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, generation: e.target.value }; }} />
+        </label>
+        <label>Parent 1
+          <select @change=${(e) => { this._batchForm = { ...this._batchForm, parent_1_key: e.target.value }; }}>
+            <option value="">— none —</option>
+            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_1_key === o.key}>${o.label}</option>`)}
+          </select>
+        </label>
+        <label>Parent 2
+          <select @change=${(e) => { this._batchForm = { ...this._batchForm, parent_2_key: e.target.value }; }}>
+            <option value="">— none —</option>
+            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_2_key === o.key}>${o.label}</option>`)}
+          </select>
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._batchForm.notes}
+            @input=${(e) => { this._batchForm = { ...this._batchForm, notes: e.target.value }; }} />
+        </label>
+        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; this._submitError = null; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
+        </div>
+      </div>
+    `;
+    }
+    _renderLogPollinationForm() {
+        const eligiblePlants = this._flowerVegPlants;
+        return x `
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingEventId = null; this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' }; }}>← Back</button>
+          <h3>${this._editingEventId ? 'Edit pollination' : 'Log pollination'}</h3>
+        </div>
+        <label>Date
+          <input type="date" .value=${this._pollinationForm.date}
+            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, date: e.target.value }; }} />
+        </label>
+        <label>Donor plant (male / pollen donor)
+          <select @change=${(e) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: e.target.value }; }}>
+            <option value="">— select plant —</option>
+            ${eligiblePlants.map((p) => x `
+              <option value="${p.plant_id}" ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}>
+                ${p.label}
+              </option>
+            `)}
+          </select>
+        </label>
+        <label>Receiver plant (female / seed bearer)
+          <select @change=${(e) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: e.target.value }; }}>
+            <option value="">— select plant —</option>
+            ${eligiblePlants.map((p) => x `
+              <option value="${p.plant_id}" ?selected=${this._pollinationForm.receiver_plant_id === p.plant_id}>
+                ${p.label}
+              </option>
+            `)}
+          </select>
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._pollinationForm.notes}
+            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, notes: e.target.value }; }} />
+        </label>
+        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
+        </div>
+      </div>
+    `;
+    }
+    _renderHarvestForm() {
+        return x `
+      <div class="form-view">
+        <div class="form-header">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>← Back</button>
+          <h3>Harvest seeds</h3>
+        </div>
+        <label>Quantity
+          <input type="number" min="1" .value=${String(this._harvestForm.quantity)}
+            @input=${(e) => { this._harvestForm = { ...this._harvestForm, quantity: parseInt(e.target.value) || 1 }; }} />
+        </label>
+        <label>Notes
+          <input type="text" .value=${this._harvestForm.notes}
+            @input=${(e) => { this._harvestForm = { ...this._harvestForm, notes: e.target.value }; }} />
+        </label>
+        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
+        <div class="form-actions">
+          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; this._submitError = null; }}>Cancel</button>
+          <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
+        </div>
+      </div>
+    `;
+    }
+    async _submitAddBatch() {
+        const f = this._batchForm;
+        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation) {
+            this._submitError = 'Please fill in all required fields.';
+            return;
+        }
+        this._submitError = null;
+        const resolveKey = (key) => {
+            if (!key)
+                return { strain: null, phenotype: null };
+            const [strain, phenotype] = key.split('||', 2);
+            return { strain: strain || null, phenotype: phenotype || null };
+        };
+        const p1 = resolveKey(f.parent_1_key);
+        const p2 = resolveKey(f.parent_2_key);
+        try {
+            if (this._editingBatchId) {
+                await this.onUpdateSeedBatch?.({
+                    batch_id: this._editingBatchId,
+                    strain_name: f.strain_name,
+                    breeder: f.breeder,
+                    quantity: f.quantity,
+                    acquisition_date: f.acquisition_date,
+                    generation: f.generation,
+                    parent_1_strain: p1.strain,
+                    parent_1_phenotype: p1.phenotype,
+                    parent_2_strain: p2.strain,
+                    parent_2_phenotype: p2.phenotype,
+                    notes: f.notes,
+                });
+            }
+            else {
+                await this.onAddSeedBatch?.({
+                    strain_name: f.strain_name,
+                    breeder: f.breeder,
+                    quantity: f.quantity,
+                    acquisition_date: f.acquisition_date,
+                    generation: f.generation,
+                    parent_1_strain: p1.strain,
+                    parent_1_phenotype: p1.phenotype,
+                    parent_2_strain: p2.strain,
+                    parent_2_phenotype: p2.phenotype,
+                    notes: f.notes,
+                });
+            }
+            this._seedSubView = 'list';
+            this._editingBatchId = null;
+            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
+            this.onSeedDataChanged?.();
+        }
+        catch (e) {
+            console.error('Failed to save seed batch', e);
+            this._submitError = 'Failed to save. Please check your connection and try again.';
+        }
+    }
+    async _submitLogPollination() {
+        const f = this._pollinationForm;
+        if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) {
+            this._submitError = 'Please fill in all required fields.';
+            return;
+        }
+        this._submitError = null;
+        try {
+            if (this._editingEventId) {
+                await this.onUpdatePollination?.({
+                    event_id: this._editingEventId,
+                    date: f.date,
+                    donor_plant_id: f.donor_plant_id,
+                    receiver_plant_id: f.receiver_plant_id,
+                    notes: f.notes,
+                });
+                this._editingEventId = null;
+            }
+            else {
+                await this.onLogPollination?.({
+                    date: f.date,
+                    donor_plant_id: f.donor_plant_id,
+                    receiver_plant_id: f.receiver_plant_id,
+                    notes: f.notes,
+                });
+            }
+            this._seedSubView = 'list';
+            this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
+            this.onSeedDataChanged?.();
+        }
+        catch (e) {
+            console.error('Failed to log pollination', e);
+            this._submitError = 'Failed to save. Please check your connection and try again.';
+        }
+    }
+    async _submitHarvestSeeds() {
+        const f = this._harvestForm;
+        if (!this._selectedEventId || !f.quantity) {
+            this._submitError = 'Please fill in all required fields.';
+            return;
+        }
+        this._submitError = null;
+        try {
+            await this.onHarvestSeeds?.({
+                event_id: this._selectedEventId,
+                quantity: f.quantity,
+                notes: f.notes,
+            });
+            this._seedSubView = 'list';
+            this._selectedEventId = null;
+            this._harvestForm = { quantity: 1, notes: '' };
+            this.onSeedDataChanged?.();
+        }
+        catch (e) {
+            console.error('Failed to harvest seeds', e);
+            this._submitError = 'Failed to save. Please check your connection and try again.';
+        }
+    }
+};
+SeedsGeneticsTab.styles = [
+    ...dialogStyles,
+    i$6 `
+      .sd-content {
+        padding: 20px 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .seeds-section {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .seeds-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+      .seeds-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .seed-batch-card {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+      }
+      .seed-batch-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+      .seed-batch-name {
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--primary-text-color);
+      }
+      .seed-batch-edit-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        padding: 0;
+        transition: background 0.15s, color 0.15s;
+      }
+      .seed-batch-edit-btn:hover {
+        background: var(--divider-color, rgba(255,255,255,0.1));
+        color: var(--primary-text-color);
+      }
+      .seed-batch-edit-btn svg {
+        fill: currentColor;
+      }
+      .seed-batch-meta {
+        font-size: 0.82rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+      }
+      .seed-batch-parents {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 4px;
+      }
+      .seed-batch-parent-chip {
+        font-size: 0.78rem;
+        color: var(--primary-text-color);
+        background: var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 6px;
+        padding: 2px 7px;
+      }
+      .seed-batch-parent-sep {
+        font-size: 0.78rem;
+        color: var(--secondary-text-color);
+        font-weight: 600;
+      }
+      .seed-batch-lineage {
+        font-size: 0.8rem;
+        color: var(--accent-green, #4caf50);
+        margin-bottom: 4px;
+      }
+      .seed-batch-notes {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+      .seed-batch-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .sow-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        padding: 10px 12px;
+        background: var(--secondary-background-color, rgba(0,0,0,0.04));
+        border-radius: 8px;
+      }
+      .sow-select {
+        flex: 1;
+        min-width: 120px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+      }
+      .sow-qty {
+        width: 64px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--divider-color);
+        background: var(--card-background-color);
+        color: var(--primary-text-color);
+        font-size: 13px;
+        text-align: center;
+      }
+      .pollination-card {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pollination-date {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--primary-text-color);
+      }
+      .pollination-plants {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+      }
+      .pollination-notes {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
+      .pollination-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .pollination-card-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 2px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+      }
+      .icon-btn:hover {
+        color: var(--primary-text-color);
+        background: var(--divider-color, rgba(255,255,255,0.08));
+      }
+      .icon-btn.danger:hover {
+        color: var(--error-color, #f44336);
+      }
+      .delete-confirm-text {
+        font-size: 0.75rem;
+        color: var(--error-color, #f44336);
+        align-self: center;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        margin-top: 4px;
+      }
+      .badge.success {
+        background: rgba(76, 175, 80, 0.15);
+        color: var(--accent-green, #4caf50);
+      }
+      .empty-state {
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        margin: 8px 0 16px 0;
+      }
+
+      /* Form view alignment */
+      .form-view {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .form-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 4px;
+      }
+      .form-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+      .form-view label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--secondary-text-color);
+      }
+      .form-view input, .form-view select {
+        background: var(--secondary-background-color, rgba(255,255,255,0.05));
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: var(--primary-text-color, #fff);
+        font-size: 0.95rem;
+        outline: none;
+        font-family: inherit;
+      }
+      .form-view input:focus, .form-view select:focus {
+        border-color: var(--accent-green, #4caf50);
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .form-error {
+        color: var(--error-color, #f44336);
+        font-size: 0.85rem;
+        margin: 4px 0 0;
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Array })
+], SeedsGeneticsTab.prototype, "strains", void 0);
+__decorate([
+    n$5({ type: Array })
+], SeedsGeneticsTab.prototype, "seedBatches", void 0);
+__decorate([
+    n$5({ type: Array })
+], SeedsGeneticsTab.prototype, "pollinationEvents", void 0);
+__decorate([
+    n$5({ type: Array })
+], SeedsGeneticsTab.prototype, "plants", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onSeedDataChanged", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onAddSeedBatch", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onUpdateSeedBatch", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onLogPollination", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onHarvestSeeds", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onUpdatePollination", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onDeletePollination", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onDeleteSeedBatch", void 0);
+__decorate([
+    n$5({ attribute: false })
+], SeedsGeneticsTab.prototype, "onSowSeeds", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_seedSubView", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_editingBatchId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_editingEventId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_confirmDeleteEventId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_confirmDeleteBatchId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_sowBatchId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_sowGrowspaceId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_sowQuantity", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_sowSubmitting", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_submitError", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_selectedEventId", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_batchForm", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_pollinationForm", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_harvestForm", void 0);
+SeedsGeneticsTab = __decorate([
+    t$2('seeds-genetics-tab')
+], SeedsGeneticsTab);
+
 const SEX_SYMBOLS = {
     female: '♀',
     male: '♂',
@@ -25532,6 +26428,1694 @@ __decorate([
 LineageTreeEditor = __decorate([
     t$2('lineage-tree-editor')
 ], LineageTreeEditor);
+
+let StrainEditorView = class StrainEditorView extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strains = [];
+        this._editorState = {};
+        this._editorHistory = [];
+        this._isCropping = false;
+        this._isImageSelectorOpen = false;
+        this._lineageEditMode = false;
+        this._lineageTree = null;
+        this._importDialogOpen = false;
+        this._importReplace = false;
+        this._seedfinderDialogOpen = false;
+        this._breederDialogOpen = false;
+        this._breederEditorState = null;
+        this._pendingDeleteBreeder = null;
+    }
+    willUpdate(changedProps) {
+        super.willUpdate(changedProps);
+        if (changedProps.has('editingStrain')) {
+            this._openEditorFor(this.editingStrain);
+            this._editorHistory = [];
+        }
+    }
+    _openEditorFor(strain) {
+        if (strain) {
+            this._editorState = { ...strain };
+        }
+        else {
+            this._editorState = {
+                strain: '',
+                phenotype: '',
+                breeder: '',
+                type: 'Hybrid',
+                flowering_days_min: 60,
+                flowering_days_max: 70,
+                lineage: '',
+                sex: 'Feminized',
+                description: '',
+                image: '',
+                breeder_logo: '',
+                sativa_percentage: 50,
+                indica_percentage: 50,
+            };
+        }
+        this._lineageEditMode = false;
+        this._lineageTree = null;
+    }
+    _navigateToAncestor(match) {
+        this._editorHistory = [...this._editorHistory, { ...this._editorState }];
+        this._openEditorFor(match);
+    }
+    _goBack() {
+        if (this._editorHistory.length > 0) {
+            const prev = this._editorHistory[this._editorHistory.length - 1];
+            this._editorHistory = this._editorHistory.slice(0, -1);
+            this._openEditorFor(prev);
+        }
+        else {
+            this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
+        }
+    }
+    _handleSave() {
+        if (!this._editorState.strain)
+            return;
+        this.dispatchEvent(new CustomEvent('save-strain', {
+            detail: this._editorState,
+            bubbles: true,
+            composed: true,
+        }));
+        if (this.source) {
+            this.dispatchEvent(new CustomEvent('strain-created-at-source', {
+                detail: {
+                    strain: this._editorState,
+                    source: this.source,
+                    returnPayload: this.returnPayload,
+                },
+                bubbles: true,
+                composed: true,
+            }));
+        }
+        else {
+            this._editorHistory = [];
+            this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
+        }
+    }
+    _handleDelete(key) {
+        this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key }, bubbles: true, composed: true }));
+    }
+    async _loadStrainLineageTree(strainName) {
+        if (!this.store)
+            return;
+        try {
+            this._lineageTree = await this.store.actions.genetics.getStrainLineageTree(strainName);
+        }
+        catch {
+            this._lineageTree = null;
+        }
+    }
+    _handleEditorChange(field, value) {
+        let newState = { ...this._editorState, [field]: value };
+        if (field === 'breeder' && typeof value === 'string' && value.trim()) {
+            const existing = this.strains.find((s) => s.breeder?.toLowerCase() === value.trim().toLowerCase() && !!s.breeder_logo);
+            if (existing) {
+                newState.breeder_logo = existing.breeder_logo;
+            }
+        }
+        this._editorState = newState;
+    }
+    _handlePrintLabel() {
+        const s = this._editorState;
+        if (!s.strain)
+            return;
+        this.dispatchEvent(new CustomEvent('open-print-label', {
+            detail: {
+                strainName: s.strain,
+                phenotype: s.phenotype,
+                lineage: s.lineage,
+                breeder: s.breeder,
+                breederLogo: s.breeder_logo,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _toggleCropMode(active) {
+        this._isCropping = active;
+    }
+    _toggleImageSelector(isOpen) {
+        this._isImageSelectorOpen = isOpen;
+    }
+    _handleSelectLibraryImage(imageUrl) {
+        this._editorState = { ...this._editorState, image: imageUrl };
+        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
+        if (existing && existing.image_crop_meta) {
+            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+        }
+        else {
+            delete this._editorState.image_crop_meta;
+        }
+        this._isImageSelectorOpen = false;
+    }
+    _handleImportFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                this.dispatchEvent(new CustomEvent('import-library', {
+                    detail: { file, replace: this._importReplace },
+                }));
+                this._importDialogOpen = false;
+            }
+        };
+        input.click();
+    }
+    getCropStyle(image, meta) {
+        if (!meta)
+            return `background-image: url('${image}')`;
+        return `
+      background-image: url('${image}');
+      background-size: ${meta.scale * 100}%;
+      background-position: ${meta.x}% ${meta.y}%;
+    `;
+    }
+    _getUniqueBreeders() {
+        const breederMap = new Map();
+        this.strains.forEach((s) => {
+            if (s.breeder && s.breeder.trim()) {
+                const existing = breederMap.get(s.breeder);
+                if (existing) {
+                    existing.strainCount++;
+                    if (!existing.logo && s.breeder_logo) {
+                        existing.logo = s.breeder_logo;
+                    }
+                }
+                else {
+                    breederMap.set(s.breeder, {
+                        logo: s.breeder_logo || '',
+                        strainCount: 1,
+                    });
+                }
+            }
+        });
+        return [...breederMap.entries()]
+            .map(([name, data]) => ({ name, ...data }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+    }
+    _startBreederEdit(name, logo) {
+        this._breederEditorState = {
+            name: name || '',
+            logo: logo || '',
+            originalName: name || '',
+        };
+    }
+    _handleSaveBreeder() {
+        const state = this._breederEditorState;
+        if (!state || !state.name.trim())
+            return;
+        const newName = state.name.trim();
+        const isEdit = !!state.originalName;
+        if (isEdit) {
+            this.dispatchEvent(new CustomEvent('update-breeder', {
+                detail: {
+                    oldName: state.originalName,
+                    newName: newName,
+                    logo: state.logo,
+                },
+            }));
+        }
+        else {
+            this.dispatchEvent(new CustomEvent('save-breeder', {
+                detail: { name: newName, logo: state.logo },
+            }));
+        }
+        this._breederEditorState = null;
+    }
+    _handleDeleteBreeder(breederName) {
+        this._pendingDeleteBreeder = breederName;
+    }
+    _confirmDeleteBreeder() {
+        if (this._pendingDeleteBreeder) {
+            this.dispatchEvent(new CustomEvent('delete-breeder', {
+                detail: { name: this._pendingDeleteBreeder },
+            }));
+            this._pendingDeleteBreeder = null;
+        }
+    }
+    _cancelDeleteBreeder() {
+        this._pendingDeleteBreeder = null;
+    }
+    _handleSeedfinderImport(e) {
+        const data = e.detail;
+        this._editorState = {
+            ...this._editorState,
+            ...data,
+        };
+        this._seedfinderDialogOpen = false;
+        this.requestUpdate();
+    }
+    render() {
+        return x `
+      ${this.renderEditorView()}
+      ${this._isCropping ? this.renderCropOverlay() : E}
+      ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
+      ${this._importDialogOpen ? this.renderImportDialog() : E}
+      ${this._breederDialogOpen ? this.renderBreederDialog() : E}
+      ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : E}
+      ${this._seedfinderDialogOpen ? this.renderSeedfinderDialog() : E}
+    `;
+    }
+    renderEditorView() {
+        const s = this._editorState;
+        const isEdit = !!s.strain &&
+            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
+        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
+        const uniqueBreeders = [
+            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
+        ].sort();
+        const handleFileChange = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
+            }
+        };
+        return x `
+      <datalist id="strain-suggestions">
+        ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
+      </datalist>
+      <datalist id="breeder-suggestions">
+        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
+      </datalist>
+
+      <div class="dialog-header">
+        <div class="dialog-title-group" style="display:flex; align-items:center; gap:16px;">
+          <button
+            class="md3-button tonal"
+            style="padding: 0 12px; height: 32px;"
+            @click=${() => this._goBack()}
+          >
+            <svg
+              style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
+              <path d="${mdiArrowLeft}"></path>
+            </svg>
+            ${this._editorHistory.length > 0 ? this._editorHistory[this._editorHistory.length - 1].strain ?? 'Back' : 'Back'}
+          </button>
+          <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
+        </div>
+        <button
+          class="md3-button text close"
+          @click=${() => this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
+          style="min-width:auto; padding:8px; margin-left: auto;"
+        >
+          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiClose}"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sd-content">
+        <div class="editor-layout">
+          <!-- LEFT COL: IDENTITY -->
+          <div class="editor-col">
+            <div
+              class="photo-upload-area"
+              @click=${(e) => {
+            const target = e.target;
+            if (!target.closest('.crop-btn') &&
+                !target.closest('.select-library-btn') &&
+                !target.closest('.md3-button')) {
+                e.currentTarget.querySelector('input')?.click();
+            }
+        }}
+              @dragover=${(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        }}
+              @drop=${(e) => {
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('image', base64))
+                    .catch((err) => console.error('Error compressing image:', err));
+            }
+        }}
+            >
+              <button
+                class="select-library-btn"
+                @click=${(e) => {
+            e.stopPropagation();
+            this._toggleImageSelector(true);
+        }}
+              >
+                <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiViewDashboard}"></path>
+                </svg>
+                Select from Library
+              </button>
+
+              ${s.image
+            ? x `
+                    ${s.image_crop_meta
+                ? x `<div
+                          style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
+                        ></div>`
+                : x `<img
+                          src="${s.image}"
+                          style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
+                        />`}
+
+                    <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
+                      <button
+                        class="crop-btn"
+                        style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
+                        @click=${(e) => {
+                e.stopPropagation();
+                this._toggleCropMode(true);
+            }}
+                        title="Crop Image"
+                      >
+                        <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiContentCopy}"></path>
+                        </svg>
+                      </button>
+                      <div
+                        style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;"
+                      >
+                        <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24">
+                          <path d="${mdiPencil}"></path>
+                        </svg>
+                      </div>
+                    </div>
+                  `
+            : x `
+                    <div style="display: flex; gap: 16px; align-items: center;">
+                      <div
+                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                      >
+                        <button
+                          class="md3-button tonal"
+                          @click=${(e) => e.currentTarget
+                .nextElementSibling.click()}
+                        >
+                          <svg
+                            style="width:24px;height:24px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiCamera}"></path>
+                          </svg>
+                          Camera
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          style="display:none"
+                          @change=${handleFileChange}
+                        />
+                      </div>
+
+                      <div
+                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
+                      >
+                        <button
+                          class="md3-button tonal"
+                          @click=${(e) => e.currentTarget
+                .nextElementSibling.click()}
+                        >
+                          <svg
+                            style="width:24px;height:24px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiImage}"></path>
+                          </svg>
+                          Gallery
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          style="display:none"
+                          @change=${handleFileChange}
+                        />
+                      </div>
+                    </div>
+                    <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;"
+                      >(Or Drag & Drop)</span
+                    >
+                  `}
+            </div>
+
+            <div class="sd-form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+                <label class="sd-label" style="margin-bottom:0;">Strain Name *</label>
+                <button
+                  class="md3-button text"
+                  style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
+                  @click=${() => (this._seedfinderDialogOpen = true)}
+                >
+                  <svg
+                    style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiWeb}"></path>
+                  </svg>
+                  Seedfinder
+                </button>
+              </div>
+              <input
+                type="text"
+                class="sd-input"
+                list="strain-suggestions"
+                .value=${s.strain || ''}
+                @input=${(e) => this._handleEditorChange('strain', e.target.value)}
+              />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Phenotype</label>
+              <input
+                type="text"
+                class="sd-input"
+                placeholder="e.g. #1 (Optional)"
+                .value=${s.phenotype || ''}
+                @input=${(e) => this._handleEditorChange('phenotype', e.target.value)}
+              />
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Breeder/Seedbank</label>
+              <input
+                type="text"
+                class="sd-input"
+                list="breeder-suggestions"
+                .value=${s.breeder || ''}
+                @input=${(e) => this._handleEditorChange('breeder', e.target.value)}
+              />
+
+              <!-- Breeder Logo Upload -->
+              <div
+                class="breeder-logo-upload"
+                style="margin-top: 12px; display: flex; align-items: center; gap: 12px;"
+              >
+                ${s.breeder_logo
+            ? x `
+                      <img
+                        src="${s.breeder_logo}"
+                        style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,0.05); padding: 4px;"
+                      />
+                    `
+            : x `
+                      <div
+                        style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
+                      >
+                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiImage}"></path>
+                        </svg>
+                      </div>
+                    `}
+                <button
+                  class="md3-button tonal"
+                  style="height: 32px; padding: 0 12px; font-size: 0.8rem;"
+                  @click=${(e) => e.currentTarget.nextElementSibling.click()}
+                >
+                  <svg
+                    style="width:16px;height:16px;fill:currentColor; margin-right:6px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiCloudUpload}"></path>
+                  </svg>
+                  ${s.breeder_logo ? 'Change Logo' : 'Upload Logo'}
+                </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  style="display:none"
+                  @change=${(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => this._handleEditorChange('breeder_logo', base64))
+                    .catch((err) => console.error('Error compressing logo:', err));
+            }
+        }}
+                />
+                ${s.breeder_logo
+            ? x `
+                      <button
+                        class="md3-button text"
+                        style="height: 32px; padding: 0 8px; color: var(--error-color, #ff5252);"
+                        @click=${() => this._handleEditorChange('breeder_logo', '')}
+                      >
+                        <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiDelete}"></path>
+                        </svg>
+                      </button>
+                    `
+            : E}
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT COL: GENETICS -->
+          <div class="editor-col">
+            <div class="sd-form-group">
+              <label class="sd-label">Type *</label>
+              <div class="type-selector-grid">
+                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
+            let icon = mdiLeaf;
+            if (t === 'Indica')
+                icon = mdiWeatherNight;
+            if (t === 'Sativa')
+                icon = mdiWeatherSunny;
+            if (t === 'Hybrid')
+                icon = mdiTuneVariant;
+            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+            return x `
+                    <div
+                      class="type-option ${isActive ? 'active' : ''}"
+                      @click=${() => this._handleEditorChange('type', t)}
+                    >
+                      <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
+                      <span class="type-label" style="font-size:0.85rem; font-weight:500;"
+                        >${t}</span
+                      >
+                    </div>
+                  `;
+        })}
+              </div>
+            </div>
+
+            ${(s.type || '').toLowerCase() === 'hybrid'
+            ? x `
+                  <div style="margin-bottom: 20px;">
+                    <label class="sd-label">Hybrid Composition (%)</label>
+                    <div
+                      class="hg-container"
+                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
+                    >
+                      <div class="hg-labels">
+                        <div
+                          class="hg-input-label"
+                          style="display:flex; align-items:center; gap:4px;"
+                        >
+                          <span>Indica:</span>
+                          <input
+                            class="hg-num-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            .value=${s.indica_percentage || 0}
+                            @input=${(e) => {
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('indica_percentage', val);
+                this._handleEditorChange('sativa_percentage', 100 - val);
+            }}
+                          />
+                          <span>%</span>
+                        </div>
+                        <div
+                          class="hg-input-label"
+                          style="display:flex; align-items:center; gap:4px;"
+                        >
+                          <span>Sativa:</span>
+                          <input
+                            class="hg-num-input"
+                            type="number"
+                            min="0"
+                            max="100"
+                            .value=${s.sativa_percentage || 0}
+                            @input=${(e) => {
+                let val = Math.floor(parseFloat(e.target.value)) || 0;
+                if (val < 0)
+                    val = 0;
+                if (val > 100)
+                    val = 100;
+                this._handleEditorChange('sativa_percentage', val);
+                this._handleEditorChange('indica_percentage', 100 - val);
+            }}
+                          />
+                          <span>%</span>
+                        </div>
+                      </div>
+
+                      <div
+                        class="hg-bar-track"
+                        @click=${(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                let percent = Math.round((x / rect.width) * 100);
+                if (percent < 0)
+                    percent = 0;
+                if (percent > 100)
+                    percent = 100;
+                this._handleEditorChange('indica_percentage', percent);
+                this._handleEditorChange('sativa_percentage', 100 - percent);
+            }}
+                      >
+                        <div
+                          class="hg-bar-indica"
+                          style="width: ${s.indica_percentage || 0}%"
+                        ></div>
+                        <div class="hg-bar-sativa"></div>
+                        <div class="hg-tick" style="left: 25%"></div>
+                        <div class="hg-tick" style="left: 50%"></div>
+                        <div class="hg-tick" style="left: 75%"></div>
+                      </div>
+                    </div>
+                  </div>
+                `
+            : E}
+
+            <div class="sd-form-group">
+              <label class="sd-label">Flowering Time (Days)</label>
+              <div style="display:flex; gap:16px;">
+                <input
+                  type="number"
+                  class="sd-input"
+                  placeholder="Min"
+                  .value=${s.flowering_days_min || ''}
+                  @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)}
+                />
+                <input
+                  type="number"
+                  class="sd-input"
+                  placeholder="Max"
+                  .value=${s.flowering_days_max || ''}
+                  @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
+                Lineage
+                <button class="sd-btn-text" @click=${async () => {
+            this._lineageEditMode = !this._lineageEditMode;
+            if (this._lineageEditMode && s.strain) {
+                await this._loadStrainLineageTree(s.strain);
+            }
+        }}>
+                  ${this._lineageEditMode ? 'View' : 'Edit tree'}
+                </button>
+              </label>
+              ${this._lineageEditMode
+            ? x `<lineage-tree-editor
+                    .node=${this._lineageTree}
+                    .strainEntries=${(this.strains ?? []).map((st) => ({
+                name: st.strain || st['strain_name'] || '',
+                phenotype: st.phenotype && st.phenotype !== 'default' ? st.phenotype : undefined,
+            })).filter(e => !!e.name)}
+                    @lineage-change=${async (e) => {
+                const { parents } = e.detail;
+                if (!s.strain || !this.store)
+                    return;
+                const result = await this.store.actions.genetics.updateStrainLineageTree(s.strain, parents);
+                this._handleEditorChange('lineage', result.lineage);
+                await this._loadStrainLineageTree(s.strain);
+            }}
+                  ></lineage-tree-editor>`
+            : x `
+                    ${this._lineageTree?.parents?.length
+                ? x `<lineage-tree
+                          .node=${this._lineageTree}
+                          .clickable=${true}
+                          @node-click=${(e) => {
+                    const match = (this.strains ?? []).find((st) => st.strain === e.detail.name);
+                    if (match)
+                        this._navigateToAncestor(match);
+                }}
+                        ></lineage-tree>`
+                : x `<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
+                  `}
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Sex</label>
+              <div style="display:flex; gap:20px; padding: 8px 0;">
+                ${['Feminized', 'Regular'].map((sex) => x `
+                    <label
+                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(, white);"
+                    >
+                      <input
+                        type="radio"
+                        name="sex_radio"
+                        .checked=${s.sex === sex}
+                        @change=${() => this._handleEditorChange('sex', sex)}
+                        style="accent-color: var(--accent-green); transform: scale(1.2);"
+                      />
+                      ${sex}
+                    </label>
+                  `)}
+              </div>
+            </div>
+
+            <div class="sd-form-group">
+              <label class="sd-label">Description</label>
+              <textarea
+                class="sd-textarea"
+                .value=${s.description || ''}
+                @input=${(e) => this._handleEditorChange('description', e.target.value)}
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sd-footer" style="justify-content: space-between;">
+        ${s.key
+            ? x `
+              <button
+                class="md3-button text"
+                style="color: var(--error-color, #f44336);"
+                @click=${() => this._handleDelete(s.key)}
+              >
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiDelete}"></path>
+                </svg>
+                Delete
+              </button>
+            `
+            : x `<div></div>`}
+
+        <div style="display:flex; gap:12px;">
+          ${s.strain ? x `
+            <button class="md3-button outlined" @click=${this._handlePrintLabel}>
+              <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24">
+                <path d="${mdiDownload}"></path>
+              </svg>
+              Print Label
+            </button>
+          ` : E}
+          <button class="md3-button tonal" @click=${() => this._goBack()}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSave()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiCheck}"></path>
+            </svg>
+            Save Strain
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    renderCropOverlay() {
+        const s = this._editorState;
+        if (!s.image)
+            return E;
+        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
+        const handleWheel = (e) => {
+            e.preventDefault();
+            const delta = e.deltaY * -1e-3;
+            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
+            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
+        };
+        const handleMouseDown = (e) => {
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startMetaX = meta.x;
+            const startMetaY = meta.y;
+            const onMouseMove = (ev) => {
+                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
+                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
+                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
+                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
+                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
+            };
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        };
+        return x `
+      <div class="crop-overlay">
+        <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
+        <div
+          class="crop-viewport"
+          @wheel=${handleWheel}
+          @mousedown=${handleMouseDown}
+          @dragstart=${(e) => e.preventDefault()}
+        >
+          <div
+            style="width: 100%; height: 100%;
+              background-image: url('${s.image}');
+              background-size: ${meta.scale * 100}%;
+              background-position: ${meta.x}% ${meta.y}%;
+              background-repeat: no-repeat;
+              pointer-events: none;"
+          ></div>
+        </div>
+
+        <div class="crop-controls">
+          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
+            <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
+          </div>
+          <input
+            type="range"
+            class="crop-slider"
+            min="1"
+            max="5"
+            step="0.1"
+            .value=${meta.scale.toString()}
+            @input=${(e) => this._handleEditorChange('image_crop_meta', {
+            ...meta,
+            scale: parseFloat(e.target.value),
+        })}
+          />
+
+          <div style="display:flex; gap:12px; margin-top:12px;">
+            <button
+              class="md3-button tonal"
+              style="flex:1"
+              @click=${() => this._toggleCropMode(false)}
+            >
+              Done
+            </button>
+          </div>
+          <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
+            Drag to pan • Scroll to zoom
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    renderImageSelector() {
+        const imageMap = new Map();
+        this.strains.forEach((s) => {
+            if (s.image) {
+                if (!imageMap.has(s.image)) {
+                    imageMap.set(s.image, []);
+                }
+                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
+            }
+        });
+        return x `
+      <div class="crop-overlay">
+        <div
+          class="glass-dialog-container"
+          style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
+        >
+          <div class="dialog-header">
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Select from Library</h2>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${() => this._toggleImageSelector(false)}
+              style="min-width:auto; padding:8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="sd-content" style="overflow-y: auto;">
+            <div
+              style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
+            >
+              ${[...imageMap.entries()].map(([img, infoList]) => x `
+                  <div
+                    style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
+                    @click=${() => this._handleSelectLibraryImage(img)}
+                  >
+                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
+                    <div
+                      style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
+                    >
+                      ${infoList.map((info, index) => x `
+                          <div
+                            style="${index < infoList.length - 1
+            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
+            : ''}"
+                          >
+                            <div style="font-weight: 700;">Strain: ${info.strain}</div>
+                            <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
+                          </div>
+                        `)}
+                    </div>
+                  </div>
+                `)}
+            </div>
+            ${imageMap.size === 0
+            ? x `<p
+                  style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
+                >
+                  No images found in library.
+                </p>`
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    renderImportDialog() {
+        const close = () => { this._importDialogOpen = false; };
+        return x `
+      <ha-dialog
+        open
+        @closed=${close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>
+            </div>
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">Import Strains</h2>
+            </div>
+            <button
+              class="md3-button text close"
+              @click=${close}
+              style="min-width:auto; padding:8px; margin-left: auto;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div style="padding: 24px;">
+            <div
+              style="font-size: 0.9rem; color: var(--secondary-text-color); line-height: 1.5; margin-bottom: 20px;"
+            >
+              Select a ZIP file containing your strain library export. You can either merge the new
+              strains with your existing library or replace it entirely.
+            </div>
+
+            <div
+              style="background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px;"
+            >
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input
+                  type="radio"
+                  name="import_mode"
+                  .checked=${!this._importReplace}
+                  @change=${() => (this._importReplace = false)}
+                  style="accent-color: var(--accent-green); transform: scale(1.2);"
+                />
+                <div>
+                  <div style="font-weight: 600;">Merge</div>
+                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                    Add new strains, keep existing ones.
+                  </div>
+                </div>
+              </label>
+
+              <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 12px 0;"></div>
+
+              <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                <input
+                  type="radio"
+                  name="import_mode"
+                  .checked=${this._importReplace}
+                  @change=${() => (this._importReplace = true)}
+                  style="accent-color: var(--accent-green); transform: scale(1.2);"
+                />
+                <div>
+                  <div style="font-weight: 600;">Replace</div>
+                  <div style="font-size: 0.8rem; color: var(--secondary-text-color);">
+                    Overwrite entire library with import.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
+              <button class="md3-button tonal" @click=${close}>
+                Cancel
+              </button>
+              <button class="md3-button primary" @click=${() => this._handleImportFile()}>
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiCloudUpload}"></path>
+                </svg>
+                Select File
+              </button>
+            </div>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderBreederDialog() {
+        const breeders = this._getUniqueBreeders();
+        const close = () => { this._breederDialogOpen = false; this._breederEditorState = null; };
+        return x `
+      <ha-dialog
+        open
+        @closed=${close}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="width: 600px; max-width: 98vw; height: auto; max-height: 90vh;">
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiAccountGroup}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <h2 class="dialog-title">Breeder Manager</h2>
+                  <gs-help-tooltip
+                    content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
+                    placement="bottom"
+                    label="Breeders"
+                  ></gs-help-tooltip>
+                </div>
+            </div>
+            <button
+              class="md3-button text close"
+              @click=${close}
+              style="min-width:auto; padding:8px; margin-left: auto;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="sd-content">
+            ${this._breederEditorState
+            ? this.renderBreederEditor()
+            : this.renderBreederList(breeders)}
+          </div>
+
+          ${!this._breederEditorState ? x `
+            <div class="sd-footer">
+              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
+                Breeders appear automatically when strains with breeder info are saved.
+              </span>
+            </div>
+          ` : E}
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderBreederList(breeders) {
+        if (breeders.length === 0) {
+            return x `
+        <div style="text-align:center; padding:40px; color:var(--secondary-text-color);">
+          <svg style="width:48px;height:48px;fill:currentColor;opacity:0.5;" viewBox="0 0 24 24">
+            <path d="${mdiAccountGroup}"></path>
+          </svg>
+          <p>No breeders found. Add strains with breeder info or create a new breeder.</p>
+        </div>
+      `;
+        }
+        return x `
+      <div class="breeder-list">
+        ${breeders.map((b) => x `
+          <div class="breeder-card" @click=${() => this._startBreederEdit(b.name, b.logo)}>
+            ${b.logo
+            ? x `<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
+            : x `<div class="breeder-logo-placeholder">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiImage}"></path>
+                  </svg>
+                </div>`}
+            <div class="breeder-info">
+              <div class="breeder-name">${b.name}</div>
+              <div class="breeder-strain-count">${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}</div>
+            </div>
+            <div class="breeder-actions">
+              <button class="sc-action-btn" @click=${(e) => { e.stopPropagation(); this._startBreederEdit(b.name, b.logo); }}>
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiPencil}"></path>
+                </svg>
+              </button>
+              <button class="sc-action-btn" @click=${(e) => { e.stopPropagation(); this._handleDeleteBreeder(b.name); }} style="color:var(--error-color, #f44336);">
+                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${mdiDelete}"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        `)}
+      </div>
+    `;
+    }
+    renderBreederEditor() {
+        const state = this._breederEditorState;
+        const isEdit = !!state.originalName;
+        const affectedStrains = isEdit
+            ? this.strains.filter((s) => s.breeder === state.originalName)
+            : [];
+        const handleLogoUpload = (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                PlantUtils.compressImage(file)
+                    .then((base64) => {
+                    this._breederEditorState = { ...this._breederEditorState, logo: base64 };
+                })
+                    .catch((err) => console.error('Error compressing logo:', err));
+            }
+        };
+        return x `
+      <div style="display:flex; flex-direction:column; gap:20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+          <button class="md3-button tonal" style="padding:0 12px; height:32px;" @click=${() => (this._breederEditorState = null)}>
+            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+              <path d="${mdiArrowLeft}"></path>
+            </svg>
+            Back
+          </button>
+          <h3 style="margin:0; color:var(--primary-text-color);">${isEdit ? 'Edit Breeder' : 'New Breeder'}</h3>
+        </div>
+
+        <div class="sd-form-group">
+          <label class="sd-label">Breeder Name *</label>
+          <input
+            type="text"
+            class="sd-input"
+            placeholder="e.g. Royal Queen Seeds"
+            .value=${state.name}
+            @input=${(e) => {
+            this._breederEditorState = { ...this._breederEditorState, name: e.target.value };
+        }}
+          />
+        </div>
+
+        <div class="sd-form-group">
+          <label class="sd-label">Breeder Logo</label>
+          <div style="display:flex; align-items:center; gap:16px;">
+            ${state.logo
+            ? x `<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
+            : x `<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                </div>`}
+            <div style="display:flex; gap:8px;">
+              <button class="md3-button tonal" style="height:36px; padding:0 16px; font-size:0.85rem;" @click=${(e) => e.currentTarget.nextElementSibling.click()}>
+                <svg style="width:16px;height:16px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+                ${state.logo ? 'Change Logo' : 'Upload Logo'}
+              </button>
+              <input type="file" accept="image/*" style="display:none" @change=${handleLogoUpload} />
+              ${state.logo ? x `
+                <button class="md3-button text" style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);" @click=${() => { this._breederEditorState = { ...this._breederEditorState, logo: '' }; }}>
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
+                </button>
+              ` : E}
+            </div>
+          </div>
+        </div>
+
+        ${isEdit && affectedStrains.length > 0 ? x `
+          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;">
+            <label class="sd-label" style="margin-bottom:8px;">Strains using this breeder (${affectedStrains.length})</label>
+            <div style="display:flex; flex-wrap:wrap; gap:8px;">
+              ${affectedStrains.map((s) => x `
+                <span style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;">
+                  ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
+                </span>
+              `)}
+            </div>
+          </div>
+        ` : E}
+
+        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>Cancel</button>
+          <button class="md3-button primary" @click=${() => this._handleSaveBreeder()} ?disabled=${!state.name.trim()}>
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+            ${isEdit ? 'Save Changes' : 'Create Breeder'}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    renderBreederDeleteConfirmation() {
+        const breederName = this._pendingDeleteBreeder;
+        const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._cancelDeleteBreeder}
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
+        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
+          <h2 class="dialog-title">Remove Breeder?</h2>
+          <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
+            This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
+          </p>
+          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
+            <button class="md3-button tonal" @click=${this._cancelDeleteBreeder}>Cancel</button>
+            <button class="md3-button text" style="color:#f44336;" @click=${this._confirmDeleteBreeder}>
+              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
+                <path d="${mdiDelete}"></path>
+              </svg>
+              Remove
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderSeedfinderDialog() {
+        return x `
+      <strain-import-dialog
+        .hass=${this.hass}
+        .open=${this._seedfinderDialogOpen}
+        .initialStrain=${this._editorState.strain}
+        .initialPheno=${this._editorState.phenotype}
+        @close=${() => (this._seedfinderDialogOpen = false)}
+        @import=${this._handleSeedfinderImport}
+      ></strain-import-dialog>
+    `;
+    }
+};
+StrainEditorView.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        --accent-green: #4caf50;
+        display: contents;
+      }
+
+      .sd-content {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .sd-footer {
+        padding: 16px 24px;
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      }
+
+      /* FORMS */
+      .sd-form-group {
+        margin-bottom: 20px;
+      }
+      .sd-label {
+        display: block;
+        color: var(--primary-text-color, --secondary-text-color);
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+      .sd-input,
+      .sd-textarea,
+      .sd-select {
+        width: 100%;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: var(--primary-text-color, #fff);
+        font-size: 0.95rem;
+        outline: none;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+      }
+      .sd-input:focus,
+      .sd-textarea:focus,
+      .sd-select:focus {
+        border-color: var(--accent-green);
+      }
+      .sd-textarea {
+        resize: vertical;
+        min-height: 100px;
+        width: 100%;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--primary-text-color, #fff);
+        font-family: inherit;
+        box-sizing: border-box;
+        font-size: 1rem;
+      }
+      .sd-textarea:focus {
+        border-color: var(--accent-green);
+        outline: none;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .sd-btn-text {
+        background: none;
+        border: none;
+        color: var(--accent-green, #4caf50);
+        font-size: 0.8rem;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: inherit;
+      }
+      .sd-btn-text:hover {
+        background: rgba(76, 175, 80, 0.1);
+      }
+
+      /* EDITOR LAYOUT */
+      .editor-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        gap: 32px;
+      }
+
+      /* PHOTO UPLOAD */
+      .photo-upload-area {
+        border: 2px dashed var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 12px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.02));
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .photo-upload-area:hover {
+        border-color: var(--accent-green);
+        background: rgba(76, 175, 80, 0.05);
+      }
+      .select-library-btn {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 10;
+        cursor: pointer;
+      }
+      .select-library-btn:hover {
+        background: var(--accent-green);
+        border-color: var(--accent-green);
+      }
+
+      /* Crop Overlay */
+      .crop-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .crop-viewport {
+        width: 300px;
+        height: 300px;
+        border: 2px solid var(--accent-green);
+        overflow: hidden;
+        position: relative;
+        cursor: move;
+        box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.7);
+      }
+      .crop-controls {
+        margin-top: 20px;
+        width: 300px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .crop-slider {
+        width: 100%;
+        accent-color: var(--accent-green);
+      }
+
+      /* Type Selector */
+      .type-selector-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .type-option {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 16px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+        text-align: center;
+      }
+      .type-option:hover {
+        border-color: #666;
+      }
+      .type-option.active {
+        background: var(--secondary-background-color, rgba(76, 175, 80, 0.1));
+        border-color: var(--accent-green);
+        color: var(--primary-text-color, #fff);
+      }
+      .type-option svg {
+        width: 28px;
+        height: 28px;
+        fill: var(--secondary-text-color);
+      }
+      .type-option.active svg {
+        fill: var(--accent-green);
+      }
+
+      /* Hybrid Graph */
+      .hg-container {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        margin-top: 8px;
+        font-family: 'Roboto', sans-serif;
+      }
+      .hg-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--primary-text-color, #fff);
+        margin-bottom: 2px;
+      }
+      .hg-bar-track {
+        height: 18px;
+        width: 100%;
+        background: #333;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        cursor: pointer;
+      }
+      .hg-bar-indica {
+        background: #8b5cf6;
+        height: 100%;
+        transition: width 0.2s ease;
+      }
+      .hg-bar-sativa {
+        background: #eab308;
+        height: 100%;
+        flex: 1;
+        transition: width 0.2s ease;
+      }
+      .hg-tick {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.4);
+        pointer-events: none;
+      }
+      .hg-num-input {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--secondary-text-color);
+        color: var(--primary-text-color, #fff);
+        width: 36px;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0;
+      }
+      .hg-num-input:focus {
+        outline: none;
+        border-bottom-color: var(--accent-green);
+      }
+
+      /* Breeder Dialog */
+      .breeder-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .breeder-card {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .breeder-card:hover {
+        border-color: var(--accent-green);
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .breeder-logo-preview {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        object-fit: contain;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 4px;
+        flex-shrink: 0;
+      }
+      .breeder-logo-placeholder {
+        width: 56px;
+        height: 56px;
+        border-radius: 8px;
+        border: 1px dashed var(--divider-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--secondary-text-color);
+        flex-shrink: 0;
+      }
+      .breeder-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .breeder-name {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color, #fff);
+        margin: 0 0 4px 0;
+      }
+      .breeder-strain-count {
+        font-size: 0.8rem;
+        color: var(--secondary-text-color);
+      }
+      .breeder-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .sc-action-btn {
+        background: rgba(0, 0, 0, 0.6);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        cursor: pointer;
+      }
+      .sc-action-btn:hover {
+        background: var(--accent-green);
+      }
+
+      /* Glass dialog container for overlays */
+      .glass-dialog-container {
+        display: flex;
+        flex-direction: column;
+        background: var(--card-background-color, #1e1e1e);
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      @media (max-width: 600px) {
+        .editor-layout {
+          grid-template-columns: 1fr;
+        }
+        .sd-footer {
+          display: none;
+        }
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], StrainEditorView.prototype, "editingStrain", void 0);
+__decorate([
+    n$5({ type: Array })
+], StrainEditorView.prototype, "strains", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainEditorView.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainEditorView.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainEditorView.prototype, "source", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainEditorView.prototype, "returnPayload", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_editorState", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_editorHistory", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_isCropping", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_isImageSelectorOpen", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_lineageEditMode", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_lineageTree", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_importDialogOpen", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_importReplace", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_seedfinderDialogOpen", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_breederDialogOpen", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_breederEditorState", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_pendingDeleteBreeder", void 0);
+StrainEditorView = __decorate([
+    t$2('strain-editor-view')
+], StrainEditorView);
 
 // Pure layout computation for genetics lineage tree views.
 // No DOM, no LitElement — only position math and graph traversal.
@@ -27466,20 +30050,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this.focusLineage = false;
         this._view = 'browse';
         this._searchQuery = '';
-        this._editorState = {};
-        this._editorHistory = [];
-        this._isCropping = false;
-        this._isImageSelectorOpen = false;
-        this._lineageEditMode = false;
-        this._lineageTree = null;
-        this._importDialogOpen = false;
-        this._mobileMenuOpen = false;
         this._pendingDeleteKey = null;
-        this._seedfinderDialogOpen = false;
-        this._importReplace = false;
-        this._breederDialogOpen = false;
-        this._breederEditorState = null;
-        this._pendingDeleteBreeder = null;
         // Seeds & Genetics tab state
         this.seedBatches = [];
         this.pollinationEvents = [];
@@ -27487,142 +30058,30 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this.initialTab = 'strains';
         this._activeMainTab = 'strains';
         this._libraryFilter = 'library';
-        this._seedSubView = 'list';
-        this._editingBatchId = null;
-        this._editingEventId = null;
-        this._confirmDeleteEventId = null;
-        this._confirmDeleteBatchId = null;
-        this._sowBatchId = null;
-        this._sowGrowspaceId = '';
-        this._sowQuantity = 1;
-        this._sowSubmitting = false;
-        this._submitError = null;
-        this._selectedEventId = null;
-        this._batchForm = {
-            strain_name: '',
-            breeder: '',
-            quantity: 1,
-            acquisition_date: '',
-            generation: 'F1',
-            parent_1_key: '',
-            parent_2_key: '',
-            notes: '',
-        };
-        this._pollinationForm = {
-            date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
-        };
-        this._harvestForm = { quantity: 1, notes: '' };
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
-    }
-    get _flowerVegPlants() {
-        const ELIGIBLE_STAGES = ['flower', 'veg'];
-        return this.plants.flatMap((device) => device.plants
-            .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
-            .map((p) => {
-            const stage = p.attributes.stage;
-            const stageDays = p.attributes[`${stage}_days`];
-            const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
-            const strain = p.attributes.strain ?? '';
-            const phenotype = p.attributes.phenotype;
-            const phenoStr = phenotype ? ` (${phenotype})` : '';
-            const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
-            return { plant_id: p.attributes.plant_id, label };
-        }));
-    }
-    _getPlantLabel(plant_id) {
-        for (const device of this.plants) {
-            for (const p of device.plants) {
-                if (p.attributes.plant_id === plant_id) {
-                    const strain = p.attributes.strain ?? '';
-                    const phenotype = p.attributes.phenotype;
-                    return phenotype ? `${strain} (${phenotype})` : (strain || plant_id);
-                }
-            }
-        }
-        return plant_id;
+        // Browse-view overlay state
+        this._mobileMenuOpen = false;
+        this._importDialogOpen = false;
+        this._importReplace = false;
+        this._breederDialogOpen = false;
+        this._breederEditorState = null;
+        this._pendingDeleteBreeder = null;
+        // Editor navigation state
+        this._editingStrain = undefined;
     }
     willUpdate(changedProps) {
         super.willUpdate(changedProps);
         // Auto-open editor if editingStrain is provided
         if (changedProps.has('editingStrain') && this.editingStrain) {
-            this._startEdit(this.editingStrain);
-            if (this.editingStrain.strain) {
-                if (this.focusLineage)
-                    this._lineageEditMode = true;
-                void this._loadStrainLineageTree(this.editingStrain.strain);
-            }
+            this._editingStrain = this.editingStrain;
+            this._view = 'editor';
         }
     }
     updated(changedProperties) {
         if (changedProperties.has('initialTab')) {
             this._activeMainTab = this.initialTab;
-        }
-    }
-    _startEdit(strain) {
-        this._editorHistory = [];
-        this._openEditorFor(strain);
-    }
-    _openEditorFor(strain) {
-        if (strain) {
-            this._editorState = { ...strain };
-        }
-        else {
-            this._editorState = {
-                strain: '',
-                phenotype: '',
-                breeder: '',
-                type: 'Hybrid',
-                flowering_days_min: 60,
-                flowering_days_max: 70,
-                lineage: '',
-                sex: 'Feminized',
-                description: '',
-                image: '',
-                breeder_logo: '',
-                sativa_percentage: 50,
-                indica_percentage: 50,
-            };
-        }
-        this._view = 'editor';
-        this._lineageEditMode = false;
-        this._lineageTree = null;
-    }
-    _navigateToAncestor(match) {
-        this._editorHistory = [...this._editorHistory, { ...this._editorState }];
-        this._openEditorFor(match);
-    }
-    _goBack() {
-        if (this._editorHistory.length > 0) {
-            const prev = this._editorHistory[this._editorHistory.length - 1];
-            this._editorHistory = this._editorHistory.slice(0, -1);
-            this._openEditorFor(prev);
-        }
-        else {
-            this._view = 'browse';
-        }
-    }
-    _handleSave() {
-        if (!this._editorState.strain)
-            return;
-        // Save to backend
-        this.dispatchEvent(new CustomEvent('save-strain', { detail: this._editorState }));
-        // If opened from a specific source, we might want to return there immediately
-        if (this.source) {
-            this.dispatchEvent(new CustomEvent('strain-created-at-source', {
-                detail: {
-                    strain: this._editorState,
-                    source: this.source,
-                    returnPayload: this.returnPayload,
-                },
-                bubbles: true,
-                composed: true,
-            }));
-        }
-        else {
-            this._view = 'browse';
-            this._editorHistory = [];
         }
     }
     _handleDelete(key) {
@@ -27636,90 +30095,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     _cancelDelete() {
         this._pendingDeleteKey = null;
-    }
-    async _loadStrainLineageTree(strainName) {
-        if (!this.store)
-            return;
-        try {
-            this._lineageTree = await this.store.actions.genetics.getStrainLineageTree(strainName);
-        }
-        catch {
-            this._lineageTree = null;
-        }
-    }
-    _handleEditorChange(field, value) {
-        let newState = { ...this._editorState, [field]: value };
-        // Auto-propagate breeder logo if breeder changes
-        if (field === 'breeder' && typeof value === 'string' && value.trim()) {
-            const existing = this.strains.find((s) => s.breeder?.toLowerCase() === value.trim().toLowerCase() && !!s.breeder_logo);
-            if (existing) {
-                newState.breeder_logo = existing.breeder_logo;
-            }
-        }
-        this._editorState = newState;
-    }
-    _handlePrintLabel() {
-        const s = this._editorState;
-        if (!s.strain)
-            return;
-        this.dispatchEvent(new CustomEvent('open-print-label', {
-            detail: {
-                strainName: s.strain,
-                phenotype: s.phenotype,
-                lineage: s.lineage,
-                breeder: s.breeder,
-                breederLogo: s.breeder_logo,
-            },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _toggleCropMode(active) {
-        this._isCropping = active;
-    }
-    _toggleImageSelector(isOpen) {
-        this._isImageSelectorOpen = isOpen;
-    }
-    _handleSelectLibraryImage(imageUrl) {
-        this._editorState = { ...this._editorState, image: imageUrl };
-        // Find existing crop meta
-        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
-        if (existing && existing.image_crop_meta) {
-            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
-        }
-        else {
-            delete this._editorState.image_crop_meta;
-        }
-        this._isImageSelectorOpen = false;
-    }
-    _handleImportFile() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.zip';
-        input.onchange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                this.dispatchEvent(new CustomEvent('import-library', {
-                    detail: { file, replace: this._importReplace },
-                }));
-                this._importDialogOpen = false;
-            }
-        };
-        input.click();
-    }
-    getCropStyle(image, meta) {
-        if (!meta)
-            return `background-image: url('${image}')`;
-        return `
-      background-image: url('${image}');
-      background-size: ${meta.scale * 100}%;
-      background-position: ${meta.x}% ${meta.y}%;
-    `;
-    }
-    getImgStyle(meta) {
-        if (!meta)
-            return 'width: 100%; height: 100%; object-fit: cover;';
-        return `width: 100%; height: 100%; object-fit: cover; object-position: ${meta.x}% ${meta.y}%; transform: scale(${meta.scale}); transform-origin: ${meta.x}% ${meta.y}%;`;
     }
     _getUniqueBreeders() {
         const breederMap = new Map();
@@ -27761,18 +30136,67 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           ${this._activeMainTab === 'tree'
             ? this._renderTreeViewTab()
             : this._activeMainTab === 'seeds'
-                ? this._renderSeedsTab()
-                : (this._view === 'browse' ? this.renderBrowseView() : this.renderEditorView())}
+                ? x `
+                  <seeds-genetics-tab
+                    .strains=${this.strains}
+                    .seedBatches=${this.seedBatches}
+                    .pollinationEvents=${this.pollinationEvents}
+                    .plants=${this.plants}
+                    .onSeedDataChanged=${this.onSeedDataChanged}
+                    .onAddSeedBatch=${this.onAddSeedBatch}
+                    .onUpdateSeedBatch=${this.onUpdateSeedBatch}
+                    .onLogPollination=${this.onLogPollination}
+                    .onHarvestSeeds=${this.onHarvestSeeds}
+                    .onUpdatePollination=${this.onUpdatePollination}
+                    .onDeletePollination=${this.onDeletePollination}
+                    .onDeleteSeedBatch=${this.onDeleteSeedBatch}
+                    .onSowSeeds=${this.onSowSeeds}
+                    @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                  ></seeds-genetics-tab>
+                `
+                : (this._view === 'browse' ? this.renderBrowseView() : x `
+              <strain-editor-view
+                .editingStrain=${this._editingStrain}
+                .strains=${this.strains}
+                .store=${this.store}
+                .hass=${this.hass}
+                .source=${this.source}
+                .returnPayload=${this.returnPayload}
+                @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
+                @save-strain=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
+                @delete-strain=${(e) => {
+                    this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
+                    this._view = 'browse';
+                    this._editingStrain = undefined;
+                }}
+                @strain-created-at-source=${(e) => {
+                    this.dispatchEvent(new CustomEvent('strain-created-at-source', { detail: e.detail, bubbles: true, composed: true }));
+                }}
+                @open-print-label=${(e) => {
+                    this.dispatchEvent(new CustomEvent('open-print-label', { detail: e.detail, bubbles: true, composed: true }));
+                }}
+                @import-library=${(e) => {
+                    this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
+                }}
+                @update-breeder=${(e) => {
+                    this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
+                }}
+                @save-breeder=${(e) => {
+                    this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
+                }}
+                @delete-breeder=${(e) => {
+                    this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
+                }}
+                @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+              ></strain-editor-view>
+            `)}
         </div>
       </ha-dialog>
 
-      ${this._isCropping ? this.renderCropOverlay() : E}
-      ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
-      ${this._importDialogOpen ? this.renderImportDialog() : E}
       ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : E}
+      ${this._importDialogOpen ? this.renderImportDialog() : E}
       ${this._breederDialogOpen ? this.renderBreederDialog() : E}
       ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : E}
-      ${this._seedfinderDialogOpen ? this.renderSeedfinderDialog() : E}
     `;
     }
     renderBrowseView() {
@@ -27913,7 +30337,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               <div
                 class="mobile-menu-item"
                 @click=${() => {
-                this._startEdit();
+                this._editingStrain = undefined;
+                this._view = 'editor';
                 this._mobileMenuOpen = false;
             }}
               >
@@ -27960,7 +30385,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
             : E}
 
       <!-- Mobile FAB -->
-      <button class="fab-btn" @click=${() => this._startEdit()}>
+      <button class="fab-btn" @click=${() => { this._editingStrain = undefined; this._view = 'editor'; }}>
         <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
           <path d="${mdiPlus}"></path>
         </svg>
@@ -27997,7 +30422,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           </svg>
           Export Strains
         </button>
-        <button class="md3-button primary" @click=${() => this._startEdit()}>
+        <button class="md3-button primary" @click=${() => { this._editingStrain = undefined; this._view = 'editor'; }}>
           <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${mdiPlus}"></path>
           </svg>
@@ -28021,14 +30446,16 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         const totalHarvests = analytics?.total_harvests ?? 0;
         const avgFlowerDays = analytics?.avg_flower_days;
         return x `
-      <div class="strain-card" @click=${() => this._startEdit(strain)}>
+      <div class="strain-card" @click=${() => { this._editingStrain = strain; this._view = 'editor'; }}>
         <div class="sc-thumb">
           ${strain.image
             ? x `<img
                 src="${strain.image}"
                 loading="lazy"
                 alt="${strain.strain}"
-                style="${this.getImgStyle(strain.image_crop_meta)}"
+                style="${strain.image_crop_meta
+                ? `width: 100%; height: 100%; object-fit: cover; object-position: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%; transform: scale(${strain.image_crop_meta.scale}); transform-origin: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%;`
+                : 'width: 100%; height: 100%; object-fit: cover;'}"
               />`
             : x `<svg
                 style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
@@ -28088,697 +30515,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 `
             : E}
             ${totalHarvests > 0 ? x `<span style="color: var(--secondary-text-color);">${totalHarvests} harvest${totalHarvests !== 1 ? 's' : ''}</span>` : E}
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderEditorView() {
-        const s = this._editorState;
-        const isEdit = !!s.strain &&
-            this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
-        const uniqueStrains = [...new Set(this.strains.map((st) => st.strain).filter(Boolean))].sort();
-        const uniqueBreeders = [
-            ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
-        ].sort();
-        const handleFileChange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        };
-        return x `
-      <datalist id="strain-suggestions">
-        ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
-      </datalist>
-      <datalist id="breeder-suggestions">
-        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
-      </datalist>
-
-      <div class="dialog-header">
-        <div class="dialog-title-group" style="display:flex; align-items:center; gap:16px;">
-          <button
-            class="md3-button tonal"
-            style="padding: 0 12px; height: 32px;"
-            @click=${() => this._goBack()}
-          >
-            <svg
-              style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
-              viewBox="0 0 24 24"
-            >
-              <path d="${mdiArrowLeft}"></path>
-            </svg>
-            ${this._editorHistory.length > 0 ? this._editorHistory[this._editorHistory.length - 1].strain ?? 'Back' : 'Back'}
-          </button>
-          <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
-        </div>
-        <button
-          class="md3-button text close"
-          @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-          style="min-width:auto; padding:8px; margin-left: auto;"
-        >
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiClose}"></path>
-          </svg>
-        </button>
-      </div>
-
-      <div class="sd-content">
-        <div class="editor-layout">
-          <!-- LEFT COL: IDENTITY -->
-          <div class="editor-col">
-            <div
-              class="photo-upload-area"
-              @click=${(e) => {
-            const target = e.target;
-            if (!target.closest('.crop-btn') &&
-                !target.closest('.select-library-btn') &&
-                !target.closest('.md3-button')) {
-                e.currentTarget.querySelector('input')?.click();
-            }
-        }}
-              @dragover=${(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-        }}
-              @drop=${(e) => {
-            e.preventDefault();
-            const file = e.dataTransfer?.files[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        }}
-            >
-              <button
-                class="select-library-btn"
-                @click=${(e) => {
-            e.stopPropagation();
-            this._toggleImageSelector(true);
-        }}
-              >
-                <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiViewDashboard}"></path>
-                </svg>
-                Select from Library
-              </button>
-
-              ${s.image
-            ? x `
-                    ${s.image_crop_meta
-                ? x `<div
-                          style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
-                        ></div>`
-                : x `<img
-                          src="${s.image}"
-                          style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
-                        />`}
-
-                    <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
-                      <button
-                        class="crop-btn"
-                        style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
-                        @click=${(e) => {
-                e.stopPropagation();
-                this._toggleCropMode(true);
-            }}
-                        title="Crop Image"
-                      >
-                        <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiContentCopy}"></path>
-                        </svg>
-                      </button>
-                      <div
-                        style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;"
-                      >
-                        <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24">
-                          <path d="${mdiPencil}"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  `
-            : x `
-                    <div style="display: flex; gap: 16px; align-items: center;">
-                      <div
-                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
-                      >
-                        <button
-                          class="md3-button tonal"
-                          @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
-                        >
-                          <svg
-                            style="width:24px;height:24px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiCamera}"></path>
-                          </svg>
-                          Camera
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          style="display:none"
-                          @change=${handleFileChange}
-                        />
-                      </div>
-
-                      <div
-                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
-                      >
-                        <button
-                          class="md3-button tonal"
-                          @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
-                        >
-                          <svg
-                            style="width:24px;height:24px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiImage}"></path>
-                          </svg>
-                          Gallery
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style="display:none"
-                          @change=${handleFileChange}
-                        />
-                      </div>
-                    </div>
-                    <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;"
-                      >(Or Drag & Drop)</span
-                    >
-                  `}
-            </div>
-
-            <div class="sd-form-group">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-                <label class="sd-label" style="margin-bottom:0;">Strain Name *</label>
-                <button
-                  class="md3-button text"
-                  style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
-                  @click=${() => (this._seedfinderDialogOpen = true)}
-                >
-                  <svg
-                    style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="${mdiWeb}"></path>
-                  </svg>
-                  Seedfinder
-                </button>
-              </div>
-              <input
-                type="text"
-                class="sd-input"
-                list="strain-suggestions"
-                .value=${s.strain || ''}
-                @input=${(e) => this._handleEditorChange('strain', e.target.value)}
-              />
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Phenotype</label>
-              <input
-                type="text"
-                class="sd-input"
-                placeholder="e.g. #1 (Optional)"
-                .value=${s.phenotype || ''}
-                @input=${(e) => this._handleEditorChange('phenotype', e.target.value)}
-              />
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Breeder/Seedbank</label>
-              <input
-                type="text"
-                class="sd-input"
-                list="breeder-suggestions"
-                .value=${s.breeder || ''}
-                @input=${(e) => this._handleEditorChange('breeder', e.target.value)}
-              />
-
-              <!-- Breeder Logo Upload -->
-              <div
-                class="breeder-logo-upload"
-                style="margin-top: 12px; display: flex; align-items: center; gap: 12px;"
-              >
-                ${s.breeder_logo
-            ? x `
-                      <img
-                        src="${s.breeder_logo}"
-                        style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,0.05); padding: 4px;"
-                      />
-                    `
-            : x `
-                      <div
-                        style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
-                      >
-                        <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiImage}"></path>
-                        </svg>
-                      </div>
-                    `}
-                <button
-                  class="md3-button tonal"
-                  style="height: 32px; padding: 0 12px; font-size: 0.8rem;"
-                  @click=${(e) => e.currentTarget.nextElementSibling.click()}
-                >
-                  <svg
-                    style="width:16px;height:16px;fill:currentColor; margin-right:6px;"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="${mdiCloudUpload}"></path>
-                  </svg>
-                  ${s.breeder_logo ? 'Change Logo' : 'Upload Logo'}
-                </button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  style="display:none"
-                  @change=${(e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('breeder_logo', base64))
-                    .catch((err) => console.error('Error compressing logo:', err));
-            }
-        }}
-                />
-                ${s.breeder_logo
-            ? x `
-                      <button
-                        class="md3-button text"
-                        style="height: 32px; padding: 0 8px; color: var(--error-color, #ff5252);"
-                        @click=${() => this._handleEditorChange('breeder_logo', '')}
-                      >
-                        <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiDelete}"></path>
-                        </svg>
-                      </button>
-                    `
-            : E}
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT COL: GENETICS -->
-          <div class="editor-col">
-            <div class="sd-form-group">
-              <label class="sd-label">Type *</label>
-              <div class="type-selector-grid">
-                ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-            let icon = mdiLeaf;
-            if (t === 'Indica')
-                icon = mdiWeatherNight;
-            if (t === 'Sativa')
-                icon = mdiWeatherSunny;
-            if (t === 'Hybrid')
-                icon = mdiTuneVariant;
-            const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-            return x `
-                    <div
-                      class="type-option ${isActive ? 'active' : ''}"
-                      @click=${() => this._handleEditorChange('type', t)}
-                    >
-                      <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-                      <span class="type-label" style="font-size:0.85rem; font-weight:500;"
-                        >${t}</span
-                      >
-                    </div>
-                  `;
-        })}
-              </div>
-            </div>
-
-            ${(s.type || '').toLowerCase() === 'hybrid'
-            ? x `
-                  <div style="margin-bottom: 20px;">
-                    <label class="sd-label">Hybrid Composition (%)</label>
-                    <div
-                      class="hg-container"
-                      style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px;"
-                    >
-                      <div class="hg-labels">
-                        <div
-                          class="hg-input-label"
-                          style="display:flex; align-items:center; gap:4px;"
-                        >
-                          <span>Indica:</span>
-                          <input
-                            class="hg-num-input"
-                            type="number"
-                            min="0"
-                            max="100"
-                            .value=${s.indica_percentage || 0}
-                            @input=${(e) => {
-                let val = Math.floor(parseFloat(e.target.value)) || 0;
-                if (val < 0)
-                    val = 0;
-                if (val > 100)
-                    val = 100;
-                this._handleEditorChange('indica_percentage', val);
-                this._handleEditorChange('sativa_percentage', 100 - val);
-            }}
-                          />
-                          <span>%</span>
-                        </div>
-                        <div
-                          class="hg-input-label"
-                          style="display:flex; align-items:center; gap:4px;"
-                        >
-                          <span>Sativa:</span>
-                          <input
-                            class="hg-num-input"
-                            type="number"
-                            min="0"
-                            max="100"
-                            .value=${s.sativa_percentage || 0}
-                            @input=${(e) => {
-                let val = Math.floor(parseFloat(e.target.value)) || 0;
-                if (val < 0)
-                    val = 0;
-                if (val > 100)
-                    val = 100;
-                this._handleEditorChange('sativa_percentage', val);
-                this._handleEditorChange('indica_percentage', 100 - val);
-            }}
-                          />
-                          <span>%</span>
-                        </div>
-                      </div>
-
-                      <div
-                        class="hg-bar-track"
-                        @click=${(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                let percent = Math.round((x / rect.width) * 100);
-                if (percent < 0)
-                    percent = 0;
-                if (percent > 100)
-                    percent = 100;
-                this._handleEditorChange('indica_percentage', percent);
-                this._handleEditorChange('sativa_percentage', 100 - percent);
-            }}
-                      >
-                        <div
-                          class="hg-bar-indica"
-                          style="width: ${s.indica_percentage || 0}%"
-                        ></div>
-                        <div class="hg-bar-sativa"></div>
-                        <div class="hg-tick" style="left: 25%"></div>
-                        <div class="hg-tick" style="left: 50%"></div>
-                        <div class="hg-tick" style="left: 75%"></div>
-                      </div>
-                    </div>
-                  </div>
-                `
-            : E}
-
-            <div class="sd-form-group">
-              <label class="sd-label">Flowering Time (Days)</label>
-              <div style="display:flex; gap:16px;">
-                <input
-                  type="number"
-                  class="sd-input"
-                  placeholder="Min"
-                  .value=${s.flowering_days_min || ''}
-                  @input=${(e) => this._handleEditorChange('flowering_days_min', e.target.value)}
-                />
-                <input
-                  type="number"
-                  class="sd-input"
-                  placeholder="Max"
-                  .value=${s.flowering_days_max || ''}
-                  @input=${(e) => this._handleEditorChange('flowering_days_max', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
-                Lineage
-                <button class="sd-btn-text" @click=${async () => {
-            this._lineageEditMode = !this._lineageEditMode;
-            if (this._lineageEditMode && s.strain) {
-                await this._loadStrainLineageTree(s.strain);
-            }
-        }}>
-                  ${this._lineageEditMode ? 'View' : 'Edit tree'}
-                </button>
-              </label>
-              ${this._lineageEditMode
-            ? x `<lineage-tree-editor
-                    .node=${this._lineageTree}
-                    .strainEntries=${(this.strains ?? []).map((st) => ({
-                name: st.strain || st['strain_name'] || '',
-                phenotype: st.phenotype && st.phenotype !== 'default' ? st.phenotype : undefined,
-            })).filter(e => !!e.name)}
-                    @lineage-change=${async (e) => {
-                const { parents } = e.detail;
-                if (!s.strain || !this.store)
-                    return;
-                const result = await this.store.actions.genetics.updateStrainLineageTree(s.strain, parents);
-                this._handleEditorChange('lineage', result.lineage);
-                await this._loadStrainLineageTree(s.strain);
-            }}
-                  ></lineage-tree-editor>`
-            : x `
-                    ${this._lineageTree?.parents?.length
-                ? x `<lineage-tree
-                          .node=${this._lineageTree}
-                          .clickable=${true}
-                          @node-click=${(e) => {
-                    const match = (this.strains ?? []).find((st) => st.strain === e.detail.name);
-                    if (match)
-                        this._navigateToAncestor(match);
-                }}
-                        ></lineage-tree>`
-                : x `<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
-                  `}
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Sex</label>
-              <div style="display:flex; gap:20px; padding: 8px 0;">
-                ${['Feminized', 'Regular'].map((sex) => x `
-                    <label
-                      style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(, white);"
-                    >
-                      <input
-                        type="radio"
-                        name="sex_radio"
-                        .checked=${s.sex === sex}
-                        @change=${() => this._handleEditorChange('sex', sex)}
-                        style="accent-color: var(--accent-green); transform: scale(1.2);"
-                      />
-                      ${sex}
-                    </label>
-                  `)}
-              </div>
-            </div>
-
-            <div class="sd-form-group">
-              <label class="sd-label">Description</label>
-              <textarea
-                class="sd-textarea"
-                .value=${s.description || ''}
-                @input=${(e) => this._handleEditorChange('description', e.target.value)}
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sd-footer" style="justify-content: space-between;">
-        ${s.key
-            ? x `
-              <button
-                class="md3-button text"
-                style="color: var(--error-color, #f44336);"
-                @click=${() => this._handleDelete(s.key)}
-              >
-                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiDelete}"></path>
-                </svg>
-                Delete
-              </button>
-            `
-            : x `<div></div>`}
-
-        <div style="display:flex; gap:12px;">
-          ${s.strain ? x `
-            <button class="md3-button outlined" @click=${this._handlePrintLabel}>
-              <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24">
-                <path d="${mdiDownload}"></path>
-              </svg>
-              Print Label
-            </button>
-          ` : E}
-          <button class="md3-button tonal" @click=${() => this._goBack()}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSave()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiCheck}"></path>
-            </svg>
-            Save Strain
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    renderCropOverlay() {
-        const s = this._editorState;
-        if (!s.image)
-            return E;
-        const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
-        const handleWheel = (e) => {
-            e.preventDefault();
-            const delta = e.deltaY * -1e-3;
-            const newScale = Math.min(Math.max(meta.scale + delta, 1), 5);
-            this._handleEditorChange('image_crop_meta', { ...meta, scale: newScale });
-        };
-        const handleMouseDown = (e) => {
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startMetaX = meta.x;
-            const startMetaY = meta.y;
-            const onMouseMove = (ev) => {
-                const deltaX = (startX - ev.clientX) * (0.2 / meta.scale);
-                const deltaY = (startY - ev.clientY) * (0.2 / meta.scale);
-                const newX = Math.min(Math.max(startMetaX + deltaX, 0), 100);
-                const newY = Math.min(Math.max(startMetaY + deltaY, 0), 100);
-                this._handleEditorChange('image_crop_meta', { ...meta, x: newX, y: newY });
-            };
-            const onMouseUp = () => {
-                window.removeEventListener('mousemove', onMouseMove);
-                window.removeEventListener('mouseup', onMouseUp);
-            };
-            window.addEventListener('mousemove', onMouseMove);
-            window.addEventListener('mouseup', onMouseUp);
-        };
-        return x `
-      <div class="crop-overlay">
-        <h3 style="color:white; margin-bottom:20px;">Adjust Image</h3>
-        <div
-          class="crop-viewport"
-          @wheel=${handleWheel}
-          @mousedown=${handleMouseDown}
-          @dragstart=${(e) => e.preventDefault()}
-        >
-          <div
-            style="width: 100%; height: 100%;
-              background-image: url('${s.image}');
-              background-size: ${meta.scale * 100}%;
-              background-position: ${meta.x}% ${meta.y}%;
-              background-repeat: no-repeat;
-              pointer-events: none;"
-          ></div>
-        </div>
-
-        <div class="crop-controls">
-          <div style="display:flex; justify-content:space-between; color:#ccc; font-size:0.8rem;">
-            <span>Zoom: ${(meta.scale * 100).toFixed(0)}%</span>
-          </div>
-          <input
-            type="range"
-            class="crop-slider"
-            min="1"
-            max="5"
-            step="0.1"
-            .value=${meta.scale.toString()}
-            @input=${(e) => this._handleEditorChange('image_crop_meta', {
-            ...meta,
-            scale: parseFloat(e.target.value),
-        })}
-          />
-
-          <div style="display:flex; gap:12px; margin-top:12px;">
-            <button
-              class="md3-button tonal"
-              style="flex:1"
-              @click=${() => this._toggleCropMode(false)}
-            >
-              Done
-            </button>
-          </div>
-          <div style="text-align:center; font-size:0.8rem; color:#888; margin-top:8px;">
-            Drag to pan • Scroll to zoom
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    renderImageSelector() {
-        const imageMap = new Map();
-        this.strains.forEach((s) => {
-            if (s.image) {
-                if (!imageMap.has(s.image)) {
-                    imageMap.set(s.image, []);
-                }
-                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
-            }
-        });
-        return x `
-      <div class="crop-overlay">
-        <div
-          class="glass-dialog-container"
-          style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
-        >
-          <div class="dialog-header">
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Select from Library</h2>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${() => this._toggleImageSelector(false)}
-              style="min-width:auto; padding:8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="sd-content" style="overflow-y: auto;">
-            <div
-              style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
-            >
-              ${[...imageMap.entries()].map(([img, infoList]) => x `
-                  <div
-                    style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
-                    @click=${() => this._handleSelectLibraryImage(img)}
-                  >
-                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <div
-                      style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
-                    >
-                      ${infoList.map((info, index) => x `
-                          <div
-                            style="${index < infoList.length - 1
-            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
-            : ''}"
-                          >
-                            <div style="font-weight: 700;">Strain: ${info.strain}</div>
-                            <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
-                          </div>
-                        `)}
-                    </div>
-                  </div>
-                `)}
-            </div>
-            ${imageMap.size === 0
-            ? x `<p
-                  style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
-                >
-                  No images found in library.
-                </p>`
-            : E}
           </div>
         </div>
       </div>
@@ -28863,7 +30599,19 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
               <button class="md3-button tonal" @click=${close}>
                 Cancel
               </button>
-              <button class="md3-button primary" @click=${() => this._handleImportFile()}>
+              <button class="md3-button primary" @click=${() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.zip';
+            input.onchange = (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace: this._importReplace } }));
+                    this._importDialogOpen = false;
+                }
+            };
+            input.click();
+        }}>
                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiCloudUpload}"></path>
                 </svg>
@@ -29154,15 +30902,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       </div>
     `;
     }
-    _renderSeedsTab() {
-        if (this._seedSubView === 'add-batch')
-            return this._renderAddBatchForm();
-        if (this._seedSubView === 'log-pollination')
-            return this._renderLogPollinationForm();
-        if (this._seedSubView === 'harvest')
-            return this._renderHarvestForm();
-        return this._renderSeedList();
-    }
     _applyLibraryFilter(strains) {
         if (this._libraryFilter === 'active') {
             return strains.filter((s) => (this.activePlantCounts[s.strain] ?? 0) > 0);
@@ -29361,469 +31100,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       </div>
     `;
     }
-    _renderSeedList() {
-        return x `
-      <div class="dialog-header">
-        <div class="dialog-icon">
-          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiLeaf}"></path>
-          </svg>
-        </div>
-        <div class="dialog-title-group">
-          <h2 class="dialog-title">Seeds &amp; Genetics</h2>
-        </div>
-        <div class="header-actions" style="display:flex; gap:8px;">
-          <button
-            class="md3-button text close"
-            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-            style="min-width:auto; padding:8px; margin-left: auto;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="seeds-section">
-        <div class="seeds-header">
-          <h3>Seed inventory</h3>
-          <button class="md3-button filled" @click=${() => {
-            this._editingBatchId = null;
-            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
-            this._submitError = null;
-            this._seedSubView = 'add-batch';
-        }}>
-            Add batch
-          </button>
-        </div>
-        ${this.seedBatches.length === 0
-            ? x `<p class="empty-state">No seed batches yet.</p>`
-            : this.seedBatches.map(b => x `
-              <div class="seed-batch-card">
-                <div class="seed-batch-card-header">
-                  <div class="seed-batch-name">${b.strain_name}</div>
-                  <button class="seed-batch-edit-btn" title="Edit batch" @click=${() => {
-                const p1Key = b.parent_1_strain
-                    ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
-                    : '';
-                const p2Key = b.parent_2_strain
-                    ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
-                    : '';
-                this._batchForm = {
-                    strain_name: b.strain_name,
-                    breeder: b.breeder,
-                    quantity: b.quantity,
-                    acquisition_date: b.acquisition_date,
-                    generation: b.generation,
-                    parent_1_key: p1Key,
-                    parent_2_key: p2Key,
-                    notes: b.notes ?? '',
-                };
-                this._editingBatchId = b.batch_id;
-                this._submitError = null;
-                this._seedSubView = 'add-batch';
-            }}>
-                    <svg viewBox="0 0 24 24" width="16" height="16">
-                      <path d="${mdiPencil}"></path>
-                    </svg>
-                  </button>
-                </div>
-                <div class="seed-batch-meta">${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}</div>
-                ${(b.parent_1_strain || b.parent_2_strain) ? x `
-                  <div class="seed-batch-parents">
-                    ${b.parent_1_strain ? x `<span class="seed-batch-parent-chip">♀ ${b.parent_1_strain}${b.parent_1_phenotype ? ` (${b.parent_1_phenotype})` : ''}</span>` : E}
-                    ${(b.parent_1_strain && b.parent_2_strain) ? x `<span class="seed-batch-parent-sep">×</span>` : E}
-                    ${b.parent_2_strain ? x `<span class="seed-batch-parent-chip">♂ ${b.parent_2_strain}${b.parent_2_phenotype ? ` (${b.parent_2_phenotype})` : ''}</span>` : E}
-                  </div>
-                ` : E}
-                ${b.lineage ? x `<div class="seed-batch-lineage">${b.lineage}</div>` : E}
-                ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
-                <div class="seed-batch-actions">
-                  <button class="md3-button tonal" style="font-size:12px;" @click=${() => {
-                if (this._sowBatchId === b.batch_id) {
-                    this._sowBatchId = null;
-                }
-                else {
-                    this._sowBatchId = b.batch_id;
-                    this._sowQuantity = 1;
-                    this._sowGrowspaceId = this.plants[0]?.deviceId ?? '';
-                }
-                this._confirmDeleteBatchId = null;
-            }}>🌱 Sow seeds</button>
-                  ${this._confirmDeleteBatchId === b.batch_id
-                ? x `
-                        <span style="font-size:12px; color:var(--secondary-text-color);">Delete?</span>
-                        <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
-                    await this.onDeleteSeedBatch?.(b.batch_id);
-                    this._confirmDeleteBatchId = null;
-                    this.onSeedDataChanged?.();
-                }}>
-                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
-                        </button>
-                        <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteBatchId = null; }}>
-                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
-                        </button>
-                      `
-                : x `
-                        <button class="icon-btn danger" title="Delete batch" @click=${() => { this._confirmDeleteBatchId = b.batch_id; this._sowBatchId = null; }}>
-                          <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
-                        </button>
-                      `}
-                </div>
-                ${this._sowBatchId === b.batch_id ? x `
-                  <div class="sow-form">
-                    <select
-                      class="sow-select"
-                      .value=${this._sowGrowspaceId}
-                      @change=${(e) => { this._sowGrowspaceId = e.target.value; }}
-                    >
-                      ${this.plants.map(g => x `
-                        <option value=${g.deviceId} ?selected=${g.deviceId === this._sowGrowspaceId}>${g.name}</option>
-                      `)}
-                    </select>
-                    <input
-                      type="number"
-                      class="sow-qty"
-                      min="1"
-                      max=${b.quantity}
-                      .value=${String(this._sowQuantity)}
-                      @input=${(e) => { this._sowQuantity = Number(e.target.value); }}
-                      placeholder="Seeds"
-                    />
-                    <button
-                      class="md3-button filled"
-                      style="font-size:12px;"
-                      ?disabled=${this._sowSubmitting || !this._sowGrowspaceId}
-                      @click=${async () => {
-                if (!this._sowGrowspaceId)
-                    return;
-                this._sowSubmitting = true;
-                try {
-                    await this.onSowSeeds?.({
-                        growspace_id: this._sowGrowspaceId,
-                        strain: b.strain_name,
-                        amount: this._sowQuantity,
-                        seed_batch_id: b.batch_id,
-                        generation: b.generation,
-                    });
-                    this._sowBatchId = null;
-                    this.onSeedDataChanged?.();
-                }
-                finally {
-                    this._sowSubmitting = false;
-                }
-            }}
-                    >${this._sowSubmitting ? 'Planting…' : 'Plant'}</button>
-                    <button class="md3-button text" style="font-size:12px;" @click=${() => { this._sowBatchId = null; }}>Cancel</button>
-                  </div>
-                ` : E}
-              </div>
-            `)}
-
-        <div class="seeds-header">
-          <h3>Pollination log</h3>
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'log-pollination'; }}>
-            Log pollination
-          </button>
-        </div>
-        ${this.pollinationEvents.length === 0
-            ? x `<p class="empty-state">No pollination events yet.</p>`
-            : this.pollinationEvents.map(e => x `
-              <div class="pollination-card">
-                <div class="pollination-card-header">
-                  <div class="pollination-date">${e.date}</div>
-                  <div class="pollination-card-actions">
-                    <button class="icon-btn" title="Edit" @click=${() => {
-                this._editingEventId = e.event_id;
-                this._pollinationForm = {
-                    date: e.date,
-                    donor_plant_id: e.donor_plant_id,
-                    receiver_plant_id: e.receiver_plant_id,
-                    notes: e.notes ?? '',
-                };
-                this._seedSubView = 'log-pollination';
-            }}>
-                      <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiPencil}"></path></svg>
-                    </button>
-                    ${this._confirmDeleteEventId === e.event_id
-                ? x `
-                          <span class="delete-confirm-text">Delete?</span>
-                          <button class="icon-btn danger" title="Confirm delete" @click=${async () => {
-                    await this.onDeletePollination?.(e.event_id);
-                    this._confirmDeleteEventId = null;
-                    this.onSeedDataChanged?.();
-                }}>
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiCheck}"></path></svg>
-                          </button>
-                          <button class="icon-btn" title="Cancel" @click=${() => { this._confirmDeleteEventId = null; }}>
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiClose}"></path></svg>
-                          </button>
-                        `
-                : x `
-                          <button class="icon-btn danger" title="Delete" @click=${() => { this._confirmDeleteEventId = e.event_id; }}>
-                            <svg viewBox="0 0 24 24" width="16" height="16"><path d="${mdiDelete}"></path></svg>
-                          </button>
-                        `}
-                  </div>
-                </div>
-                <div class="pollination-plants">♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀ ${this._getPlantLabel(e.receiver_plant_id)}</div>
-                ${e.notes ? x `<div class="pollination-notes">${e.notes}</div>` : E}
-                ${e.result_seed_batch_id
-                ? x `<span class="badge success">Seeds harvested</span>`
-                : x `
-                      <button class="md3-button tonal" @click=${() => {
-                    this._selectedEventId = e.event_id;
-                    this._seedSubView = 'harvest';
-                }}>Harvest seeds</button>
-                    `}
-              </div>
-            `)}
-      </div>
-    `;
-    }
-    _renderAddBatchForm() {
-        const isEditing = this._editingBatchId !== null;
-        const uniqueBreeders = [...new Set(this.strains.map((s) => s.breeder).filter(Boolean))].sort();
-        const strainOptions = this.strains
-            .slice()
-            .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
-            .map((s) => ({
-            key: `${s.strain}||${s.phenotype}`,
-            label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
-        }));
-        return x `
-      <datalist id="batch-breeder-suggestions">
-        ${uniqueBreeders.map((name) => x `<option value="${name}"></option>`)}
-      </datalist>
-      <div class="form-view">
-        <div class="form-header">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; }}>← Back</button>
-          <h3>${isEditing ? 'Edit seed batch' : 'Add seed batch'}</h3>
-        </div>
-        <label>Strain name
-          <input type="text" .value=${this._batchForm.strain_name}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, strain_name: e.target.value }; }} />
-        </label>
-        <label>Breeder
-          <input type="text" list="batch-breeder-suggestions" .value=${this._batchForm.breeder}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, breeder: e.target.value }; }} />
-        </label>
-        <label>Quantity
-          <input type="number" min="1" .value=${String(this._batchForm.quantity)}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, quantity: parseInt(e.target.value) || 1 }; }} />
-        </label>
-        <label>Acquisition date
-          <input type="date" .value=${this._batchForm.acquisition_date}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, acquisition_date: e.target.value }; }} />
-        </label>
-        <label>Generation
-          <input type="text" placeholder="F1, S1, BX1…" .value=${this._batchForm.generation}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, generation: e.target.value }; }} />
-        </label>
-        <label>Parent 1
-          <select @change=${(e) => { this._batchForm = { ...this._batchForm, parent_1_key: e.target.value }; }}>
-            <option value="">— none —</option>
-            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_1_key === o.key}>${o.label}</option>`)}
-          </select>
-        </label>
-        <label>Parent 2
-          <select @change=${(e) => { this._batchForm = { ...this._batchForm, parent_2_key: e.target.value }; }}>
-            <option value="">— none —</option>
-            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_2_key === o.key}>${o.label}</option>`)}
-          </select>
-        </label>
-        <label>Notes
-          <input type="text" .value=${this._batchForm.notes}
-            @input=${(e) => { this._batchForm = { ...this._batchForm, notes: e.target.value }; }} />
-        </label>
-        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
-        <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingBatchId = null; this._submitError = null; }}>Cancel</button>
-          <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
-        </div>
-      </div>
-    `;
-    }
-    _renderLogPollinationForm() {
-        const eligiblePlants = this._flowerVegPlants;
-        return x `
-      <div class="form-view">
-        <div class="form-header">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._editingEventId = null; this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' }; }}>← Back</button>
-          <h3>${this._editingEventId ? 'Edit pollination' : 'Log pollination'}</h3>
-        </div>
-        <label>Date
-          <input type="date" .value=${this._pollinationForm.date}
-            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, date: e.target.value }; }} />
-        </label>
-        <label>Donor plant (male / pollen donor)
-          <select @change=${(e) => { this._pollinationForm = { ...this._pollinationForm, donor_plant_id: e.target.value }; }}>
-            <option value="">— select plant —</option>
-            ${eligiblePlants.map((p) => x `
-              <option value="${p.plant_id}" ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}>
-                ${p.label}
-              </option>
-            `)}
-          </select>
-        </label>
-        <label>Receiver plant (female / seed bearer)
-          <select @change=${(e) => { this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: e.target.value }; }}>
-            <option value="">— select plant —</option>
-            ${eligiblePlants.map((p) => x `
-              <option value="${p.plant_id}" ?selected=${this._pollinationForm.receiver_plant_id === p.plant_id}>
-                ${p.label}
-              </option>
-            `)}
-          </select>
-        </label>
-        <label>Notes
-          <input type="text" .value=${this._pollinationForm.notes}
-            @input=${(e) => { this._pollinationForm = { ...this._pollinationForm, notes: e.target.value }; }} />
-        </label>
-        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
-        <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._submitError = null; }}>Cancel</button>
-          <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
-        </div>
-      </div>
-    `;
-    }
-    _renderHarvestForm() {
-        return x `
-      <div class="form-view">
-        <div class="form-header">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; }}>← Back</button>
-          <h3>Harvest seeds</h3>
-        </div>
-        <label>Quantity
-          <input type="number" min="1" .value=${String(this._harvestForm.quantity)}
-            @input=${(e) => { this._harvestForm = { ...this._harvestForm, quantity: parseInt(e.target.value) || 1 }; }} />
-        </label>
-        <label>Notes
-          <input type="text" .value=${this._harvestForm.notes}
-            @input=${(e) => { this._harvestForm = { ...this._harvestForm, notes: e.target.value }; }} />
-        </label>
-        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
-        <div class="form-actions">
-          <button class="md3-button tonal" @click=${() => { this._seedSubView = 'list'; this._selectedEventId = null; this._submitError = null; }}>Cancel</button>
-          <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
-        </div>
-      </div>
-    `;
-    }
-    async _submitAddBatch() {
-        const f = this._batchForm;
-        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation) {
-            this._submitError = 'Please fill in all required fields.';
-            return;
-        }
-        this._submitError = null;
-        const resolveKey = (key) => {
-            if (!key)
-                return { strain: null, phenotype: null };
-            const [strain, phenotype] = key.split('||', 2);
-            return { strain: strain || null, phenotype: phenotype || null };
-        };
-        const p1 = resolveKey(f.parent_1_key);
-        const p2 = resolveKey(f.parent_2_key);
-        try {
-            if (this._editingBatchId) {
-                await this.onUpdateSeedBatch?.({
-                    batch_id: this._editingBatchId,
-                    strain_name: f.strain_name,
-                    breeder: f.breeder,
-                    quantity: f.quantity,
-                    acquisition_date: f.acquisition_date,
-                    generation: f.generation,
-                    parent_1_strain: p1.strain,
-                    parent_1_phenotype: p1.phenotype,
-                    parent_2_strain: p2.strain,
-                    parent_2_phenotype: p2.phenotype,
-                    notes: f.notes,
-                });
-            }
-            else {
-                await this.onAddSeedBatch?.({
-                    strain_name: f.strain_name,
-                    breeder: f.breeder,
-                    quantity: f.quantity,
-                    acquisition_date: f.acquisition_date,
-                    generation: f.generation,
-                    parent_1_strain: p1.strain,
-                    parent_1_phenotype: p1.phenotype,
-                    parent_2_strain: p2.strain,
-                    parent_2_phenotype: p2.phenotype,
-                    notes: f.notes,
-                });
-            }
-            this._seedSubView = 'list';
-            this._editingBatchId = null;
-            this._batchForm = { strain_name: '', breeder: '', quantity: 1, acquisition_date: '', generation: 'F1', parent_1_key: '', parent_2_key: '', notes: '' };
-            this.onSeedDataChanged?.();
-        }
-        catch (e) {
-            console.error('Failed to save seed batch', e);
-            this._submitError = 'Failed to save. Please check your connection and try again.';
-        }
-    }
-    async _submitLogPollination() {
-        const f = this._pollinationForm;
-        if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) {
-            this._submitError = 'Please fill in all required fields.';
-            return;
-        }
-        this._submitError = null;
-        try {
-            if (this._editingEventId) {
-                await this.onUpdatePollination?.({
-                    event_id: this._editingEventId,
-                    date: f.date,
-                    donor_plant_id: f.donor_plant_id,
-                    receiver_plant_id: f.receiver_plant_id,
-                    notes: f.notes,
-                });
-                this._editingEventId = null;
-            }
-            else {
-                await this.onLogPollination?.({
-                    date: f.date,
-                    donor_plant_id: f.donor_plant_id,
-                    receiver_plant_id: f.receiver_plant_id,
-                    notes: f.notes,
-                });
-            }
-            this._seedSubView = 'list';
-            this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
-            this.onSeedDataChanged?.();
-        }
-        catch (e) {
-            console.error('Failed to log pollination', e);
-            this._submitError = 'Failed to save. Please check your connection and try again.';
-        }
-    }
-    async _submitHarvestSeeds() {
-        const f = this._harvestForm;
-        if (!this._selectedEventId || !f.quantity) {
-            this._submitError = 'Please fill in all required fields.';
-            return;
-        }
-        this._submitError = null;
-        try {
-            await this.onHarvestSeeds?.({
-                event_id: this._selectedEventId,
-                quantity: f.quantity,
-                notes: f.notes,
-            });
-            this._seedSubView = 'list';
-            this._selectedEventId = null;
-            this._harvestForm = { quantity: 1, notes: '' };
-            this.onSeedDataChanged?.();
-        }
-        catch (e) {
-            console.error('Failed to harvest seeds', e);
-            this._submitError = 'Failed to save. Please check your connection and try again.';
-        }
-    }
     renderBreederDeleteConfirmation() {
         const breederName = this._pendingDeleteBreeder;
         const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
@@ -29852,27 +31128,6 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         </div>
       </ha-dialog>
     `;
-    }
-    renderSeedfinderDialog() {
-        return x `
-      <strain-import-dialog
-        .hass=${this.hass}
-        .open=${this._seedfinderDialogOpen}
-        .initialStrain=${this._editorState.strain}
-        .initialPheno=${this._editorState.phenotype}
-        @close=${() => (this._seedfinderDialogOpen = false)}
-        @import=${this._handleSeedfinderImport}
-      ></strain-import-dialog>
-    `;
-    }
-    _handleSeedfinderImport(e) {
-        const data = e.detail;
-        this._editorState = {
-            ...this._editorState,
-            ...data,
-        };
-        this._seedfinderDialogOpen = false;
-        this.requestUpdate();
     }
 };
 StrainLibraryDialog.styles = [
@@ -30841,46 +32096,7 @@ __decorate([
 ], StrainLibraryDialog.prototype, "_searchQuery", void 0);
 __decorate([
     r$3()
-], StrainLibraryDialog.prototype, "_editorState", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_editorHistory", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_isCropping", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_isImageSelectorOpen", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_lineageEditMode", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_lineageTree", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
-__decorate([
-    r$3()
 ], StrainLibraryDialog.prototype, "_pendingDeleteKey", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_seedfinderDialogOpen", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_importReplace", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_breederDialogOpen", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_breederEditorState", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_pendingDeleteBreeder", void 0);
 __decorate([
     n$5({ type: Array })
 ], StrainLibraryDialog.prototype, "seedBatches", void 0);
@@ -30928,49 +32144,28 @@ __decorate([
 ], StrainLibraryDialog.prototype, "_libraryFilter", void 0);
 __decorate([
     r$3()
-], StrainLibraryDialog.prototype, "_seedSubView", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_editingBatchId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_editingEventId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_confirmDeleteEventId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_confirmDeleteBatchId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_sowBatchId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_sowGrowspaceId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_sowQuantity", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_sowSubmitting", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_submitError", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_selectedEventId", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_batchForm", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_pollinationForm", void 0);
-__decorate([
-    r$3()
-], StrainLibraryDialog.prototype, "_harvestForm", void 0);
-__decorate([
-    r$3()
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_mobileMenuOpen", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_importDialogOpen", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_importReplace", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_breederDialogOpen", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_breederEditorState", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_pendingDeleteBreeder", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_editingStrain", void 0);
 StrainLibraryDialog = __decorate([
     t$2('strain-library-dialog')
 ], StrainLibraryDialog);
@@ -33374,15 +34569,14 @@ PlantDashboardTab = __decorate([
     t$2('plant-dashboard-tab')
 ], PlantDashboardTab);
 
-/**
- * Plant Actions Tab - Presentational Component
- *
- * Displays quick action cards for plant management.
- * Pure component: props in, events out.
- */
-let PlantActionsTab = class PlantActionsTab extends i$3 {
+var PlantActionsTab_1;
+let PlantActionsTab = PlantActionsTab_1 = class PlantActionsTab extends i$3 {
     constructor() {
         super(...arguments);
+        this._showScoringForm = false;
+        this._savingScore = false;
+        this._scoresEdit = {};
+        this._starPreview = {};
         // Icon mapping
         this._iconMap = {
             mdiWater,
@@ -33393,6 +34587,19 @@ let PlantActionsTab = class PlantActionsTab extends i$3 {
             mdiDna,
         };
     }
+    willUpdate(changedProps) {
+        if (changedProps.has('plant') && this.plant) {
+            const rawScores = this.plant.attributes?.scores || {};
+            this._scoresEdit = {
+                vigor: rawScores.vigor ?? null,
+                structure: rawScores.structure ?? null,
+                aroma: rawScores.aroma ?? null,
+                resin: rawScores.resin ?? null,
+                pest_resistance: rawScores.pest_resistance ?? null,
+            };
+            this._starPreview = {};
+        }
+    }
     render() {
         return x `
       <div class="detail-card">
@@ -33401,6 +34608,7 @@ let PlantActionsTab = class PlantActionsTab extends i$3 {
           ${this.availableActions.map((action) => this._renderActionCard(action))}
         </div>
       </div>
+      ${this._renderScorePhenotypeSection()}
     `;
     }
     _renderActionCard(action) {
@@ -33422,6 +34630,98 @@ let PlantActionsTab = class PlantActionsTab extends i$3 {
       </div>
     `;
     }
+    _renderScorePhenotypeSection() {
+        return x `
+      <div class="score-card">
+        <div class="score-card-header" style="margin-bottom:${this._showScoringForm ? '16px' : '0'};">
+          <h3>Score Phenotype</h3>
+          <button
+            class="md3-button"
+            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
+          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
+        </div>
+        ${this._showScoringForm ? x `
+          <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
+            ${PlantActionsTab_1.SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
+          </div>
+          <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+            <button
+              class="md3-button filled"
+              @click=${() => this._savePhenotypeScore()}
+              ?disabled=${this._savingScore}
+            >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
+          </div>
+        ` : x `
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px; pointer-events:none; opacity:0.7;">
+            ${PlantActionsTab_1.SCORE_DIMENSIONS.map(dim => {
+            const val = this._scoresEdit[dim.key];
+            return x `
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <span style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
+                    <span>${dim.emoji}</span>${dim.label}
+                  </span>
+                  <span style="font-size:0.95rem; opacity:0.7;">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
+                </div>
+              `;
+        })}
+          </div>
+        `}
+      </div>
+    `;
+    }
+    _renderScoreRow(dim) {
+        const current = this._scoresEdit[dim.key];
+        const preview = this._starPreview[dim.key];
+        return x `
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;">
+            <span style="font-size:1.2rem;">${dim.emoji}</span>
+            ${dim.label}
+          </span>
+          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
+            ${current !== null && current !== undefined ? `${current} / 5` : '—'}
+          </span>
+        </div>
+        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          ${[1, 2, 3, 4, 5].map(star => x `
+            <button
+              style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
+                filter: ${(current !== null && star <= current) || (preview !== null && star <= preview)
+            ? 'grayscale(0) opacity(1)'
+            : 'grayscale(0.6) opacity(0.5)'};"
+              aria-label="Set ${dim.label} score to ${star}"
+              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
+              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
+              @click=${() => this._setScore(dim.key, star)}
+              ?disabled=${this._savingScore}
+            >⭐</button>
+          `)}
+        </div>
+      </div>
+    `;
+    }
+    _setScore(key, value) {
+        const current = this._scoresEdit[key];
+        this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
+    }
+    async _savePhenotypeScore() {
+        if (!this.plant?.attributes?.plant_id)
+            return;
+        this._savingScore = true;
+        try {
+            const plantId = this.plant.attributes.plant_id;
+            await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
+            this._showScoringForm = false;
+        }
+        catch (e) {
+            console.error('Failed to save phenotype scores', e);
+        }
+        finally {
+            this._savingScore = false;
+        }
+    }
     _handleActionClick(actionId) {
         this.dispatchEvent(new CustomEvent('action-click', {
             detail: { actionId },
@@ -33430,6 +34730,13 @@ let PlantActionsTab = class PlantActionsTab extends i$3 {
         }));
     }
 };
+PlantActionsTab.SCORE_DIMENSIONS = [
+    { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
+    { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
+    { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
+    { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
+    { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
+];
 PlantActionsTab.styles = [
     sharedStyles,
     i$6 `
@@ -33491,12 +34798,64 @@ PlantActionsTab.styles = [
         font-size: 0.9rem;
         text-align: center;
       }
+
+      .score-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 16px;
+        grid-column: 1 / -1;
+      }
+
+      .score-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .score-card h3 {
+        margin: 0;
+      }
+
+      .md3-button {
+        background: transparent;
+        border: 1px solid var(--divider-color, rgba(255,255,255,0.2));
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 0.85rem;
+        padding: 6px 14px;
+      }
+
+      .md3-button.filled {
+        background: var(--primary-color, #4caf50);
+        border-color: transparent;
+        color: #fff;
+      }
     `,
 ];
 __decorate([
+    c$2({ context: storeContext })
+], PlantActionsTab.prototype, "store", void 0);
+__decorate([
     n$5({ attribute: false })
 ], PlantActionsTab.prototype, "availableActions", void 0);
-PlantActionsTab = __decorate([
+__decorate([
+    n$5({ attribute: false })
+], PlantActionsTab.prototype, "plant", void 0);
+__decorate([
+    r$3()
+], PlantActionsTab.prototype, "_showScoringForm", void 0);
+__decorate([
+    r$3()
+], PlantActionsTab.prototype, "_savingScore", void 0);
+__decorate([
+    r$3()
+], PlantActionsTab.prototype, "_scoresEdit", void 0);
+__decorate([
+    r$3()
+], PlantActionsTab.prototype, "_starPreview", void 0);
+PlantActionsTab = PlantActionsTab_1 = __decorate([
     t$2('plant-actions-tab')
 ], PlantActionsTab);
 
@@ -34453,6 +35812,420 @@ PlantTimelineTab = __decorate([
     t$2('plant-timeline-tab')
 ], PlantTimelineTab);
 
+var PlantHarvestTab_1;
+let PlantHarvestTab = PlantHarvestTab_1 = class PlantHarvestTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._harvestMetricsEdit = {};
+        this._scoresEdit = {};
+        this._starPreview = {};
+        this._savingHarvest = false;
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('plant') && this.plant) {
+            const hm = this.plant.attributes?.harvest_metrics || {};
+            this._harvestMetricsEdit = { ...hm };
+            const rawScores = this.plant.attributes?.phenotype_score || {};
+            this._scoresEdit = {
+                vigor: rawScores.vigor ?? null,
+                internodal_spacing: rawScores.internodal_spacing ?? null,
+                terpene_intensity: rawScores.terpene_intensity ?? null,
+                resin: rawScores.resin ?? null,
+                mold_resistance: rawScores.mold_resistance ?? null,
+            };
+            this._starPreview = {};
+        }
+    }
+    render() {
+        const isSaving = this._savingHarvest;
+        const hm = this._harvestMetricsEdit;
+        const stage = (this.plant?.state || '').toLowerCase();
+        const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
+        return x `
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- Score Grid -->
+        <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
+          ${PlantHarvestTab_1.SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
+        </div>
+        <p style="font-size:0.8rem; opacity:0.45; margin:8px 0 0; text-align:center;">
+          All fields are optional — you can advance without scoring.
+        </p>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Yield Metrics -->
+        <div>
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Yield metrics</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">Wet weight (g)</label>
+              <input type="number" min="0" step="0.1" placeholder="e.g. 120"
+                .value=${String(hm.wet_weight ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">Dry weight (g)</label>
+              <input type="number" min="0" step="0.1" placeholder="e.g. 28"
+                .value=${String(hm.dry_weight ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">Trim weight (g)</label>
+              <input type="number" min="0" step="0.1" placeholder="e.g. 5"
+                .value=${String(hm.trim_weight ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Lab Results -->
+        <div>
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Lab results</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">THC (%)</label>
+              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
+                .value=${String(hm.thc_percentage ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <label style="font-size:0.75rem; opacity:0.7;">CBD (%)</label>
+              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
+                .value=${String(hm.cbd_percentage ?? '')}
+                @input=${(e) => {
+            const v = e.target.value;
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
+        }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
+              />
+            </div>
+            <div style="display:flex; flex-direction:column; gap:4px; grid-column: 1 / -1;">
+              <label style="font-size:0.75rem; opacity:0.7;">Terpene profile</label>
+              <textarea rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
+                .value=${String(hm.terpene_profile ?? '')}
+                @input=${(e) => {
+            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: e.target.value };
+        }}
+                ?disabled=${isSaving}
+                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box; resize:vertical;"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+          <button
+            class="md3-button outlined"
+            @click=${() => this._skipAndAdvance()}
+            ?disabled=${isSaving}
+          >${advanceLabel}</button>
+          <button
+            class="md3-button filled"
+            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+            @click=${() => this._saveHarvestMetrics()}
+            ?disabled=${isSaving}
+          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
+        </div>
+      </div>
+    `;
+    }
+    _setScore(key, value) {
+        const current = this._scoresEdit[key];
+        this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
+    }
+    _renderScoreRow(dim) {
+        const current = this._scoresEdit[dim.key];
+        const preview = this._starPreview[dim.key];
+        return x `
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;">
+            <span style="font-size:1.2rem;">${dim.emoji}</span>
+            ${dim.label}
+          </span>
+          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
+            ${current !== null && current !== undefined ? `${current} / 5` : '—'}
+          </span>
+        </div>
+        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          ${[1, 2, 3, 4, 5].map(star => x `
+            <button
+              style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
+                filter: ${(current !== null && star <= current) || (preview !== null && star <= preview)
+            ? 'grayscale(0) opacity(1)'
+            : 'grayscale(0.6) opacity(0.5)'};"
+              aria-label="Set ${dim.label} score to ${star}"
+              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
+              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
+              @click=${() => this._setScore(dim.key, star)}
+              ?disabled=${this._savingHarvest}
+            >⭐</button>
+          `)}
+        </div>
+      </div>
+    `;
+    }
+    _skipAndAdvance() {
+        if (this._savingHarvest)
+            return;
+        const stage = (this.plant?.state || '').toLowerCase();
+        const action = (stage === 'dry' || stage === 'drying') ? 'finish-drying' : 'harvest';
+        this.dispatchEvent(new CustomEvent('harvest-advance', {
+            detail: { action },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    async _saveHarvestMetrics() {
+        if (!this.plant?.attributes?.plant_id)
+            return;
+        this._savingHarvest = true;
+        try {
+            const plantId = this.plant.attributes.plant_id;
+            await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
+            await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
+            this.dispatchEvent(new CustomEvent('harvest-saved', { bubbles: true, composed: true }));
+        }
+        catch (e) {
+            console.error('Failed to save harvest metrics', e);
+        }
+        finally {
+            this._savingHarvest = false;
+        }
+    }
+};
+PlantHarvestTab.styles = [dialogStyles];
+PlantHarvestTab.SCORE_DIMENSIONS = [
+    { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
+    { key: 'internodal_spacing', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
+    { key: 'terpene_intensity', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
+    { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
+    { key: 'mold_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
+];
+__decorate([
+    c$2({ context: storeContext })
+], PlantHarvestTab.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantHarvestTab.prototype, "plant", void 0);
+__decorate([
+    r$3()
+], PlantHarvestTab.prototype, "_harvestMetricsEdit", void 0);
+__decorate([
+    r$3()
+], PlantHarvestTab.prototype, "_scoresEdit", void 0);
+__decorate([
+    r$3()
+], PlantHarvestTab.prototype, "_starPreview", void 0);
+__decorate([
+    r$3()
+], PlantHarvestTab.prototype, "_savingHarvest", void 0);
+PlantHarvestTab = PlantHarvestTab_1 = __decorate([
+    t$2('plant-harvest-tab')
+], PlantHarvestTab);
+
+let PlantGeneticsTab = class PlantGeneticsTab extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._lineageTree = null;
+        this._lineageLoading = false;
+        this._sexSaving = false;
+        this._seedBatchSearchOpen = false;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        void this._loadLineageTree();
+    }
+    willUpdate(changedProps) {
+        if (changedProps.has('plant') && this.plant && this.isConnected) {
+            void this._loadLineageTree();
+        }
+    }
+    render() {
+        const attrs = this.plant?.attributes ?? {};
+        const sex = attrs.sex ?? 'unknown';
+        const seedBatchId = attrs.seed_batch_id ?? null;
+        const generation = attrs.generation ?? '';
+        const sexOptions = [
+            { value: 'unknown', label: 'Unknown' },
+            { value: 'female', label: '♀ Female' },
+            { value: 'male', label: '♂ Male' },
+            { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
+        ];
+        return x `
+      <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+
+        <!-- Sex -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Sex</h4>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            ${sexOptions.map(opt => x `
+              <button
+                class="md3-chip ${sex === opt.value ? 'selected' : ''}"
+                style="
+                  padding: 6px 14px;
+                  border-radius: 20px;
+                  border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
+                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
+                  color: ${sex === opt.value ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
+                  font-size: 13px;
+                  cursor: pointer;
+                "
+                ?disabled=${this._sexSaving}
+                @click=${async () => {
+            if (sex === opt.value)
+                return;
+            this._sexSaving = true;
+            try {
+                await this.store?.actions.genetics.setPlantSex(attrs.plant_id, opt.value);
+            }
+            finally {
+                this._sexSaving = false;
+            }
+        }}
+              >${opt.label}</button>
+            `)}
+          </div>
+        </div>
+
+        <!-- Seed batch origin -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Origin</h4>
+          ${seedBatchId
+            ? x `
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span style="
+                    background: rgba(139,195,74,0.15);
+                    border: 1px solid #8bc34a;
+                    border-radius: 16px;
+                    padding: 4px 12px;
+                    font-size: 13px;
+                  ">🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span>
+                  <button
+                    class="md3-button text"
+                    style="font-size: 12px; color: var(--secondary-text-color);"
+                    @click=${async () => {
+                await this.store?.actions.genetics.sowSeed(seedBatchId, attrs.plant_id);
+            }}
+                  >Unlink</button>
+                </div>
+              `
+            : x `
+                <div>
+                  <button
+                    class="md3-button tonal"
+                    style="font-size: 13px;"
+                    @click=${() => { this._seedBatchSearchOpen = !this._seedBatchSearchOpen; }}
+                  >🔗 Link to seed batch</button>
+                  ${this._seedBatchSearchOpen ? x `
+                    <div style="margin-top: 8px; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px;">
+                      <p style="font-size: 12px; color: var(--secondary-text-color); margin: 0 0 8px;">
+                        To link this plant to a seed batch, use the Seed Inventory panel in Strain Library → Seeds tab, then tap Sow.
+                      </p>
+                    </div>
+                  ` : E}
+                </div>
+              `}
+        </div>
+
+        <!-- Lineage tree -->
+        <div>
+          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;">
+            Lineage
+            <button class="md3-button text" style="font-size:11px;"
+              @click=${() => {
+            const strainName = this.plant?.attributes?.strain;
+            const phenotype = this.plant?.attributes?.phenotype;
+            if (strainName) {
+                this.dispatchEvent(new CustomEvent('open-strain-editor', {
+                    detail: { strain: strainName, phenotype, focusLineage: true },
+                    bubbles: true,
+                    composed: true,
+                }));
+            }
+        }}
+            >Edit lineage</button>
+          </h4>
+          <lineage-tree
+            .node=${this._lineageTree}
+            .loading=${this._lineageLoading}
+          ></lineage-tree>
+        </div>
+      </div>
+    `;
+    }
+    async _loadLineageTree() {
+        const plantId = this.plant?.attributes?.plant_id;
+        if (!plantId || !this.store)
+            return;
+        this._lineageLoading = true;
+        this._lineageTree = null;
+        try {
+            const tree = await this.store.actions.genetics.getLineageTree(plantId);
+            this._lineageTree = tree;
+        }
+        catch {
+            this._lineageTree = null;
+        }
+        finally {
+            this._lineageLoading = false;
+        }
+    }
+};
+PlantGeneticsTab.styles = [dialogStyles];
+__decorate([
+    c$2({ context: storeContext })
+], PlantGeneticsTab.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], PlantGeneticsTab.prototype, "plant", void 0);
+__decorate([
+    r$3()
+], PlantGeneticsTab.prototype, "_lineageTree", void 0);
+__decorate([
+    r$3()
+], PlantGeneticsTab.prototype, "_lineageLoading", void 0);
+__decorate([
+    r$3()
+], PlantGeneticsTab.prototype, "_sexSaving", void 0);
+__decorate([
+    r$3()
+], PlantGeneticsTab.prototype, "_seedBatchSearchOpen", void 0);
+PlantGeneticsTab = __decorate([
+    t$2('plant-genetics-tab')
+], PlantGeneticsTab);
+
 /**
  * Plant Overview Container - Smart Component
  *
@@ -34472,20 +36245,6 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._showAllDates = false;
         this._showDeleteConfirmation = false;
         this._logbookEvents = [];
-        // Harvest/scoring tab state
-        this._harvestMetricsEdit = {};
-        this._scoresEdit = {};
-        this._starPreview = {};
-        this._savingHarvest = false;
-        // Score Phenotype in actions tab
-        this._showScoringForm = false;
-        this._savingScore = false;
-        // Genetics tab state
-        this._lineageTree = null;
-        this._lineageLoading = false;
-        this._sexSaving = false;
-        this._seedBatchSearchOpen = false;
-        this._seedBatchSearchQuery = '';
         // ViewModel state managed via atoms
         this._plantAtom = atom(null);
         this._editedAttributesAtom = atom({});
@@ -34533,23 +36292,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             });
             this.viewModel = createStablePlantOverviewViewModel(this._plantAtom, this._editedAttributesAtom, this._uiStateAtom, this.store, this._logbookEventsAtom);
             this.viewModelController = new libExports.StoreController(this, this.viewModel);
-            this._initHarvestState();
         }
         // Fetch logbook events asynchronously; the atom update will trigger a re-render
         this._fetchLogbookEvents();
-    }
-    _initHarvestState() {
-        const hm = this.plant?.attributes?.harvest_metrics || {};
-        this._harvestMetricsEdit = { ...hm };
-        const rawScores = this.plant?.attributes?.scores || {};
-        this._scoresEdit = {
-            vigor: rawScores.vigor ?? null,
-            structure: rawScores.structure ?? null,
-            aroma: rawScores.aroma ?? null,
-            resin: rawScores.resin ?? null,
-            pest_resistance: rawScores.pest_resistance ?? null,
-        };
-        this._starPreview = {};
     }
     async _fetchLogbookEvents() {
         const growspaceId = this.plant?.attributes?.growspace_id;
@@ -34571,7 +36316,6 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     willUpdate(changedProps) {
         if (changedProps.has('plant') && this.plant) {
-            this._initHarvestState();
             this._plantAtom.set(this.plant);
             // Initialize viewModel on first plant arrival if not already done in connectedCallback
             if (!this.viewModelController && this.store) {
@@ -34632,8 +36376,18 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             ${this._activeTab === 'dashboard' ? this._renderDashboard(vm) : E}
             ${this._activeTab === 'actions' ? this._renderActions(vm) : E}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : E}
-            ${this._activeTab === 'harvest' ? this._renderHarvestTab() : E}
-            ${this._activeTab === 'genetics' ? this._renderGeneticsTab() : E}
+            ${this._activeTab === 'harvest' ? x `
+              <plant-harvest-tab
+                .plant=${this.plant}
+                @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
+                @harvest-advance=${this._handleHarvestAdvance}
+              ></plant-harvest-tab>
+            ` : E}
+            ${this._activeTab === 'genetics' ? x `
+              <plant-genetics-tab
+                .plant=${this.plant}
+              ></plant-genetics-tab>
+            ` : E}
           </div>
 
           <!-- ACTIONS -->
@@ -34764,10 +36518,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         ${showHarvestTab ? x `
           <button
             class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
-            @click=${() => {
-            this._activeTab = 'harvest';
-            this._initHarvestState();
-        }}
+            @click=${() => { this._activeTab = 'harvest'; }}
           >
             <svg viewBox="0 0 24 24">
               <path d="${mdiCannabis}"></path>
@@ -34777,10 +36528,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         ` : E}
         <button
           class="tab-btn ${this._activeTab === 'genetics' ? 'active' : ''}"
-          @click=${() => {
-            this._activeTab = 'genetics';
-            this._loadLineageTree();
-        }}
+          @click=${() => { this._activeTab = 'genetics'; }}
         >
           <svg viewBox="0 0 24 24">
             <path d="${mdiDna}"></path>
@@ -34870,9 +36618,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         return x `
       <plant-actions-tab
         .availableActions=${vm.availableActions}
+        .plant=${this.plant}
         @action-click=${this._handleActionClick}
       ></plant-actions-tab>
-      ${this._renderScorePhenotypeSection()}
     `;
     }
     _renderTimeline(_vm) {
@@ -35150,10 +36898,29 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         }
     }
     _handleHarvest() {
-        this.store.actions.plant.harvest(this.plant);
+        const stage = (this.plant.state || this.plant.attributes?.stage || '').toLowerCase();
+        if (stage === PlantStage.FLOWER || stage === 'flowering') {
+            this.store.actions.ui.setActiveDialog({
+                type: 'HARVEST_SCORING',
+                payload: { plant: this.plant },
+            });
+            // Close the overview when opening the scoring dialog to keep flow clean
+            this._handleClose();
+        }
+        else {
+            this.store.actions.plant.harvest(this.plant);
+        }
     }
     _handleFinishDrying() {
         this.store.actions.plant.finishDrying(this.plant);
+    }
+    _handleHarvestAdvance(e) {
+        if (e.detail.action === 'finish-drying') {
+            this._handleFinishDrying();
+        }
+        else {
+            this._handleHarvest();
+        }
     }
     _handleMovePlantEvent(e) {
         const { targetId } = e.detail;
@@ -35271,398 +37038,6 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             type: 'STRAIN_LIBRARY',
             payload: { editingStrain: strainEntry },
         });
-    }
-    // ── Harvest / Scoring tab ──────────────────────────────────────────────────
-    _setScore(key, value) {
-        const current = this._scoresEdit[key];
-        this._scoresEdit = { ...this._scoresEdit, [key]: current === value ? null : value };
-    }
-    _renderScoreRow(dim) {
-        const current = this._scoresEdit[dim.key];
-        const preview = this._starPreview[dim.key];
-        return x `
-      <div style="display:flex; flex-direction:column; gap:6px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="display:flex; align-items:center; gap:8px; font-weight:500; font-size:0.95rem;">
-            <span style="font-size:1.2rem;">${dim.emoji}</span>
-            ${dim.label}
-          </span>
-          <span style="font-size:0.95rem; opacity:0.7; min-width:30px; text-align:right;">
-            ${current !== null && current !== undefined ? `${current} / 5` : '—'}
-          </span>
-        </div>
-        <p style="font-size:0.8rem; opacity:0.5; margin:0;">${dim.description}</p>
-        <div style="display:flex; gap:6px; margin-top:4px;">
-          ${[1, 2, 3, 4, 5].map(star => x `
-            <button
-              style="background:none; border:none; padding:0; cursor:pointer; font-size:1.6rem; line-height:1; transition:transform 0.1s, filter 0.15s;
-                filter: ${(current !== null && star <= current) || (preview !== null && star <= preview)
-            ? 'grayscale(0) opacity(1)'
-            : 'grayscale(0.6) opacity(0.5)'};"
-              aria-label="Set ${dim.label} score to ${star}"
-              @mouseenter=${() => { this._starPreview = { ...this._starPreview, [dim.key]: star }; }}
-              @mouseleave=${() => { this._starPreview = { ...this._starPreview, [dim.key]: null }; }}
-              @click=${() => this._setScore(dim.key, star)}
-              ?disabled=${this._savingHarvest}
-            >⭐</button>
-          `)}
-        </div>
-      </div>
-    `;
-    }
-    async _loadLineageTree() {
-        const plantId = this.plant?.attributes?.plant_id;
-        if (!plantId || !this.store)
-            return;
-        this._lineageLoading = true;
-        this._lineageTree = null;
-        try {
-            const tree = await this.store.actions.genetics.getLineageTree(plantId);
-            this._lineageTree = tree;
-        }
-        catch {
-            this._lineageTree = null;
-        }
-        finally {
-            this._lineageLoading = false;
-        }
-    }
-    _renderGeneticsTab() {
-        const plant = this.plant;
-        const attrs = plant?.attributes ?? {};
-        const sex = attrs.sex ?? 'unknown';
-        const seedBatchId = attrs.seed_batch_id ?? null;
-        const generation = attrs.generation ?? '';
-        const sexOptions = [
-            { value: 'unknown', label: 'Unknown' },
-            { value: 'female', label: '♀ Female' },
-            { value: 'male', label: '♂ Male' },
-            { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
-        ];
-        return x `
-      <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
-
-        <!-- Identity -->
-        <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Sex</h4>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            ${sexOptions.map(opt => x `
-              <button
-                class="md3-chip ${sex === opt.value ? 'selected' : ''}"
-                style="
-                  padding: 6px 14px;
-                  border-radius: 20px;
-                  border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
-                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
-                  color: ${sex === opt.value ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
-                  font-size: 13px;
-                  cursor: pointer;
-                "
-                ?disabled=${this._sexSaving}
-                @click=${async () => {
-            if (sex === opt.value)
-                return;
-            this._sexSaving = true;
-            try {
-                await this.store?.actions.genetics.setPlantSex(attrs.plant_id, opt.value);
-            }
-            finally {
-                this._sexSaving = false;
-            }
-        }}
-              >${opt.label}</button>
-            `)}
-          </div>
-        </div>
-
-        <!-- Seed batch origin -->
-        <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Origin</h4>
-          ${seedBatchId
-            ? x `
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="
-                    background: rgba(139,195,74,0.15);
-                    border: 1px solid #8bc34a;
-                    border-radius: 16px;
-                    padding: 4px 12px;
-                    font-size: 13px;
-                  ">🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span>
-                  <button
-                    class="md3-button text"
-                    style="font-size: 12px; color: var(--secondary-text-color);"
-                    @click=${async () => {
-                await this.store?.actions.genetics.sowSeed(seedBatchId, attrs.plant_id);
-            }}
-                  >Unlink</button>
-                </div>
-              `
-            : x `
-                <div>
-                  <button
-                    class="md3-button tonal"
-                    style="font-size: 13px;"
-                    @click=${() => { this._seedBatchSearchOpen = !this._seedBatchSearchOpen; }}
-                  >🔗 Link to seed batch</button>
-                  ${this._seedBatchSearchOpen ? x `
-                    <div style="margin-top: 8px; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px;">
-                      <p style="font-size: 12px; color: var(--secondary-text-color); margin: 0 0 8px;">
-                        To link this plant to a seed batch, use the Seed Inventory panel in Strain Library → Seeds tab, then tap Sow.
-                      </p>
-                    </div>
-                  ` : E}
-                </div>
-              `}
-        </div>
-
-        <!-- Lineage tree -->
-        <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;">
-            Lineage
-            <button class="md3-button text" style="font-size:11px;"
-              @click=${() => {
-            const strainName = this.plant?.attributes?.strain;
-            const phenotype = this.plant?.attributes?.phenotype;
-            if (strainName) {
-                this.dispatchEvent(new CustomEvent('open-strain-editor', {
-                    detail: { strain: strainName, phenotype, focusLineage: true },
-                    bubbles: true,
-                    composed: true,
-                }));
-            }
-        }}
-            >Edit lineage</button>
-          </h4>
-          <lineage-tree
-            .node=${this._lineageTree}
-            .loading=${this._lineageLoading}
-          ></lineage-tree>
-        </div>
-      </div>
-    `;
-    }
-    _renderHarvestTab() {
-        const SCORE_DIMENSIONS = [
-            { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
-            { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
-            { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
-            { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
-            { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
-        ];
-        const isSaving = this._savingHarvest;
-        const hm = this._harvestMetricsEdit;
-        const stage = (this.plant?.state || '').toLowerCase();
-        const advanceLabel = (stage === 'dry' || stage === 'drying') ? '🌿 Skip & begin cure' : '📦 Skip & finish';
-        return x `
-      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
-
-        <!-- Score Grid -->
-        <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
-          ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
-        </div>
-        <p style="font-size:0.8rem; opacity:0.45; margin:8px 0 0; text-align:center;">
-          All fields are optional — you can advance without scoring.
-        </p>
-
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
-
-        <!-- Yield Metrics -->
-        <div>
-          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Yield metrics</p>
-          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">Wet weight (g)</label>
-              <input type="number" min="0" step="0.1" placeholder="e.g. 120"
-                .value=${String(hm.wet_weight ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, wet_weight: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">Dry weight (g)</label>
-              <input type="number" min="0" step="0.1" placeholder="e.g. 28"
-                .value=${String(hm.dry_weight ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, dry_weight: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">Trim weight (g)</label>
-              <input type="number" min="0" step="0.1" placeholder="e.g. 5"
-                .value=${String(hm.trim_weight ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, trim_weight: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-          </div>
-        </div>
-
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
-
-        <!-- Lab Results -->
-        <div>
-          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Lab results</p>
-          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">THC (%)</label>
-              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 24.5"
-                .value=${String(hm.thc_percentage ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, thc_percentage: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
-              <label style="font-size:0.75rem; opacity:0.7;">CBD (%)</label>
-              <input type="number" min="0" max="100" step="0.1" placeholder="e.g. 0.3"
-                .value=${String(hm.cbd_percentage ?? '')}
-                @input=${(e) => {
-            const v = e.target.value;
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, cbd_percentage: v === '' ? null : parseFloat(v) };
-        }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box;"
-              />
-            </div>
-            <div style="display:flex; flex-direction:column; gap:4px; grid-column: 1 / -1;">
-              <label style="font-size:0.75rem; opacity:0.7;">Terpene profile</label>
-              <textarea rows="2" placeholder="e.g. myrcene, limonene, caryophyllene"
-                .value=${String(hm.terpene_profile ?? '')}
-                @input=${(e) => {
-            this._harvestMetricsEdit = { ...this._harvestMetricsEdit, terpene_profile: e.target.value };
-        }}
-                ?disabled=${isSaving}
-                style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; width:100%; box-sizing:border-box; resize:vertical;"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
-
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
-          <button
-            class="md3-button outlined"
-            @click=${() => this._skipAndAdvance()}
-            ?disabled=${isSaving}
-          >${advanceLabel}</button>
-          <button
-            class="md3-button filled"
-            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
-            @click=${() => this._saveHarvestMetrics()}
-            ?disabled=${isSaving}
-          >${isSaving ? 'Saving…' : '🌾 Save scores & metrics'}</button>
-        </div>
-      </div>
-    `;
-    }
-    _skipAndAdvance() {
-        if (this._savingHarvest)
-            return;
-        const stage = (this.plant?.state || '').toLowerCase();
-        if (stage === 'dry' || stage === 'drying') {
-            this._handleFinishDrying();
-        }
-        else {
-            this._handleHarvest();
-        }
-    }
-    async _saveHarvestMetrics() {
-        if (!this.plant?.attributes?.plant_id)
-            return;
-        this._savingHarvest = true;
-        try {
-            const plantId = this.plant.attributes.plant_id;
-            await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
-            await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
-            this._activeTab = 'dashboard';
-        }
-        catch (e) {
-            // Toast is handled inside the action; just catch to prevent unhandled rejection
-            console.error('Failed to save harvest metrics', e);
-        }
-        finally {
-            this._savingHarvest = false;
-        }
-    }
-    // ── Score Phenotype (actions tab) ─────────────────────────────────────────
-    _renderScorePhenotypeSection() {
-        const SCORE_DIMENSIONS = [
-            { key: 'vigor', label: 'Vigor', description: 'Overall plant health, growth rate, and robustness', emoji: '💪' },
-            { key: 'structure', label: 'Structure', description: 'Branch spacing, internodal distance, and bud site density', emoji: '🌿' },
-            { key: 'aroma', label: 'Aroma', description: 'Terpene expression — potency and complexity of smell', emoji: '👃' },
-            { key: 'resin', label: 'Resin', description: 'Trichome coverage and density', emoji: '💎' },
-            { key: 'pest_resistance', label: 'Pest resistance', description: 'Resilience against pests and disease during the run', emoji: '🛡️' },
-        ];
-        return x `
-      <div style="background:var(--secondary-background-color, rgba(255,255,255,0.05)); border-radius:12px; padding:16px; grid-column: 1 / -1;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:${this._showScoringForm ? '16px' : '0'};">
-          <h3 style="margin:0;">Score Phenotype</h3>
-          <button
-            class="md3-button outlined"
-            @click=${() => { this._showScoringForm = !this._showScoringForm; }}
-          >${this._showScoringForm ? 'Cancel' : 'Score'}</button>
-        </div>
-        ${this._showScoringForm ? x `
-          <div style="display:flex; flex-direction:column; gap:20px; padding:8px 0;">
-            ${SCORE_DIMENSIONS.map(dim => this._renderScoreRow(dim))}
-          </div>
-          <div style="display:flex; justify-content:flex-end; margin-top:16px;">
-            <button
-              class="md3-button filled"
-              @click=${() => this._savePhenotypeScore()}
-              ?disabled=${this._savingScore}
-            >${this._savingScore ? 'Saving…' : 'Save scores'}</button>
-          </div>
-        ` : x `
-          <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px; pointer-events:none; opacity:0.7;">
-            ${SCORE_DIMENSIONS.map(dim => {
-            const val = this._scoresEdit[dim.key];
-            return x `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                  <span style="display:flex; align-items:center; gap:8px; font-size:0.95rem;">
-                    <span>${dim.emoji}</span>${dim.label}
-                  </span>
-                  <span style="font-size:0.95rem; opacity:0.7;">${val !== null && val !== undefined ? `${val} / 5` : '—'}</span>
-                </div>
-              `;
-        })}
-          </div>
-        `}
-      </div>
-    `;
-    }
-    async _savePhenotypeScore() {
-        if (!this.plant?.attributes?.plant_id)
-            return;
-        this._savingScore = true;
-        try {
-            const plantId = this.plant.attributes.plant_id;
-            await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
-            this._showScoringForm = false;
-        }
-        catch (e) {
-            // Toast is handled inside the action; just catch to prevent unhandled rejection
-            console.error('Failed to save phenotype scores', e);
-        }
-        finally {
-            this._savingScore = false;
-        }
     }
 };
 PlantOverviewContainer.styles = [
@@ -35847,39 +37222,6 @@ __decorate([
 __decorate([
     r$3()
 ], PlantOverviewContainer.prototype, "_logbookEvents", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_harvestMetricsEdit", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_scoresEdit", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_starPreview", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_savingHarvest", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_showScoringForm", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_savingScore", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_lineageTree", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_lineageLoading", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_sexSaving", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_seedBatchSearchOpen", void 0);
-__decorate([
-    r$3()
-], PlantOverviewContainer.prototype, "_seedBatchSearchQuery", void 0);
 PlantOverviewContainer = __decorate([
     t$2('plant-overview-container')
 ], PlantOverviewContainer);
@@ -36168,10 +37510,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         if (active.type !== 'PLANT_OVERVIEW')
             return x ``;
         const dialogState = active.payload;
+        // Look up the live plant entity from fresh device data so the overview
+        // reflects data saved during the session (e.g. after scoring/metrics save).
+        const dialogPlantId = dialogState.plant.attributes?.plant_id ||
+            dialogState.plant.entity_id.replace('sensor.', '');
+        const allPlants = this._dialogHostController.value.devices.flatMap((d) => d.plants || []);
+        const livePlant = allPlants.find((p) => (p.attributes?.plant_id || p.entity_id.replace('sensor.', '')) === dialogPlantId) || dialogState.plant;
         return x `
       <plant-overview-container
         .open=${true}
-        .plant=${dialogState.plant}
+        .plant=${livePlant}
         .editedAttributes=${dialogState.editedAttributes}
         @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
         @update-plant=${(e) => this.store?.actions.plant.updateFromDialog({
@@ -46345,18 +47693,21 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
     _iconButton(icon, action, label, help, active = false) {
         return x `
       <div style="position:relative;display:inline-flex;align-items:center;">
-        <div
+        <button
           class="icon-button ${active ? 'active' : ''}"
           @click=${() => this._triggerAction(action)}
           title="${label}"
+          aria-label="${label}"
+          aria-pressed="${active}"
+          type="button"
         >
           <svg viewBox="0 0 24 24"><path d="${icon}"></path></svg>
-        </div>
+        </button>
         <gs-help-tooltip
           .content=${help}
           placement="bottom"
           .label=${label}
-          style="position:absolute;top:-4px;right:-4px;"
+          style="position:absolute;top:-10px;right:-10px;z-index:1;"
         ></gs-help-tooltip>
       </div>
     `;
@@ -46390,13 +47741,16 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
 
       ${this.isMobile
             ? x `
-            <div
+            <button
               class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
               @click=${() => this.dispatchEvent(new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true }))}
               title="Toggle Link Mode"
+              aria-label="Toggle Link Mode"
+              aria-pressed="${this.mobileLink}"
+              type="button"
             >
               <svg viewBox="0 0 24 24"><path d="${mdiLink}"></path></svg>
-            </div>
+            </button>
           `
             : ''}
 
@@ -46407,7 +47761,7 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
       ${this._iconButton(mdiCog, 'config', 'Settings', 'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.')}
 
       <div class="menu-container">
-        <button class="icon-button" id="menu-trigger" popovertarget="header-menu" title="Open Menu">
+        <button class="icon-button" id="menu-trigger" style="anchor-name: --menu-trigger" popovertarget="header-menu" title="Open Menu">
           <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
         </button>
         ${this._renderMenu()}
@@ -46531,11 +47885,17 @@ GrowspaceHeaderActionsUI.styles = i$6 `
       color: var(--primary-text-color, #fff);
       cursor: pointer;
       transition: all 0.2s;
-      anchor-name: --menu-trigger;
       flex-shrink: 0;
+      padding: 0;
+      font: inherit;
+      outline: none;
     }
     .icon-button:hover {
       background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
+    }
+    .icon-button:focus-visible {
+      outline: 2px solid var(--primary-color, #2196f3);
+      outline-offset: 2px;
     }
     .icon-button svg {
       width: 22px;
