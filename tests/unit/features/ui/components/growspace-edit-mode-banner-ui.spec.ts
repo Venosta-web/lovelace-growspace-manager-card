@@ -168,27 +168,61 @@ describe('GrowspaceEditModeBannerUI', () => {
             expect(container.scrollBy).toHaveBeenCalledWith({ left: 150, behavior: 'smooth' });
         });
 
-        it('should update scroll state correctly', async () => {
-            // Mock properties on container to simulate scrollable content
+        it('should update scroll state correctly at start of scroll', async () => {
             Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
             Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });
-            Object.defineProperty(container, 'scrollLeft', { value: 100, configurable: true });
+            Object.defineProperty(container, 'scrollLeft', { value: 0, configurable: true });
 
-            container.dispatchEvent(new Event('scroll'));
+            (element as any)._checkScroll();
             await element.updateComplete;
 
-            expect((element as any)._canScrollLeft).toBe(true);
+            expect((element as any)._canScrollLeft).toBe(false);
             expect((element as any)._canScrollRight).toBe(true);
         });
 
-        it('should call _checkScroll when ResizeObserver triggers', async () => {
-            const checkScrollSpy = vi.spyOn(element as any, '_checkScroll');
-            
-            // Access the ResizeController internal ResizeObserver callback if possible
-            // Or just simulate what ResizeController does:
+        it('should update scroll state correctly at end of scroll', async () => {
+            Object.defineProperty(container, 'scrollWidth', { value: 1000, configurable: true });
+            Object.defineProperty(container, 'clientWidth', { value: 500, configurable: true });
+            Object.defineProperty(container, 'scrollLeft', { value: 500, configurable: true });
+
             (element as any)._checkScroll();
+            await element.updateComplete;
+
+            expect((element as any)._canScrollLeft).toBe(true);
+            expect((element as any)._canScrollRight).toBe(false);
+        });
+
+        it('should handle null container in _scrollActions', () => {
+            const originalRef = (element as any)._actionsContainerRef;
+            (element as any)._actionsContainerRef = { value: null };
             
-            expect(checkScrollSpy).toHaveBeenCalled();
+            // Should not throw
+            expect(() => (element as any)._scrollActions('left')).not.toThrow();
+            
+            // Restore ref
+            (element as any)._actionsContainerRef = originalRef;
+        });
+
+        it('should handle null container in _checkScroll', () => {
+            const originalRef = (element as any)._actionsContainerRef;
+            (element as any)._actionsContainerRef = { value: null };
+            
+            // Should not throw
+            expect(() => (element as any)._checkScroll()).not.toThrow();
+            
+            // Restore ref
+            (element as any)._actionsContainerRef = originalRef;
+        });
+
+        it('should handle null container in firstUpdated', () => {
+            const originalRef = (element as any)._actionsContainerRef;
+            (element as any)._actionsContainerRef = { value: null };
+            
+            // Should not throw
+            expect(() => element.firstUpdated()).not.toThrow();
+            
+            // Restore ref
+            (element as any)._actionsContainerRef = originalRef;
         });
     });
 });
