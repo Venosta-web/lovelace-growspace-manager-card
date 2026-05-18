@@ -48,7 +48,7 @@ describe('GrowspaceStore.$headerActionsState', () => {
   });
 
   it('updates when selectedDevice changes', () => {
-    store.data.$selectedDevice.set('gs1');
+    store.grid.$selectedDevice.set('gs1');
     expect(store.$headerActionsState.get().selectedDevice).toBe('gs1');
   });
 });

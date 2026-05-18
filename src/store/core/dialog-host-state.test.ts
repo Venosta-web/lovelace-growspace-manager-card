@@ -44,7 +44,7 @@ describe('GrowspaceStore.$dialogHostState', () => {
   });
 
   it('updates when selectedDevice changes', () => {
-    store.data.$selectedDevice.set('gs1');
+    store.grid.$selectedDevice.set('gs1');
     expect(store.$dialogHostState.get().selectedDevice).toBe('gs1');
   });
 

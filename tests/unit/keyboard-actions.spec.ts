@@ -96,7 +96,7 @@ describe('keyboard-actions', () => {
         vi.mocked(store.ui.$isEditMode.get).mockReturnValue(false);
         vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(0);
         vi.mocked(store.ui.$selectedPlants.get).mockReturnValue(new Set<string>());
-        vi.mocked(store.data.$selectedDevice.get).mockReturnValue('device1');
+        store.grid.$selectedDevice.set('device1');
         vi.mocked(store.data.$devices.get).mockReturnValue([
             { deviceId: 'device1', name: 'Tent 1', plants: mockPlants } as any,
         ]);
@@ -211,7 +211,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should do nothing when no device is selected', () => {
-            vi.mocked(store.data.$selectedDevice.get).mockReturnValue(null);
+            store.grid.$selectedDevice.set(null);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'ArrowRight');
 
@@ -257,7 +257,7 @@ describe('keyboard-actions', () => {
         });
 
         it('should do nothing when selected device is not found in devices list', () => {
-            vi.mocked(store.data.$selectedDevice.get).mockReturnValue('nonexistent');
+            store.grid.$selectedDevice.set('nonexistent');
             vi.mocked(store.data.$devices.get).mockReturnValue([]);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'ArrowRight');

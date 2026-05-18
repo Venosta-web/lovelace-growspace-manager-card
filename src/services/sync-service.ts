@@ -2,6 +2,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from '../data-service';
 import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
+import { GrowspaceGridStore } from '../store/grid/grid-store';
 import { GrowspaceAPIResponse, GrowspaceDevice } from '../types';
 
 /**
@@ -16,7 +17,8 @@ export class SyncService {
   constructor(
     private dataService: DataService,
     private dataStore: GrowspaceDataStore,
-    private uiStore: GrowspaceUIStore
+    private uiStore: GrowspaceUIStore,
+    private gridStore: GrowspaceGridStore
   ) { }
 
   /**
@@ -87,7 +89,7 @@ export class SyncService {
     } finally {
       this._isFetchingWS = false;
       // Check if devices loaded or if a device is selected to turn off loading
-      if (this.dataStore.$devices.get().length === 0 || this.dataStore.$selectedDevice.get()) {
+      if (this.dataStore.$devices.get().length === 0 || this.gridStore.$selectedDevice.get()) {
         this.uiStore.setIsLoading(false);
       }
     }
@@ -128,7 +130,7 @@ export class SyncService {
       }
     });
 
-    const selectedDevice = this.dataStore.$selectedDevice.get();
+    const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed
     if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
       const config = this.dataStore.$config.get();
@@ -141,14 +143,14 @@ export class SyncService {
         (d) => d.deviceId === config.default_growspace || d.name === config.default_growspace
       );
       if (defaultDevice) {
-        this.dataStore.setSelectedDevice(defaultDevice.deviceId);
+        this.gridStore.setSelectedDevice(defaultDevice.deviceId);
         this.uiStore.setDefaultApplied(true);
         return;
       }
 
       // Fallback to first device only if autoSelect is enabled
       if (autoSelect) {
-        this.dataStore.setSelectedDevice(devices[0].deviceId);
+        this.gridStore.setSelectedDevice(devices[0].deviceId);
       }
       this.uiStore.setDefaultApplied(true);
     }

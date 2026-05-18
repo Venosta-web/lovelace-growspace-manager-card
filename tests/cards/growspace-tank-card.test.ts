@@ -101,7 +101,7 @@ describe('GrowspaceTankCard', () => {
         element.store.data.$devices.set([
             { deviceId: 'wrong_device', name: 'Wrong Tent', environmentAttributes: {}, plants: [] } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const errorDiv = element.shadowRoot?.querySelector('.error');
@@ -119,7 +119,7 @@ describe('GrowspaceTankCard', () => {
                 plants: []
             } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const emptyState = element.shadowRoot?.querySelector('.empty-state');
@@ -160,7 +160,7 @@ describe('GrowspaceTankCard', () => {
                 plants: []
             } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         // Check header info
@@ -219,7 +219,7 @@ describe('GrowspaceTankCard', () => {
                 plants: []
             } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const tankCards = element.shadowRoot?.querySelectorAll('.tank-card');
@@ -259,7 +259,7 @@ describe('GrowspaceTankCard', () => {
                 plants: []
             } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const avgBadge = element.shadowRoot?.querySelector('.avg-badge');
@@ -298,7 +298,7 @@ describe('GrowspaceTankCard', () => {
     });
 
     test('selectedDevice getter returns value from store', () => {
-        element.store.data.$selectedDevice.set('test_device');
+        element.store.grid.$selectedDevice.set('test_device');
         expect(element.selectedDevice).toBe('test_device');
     });
 

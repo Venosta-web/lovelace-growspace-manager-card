@@ -479,7 +479,7 @@ export async function confirmAddPlant(
     addToLibrary?: boolean;
   }
 ): Promise<boolean> {
-  const selectedDevice = ctx.data.$selectedDevice.get();
+  const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) {
     ctx.showToast('No growspace selected', 'error');
     return false;
@@ -530,7 +530,7 @@ export async function confirmAddPlant(
  * Batch add plants with Undo/Redo
  */
 export async function confirmAddPlants(ctx: ActionContext, detail: AddPlantsDialogState): Promise<void> {
-  const selectedDevice = ctx.data.$selectedDevice.get();
+  const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) {
     ctx.showToast('No growspace selected', 'error');
     return;

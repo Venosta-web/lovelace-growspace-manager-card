@@ -126,7 +126,7 @@ describe('GrowspaceAnalyticsCard', () => {
         element.store.data.$devices.set([
             { deviceId: 'wrong_device', name: 'Wrong Tent', plants: [] } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const errorDiv = element.shadowRoot?.querySelector('.error');
@@ -139,7 +139,7 @@ describe('GrowspaceAnalyticsCard', () => {
         element.store.data.$devices.set([
             { deviceId: 'selected_tent', name: 'Selected Tent', plants: [] } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
         
         const cardContainer = element.shadowRoot?.querySelector('.unified-growspace-card');

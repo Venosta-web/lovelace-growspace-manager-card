@@ -47,7 +47,7 @@ export function togglePlantSelection(ctx: ActionContext, plantOrId: string | Pla
 }
 
 export function selectAllPlants(ctx: ActionContext) {
-  const selectedDevice = ctx.data.$selectedDevice.get();
+  const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) return;
 
   const devices = ctx.data.$devices.get();
@@ -211,7 +211,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     return;
   }
 
-  const selectedDeviceId = ctx.data.$selectedDevice.get();
+  const selectedDeviceId = ctx.grid.$selectedDevice.get();
   if (!selectedDeviceId) {
     return;
   }
@@ -281,7 +281,7 @@ export function openIPMDialog(
   libraryActions.fetchIPMPresets(ctx);
   const growspaceId =
     context?.growspaceId ||
-    (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
+    (!context?.plantIds?.length ? ctx.grid.$selectedDevice.get() || undefined : undefined);
 
   ctx.ui.setActiveDialog({
     type: 'IPM',
@@ -293,7 +293,7 @@ export function openIPMDialog(
 }
 
 export function openLogbookDialog(ctx: ActionContext) {
-  const growspaceId = ctx.data.$selectedDevice.get();
+  const growspaceId = ctx.grid.$selectedDevice.get();
   if (growspaceId) {
     ctx.ui.setActiveDialog({
       type: 'LOGBOOK',

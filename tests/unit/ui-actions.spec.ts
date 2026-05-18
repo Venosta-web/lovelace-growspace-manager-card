@@ -70,10 +70,12 @@ describe('ui-actions', () => {
                 ...mockUIState
             },
             data: {
-                $selectedDevice: { get: vi.fn() },
                 $devices: { get: vi.fn(() => []) },
                 $optimisticDeletedPlantIds: { get: vi.fn(() => new Set()) },
                 $plantToDeviceMap: { get: vi.fn(() => new Map()) }
+            },
+            grid: {
+                $selectedDevice: { get: vi.fn() },
             },
             dataService: {
                 fetchStrainLibrary: vi.fn()
@@ -120,13 +122,13 @@ describe('ui-actions', () => {
         });
 
         it('selectAllPlants should do nothing if no device selected', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue(null);
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue(null);
             selectAllPlants(ctx);
             expect(selectAllPlantsSpy).not.toHaveBeenCalled();
         });
 
         it('selectAllPlants should select all valid plant ids', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('dev1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('dev1');
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
                     deviceId: 'dev1',
@@ -231,7 +233,7 @@ describe('ui-actions', () => {
         });
 
         it('should find first empty slot if no coordinates provided', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('dev1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('dev1');
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
                     deviceId: 'dev1',
@@ -269,7 +271,7 @@ describe('ui-actions', () => {
         });
 
         it('should open logbook dialog', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
             openLogbookDialog(ctx);
             expect(setActiveDialogSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'LOGBOOK' }));
         });

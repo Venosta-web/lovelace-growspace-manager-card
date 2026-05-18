@@ -22,7 +22,6 @@ export class GrowspaceDataStore {
   public readonly $config: WritableAtom<GrowspaceManagerCardConfig>;
   public readonly $optimisticDeletedPlantIds: WritableAtom<Set<string>>;
   public readonly $wsDataCache: WritableAtom<Record<string, GrowspaceAPIResponse>>;
-  public readonly $selectedDevice: WritableAtom<string | null>;
   /** Map from plantId to deviceId for O(1) lookups */
   public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
   public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
@@ -43,7 +42,6 @@ export class GrowspaceDataStore {
     this.$config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
     this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());
     this.$wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
-    this.$selectedDevice = atom<string | null>(null);
     this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
     this.$nutrientPresets = atom<Record<string, NutrientPreset>>({});
     this.$ipmPresets = atom<Record<string, IPMPreset>>({});
@@ -90,10 +88,6 @@ export class GrowspaceDataStore {
       }
     }
     this.$plantToDeviceMap.set(map);
-  }
-
-  public setSelectedDevice(deviceId: string | null) {
-    this.$selectedDevice.set(deviceId);
   }
 
   public setConfig(config: GrowspaceManagerCardConfig) {

@@ -1,4 +1,4 @@
-import { computed, ReadableAtom } from 'nanostores';
+import { atom, computed, ReadableAtom, WritableAtom } from 'nanostores';
 import { GrowspaceDataStore } from '../core/data-store';
 import { PlantUtils } from '../../utils/plant-utils';
 import { GrowspaceDevice, PlantEntity } from '../../types';
@@ -16,6 +16,13 @@ export interface GridViewState {
 }
 
 export class GrowspaceGridStore {
+  /**
+   * The currently selected growspace device ID. Kept per-card so that multiple
+   * card instances on the same dashboard (e.g. a standalone card and a carousel
+   * card) don't share selection state via the singleton shared store.
+   */
+  public readonly $selectedDevice: WritableAtom<string | null>;
+
   /**
    * Derived list of devices whose plants exclude any optimistically deleted IDs.
    */
@@ -39,6 +46,8 @@ export class GrowspaceGridStore {
   public readonly $gridViewState: ReadableAtom<GridViewState>;
 
   constructor(dataStore: GrowspaceDataStore) {
+    this.$selectedDevice = atom<string | null>(null);
+
     this.$activeDevices = computed(
       [dataStore.$devices, dataStore.$optimisticDeletedPlantIds],
       (devices, deletedIds): GrowspaceDevice[] => {
@@ -61,7 +70,7 @@ export class GrowspaceGridStore {
     });
 
     this.$gridLayout = computed(
-      [this.$activeDevices, dataStore.$selectedDevice],
+      [this.$activeDevices, this.$selectedDevice],
       (devices, selectedId): GridLayout => {
         if (!selectedId) {
           return { effectiveRows: 0, grid: [] };
@@ -81,7 +90,7 @@ export class GrowspaceGridStore {
     );
 
     this.$gridViewState = computed(
-      [this.$activeDevices, this.$gridLayout, this.$growspaceOptions, dataStore.$selectedDevice],
+      [this.$activeDevices, this.$gridLayout, this.$growspaceOptions, this.$selectedDevice],
       (devices, gridLayout, growspaceOptions, selectedDevice): GridViewState => ({
         devices,
         selectedDevice,
@@ -89,5 +98,9 @@ export class GrowspaceGridStore {
         growspaceOptions,
       })
     );
+  }
+
+  public setSelectedDevice(deviceId: string | null): void {
+    this.$selectedDevice.set(deviceId);
   }
 }

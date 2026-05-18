@@ -54,9 +54,8 @@ describe('GrowspaceSharedStore', () => {
     });
 
     describe('constructor', () => {
-        it('creates data, history and dataService', () => {
+        it('creates data and dataService', () => {
             expect(store.data).toBeDefined();
-            expect(store.history).toBeDefined();
             expect(store.dataService).toBeDefined();
         });
     });
@@ -110,11 +109,6 @@ describe('GrowspaceSharedStore', () => {
     });
 
     describe('destroy', () => {
-        it('calls history.destroy', () => {
-            store.destroy();
-            expect(mockHistoryDestroy).toHaveBeenCalled();
-        });
-
         it('calls the HA unsubscribe function if subscribed', async () => {
             const unsub = vi.fn();
             mockSubscribeEvents.mockResolvedValue(unsub);

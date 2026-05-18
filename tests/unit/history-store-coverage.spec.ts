@@ -1,5 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { atom } from 'nanostores';
 import { GrowspaceHistoryStore } from '../../src/store/history/history-store';
 import { DataService } from '../../src/data-service';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
@@ -9,16 +10,17 @@ describe('GrowspaceHistoryStore Coverage', () => {
     let store: GrowspaceHistoryStore;
     let mockDataService: any;
     let mockDataStore: any;
+    let $selectedDevice: ReturnType<typeof atom<string | null>>;
 
     beforeEach(() => {
         mockDataService = {
             getHistoryStats: vi.fn().mockResolvedValue({})
         };
+        $selectedDevice = atom<string | null>(null);
         mockDataStore = {
-            $selectedDevice: { get: vi.fn(), subscribe: vi.fn() },
             $devices: { get: vi.fn() }
         };
-        store = new GrowspaceHistoryStore(mockDataService, mockDataStore);
+        store = new GrowspaceHistoryStore(mockDataService, mockDataStore, $selectedDevice);
     });
 
     afterEach(() => {
@@ -31,7 +33,7 @@ describe('GrowspaceHistoryStore Coverage', () => {
             name: 'Device 1'
         } as GrowspaceDevice;
 
-        mockDataStore.$selectedDevice.get.mockReturnValue('d1');
+        $selectedDevice.set('d1');
         mockDataStore.$devices.get.mockReturnValue([device]);
 
         // Add a composite key to active graphs
@@ -51,7 +53,7 @@ describe('GrowspaceHistoryStore Coverage', () => {
             name: 'Device 1'
         } as GrowspaceDevice;
 
-        mockDataStore.$selectedDevice.get.mockReturnValue('d1');
+        $selectedDevice.set('d1');
         mockDataStore.$devices.get.mockReturnValue([device]);
 
         // Setup existing timestamps so it takes the delta path
@@ -118,7 +120,7 @@ describe('GrowspaceHistoryStore Coverage', () => {
             overviewEntityId: 'sensor.overview'
         } as GrowspaceDevice;
 
-        mockDataStore.$selectedDevice.get.mockReturnValue('d1');
+        $selectedDevice.set('d1');
         mockDataStore.$devices.get.mockReturnValue([device]);
         store.$lastTimestamps.set({ 'temp': '2023-01-01' }); // Set timestamp to force delta path
 

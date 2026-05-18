@@ -156,7 +156,7 @@ describe('GrowspaceAiInsightCard', () => {
                 { deviceId: 'tent_1', name: 'Tent 1', plants: [] } as any,
                 { deviceId: 'tent_2', name: 'Tent 2', plants: [] } as any,
             ]);
-            element.store.data.$selectedDevice.set('tent_1');
+            element.store.grid.$selectedDevice.set('tent_1');
         });
 
         test('analyze all triggers analyzeAllGrowspaces', async () => {
@@ -183,14 +183,14 @@ describe('GrowspaceAiInsightCard', () => {
         });
 
         test('analyze specific throws error if no device selected', async () => {
-            element.store.data.$selectedDevice.set(null);
+            element.store.grid.$selectedDevice.set(null);
             await (element as any)._analyze(false);
 
             expect((element as any)._error).toContain('No device selected and "Analyze All" was false.');
         });
 
         test('analyze specific throws error if device not found in array', async () => {
-            element.store.data.$selectedDevice.set('nonexistent');
+            element.store.grid.$selectedDevice.set('nonexistent');
             await (element as any)._analyze(false);
 
             expect((element as any)._error).toContain('Selected device not found in devices list.');
@@ -218,7 +218,7 @@ describe('GrowspaceAiInsightCard', () => {
             element.store.data.$devices.set([
                 { deviceId: 'tent_1', name: 'Tent 1', plants: [] } as any
             ]);
-            element.store.data.$selectedDevice.set('tent_1');
+            element.store.grid.$selectedDevice.set('tent_1');
         });
 
         test('renders the target name in subtitle', async () => {
@@ -228,7 +228,7 @@ describe('GrowspaceAiInsightCard', () => {
         });
 
         test('renders Unknown Growspace if selected device not matched', async () => {
-            element.store.data.$selectedDevice.set(null);
+            element.store.grid.$selectedDevice.set(null);
             await element.updateComplete;
             const subtitle = element.shadowRoot?.querySelector('.ai-subtitle');
             expect(subtitle?.textContent).toContain('Target: Unknown Growspace');

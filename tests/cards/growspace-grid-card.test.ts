@@ -109,7 +109,7 @@ describe('GrowspaceGridCard', () => {
         element.store.data.$devices.set([
             { deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any
         ]);
-        element.store.data.$selectedDevice.set('test_tent');
+        element.store.grid.$selectedDevice.set('test_tent');
         await element.updateComplete;
 
         const cardContainer = element.shadowRoot?.querySelector('.unified-growspace-card');
@@ -184,7 +184,7 @@ describe('GrowspaceGridCard', () => {
                 plants: []
             } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const errorDiv = element.shadowRoot?.querySelector('.error');
@@ -208,7 +208,7 @@ describe('GrowspaceGridCard', () => {
                 plants: []
             } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
 
         // Render card
         await element.updateComplete;

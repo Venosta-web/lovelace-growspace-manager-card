@@ -24,6 +24,7 @@ export class GrowspaceHistoryStore {
   // --- Dependencies ---
   private dataService: DataService;
   private dataStore: GrowspaceDataStore;
+  private _selectedDevice: ReadableAtom<string | null>;
 
   // --- Internals ---
   private readonly STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
@@ -60,9 +61,14 @@ export class GrowspaceHistoryStore {
     graphRanges: Record<string, HistoryTimeRange>;
   }>;
 
-  constructor(dataService: DataService, dataStore: GrowspaceDataStore) {
+  constructor(
+    dataService: DataService,
+    dataStore: GrowspaceDataStore,
+    selectedDevice: ReadableAtom<string | null>
+  ) {
     this.dataService = dataService;
     this.dataStore = dataStore;
+    this._selectedDevice = selectedDevice;
 
     this.$historyCache = map<Record<string, HistorySensorState[]>>({});
     this.$lastTimestamps = map<Record<string, string>>({});
@@ -74,7 +80,7 @@ export class GrowspaceHistoryStore {
     this.$linkedGraphGroups = atom<string[][]>([]);
 
     // Subscribe to device changes to handle cache and storage
-    this._selectedDeviceUnsub = this.dataStore.$selectedDevice.subscribe((deviceId) => {
+    this._selectedDeviceUnsub = this._selectedDevice.subscribe((deviceId) => {
       if (deviceId) {
         this.handleDeviceChange(deviceId);
       }
@@ -308,12 +314,12 @@ export class GrowspaceHistoryStore {
   }
 
   public getRange(): HistoryTimeRange {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     return this.getGraphRange(deviceId);
   }
 
   private async _fetchHistory(range: HistoryTimeRange = '24h') {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
     const devices = this.dataStore.$devices.get();
@@ -405,7 +411,7 @@ export class GrowspaceHistoryStore {
   }
 
   private async _fetchHistoryDelta() {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
     const devices = this.dataStore.$devices.get();
@@ -563,7 +569,7 @@ export class GrowspaceHistoryStore {
   }
 
   private _saveToStorage() {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
     try {

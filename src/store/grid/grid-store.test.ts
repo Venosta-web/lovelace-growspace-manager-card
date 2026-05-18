@@ -23,7 +23,7 @@ const makeDevice = (id: string, plants: PlantEntity[]): GrowspaceDevice =>
 describe('GrowspaceGridStore.$gridViewState', () => {
   let mockDataStore: Pick<
     GrowspaceDataStore,
-    '$devices' | '$optimisticDeletedPlantIds' | '$selectedDevice'
+    '$devices' | '$optimisticDeletedPlantIds'
   >;
   let store: GrowspaceGridStore;
 
@@ -31,7 +31,6 @@ describe('GrowspaceGridStore.$gridViewState', () => {
     mockDataStore = {
       $devices: atom<GrowspaceDevice[]>([]),
       $optimisticDeletedPlantIds: atom<Set<string>>(new Set()),
-      $selectedDevice: atom<string | null>(null),
     };
     store = new GrowspaceGridStore(mockDataStore as GrowspaceDataStore);
   });
@@ -45,7 +44,7 @@ describe('GrowspaceGridStore.$gridViewState', () => {
     const plant = makePlant('p1', 0, 0);
     const device = makeDevice('gs1', [plant]);
     mockDataStore.$devices.set([device]);
-    mockDataStore.$selectedDevice.set('gs1');
+    store.$selectedDevice.set('gs1');
 
     const state = store.$gridViewState.get();
 
@@ -60,7 +59,7 @@ describe('GrowspaceGridStore.$gridViewState', () => {
     const plant1 = makePlant('p1', 0, 0);
     const device1 = makeDevice('gs1', [plant1]);
     mockDataStore.$devices.set([device1]);
-    mockDataStore.$selectedDevice.set('gs1');
+    store.$selectedDevice.set('gs1');
 
     const plant2 = makePlant('p2', 0, 1);
     const device2 = makeDevice('gs2', [plant2]);
@@ -75,7 +74,7 @@ describe('GrowspaceGridStore.$gridViewState', () => {
     const plant = makePlant('p1', 0, 0);
     const device = makeDevice('gs1', [plant]);
     mockDataStore.$devices.set([device]);
-    mockDataStore.$selectedDevice.set('gs1');
+    store.$selectedDevice.set('gs1');
     mockDataStore.$optimisticDeletedPlantIds.set(new Set(['p1']));
 
     const state = store.$gridViewState.get();

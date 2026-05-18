@@ -2,11 +2,9 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 import { DataService } from '../../data-service';
 import { GrowspaceDataStore } from './data-store';
-import { GrowspaceHistoryStore } from '../history/history-store';
 
 export class GrowspaceSharedStore {
   public readonly data: GrowspaceDataStore;
-  public readonly history: GrowspaceHistoryStore;
   public readonly dataService: DataService;
 
   private _hass?: HomeAssistant;
@@ -15,7 +13,6 @@ export class GrowspaceSharedStore {
   constructor() {
     this.dataService = new DataService();
     this.data = new GrowspaceDataStore();
-    this.history = new GrowspaceHistoryStore(this.dataService, this.data);
   }
 
   updateHass(hass: HomeAssistant): void {
@@ -29,7 +26,6 @@ export class GrowspaceSharedStore {
 
   destroy(): void {
     this._unsubscribe();
-    this.history.destroy();
   }
 
   private async _subscribe(hass: HomeAssistant): Promise<void> {

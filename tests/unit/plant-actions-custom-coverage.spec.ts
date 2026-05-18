@@ -69,11 +69,13 @@ describe('plant-actions-custom-coverage', () => {
                 clearPlantSelection: vi.fn()
             },
             data: {
-                $selectedDevice: { get: vi.fn() },
                 $devices: { get: vi.fn().mockReturnValue([]), set: vi.fn() },
                 addOptimisticDeletedPlantId: vi.fn(),
                 removeOptimisticDeletedPlantId: vi.fn(),
                 updateWsDataCacheGrid: vi.fn()
+            } as any,
+            grid: {
+                $selectedDevice: { get: vi.fn() },
             } as any,
             optimisticManager: {
                 applyOptimisticUpdate: vi.fn().mockImplementation(async (type, payload, apply) => {

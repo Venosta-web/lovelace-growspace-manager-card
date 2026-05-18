@@ -14,5 +14,5 @@ export function initializeSelectedDevice(ctx: ActionContext, config: GrowspaceMa
 }
 
 export function handleDeviceChange(ctx: ActionContext, deviceId: string) {
-  ctx.data.setSelectedDevice(deviceId);
+  ctx.grid.setSelectedDevice(deviceId);
 }

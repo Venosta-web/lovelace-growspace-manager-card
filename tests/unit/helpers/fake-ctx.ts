@@ -48,7 +48,6 @@ export function makeFakeCtx(): FakeCtx {
       clearPlantSelection: vi.fn(),
     } as any,
     data: {
-      $selectedDevice: { get: vi.fn() },
       $devices: { get: vi.fn().mockReturnValue([]), set: vi.fn() },
       addOptimisticDeletedPlantId: vi.fn(),
       removeOptimisticDeletedPlantId: vi.fn(),
@@ -56,7 +55,9 @@ export function makeFakeCtx(): FakeCtx {
     } as any,
     syncService: {} as any,
     history: {} as any,
-    grid: {} as any,
+    grid: {
+      $selectedDevice: { get: vi.fn() },
+    } as any,
     hass: {} as any,
   } as any;
 }

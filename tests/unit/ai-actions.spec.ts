@@ -23,11 +23,7 @@ describe('ai-actions', () => {
             setActiveDialog: vi.fn(),
         };
 
-        mockDataStore = {
-            $selectedDevice: {
-                get: vi.fn().mockReturnValue('gs123'),
-            },
-        };
+        mockDataStore = {};
 
         ctx = {
             dataService: mockDataService,
@@ -36,6 +32,11 @@ describe('ai-actions', () => {
             refreshData: vi.fn().mockResolvedValue(undefined),
             data: mockDataStore,
             ui: mockUIStore,
+            grid: {
+                $selectedDevice: {
+                    get: vi.fn().mockReturnValue('gs123'),
+                },
+            },
         } as any;
     });
 
@@ -68,7 +69,7 @@ describe('ai-actions', () => {
         });
 
         it('should handle error when no device selected for specific query', async () => {
-            mockDataStore.$selectedDevice.get.mockReturnValue(null);
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue(null);
 
             await analyzeGrowspace(ctx, 'query', false);
 

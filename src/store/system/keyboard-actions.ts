@@ -13,7 +13,7 @@ import * as plantActions from '../plant/plant-actions';
  * Excludes plants that are marked for optimistic deletion.
  */
 function getVisiblePlants(ctx: ActionContext): PlantEntity[] {
-  const selectedDevice = ctx.data.$selectedDevice.get();
+  const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) return [];
 
   const devices = ctx.data.$devices.get();

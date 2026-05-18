@@ -529,7 +529,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should handle handleDrop swap logic', async () => {
             const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1, growspace_id: 'd1' } } as any;
             const target = { entity_id: 's2', attributes: { plant_id: 'p2', strain: 'S2', row: 2, col: 2, growspace_id: 'd1' } } as any;
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
 
             // Pass through plantActions real logic (which uses mocked service)
             // or we might need to rely on the fact that plantActions calls service.
@@ -552,7 +552,7 @@ describe('GrowspaceStore Branch Coverage', () => {
 
         it('should handle handleDrop move to empty logic', async () => {
             const source = { entity_id: 's1', attributes: { plant_id: 'p1', strain: 'S1', row: 1, col: 1, growspace_id: 'd1' } } as any;
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
 
             await store.handleDrop(3, 3, null, source);
 
@@ -581,7 +581,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should find next available slot in openAddPlantDialog', () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             const plants = [
                 { attributes: { row: 1, col: 1, plant_id: 'p1' } }, // 0,0 occupied
                 // 0,1 empty
@@ -655,7 +655,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             });
         });
         it('should handle addBatch action success', async () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             mockDataServiceInstance.addPlants = vi.fn().mockResolvedValue({});
 
             await store.actions.plant.addBatch({ count: 5 });
@@ -665,7 +665,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should handle addBatch action failure', async () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             // showToast is mocked
             mockDataServiceInstance.addPlants = vi.fn().mockRejectedValue(new Error('Batch Fail'));
 
@@ -675,12 +675,12 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should handle addBatch with no device selected', async () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue(null);
+            store.grid.$selectedDevice.set(null);
             await store.actions.plant.addBatch({});
             expect(uiStore.showToast).toHaveBeenCalledWith('No growspace selected', 'error', undefined);
         });
         it('should handle openIPMDialog defaults', () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             store.openIPMDialog();
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'IPM',
@@ -697,7 +697,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should handle openIPMDialog with plantIds should not set growspaceId from selection', () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             store.openIPMDialog({ plantIds: ['p1'] });
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'IPM',
@@ -781,7 +781,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should cover openLogbookDialog', () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             store.openLogbookDialog();
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith({ type: 'LOGBOOK', payload: { growspaceId: 'd1' } });
         });
@@ -807,13 +807,13 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should open crop steering dialog when toggleEnvGraph is called with crop_steering', () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue('gs1');
+            store.grid.$selectedDevice.set('gs1');
             store.toggleEnvGraph('crop_steering');
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'CROP_STEERING' }));
         });
 
         it('should not open crop steering dialog when toggleEnvGraph is called with crop_steering but no device', () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue(undefined);
+            store.grid.$selectedDevice.set(null);
             store.toggleEnvGraph('crop_steering');
             expect(uiStore.setActiveDialog).not.toHaveBeenCalled();
         });
@@ -835,7 +835,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             (dataStore.$devices.get as any).mockReturnValue([
                 { deviceId: 'd1', plants: undefined }
             ]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
 
             await store.confirmAddPlants({});
 
@@ -844,7 +844,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should auto-expand view mode when enabling graph in header mode', () => {
-            (store as any)._shared.history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
+            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
             (uiStore.$viewMode.get as any).mockReturnValue('header');
 
             store.toggleEnvGraph('temp');
@@ -853,7 +853,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should not auto-expand view mode if graph disabled', () => {
-            (store as any)._shared.history = { toggleEnvGraph: vi.fn().mockReturnValue(false) };
+            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(false) };
             (uiStore.$viewMode.get as any).mockReturnValue('header');
 
             store.toggleEnvGraph('temp');
@@ -862,7 +862,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should not auto-expand if already in standard mode', () => {
-            (store as any)._shared.history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
+            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
             (uiStore.$viewMode.get as any).mockReturnValue('standard');
 
             store.toggleEnvGraph('temp');
@@ -884,26 +884,26 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should return early in toggleEnvGraph if no history store', () => {
-            (store as any)._shared.history = undefined;
+            (store as any).history = undefined;
             store.toggleEnvGraph('temp');
             // No error, return
         });
 
         it('should handle handleDrop early returns', async () => {
-            (dataStore.$selectedDevice.get as any).mockReturnValue(null); // No device
+            store.grid.$selectedDevice.set(null); // No device
             await store.handleDrop(1, 1, null, {} as any);
             // No calls
             expect(mockDataServiceInstance.swapPlants).not.toHaveBeenCalled();
             expect(mockDataServiceInstance.updatePlant).not.toHaveBeenCalled();
 
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1'); // Device exists
+            store.grid.$selectedDevice.set('d1'); // Device exists
             await store.handleDrop(1, 1, null, null); // No source
             expect(mockDataServiceInstance.swapPlants).not.toHaveBeenCalled();
         });
 
         it('should handle analyzeGrowspace parsing logic', async () => {
             (uiStore.$activeDialog.get as any).mockReturnValue({ type: 'GROW_MASTER', payload: {} });
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
 
             // 1. String
             mockDataServiceInstance.askGrowAdvice.mockResolvedValue('Advice string');
@@ -945,7 +945,7 @@ describe('GrowspaceStore Branch Coverage', () => {
     describe('Deep Branch Coverage', () => {
         it('should handle selectAllPlants with missing device data', () => {
             (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd2' }]); // mismatch
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             store.selectAllPlants();
             expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
         });
@@ -953,7 +953,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         it('should handle selectAllPlants with undefined plants array', () => {
             const device = { deviceId: 'd1', plants: undefined };
             (dataStore.$devices.get as any).mockReturnValue([device]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             store.selectAllPlants();
             expect(uiStore.selectAllPlants).not.toHaveBeenCalled();
         });
@@ -1057,7 +1057,7 @@ describe('GrowspaceStore Branch Coverage', () => {
                 deviceId: 'd1',
                 plants: [{ attributes: { plant_id: null } }] // Plant without ID
             }]);
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             mockDataServiceInstance.addPlants.mockResolvedValue({});
             (dataStore.$wsDataCache.get as any).mockReturnValue({});
 
@@ -1082,7 +1082,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             }];
             getMock.mockReturnValueOnce(afterDevices); // Second read check
 
-            (dataStore.$selectedDevice.get as any).mockReturnValue('d1');
+            store.grid.$selectedDevice.set('d1');
             mockDataServiceInstance.addPlants.mockResolvedValue({});
 
             await store.confirmAddPlants({});

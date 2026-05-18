@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { atom } from 'nanostores';
 import { GrowspaceHistoryStore } from '../../src/store/history/history-store';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { DataService } from '../../src/data-service';
@@ -14,15 +15,18 @@ describe('history-store', () => {
         { entity_id: 'sensor.temp', state: '26', attributes: {}, last_changed: '2024-01-01T01:00:00Z' },
     ];
 
+    let $selectedDevice: ReturnType<typeof atom<string | null>>;
+
     beforeEach(() => {
         localStorage.clear();
         dataStore = new GrowspaceDataStore();
+        $selectedDevice = atom<string | null>(null);
         mockDataService = {
             getHistoryStats: vi.fn(),
             hass: { states: {} }
         } as unknown as DataService;
 
-        store = new GrowspaceHistoryStore(mockDataService, dataStore);
+        store = new GrowspaceHistoryStore(mockDataService, dataStore, $selectedDevice);
     });
 
     describe('History Cache Operations', () => {
@@ -120,7 +124,7 @@ describe('history-store', () => {
                 name: 'Test Device',
                 overviewEntityId: 'sensor.overview'
             } as any;
-            dataStore.$selectedDevice.set('d1');
+            $selectedDevice.set('d1');
             dataStore.$devices.set([device]);
 
             (mockDataService.getHistoryStats as any).mockResolvedValue({});
@@ -165,7 +169,7 @@ describe('history-store', () => {
                 name: 'Device 1',
                 environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
-            dataStore.setSelectedDevice('device1');
+            $selectedDevice.set('device1');
 
             const ranges: HistoryTimeRange[] = ['1h', '6h', '24h', '7d'];
 
@@ -282,7 +286,7 @@ describe('history-store', () => {
 
     describe('History Fetching', () => {
         beforeEach(() => {
-            dataStore.setSelectedDevice('device1');
+            $selectedDevice.set('device1');
             dataStore.setDevices([{
                 deviceId: 'device1',
                 name: 'Device 1',
@@ -514,7 +518,7 @@ describe('history-store', () => {
             dataStore.setDevices([{
                 deviceId: 'd1', name: 'D1', overview_entity_id: overviewId
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
 
             vi.mocked(mockDataService.getHistoryStats).mockResolvedValue({
                 [overviewId]: mockHistoryData
@@ -532,7 +536,7 @@ describe('history-store', () => {
                 name: 'D1',
                 environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
 
             store.setHistoryData('temperature', mockHistoryData);
             store.updateLastTimestamp('temperature', mockHistoryData);
@@ -549,7 +553,7 @@ describe('history-store', () => {
         it('should return early in _fetchHistoryDelta when device is not found', async () => {
             // Select a device that doesn't exist in the devices list
             dataStore.setDevices([]);
-            dataStore.setSelectedDevice('nonexistent_device');
+            $selectedDevice.set('nonexistent_device');
 
             const spy = vi.spyOn(mockDataService, 'getHistoryStats');
             await (store as any)._fetchHistoryDelta();
@@ -568,7 +572,7 @@ describe('history-store', () => {
 
         it('should handle storage save/load errors', () => {
             const deviceId = 'd1';
-            dataStore.setSelectedDevice(deviceId);
+            $selectedDevice.set(deviceId);
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             // Save error
@@ -593,7 +597,7 @@ describe('history-store', () => {
         });
 
         it('should skip _saveToStorage if no device selected', () => {
-            dataStore.setSelectedDevice(null);
+            $selectedDevice.set(null);
             const spy = vi.spyOn(Storage.prototype, 'setItem');
             (store as any)._saveToStorage();
             expect(spy).not.toHaveBeenCalled();
@@ -615,7 +619,7 @@ describe('history-store', () => {
                 deviceId: 'd1', name: 'D1',
                 environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
 
             store.setHistoryData('temperature', mockHistoryData);
             store.updateLastTimestamp('temperature', mockHistoryData);
@@ -664,7 +668,7 @@ describe('history-store', () => {
                 // Device has NO sensors defined here
                 environmentAttributes: {}
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
 
             // Set a timestamp for a metric that doesn't exist on device
             store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
@@ -688,7 +692,7 @@ describe('history-store', () => {
                 deviceId: 'd1',
                 name: 'D1'
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
 
             vi.spyOn(store as any, 'getEntityIdsForMetric').mockReturnValue([]);
             const spy = vi.spyOn(mockDataService, 'getHistoryStats');
@@ -706,7 +710,7 @@ describe('history-store', () => {
                 name: 'D1',
                 environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
 
             // Seed data so timestamps exist
             store.setHistoryData('temperature', mockHistoryData);
@@ -725,7 +729,7 @@ describe('history-store', () => {
         });
         it('should return early in _fetchHistory if device not found', async () => {
             // Select a device that doesn't exist
-            dataStore.setSelectedDevice('nonexistent');
+            $selectedDevice.set('nonexistent');
 
             const spy = vi.spyOn(mockDataService, 'getHistoryStats');
             await (store as any)._fetchHistory();
@@ -743,7 +747,7 @@ describe('history-store', () => {
         });
 
         it('should handle loadHistoryOnDemand error with no message', async () => {
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
             dataStore.setDevices([{ deviceId: 'd1', name: 'D1' } as any]);
             vi.mocked(mockDataService.getHistoryStats).mockRejectedValue({});
             await store.loadHistoryOnDemand();
@@ -767,7 +771,7 @@ describe('history-store', () => {
         });
 
         it('should return early in _fetchHistory if no device id', async () => {
-            dataStore.setSelectedDevice(null);
+            $selectedDevice.set(null);
             const spy = vi.spyOn(mockDataService, 'getHistoryStats');
             await (store as any)._fetchHistory();
             expect(spy).not.toHaveBeenCalled();
@@ -775,7 +779,7 @@ describe('history-store', () => {
         });
 
         it('should return early in _fetchHistoryDelta if no device id', async () => {
-            dataStore.setSelectedDevice(null);
+            $selectedDevice.set(null);
             const spy = vi.spyOn(mockDataService, 'getHistoryStats');
             await (store as any)._fetchHistoryDelta();
             expect(spy).not.toHaveBeenCalled();
@@ -787,7 +791,7 @@ describe('history-store', () => {
                 deviceId: 'd1', name: 'D1',
                 environmentAttributes: { temperatureSensor: 'sensor.temp' }
             } as any]);
-            dataStore.setSelectedDevice('d1');
+            $selectedDevice.set('d1');
             store.$lastTimestamps.setKey('temperature', '2024-01-01T00:00:00Z');
 
             // Return result without the expected entity id

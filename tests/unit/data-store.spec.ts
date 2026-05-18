@@ -38,14 +38,6 @@ describe('DataStore', () => {
         expect(store.$ipmPresets.get()).toEqual(presets);
     });
 
-    it('should set selected device', () => {
-        store.setSelectedDevice('d1');
-        expect(store.$selectedDevice.get()).toBe('d1');
-
-        store.setSelectedDevice(null);
-        expect(store.$selectedDevice.get()).toBeNull();
-    });
-
     it('should set config', () => {
         const config = { default_growspace: 'd1' } as any;
         store.setConfig(config);

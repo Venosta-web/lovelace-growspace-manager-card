@@ -197,7 +197,7 @@ describe('grid-store', () => {
     describe('$gridLayout', () => {
         it('should return empty grid when no selected device', () => {
             dataStore.setDevices([mockDevice1]);
-            dataStore.setSelectedDevice(null);
+            gridStore.$selectedDevice.set(null);
 
             const result = gridStore.$gridLayout.get();
 
@@ -206,7 +206,7 @@ describe('grid-store', () => {
 
         it('should return empty grid when selected device not found', () => {
             dataStore.setDevices([mockDevice1]);
-            dataStore.setSelectedDevice('nonexistent');
+            gridStore.$selectedDevice.set('nonexistent');
 
             const result = gridStore.$gridLayout.get();
 
@@ -215,7 +215,7 @@ describe('grid-store', () => {
 
         it('should return grid layout for selected device', () => {
             dataStore.setDevices([mockDevice1, mockDevice2]);
-            dataStore.setSelectedDevice('gs1');
+            gridStore.$selectedDevice.set('gs1');
 
             const result = gridStore.$gridLayout.get();
 
@@ -226,7 +226,7 @@ describe('grid-store', () => {
 
         it('should exclude optimistically deleted plants from grid', () => {
             dataStore.setDevices([mockDevice1]);
-            dataStore.setSelectedDevice('gs1');
+            gridStore.$selectedDevice.set('gs1');
             dataStore.addOptimisticDeletedPlantId('abc');
 
             const result = gridStore.$gridLayout.get();

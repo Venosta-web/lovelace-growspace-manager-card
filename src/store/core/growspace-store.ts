@@ -50,11 +50,11 @@ export class GrowspaceStore {
 
   // Shared sub-stores (delegated to shared store)
   public get data(): GrowspaceDataStore { return this._shared.data; }
-  public get history(): GrowspaceHistoryStore { return this._shared.history; }
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;
   public readonly grid: GrowspaceGridStore;
+  public readonly history: GrowspaceHistoryStore;
 
   // Services
   public readonly syncService: SyncService;
@@ -152,13 +152,14 @@ export class GrowspaceStore {
     // Per-card stores
     this.ui = new GrowspaceUIStore();
     this.grid = new GrowspaceGridStore(shared.data);
+    this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, this.grid.$selectedDevice);
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
       [
         this.ui.$activeDialog,
         this.data.$devices,
-        this.data.$selectedDevice,
+        this.grid.$selectedDevice,
         this.data.$strainLibrary,
         this.data.$nutrientPresets,
         this.data.$ipmPresets,
@@ -184,7 +185,7 @@ export class GrowspaceStore {
     );
 
     this.$headerActionsState = computed(
-      [this.ui.$viewMode, this.ui.$isEditMode, this.ui.$selectedPlants, this.data.$selectedDevice],
+      [this.ui.$viewMode, this.ui.$isEditMode, this.ui.$selectedPlants, this.grid.$selectedDevice],
       (viewMode, isEditMode, selectedPlants, selectedDevice) => ({
         viewMode,
         isEditMode,
@@ -224,7 +225,7 @@ export class GrowspaceStore {
     );
 
     // Initialize services
-    this.syncService = new SyncService(this.dataService, shared.data, this.ui);
+    this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
     this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
       this.showToast(msg, type, action)
     );
@@ -250,6 +251,7 @@ export class GrowspaceStore {
 
   public destroy(): void {
     this._staleUnsub?.();
+    this.history.destroy();
     this.eventBus.clear();
   }
 
@@ -341,7 +343,7 @@ export class GrowspaceStore {
 
   toggleEnvGraph(metric: string) {
     if (metric === 'crop_steering') {
-      const gsId = this.data.$selectedDevice.get();
+      const gsId = this.grid.$selectedDevice.get();
       if (gsId) this.openCropSteeringDialog(gsId);
       return;
     }
@@ -476,7 +478,7 @@ export class GrowspaceStore {
     targetPlant: PlantEntity | null,
     sourcePlant: PlantEntity | null
   ): Promise<boolean> {
-    if (!this.data.$selectedDevice.get()) return false;
+    if (!this.grid.$selectedDevice.get()) return false;
     return await plantActions.handlePlantDrop(
       this.context,
       targetRow,

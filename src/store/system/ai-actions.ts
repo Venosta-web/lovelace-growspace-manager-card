@@ -15,7 +15,7 @@ export async function analyzeGrowspace(ctx: ActionContext, query: string, all: b
     if (all) {
       response = await ctx.dataService.analyzeAllGrowspaces();
     } else {
-      const selectedDevice = ctx.data.$selectedDevice.get();
+      const selectedDevice = ctx.grid.$selectedDevice.get();
       if (!selectedDevice) throw new Error('No device selected');
       response = await ctx.dataService.askGrowAdvice(selectedDevice, query);
     }

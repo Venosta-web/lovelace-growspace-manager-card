@@ -5,11 +5,10 @@ import type { GrowspaceDataStore } from '../core/data-store';
 import { atom } from 'nanostores';
 
 const makeStore = () => {
-  const mockDataStore = {
-    $selectedDevice: atom<string | null>(null),
-  } as unknown as GrowspaceDataStore;
+  const mockDataStore = {} as unknown as GrowspaceDataStore;
   const mockDataService = {} as DataService;
-  return new GrowspaceHistoryStore(mockDataService, mockDataStore);
+  const $selectedDevice = atom<string | null>(null);
+  return new GrowspaceHistoryStore(mockDataService, mockDataStore, $selectedDevice);
 };
 
 describe('GrowspaceHistoryStore.$analyticsViewState', () => {
