@@ -423,6 +423,15 @@ export class DataService {
     terpene_profile?: string | null;
   }) => this._plantAPI.updateHarvestMetrics(params);
 
+  logDryingWeight = (params: { plant_id: string; weight_grams: number; date?: string }) =>
+    this._plantAPI.logDryingWeight(params);
+
+  logMoistureReading = (params: { plant_id: string; moisture_percent: number; date?: string }) =>
+    this._plantAPI.logMoistureReading(params);
+
+  setVisualTag = (params: { plant_id: string; visual_tag: string | null }) =>
+    this._plantAPI.setVisualTag(params);
+
   // ========================================
   // Irrigation API Delegations
   // ========================================

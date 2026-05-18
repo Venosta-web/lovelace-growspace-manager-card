@@ -11,7 +11,22 @@ export const haTest = authenticatedTest.extend<{ testContext: TestContext }>({
       throw new Error('TEST_GROWSPACE_ID environment variable is required');
     }
 
-    await use({ growspaceId, dashboardPath });
+    await use({
+      growspaceId,
+      dashboardPath,
+      vegGrowspaceId: process.env.TEST_VEG_GROWSPACE_ID || '',
+      vegDashboardPath: process.env.TEST_VEG_DASHBOARD_PATH || '',
+      cloneGrowspaceId: process.env.TEST_CLONE_GROWSPACE_ID || '',
+      cloneDashboardPath: process.env.TEST_CLONE_DASHBOARD_PATH || '',
+      motherGrowspaceId: process.env.TEST_MOTHER_GROWSPACE_ID || '',
+      motherDashboardPath: process.env.TEST_MOTHER_DASHBOARD_PATH || '',
+      flowerGrowspaceId: process.env.TEST_FLOWER_GROWSPACE_ID || '',
+      flowerDashboardPath: process.env.TEST_FLOWER_DASHBOARD_PATH || '',
+      dryGrowspaceId: process.env.TEST_DRY_GROWSPACE_ID || '',
+      dryDashboardPath: process.env.TEST_DRY_DASHBOARD_PATH || '',
+      cureGrowspaceId: process.env.TEST_CURE_GROWSPACE_ID || '',
+      cureDashboardPath: process.env.TEST_CURE_DASHBOARD_PATH || '',
+    });
   },
 });
 

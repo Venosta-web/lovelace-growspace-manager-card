@@ -9,6 +9,7 @@ import * as environmentActions from '../growspace/environment-actions';
 import * as breederActions from '../plant/breeder-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as ipmActions from '../plant/ipm-actions';
+import * as dryingActions from '../plant/drying-actions';
 import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
 import { ActionContext } from './action-context';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
@@ -71,6 +72,15 @@ export class ActionDispatcher {
 
     printLabel: (params: Parameters<typeof plantActions.printLabel>[1]) =>
       plantActions.printLabel(this.ctx, params),
+
+    logDryingWeight: (plantId: string, weightGrams: number, date?: string) =>
+      dryingActions.logDryingWeight(this.ctx, plantId, weightGrams, date),
+
+    logMoistureReading: (plantId: string, moisturePercent: number, date?: string) =>
+      dryingActions.logMoistureReading(this.ctx, plantId, moisturePercent, date),
+
+    setVisualTag: (plantId: string, visualTag: string | null) =>
+      dryingActions.setVisualTag(this.ctx, plantId, visualTag),
   };
 
   public readonly growspace = {

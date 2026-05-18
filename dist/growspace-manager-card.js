@@ -5424,6 +5424,9 @@ const SERVICES = {
     RESET_WATER_TRACKING: 'reset_water_tracking',
     UPDATE_STRAIN_META: 'update_strain_meta',
     TRIGGER_VISION_CHECKUP: 'trigger_vision_checkup',
+    LOG_DRYING_WEIGHT: 'log_drying_weight',
+    LOG_MOISTURE_READING: 'log_moisture_reading',
+    SET_VISUAL_TAG: 'set_visual_tag',
 };
 // Storage keys
 const STORAGE_KEYS = {
@@ -6556,6 +6559,39 @@ class PlantAPI extends BaseAPI {
             throw err;
         }
     }
+    async logDryingWeight(params) {
+        const payload = { plant_id: params.plant_id, weight_grams: params.weight_grams };
+        if (params.date)
+            payload.date = params.date;
+        try {
+            await this.callService(DOMAIN$1, SERVICES.LOG_DRYING_WEIGHT, payload);
+        }
+        catch (err) {
+            console.error('[PlantAPI:logDryingWeight] Error:', err);
+            throw err;
+        }
+    }
+    async logMoistureReading(params) {
+        const payload = { plant_id: params.plant_id, moisture_percent: params.moisture_percent };
+        if (params.date)
+            payload.date = params.date;
+        try {
+            await this.callService(DOMAIN$1, SERVICES.LOG_MOISTURE_READING, payload);
+        }
+        catch (err) {
+            console.error('[PlantAPI:logMoistureReading] Error:', err);
+            throw err;
+        }
+    }
+    async setVisualTag(params) {
+        try {
+            await this.callService(DOMAIN$1, SERVICES.SET_VISUAL_TAG, { plant_id: params.plant_id, visual_tag: params.visual_tag ?? null });
+        }
+        catch (err) {
+            console.error('[PlantAPI:setVisualTag] Error:', err);
+            throw err;
+        }
+    }
     async movePlant(plantId, targetGrowspaceId, transitionDate) {
         const payload = {
             plant_id: plantId,
@@ -7161,6 +7197,9 @@ let DataService$1 = class DataService {
         this.printLabel = (params) => this._plantAPI.printLabel(params);
         this.scorePlant = (params) => this._plantAPI.scorePlant(params);
         this.updateHarvestMetrics = (params) => this._plantAPI.updateHarvestMetrics(params);
+        this.logDryingWeight = (params) => this._plantAPI.logDryingWeight(params);
+        this.logMoistureReading = (params) => this._plantAPI.logMoistureReading(params);
+        this.setVisualTag = (params) => this._plantAPI.setVisualTag(params);
         // ========================================
         // Irrigation API Delegations
         // ========================================
@@ -35807,176 +35846,228 @@ PlantHarvestTab = PlantHarvestTab_1 = __decorate([
     t$2('plant-harvest-tab')
 ], PlantHarvestTab);
 
-let PlantGeneticsTab = class PlantGeneticsTab extends i$3 {
+let PlantDryingTab = class PlantDryingTab extends i$3 {
     constructor() {
         super(...arguments);
-        this._lineageTree = null;
-        this._lineageLoading = false;
-        this._sexSaving = false;
-        this._seedBatchSearchOpen = false;
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        void this._loadLineageTree();
+        this._weightInput = '';
+        this._weightDate = '';
+        this._savingWeight = false;
+        this._moistureInput = '';
+        this._moistureDate = '';
+        this._savingMoisture = false;
+        this._visualTagInput = '';
+        this._savingTag = false;
     }
     willUpdate(changedProps) {
-        if (changedProps.has('plant') && this.plant && this.isConnected) {
-            void this._loadLineageTree();
+        if (changedProps.has('plant') && this.plant) {
+            const attrs = this.plant.attributes;
+            this._visualTagInput = attrs.visual_tag ?? '';
         }
     }
     render() {
-        const attrs = this.plant?.attributes ?? {};
-        const sex = attrs.sex ?? 'unknown';
-        const seedBatchId = attrs.seed_batch_id ?? null;
-        const generation = attrs.generation ?? '';
-        const sexOptions = [
-            { value: 'unknown', label: 'Unknown' },
-            { value: 'female', label: '♀ Female' },
-            { value: 'male', label: '♂ Male' },
-            { value: 'hermaphrodite', label: '⚥ Hermaphrodite' },
-        ];
+        const attrs = (this.plant?.attributes ?? {});
+        const weight = attrs.drying_weight ?? null;
+        const weightLostPct = attrs.weight_lost_pct ?? null;
+        const daysToTarget = attrs.days_to_target ?? null;
+        const moisture = attrs.drying_moisture ?? null;
+        const cureReady = attrs.drying_ready_for_cure ?? false;
+        const missingWetWeight = weight !== null && weightLostPct === null && daysToTarget === null;
         return x `
-      <div style="padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="padding: 24px; display: flex; flex-direction: column; gap: 24px;">
 
-        <!-- Sex -->
+        <!-- Stats -->
         <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Sex</h4>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            ${sexOptions.map(opt => x `
-              <button
-                class="md3-chip ${sex === opt.value ? 'selected' : ''}"
-                style="
-                  padding: 6px 14px;
-                  border-radius: 20px;
-                  border: 1px solid ${sex === opt.value ? 'var(--primary-color)' : 'var(--divider-color)'};
-                  background: ${sex === opt.value ? 'var(--primary-color)' : 'transparent'};
-                  color: ${sex === opt.value ? 'var(--text-primary-color, #fff)' : 'var(--primary-text-color)'};
-                  font-size: 13px;
-                  cursor: pointer;
-                "
-                ?disabled=${this._sexSaving}
-                @click=${async () => {
-            if (sex === opt.value)
-                return;
-            this._sexSaving = true;
-            try {
-                await this.store?.actions.genetics.setPlantSex(attrs.plant_id, opt.value);
-            }
-            finally {
-                this._sexSaving = false;
-            }
-        }}
-              >${opt.label}</button>
-            `)}
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Progress</p>
+          <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(130px, 1fr)); gap:12px;">
+            ${this._renderStat('Current weight', weight !== null ? `${weight.toFixed(1)} g` : '—')}
+            ${this._renderStat('Weight lost', weightLostPct !== null ? `${weightLostPct.toFixed(1)}%` : '—')}
+            ${this._renderStat('Est. days left', daysToTarget !== null ? `${Math.ceil(daysToTarget)}` : '—')}
+            ${this._renderStat('Moisture', moisture !== null ? `${moisture.toFixed(1)}%` : '—')}
+            ${this._renderStat('Ready for cure', cureReady ? '✓ Yes' : '✗ No')}
+          </div>
+          ${missingWetWeight ? x `
+            <p style="font-size:0.78rem; opacity:0.5; margin:10px 0 0;">
+              Set wet weight in the Harvest tab to enable projections.
+            </p>
+          ` : ''}
+        </div>
+
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Visual Tag -->
+        <div>
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Visual tag</p>
+          <p style="font-size:0.8rem; opacity:0.5; margin:0 0 10px;">Physical identifier tied to the plant (e.g. "Red Velcro").</p>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input
+              type="text"
+              placeholder="e.g. Red Velcro"
+              .value=${this._visualTagInput}
+              @input=${(e) => { this._visualTagInput = e.target.value; }}
+              ?disabled=${this._savingTag}
+              style="flex:1; background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; box-sizing:border-box;"
+            />
+            <button
+              class="md3-button filled"
+              @click=${this._saveVisualTag}
+              ?disabled=${this._savingTag}
+              style="white-space:nowrap;"
+            >${this._savingTag ? 'Saving…' : 'Save'}</button>
           </div>
         </div>
 
-        <!-- Seed batch origin -->
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Log Weight -->
         <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px;">Origin</h4>
-          ${seedBatchId
-            ? x `
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                  <span style="
-                    background: rgba(139,195,74,0.15);
-                    border: 1px solid #8bc34a;
-                    border-radius: 16px;
-                    padding: 4px 12px;
-                    font-size: 13px;
-                  ">🌱 ${seedBatchId}${generation ? ` · ${generation}` : ''}</span>
-                  <button
-                    class="md3-button text"
-                    style="font-size: 12px; color: var(--secondary-text-color);"
-                    @click=${async () => {
-                await this.store?.actions.genetics.sowSeed(seedBatchId, attrs.plant_id);
-            }}
-                  >Unlink</button>
-                </div>
-              `
-            : x `
-                <div>
-                  <button
-                    class="md3-button tonal"
-                    style="font-size: 13px;"
-                    @click=${() => { this._seedBatchSearchOpen = !this._seedBatchSearchOpen; }}
-                  >🔗 Link to seed batch</button>
-                  ${this._seedBatchSearchOpen ? x `
-                    <div style="margin-top: 8px; padding: 12px; border: 1px solid var(--divider-color); border-radius: 8px;">
-                      <p style="font-size: 12px; color: var(--secondary-text-color); margin: 0 0 8px;">
-                        To link this plant to a seed batch, use the Seed Inventory panel in Strain Library → Seeds tab, then tap Sow.
-                      </p>
-                    </div>
-                  ` : E}
-                </div>
-              `}
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Log weight</p>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="Weight (g)"
+              .value=${this._weightInput}
+              @input=${(e) => { this._weightInput = e.target.value; }}
+              ?disabled=${this._savingWeight}
+              style="width:120px; background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; box-sizing:border-box;"
+            />
+            <input
+              type="date"
+              .value=${this._weightDate}
+              @input=${(e) => { this._weightDate = e.target.value; }}
+              ?disabled=${this._savingWeight}
+              style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; box-sizing:border-box;"
+            />
+            <button
+              class="md3-button filled"
+              @click=${this._logWeight}
+              ?disabled=${this._savingWeight || !this._weightInput}
+              style="white-space:nowrap;"
+            >${this._savingWeight ? 'Saving…' : 'Log weight'}</button>
+          </div>
         </div>
 
-        <!-- Lineage tree -->
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0;" />
+
+        <!-- Log Moisture -->
         <div>
-          <h4 style="margin: 0 0 12px; font-size: 13px; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.5px; display:flex; align-items:center; justify-content:space-between;">
-            Lineage
-            <button class="md3-button text" style="font-size:11px;"
-              @click=${() => {
-            const strainName = this.plant?.attributes?.strain;
-            const phenotype = this.plant?.attributes?.phenotype;
-            if (strainName) {
-                this.dispatchEvent(new CustomEvent('open-strain-editor', {
-                    detail: { strain: strainName, phenotype, focusLineage: true },
-                    bubbles: true,
-                    composed: true,
-                }));
-            }
-        }}
-            >Edit lineage</button>
-          </h4>
-          <lineage-tree
-            .node=${this._lineageTree}
-            .loading=${this._lineageLoading}
-          ></lineage-tree>
+          <p style="font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; opacity:0.6; margin:0 0 12px;">Log moisture</p>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="Moisture (%)"
+              .value=${this._moistureInput}
+              @input=${(e) => { this._moistureInput = e.target.value; }}
+              ?disabled=${this._savingMoisture}
+              style="width:140px; background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; box-sizing:border-box;"
+            />
+            <input
+              type="date"
+              .value=${this._moistureDate}
+              @input=${(e) => { this._moistureDate = e.target.value; }}
+              ?disabled=${this._savingMoisture}
+              style="background:var(--card-background-color, rgba(255,255,255,0.06)); border:1px solid var(--divider-color, rgba(255,255,255,0.15)); border-radius:8px; color:var(--primary-text-color); font-size:0.9rem; padding:6px 10px; box-sizing:border-box;"
+            />
+            <button
+              class="md3-button filled"
+              @click=${this._logMoisture}
+              ?disabled=${this._savingMoisture || !this._moistureInput}
+              style="white-space:nowrap;"
+            >${this._savingMoisture ? 'Saving…' : 'Log moisture'}</button>
+          </div>
         </div>
+
       </div>
     `;
     }
-    async _loadLineageTree() {
-        const plantId = this.plant?.attributes?.plant_id;
-        if (!plantId || !this.store)
-            return;
-        this._lineageLoading = true;
-        this._lineageTree = null;
+    _renderStat(label, value) {
+        return x `
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        <span style="font-size:0.75rem; opacity:0.6;">${label}</span>
+        <span style="font-size:1rem; font-weight:600;">${value}</span>
+      </div>
+    `;
+    }
+    _plantId() {
+        return this.plant?.attributes?.plant_id || this.plant?.entity_id?.replace('sensor.', '') || '';
+    }
+    async _saveVisualTag() {
+        this._savingTag = true;
         try {
-            const tree = await this.store.actions.genetics.getLineageTree(plantId);
-            this._lineageTree = tree;
-        }
-        catch {
-            this._lineageTree = null;
+            const tag = this._visualTagInput.trim() || null;
+            await this.store.actions.plant.setVisualTag(this._plantId(), tag);
         }
         finally {
-            this._lineageLoading = false;
+            this._savingTag = false;
+        }
+    }
+    async _logWeight() {
+        const grams = parseFloat(this._weightInput);
+        if (isNaN(grams))
+            return;
+        this._savingWeight = true;
+        try {
+            await this.store.actions.plant.logDryingWeight(this._plantId(), grams, this._weightDate || undefined);
+            this._weightInput = '';
+            this._weightDate = '';
+        }
+        finally {
+            this._savingWeight = false;
+        }
+    }
+    async _logMoisture() {
+        const pct = parseFloat(this._moistureInput);
+        if (isNaN(pct))
+            return;
+        this._savingMoisture = true;
+        try {
+            await this.store.actions.plant.logMoistureReading(this._plantId(), pct, this._moistureDate || undefined);
+            this._moistureInput = '';
+            this._moistureDate = '';
+        }
+        finally {
+            this._savingMoisture = false;
         }
     }
 };
-PlantGeneticsTab.styles = [dialogStyles];
+PlantDryingTab.styles = [dialogStyles];
 __decorate([
     c$2({ context: storeContext })
-], PlantGeneticsTab.prototype, "store", void 0);
+], PlantDryingTab.prototype, "store", void 0);
 __decorate([
     n$5({ attribute: false })
-], PlantGeneticsTab.prototype, "plant", void 0);
+], PlantDryingTab.prototype, "plant", void 0);
 __decorate([
     r$3()
-], PlantGeneticsTab.prototype, "_lineageTree", void 0);
+], PlantDryingTab.prototype, "_weightInput", void 0);
 __decorate([
     r$3()
-], PlantGeneticsTab.prototype, "_lineageLoading", void 0);
+], PlantDryingTab.prototype, "_weightDate", void 0);
 __decorate([
     r$3()
-], PlantGeneticsTab.prototype, "_sexSaving", void 0);
+], PlantDryingTab.prototype, "_savingWeight", void 0);
 __decorate([
     r$3()
-], PlantGeneticsTab.prototype, "_seedBatchSearchOpen", void 0);
-PlantGeneticsTab = __decorate([
-    t$2('plant-genetics-tab')
-], PlantGeneticsTab);
+], PlantDryingTab.prototype, "_moistureInput", void 0);
+__decorate([
+    r$3()
+], PlantDryingTab.prototype, "_moistureDate", void 0);
+__decorate([
+    r$3()
+], PlantDryingTab.prototype, "_savingMoisture", void 0);
+__decorate([
+    r$3()
+], PlantDryingTab.prototype, "_visualTagInput", void 0);
+__decorate([
+    r$3()
+], PlantDryingTab.prototype, "_savingTag", void 0);
+PlantDryingTab = __decorate([
+    t$2('plant-drying-tab')
+], PlantDryingTab);
 
 /**
  * Plant Overview Container - Smart Component
@@ -36128,18 +36219,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             ${this._activeTab === 'dashboard' ? this._renderDashboard(vm) : E}
             ${this._activeTab === 'actions' ? this._renderActions(vm) : E}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : E}
-            ${this._activeTab === 'harvest' ? x `
-              <plant-harvest-tab
-                .plant=${this.plant}
-                @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
-                @harvest-advance=${this._handleHarvestAdvance}
-              ></plant-harvest-tab>
-            ` : E}
-            ${this._activeTab === 'genetics' ? x `
-              <plant-genetics-tab
-                .plant=${this.plant}
-              ></plant-genetics-tab>
-            ` : E}
+            ${this._activeTab === 'harvest' ? this._renderHarvestTab() : E}
           </div>
 
           <!-- ACTIONS -->
@@ -36275,18 +36355,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             <svg viewBox="0 0 24 24">
               <path d="${mdiCannabis}"></path>
             </svg>
-            Scoring & Harvest
+            Harvest
           </button>
         ` : E}
-        <button
-          class="tab-btn ${this._activeTab === 'genetics' ? 'active' : ''}"
-          @click=${() => { this._activeTab = 'genetics'; }}
-        >
-          <svg viewBox="0 0 24 24">
-            <path d="${mdiDna}"></path>
-          </svg>
-          Genetics
-        </button>
       </div>
     `;
     }
@@ -36474,6 +36545,21 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
             };
         });
         return [...recordedEvents, ...milestones, ...logbookEvents];
+    }
+    _renderHarvestTab() {
+        const stage = (this.plant?.state || '').toLowerCase();
+        const isDrying = stage === 'dry' || stage === 'drying';
+        return x `
+      ${isDrying ? x `
+        <plant-drying-tab .plant=${this.plant}></plant-drying-tab>
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0 24px;" />
+      ` : E}
+      <plant-harvest-tab
+        .plant=${this.plant}
+        @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
+        @harvest-advance=${this._handleHarvestAdvance}
+      ></plant-harvest-tab>
+    `;
     }
     _renderFooter(vm) {
         const stage = (this.plant?.state || '').toLowerCase();
@@ -112355,6 +112441,40 @@ async function applyIPM(ctx, detail) {
     }
 }
 
+async function logDryingWeight(ctx, plantId, weightGrams, date) {
+    try {
+        await ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date });
+        ctx.showToast('Weight logged', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to log weight: ${error}`, 'error');
+        throw e;
+    }
+}
+async function logMoistureReading(ctx, plantId, moisturePercent, date) {
+    try {
+        await ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date });
+        ctx.showToast('Moisture logged', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to log moisture: ${error}`, 'error');
+        throw e;
+    }
+}
+async function setVisualTag(ctx, plantId, visualTag) {
+    try {
+        await ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag });
+        ctx.showToast('Visual tag saved', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.showToast(`Failed to save visual tag: ${error}`, 'error');
+        throw e;
+    }
+}
+
 class ActionDispatcher {
     constructor(store) {
         this.store = store;
@@ -112378,6 +112498,9 @@ class ActionDispatcher {
             saveHarvestMetrics: (plantId, metrics) => saveHarvestMetrics(this.ctx, plantId, metrics),
             scorePhenotype: (plantId, scores) => scorePhenotype(this.ctx, plantId, scores),
             printLabel: (params) => printLabel(this.ctx, params),
+            logDryingWeight: (plantId, weightGrams, date) => logDryingWeight(this.ctx, plantId, weightGrams, date),
+            logMoistureReading: (plantId, moisturePercent, date) => logMoistureReading(this.ctx, plantId, moisturePercent, date),
+            setVisualTag: (plantId, visualTag) => setVisualTag(this.ctx, plantId, visualTag),
         };
         this.growspace = {
             add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),

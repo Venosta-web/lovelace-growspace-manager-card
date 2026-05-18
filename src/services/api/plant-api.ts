@@ -268,6 +268,37 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
+  async logDryingWeight(params: { plant_id: string; weight_grams: number; date?: string }): Promise<void> {
+    const payload: Record<string, unknown> = { plant_id: params.plant_id, weight_grams: params.weight_grams };
+    if (params.date) payload.date = params.date;
+    try {
+      await this.callService(DOMAIN, SERVICES.LOG_DRYING_WEIGHT, payload);
+    } catch (err) {
+      console.error('[PlantAPI:logDryingWeight] Error:', err);
+      throw err;
+    }
+  }
+
+  async logMoistureReading(params: { plant_id: string; moisture_percent: number; date?: string }): Promise<void> {
+    const payload: Record<string, unknown> = { plant_id: params.plant_id, moisture_percent: params.moisture_percent };
+    if (params.date) payload.date = params.date;
+    try {
+      await this.callService(DOMAIN, SERVICES.LOG_MOISTURE_READING, payload);
+    } catch (err) {
+      console.error('[PlantAPI:logMoistureReading] Error:', err);
+      throw err;
+    }
+  }
+
+  async setVisualTag(params: { plant_id: string; visual_tag: string | null }): Promise<void> {
+    try {
+      await this.callService(DOMAIN, SERVICES.SET_VISUAL_TAG, { plant_id: params.plant_id, visual_tag: params.visual_tag ?? null });
+    } catch (err) {
+      console.error('[PlantAPI:setVisualTag] Error:', err);
+      throw err;
+    }
+  }
+
   async movePlant(plantId: string, targetGrowspaceId: string, transitionDate?: string): Promise<void> {
     const payload: Record<string, unknown> = {
       plant_id: plantId,

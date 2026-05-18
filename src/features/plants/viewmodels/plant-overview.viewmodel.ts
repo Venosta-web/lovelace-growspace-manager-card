@@ -56,7 +56,7 @@ export interface PlantOverviewViewModel {
   editedAttributes: PlantOverviewEditedAttributes;
 
   // UI state
-  activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics';
+  activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
   isEditing: boolean;
   showAllDates: boolean;
   showDeleteConfirmation: boolean;
@@ -340,7 +340,7 @@ export function createPlantOverviewViewModel(
   plant: PlantEntity,
   editedAttributes: PlantOverviewEditedAttributes,
   uiState: {
-    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics';
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;
@@ -428,7 +428,7 @@ export function createStablePlantOverviewViewModel(
   $plant: ReadableAtom<PlantEntity | null>,
   $editedAttributes: ReadableAtom<PlantOverviewEditedAttributes>,
   $uiState: ReadableAtom<{
-    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics';
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;

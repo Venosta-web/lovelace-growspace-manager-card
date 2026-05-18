@@ -84,6 +84,9 @@ export const SERVICES = {
   RESET_WATER_TRACKING: 'reset_water_tracking',
   UPDATE_STRAIN_META: 'update_strain_meta',
   TRIGGER_VISION_CHECKUP: 'trigger_vision_checkup',
+  LOG_DRYING_WEIGHT: 'log_drying_weight',
+  LOG_MOISTURE_READING: 'log_moisture_reading',
+  SET_VISUAL_TAG: 'set_visual_tag',
 };
 
 

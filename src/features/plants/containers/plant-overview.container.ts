@@ -40,7 +40,7 @@ import '../components/plant-dashboard-tab';
 import '../components/plant-actions-tab';
 import '../components/plant-timeline-tab';
 import '../components/plant-harvest-tab';
-import '../components/plant-genetics-tab';
+import '../components/plant-drying-tab';
 import '../../shared/ui/md3-select';
 import '../../shared/ui/md3-number-input';
 
@@ -62,7 +62,7 @@ export class PlantOverviewContainer extends LitElement {
   @property({ type: Boolean, reflect: true }) open = false;
 
   // Local UI state
-  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics' = 'dashboard';
+  @state() private _activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' = 'dashboard';
   @state() private _isEditing = true;
   @state() private _showAllDates = false;
   @state() private _showDeleteConfirmation = false;
@@ -74,7 +74,7 @@ export class PlantOverviewContainer extends LitElement {
   private _plantAtom = atom<PlantEntity | null>(null);
   private _editedAttributesAtom = atom<PlantOverviewEditedAttributes>({} as PlantOverviewEditedAttributes);
   private _uiStateAtom = atom<{
-    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest' | 'genetics';
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;
@@ -387,18 +387,7 @@ export class PlantOverviewContainer extends LitElement {
             ${this._activeTab === 'dashboard' ? this._renderDashboard(vm) : nothing}
             ${this._activeTab === 'actions' ? this._renderActions(vm) : nothing}
             ${this._activeTab === 'timeline' ? this._renderTimeline(vm) : nothing}
-            ${this._activeTab === 'harvest' ? html`
-              <plant-harvest-tab
-                .plant=${this.plant}
-                @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
-                @harvest-advance=${this._handleHarvestAdvance}
-              ></plant-harvest-tab>
-            ` : nothing}
-            ${this._activeTab === 'genetics' ? html`
-              <plant-genetics-tab
-                .plant=${this.plant}
-              ></plant-genetics-tab>
-            ` : nothing}
+            ${this._activeTab === 'harvest' ? this._renderHarvestTab() : nothing}
           </div>
 
           <!-- ACTIONS -->
@@ -542,18 +531,9 @@ export class PlantOverviewContainer extends LitElement {
             <svg viewBox="0 0 24 24">
               <path d="${mdiCannabis}"></path>
             </svg>
-            Scoring & Harvest
+            Harvest
           </button>
         ` : nothing}
-        <button
-          class="tab-btn ${this._activeTab === 'genetics' ? 'active' : ''}"
-          @click=${() => { this._activeTab = 'genetics'; }}
-        >
-          <svg viewBox="0 0 24 24">
-            <path d="${mdiDna}"></path>
-          </svg>
-          Genetics
-        </button>
       </div>
     `;
   }
@@ -757,6 +737,22 @@ export class PlantOverviewContainer extends LitElement {
       });
 
     return [...recordedEvents, ...milestones, ...logbookEvents];
+  }
+
+  private _renderHarvestTab(): TemplateResult {
+    const stage = (this.plant?.state || '').toLowerCase();
+    const isDrying = stage === 'dry' || stage === 'drying';
+    return html`
+      ${isDrying ? html`
+        <plant-drying-tab .plant=${this.plant}></plant-drying-tab>
+        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0 24px;" />
+      ` : nothing}
+      <plant-harvest-tab
+        .plant=${this.plant}
+        @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
+        @harvest-advance=${this._handleHarvestAdvance}
+      ></plant-harvest-tab>
+    `;
   }
 
   private _renderFooter(vm: PlantOverviewViewModel): TemplateResult {

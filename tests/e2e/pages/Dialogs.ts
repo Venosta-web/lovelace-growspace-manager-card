@@ -15,6 +15,71 @@ export class AddPlantDialog {
     await expect(this.dialog).toHaveAttribute('open', '');
   }
 
+  async waitForClosed() {
+    await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  }
+
+  // ── Wizard navigation ────────────────────────────────────────────────────────
+
+  async isContinueDisabled(): Promise<boolean> {
+    return this.dialog.locator('button.md3-button.primary', { hasText: /continue/i }).isDisabled();
+  }
+
+  async clickContinue() {
+    await this.dialog.locator('button.md3-button.primary', { hasText: /continue/i }).click();
+  }
+
+  async clickBack() {
+    await this.dialog.locator('button.md3-button.tonal', { hasText: /back/i }).click();
+  }
+
+  async clickCancel() {
+    await this.dialog.locator('button.md3-button.tonal', { hasText: /cancel/i }).click();
+  }
+
+  /** Final submit on wizard step 3 */
+  async clickAddPlant() {
+    await this.dialog.locator('button.md3-button.primary', { hasText: /add plant/i }).click();
+  }
+
+  // ── Step 1: Identity ─────────────────────────────────────────────────────────
+
+  async typeStrain(query: string) {
+    const input = this.dialog.locator('md3-text-input[label*="Strain" i]').locator('input');
+    await input.fill(query);
+  }
+
+  async selectStrainFromDropdown(strain: string) {
+    const option = this.dialog.locator('.strain-option', { hasText: strain });
+    await expect(option).toBeVisible({ timeout: 3000 });
+    await option.click();
+  }
+
+  // ── Step 2: Source ───────────────────────────────────────────────────────────
+
+  async selectSeedSource() {
+    await this.dialog.locator('.source-btn', { hasText: /seed/i }).click();
+  }
+
+  async selectCloneSource() {
+    await this.dialog.locator('.source-btn', { hasText: /clone/i }).click();
+  }
+
+  /** Select a sibling plant by its strain name in the clone picker */
+  async selectSiblingPlant(strain: string) {
+    const item = this.dialog.locator('.sibling-item', { hasText: strain });
+    await expect(item).toBeVisible({ timeout: 3000 });
+    await item.click();
+  }
+
+  // ── Step 3: Schedule ─────────────────────────────────────────────────────────
+
+  async fillDate(label: string, date: string) {
+    await this.dialog.locator(`md3-date-input[label="${label}"]`).locator('input').fill(date);
+  }
+
+  // ── Legacy helpers (kept for existing tests) ─────────────────────────────────
+
   async fillForm(plantData: Partial<PlantData>) {
     await this.waitForOpen();
 
