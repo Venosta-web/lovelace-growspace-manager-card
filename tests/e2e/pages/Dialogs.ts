@@ -1,4 +1,4 @@
-import { Page, Locator } from '@playwright/test';
+import { Page, Locator, expect } from '@playwright/test';
 import { PlantData } from './types';
 
 export class AddPlantDialog {
@@ -7,12 +7,12 @@ export class AddPlantDialog {
 
   constructor(page: Page) {
     this.page = page;
-    // Use actual custom element name from exploration
-    this.dialog = page.locator('add-plant-dialog');
+    // Target the ha-dialog inside the custom element to ensure non-zero bounding box for visibility checks
+    this.dialog = page.locator('add-plant-dialog ha-dialog');
   }
 
   async waitForOpen() {
-    await this.dialog.waitFor({ state: 'visible', timeout: 5000 });
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 
   async fillForm(plantData: Partial<PlantData>) {
@@ -21,18 +21,19 @@ export class AddPlantDialog {
 
     // Use MD3 custom inputs based on exploration
     if (plantData.strain) {
-      const strainInput = this.dialog.locator('md3-text-input[label*="Strain" i]');
+      const strainInput = this.dialog.locator('md3-text-input[label*="Strain" i]').locator('input');
       await strainInput.fill(plantData.strain);
     }
 
     if (plantData.phenotype) {
-      const phenotypeInput = this.dialog.locator('md3-text-input[label*="Phenotype" i]');
+      const phenotypeInput = this.dialog.locator('md3-text-input[label*="Phenotype" i]').locator('input');
       await phenotypeInput.fill(plantData.phenotype);
     }
 
     // Note: Row/col might be selected via grid, not input fields
     // This needs to be discovered during actual testing
   }
+
 
   async submit() {
     // Primary button with .md3-button.primary class
@@ -55,11 +56,11 @@ export class ConfigDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('config-dialog');
+    this.dialog = page.locator('config-dialog ha-dialog');
   }
 
   async waitForOpen() {
-    await this.dialog.waitFor({ state: 'visible', timeout: 5000 });
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 
   async save() {
@@ -81,15 +82,15 @@ export class WateringDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('watering-dialog');
+    this.dialog = page.locator('watering-dialog ha-dialog');
   }
 
   async waitForOpen() {
-    await this.dialog.waitFor({ state: 'visible', timeout: 5000 });
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 
   async fillAmount(amount: number) {
-    const amountInput = this.dialog.locator('md3-number-input[label*="Amount" i]');
+    const amountInput = this.dialog.locator('md3-number-input[label*="Amount" i]').locator('input');
     await amountInput.fill(String(amount));
   }
 

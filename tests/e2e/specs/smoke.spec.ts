@@ -27,13 +27,13 @@ test.describe('Growspace Manager Card - Smoke Tests', () => {
     await expect(growspaceCard.menu).toBeVisible();
   });
 
-  test('can open add plant dialog', async () => {
+  test('can open add plant dialog', async ({ page }) => {
     // Click menu item to add plant
     await growspaceCard.clickMenuItem(/add.*plant/i);
 
     // Verify dialog appears
-    const addPlantDialog = new AddPlantDialog(test.info().project.use.page!);
-    await expect(addPlantDialog.dialog).toBeVisible();
+    const addPlantDialog = new AddPlantDialog(page);
+    await addPlantDialog.waitForOpen();
   });
 
   test('displays plant cards', async ({ page }) => {

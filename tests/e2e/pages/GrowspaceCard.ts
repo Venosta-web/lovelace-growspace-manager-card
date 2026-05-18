@@ -9,12 +9,12 @@ export class GrowspaceCard {
 
   constructor(page: Page) {
     this.page = page;
-    // Main card element
-    this.card = page.locator('growspace-manager-card');
-    // Header menu button
-    this.menuButton = page.locator('button#menu-trigger');
-    // Menu dropdown
-    this.menu = page.locator('#header-menu');
+    // Main card element - use first() to prevent strict mode violation with multiple cards
+    this.card = page.locator('growspace-manager-card').first();
+    // Header menu button (scoped within this.card)
+    this.menuButton = this.card.locator('button#menu-trigger');
+    // Menu dropdown (scoped within this.card)
+    this.menu = this.card.locator('#header-menu');
   }
 
   /**
@@ -49,7 +49,7 @@ export class GrowspaceCard {
    * Get all plant card containers
    */
   allPlantCards(): Locator {
-    return this.page.locator('plant-card-container');
+    return this.card.locator('plant-card-container');
   }
 
   /**
@@ -65,7 +65,7 @@ export class GrowspaceCard {
    * Get empty cell at specific position
    */
   emptyCell(row: number, col: number): Locator {
-    return this.page.locator(`.plant-card-empty[data-row="${row}"][data-col="${col}"]`);
+    return this.card.locator(`.plant-card-empty[data-row="${row}"][data-col="${col}"]`);
   }
 
   /**
@@ -81,7 +81,7 @@ export class GrowspaceCard {
    * Check if card is in compact mode
    */
   async isCompactMode(): Promise<boolean> {
-    const grid = this.page.locator('.grid.compact');
+    const grid = this.card.locator('.grid.compact');
     return await grid.isVisible();
   }
 

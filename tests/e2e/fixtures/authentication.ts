@@ -6,20 +6,22 @@ export const authenticatedTest = base.extend<{ authContext: AuthContext }>({
     const token = process.env.HA_ACCESS_TOKEN;
     const baseURL = process.env.HA_BASE_URL || 'http://localhost:8123';
 
-    if (!token) {
-      throw new Error('HA_ACCESS_TOKEN environment variable is required');
-    }
-
+    // No longer throwing an error if token is missing
     await use({ token, baseURL });
   },
 
   context: async ({ browser, authContext }, use) => {
-    const context = await browser.newContext({
+    const contextOptions: any = {
       baseURL: authContext.baseURL,
-      extraHTTPHeaders: {
+    };
+
+    if (authContext.token) {
+      contextOptions.extraHTTPHeaders = {
         'Authorization': `Bearer ${authContext.token}`,
-      },
-    });
+      };
+    }
+
+    const context = await browser.newContext(contextOptions);
 
     await use(context);
     await context.close();

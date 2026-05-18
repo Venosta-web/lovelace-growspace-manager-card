@@ -49,7 +49,7 @@ export async function waitForElement(
  * Wait for card to be fully loaded
  */
 export async function waitForCardReady(page: Page): Promise<void> {
-  await page.locator('growspace-manager-card').waitFor({ state: 'visible' });
+  await page.locator('growspace-manager-card').first().waitFor({ state: 'visible' });
   await page.waitForLoadState('networkidle');
   // Give the card time to initialize
   await page.waitForTimeout(1000);

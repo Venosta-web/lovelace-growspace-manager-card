@@ -1,5 +1,5 @@
 export interface AuthContext {
-  token: string;
+  token?: string;
   baseURL: string;
 }
 
