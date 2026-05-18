@@ -3,6 +3,7 @@ import { GrowspaceManagerCardConfig } from '../../types';
 
 export function initializeSelectedDevice(ctx: ActionContext, config: GrowspaceManagerCardConfig) {
   ctx.data.setConfig(config);
+  ctx.syncService.setCardConfig(config);
 
   // Set view mode from config
   if (config?.initial_view_mode) {

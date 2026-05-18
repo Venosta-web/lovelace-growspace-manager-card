@@ -3,7 +3,7 @@ import { DataService } from '../data-service';
 import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { GrowspaceGridStore } from '../store/grid/grid-store';
-import { GrowspaceAPIResponse, GrowspaceDevice } from '../types';
+import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 
 /**
  * Service responsible for synchronizing data between Home Assistant and the local store.
@@ -13,6 +13,12 @@ export class SyncService {
   private _isFetchingWS = false;
   private _lastHassRef: HomeAssistant | undefined;
   private _watchedEntities = new Set<string>();
+  /** Per-card config — not shared across card instances. */
+  private _cardConfig: GrowspaceManagerCardConfig = {} as GrowspaceManagerCardConfig;
+
+  public setCardConfig(config: GrowspaceManagerCardConfig): void {
+    this._cardConfig = config;
+  }
 
   constructor(
     private dataService: DataService,
@@ -133,7 +139,7 @@ export class SyncService {
     const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed
     if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
-      const config = this.dataStore.$config.get();
+      const config = this._cardConfig;
       // Default to true if not defined
       const autoSelect = config?.auto_select_growspace ?? true;
 

@@ -112506,6 +112506,7 @@ class ActionDispatcher {
 
 function initializeSelectedDevice(ctx, config) {
     ctx.data.setConfig(config);
+    ctx.syncService.setCardConfig(config);
     // Set view mode from config
     if (config?.initial_view_mode) {
         ctx.ui.setViewMode(config.initial_view_mode);
@@ -112589,6 +112590,9 @@ function handleKeyboardNavigation(ctx, key) {
  * Handles caching, optimizing updates, and managing the initial data fetch.
  */
 class SyncService {
+    setCardConfig(config) {
+        this._cardConfig = config;
+    }
     constructor(dataService, dataStore, uiStore, gridStore) {
         this.dataService = dataService;
         this.dataStore = dataStore;
@@ -112596,6 +112600,8 @@ class SyncService {
         this.gridStore = gridStore;
         this._isFetchingWS = false;
         this._watchedEntities = new Set();
+        /** Per-card config — not shared across card instances. */
+        this._cardConfig = {};
     }
     /**
      * Updates the Home Assistant reference and triggers data refresh if necessary.
@@ -112700,7 +112706,7 @@ class SyncService {
         const selectedDevice = this.gridStore.$selectedDevice.get();
         // Auto-select if needed
         if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
-            const config = this.dataStore.$config.get();
+            const config = this._cardConfig;
             // Default to true if not defined
             const autoSelect = config?.auto_select_growspace ?? true;
             if (this.uiStore.$defaultApplied.get())
