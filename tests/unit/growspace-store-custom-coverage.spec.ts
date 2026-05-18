@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import * as _dataStore from '../../src/store/core/data-store';
 import * as _uiStore from '../../src/store/ui/ui-store';
 
@@ -53,6 +54,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $nutrientPresets: { get: vi.fn(() => ({})), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), subscribe: vi.fn() },
         $nutrientInventory: { get: vi.fn(() => []), subscribe: vi.fn() },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
     };
     return {
         ...atoms,
@@ -87,7 +89,7 @@ describe('GrowspaceStore Custom Coverage', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
         mockDataService = store.dataService;
     });
 

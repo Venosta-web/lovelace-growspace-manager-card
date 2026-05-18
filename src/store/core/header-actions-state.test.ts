@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { GrowspaceSharedStore } from './growspace-shared-store';
 import { GrowspaceStore } from './growspace-store';
 import { ViewMode } from '../../constants';
 
@@ -6,7 +7,7 @@ describe('GrowspaceStore.$headerActionsState', () => {
   let store: GrowspaceStore;
 
   beforeEach(() => {
-    store = new GrowspaceStore();
+    store = new GrowspaceStore(new GrowspaceSharedStore());
   });
 
   it('exposes $headerActionsState as a computed atom', () => {

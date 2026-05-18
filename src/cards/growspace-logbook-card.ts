@@ -4,7 +4,7 @@ import { provide } from '@lit/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import { SubscriptionController } from '../controllers/subscription-controller';
+import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import { StoreController } from '@nanostores/lit';
 import { hassContext, configContext, storeContext } from '../lib/context';
 import { variables } from '../styles/variables';
@@ -22,27 +22,16 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   @state() private _config?: GrowspaceManagerCardConfig;
   @state() private _activeTab: 'list' | 'timeline' = 'list';
 
+  private _sharedStore = growspaceStoreRegistry.acquire();
+
   @provide({ context: storeContext })
-  private _store = new GrowspaceStore();
+  private _store = new GrowspaceStore(this._sharedStore);
 
   @provide({ context: hassContext })
   private _hassContext = this.hass;
 
   @provide({ context: configContext })
   private _configContext = this._config;
-
-  private _subscriptionController = new SubscriptionController(
-    this,
-    this._store.data,
-    (refresh) => {
-      if (this.hass) {
-        this._store.updateHass(this.hass);
-      }
-      if (refresh) {
-        this._store.refreshData(true);
-      }
-    }
-  );
 
   private _viewController = new StoreController(this, this._store.$sharedCardViewState);
 
@@ -73,6 +62,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   public disconnectedCallback(): void {
     super.disconnectedCallback();
     this._store.destroy();
+    growspaceStoreRegistry.release();
   }
 
   protected updated(changedProps: PropertyValues): void {
@@ -80,7 +70,6 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     if (changedProps.has('hass') && this.hass) {
       this._hassContext = this.hass;
       this._store.updateHass(this.hass);
-      this._subscriptionController.updateHass(this.hass);
     }
   }
 

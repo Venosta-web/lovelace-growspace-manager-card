@@ -18,6 +18,7 @@ import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
 import { GrowspaceGridStore } from '../grid/grid-store';
+import { GrowspaceSharedStore } from './growspace-shared-store';
 
 import { ActionDispatcher } from './action-dispatcher';
 import { ActionContext } from './action-context';
@@ -41,13 +42,18 @@ import { OptimisticManager } from '../system/optimistic-manager';
 import { EventBus } from '../../features/shared/events/event-bus';
 
 export class GrowspaceStore {
+  private readonly _shared: GrowspaceSharedStore;
+  private _staleUnsub?: () => void;
+
   dataService!: DataService;
   hass!: HomeAssistant;
 
-  // Instance-based stores
-  public readonly data: GrowspaceDataStore;
+  // Shared sub-stores (delegated to shared store)
+  public get data(): GrowspaceDataStore { return this._shared.data; }
+  public get history(): GrowspaceHistoryStore { return this._shared.history; }
+
+  // Per-card stores
   public readonly ui: GrowspaceUIStore;
-  public readonly history: GrowspaceHistoryStore;
   public readonly grid: GrowspaceGridStore;
 
   // Services
@@ -139,14 +145,13 @@ export class GrowspaceStore {
    */
   public readonly actions = new ActionDispatcher(this);
 
-  constructor() {
-    this.dataService = new DataService();
+  constructor(shared: GrowspaceSharedStore) {
+    this._shared = shared;
+    this.dataService = shared.dataService;
 
-    // Initialize sub-stores
-    this.data = new GrowspaceDataStore();
+    // Per-card stores
     this.ui = new GrowspaceUIStore();
-    this.history = new GrowspaceHistoryStore(this.dataService, this.data);
-    this.grid = new GrowspaceGridStore(this.data);
+    this.grid = new GrowspaceGridStore(shared.data);
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
@@ -219,32 +224,32 @@ export class GrowspaceStore {
     );
 
     // Initialize services
-    this.syncService = new SyncService(this.dataService, this.data, this.ui);
+    this.syncService = new SyncService(this.dataService, shared.data, this.ui);
     this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
       this.showToast(msg, type, action)
     );
-    this.optimisticManager = new OptimisticManager(this.data, this.undoRedoManager);
+    this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
 
     // Initialize new infrastructure (Phase 1)
     this.eventBus = new EventBus();
+
+    // Trigger a full refresh whenever the shared store signals stale data
+    let prevStale = shared.data.$staleCounter.get();
+    this._staleUnsub = shared.data.$staleCounter.subscribe((n) => {
+      if (n !== prevStale) {
+        prevStale = n;
+        this.syncService.refreshGrowspaceData();
+      }
+    });
   }
 
-  /**
-   * Initialize store with Home Assistant instance and start subscriptions
-   * (Phase 1: New method for cleaner lifecycle management)
-   */
   public initialize(hass: HomeAssistant): void {
     this.hass = hass;
     this.updateHass(hass);
-    // History store subscriptions will be initialized here in future phases
   }
 
-  /**
-   * Cleanup all subscriptions and resources
-   * (Phase 1: Enhanced to include event bus cleanup)
-   */
   public destroy(): void {
-    this.history.destroy();
+    this._staleUnsub?.();
     this.eventBus.clear();
   }
 
@@ -272,6 +277,7 @@ export class GrowspaceStore {
 
   updateHass(hass: HomeAssistant) {
     this.hass = hass;
+    this._shared.updateHass(hass);
     this.syncService.updateHass(hass);
     if (hass.language && hass.language !== this.ui.$language.get()) {
       this.ui.setLanguage(hass.language);

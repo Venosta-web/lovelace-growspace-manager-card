@@ -9,7 +9,6 @@ import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
 import { ViewMode } from './features/environment/constants';
 
-import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
 import './features/ui/containers/growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './features/ui/containers/growspace-dialog-host.container';
@@ -26,25 +25,17 @@ import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/core/growspace-store';
+import { growspaceStoreRegistry } from './store/core/growspace-store-registry';
 import { StoreController } from '@nanostores/lit';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
+  private _sharedStore = growspaceStoreRegistry.acquire();
+
   @provide({ context: storeContext })
-  store = new GrowspaceStore();
+  store = new GrowspaceStore(this._sharedStore);
 
   private _dialogPortal: GrowspaceDialogHost | null = null;
-
-  protected _subscriptionController = new SubscriptionController(
-    this,
-    this.store.data,
-    (refresh) => {
-      this.store.updateHass(this.hass);
-      if (refresh) {
-        this.store.refreshData(true);
-      }
-    }
-  );
 
   protected _viewController = new StoreController(this, this.store.$mainCardState);
 
@@ -129,6 +120,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this._dialogPortal = null;
     }
     this.store.destroy();
+    growspaceStoreRegistry.release();
   }
 
   private _handleLibraryExportReady = (e: LibraryExportReadyEvent) => {
@@ -140,7 +132,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
     if (changedProps.has('hass')) {
       this.store.updateHass(this.hass);
-      this._subscriptionController.updateHass(this.hass);
       if (this._dialogPortal) {
         this._dialogPortal.hass = this.hass;
       }

@@ -3,6 +3,7 @@ import * as keyboardActions from '../../src/store/system/keyboard-actions';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import { PlantEntity } from '../../src/types';
 import { ActionContext } from '../../src/store/core/action-context';
 
@@ -37,6 +38,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $selectedDevice: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
         $devices: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
         $optimisticDeletedPlantIds: { get: vi.fn(), set: vi.fn(), subscribe: vi.fn() },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
     };
     return {
         GrowspaceDataStore: class {
@@ -54,7 +56,7 @@ describe('keyboard-actions', () => {
         vi.clearAllMocks();
 
         // Create store instance
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
 
         mockPlants = [
             {

@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import * as _uiStore from '../../src/store/ui/ui-store';
 import * as _dataStore from '../../src/store/core/data-store';
 
@@ -60,6 +61,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $nutrientPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $nutrientInventory: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
@@ -89,6 +91,7 @@ vi.mock('../../src/store/core/data-store', () => {
             $nutrientPresets = atoms.$nutrientPresets;
             $ipmPresets = atoms.$ipmPresets;
             $nutrientInventory = atoms.$nutrientInventory;
+            $staleCounter = atoms.$staleCounter;
 
             setDevices = actions.setDevices;
             setSelectedDevice = actions.setSelectedDevice;
@@ -210,7 +213,7 @@ describe('GrowspaceStore Branch Coverage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
         store.hass = { connection: { sendMessagePromise: vi.fn(), subscribeEvents: vi.fn() } } as any;
 
         // Default mock behaviors needed for basic ops
@@ -841,7 +844,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should auto-expand view mode when enabling graph in header mode', () => {
-            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
+            (store as any)._shared.history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
             (uiStore.$viewMode.get as any).mockReturnValue('header');
 
             store.toggleEnvGraph('temp');
@@ -850,7 +853,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should not auto-expand view mode if graph disabled', () => {
-            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(false) };
+            (store as any)._shared.history = { toggleEnvGraph: vi.fn().mockReturnValue(false) };
             (uiStore.$viewMode.get as any).mockReturnValue('header');
 
             store.toggleEnvGraph('temp');
@@ -859,7 +862,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should not auto-expand if already in standard mode', () => {
-            (store as any).history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
+            (store as any)._shared.history = { toggleEnvGraph: vi.fn().mockReturnValue(true) };
             (uiStore.$viewMode.get as any).mockReturnValue('standard');
 
             store.toggleEnvGraph('temp');
@@ -881,7 +884,7 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
         it('should return early in toggleEnvGraph if no history store', () => {
-            (store as any).history = undefined;
+            (store as any)._shared.history = undefined;
             store.toggleEnvGraph('temp');
             // No error, return
         });
@@ -997,11 +1000,10 @@ describe('GrowspaceStore Branch Coverage', () => {
             expect(store.data.setIPMPresets).toHaveBeenCalledWith(presets);
         });
 
-        it('should call history.destroy on store.destroy', () => {
-            // history is already mocked/instantiated in beforeEach
-            const historyDestroySpy = vi.spyOn(store.history, 'destroy');
+        it('should clear eventBus on store.destroy', () => {
+            const eventBusSpy = vi.spyOn(store.eventBus, 'clear');
             store.destroy();
-            expect(historyDestroySpy).toHaveBeenCalled();
+            expect(eventBusSpy).toHaveBeenCalled();
         });
     });
 

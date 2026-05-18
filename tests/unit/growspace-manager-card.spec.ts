@@ -12,19 +12,6 @@ vi.mock('../../src/features/ui/containers/growspace-header.container', () => ({}
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../src/features/shared/layouts/growspace-view-switcher', () => ({}));
 
-export const mockSubscriptionCallback = { fn: undefined as ((refresh: boolean) => void) | undefined };
-
-vi.mock('../../src/controllers/subscription-controller', () => ({
-    SubscriptionController: class {
-        constructor(host: any, store: any, onUpdate: (refresh: boolean) => void) {
-            mockSubscriptionCallback.fn = onUpdate;
-        }
-        updateHass() { }
-        hostConnected() { }
-        hostDisconnected() { }
-    }
-}));
-
 // Mock window location
 const mockLocation = {
     search: '',
@@ -513,17 +500,12 @@ describe('GrowspaceManagerCard', () => {
 
 
     describe('Subscription & Handlers', () => {
-        it('should handle subscription update callback', () => {
+        it('should call updateHass when updated() is called with hass change', () => {
             const updateSpy = vi.spyOn(element.store, 'updateHass');
-            const refreshSpy = vi.spyOn(element.store, 'refreshData');
-
-            if (mockSubscriptionCallback.fn) {
-                mockSubscriptionCallback.fn(true);
-                expect(updateSpy).toHaveBeenCalledWith(mockHass);
-                expect(refreshSpy).toHaveBeenCalledWith(true);
-            } else {
-                throw new Error('Subscription callback not captured');
-            }
+            const newHass = { ...mockHass, themes: {} } as any;
+            element.hass = newHass;
+            (element as any).updated(new Map([['hass', mockHass]]));
+            expect(updateSpy).toHaveBeenCalledWith(newHass);
         });
 
         it('should handle private event handlers', () => {

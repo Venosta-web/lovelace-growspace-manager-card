@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import { TrainingTechnique } from '../../src/types';
 
 // Mock DataService
@@ -24,7 +25,7 @@ describe('Training UI Logic', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
         // Initialize UI store state needed for tests
         store.ui.setEditMode(true);
     });

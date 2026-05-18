@@ -30,12 +30,15 @@ export class GrowspaceDataStore {
   public readonly $nutrientInventory: WritableAtom<import('../../types').NutrientInventory | null>;
   public readonly $ecRampCurves: WritableAtom<Record<string, import('../../schemas/api-schema').ECRampCurve>>;
   public readonly $nutrientDataState: ReadableAtom<NutrientDataState>;
+  /** Incremented by GrowspaceSharedStore when a push event requires a full data refresh. */
+  public readonly $staleCounter: WritableAtom<number>;
 
   /** Indicates if store has active subscribers (for lazy loading) */
   private _isActive = false;
 
   constructor() {
     this.$devices = atom<GrowspaceDevice[]>([]);
+    this.$staleCounter = atom<number>(0);
     this.$strainLibrary = atom<StrainEntry[]>([]);
     this.$config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
     this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());

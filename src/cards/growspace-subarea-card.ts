@@ -29,7 +29,7 @@ import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
-import { SubscriptionController } from '../controllers/subscription-controller';
+import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 
 export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
     growspace_id: string;
@@ -45,27 +45,16 @@ const SENSOR_LABEL_TO_METRIC: Record<string, string> = {
 
 @customElement('growspace-subarea-card')
 export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
-    @provide({ context: storeContext })
-    store = new GrowspaceStore();
+    private _sharedStore = growspaceStoreRegistry.acquire();
 
-    protected _subscriptionController = new SubscriptionController(
-        this,
-        this.store.data,
-        (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-                this._loadSubarea();
-            }
-        }
-    );
+    @provide({ context: storeContext })
+    store = new GrowspaceStore(this._sharedStore);
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
     private _dataService: DataService | null = null;
     private _analyticsStateController: StoreController<any> | null = null;
+    private _staleUnsub?: () => void;
 
     @provide({ context: hassContext })
     @property({ attribute: false })
@@ -208,6 +197,13 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     connectedCallback(): void {
         super.connectedCallback();
         this._initAnalyticsController();
+        let prevStale = this._sharedStore.data.$staleCounter.get();
+        this._staleUnsub = this._sharedStore.data.$staleCounter.subscribe((n) => {
+            if (n !== prevStale) {
+                prevStale = n;
+                this._loadSubarea();
+            }
+        });
     }
 
     protected firstUpdated(): void {
@@ -233,8 +229,10 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
     disconnectedCallback(): void {
         super.disconnectedCallback();
+        this._staleUnsub?.();
         this.store.history?.stopAutoRefresh();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
 
     protected updated(changedProps: PropertyValues): void {
@@ -242,7 +240,6 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
             if (!this._dataService) {
                 this._dataService = new DataService(this.hass);
             } else {

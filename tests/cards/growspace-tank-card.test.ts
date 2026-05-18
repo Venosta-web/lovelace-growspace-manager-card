@@ -290,16 +290,11 @@ describe('GrowspaceTankCard', () => {
         expect(storeSpy).toHaveBeenCalled();
     });
 
-    test('subscription controller callback updates store and refreshes data', () => {
-        const updateHassSpy = vi.spyOn(element.store, 'updateHass');
-        const refreshDataSpy = vi.spyOn(element.store, 'refreshData');
-        
-        // Access private _onUpdate from the controller
-        const controller = (element as any)._subscriptionController;
-        controller._onUpdate(true); // pass refresh = true
-        
-        expect(updateHassSpy).toHaveBeenCalled();
-        expect(refreshDataSpy).toHaveBeenCalledWith(true);
+    test('stale counter triggers data refresh', async () => {
+        const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
+        element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
+        await Promise.resolve();
+        expect(refreshSpy).toHaveBeenCalled();
     });
 
     test('selectedDevice getter returns value from store', () => {

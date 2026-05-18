@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import { GrowspaceDevice, PlantEntity } from '../../src/types';
 
 // Mock dependencies
@@ -47,7 +48,7 @@ describe('Batch Actions', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
 
         // Mock UI store methods
         store.ui.showToast = mockShowToast;

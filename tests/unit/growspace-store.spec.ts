@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import { PlantEntity } from '../../src/types';
 import * as _uiStore from '../../src/store/ui/ui-store';
 import * as _dataStore from '../../src/store/core/data-store';
@@ -100,6 +101,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $nutrientPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $nutrientInventory: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
@@ -209,7 +211,7 @@ describe('GrowspaceStore', () => {
             requestUpdate: vi.fn(),
             dispatchEvent: vi.fn()
         };
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
         // Ensure proxy works
         store.hass = { connection: { subscribeEvents: vi.fn() } } as any;
     });
@@ -273,14 +275,14 @@ describe('GrowspaceStore', () => {
 
         it('should call initialize and destroy', () => {
             const initSpy = vi.spyOn(store, 'updateHass');
-            const destroySpy = vi.spyOn((store as any).history, 'destroy');
+            const eventBusSpy = vi.spyOn(store.eventBus, 'clear');
             const h = { connection: { subscribeEvents: vi.fn() }, states: {}, locale: {} } as any;
 
             store.initialize(h);
             expect(initSpy).toHaveBeenCalledWith(h);
 
             store.destroy();
-            expect(destroySpy).toHaveBeenCalled();
+            expect(eventBusSpy).toHaveBeenCalled();
         });
 
         it('should force refresh data when flagged', async () => {
@@ -2282,7 +2284,7 @@ describe('GrowspaceStore', () => {
         let store: GrowspaceStore;
         beforeEach(() => {
             vi.clearAllMocks();
-            store = new GrowspaceStore();
+            store = new GrowspaceStore(new GrowspaceSharedStore());
             store.hass = { connection: { sendMessagePromise: vi.fn(), subscribeEvents: vi.fn() } } as any;
         });
         it('should handle batch remove success', async () => {
@@ -2350,7 +2352,7 @@ describe('GrowspaceStore', () => {
         beforeEach(() => {
             vi.clearAllMocks();
             localStorage.clear();
-            store = new GrowspaceStore();
+            store = new GrowspaceStore(new GrowspaceSharedStore());
             store.hass = { connection: { sendMessagePromise: vi.fn(), subscribeEvents: vi.fn() } } as any;
         });
 

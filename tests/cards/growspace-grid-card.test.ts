@@ -97,16 +97,11 @@ describe('GrowspaceGridCard', () => {
         expect(spy).toHaveBeenCalled();
     });
 
-    test('subscription logic updates Hass and refreshes Data', () => {
-        const updateHassSpy = vi.spyOn(element.store, 'updateHass');
-        const refreshDataSpy = vi.spyOn(element.store, 'refreshData');
-        
-        // Trigger the subscription callback
-        const callback = (element as any)._subscriptionController._onUpdate;
-        callback(true);
-        
-        expect(updateHassSpy).toHaveBeenCalled();
-        expect(refreshDataSpy).toHaveBeenCalledWith(true);
+    test('stale counter triggers data refresh', async () => {
+        const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
+        element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
+        await Promise.resolve();
+        expect(refreshSpy).toHaveBeenCalled();
     });
 
     test('event handlers trigger store actions', async () => {

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { openBatchCloneDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
@@ -63,7 +64,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   let store: GrowspaceStore;
 
   beforeEach(() => {
-    store = new GrowspaceStore();
+    store = new GrowspaceStore(new GrowspaceSharedStore());
   });
 
   it('opens BATCH_CLONE dialog via store method', () => {

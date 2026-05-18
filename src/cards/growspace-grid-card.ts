@@ -9,7 +9,7 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { ViewMode } from '../features/environment/constants';
 
-import { SubscriptionController } from '../controllers/subscription-controller';
+import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import '../features/ui/containers/growspace-dialog-host.container';
 import '../features/ui/containers/growspace-toast.container';
 import '../features/shared/layouts/growspace-view-switcher';
@@ -25,21 +25,10 @@ import { StoreController } from '@nanostores/lit';
 
 @customElement('growspace-grid-card')
 export class GrowspaceGridCard extends LitElement implements LovelaceCard {
-    @provide({ context: storeContext })
-    store = new GrowspaceStore();
+    private _sharedStore = growspaceStoreRegistry.acquire();
 
-    protected _subscriptionController = new SubscriptionController(
-        this,
-        this.store.data,
-        (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-            }
-        }
-    );
+    @provide({ context: storeContext })
+    store = new GrowspaceStore(this._sharedStore);
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
@@ -90,6 +79,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
 
     protected updated(changedProps: PropertyValues): void {
@@ -97,7 +87,6 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
 
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
         }
     }
 

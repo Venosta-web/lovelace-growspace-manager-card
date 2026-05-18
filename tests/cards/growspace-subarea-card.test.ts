@@ -475,20 +475,13 @@ describe('GrowspaceSubareaCard', () => {
         consoleSpy.mockRestore();
     });
 
-    test('subscription callback updates hass and refreshes on refresh=true', async () => {
-        const refreshSpy = vi.spyOn(element.store, 'refreshData');
+    test('stale counter triggers data refresh and loadSubarea', async () => {
+        const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
         const loadSpy = vi.spyOn(element as any, '_loadSubarea');
-        const onUpdate = (element as any)._subscriptionController._onUpdate;
-        onUpdate(true);
-        expect(refreshSpy).toHaveBeenCalledWith(true);
+        element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
+        await Promise.resolve();
+        expect(refreshSpy).toHaveBeenCalled();
         expect(loadSpy).toHaveBeenCalled();
-    });
-
-    test('subscription callback skips refresh when refresh=false', async () => {
-        const refreshSpy = vi.spyOn(element.store, 'refreshData');
-        const onUpdate = (element as any)._subscriptionController._onUpdate;
-        onUpdate(false);
-        expect(refreshSpy).not.toHaveBeenCalled();
     });
 
     test('firstUpdated initializes store when _config.growspace_id is set', async () => {

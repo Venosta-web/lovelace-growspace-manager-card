@@ -7428,95 +7428,6 @@ const configContext = n$4('config');
 const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
 
-class SubscriptionController {
-    constructor(host, dataStore, onUpdate) {
-        this.host = host;
-        this.dataStore = dataStore;
-        this._onUpdate = onUpdate;
-        host.addController(this);
-    }
-    hostConnected() {
-        if (this._hass) {
-            this.subscribe(this._hass);
-        }
-    }
-    hostDisconnected() {
-        this.unsubscribe();
-    }
-    updateHass(hass) {
-        if (this._hass !== hass) {
-            this._hass = hass;
-            // Subscribe if not already subscribed
-            if (!this._unsubEvents) {
-                this.subscribe(hass);
-            }
-        }
-    }
-    async subscribe(hass) {
-        if (this._unsubEvents || !hass)
-            return;
-        this._hass = hass;
-        try {
-            this._unsubEvents = await hass.connection.subscribeEvents((event) => this._handleEvent(event), 'growspace_manager_updated');
-        }
-        catch (err) {
-            console.error('Failed to subscribe to growspace events', err);
-        }
-    }
-    unsubscribe() {
-        if (this._unsubEvents) {
-            this._unsubEvents();
-            this._unsubEvents = undefined;
-        }
-    }
-    _handleEvent(event) {
-        // Type guard for event structure
-        const haEvent = event;
-        if (!haEvent.data || typeof haEvent.data.event_type !== 'string' || typeof haEvent.data.data !== 'object') {
-            console.warn('Received malformed growspace event', event);
-            return;
-        }
-        // eslint-disable-next-line camelcase
-        const { event_type, data } = haEvent.data;
-        // eslint-disable-next-line camelcase
-        let requestedRefresh = false;
-        if (event_type === 'plant_added' || event_type === 'plant_updated') {
-            this._handlePlantUpdate(data.plant);
-            // eslint-disable-next-line camelcase
-        }
-        else if (event_type === 'plant_removed') {
-            this._handlePlantRemoval(data.plant_id, data.growspace_id);
-        }
-        else if (event_type === 'growspace_manager_updated') {
-            requestedRefresh = true;
-        }
-        if (this._onUpdate)
-            this._onUpdate(requestedRefresh);
-    }
-    // Logic moved from GrowspaceStore, adapted to use dataStore actions
-    _handlePlantUpdate(plantData) {
-        const data = plantData;
-        const plantId = data?.plant_id;
-        if (!plantId) {
-            console.warn('Received plant update event without plant_id', plantData);
-            return;
-        }
-        // 1. Remove old instance (handle moves) - simplified cache update
-        this.dataStore.removePlantFromWsCache(plantId);
-        // 2. Add to new location
-        const gsId = data.growspace_id || data.attributes?.growspace_id;
-        if (gsId && typeof data.row === 'number' && typeof data.col === 'number') {
-            const correctKey = `position_${data.row}_${data.col}`;
-            this.dataStore.updateWsDataCacheGrid(gsId, (grid) => {
-                grid[correctKey] = plantData;
-            });
-        }
-    }
-    _handlePlantRemoval(plantId, growspaceId) {
-        this.dataStore.removePlantFromWsCache(plantId, growspaceId);
-    }
-}
-
 /**
  * @license
  * Copyright 2020 Google LLC
@@ -109851,219 +109762,6 @@ GrowspaceViewSwitcher = __decorate([
     t$2('growspace-view-switcher')
 ], GrowspaceViewSwitcher);
 
-class GrowspaceDataStore {
-    constructor() {
-        /** Indicates if store has active subscribers (for lazy loading) */
-        this._isActive = false;
-        this.$devices = atom([]);
-        this.$strainLibrary = atom([]);
-        this.$config = atom({});
-        this.$optimisticDeletedPlantIds = atom(new Set());
-        this.$wsDataCache = atom({});
-        this.$selectedDevice = atom(null);
-        this.$plantToDeviceMap = atom(new Map());
-        this.$nutrientPresets = atom({});
-        this.$ipmPresets = atom({});
-        this.$nutrientInventory = atom(null);
-        this.$ecRampCurves = atom({});
-        this.$nutrientDataState = computed([this.$nutrientPresets, this.$nutrientInventory, this.$ecRampCurves], (nutrientPresets, nutrientInventory, ecRampCurves) => ({
-            nutrientPresets,
-            nutrientInventory,
-            ecRampCurves,
-            isLoading: Object.keys(nutrientPresets).length === 0 && nutrientInventory === null,
-        }));
-        // Lazy initialization: only log activity when store has subscribers
-        onMount(this.$devices, () => {
-            this._isActive = true;
-            console.debug('[GrowspaceDataStore] Mounted - subscribers connected');
-            return () => {
-                this._isActive = false;
-                console.debug('[GrowspaceDataStore] Unmounted - cleaning up');
-            };
-        });
-    }
-    /** Check if store has active subscribers */
-    get isActive() {
-        return this._isActive;
-    }
-    // Actions (State setters)
-    setDevices(devices) {
-        this.$devices.set(devices);
-        // Rebuild plant-to-device map for O(1) lookups
-        const map = new Map();
-        for (const device of devices) {
-            if (!device.plants)
-                continue;
-            for (const plant of device.plants) {
-                const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
-                map.set(plantId, device.deviceId);
-            }
-        }
-        this.$plantToDeviceMap.set(map);
-    }
-    setSelectedDevice(deviceId) {
-        this.$selectedDevice.set(deviceId);
-    }
-    setConfig(config) {
-        this.$config.set(config);
-    }
-    setStrainLibrary(library) {
-        this.$strainLibrary.set(library);
-    }
-    setNutrientPresets(presets) {
-        this.$nutrientPresets.set(presets);
-    }
-    setIPMPresets(presets) {
-        this.$ipmPresets.set(presets);
-    }
-    setECRampCurves(curves) {
-        this.$ecRampCurves.set(curves);
-    }
-    setOptimisticDeletedPlantIds(ids) {
-        this.$optimisticDeletedPlantIds.set(ids);
-    }
-    addOptimisticDeletedPlantId(id) {
-        const current = new Set(this.$optimisticDeletedPlantIds.get());
-        current.add(id);
-        this.$optimisticDeletedPlantIds.set(current);
-    }
-    removeOptimisticDeletedPlantId(id) {
-        const current = new Set(this.$optimisticDeletedPlantIds.get());
-        if (current.has(id)) {
-            current.delete(id);
-            this.$optimisticDeletedPlantIds.set(current);
-        }
-    }
-    patchDeviceIrrigationConfig(growspaceId, patch) {
-        const devices = this.$devices.get();
-        const idx = devices.findIndex((d) => d.deviceId === growspaceId);
-        if (idx === -1)
-            return;
-        const updated = devices.map((d, i) => i === idx
-            ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } }
-            : d);
-        this.$devices.set(updated);
-    }
-    setWsDataCache(cache) {
-        const current = this.$wsDataCache.get();
-        if (current === cache)
-            return;
-        const keysA = Object.keys(current);
-        const keysB = Object.keys(cache);
-        let changed = false;
-        if (keysA.length !== keysB.length) {
-            changed = true;
-        }
-        else {
-            for (const key of keysB) {
-                const valA = current[key];
-                const valB = cache[key];
-                if (!valA) {
-                    changed = true;
-                    break;
-                }
-                // Optimization: Use scalar timestamp check if available (O(1))
-                if (valA._ts !== undefined && valB._ts !== undefined) {
-                    if (valA._ts !== valB._ts) {
-                        changed = true;
-                        break;
-                    }
-                }
-                else {
-                    // Fallback: Deep comparison for legacy data or if _ts missing (O(N))
-                    if (JSON.stringify(valA) !== JSON.stringify(valB)) {
-                        changed = true;
-                        break;
-                    }
-                }
-            }
-        }
-        if (changed) {
-            this.$wsDataCache.set(cache);
-        }
-    }
-    updateWsDataCacheGrid(gsId, mutator) {
-        const currentCache = this.$wsDataCache.get();
-        if (!currentCache[gsId])
-            return;
-        const newCache = { ...currentCache };
-        newCache[gsId] = { ...newCache[gsId] };
-        const newGrid = { ...newCache[gsId].grid };
-        newCache[gsId].grid = newGrid;
-        mutator(newGrid);
-        this.$wsDataCache.set(newCache);
-    }
-    removePlantFromWsCache(plantId, growspaceId) {
-        const currentCache = this.$wsDataCache.get();
-        const newCache = { ...currentCache };
-        let changed = false;
-        const removeFn = (gsId) => {
-            if (!newCache[gsId] || !newCache[gsId].grid)
-                return;
-            let gridChanged = false;
-            const newGrid = { ...newCache[gsId].grid };
-            Object.keys(newGrid).forEach((key) => {
-                const plant = newGrid[key];
-                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                    newGrid[key] = null;
-                    gridChanged = true;
-                }
-            });
-            if (gridChanged) {
-                newCache[gsId] = { ...newCache[gsId], grid: newGrid };
-                changed = true;
-            }
-        };
-        if (growspaceId) {
-            removeFn(growspaceId);
-        }
-        else {
-            // Optimization: Look up growspace ID from map instead of scanning everything
-            const probableGrowspaceId = this.$plantToDeviceMap.get().get(plantId);
-            if (probableGrowspaceId && newCache[probableGrowspaceId]) {
-                removeFn(probableGrowspaceId);
-            }
-            else {
-                // Fallback if map fails or inconsistent
-                Object.keys(newCache).forEach((gsId) => removeFn(gsId));
-            }
-        }
-        if (changed) {
-            this.$wsDataCache.set(newCache);
-        }
-    }
-    addPlantEvent(plantId, event) {
-        const currentCache = this.$wsDataCache.get();
-        const newCache = { ...currentCache };
-        let changed = false;
-        Object.keys(newCache).forEach((gsId) => {
-            const grid = newCache[gsId].grid;
-            if (!grid)
-                return;
-            Object.entries(grid).forEach(([key, plant]) => {
-                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
-                    // Create a deep copy of the plant data to avoid mutation
-                    const updatedPlant = { ...plant, events: [...(plant.events || []), event] };
-                    newCache[gsId] = {
-                        ...newCache[gsId],
-                        grid: {
-                            ...newCache[gsId].grid,
-                            [key]: updatedPlant,
-                        },
-                    };
-                    changed = true;
-                }
-            });
-        });
-        if (changed) {
-            this.$wsDataCache.set(newCache);
-        }
-    }
-    setNutrientInventory(inventory) {
-        this.$nutrientInventory.set(inventory);
-    }
-}
-
 class GrowspaceUIStore {
     constructor() {
         this.$viewMode = atom(ViewMode.STANDARD);
@@ -110177,555 +109875,6 @@ class GrowspaceUIStore {
     }
     setPendingDeepLink(plantId) {
         this.$pendingDeepLinkPlantId.set(plantId);
-    }
-}
-
-class GrowspaceHistoryStore {
-    constructor(dataService, dataStore) {
-        // --- Internals ---
-        this.STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
-        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
-        this._refreshInterval = null;
-        this._selectedDeviceUnsub = null;
-        this._visibilityHandler = null;
-        this.dataService = dataService;
-        this.dataStore = dataStore;
-        this.$historyCache = map({});
-        this.$lastTimestamps = map({});
-        this.$historyLoading = atom(false);
-        this.$historyLoaded = atom(false);
-        this.$historyError = atom(null);
-        this.$graphRanges = map({});
-        this.$activeEnvGraphs = atom(new Set());
-        this.$linkedGraphGroups = atom([]);
-        // Subscribe to device changes to handle cache and storage
-        this._selectedDeviceUnsub = this.dataStore.$selectedDevice.subscribe((deviceId) => {
-            if (deviceId) {
-                this.handleDeviceChange(deviceId);
-            }
-        });
-        this.$headerHistoryState = computed([this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups], (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
-            historyCache,
-            historyLoading,
-            activeEnvGraphs,
-            linkedGraphGroups,
-        }));
-        this.$combinedHistory = computed(this.$historyCache, (cache) => {
-            const result = { ...cache };
-            const commonMetrics = [
-                'temperature',
-                'humidity',
-                'vpd',
-                'co2',
-                'soil_moisture',
-                'light',
-                'optimal',
-            ];
-            commonMetrics.forEach((m) => {
-                if (!result[m])
-                    result[m] = [];
-            });
-            return result;
-        });
-        this.$analyticsViewState = computed([
-            this.$historyLoading,
-            this.$historyLoaded,
-            this.$activeEnvGraphs,
-            this.$linkedGraphGroups,
-            this.$combinedHistory,
-            this.$graphRanges,
-        ], (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
-            historyLoading,
-            historyLoaded,
-            activeEnvGraphs,
-            linkedGraphGroups,
-            combinedHistory,
-            graphRanges,
-        }));
-    }
-    // --- Actions ---
-    setHistoryData(metric, data) {
-        const current = this.$historyCache.get();
-        this.$historyCache.set({ ...current, [metric]: data });
-    }
-    setHistoryBatch(updates) {
-        const current = this.$historyCache.get();
-        this.$historyCache.set({ ...current, ...updates });
-    }
-    updateLastTimestamp(metric, data) {
-        if (data.length === 0)
-            return;
-        const lastPoint = data[data.length - 1];
-        const timestamp = lastPoint.last_updated || lastPoint.last_changed;
-        if (timestamp) {
-            this.$lastTimestamps.setKey(metric, timestamp);
-        }
-    }
-    clearHistoryCache() {
-        this.$historyCache.set({});
-        this.$lastTimestamps.set({});
-        this.$historyLoaded.set(false);
-        this.$historyError.set(null);
-    }
-    setHistoryLoading(loading) {
-        this.$historyLoading.set(loading);
-    }
-    setHistoryLoaded(loaded) {
-        this.$historyLoaded.set(loaded);
-    }
-    setGraphRange(deviceId, range) {
-        this.$graphRanges.setKey(deviceId, range);
-        this.setHistoryLoaded(false);
-    }
-    getGraphRange(deviceId) {
-        if (!deviceId)
-            return '24h';
-        return this.$graphRanges.get()[deviceId] || '24h';
-    }
-    toggleEnvGraph(metric) {
-        const current = this.$activeEnvGraphs.get();
-        const newSet = new Set(current);
-        if (newSet.has(metric)) {
-            newSet.delete(metric);
-            this.$activeEnvGraphs.set(newSet);
-            return false;
-        }
-        else {
-            newSet.add(metric);
-            this.$activeEnvGraphs.set(newSet);
-            return true;
-        }
-    }
-    linkGraphs(metric1, metric2) {
-        const groups = this.$linkedGraphGroups.get();
-        const existingGroupIndex = groups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
-        const newGroups = [...groups];
-        if (existingGroupIndex >= 0) {
-            const group = new Set(newGroups[existingGroupIndex]);
-            group.add(metric1);
-            group.add(metric2);
-            newGroups[existingGroupIndex] = Array.from(group);
-        }
-        else {
-            newGroups.push([metric1, metric2]);
-        }
-        this.$linkedGraphGroups.set(newGroups);
-        const newActive = new Set(this.$activeEnvGraphs.get());
-        newActive.add(metric1);
-        newActive.add(metric2);
-        this.$activeEnvGraphs.set(newActive);
-    }
-    unlinkGraphGroup(index) {
-        const groups = this.$linkedGraphGroups.get();
-        if (index >= 0 && index < groups.length) {
-            const newGroups = [...groups];
-            newGroups.splice(index, 1);
-            this.$linkedGraphGroups.set(newGroups);
-        }
-    }
-    unlinkGraphMetric(metric) {
-        const groups = this.$linkedGraphGroups.get();
-        const newGroups = groups
-            .map((group) => group.filter((m) => m !== metric))
-            .filter((group) => group.length > 1);
-        this.$linkedGraphGroups.set(newGroups);
-    }
-    clearAllLinks() {
-        this.$linkedGraphGroups.set([]);
-    }
-    getHistoryForMetric(metric) {
-        return this.$historyCache.get()[metric] || null;
-    }
-    // --- Fetching & Logic (Migrated from Controller) ---
-    handleDeviceChange(deviceId) {
-        // Clear runtime cache
-        this.clearHistoryCache();
-        // Try load from storage
-        this._loadFromStorage(deviceId);
-    }
-    async loadHistoryOnDemand() {
-        if (this.$historyLoading.get() || this.$historyLoaded.get()) {
-            return;
-        }
-        this.setHistoryLoading(true);
-        try {
-            await this._fetchHistory(this.getRange());
-            this.setHistoryLoaded(true);
-            console.log('[HistoryStore] History loaded successfully');
-        }
-        catch (error) {
-            const e = error instanceof Error ? error.message : undefined;
-            console.error('[HistoryStore] Failed to load history', error);
-            this.$historyError.set(e || 'Failed to load history');
-        }
-        finally {
-            this.setHistoryLoading(false);
-        }
-    }
-    startAutoRefresh() {
-        if (this._refreshInterval)
-            return;
-        this._refreshInterval = window.setInterval(() => {
-            this._fetchHistoryDelta();
-        }, 5 * 60 * 1000); // 5 minutes
-        // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
-        this._visibilityHandler = () => {
-            if (!document.hidden) {
-                this._fetchHistoryDelta();
-            }
-        };
-        document.addEventListener('visibilitychange', this._visibilityHandler);
-    }
-    stopAutoRefresh() {
-        if (this._refreshInterval) {
-            window.clearInterval(this._refreshInterval);
-            this._refreshInterval = null;
-        }
-        if (this._visibilityHandler) {
-            document.removeEventListener('visibilitychange', this._visibilityHandler);
-            this._visibilityHandler = null;
-        }
-    }
-    destroy() {
-        this.stopAutoRefresh();
-        if (this._selectedDeviceUnsub) {
-            this._selectedDeviceUnsub();
-            this._selectedDeviceUnsub = null;
-        }
-    }
-    getRange() {
-        const deviceId = this.dataStore.$selectedDevice.get();
-        return this.getGraphRange(deviceId);
-    }
-    async _fetchHistory(range = '24h') {
-        const deviceId = this.dataStore.$selectedDevice.get();
-        if (!deviceId)
-            return;
-        const devices = this.dataStore.$devices.get();
-        const device = devices.find((d) => d.deviceId === deviceId);
-        if (!device)
-            return;
-        const { start, end } = this.calculateTimeRange(range);
-        const metricsToFetch = [
-            'optimal',
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'irrigation_tank_level',
-            'soil_moisture',
-            'exhaust',
-            'humidifier',
-            'dehumidifier',
-            'circulation_fan',
-            'irrigation',
-            'drain',
-        ];
-        const entitiesToFetch = new Set();
-        // 1. Identify Overview Entity
-        if (device.overviewEntityId) {
-            entitiesToFetch.add(device.overviewEntityId);
-            // Map main overview entity to 'main' for timestamp tracking if needed,
-            // but usually main data is split into metrics.
-            // The controller logic mapped overview_entity_id to 'main' in some places,
-            // let's follow that pattern if consistent.
-        }
-        // 2. Identify Metric Entities
-        for (const metric of metricsToFetch) {
-            const entityIds = this.getEntityIdsForMetric(device, metric);
-            entityIds.forEach((entityId) => {
-                entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-                entitiesToFetch.add(entityId);
-            });
-        }
-        // 3. Identify Composite Keys (Multi-Device Graphs)
-        const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach((key) => {
-            if (key.includes(':')) {
-                const [metric, entityId] = key.split(':');
-                if (metric && entityId) {
-                    entitiesToFetch.add(entityId);
-                }
-            }
-        });
-        if (entitiesToFetch.size === 0)
-            return;
-        const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
-        if (!batchResults)
-            return;
-        // Overview/Main
-        // Metrics
-        const formattedUpdates = {};
-        for (const metric of metricsToFetch) {
-            const entityIds = this.getEntityIdsForMetric(device, metric);
-            entityIds.forEach((entityId) => {
-                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-                const result = batchResults[entityId] || [];
-                formattedUpdates[key] = result;
-                this.updateLastTimestamp(key, result);
-            });
-        }
-        this.setHistoryBatch(formattedUpdates);
-        this._saveToStorage();
-    }
-    async _fetchHistoryDelta() {
-        const deviceId = this.dataStore.$selectedDevice.get();
-        if (!deviceId)
-            return;
-        const devices = this.dataStore.$devices.get();
-        const device = devices.find((d) => d.deviceId === deviceId);
-        if (!device)
-            return;
-        const currentTimestamps = this.$lastTimestamps.get();
-        const hasAnyTimestamps = Object.keys(currentTimestamps).length > 0;
-        if (!hasAnyTimestamps) {
-            await this._fetchHistory(this.getRange());
-            return;
-        }
-        const now = new Date();
-        const metricsToFetch = [
-            'optimal',
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'irrigation_tank_level',
-            'soil_moisture',
-            'exhaust',
-            'humidifier',
-            'dehumidifier',
-            'circulation_fan',
-            'irrigation',
-            'drain',
-        ];
-        const entityMap = {};
-        const entitiesToFetch = new Set();
-        // Overview
-        if (device.overviewEntityId) ;
-        for (const metric of metricsToFetch) {
-            const entityIds = this.getEntityIdsForMetric(device, metric);
-            entityIds.forEach((entityId) => {
-                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
-                const lastTimestamp = currentTimestamps[key];
-                if (lastTimestamp) {
-                    entityMap[key] = entityId;
-                    entitiesToFetch.add(entityId);
-                }
-            });
-        }
-        // Composite Keys Delta
-        const activeGraphs = this.$activeEnvGraphs.get();
-        activeGraphs.forEach((key) => {
-            if (key.includes(':')) {
-                const [metric, entityId] = key.split(':');
-                const lastTimestamp = currentTimestamps[key];
-                if (metric && entityId && lastTimestamp) {
-                    entityMap[key] = entityId;
-                    entitiesToFetch.add(entityId);
-                }
-            }
-        });
-        if (entitiesToFetch.size === 0)
-            return;
-        try {
-            const oldestTimestamp = Math.min(...Object.values(currentTimestamps)
-                .filter((t) => t)
-                .map((t) => new Date(t).getTime()));
-            const start = new Date(oldestTimestamp);
-            const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, now, 5, // Small interval
-            true);
-            if (!batchResults)
-                return;
-            for (const [key, entityId] of Object.entries(entityMap)) {
-                const deltaData = batchResults[entityId] || [];
-                if (deltaData.length > 0) {
-                    this._mergeDeltaData(key, deltaData);
-                }
-            }
-            this._saveToStorage();
-        }
-        catch (e) {
-            console.error('[HistoryStore] Failed to fetch delta history', e);
-        }
-    }
-    _mergeDeltaData(metric, deltaData) {
-        const currentCache = this.$historyCache.get();
-        const existing = currentCache[metric] || [];
-        if (existing.length === 0) {
-            this.setHistoryData(metric, deltaData);
-            this.updateLastTimestamp(metric, deltaData);
-            return;
-        }
-        const lastExisting = existing[existing.length - 1];
-        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
-        const newData = deltaData.filter((point) => {
-            const pointTime = new Date(point.last_updated || point.last_changed).getTime();
-            return pointTime > lastTimestamp;
-        });
-        if (newData.length > 0) {
-            this.setHistoryData(metric, [...existing, ...newData]);
-            this.updateLastTimestamp(metric, newData);
-        }
-    }
-    _loadFromStorage(deviceId) {
-        try {
-            const key = this.STORAGE_KEY_PREFIX + deviceId;
-            const raw = localStorage.getItem(key);
-            if (!raw)
-                return false;
-            const data = JSON.parse(raw);
-            if (!data || !data.version || !data.timestamp || !data.history)
-                return false;
-            const age = Date.now() - data.timestamp;
-            if (age > this.CACHE_VALIDITY_MS) {
-                localStorage.removeItem(key);
-                return false;
-            }
-            this.setHistoryBatch(data.history);
-            // Restore timestamps
-            const timestamps = data.timestamps || {};
-            this.$lastTimestamps.set(timestamps);
-            // Don't mark as fully loaded — localStorage data serves as an
-            // immediate preview while loadHistoryOnDemand() fetches fresh data.
-            // Previously this set historyLoaded=true, which prevented fresh
-            // fetches and left graphs showing stale cached data for hours.
-            return true;
-        }
-        catch (e) {
-            console.error('[HistoryStore] Failed to load from storage', e);
-            return false;
-        }
-    }
-    _saveToStorage() {
-        const deviceId = this.dataStore.$selectedDevice.get();
-        if (!deviceId)
-            return;
-        try {
-            const key = this.STORAGE_KEY_PREFIX + deviceId;
-            const data = {
-                version: 1,
-                timestamp: Date.now(),
-                history: this.$historyCache.get(),
-                timestamps: this.$lastTimestamps.get(),
-            };
-            localStorage.setItem(key, JSON.stringify(data));
-        }
-        catch (e) {
-            console.error('[HistoryStore] Failed to save to storage', e);
-        }
-    }
-    // --- Utils ---
-    getEntityIdsForMetric(device, metricKey) {
-        const ids = [];
-        if (metricKey === 'optimal') {
-            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-            const overviewId = device.overviewEntityId || device.overview_entity_id;
-            if (overviewId) {
-                slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
-            }
-            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
-            if (slug === 'cure')
-                optimalId = `binary_sensor.cure_optimal_curing`;
-            else if (slug === 'dry')
-                optimalId = `binary_sensor.dry_optimal_drying`;
-            ids.push(optimalId);
-            return ids;
-        }
-        const mapping = METRIC_ENTITY_KEYS[metricKey];
-        if (!mapping)
-            return ids;
-        const envAttrs = (device.environmentAttributes ||
-            device.environment_attributes ||
-            {});
-        // 1. Try plural keys first
-        const pluralKey = mapping.primary.endsWith('Sensor')
-            ? mapping.primary.replace('Sensor', 'Sensors')
-            : `${mapping.primary}s`;
-        let pluralIds = envAttrs[pluralKey];
-        if (!pluralIds && /[A-Z]/.test(pluralKey)) {
-            const snakePlural = pluralKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-            pluralIds = envAttrs[snakePlural];
-        }
-        if (pluralIds && Array.isArray(pluralIds) && pluralIds.length > 0) {
-            return pluralIds;
-        }
-        // 2. Fallback to single primary/fallback
-        if (mapping.source === 'irrigation') {
-            const config = (device.irrigationConfig ||
-                device.irrigation_config);
-            if (!config)
-                return ids;
-            let entityId = config[mapping.primary];
-            if (!entityId && /[A-Z]/.test(mapping.primary)) {
-                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-                entityId = config[snakeKey];
-            }
-            if (typeof entityId === 'string')
-                ids.push(entityId);
-        }
-        else {
-            let entityId = envAttrs[mapping.primary];
-            if (!entityId && mapping.fallback) {
-                entityId = envAttrs[mapping.fallback];
-            }
-            if (!entityId && /[A-Z]/.test(mapping.primary)) {
-                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-                entityId = envAttrs[snakeKey];
-            }
-            // Special fallback for VPD calculated sensor
-            if (!entityId && metricKey === 'vpd' && device.name) {
-                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
-                const calcName = `${device.name} Calculated VPD`;
-                const calculatedId = `sensor.${slugify(calcName)}`;
-                if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
-                    entityId = calculatedId;
-                }
-            }
-            if (entityId)
-                ids.push(entityId);
-        }
-        // Special case for irrigation_tank_level - extract sensor entities from tanks array
-        if (metricKey === 'irrigation_tank_level') {
-            const tanks = envAttrs['irrigationTanks'] || [];
-            return tanks.map(t => t.sensorEntity).filter(Boolean);
-        }
-        return ids;
-    }
-    getEntityIdForMetric(device, metricKey) {
-        const ids = this.getEntityIdsForMetric(device, metricKey);
-        return ids.length > 0 ? ids[0] : null;
-    }
-    calculateTimeRange(range) {
-        const now = new Date();
-        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        switch (range) {
-            case '1h':
-                startTime = new Date(now.getTime() - 60 * 60 * 1000);
-                break;
-            case '6h':
-                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
-                break;
-            case '7d':
-                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                break;
-        }
-        return { start: startTime, end: now };
-    }
-    _getIntervalForRange(range) {
-        switch (range) {
-            case '7d':
-                return 240;
-            case '24h':
-                return 30;
-            case '6h':
-                return 15;
-            case '1h':
-                return 5;
-            default:
-                return 15;
-        }
     }
 }
 
@@ -113323,6 +112472,9 @@ class EventBus {
 }
 
 class GrowspaceStore {
+    // Shared sub-stores (delegated to shared store)
+    get data() { return this._shared.data; }
+    get history() { return this._shared.history; }
     /** Unified Action Context */
     get context() {
         return {
@@ -113340,17 +112492,16 @@ class GrowspaceStore {
             refreshData: (force) => this.refreshData(force),
         };
     }
-    constructor() {
+    constructor(shared) {
         /**
          * Centralized Action Dispatcher
          */
         this.actions = new ActionDispatcher(this);
-        this.dataService = new DataService$1();
-        // Initialize sub-stores
-        this.data = new GrowspaceDataStore();
+        this._shared = shared;
+        this.dataService = shared.dataService;
+        // Per-card stores
         this.ui = new GrowspaceUIStore();
-        this.history = new GrowspaceHistoryStore(this.dataService, this.data);
-        this.grid = new GrowspaceGridStore(this.data);
+        this.grid = new GrowspaceGridStore(shared.data);
         // Cross-store computed atoms
         this.$dialogHostState = computed([
             this.ui.$activeDialog,
@@ -113386,27 +112537,26 @@ class GrowspaceStore {
         this.$headerState = computed([this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState], (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history }));
         this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
-        this.syncService = new SyncService(this.dataService, this.data, this.ui);
+        this.syncService = new SyncService(this.dataService, shared.data, this.ui);
         this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.showToast(msg, type, action));
-        this.optimisticManager = new OptimisticManager(this.data, this.undoRedoManager);
+        this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
         // Initialize new infrastructure (Phase 1)
         this.eventBus = new EventBus();
+        // Trigger a full refresh whenever the shared store signals stale data
+        let prevStale = shared.data.$staleCounter.get();
+        this._staleUnsub = shared.data.$staleCounter.subscribe((n) => {
+            if (n !== prevStale) {
+                prevStale = n;
+                this.syncService.refreshGrowspaceData();
+            }
+        });
     }
-    /**
-     * Initialize store with Home Assistant instance and start subscriptions
-     * (Phase 1: New method for cleaner lifecycle management)
-     */
     initialize(hass) {
         this.hass = hass;
         this.updateHass(hass);
-        // History store subscriptions will be initialized here in future phases
     }
-    /**
-     * Cleanup all subscriptions and resources
-     * (Phase 1: Enhanced to include event bus cleanup)
-     */
     destroy() {
-        this.history.destroy();
+        this._staleUnsub?.();
         this.eventBus.clear();
     }
     // === Undo/Redo Methods ===
@@ -113427,6 +112577,7 @@ class GrowspaceStore {
     }
     updateHass(hass) {
         this.hass = hass;
+        this._shared.updateHass(hass);
         this.syncService.updateHass(hass);
         if (hass.language && hass.language !== this.ui.$language.get()) {
             this.ui.setLanguage(hass.language);
@@ -113759,17 +112910,874 @@ class GrowspaceStore {
     }
 }
 
+class GrowspaceDataStore {
+    constructor() {
+        /** Indicates if store has active subscribers (for lazy loading) */
+        this._isActive = false;
+        this.$devices = atom([]);
+        this.$staleCounter = atom(0);
+        this.$strainLibrary = atom([]);
+        this.$config = atom({});
+        this.$optimisticDeletedPlantIds = atom(new Set());
+        this.$wsDataCache = atom({});
+        this.$selectedDevice = atom(null);
+        this.$plantToDeviceMap = atom(new Map());
+        this.$nutrientPresets = atom({});
+        this.$ipmPresets = atom({});
+        this.$nutrientInventory = atom(null);
+        this.$ecRampCurves = atom({});
+        this.$nutrientDataState = computed([this.$nutrientPresets, this.$nutrientInventory, this.$ecRampCurves], (nutrientPresets, nutrientInventory, ecRampCurves) => ({
+            nutrientPresets,
+            nutrientInventory,
+            ecRampCurves,
+            isLoading: Object.keys(nutrientPresets).length === 0 && nutrientInventory === null,
+        }));
+        // Lazy initialization: only log activity when store has subscribers
+        onMount(this.$devices, () => {
+            this._isActive = true;
+            console.debug('[GrowspaceDataStore] Mounted - subscribers connected');
+            return () => {
+                this._isActive = false;
+                console.debug('[GrowspaceDataStore] Unmounted - cleaning up');
+            };
+        });
+    }
+    /** Check if store has active subscribers */
+    get isActive() {
+        return this._isActive;
+    }
+    // Actions (State setters)
+    setDevices(devices) {
+        this.$devices.set(devices);
+        // Rebuild plant-to-device map for O(1) lookups
+        const map = new Map();
+        for (const device of devices) {
+            if (!device.plants)
+                continue;
+            for (const plant of device.plants) {
+                const plantId = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+                map.set(plantId, device.deviceId);
+            }
+        }
+        this.$plantToDeviceMap.set(map);
+    }
+    setSelectedDevice(deviceId) {
+        this.$selectedDevice.set(deviceId);
+    }
+    setConfig(config) {
+        this.$config.set(config);
+    }
+    setStrainLibrary(library) {
+        this.$strainLibrary.set(library);
+    }
+    setNutrientPresets(presets) {
+        this.$nutrientPresets.set(presets);
+    }
+    setIPMPresets(presets) {
+        this.$ipmPresets.set(presets);
+    }
+    setECRampCurves(curves) {
+        this.$ecRampCurves.set(curves);
+    }
+    setOptimisticDeletedPlantIds(ids) {
+        this.$optimisticDeletedPlantIds.set(ids);
+    }
+    addOptimisticDeletedPlantId(id) {
+        const current = new Set(this.$optimisticDeletedPlantIds.get());
+        current.add(id);
+        this.$optimisticDeletedPlantIds.set(current);
+    }
+    removeOptimisticDeletedPlantId(id) {
+        const current = new Set(this.$optimisticDeletedPlantIds.get());
+        if (current.has(id)) {
+            current.delete(id);
+            this.$optimisticDeletedPlantIds.set(current);
+        }
+    }
+    patchDeviceIrrigationConfig(growspaceId, patch) {
+        const devices = this.$devices.get();
+        const idx = devices.findIndex((d) => d.deviceId === growspaceId);
+        if (idx === -1)
+            return;
+        const updated = devices.map((d, i) => i === idx
+            ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } }
+            : d);
+        this.$devices.set(updated);
+    }
+    setWsDataCache(cache) {
+        const current = this.$wsDataCache.get();
+        if (current === cache)
+            return;
+        const keysA = Object.keys(current);
+        const keysB = Object.keys(cache);
+        let changed = false;
+        if (keysA.length !== keysB.length) {
+            changed = true;
+        }
+        else {
+            for (const key of keysB) {
+                const valA = current[key];
+                const valB = cache[key];
+                if (!valA) {
+                    changed = true;
+                    break;
+                }
+                // Optimization: Use scalar timestamp check if available (O(1))
+                if (valA._ts !== undefined && valB._ts !== undefined) {
+                    if (valA._ts !== valB._ts) {
+                        changed = true;
+                        break;
+                    }
+                }
+                else {
+                    // Fallback: Deep comparison for legacy data or if _ts missing (O(N))
+                    if (JSON.stringify(valA) !== JSON.stringify(valB)) {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+        }
+        if (changed) {
+            this.$wsDataCache.set(cache);
+        }
+    }
+    updateWsDataCacheGrid(gsId, mutator) {
+        const currentCache = this.$wsDataCache.get();
+        if (!currentCache[gsId])
+            return;
+        const newCache = { ...currentCache };
+        newCache[gsId] = { ...newCache[gsId] };
+        const newGrid = { ...newCache[gsId].grid };
+        newCache[gsId].grid = newGrid;
+        mutator(newGrid);
+        this.$wsDataCache.set(newCache);
+    }
+    removePlantFromWsCache(plantId, growspaceId) {
+        const currentCache = this.$wsDataCache.get();
+        const newCache = { ...currentCache };
+        let changed = false;
+        const removeFn = (gsId) => {
+            if (!newCache[gsId] || !newCache[gsId].grid)
+                return;
+            let gridChanged = false;
+            const newGrid = { ...newCache[gsId].grid };
+            Object.keys(newGrid).forEach((key) => {
+                const plant = newGrid[key];
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    newGrid[key] = null;
+                    gridChanged = true;
+                }
+            });
+            if (gridChanged) {
+                newCache[gsId] = { ...newCache[gsId], grid: newGrid };
+                changed = true;
+            }
+        };
+        if (growspaceId) {
+            removeFn(growspaceId);
+        }
+        else {
+            // Optimization: Look up growspace ID from map instead of scanning everything
+            const probableGrowspaceId = this.$plantToDeviceMap.get().get(plantId);
+            if (probableGrowspaceId && newCache[probableGrowspaceId]) {
+                removeFn(probableGrowspaceId);
+            }
+            else {
+                // Fallback if map fails or inconsistent
+                Object.keys(newCache).forEach((gsId) => removeFn(gsId));
+            }
+        }
+        if (changed) {
+            this.$wsDataCache.set(newCache);
+        }
+    }
+    addPlantEvent(plantId, event) {
+        const currentCache = this.$wsDataCache.get();
+        const newCache = { ...currentCache };
+        let changed = false;
+        Object.keys(newCache).forEach((gsId) => {
+            const grid = newCache[gsId].grid;
+            if (!grid)
+                return;
+            Object.entries(grid).forEach(([key, plant]) => {
+                if (plant && (plant.plant_id === plantId || plant.entity_id?.endsWith(plantId))) {
+                    // Create a deep copy of the plant data to avoid mutation
+                    const updatedPlant = { ...plant, events: [...(plant.events || []), event] };
+                    newCache[gsId] = {
+                        ...newCache[gsId],
+                        grid: {
+                            ...newCache[gsId].grid,
+                            [key]: updatedPlant,
+                        },
+                    };
+                    changed = true;
+                }
+            });
+        });
+        if (changed) {
+            this.$wsDataCache.set(newCache);
+        }
+    }
+    setNutrientInventory(inventory) {
+        this.$nutrientInventory.set(inventory);
+    }
+}
+
+class GrowspaceHistoryStore {
+    constructor(dataService, dataStore) {
+        // --- Internals ---
+        this.STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
+        this.CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000;
+        this._refreshInterval = null;
+        this._selectedDeviceUnsub = null;
+        this._visibilityHandler = null;
+        this.dataService = dataService;
+        this.dataStore = dataStore;
+        this.$historyCache = map({});
+        this.$lastTimestamps = map({});
+        this.$historyLoading = atom(false);
+        this.$historyLoaded = atom(false);
+        this.$historyError = atom(null);
+        this.$graphRanges = map({});
+        this.$activeEnvGraphs = atom(new Set());
+        this.$linkedGraphGroups = atom([]);
+        // Subscribe to device changes to handle cache and storage
+        this._selectedDeviceUnsub = this.dataStore.$selectedDevice.subscribe((deviceId) => {
+            if (deviceId) {
+                this.handleDeviceChange(deviceId);
+            }
+        });
+        this.$headerHistoryState = computed([this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups], (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
+            historyCache,
+            historyLoading,
+            activeEnvGraphs,
+            linkedGraphGroups,
+        }));
+        this.$combinedHistory = computed(this.$historyCache, (cache) => {
+            const result = { ...cache };
+            const commonMetrics = [
+                'temperature',
+                'humidity',
+                'vpd',
+                'co2',
+                'soil_moisture',
+                'light',
+                'optimal',
+            ];
+            commonMetrics.forEach((m) => {
+                if (!result[m])
+                    result[m] = [];
+            });
+            return result;
+        });
+        this.$analyticsViewState = computed([
+            this.$historyLoading,
+            this.$historyLoaded,
+            this.$activeEnvGraphs,
+            this.$linkedGraphGroups,
+            this.$combinedHistory,
+            this.$graphRanges,
+        ], (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
+            historyLoading,
+            historyLoaded,
+            activeEnvGraphs,
+            linkedGraphGroups,
+            combinedHistory,
+            graphRanges,
+        }));
+    }
+    // --- Actions ---
+    setHistoryData(metric, data) {
+        const current = this.$historyCache.get();
+        this.$historyCache.set({ ...current, [metric]: data });
+    }
+    setHistoryBatch(updates) {
+        const current = this.$historyCache.get();
+        this.$historyCache.set({ ...current, ...updates });
+    }
+    updateLastTimestamp(metric, data) {
+        if (data.length === 0)
+            return;
+        const lastPoint = data[data.length - 1];
+        const timestamp = lastPoint.last_updated || lastPoint.last_changed;
+        if (timestamp) {
+            this.$lastTimestamps.setKey(metric, timestamp);
+        }
+    }
+    clearHistoryCache() {
+        this.$historyCache.set({});
+        this.$lastTimestamps.set({});
+        this.$historyLoaded.set(false);
+        this.$historyError.set(null);
+    }
+    setHistoryLoading(loading) {
+        this.$historyLoading.set(loading);
+    }
+    setHistoryLoaded(loaded) {
+        this.$historyLoaded.set(loaded);
+    }
+    setGraphRange(deviceId, range) {
+        this.$graphRanges.setKey(deviceId, range);
+        this.setHistoryLoaded(false);
+    }
+    getGraphRange(deviceId) {
+        if (!deviceId)
+            return '24h';
+        return this.$graphRanges.get()[deviceId] || '24h';
+    }
+    toggleEnvGraph(metric) {
+        const current = this.$activeEnvGraphs.get();
+        const newSet = new Set(current);
+        if (newSet.has(metric)) {
+            newSet.delete(metric);
+            this.$activeEnvGraphs.set(newSet);
+            return false;
+        }
+        else {
+            newSet.add(metric);
+            this.$activeEnvGraphs.set(newSet);
+            return true;
+        }
+    }
+    linkGraphs(metric1, metric2) {
+        const groups = this.$linkedGraphGroups.get();
+        const existingGroupIndex = groups.findIndex((group) => group.includes(metric1) || group.includes(metric2));
+        const newGroups = [...groups];
+        if (existingGroupIndex >= 0) {
+            const group = new Set(newGroups[existingGroupIndex]);
+            group.add(metric1);
+            group.add(metric2);
+            newGroups[existingGroupIndex] = Array.from(group);
+        }
+        else {
+            newGroups.push([metric1, metric2]);
+        }
+        this.$linkedGraphGroups.set(newGroups);
+        const newActive = new Set(this.$activeEnvGraphs.get());
+        newActive.add(metric1);
+        newActive.add(metric2);
+        this.$activeEnvGraphs.set(newActive);
+    }
+    unlinkGraphGroup(index) {
+        const groups = this.$linkedGraphGroups.get();
+        if (index >= 0 && index < groups.length) {
+            const newGroups = [...groups];
+            newGroups.splice(index, 1);
+            this.$linkedGraphGroups.set(newGroups);
+        }
+    }
+    unlinkGraphMetric(metric) {
+        const groups = this.$linkedGraphGroups.get();
+        const newGroups = groups
+            .map((group) => group.filter((m) => m !== metric))
+            .filter((group) => group.length > 1);
+        this.$linkedGraphGroups.set(newGroups);
+    }
+    clearAllLinks() {
+        this.$linkedGraphGroups.set([]);
+    }
+    getHistoryForMetric(metric) {
+        return this.$historyCache.get()[metric] || null;
+    }
+    // --- Fetching & Logic (Migrated from Controller) ---
+    handleDeviceChange(deviceId) {
+        // Clear runtime cache
+        this.clearHistoryCache();
+        // Try load from storage
+        this._loadFromStorage(deviceId);
+    }
+    async loadHistoryOnDemand() {
+        if (this.$historyLoading.get() || this.$historyLoaded.get()) {
+            return;
+        }
+        this.setHistoryLoading(true);
+        try {
+            await this._fetchHistory(this.getRange());
+            this.setHistoryLoaded(true);
+            console.log('[HistoryStore] History loaded successfully');
+        }
+        catch (error) {
+            const e = error instanceof Error ? error.message : undefined;
+            console.error('[HistoryStore] Failed to load history', error);
+            this.$historyError.set(e || 'Failed to load history');
+        }
+        finally {
+            this.setHistoryLoading(false);
+        }
+    }
+    startAutoRefresh() {
+        if (this._refreshInterval)
+            return;
+        this._refreshInterval = window.setInterval(() => {
+            this._fetchHistoryDelta();
+        }, 5 * 60 * 1000); // 5 minutes
+        // Refresh when tab becomes visible again (browsers throttle setInterval when hidden)
+        this._visibilityHandler = () => {
+            if (!document.hidden) {
+                this._fetchHistoryDelta();
+            }
+        };
+        document.addEventListener('visibilitychange', this._visibilityHandler);
+    }
+    stopAutoRefresh() {
+        if (this._refreshInterval) {
+            window.clearInterval(this._refreshInterval);
+            this._refreshInterval = null;
+        }
+        if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
+        }
+    }
+    destroy() {
+        this.stopAutoRefresh();
+        if (this._selectedDeviceUnsub) {
+            this._selectedDeviceUnsub();
+            this._selectedDeviceUnsub = null;
+        }
+    }
+    getRange() {
+        const deviceId = this.dataStore.$selectedDevice.get();
+        return this.getGraphRange(deviceId);
+    }
+    async _fetchHistory(range = '24h') {
+        const deviceId = this.dataStore.$selectedDevice.get();
+        if (!deviceId)
+            return;
+        const devices = this.dataStore.$devices.get();
+        const device = devices.find((d) => d.deviceId === deviceId);
+        if (!device)
+            return;
+        const { start, end } = this.calculateTimeRange(range);
+        const metricsToFetch = [
+            'optimal',
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'irrigation_tank_level',
+            'soil_moisture',
+            'exhaust',
+            'humidifier',
+            'dehumidifier',
+            'circulation_fan',
+            'irrigation',
+            'drain',
+        ];
+        const entitiesToFetch = new Set();
+        // 1. Identify Overview Entity
+        if (device.overviewEntityId) {
+            entitiesToFetch.add(device.overviewEntityId);
+            // Map main overview entity to 'main' for timestamp tracking if needed,
+            // but usually main data is split into metrics.
+            // The controller logic mapped overview_entity_id to 'main' in some places,
+            // let's follow that pattern if consistent.
+        }
+        // 2. Identify Metric Entities
+        for (const metric of metricsToFetch) {
+            const entityIds = this.getEntityIdsForMetric(device, metric);
+            entityIds.forEach((entityId) => {
+                entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+                entitiesToFetch.add(entityId);
+            });
+        }
+        // 3. Identify Composite Keys (Multi-Device Graphs)
+        const activeGraphs = this.$activeEnvGraphs.get();
+        activeGraphs.forEach((key) => {
+            if (key.includes(':')) {
+                const [metric, entityId] = key.split(':');
+                if (metric && entityId) {
+                    entitiesToFetch.add(entityId);
+                }
+            }
+        });
+        if (entitiesToFetch.size === 0)
+            return;
+        const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, end, this._getIntervalForRange(range), true);
+        if (!batchResults)
+            return;
+        // Overview/Main
+        // Metrics
+        const formattedUpdates = {};
+        for (const metric of metricsToFetch) {
+            const entityIds = this.getEntityIdsForMetric(device, metric);
+            entityIds.forEach((entityId) => {
+                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+                const result = batchResults[entityId] || [];
+                formattedUpdates[key] = result;
+                this.updateLastTimestamp(key, result);
+            });
+        }
+        this.setHistoryBatch(formattedUpdates);
+        this._saveToStorage();
+    }
+    async _fetchHistoryDelta() {
+        const deviceId = this.dataStore.$selectedDevice.get();
+        if (!deviceId)
+            return;
+        const devices = this.dataStore.$devices.get();
+        const device = devices.find((d) => d.deviceId === deviceId);
+        if (!device)
+            return;
+        const currentTimestamps = this.$lastTimestamps.get();
+        const hasAnyTimestamps = Object.keys(currentTimestamps).length > 0;
+        if (!hasAnyTimestamps) {
+            await this._fetchHistory(this.getRange());
+            return;
+        }
+        const now = new Date();
+        const metricsToFetch = [
+            'optimal',
+            'temperature',
+            'humidity',
+            'vpd',
+            'co2',
+            'light',
+            'irrigation_tank_level',
+            'soil_moisture',
+            'exhaust',
+            'humidifier',
+            'dehumidifier',
+            'circulation_fan',
+            'irrigation',
+            'drain',
+        ];
+        const entityMap = {};
+        const entitiesToFetch = new Set();
+        // Overview
+        if (device.overviewEntityId) ;
+        for (const metric of metricsToFetch) {
+            const entityIds = this.getEntityIdsForMetric(device, metric);
+            entityIds.forEach((entityId) => {
+                const key = entityIds.length > 1 ? `${metric}:${entityId}` : metric;
+                const lastTimestamp = currentTimestamps[key];
+                if (lastTimestamp) {
+                    entityMap[key] = entityId;
+                    entitiesToFetch.add(entityId);
+                }
+            });
+        }
+        // Composite Keys Delta
+        const activeGraphs = this.$activeEnvGraphs.get();
+        activeGraphs.forEach((key) => {
+            if (key.includes(':')) {
+                const [metric, entityId] = key.split(':');
+                const lastTimestamp = currentTimestamps[key];
+                if (metric && entityId && lastTimestamp) {
+                    entityMap[key] = entityId;
+                    entitiesToFetch.add(entityId);
+                }
+            }
+        });
+        if (entitiesToFetch.size === 0)
+            return;
+        try {
+            const oldestTimestamp = Math.min(...Object.values(currentTimestamps)
+                .filter((t) => t)
+                .map((t) => new Date(t).getTime()));
+            const start = new Date(oldestTimestamp);
+            const batchResults = await this.dataService.getHistoryStats(Array.from(entitiesToFetch), start, now, 5, // Small interval
+            true);
+            if (!batchResults)
+                return;
+            for (const [key, entityId] of Object.entries(entityMap)) {
+                const deltaData = batchResults[entityId] || [];
+                if (deltaData.length > 0) {
+                    this._mergeDeltaData(key, deltaData);
+                }
+            }
+            this._saveToStorage();
+        }
+        catch (e) {
+            console.error('[HistoryStore] Failed to fetch delta history', e);
+        }
+    }
+    _mergeDeltaData(metric, deltaData) {
+        const currentCache = this.$historyCache.get();
+        const existing = currentCache[metric] || [];
+        if (existing.length === 0) {
+            this.setHistoryData(metric, deltaData);
+            this.updateLastTimestamp(metric, deltaData);
+            return;
+        }
+        const lastExisting = existing[existing.length - 1];
+        const lastTimestamp = new Date(lastExisting.last_updated || lastExisting.last_changed).getTime();
+        const newData = deltaData.filter((point) => {
+            const pointTime = new Date(point.last_updated || point.last_changed).getTime();
+            return pointTime > lastTimestamp;
+        });
+        if (newData.length > 0) {
+            this.setHistoryData(metric, [...existing, ...newData]);
+            this.updateLastTimestamp(metric, newData);
+        }
+    }
+    _loadFromStorage(deviceId) {
+        try {
+            const key = this.STORAGE_KEY_PREFIX + deviceId;
+            const raw = localStorage.getItem(key);
+            if (!raw)
+                return false;
+            const data = JSON.parse(raw);
+            if (!data || !data.version || !data.timestamp || !data.history)
+                return false;
+            const age = Date.now() - data.timestamp;
+            if (age > this.CACHE_VALIDITY_MS) {
+                localStorage.removeItem(key);
+                return false;
+            }
+            this.setHistoryBatch(data.history);
+            // Restore timestamps
+            const timestamps = data.timestamps || {};
+            this.$lastTimestamps.set(timestamps);
+            // Don't mark as fully loaded — localStorage data serves as an
+            // immediate preview while loadHistoryOnDemand() fetches fresh data.
+            // Previously this set historyLoaded=true, which prevented fresh
+            // fetches and left graphs showing stale cached data for hours.
+            return true;
+        }
+        catch (e) {
+            console.error('[HistoryStore] Failed to load from storage', e);
+            return false;
+        }
+    }
+    _saveToStorage() {
+        const deviceId = this.dataStore.$selectedDevice.get();
+        if (!deviceId)
+            return;
+        try {
+            const key = this.STORAGE_KEY_PREFIX + deviceId;
+            const data = {
+                version: 1,
+                timestamp: Date.now(),
+                history: this.$historyCache.get(),
+                timestamps: this.$lastTimestamps.get(),
+            };
+            localStorage.setItem(key, JSON.stringify(data));
+        }
+        catch (e) {
+            console.error('[HistoryStore] Failed to save to storage', e);
+        }
+    }
+    // --- Utils ---
+    getEntityIdsForMetric(device, metricKey) {
+        const ids = [];
+        if (metricKey === 'optimal') {
+            let slug = device.name.toLowerCase().replace(/\s+/g, '_');
+            const overviewId = device.overviewEntityId || device.overview_entity_id;
+            if (overviewId) {
+                slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
+            }
+            let optimalId = `binary_sensor.${slug}_optimal_conditions`;
+            if (slug === 'cure')
+                optimalId = `binary_sensor.cure_optimal_curing`;
+            else if (slug === 'dry')
+                optimalId = `binary_sensor.dry_optimal_drying`;
+            ids.push(optimalId);
+            return ids;
+        }
+        const mapping = METRIC_ENTITY_KEYS[metricKey];
+        if (!mapping)
+            return ids;
+        const envAttrs = (device.environmentAttributes ||
+            device.environment_attributes ||
+            {});
+        // 1. Try plural keys first
+        const pluralKey = mapping.primary.endsWith('Sensor')
+            ? mapping.primary.replace('Sensor', 'Sensors')
+            : `${mapping.primary}s`;
+        let pluralIds = envAttrs[pluralKey];
+        if (!pluralIds && /[A-Z]/.test(pluralKey)) {
+            const snakePlural = pluralKey.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+            pluralIds = envAttrs[snakePlural];
+        }
+        if (pluralIds && Array.isArray(pluralIds) && pluralIds.length > 0) {
+            return pluralIds;
+        }
+        // 2. Fallback to single primary/fallback
+        if (mapping.source === 'irrigation') {
+            const config = (device.irrigationConfig ||
+                device.irrigation_config);
+            if (!config)
+                return ids;
+            let entityId = config[mapping.primary];
+            if (!entityId && /[A-Z]/.test(mapping.primary)) {
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+                entityId = config[snakeKey];
+            }
+            if (typeof entityId === 'string')
+                ids.push(entityId);
+        }
+        else {
+            let entityId = envAttrs[mapping.primary];
+            if (!entityId && mapping.fallback) {
+                entityId = envAttrs[mapping.fallback];
+            }
+            if (!entityId && /[A-Z]/.test(mapping.primary)) {
+                const snakeKey = mapping.primary.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+                entityId = envAttrs[snakeKey];
+            }
+            // Special fallback for VPD calculated sensor
+            if (!entityId && metricKey === 'vpd' && device.name) {
+                const slugify = (text) => text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+                const calcName = `${device.name} Calculated VPD`;
+                const calculatedId = `sensor.${slugify(calcName)}`;
+                if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
+                    entityId = calculatedId;
+                }
+            }
+            if (entityId)
+                ids.push(entityId);
+        }
+        // Special case for irrigation_tank_level - extract sensor entities from tanks array
+        if (metricKey === 'irrigation_tank_level') {
+            const tanks = envAttrs['irrigationTanks'] || [];
+            return tanks.map(t => t.sensorEntity).filter(Boolean);
+        }
+        return ids;
+    }
+    getEntityIdForMetric(device, metricKey) {
+        const ids = this.getEntityIdsForMetric(device, metricKey);
+        return ids.length > 0 ? ids[0] : null;
+    }
+    calculateTimeRange(range) {
+        const now = new Date();
+        let startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        switch (range) {
+            case '1h':
+                startTime = new Date(now.getTime() - 60 * 60 * 1000);
+                break;
+            case '6h':
+                startTime = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+                break;
+            case '7d':
+                startTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                break;
+        }
+        return { start: startTime, end: now };
+    }
+    _getIntervalForRange(range) {
+        switch (range) {
+            case '7d':
+                return 240;
+            case '24h':
+                return 30;
+            case '6h':
+                return 15;
+            case '1h':
+                return 5;
+            default:
+                return 15;
+        }
+    }
+}
+
+class GrowspaceSharedStore {
+    constructor() {
+        this.dataService = new DataService$1();
+        this.data = new GrowspaceDataStore();
+        this.history = new GrowspaceHistoryStore(this.dataService, this.data);
+    }
+    updateHass(hass) {
+        if (this._hass === hass)
+            return;
+        this._hass = hass;
+        this.dataService.updateHass(hass);
+        if (!this._unsubEvents) {
+            this._subscribe(hass);
+        }
+    }
+    destroy() {
+        this._unsubscribe();
+        this.history.destroy();
+    }
+    async _subscribe(hass) {
+        if (this._unsubEvents || !hass)
+            return;
+        try {
+            this._unsubEvents = await hass.connection.subscribeEvents((event) => this._handleEvent(event), 'growspace_manager_updated');
+        }
+        catch (err) {
+            console.error('[GrowspaceSharedStore] Failed to subscribe to growspace events', err);
+        }
+    }
+    _unsubscribe() {
+        if (this._unsubEvents) {
+            this._unsubEvents();
+            this._unsubEvents = undefined;
+        }
+    }
+    _handleEvent(event) {
+        const haEvent = event;
+        if (!haEvent.data ||
+            typeof haEvent.data.event_type !== 'string' ||
+            typeof haEvent.data.data !== 'object') {
+            console.warn('[GrowspaceSharedStore] Received malformed growspace event', event);
+            return;
+        }
+        const { event_type, data } = haEvent.data;
+        if (event_type === 'plant_added' || event_type === 'plant_updated') {
+            this._handlePlantUpdate(data.plant);
+        }
+        else if (event_type === 'plant_removed') {
+            this._handlePlantRemoval(data.plant_id, data.growspace_id);
+        }
+        else if (event_type === 'growspace_manager_updated') {
+            this.dataService.invalidateCache();
+            this.data.$staleCounter.set(this.data.$staleCounter.get() + 1);
+        }
+    }
+    _handlePlantUpdate(plantData) {
+        const data = plantData;
+        const plantId = data?.plant_id;
+        if (!plantId) {
+            console.warn('[GrowspaceSharedStore] Plant update event missing plant_id', plantData);
+            return;
+        }
+        this.data.removePlantFromWsCache(plantId);
+        const gsId = data.growspace_id || data.attributes?.growspace_id;
+        if (gsId && typeof data.row === 'number' && typeof data.col === 'number') {
+            const correctKey = `position_${data.row}_${data.col}`;
+            this.data.updateWsDataCacheGrid(gsId, (grid) => {
+                grid[correctKey] = plantData;
+            });
+        }
+    }
+    _handlePlantRemoval(plantId, growspaceId) {
+        this.data.removePlantFromWsCache(plantId, growspaceId);
+    }
+}
+
+class GrowspaceStoreRegistry {
+    constructor() {
+        this._entry = null;
+    }
+    acquire() {
+        if (!this._entry) {
+            this._entry = { store: new GrowspaceSharedStore(), refs: 0 };
+        }
+        this._entry.refs++;
+        return this._entry.store;
+    }
+    release() {
+        if (!this._entry)
+            return;
+        this._entry.refs--;
+        if (this._entry.refs <= 0) {
+            this._entry.store.destroy();
+            this._entry = null;
+        }
+    }
+}
+const growspaceStoreRegistry = new GrowspaceStoreRegistry();
+
 let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     constructor() {
         super(...arguments);
-        this.store = new GrowspaceStore();
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this.store = new GrowspaceStore(this._sharedStore);
         this._dialogPortal = null;
-        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
-            this.store.updateHass(this.hass);
-            if (refresh) {
-                this.store.refreshData(true);
-            }
-        });
         this._viewController = new libExports.StoreController(this, this.store.$mainCardState);
         this._strainLibrary = [];
         this._handleLibraryExportReady = (e) => {
@@ -113851,12 +113859,12 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             this._dialogPortal = null;
         }
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass')) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
             if (this._dialogPortal) {
                 this._dialogPortal.hass = this.hass;
             }
@@ -114048,15 +114056,8 @@ GrowspaceManagerCard = __decorate([
 let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
     constructor() {
         super(...arguments);
-        this.store = new GrowspaceStore();
-        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-            }
-        });
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._handleSelectAll = () => this.store.selectAllPlants();
         this._handleClearSelection = () => this.store.clearPlantSelection();
@@ -114096,12 +114097,12 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
         }
     }
     static async getConfigElement() {
@@ -114245,15 +114246,8 @@ GrowspaceGridCard = __decorate([
 let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
     constructor() {
         super(...arguments);
-        this.store = new GrowspaceStore();
-        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-            }
-        });
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Analytics Card caught error:', error, errorInfo);
@@ -114283,12 +114277,12 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
         }
     }
     static async getConfigElement() {
@@ -114383,15 +114377,8 @@ GrowspaceAnalyticsCard = __decorate([
 let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     constructor() {
         super(...arguments);
-        this.store = new GrowspaceStore();
-        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-            }
-        });
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._userQuery = '';
         this._isLoading = false;
@@ -114420,12 +114407,12 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
         }
     }
     static async getConfigElement() {
@@ -114711,15 +114698,8 @@ GrowspaceAiInsightCard = __decorate([
 let GrowspaceTankCard = class GrowspaceTankCard extends i$3 {
     constructor() {
         super(...arguments);
-        this.store = new GrowspaceStore();
-        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-            }
-        });
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Tank Card caught error:', error, errorInfo);
@@ -114737,12 +114717,12 @@ let GrowspaceTankCard = class GrowspaceTankCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
         }
     }
     static async getConfigElement() {
@@ -115235,16 +115215,8 @@ GrowspaceTankCard = __decorate([
 let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     constructor() {
         super(...arguments);
-        this.store = new GrowspaceStore();
-        this._subscriptionController = new SubscriptionController(this, this.store.data, (refresh) => {
-            if (this.hass) {
-                this.store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this.store.refreshData(true);
-                this._loadSubarea();
-            }
-        });
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
         this._dataService = null;
         this._analyticsStateController = null;
@@ -115274,6 +115246,13 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     connectedCallback() {
         super.connectedCallback();
         this._initAnalyticsController();
+        let prevStale = this._sharedStore.data.$staleCounter.get();
+        this._staleUnsub = this._sharedStore.data.$staleCounter.subscribe((n) => {
+            if (n !== prevStale) {
+                prevStale = n;
+                this._loadSubarea();
+            }
+        });
     }
     firstUpdated() {
         if (this.hass) {
@@ -115297,14 +115276,15 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     }
     disconnectedCallback() {
         super.disconnectedCallback();
+        this._staleUnsub?.();
         this.store.history?.stopAutoRefresh();
         this.store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
             if (!this._dataService) {
                 this._dataService = new DataService$1(this.hass);
             }
@@ -115740,17 +115720,10 @@ let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
     constructor() {
         super(...arguments);
         this._activeTab = 'list';
-        this._store = new GrowspaceStore();
+        this._sharedStore = growspaceStoreRegistry.acquire();
+        this._store = new GrowspaceStore(this._sharedStore);
         this._hassContext = this.hass;
         this._configContext = this._config;
-        this._subscriptionController = new SubscriptionController(this, this._store.data, (refresh) => {
-            if (this.hass) {
-                this._store.updateHass(this.hass);
-            }
-            if (refresh) {
-                this._store.refreshData(true);
-            }
-        });
         this._viewController = new libExports.StoreController(this, this._store.$sharedCardViewState);
     }
     static async getConfigElement() {
@@ -115776,13 +115749,13 @@ let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this._store.destroy();
+        growspaceStoreRegistry.release();
     }
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
             this._hassContext = this.hass;
             this._store.updateHass(this.hass);
-            this._subscriptionController.updateHass(this.hass);
         }
     }
     getCardSize() {
