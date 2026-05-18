@@ -237,6 +237,7 @@ export interface SerializedEnvironmentAttributes {
   electricity_cost_per_kwh?: number | null;
   substrate_temperature_sensors?: string[];
   camera_entities?: string[];
+  power_sensors?: string[];
   energy_sensors?: string[];
 
   // EC / pH / flow sensors
@@ -338,6 +339,7 @@ export interface EnvironmentAttributes {
   electricityCostPerKwh?: number | null;
   substrateTemperatureSensors?: string[];
   cameraEntities?: string[];
+  powerSensors?: string[];
   energySensors?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
 
@@ -385,6 +387,7 @@ export interface EnvironmentConfig {
   runoff_ec_sensors?: string[];
   drain_volume_sensors?: string[];
   irrigation_flow_sensors?: string[];
+  power_sensors?: string[];
   energy_sensors?: string[];
   electricity_cost_per_kwh?: number;
   dli_target_veg?: number;

@@ -1907,7 +1907,7 @@ export class ConfigDialog extends LitElement {
       this.envRunoffEcSensors = attrs.runoffEcSensors || [];
       this.envDrainVolumeSensors = attrs.drainVolumeSensors || [];
       this.envIrrigationFlowSensors = attrs.irrigationFlowSensors || [];
-      this.envPowerSensors = [];
+      this.envPowerSensors = attrs.powerSensors || [];
       this.envEnergySensors = attrs.energySensors || [];
       this.envIrrigationTanks = (attrs.irrigationTanks || []).map((t: any) => ({
         sensorEntity: t.sensorEntity || '',

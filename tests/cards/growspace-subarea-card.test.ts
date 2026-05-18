@@ -83,7 +83,7 @@ describe('GrowspaceSubareaCard', () => {
             },
             connection: {
                 sendMessagePromise: vi.fn(),
-                subscribeEvents: vi.fn().mockResolvedValue(() => {}),
+                subscribeEvents: vi.fn().mockResolvedValue(() => { }),
             },
             language: 'en',
         };
@@ -91,7 +91,7 @@ describe('GrowspaceSubareaCard', () => {
         element = await fixture<GrowspaceSubareaCard>(html`
             <growspace-subarea-card .hass=${mockHass}></growspace-subarea-card>
         `);
-        
+
         element.setConfig({
             type: 'custom:growspace-subarea-card',
             growspace_id: 'gs1',
@@ -115,7 +115,7 @@ describe('GrowspaceSubareaCard', () => {
     test('renders subarea name and growspace name', () => {
         const title = element.shadowRoot?.querySelector('.subarea-title');
         expect(title?.textContent?.trim()).toBe('Veg Area');
-        
+
         const subtitle = element.shadowRoot?.querySelector('.subarea-subtitle');
         expect(subtitle?.textContent?.trim()).toContain('gs1'); // default to growspace_id if parent name not fetched
     });
@@ -132,11 +132,11 @@ describe('GrowspaceSubareaCard', () => {
     test('renders device chips correctly', () => {
         const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
         expect(chips?.length).toBe(5);
-        
+
         // Light chip (on) — device state is stored in .value, not .status
         expect((chips?.[0] as any).label).toContain('Lights');
         expect((chips?.[0] as any).value).toBe('On');
-        
+
         // Exhaust chip (off)
         expect((chips?.[1] as any).label).toContain('Exhaust');
         expect((chips?.[1] as any).value).toBe('Off');
@@ -153,7 +153,7 @@ describe('GrowspaceSubareaCard', () => {
         const configBtn = element.shadowRoot?.querySelector('.config-button') as HTMLElement;
         configBtn.click();
         await element.updateComplete;
-        
+
         const dialog = element.shadowRoot?.querySelector('config-dialog');
         expect(dialog).not.toBeNull();
     });
@@ -168,7 +168,7 @@ describe('GrowspaceSubareaCard', () => {
         mockDataService.getSubareas.mockResolvedValue([]);
         await (element as any)._loadSubarea();
         await element.updateComplete;
-        
+
         expect(element.shadowRoot?.querySelector('.error')?.textContent).toContain('not found');
     });
 
@@ -329,7 +329,7 @@ describe('GrowspaceSubareaCard', () => {
 
     test('_loadHistory catches and logs errors', async () => {
         mockDataService.getBatchHistory.mockRejectedValue(new Error('History fetch failed'));
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         await (element as any)._loadHistory(mockSubarea);
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
@@ -468,7 +468,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('_handleError does not call system_log when hass is undefined', () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         (element as any).hass = undefined;
         (element as any)._handleError(new Error('test'), {});
         expect(consoleSpy).toHaveBeenCalled();
@@ -518,7 +518,7 @@ describe('GrowspaceSubareaCard', () => {
 
     test('renders error state when getSubareas throws', async () => {
         mockDataService.getSubareas.mockRejectedValue(new Error('Network error'));
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
         await (element as any)._loadSubarea();
         await element.updateComplete;
 

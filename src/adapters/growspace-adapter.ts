@@ -140,6 +140,7 @@ export class GrowspaceAdapter {
       electricityCostPerKwh: wsData.electricity_cost_per_kwh,
       substrateTemperatureSensors: wsData.substrate_temperature_sensors,
       cameraEntities: wsData.camera_entities,
+      powerSensors: wsData.power_sensors,
       energySensors: wsData.energy_sensors,
       // EC / pH / flow sensors (for capability detection)
       phSensors: wsData.ph_sensors,

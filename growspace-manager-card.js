@@ -5225,6 +5225,7 @@ class GrowspaceAdapter {
             electricityCostPerKwh: wsData.electricity_cost_per_kwh,
             substrateTemperatureSensors: wsData.substrate_temperature_sensors,
             cameraEntities: wsData.camera_entities,
+            powerSensors: wsData.power_sensors,
             energySensors: wsData.energy_sensors,
             // EC / pH / flow sensors (for capability detection)
             phSensors: wsData.ph_sensors,
@@ -16566,7 +16567,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envRunoffEcSensors = attrs.runoffEcSensors || [];
             this.envDrainVolumeSensors = attrs.drainVolumeSensors || [];
             this.envIrrigationFlowSensors = attrs.irrigationFlowSensors || [];
-            this.envPowerSensors = [];
+            this.envPowerSensors = attrs.powerSensors || [];
             this.envEnergySensors = attrs.energySensors || [];
             this.envIrrigationTanks = (attrs.irrigationTanks || []).map((t) => ({
                 sensorEntity: t.sensorEntity || '',
@@ -111824,7 +111825,7 @@ function openConfigDialog(ctx, device) {
                 runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
                 drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
                 irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
-                powerSensors: [],
+                powerSensors: device?.environmentAttributes?.powerSensors || [],
                 energySensors: device?.environmentAttributes?.energySensors || [],
             },
         },
@@ -115344,12 +115345,22 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             this._loading = false;
         }
     }
-    async _loadHistory(subarea) {
+    _calculateHistoryStart(range) {
+        const now = new Date();
+        switch (range) {
+            case '1h': return new Date(now.getTime() - 60 * 60 * 1000);
+            case '6h': return new Date(now.getTime() - 6 * 60 * 60 * 1000);
+            case '7d': return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            default: return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        }
+    }
+    async _loadHistory(subarea, range) {
         if (!this._dataService)
             return;
         const ec = subarea.environment_config;
+        const activeRange = range ?? this.store.history.getRange();
         const end = new Date();
-        const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        const start = this._calculateHistoryStart(activeRange);
         const metricEntities = [];
         const tempIds = ec.temperature_sensors?.length ? ec.temperature_sensors : ec.temperature_sensor ? [ec.temperature_sensor] : [];
         const humIds = ec.humidity_sensors?.length ? ec.humidity_sensors : ec.humidity_sensor ? [ec.humidity_sensor] : [];
@@ -115380,9 +115391,18 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 }
             }
             this._historyCache = cache;
+            // Inject subarea sensor history into the store so growspace-analytics
+            // shows the subarea's sensors instead of the parent growspace's sensors.
+            this.store.history.setHistoryBatch(cache);
+            this.store.history.setHistoryLoaded(true);
         }
         catch (err) {
             console.error('[GrowspaceSubareaCard] Failed to load history:', err);
+        }
+    }
+    _handleSubareaRangeChange(e) {
+        if (this._subarea) {
+            this._loadHistory(this._subarea, e.detail);
         }
     }
     static async getConfigElement() {
@@ -115509,7 +115529,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                             ${this._renderHeaderMetrics(ec, parentDevice)}
 
                             ${parentDevice
-            ? x `<growspace-analytics .device=${parentDevice}></growspace-analytics>`
+            ? x `<growspace-analytics .device=${parentDevice} @set-range=${this._handleSubareaRangeChange}></growspace-analytics>`
             : ''}
                         </div>
                     </div>

@@ -16,10 +16,8 @@ export class AddPlantDialog {
   }
 
   async fillForm(plantData: Partial<PlantData>) {
-    // Wait for dialog to be fully rendered
     await this.waitForOpen();
 
-    // Use MD3 custom inputs based on exploration
     if (plantData.strain) {
       const strainInput = this.dialog.locator('md3-text-input[label*="Strain" i]').locator('input');
       await strainInput.fill(plantData.strain);
@@ -29,21 +27,15 @@ export class AddPlantDialog {
       const phenotypeInput = this.dialog.locator('md3-text-input[label*="Phenotype" i]').locator('input');
       await phenotypeInput.fill(plantData.phenotype);
     }
-
-    // Note: Row/col might be selected via grid, not input fields
-    // This needs to be discovered during actual testing
   }
 
-
   async submit() {
-    // Primary button with .md3-button.primary class
     const saveButton = this.dialog.locator('button.md3-button.primary');
     await saveButton.click();
     await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
   }
 
   async cancel() {
-    // Text button with .md3-button.text class
     const cancelButton = this.dialog.locator('button.md3-button.text');
     await cancelButton.click();
     await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
@@ -82,11 +74,11 @@ export class WateringDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('watering-dialog ha-dialog');
+    this.dialog = page.locator('growspace-watering-dialog-ui ha-dialog');
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toHaveAttribute('open', '');
+    await expect(this.dialog).toBeVisible();
   }
 
   async fillAmount(amount: number) {
@@ -98,5 +90,163 @@ export class WateringDialog {
     const saveButton = this.dialog.locator('button.md3-button.primary');
     await saveButton.click();
     await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  }
+}
+
+export class IPMDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('growspace-ipm-dialog-ui ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class TrainingDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('training-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class IrrigationDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('irrigation-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+
+  async addIrrigationTime(time: string, duration: number) {
+    const irrigationCard = this.dialog
+      .locator('.detail-card')
+      .filter({ has: this.page.locator('.irrigation-time-bar') });
+    await irrigationCard.locator('button.md3-button.primary', { hasText: 'ADD TIME' }).click();
+
+    const overlay = this.dialog.locator('.overlay-backdrop');
+    await expect(overlay).toBeVisible();
+    await overlay.locator('md3-text-input[label="Time"] input').fill(time);
+    await overlay.locator('md3-number-input[label="Duration (seconds)"] input').fill(String(duration));
+    await overlay.locator('button.md3-button.primary', { hasText: 'Add Schedule' }).click();
+    await expect(overlay).not.toBeVisible();
+  }
+
+  async removeIrrigationTime(time: string) {
+    const marker = this.dialog
+      .locator('.irrigation-time-bar')
+      .locator(`.chart-marker[title^="${time}"]`);
+    await marker.click();
+
+    const overlay = this.dialog.locator('.overlay-backdrop');
+    await expect(overlay).toBeVisible();
+    await overlay.locator('button.md3-button.delete-button', { hasText: 'Delete' }).click();
+    await expect(overlay).not.toBeVisible();
+  }
+
+  hasIrrigationTime(time: string): Locator {
+    return this.dialog
+      .locator('.irrigation-time-bar')
+      .locator(`.chart-marker[title^="${time}"]`);
+  }
+}
+
+export class NutrientDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('nutrient-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class StrainLibraryDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('strain-library-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class LogbookDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('logbook-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class SnapshotsDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('snapshots-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class GrowMasterDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('grow-master-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
+  }
+}
+
+export class GrowReportDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('grow-report-dialog ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toBeVisible();
   }
 }

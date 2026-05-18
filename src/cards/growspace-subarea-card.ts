@@ -10,6 +10,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import type { Subarea } from '../services/types';
 import { DataService } from '../services/data-service';
 import { ConfigTab } from '../features/environment/constants';
+import type { HistoryTimeRange } from '../features/environment/constants';
 import { ChartUtils } from '../utils/chart-utils';
 import '../dialogs/config-dialog';
 
@@ -293,12 +294,23 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         }
     }
 
-    private async _loadHistory(subarea: Subarea): Promise<void> {
+    private _calculateHistoryStart(range: HistoryTimeRange): Date {
+        const now = new Date();
+        switch (range) {
+            case '1h': return new Date(now.getTime() - 60 * 60 * 1000);
+            case '6h': return new Date(now.getTime() - 6 * 60 * 60 * 1000);
+            case '7d': return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            default: return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        }
+    }
+
+    private async _loadHistory(subarea: Subarea, range?: HistoryTimeRange): Promise<void> {
         if (!this._dataService) return;
 
         const ec = subarea.environment_config;
+        const activeRange = range ?? this.store.history.getRange();
         const end = new Date();
-        const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+        const start = this._calculateHistoryStart(activeRange);
 
         const metricEntities: Array<{ metric: string; entityIds: string[] }> = [];
 
@@ -330,8 +342,18 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             }
 
             this._historyCache = cache;
+            // Inject subarea sensor history into the store so growspace-analytics
+            // shows the subarea's sensors instead of the parent growspace's sensors.
+            this.store.history.setHistoryBatch(cache);
+            this.store.history.setHistoryLoaded(true);
         } catch (err) {
             console.error('[GrowspaceSubareaCard] Failed to load history:', err);
+        }
+    }
+
+    private _handleSubareaRangeChange(e: CustomEvent): void {
+        if (this._subarea) {
+            this._loadHistory(this._subarea, e.detail as HistoryTimeRange);
         }
     }
 
@@ -474,7 +496,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             ${this._renderHeaderMetrics(ec, parentDevice)}
 
                             ${parentDevice
-                                ? html`<growspace-analytics .device=${parentDevice}></growspace-analytics>`
+                                ? html`<growspace-analytics .device=${parentDevice} @set-range=${this._handleSubareaRangeChange}></growspace-analytics>`
                                 : ''}
                         </div>
                     </div>
