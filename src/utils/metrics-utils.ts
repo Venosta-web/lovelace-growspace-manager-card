@@ -44,7 +44,18 @@ export interface DominantStageInfo {
   icon: string;
   daysLabel: string;
   weeksLabel: string;
+  color: string;
 }
+
+const STAGE_COLORS: Record<string, string> = {
+  flower: 'var(--stage-flower, #ff9800)',
+  veg: 'var(--stage-veg, #4caf50)',
+  seedling: 'var(--stage-seedling, #8bc34a)',
+  clone: 'var(--stage-clone, #8bc34a)',
+  mother: 'var(--stage-mother, #e91e63)',
+  dry: 'var(--stage-dry, #9c27b0)',
+  cure: 'var(--stage-cure, #2196f3)',
+};
 
 export class MetricsUtils {
   private static _getAttributeValue(ent: HassEntity | undefined, key: string): unknown {
@@ -95,6 +106,7 @@ export class MetricsUtils {
         icon,
         daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
         weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
+        color: STAGE_COLORS[dominantRaw.stage] ?? '#4caf50',
       };
     }
 

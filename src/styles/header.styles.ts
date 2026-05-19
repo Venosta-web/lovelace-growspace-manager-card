@@ -167,39 +167,69 @@ export const headerStyles = css`
     margin-left: auto;
   }
 
+  /* --- Mobile stage context (above name, hidden on desktop) --- */
+  .mobile-stage-context {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+    margin-bottom: 4px;
+  }
+
+  .mobile-stage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mobile-stage-sep {
+    opacity: 0.35;
+  }
+
   /* --- Mobile & Responsive --- */
   @media (max-width: 600px) {
-    .gs-title {
-      font-size: 1.4rem;
+    .mobile-stage-context {
+      display: flex;
     }
 
-    .select-sizer {
-      font-size: 1.4rem;
-    }
-    .header-title-area {
-      max-width: 70%;
-    }
-
-    growspace-header-actions {
-      grid-column: 1;
-      grid-row: 3;
-      justify-content: flex-start;
-      justify-self: auto;
+    .header-meta-row {
+      display: none;
     }
 
     .gs-header-top {
-      grid-template-columns: minmax(0, 1fr);
-      position: relative; /* For absolute actions */
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
       gap: 8px;
     }
 
-    /* Wrap secondary strip when link mode active - managed via props now or css? */
-    /* Since secondary-strip is now inside generic scroll-container, wrapping is harder unless scroll-container supports it */
-    /* Or we just allow scrolling on mobile always */
+    .header-title-area {
+      flex: 1;
+      min-width: 0;
+      max-width: none;
+    }
 
+    .header-actions {
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    .header-stage-area-wrapper,
     .secondary-strip-container {
-      grid-row: 4;
-      grid-column: 1;
+      display: none;
+    }
+
+    .gs-title {
+      font-size: 1.5rem;
+    }
+
+    .select-sizer {
+      font-size: 1.5rem;
     }
   }
 `;

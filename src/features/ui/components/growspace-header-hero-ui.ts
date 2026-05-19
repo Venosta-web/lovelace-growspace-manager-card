@@ -1,6 +1,6 @@
-import { LitElement, html, css, svg } from 'lit';
+import { LitElement, html, css, svg, nothing } from 'lit';
 import { repeat } from 'lit/directives/repeat.js';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, state, query } from 'lit/decorators.js';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { GrowspaceDevice } from '../../../types';
 import { HeaderChip } from '../../../utils/metrics-utils';
@@ -16,6 +16,38 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   @property({ type: Boolean }) public mobileLink = false;
   @property({ attribute: false }) public historyCache: any = {};
   @property() public timeRange = '24h';
+
+  @state() private _deckIndex = 0;
+  @query('.deck-scroll') private _deckEl?: HTMLElement;
+
+  private _onDeckScroll() {
+    const el = this._deckEl;
+    if (!el) return;
+    const firstItem = el.firstElementChild as HTMLElement;
+    if (!firstItem) return;
+    const itemWidth = firstItem.offsetWidth + 12;
+    const next = Math.round(el.scrollLeft / itemWidth);
+    if (next !== this._deckIndex) this._deckIndex = next;
+  }
+
+  private _renderDeck() {
+    return html`
+      <div class="deck-scroll" @scroll=${this._onDeckScroll}>
+        ${repeat(
+          this.chips,
+          (chip) => chip.key,
+          (chip) => html`<div class="deck-item">${this._renderHeroCard(chip)}</div>`
+        )}
+      </div>
+      ${this.chips.length > 1 ? html`
+        <div class="deck-dots">
+          ${this.chips.map((_, i) => html`
+            <span class="deck-dot ${i === this._deckIndex ? 'active' : ''}"></span>
+          `)}
+        </div>
+      ` : nothing}
+    `;
+  }
 
   private _handleChipDragStart(e: DragEvent, metric: string) {
     if (e.dataTransfer) {
@@ -177,8 +209,48 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
       @media (max-width: 600px) {
         :host {
-          gap: 12px;
+          display: block;
         }
+
+        .deck-scroll {
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: none;
+          padding: 2px 2px 4px;
+        }
+
+        .deck-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        .deck-item {
+          flex: 0 0 calc(100% - 48px);
+          scroll-snap-align: start;
+          min-width: 0;
+        }
+
+        .deck-dots {
+          display: flex;
+          gap: 5px;
+          justify-content: center;
+          margin-top: 10px;
+        }
+
+        .deck-dot {
+          height: 5px;
+          width: 5px;
+          border-radius: 3px;
+          background: rgba(255, 255, 255, 0.2);
+          transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .deck-dot.active {
+          width: 14px;
+          background: var(--primary-color, #4caf50);
+        }
+
         .hero-value {
           font-size: 1.75rem;
         }
@@ -232,12 +304,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
   ];
 
   render() {
+    if (this.isMobile) {
+      return this._renderDeck();
+    }
     return html`
-      ${repeat(
-      this.chips,
-      (chip) => chip.key,
-      (chip) => this._renderHeroCard(chip)
-    )}
+      ${repeat(this.chips, (chip) => chip.key, (chip) => this._renderHeroCard(chip))}
     `;
   }
 

@@ -12,6 +12,7 @@ import { DataService } from '../services/data-service';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
 import { ChartUtils } from '../utils/chart-utils';
+import { ResizeController } from '../controllers/resize-controller';
 import '../dialogs/config-dialog';
 
 import '../features/shared/ui/error-boundary';
@@ -52,6 +53,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     store = new GrowspaceStore(this._sharedStore);
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+    private _resizeController = new ResizeController(this, () => {});
 
     private _dataService: DataService | null = null;
     private _analyticsStateController: StoreController<any> | null = null;
@@ -526,6 +528,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         );
 
         const hasAny = metrics.heroChips.length > 0 || metrics.secondaryChips.length > 0 || metrics.deviceChips.length > 0;
+        const isMobile = this._resizeController.isMobile;
+        const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
 
         return html`
             <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
@@ -534,39 +538,64 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 ` : ''}
 
                 ${metrics.deviceChips.length > 0 ? html`
-                    <div style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto;">
-                        ${metrics.deviceChips.map((chip) => html`
-                            <growspace-chip
-                                .icon=${chip.icon}
-                                .label=${chip.label}
-                                .value=${chip.value}
-                                .multiValues=${chip.multiValues}
-                                .status=${chip.status}
-                                .active=${chip.active}
-                                .linked=${chip.linked}
-                                .tooltip=${chip.tooltip}
-                                @click=${() => this._toggleMetricGraph(chip.key)}
-                            ></growspace-chip>
-                        `)}
-                    </div>
+                    ${isMobile ? html`
+                        <growspace-header-hero-ui
+                            .chips=${metrics.deviceChips}
+                            .historyCache=${this._historyCache}
+                            .device=${parentDevice}
+                            .hass=${this.hass}
+                            .isMobile=${true}
+                            .timeRange=${timeRange}
+                            @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
+                        ></growspace-header-hero-ui>
+                    ` : html`
+                        <div style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto; scrollbar-width: none;">
+                            ${metrics.deviceChips.map((chip) => html`
+                                <growspace-chip
+                                    .icon=${chip.icon}
+                                    .label=${chip.label}
+                                    .value=${chip.value}
+                                    .multiValues=${chip.multiValues}
+                                    .status=${chip.status}
+                                    .active=${chip.active}
+                                    .linked=${chip.linked}
+                                    .tooltip=${chip.tooltip}
+                                    @click=${() => this._toggleMetricGraph(chip.key)}
+                                ></growspace-chip>
+                            `)}
+                        </div>
+                    `}
                 ` : ''}
-                
+
                 ${metrics.heroChips.length > 0 ? html`
                     <growspace-header-hero-ui
                         .chips=${metrics.heroChips}
                         .historyCache=${this._historyCache}
                         .device=${parentDevice}
                         .hass=${this.hass}
-                        .timeRange=${this._analyticsStateController?.value?.timeRange || '24h'}
+                        .isMobile=${isMobile}
+                        .timeRange=${timeRange}
                         @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-hero-ui>
                 ` : ''}
-                
+
                 ${metrics.secondaryChips.length > 0 ? html`
-                    <growspace-header-secondary-ui
-                        .chips=${metrics.secondaryChips}
-                        @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
-                    ></growspace-header-secondary-ui>
+                    ${isMobile ? html`
+                        <growspace-header-hero-ui
+                            .chips=${metrics.secondaryChips}
+                            .historyCache=${this._historyCache}
+                            .device=${parentDevice}
+                            .hass=${this.hass}
+                            .isMobile=${true}
+                            .timeRange=${timeRange}
+                            @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
+                        ></growspace-header-hero-ui>
+                    ` : html`
+                        <growspace-header-secondary-ui
+                            .chips=${metrics.secondaryChips}
+                            @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
+                        ></growspace-header-secondary-ui>
+                    `}
                 ` : ''}
             </div>
         `;

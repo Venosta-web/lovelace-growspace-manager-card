@@ -9970,23 +9970,6 @@ const uiStyles = i$6 `
     min-height: 200px;
   }
 
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-left-color: var(--primary-color, #4caf50);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
 
   /* Respect user motion preferences (WCAG 2.3.3) */
   @media (prefers-reduced-motion: reduce) {
@@ -46481,6 +46464,15 @@ function friendlyDateTime(dateTimeish) {
   }
 }
 
+const STAGE_COLORS = {
+    flower: 'var(--stage-flower, #ff9800)',
+    veg: 'var(--stage-veg, #4caf50)',
+    seedling: 'var(--stage-seedling, #8bc34a)',
+    clone: 'var(--stage-clone, #8bc34a)',
+    mother: 'var(--stage-mother, #e91e63)',
+    dry: 'var(--stage-dry, #9c27b0)',
+    cure: 'var(--stage-cure, #2196f3)',
+};
 class MetricsUtils {
     static _getAttributeValue(ent, key) {
         if (!ent || !ent.attributes)
@@ -46515,6 +46507,7 @@ class MetricsUtils {
                 icon,
                 daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
                 weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
+                color: STAGE_COLORS[dominantRaw.stage] ?? '#4caf50',
             };
         }
         // Fetch Environmental Data
@@ -47192,39 +47185,69 @@ const headerStyles = i$6 `
     margin-left: auto;
   }
 
+  /* --- Mobile stage context (above name, hidden on desktop) --- */
+  .mobile-stage-context {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
+    margin-bottom: 4px;
+  }
+
+  .mobile-stage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .mobile-stage-sep {
+    opacity: 0.35;
+  }
+
   /* --- Mobile & Responsive --- */
   @media (max-width: 600px) {
-    .gs-title {
-      font-size: 1.4rem;
+    .mobile-stage-context {
+      display: flex;
     }
 
-    .select-sizer {
-      font-size: 1.4rem;
-    }
-    .header-title-area {
-      max-width: 70%;
-    }
-
-    growspace-header-actions {
-      grid-column: 1;
-      grid-row: 3;
-      justify-content: flex-start;
-      justify-self: auto;
+    .header-meta-row {
+      display: none;
     }
 
     .gs-header-top {
-      grid-template-columns: minmax(0, 1fr);
-      position: relative; /* For absolute actions */
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
       gap: 8px;
     }
 
-    /* Wrap secondary strip when link mode active - managed via props now or css? */
-    /* Since secondary-strip is now inside generic scroll-container, wrapping is harder unless scroll-container supports it */
-    /* Or we just allow scrolling on mobile always */
+    .header-title-area {
+      flex: 1;
+      min-width: 0;
+      max-width: none;
+    }
 
+    .header-actions {
+      flex-shrink: 0;
+      align-self: flex-start;
+    }
+
+    .header-stage-area-wrapper,
     .secondary-strip-container {
-      grid-row: 4;
-      grid-column: 1;
+      display: none;
+    }
+
+    .gs-title {
+      font-size: 1.5rem;
+    }
+
+    .select-sizer {
+      font-size: 1.5rem;
     }
   }
 `;
@@ -47457,30 +47480,32 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
     }
     render() {
         return x `
-      <div class="gs-device-chips-container">
-        <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
-          <div class="chips-wrapper">
-            ${this.deviceChips.map((chip) => x `
-                <growspace-chip
-                  .icon=${chip.icon}
-                  .label=${chip.label}
-                  .value=${chip.value}
-                  .multiValues=${chip.multiValues}
-                  .status=${chip.status}
-                  .active=${chip.active}
-                  .linked=${chip.linked}
-                  .tooltip=${chip.tooltip}
-                  draggable="${this._chipDraggable}"
-                  @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
-                  @drop=${(e) => this._handleChipDrop(e, chip.key)}
-                  @dragover=${this._handleDragOver}
-                  @click=${() => this._toggleEnvGraph(chip.key)}
-                  @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
-                ></growspace-chip>
-              `)}
-          </div>
-        </scroll-container>
-      </div>
+      ${!this.isMobile ? x `
+        <div class="gs-device-chips-container">
+          <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
+            <div class="chips-wrapper">
+              ${this.deviceChips.map((chip) => x `
+                  <growspace-chip
+                    .icon=${chip.icon}
+                    .label=${chip.label}
+                    .value=${chip.value}
+                    .multiValues=${chip.multiValues}
+                    .status=${chip.status}
+                    .active=${chip.active}
+                    .linked=${chip.linked}
+                    .tooltip=${chip.tooltip}
+                    draggable="${this._chipDraggable}"
+                    @dragstart=${(e) => this._handleChipDragStart(e, chip.key)}
+                    @drop=${(e) => this._handleChipDrop(e, chip.key)}
+                    @dragover=${this._handleDragOver}
+                    @click=${() => this._toggleEnvGraph(chip.key)}
+                    @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
+                  ></growspace-chip>
+                `)}
+            </div>
+          </scroll-container>
+        </div>
+      ` : E}
 
       ${this.isMobile
             ? x `
@@ -47499,9 +47524,10 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
 
       ${this._iconButton(mdiPencil, 'edit', 'Edit Mode', 'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.', this.isEditMode)}
 
-      ${this._iconButton(mdiCube, 'heatmap', '3D Heatmap', 'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.', this.viewMode === ViewMode.HEATMAP)}
-
-      ${this._iconButton(mdiCog, 'config', 'Settings', 'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.')}
+      ${!this.isMobile ? x `
+        ${this._iconButton(mdiCube, 'heatmap', '3D Heatmap', 'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.', this.viewMode === ViewMode.HEATMAP)}
+        ${this._iconButton(mdiCog, 'config', 'Settings', 'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.')}
+      ` : E}
 
       <div class="menu-container">
         <button class="icon-button" id="menu-trigger" style="anchor-name: --menu-trigger" popovertarget="header-menu" title="Open Menu">
@@ -47515,6 +47541,18 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
         const selectedCount = this.selectedPlants?.size || 0;
         return x `
       <div id="header-menu" popover="auto" class="menu-dropdown">
+        ${this.isMobile ? x `
+          <div class="menu-header">Growspace</div>
+          <div class="menu-item" @click=${() => this._triggerAction('config')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+            <span class="menu-item-label">Settings</span>
+          </div>
+          <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
+            <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
+            <span class="menu-item-label">3D Heatmap</span>
+          </div>
+          <div class="menu-divider"></div>
+        ` : E}
         <div class="menu-header">Plant Actions</div>
         <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
           <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
@@ -47785,6 +47823,33 @@ let GrowspaceHeaderHeroUI = class GrowspaceHeaderHeroUI extends i$3 {
         this.mobileLink = false;
         this.historyCache = {};
         this.timeRange = '24h';
+        this._deckIndex = 0;
+    }
+    _onDeckScroll() {
+        const el = this._deckEl;
+        if (!el)
+            return;
+        const firstItem = el.firstElementChild;
+        if (!firstItem)
+            return;
+        const itemWidth = firstItem.offsetWidth + 12;
+        const next = Math.round(el.scrollLeft / itemWidth);
+        if (next !== this._deckIndex)
+            this._deckIndex = next;
+    }
+    _renderDeck() {
+        return x `
+      <div class="deck-scroll" @scroll=${this._onDeckScroll}>
+        ${c(this.chips, (chip) => chip.key, (chip) => x `<div class="deck-item">${this._renderHeroCard(chip)}</div>`)}
+      </div>
+      ${this.chips.length > 1 ? x `
+        <div class="deck-dots">
+          ${this.chips.map((_, i) => x `
+            <span class="deck-dot ${i === this._deckIndex ? 'active' : ''}"></span>
+          `)}
+        </div>
+      ` : E}
+    `;
     }
     _handleChipDragStart(e, metric) {
         if (e.dataTransfer) {
@@ -47804,6 +47869,9 @@ let GrowspaceHeaderHeroUI = class GrowspaceHeaderHeroUI extends i$3 {
         this.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric }, bubbles: true, composed: true }));
     }
     render() {
+        if (this.isMobile) {
+            return this._renderDeck();
+        }
         return x `
       ${c(this.chips, (chip) => chip.key, (chip) => this._renderHeroCard(chip))}
     `;
@@ -48091,8 +48159,48 @@ GrowspaceHeaderHeroUI.styles = [
 
       @media (max-width: 600px) {
         :host {
-          gap: 12px;
+          display: block;
         }
+
+        .deck-scroll {
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: none;
+          padding: 2px 2px 4px;
+        }
+
+        .deck-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        .deck-item {
+          flex: 0 0 calc(100% - 48px);
+          scroll-snap-align: start;
+          min-width: 0;
+        }
+
+        .deck-dots {
+          display: flex;
+          gap: 5px;
+          justify-content: center;
+          margin-top: 10px;
+        }
+
+        .deck-dot {
+          height: 5px;
+          width: 5px;
+          border-radius: 3px;
+          background: rgba(255, 255, 255, 0.2);
+          transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .deck-dot.active {
+          width: 14px;
+          background: var(--primary-color, #4caf50);
+        }
+
         .hero-value {
           font-size: 1.75rem;
         }
@@ -48165,6 +48273,12 @@ __decorate([
 __decorate([
     n$5()
 ], GrowspaceHeaderHeroUI.prototype, "timeRange", void 0);
+__decorate([
+    r$3()
+], GrowspaceHeaderHeroUI.prototype, "_deckIndex", void 0);
+__decorate([
+    e$6('.deck-scroll')
+], GrowspaceHeaderHeroUI.prototype, "_deckEl", void 0);
 GrowspaceHeaderHeroUI = __decorate([
     t$2('growspace-header-hero-ui')
 ], GrowspaceHeaderHeroUI);
@@ -48416,6 +48530,27 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
     _handleToggleMobileLink() {
         this._mobileLink = !this._mobileLink;
     }
+    _renderMobileStageContext() {
+        const plants = this.device?.plants || [];
+        const plantCount = plants.length;
+        if (!this.dominant && plantCount === 0)
+            return E;
+        return x `
+      <div class="mobile-stage-context">
+        ${this.dominant ? x `
+          <span
+            class="mobile-stage-dot"
+            style="background:${this.dominant.color};box-shadow:0 0 6px ${this.dominant.color}"
+          ></span>
+          <span style="color:${this.dominant.color}">${this.dominant.daysLabel}</span>
+        ` : E}
+        ${this.dominant && plantCount > 0 ? x `<span class="mobile-stage-sep">·</span>` : E}
+        ${plantCount > 0 ? x `
+          <span>${plantCount} plant${plantCount !== 1 ? 's' : ''}</span>
+        ` : E}
+      </div>
+    `;
+    }
     _renderMetaRow() {
         const plants = this.device?.plants || [];
         const plantCount = plants.length;
@@ -48455,6 +48590,7 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
         <div class="gs-header-top">
           <!-- Row 1 Left: Title/Select + Meta -->
           <div class="header-title-area">
+            ${this._renderMobileStageContext()}
             <div class="header-title-row">
               ${!this.config?.default_growspace
             ? x `<div class="select-wrapper">
@@ -48528,6 +48664,22 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
           @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
           @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
         ></growspace-header-hero-ui>
+
+        ${this._resizeController.isMobile && this.secondaryChips.length > 0 ? x `
+          <!-- SECONDARY STAT DECK (mobile only) -->
+          <growspace-header-hero-ui
+            .hass=${this.hass}
+            .chips=${this.secondaryChips}
+            .device=${this.device}
+            .isMobile=${true}
+            .mobileLink=${this._mobileLink}
+            .historyCache=${this.historyCache}
+            .timeRange=${this.timeRange}
+            @toggle-graph=${(e) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
+            @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+          ></growspace-header-hero-ui>
+        ` : E}
       </div>
     `;
     }
@@ -49311,6 +49463,9 @@ const variables = i$6 `
     --stage-flower: #ff9800;
     --stage-dry: #9c27b0;
     --stage-cure: #2196f3;
+    --stage-seedling: #8bc34a;
+    --stage-clone: #8bc34a;
+    --stage-mother: #e91e63;
 
     /* Error/Warning Colors */
     --error-color: #f44336;
@@ -114006,7 +114161,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             return x `
         <ha-card>
           <div class="loading-container">
-            <div class="loading-spinner"></div>
+            <ha-circular-progress active></ha-circular-progress>
           </div>
         </ha-card>
       `;
@@ -114186,7 +114341,7 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
             return x `
         <ha-card>
           <div class="loading-container">
-            <div class="loading-spinner"></div>
+            <ha-circular-progress active></ha-circular-progress>
           </div>
         </ha-card>
       `;
@@ -114790,7 +114945,7 @@ let GrowspaceTankCard = class GrowspaceTankCard extends i$3 {
             return x `
                 <ha-card>
                     <div class="loading-container">
-                        <div class="loading-spinner"></div>
+                        <ha-circular-progress active></ha-circular-progress>
                     </div>
                 </ha-card>
             `;
@@ -115254,6 +115409,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         this._sharedStore = growspaceStoreRegistry.acquire();
         this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
+        this._resizeController = new ResizeController(this, () => { });
         this._dataService = null;
         this._analyticsStateController = null;
         this._subarea = null;
@@ -115478,7 +115634,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             return x `
                 <ha-card>
                     <div class="loading-container">
-                        <div class="loading-spinner"></div>
+                        <ha-circular-progress active></ha-circular-progress>
                     </div>
                 </ha-card>
             `;
@@ -115581,6 +115737,8 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     _renderHeaderMetrics(ec, parentDevice) {
         const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set());
         const hasAny = metrics.heroChips.length > 0 || metrics.secondaryChips.length > 0 || metrics.deviceChips.length > 0;
+        const isMobile = this._resizeController.isMobile;
+        const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
         return x `
             <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px;">
                 ${!hasAny ? x `
@@ -115588,39 +115746,64 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 ` : ''}
 
                 ${metrics.deviceChips.length > 0 ? x `
-                    <div style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto;">
-                        ${metrics.deviceChips.map((chip) => x `
-                            <growspace-chip
-                                .icon=${chip.icon}
-                                .label=${chip.label}
-                                .value=${chip.value}
-                                .multiValues=${chip.multiValues}
-                                .status=${chip.status}
-                                .active=${chip.active}
-                                .linked=${chip.linked}
-                                .tooltip=${chip.tooltip}
-                                @click=${() => this._toggleMetricGraph(chip.key)}
-                            ></growspace-chip>
-                        `)}
-                    </div>
+                    ${isMobile ? x `
+                        <growspace-header-hero-ui
+                            .chips=${metrics.deviceChips}
+                            .historyCache=${this._historyCache}
+                            .device=${parentDevice}
+                            .hass=${this.hass}
+                            .isMobile=${true}
+                            .timeRange=${timeRange}
+                            @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
+                        ></growspace-header-hero-ui>
+                    ` : x `
+                        <div style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto; scrollbar-width: none;">
+                            ${metrics.deviceChips.map((chip) => x `
+                                <growspace-chip
+                                    .icon=${chip.icon}
+                                    .label=${chip.label}
+                                    .value=${chip.value}
+                                    .multiValues=${chip.multiValues}
+                                    .status=${chip.status}
+                                    .active=${chip.active}
+                                    .linked=${chip.linked}
+                                    .tooltip=${chip.tooltip}
+                                    @click=${() => this._toggleMetricGraph(chip.key)}
+                                ></growspace-chip>
+                            `)}
+                        </div>
+                    `}
                 ` : ''}
-                
+
                 ${metrics.heroChips.length > 0 ? x `
                     <growspace-header-hero-ui
                         .chips=${metrics.heroChips}
                         .historyCache=${this._historyCache}
                         .device=${parentDevice}
                         .hass=${this.hass}
-                        .timeRange=${this._analyticsStateController?.value?.timeRange || '24h'}
+                        .isMobile=${isMobile}
+                        .timeRange=${timeRange}
                         @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-hero-ui>
                 ` : ''}
-                
+
                 ${metrics.secondaryChips.length > 0 ? x `
-                    <growspace-header-secondary-ui
-                        .chips=${metrics.secondaryChips}
-                        @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
-                    ></growspace-header-secondary-ui>
+                    ${isMobile ? x `
+                        <growspace-header-hero-ui
+                            .chips=${metrics.secondaryChips}
+                            .historyCache=${this._historyCache}
+                            .device=${parentDevice}
+                            .hass=${this.hass}
+                            .isMobile=${true}
+                            .timeRange=${timeRange}
+                            @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
+                        ></growspace-header-hero-ui>
+                    ` : x `
+                        <growspace-header-secondary-ui
+                            .chips=${metrics.secondaryChips}
+                            @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
+                        ></growspace-header-secondary-ui>
+                    `}
                 ` : ''}
             </div>
         `;
@@ -116131,7 +116314,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-// Export all types
+console.info(`%c GrowSpace Manager Card %c v${"1.0.30-alpha.1"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

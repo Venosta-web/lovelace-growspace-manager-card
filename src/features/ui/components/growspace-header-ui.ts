@@ -92,6 +92,28 @@ export class GrowspaceHeaderUI extends LitElement {
     this._mobileLink = !this._mobileLink;
   }
 
+  private _renderMobileStageContext() {
+    const plants = this.device?.plants || [];
+    const plantCount = plants.length;
+    if (!this.dominant && plantCount === 0) return nothing;
+
+    return html`
+      <div class="mobile-stage-context">
+        ${this.dominant ? html`
+          <span
+            class="mobile-stage-dot"
+            style="background:${this.dominant.color};box-shadow:0 0 6px ${this.dominant.color}"
+          ></span>
+          <span style="color:${this.dominant.color}">${this.dominant.daysLabel}</span>
+        ` : nothing}
+        ${this.dominant && plantCount > 0 ? html`<span class="mobile-stage-sep">·</span>` : nothing}
+        ${plantCount > 0 ? html`
+          <span>${plantCount} plant${plantCount !== 1 ? 's' : ''}</span>
+        ` : nothing}
+      </div>
+    `;
+  }
+
   private _renderMetaRow() {
     const plants = this.device?.plants || [];
     const plantCount = plants.length;
@@ -136,6 +158,7 @@ export class GrowspaceHeaderUI extends LitElement {
         <div class="gs-header-top">
           <!-- Row 1 Left: Title/Select + Meta -->
           <div class="header-title-area">
+            ${this._renderMobileStageContext()}
             <div class="header-title-row">
               ${!this.config?.default_growspace
                 ? html`<div class="select-wrapper">
@@ -211,6 +234,22 @@ export class GrowspaceHeaderUI extends LitElement {
           @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
           @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
         ></growspace-header-hero-ui>
+
+        ${this._resizeController.isMobile && this.secondaryChips.length > 0 ? html`
+          <!-- SECONDARY STAT DECK (mobile only) -->
+          <growspace-header-hero-ui
+            .hass=${this.hass}
+            .chips=${this.secondaryChips}
+            .device=${this.device}
+            .isMobile=${true}
+            .mobileLink=${this._mobileLink}
+            .historyCache=${this.historyCache}
+            .timeRange=${this.timeRange}
+            @toggle-graph=${(e: CustomEvent) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
+            @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+          ></growspace-header-hero-ui>
+        ` : nothing}
       </div>
     `;
   }
