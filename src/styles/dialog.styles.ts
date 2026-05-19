@@ -7,24 +7,9 @@ export const dialogStyles = [
   uiStyles,
   css`
     ha-dialog {
-      --dialog-surface-margin-top: 40px !important;
-      --ha-dialog-width-md: 95vw !important;
-      --ha-dialog-max-width: 98vw !important;
-      --ha-dialog-width-full: 98vw !important;
-      --ha-dialog-min-height: 85vh !important;
-      --dialog-surface-width: 98vw !important;
-      --dialog-surface-max-width: 98vw !important;
-      --width: 98vw !important;
-      --dialog-content-padding: 0 !important;
-    }
-
-    @media (min-width: 601px) {
-      ha-dialog {
-        --ha-dialog-max-width: 75vw !important;
-        --dialog-surface-max-width: 75vw !important;
-        --dialog-surface-width: 75vw !important;
-        --width: 75vw !important;
-      }
+      --dialog-surface-margin-top: 40px;
+      --ha-dialog-min-height: 85vh;
+      --dialog-content-padding: 0;
     }
 
     .glass-dialog-container {
@@ -128,7 +113,6 @@ export const dialogStyles = [
         padding: 12px 16px;
       }
 
-      /* Restored responsive rules */
       .dialog-content-grid {
         flex: 1;
         min-height: 0;

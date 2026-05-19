@@ -116,7 +116,7 @@ export class TrainingDialog extends LitElement {
         @closed=${this._handleClose}
         hideActions
         .heading=${title}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

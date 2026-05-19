@@ -357,7 +357,7 @@ export class HarvestScoringDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: #4caf50;">
           <!-- HEADER -->

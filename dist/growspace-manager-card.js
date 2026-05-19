@@ -10005,24 +10005,9 @@ const dialogStyles = [
     uiStyles,
     i$6 `
     ha-dialog {
-      --dialog-surface-margin-top: 40px !important;
-      --ha-dialog-width-md: 95vw !important;
-      --ha-dialog-max-width: 98vw !important;
-      --ha-dialog-width-full: 98vw !important;
-      --ha-dialog-min-height: 85vh !important;
-      --dialog-surface-width: 98vw !important;
-      --dialog-surface-max-width: 98vw !important;
-      --width: 98vw !important;
-      --dialog-content-padding: 0 !important;
-    }
-
-    @media (min-width: 601px) {
-      ha-dialog {
-        --ha-dialog-max-width: 75vw !important;
-        --dialog-surface-max-width: 75vw !important;
-        --dialog-surface-width: 75vw !important;
-        --width: 75vw !important;
-      }
+      --dialog-surface-margin-top: 40px;
+      --ha-dialog-min-height: 85vh;
+      --dialog-content-padding: 0;
     }
 
     .glass-dialog-container {
@@ -10126,7 +10111,6 @@ const dialogStyles = [
         padding: 12px 16px;
       }
 
-      /* Restored responsive rules */
       .dialog-content-grid {
         flex: 1;
         min-height: 0;
@@ -13087,7 +13071,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -14074,7 +14058,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -14400,7 +14384,7 @@ let CloneDialog = class CloneDialog extends i$3 {
         hideActions
         .heading=${title}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
@@ -14610,7 +14594,7 @@ let SensorGroupDialog = class SensorGroupDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
@@ -14948,7 +14932,7 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -15568,7 +15552,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         @closed=${this._close}
         scrimClickAction=""
         escapeKeyAction="close"
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!--Header -->
@@ -17443,7 +17427,7 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -17713,7 +17697,7 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
         .heading=${title}
       >
         <div class="glass-dialog-container">
@@ -18099,7 +18083,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="border-color: ${borderColor}">
           <div class="dialog-header">
@@ -18317,7 +18301,7 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div slot="heading" class="dialog-header">
           <div style="display: flex; flex-direction: column;">
@@ -18709,7 +18693,7 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: #4caf50;">
           <!-- HEADER -->
@@ -19574,7 +19558,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <!-- HEADER -->
@@ -22414,7 +22398,7 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         hideActions
         scrimClickAction=""
         escapeKeyAction="close"
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -22983,7 +22967,7 @@ let NutrientDialog = class NutrientDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">
@@ -23273,7 +23257,7 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .heading=${'Print Label'}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -23583,7 +23567,7 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .heading=${'Print Labels'}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -23816,7 +23800,7 @@ let BatchCloneDialog = class BatchCloneDialog extends i$3 {
         @closed=${this._close}
         hideActions
         .heading=${'Clone Selected Plants'}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -24147,7 +24131,7 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
                 @closed=${this._close}
                 heading="Camera Snapshots"
                 hideActions
-                width="full"
+                width="large"
                 .scrimClickAction=${''}
                 .escapeKeyAction=${'close'}
             >
@@ -29842,7 +29826,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
@@ -31909,7 +31893,7 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -32119,7 +32103,7 @@ let TrainingDialog = class TrainingDialog extends i$3 {
         @closed=${this._handleClose}
         hideActions
         .heading=${title}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

@@ -275,7 +275,7 @@ export class SnapshotsDialog extends LitElement {
                 @closed=${this._close}
                 heading="Camera Snapshots"
                 hideActions
-                width="full"
+                width="large"
                 .scrimClickAction=${''}
                 .escapeKeyAction=${'close'}
             >

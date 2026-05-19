@@ -260,7 +260,7 @@ export class ECRampEditorDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
         .heading=${title}
       >
         <div class="glass-dialog-container">

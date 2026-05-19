@@ -111,7 +111,7 @@ export class GrowMasterDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="border-color: ${borderColor}">
           <div class="dialog-header">

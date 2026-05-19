@@ -910,7 +910,7 @@ export class IrrigationDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <!-- HEADER -->

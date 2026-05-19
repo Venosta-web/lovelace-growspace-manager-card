@@ -138,7 +138,7 @@ export class SensorGroupDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}

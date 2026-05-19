@@ -451,7 +451,7 @@ export class AddPlantDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->

@@ -272,7 +272,7 @@ export class SubareaConfigDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

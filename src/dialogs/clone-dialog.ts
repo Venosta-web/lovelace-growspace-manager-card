@@ -118,7 +118,7 @@ export class CloneDialog extends LitElement {
         hideActions
         .heading=${title}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">

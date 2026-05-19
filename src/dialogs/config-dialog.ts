@@ -703,7 +703,7 @@ export class ConfigDialog extends LitElement {
         @closed=${this._close}
         scrimClickAction=""
         escapeKeyAction="close"
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <!--Header -->

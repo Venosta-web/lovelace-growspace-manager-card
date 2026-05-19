@@ -121,7 +121,7 @@ export class GrowReportDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div slot="heading" class="dialog-header">
           <div style="display: flex; flex-direction: column;">

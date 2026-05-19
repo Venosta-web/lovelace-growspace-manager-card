@@ -1113,7 +1113,7 @@ export class StrainLibraryDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}

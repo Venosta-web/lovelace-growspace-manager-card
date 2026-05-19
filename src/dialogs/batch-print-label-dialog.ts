@@ -162,7 +162,7 @@ export class BatchPrintLabelDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .heading=${'Print Labels'}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

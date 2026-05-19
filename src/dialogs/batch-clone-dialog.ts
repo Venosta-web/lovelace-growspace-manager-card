@@ -148,7 +148,7 @@ export class BatchCloneDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .heading=${'Clone Selected Plants'}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

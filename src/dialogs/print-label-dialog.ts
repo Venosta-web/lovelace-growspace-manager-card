@@ -226,7 +226,7 @@ export class PrintLabelDialog extends LitElement {
         @closed=${this._close}
         hideActions
         .heading=${'Print Label'}
-        width="full"
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

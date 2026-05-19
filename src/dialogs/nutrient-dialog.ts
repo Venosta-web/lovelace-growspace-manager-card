@@ -131,7 +131,7 @@ export class NutrientDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="full"
+        width="large"
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">
