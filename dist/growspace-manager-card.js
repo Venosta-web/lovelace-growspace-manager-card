@@ -117173,6 +117173,79 @@ const FIELD_LABELS = {
 };
 const computeEditorLabel = (schema) => FIELD_LABELS[schema.name] ?? schema.name;
 
+var metrics = {
+	mother_start: "Mother Start",
+	clone_start: "Clone Start",
+	veg_start: "Vegetative Start",
+	flower_start: "Flower Start",
+	dry_start: "Dry Start",
+	cure_start: "Cure Start",
+	planted_date: "Planted Date"
+};
+var stages = {
+	seedling: "Seedling",
+	mother: "Mother",
+	clone: "Clone",
+	veg: "Vegetative",
+	flower: "Flower",
+	dry: "Drying",
+	cure: "Curing"
+};
+var card = {
+	loading: "Loading...",
+	unknown_state: "Unknown"
+};
+var errors = {
+	fetch_failed: "Failed to fetch data"
+};
+var editor = {
+	select_growspace: "Select a growspace...",
+	theme_default: "Default",
+	theme_dark: "Dark",
+	theme_green: "Green",
+	view_mode_standard: "Standard",
+	view_mode_compact: "Compact (Grid Only)",
+	view_mode_header: "Header Only"
+};
+var en = {
+	metrics: metrics,
+	stages: stages,
+	card: card,
+	errors: errors,
+	editor: editor
+};
+
+const languages = {
+    en,
+};
+// Basic lookup logic
+const localize = (string, search = '', replace = '', language = 'en') => {
+    if (!string || typeof string !== 'string') {
+        return string;
+    }
+    const [section, key] = string.split('.');
+    let translated;
+    const lang = language.replace(/_/, '-');
+    try {
+        translated = languages[lang][section][key];
+    }
+    catch (_) {
+        try {
+            translated = languages.en[section][key];
+        }
+        catch (_) {
+            translated = string;
+        }
+    }
+    if (translated === undefined) {
+        translated = string;
+    }
+    if (search !== '' && replace !== '') {
+        translated = translated.replace(search, replace);
+    }
+    return translated;
+};
+
 let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
     constructor() {
         super(...arguments);
@@ -117187,13 +117260,15 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
         }
     }
     _computeSchema() {
+        const lang = this.hass?.language;
+        const l = (key) => localize(key, '', '', lang);
         return [
             {
                 name: 'default_growspace',
                 selector: {
                     select: {
                         options: [
-                            { label: 'Select a growspace...', value: '' },
+                            { label: l('editor.select_growspace'), value: '' },
                             ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
                         ],
                     },
@@ -117204,9 +117279,9 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
                 selector: {
                     select: {
                         options: [
-                            { label: 'Default', value: 'default' },
-                            { label: 'Dark', value: 'dark' },
-                            { label: 'Green', value: 'green' },
+                            { label: l('editor.theme_default'), value: 'default' },
+                            { label: l('editor.theme_dark'), value: 'dark' },
+                            { label: l('editor.theme_green'), value: 'green' },
                         ],
                     },
                 },
@@ -117216,9 +117291,9 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
                 selector: {
                     select: {
                         options: [
-                            { label: 'Standard', value: 'standard' },
-                            { label: 'Compact (Grid Only)', value: 'compact' },
-                            { label: 'Header Only', value: 'header' },
+                            { label: l('editor.view_mode_standard'), value: 'standard' },
+                            { label: l('editor.view_mode_compact'), value: 'compact' },
+                            { label: l('editor.view_mode_header'), value: 'header' },
                         ],
                     },
                 },
