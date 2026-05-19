@@ -22899,8 +22899,8 @@ let NutrientDialog = class NutrientDialog extends i$3 {
                   .open=${true}
                   .embedded=${true}
                   .inventory=${this._inventoryController?.value ?? null}
-                  @update-stock=${(e) => this.store.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-                  @add-stock=${(e) => this.store.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+                  @update-stock=${(e) => this.store.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+                  @add-stock=${(e) => this.store.actions.library.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
                 ></growspace-nutrient-inventory-dialog-ui>`
             : x `<growspace-nutrient-presets-editor
                   .open=${true}
@@ -23035,7 +23035,7 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         this._previewError = null;
         try {
             // 1. Trigger the generation
-            await this.store.printLabel({
+            await this.store.actions.plant.printLabel({
                 plantId: this.dialogState.plantId,
                 strain: this.dialogState.strainName,
                 phenotype: this.dialogState.phenotype,
@@ -23093,7 +23093,7 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
             return;
         this._isSubmitting = true;
         try {
-            await this.store.printLabel({
+            await this.store.actions.plant.printLabel({
                 plantId: this.dialogState.plantId,
                 strain: this.dialogState.strainName,
                 phenotype: this.dialogState.phenotype,
@@ -23391,7 +23391,7 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         // Warm up Niimbot before batch printing — the first service call initializes the
         // printer session; without it all labels come out blank.
         try {
-            await this.store.printLabel({
+            await this.store.actions.plant.printLabel({
                 plantId: plantIds[0],
                 deviceId: this._selectedDeviceId || undefined,
                 preview: true,
@@ -23406,7 +23406,7 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         for (let copy = 0; copy < this._copies; copy++) {
             for (const plantId of plantIds) {
                 try {
-                    await this.store.printLabel({
+                    await this.store.actions.plant.printLabel({
                         plantId,
                         deviceId: this._selectedDeviceId || undefined,
                         preview: false,
@@ -36997,7 +36997,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .targetGrowspaceId=${targetGrowspaceId}
         .siblingPlants=${selectedDeviceData?.plants || []}
         @close=${() => this._closeDialogIfActive('ADD_PLANT')}
-        @add-plant-submit=${(e) => store.confirmAddPlant(e.detail)}
+        @add-plant-submit=${(e) => store.actions.plant.confirmAdd(e.detail)}
         @transplant-plant-submit=${(e) => this._handleTransplant(e.detail)}
         @create-new-strain=${(e) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
@@ -48721,7 +48721,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
     _handleToggleGraph(e) {
         const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
         if (metric) {
-            this.store?.toggleEnvGraph(metric);
+            this.store?.actions.ui.toggleEnvGraph(metric);
         }
     }
     _handleChipDragStart(e) {
@@ -48740,7 +48740,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         }
     }
     _handleOpenNutrients() {
-        this.store?.openNutrientsDialog();
+        this.store?.actions.ui.openNutrientsDialog();
     }
     _handleActionTriggered(e) {
         const { action } = e.detail;
@@ -48749,32 +48749,32 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             return;
         switch (action) {
             case 'add_plant':
-                this.store.openAddPlantDialog();
+                this.store.actions.ui.openAddPlantDialog();
                 break;
             case 'config': {
                 if (this.device)
-                    this.store.openConfigDialog(this.device);
+                    this.store.actions.ui.openConfigDialog(this.device);
                 break;
             }
             case 'strains':
-                this.store.openStrainLibraryDialog();
+                this.store.actions.ui.openStrainLibraryDialog();
                 break;
             case 'irrigation':
                 if (this.device?.deviceId)
-                    this.store.openIrrigationDialog();
+                    this.store.actions.ui.openIrrigationDialog();
                 break;
             case 'ai':
-                this.store.openGrowMasterDialog(this.device?.deviceId || '');
+                this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
                 break;
             case 'logbook':
-                this.store.openLogbookDialog();
+                this.store.actions.ui.openLogbookDialog();
                 break;
             case 'snapshots':
-                this.store.openSnapshotsDialog(this.device?.deviceId || undefined);
+                this.store.actions.ui.openSnapshotsDialog(this.device?.deviceId || undefined);
                 break;
             case 'water': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openWateringDialog({
+                this.store.actions.ui.openWateringDialog({
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
                     growspaceId: this.device?.deviceId || undefined,
                     mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
@@ -48783,7 +48783,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             }
             case 'ipm': {
                 const selectedPlants = this.store.ui.$selectedPlants.get();
-                this.store.openIPMDialog({
+                this.store.actions.ui.openIPMDialog({
                     growspaceId: this.device?.deviceId || '',
                     plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
                 });
@@ -48795,13 +48795,13 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
                 break;
             }
             case 'nutrients':
-                this.store.openNutrientsDialog();
+                this.store.actions.ui.openNutrientsDialog();
                 break;
             case 'ec_ramp':
-                this.store.openECRampDialog(this.device?.deviceId || undefined);
+                this.store.actions.ui.openECRampDialog(this.device?.deviceId || undefined);
                 break;
             case 'report':
-                this.store.openGrowReportDialog(this.device?.deviceId || undefined);
+                this.store.actions.ui.openGrowReportDialog(this.device?.deviceId || undefined);
                 break;
             case 'edit': {
                 const newEditMode = !this.store.ui.$isEditMode.get();
@@ -52631,7 +52631,7 @@ let GrowspaceAnalyticsContainer = class GrowspaceAnalyticsContainer extends i$3 
     _handleToggleGraph(e) {
         const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
         if (metric) {
-            this.store?.toggleEnvGraph(metric);
+            this.store?.actions.ui.toggleEnvGraph(metric);
         }
     }
     _handleUnlinkGraphs(e) {
@@ -108595,7 +108595,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             }
             else if (data.plant.row !== undefined && data.plant.col !== undefined) {
                 // Empty slot
-                this.store?.openAddPlantDialog(data.plant.row, data.plant.col);
+                this.store?.actions.ui.openAddPlantDialog(data.plant.row, data.plant.col);
             }
         }
     }
@@ -111572,14 +111572,6 @@ async function removeGrowspace(ctx, growspaceId) {
     }
 }
 
-function setIsCompactView(ctx, value) {
-    if (value) {
-        ctx.ui.setViewMode(ViewMode.COMPACT);
-    }
-    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-}
 function showToast(ctx, message, type = 'info') {
     ctx.showToast(message, type);
 }
@@ -111588,14 +111580,6 @@ function setActiveDialog(ctx, dialog) {
 }
 function closeDialog(ctx) {
     ctx.ui.closeDialog();
-}
-function toggleHeaderExpansion(ctx) {
-    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
-        ctx.ui.setViewMode(ViewMode.STANDARD);
-    }
-    else {
-        ctx.ui.setViewMode(ViewMode.HEADER);
-    }
 }
 function togglePlantSelection(ctx, plantOrId) {
     const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
@@ -112462,6 +112446,73 @@ async function setVisualTag(ctx, plantId, visualTag) {
     }
 }
 
+/**
+ * Keyboard Actions - Pure functions for keyboard navigation.
+ * Encapsulates keyboard shortcuts and navigation logic without coupling to store lifecycle.
+ */
+/**
+ * Get the currently visible plants for the selected device.
+ * Excludes plants that are marked for optimistic deletion.
+ */
+function getVisiblePlants(ctx) {
+    const selectedDevice = ctx.grid.$selectedDevice.get();
+    if (!selectedDevice)
+        return [];
+    const devices = ctx.data.$devices.get();
+    const device = devices.find((d) => d.deviceId === selectedDevice);
+    if (!device)
+        return [];
+    return device.plants.filter((p) => !ctx.data.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
+}
+/**
+ * Handle keyboard navigation for the growspace grid.
+ * Supports arrow key navigation, enter/space for selection, and delete/backspace for removal.
+ */
+function handleKeyboardNavigation(ctx, key) {
+    // Escape exits edit mode
+    if (ctx.ui.$isEditMode.get() && key === 'Escape') {
+        exitEditMode(ctx);
+        return;
+    }
+    const plants = getVisiblePlants(ctx);
+    if (plants.length === 0)
+        return;
+    const currentIndex = ctx.ui.$focusedPlantIndex.get();
+    switch (key) {
+        case 'ArrowRight':
+            ctx.ui.setFocusedPlantIndex((currentIndex + 1) % plants.length);
+            break;
+        case 'ArrowLeft':
+            ctx.ui.setFocusedPlantIndex((currentIndex - 1 + plants.length) % plants.length);
+            break;
+        case 'Enter':
+        case ' ':
+            if (currentIndex >= 0 && currentIndex < plants.length) {
+                handlePlantClick(ctx, plants[currentIndex]);
+            }
+            break;
+        case 'Delete':
+        case 'Backspace':
+            if (currentIndex >= 0 && currentIndex < plants.length) {
+                const focusedPlant = plants[currentIndex];
+                // logic in plant-actions implies we pass IDs.
+                // In plantActions.handleDeletePlant, it expects string or string[].
+                // But in original keyboard-actions it passed entity_id. Let's check plant type.
+                // Looking at getVisiblePlants above, plants are PlantEntity.
+                // PlantEntity has entity_id and attributes. attributes has plant_id.
+                // The handleDeletePlant in plant-actions checks for plant_id or entity_id.
+                // Let's pass the ID we can find.
+                const idToDelete = focusedPlant.attributes.plant_id || focusedPlant.entity_id;
+                handleDeletePlant(ctx, idToDelete);
+            }
+            else if (ctx.ui.$selectedPlants.get().size > 0) {
+                // If multiple plants are selected, delete them
+                handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
+            }
+            break;
+    }
+}
+
 class ActionDispatcher {
     constructor(store) {
         this.store = store;
@@ -112488,6 +112539,37 @@ class ActionDispatcher {
             logDryingWeight: (plantId, weightGrams, date) => logDryingWeight(this.ctx, plantId, weightGrams, date),
             logMoistureReading: (plantId, moisturePercent, date) => logMoistureReading(this.ctx, plantId, moisturePercent, date),
             setVisualTag: (plantId, visualTag) => setVisualTag(this.ctx, plantId, visualTag),
+            confirmAdd: async (detail) => {
+                if (!detail.strain)
+                    return;
+                await confirmAddPlant(this.ctx, detail);
+            },
+            batchAction: async (action, entityIds, data) => {
+                if (entityIds.length === 0)
+                    return;
+                if (action === 'remove') {
+                    entityIds.forEach((id) => this.ctx.data.addOptimisticDeletedPlantId(id));
+                }
+                try {
+                    await this.ctx.dataService.callService('growspace_manager', 'batch_action', {
+                        entity_ids: entityIds,
+                        action,
+                        data: data || {},
+                    });
+                    this.ctx.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+                    this.ctx.ui.clearPlantSelection();
+                    this.ctx.ui.setEditMode(false);
+                    await this.ctx.refreshData();
+                }
+                catch (err) {
+                    const error = err instanceof Error ? err.message : 'Unknown error';
+                    console.error(`Batch ${action} failed:`, err);
+                    this.ctx.showToast(`Batch ${action} failed: ${error}`, 'error');
+                    if (action === 'remove') {
+                        entityIds.forEach((id) => this.ctx.data.removeOptimisticDeletedPlantId(id));
+                    }
+                }
+            },
         };
         this.growspace = {
             add: (detail) => addGrowspace(this.ctx, detail.name, detail.rows, detail.plantsPerRow, detail.notificationService),
@@ -112544,6 +112626,32 @@ class ActionDispatcher {
             openCropSteeringDialog: (growspaceId) => openCropSteeringDialog(this.ctx, growspaceId),
             openECRampDialog: (growspaceId) => openECRampDialog(this.ctx, growspaceId),
             openGrowReportDialog: (growspaceId) => openGrowReportDialog(this.ctx, growspaceId),
+            openBatchWateringDialog: (growspaceId) => openBatchWateringDialog(this.ctx, growspaceId),
+            openBatchTrainingDialog: (growspaceId) => openBatchTrainingDialog(this.ctx, growspaceId),
+            openBatchCloneDialog: () => openBatchCloneDialog(this.ctx),
+            openBatchPrintLabelsDialog: () => openBatchPrintLabelsDialog(this.ctx),
+            clearPlantSelection: () => clearPlantSelection(this.ctx),
+            exitEditMode: () => exitEditMode(this.ctx),
+            handleDeepLink: (plantId) => handleDeepLink(this.ctx, plantId),
+            handleKeyboardNavigation: (key) => handleKeyboardNavigation(this.ctx, key),
+            deleteSelectedPlants: async () => {
+                const ids = Array.from(this.ctx.ui.$selectedPlants.get());
+                if (!ids.length)
+                    return;
+                await handleDeletePlant(this.ctx, ids);
+            },
+            toggleEnvGraph: (metric) => {
+                if (metric === 'crop_steering') {
+                    const gsId = this.ctx.grid.$selectedDevice.get();
+                    if (gsId)
+                        openCropSteeringDialog(this.ctx, gsId);
+                    return;
+                }
+                const isNowActive = this.ctx.history.toggleEnvGraph(metric);
+                if (isNowActive && this.ctx.ui.$viewMode.get() === ViewMode.HEADER) {
+                    this.ctx.ui.setViewMode(ViewMode.STANDARD);
+                }
+            },
         };
         this.library = {
             fetchStrains: (force = false) => fetchStrainLibrary(this.ctx, force),
@@ -112555,7 +112663,24 @@ class ActionDispatcher {
             fetchECRampCurves: (force = false) => fetchECRampCurves(this.ctx, force),
             saveECRampCurve: (data) => saveECRampCurve(this.ctx, data),
             removeECRampCurve: (id) => removeECRampCurve(this.ctx, id),
-            import: (file, replace) => this.ctx.dataService.importStrainLibrary(file, replace), // Temporarily calling dataService until library action exists
+            import: async (file, _replace) => {
+                try {
+                    const content = await file.text();
+                    const strains = JSON.parse(content);
+                    if (!Array.isArray(strains))
+                        throw new Error('Invalid format');
+                    for (const strain of strains) {
+                        await addStrain(this.ctx, strain);
+                    }
+                    this.ctx.showToast('Library imported successfully', 'success');
+                    await fetchStrainLibrary(this.ctx, true);
+                }
+                catch (e) {
+                    const error = e instanceof Error ? e.message : 'Unknown error';
+                    console.error('Import failed', e);
+                    this.ctx.showToast('Import failed: ' + error, 'error');
+                }
+            },
         };
         this.nutrient = {
             savePreset: (preset) => saveNutrientPreset(this.ctx, preset),
@@ -112627,73 +112752,6 @@ function initializeSelectedDevice(ctx, config) {
 }
 function handleDeviceChange(ctx, deviceId) {
     ctx.grid.setSelectedDevice(deviceId);
-}
-
-/**
- * Keyboard Actions - Pure functions for keyboard navigation.
- * Encapsulates keyboard shortcuts and navigation logic without coupling to store lifecycle.
- */
-/**
- * Get the currently visible plants for the selected device.
- * Excludes plants that are marked for optimistic deletion.
- */
-function getVisiblePlants(ctx) {
-    const selectedDevice = ctx.grid.$selectedDevice.get();
-    if (!selectedDevice)
-        return [];
-    const devices = ctx.data.$devices.get();
-    const device = devices.find((d) => d.deviceId === selectedDevice);
-    if (!device)
-        return [];
-    return device.plants.filter((p) => !ctx.data.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || ''));
-}
-/**
- * Handle keyboard navigation for the growspace grid.
- * Supports arrow key navigation, enter/space for selection, and delete/backspace for removal.
- */
-function handleKeyboardNavigation(ctx, key) {
-    // Escape exits edit mode
-    if (ctx.ui.$isEditMode.get() && key === 'Escape') {
-        exitEditMode(ctx);
-        return;
-    }
-    const plants = getVisiblePlants(ctx);
-    if (plants.length === 0)
-        return;
-    const currentIndex = ctx.ui.$focusedPlantIndex.get();
-    switch (key) {
-        case 'ArrowRight':
-            ctx.ui.setFocusedPlantIndex((currentIndex + 1) % plants.length);
-            break;
-        case 'ArrowLeft':
-            ctx.ui.setFocusedPlantIndex((currentIndex - 1 + plants.length) % plants.length);
-            break;
-        case 'Enter':
-        case ' ':
-            if (currentIndex >= 0 && currentIndex < plants.length) {
-                handlePlantClick(ctx, plants[currentIndex]);
-            }
-            break;
-        case 'Delete':
-        case 'Backspace':
-            if (currentIndex >= 0 && currentIndex < plants.length) {
-                const focusedPlant = plants[currentIndex];
-                // logic in plant-actions implies we pass IDs.
-                // In plantActions.handleDeletePlant, it expects string or string[].
-                // But in original keyboard-actions it passed entity_id. Let's check plant type.
-                // Looking at getVisiblePlants above, plants are PlantEntity.
-                // PlantEntity has entity_id and attributes. attributes has plant_id.
-                // The handleDeletePlant in plant-actions checks for plant_id or entity_id.
-                // Let's pass the ID we can find.
-                const idToDelete = focusedPlant.attributes.plant_id || focusedPlant.entity_id;
-                handleDeletePlant(ctx, idToDelete);
-            }
-            else if (ctx.ui.$selectedPlants.get().size > 0) {
-                // If multiple plants are selected, delete them
-                handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
-            }
-            break;
-    }
 }
 
 /**
@@ -113157,7 +113215,7 @@ class GrowspaceStore {
             optimisticManager: this.optimisticManager,
             syncService: this.syncService,
             hass: this.hass,
-            showToast: (msg, type, action) => this.showToast(msg, type, action),
+            showToast: (msg, type, action) => this.ui.showToast(msg, type, action),
             closeDialog: () => this.ui.closeDialog(),
             refreshData: (force) => this.refreshData(force),
         };
@@ -113209,7 +113267,7 @@ class GrowspaceStore {
         this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
         this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
-        this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.showToast(msg, type, action));
+        this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.ui.showToast(msg, type, action));
         this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
         // Initialize new infrastructure (Phase 1)
         this.eventBus = new EventBus();
@@ -113279,110 +113337,19 @@ class GrowspaceStore {
             toRemove.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
         }
     }
-    // --- Actions Delegation ---
-    // UI Actions
-    setIsCompactView(value) {
-        setIsCompactView(this.context, value);
-    }
-    toggleHeaderExpansion() {
-        toggleHeaderExpansion(this.context);
-    }
-    showToast(message, type = 'info', action) {
-        this.ui.showToast(message, type, action);
-    }
-    handleDeepLink(plantId) {
-        handleDeepLink(this.context, plantId);
-    }
-    toggleEnvGraph(metric) {
-        if (metric === 'crop_steering') {
-            const gsId = this.grid.$selectedDevice.get();
-            if (gsId)
-                this.openCropSteeringDialog(gsId);
-            return;
-        }
-        if (!this.history)
-            return;
-        const isNowActive = this.history.toggleEnvGraph(metric);
-        if (isNowActive && this.ui.$viewMode.get() === ViewMode.HEADER) {
-            this.ui.setViewMode(ViewMode.STANDARD);
-        }
-    }
-    openECRampDialog(growspaceId) {
-        openECRampDialog(this.context, growspaceId);
-    }
-    // Device Actions
+    // Device coordination — these belong on the store as they manage lifecycle state
     initializeSelectedDevice(config) {
         initializeSelectedDevice(this.context, config);
     }
     handleDeviceChange(deviceId) {
         handleDeviceChange(this.context, deviceId);
     }
-    // Library Actions
-    fetchStrainLibrary(force = false) {
-        return fetchStrainLibrary(this.context, force);
-    }
-    async fetchNutrientPresets(force = false) {
-        await fetchNutrientPresets(this.context, force);
-    }
-    async fetchIPMPresets(force = false) {
-        await fetchIPMPresets(this.context, force);
-    }
-    async fetchNutrientInventory(force = false) {
-        await fetchNutrientInventory(this.context, force);
-    }
-    async fetchECRampCurves(force = false) {
-        await fetchECRampCurves(this.context, force);
-    }
-    async updateNutrientStock(nutrientId, name, currentMl, initialMl) {
-        await updateNutrientStock(this.context, nutrientId, name, currentMl, initialMl);
-    }
-    async removeNutrientStock(nutrientId) {
-        await removeNutrientStock(this.context, nutrientId);
-    }
-    // Plant Actions
-    async waterPlant(plantId, amount, nutrients, presetId) {
-        await waterPlant(this.context, plantId, amount, nutrients, presetId);
-    }
-    async waterGrowspace(growspaceId, amount, nutrients, presetId) {
-        await waterGrowspace(this.context, growspaceId, amount, nutrients, presetId);
-    }
-    async printLabel(params) {
-        return await printLabel(this.context, params);
-    }
-    togglePlantSelection(plantOrId) {
-        togglePlantSelection(this.context, plantOrId);
-    }
-    selectAllPlants() {
-        selectAllPlants(this.context);
-    }
-    setSelectedPlants(_plantIds) {
-        // No-op
-    }
-    clearPlantSelection() {
-        clearPlantSelection(this.context);
-    }
-    async deleteSelectedPlants() {
-        const selectedIds = Array.from(this.ui.$selectedPlants.get());
-        if (selectedIds.length === 0)
-            return;
-        await handleDeletePlant(this.context, selectedIds);
-    }
-    exitEditMode() {
-        exitEditMode(this.context);
-    }
-    handlePlantClick(plant) {
-        handlePlantClick(this.context, plant);
-    }
-    async updatePlant(plantId, updates) {
-        await updatePlant(this.context, plantId, updates);
-    }
-    async handleMovePlantToNextStage(plant) {
-        return await movePlantToNextStage(this.context, plant);
-    }
-    async handleDrop(targetRow, targetCol, targetPlant, sourcePlant) {
-        if (!this.grid.$selectedDevice.get())
-            return false;
-        return await handlePlantDrop(this.context, targetRow, targetCol, targetPlant, sourcePlant);
+    // Grid helper — triggers a data refresh after a position change
+    updateGrid() {
+        if (this.hass) {
+            this.dataService.updateHass(this.hass);
+        }
+        this.refreshData();
     }
     async movePlant(plant, newRow, newCol) {
         const success = await movePlantPosition(this.context, plant, newRow, newCol);
@@ -113390,78 +113357,7 @@ class GrowspaceStore {
             this.updateGrid();
         }
     }
-    // Strain/Growspace Actions
-    async addStrain(strainData) {
-        await addStrain(this.context, strainData);
-    }
-    async removeStrain(strainKey) {
-        await removeStrain(this.context, strainKey);
-    }
-    async updateStrain(strainData) {
-        await updateStrain(this.context, strainData);
-    }
-    // eslint-disable-next-line camelcase
-    async handleAddGrowspace(detail) {
-        await addGrowspace(this.context, detail.name, detail.rows, detail.plantsPerRow, detail.notification_service);
-    }
-    async handleRemoveGrowspace(growspaceId) {
-        await removeGrowspace(this.context, growspaceId);
-    }
-    async handleRemoveEnvironment(growspaceId) {
-        await this.dataService.removeEnvironment(growspaceId);
-        await this.refreshData();
-    }
-    // eslint-disable-next-line camelcase
-    async handleUpdateGrowspace(detail) {
-        await updateGrowspace(this.context, detail.growspace_id, detail.name, detail.rows, detail.plantsPerRow);
-    }
-    async confirmAddPlant(detail) {
-        if (!detail.strain)
-            return;
-        await confirmAddPlant(this.context, detail);
-        await this.refreshData();
-    }
-    async confirmAddPlants(detail) {
-        await confirmAddPlants(this.context, detail);
-        await this.refreshData();
-    }
-    // AI Actions
-    async analyzeGrowspace(query, all) {
-        await analyzeGrowspace(this.context, query, all);
-    }
-    // Helpers
-    updateGrid() {
-        if (this.hass) {
-            this.dataService.updateHass(this.hass);
-        }
-        this.refreshData();
-    }
-    handleKeyboardNavigation(key) {
-        handleKeyboardNavigation(this.context, key);
-    }
-    async addNutrientPreset(preset) {
-        await this.dataService.saveNutrientPreset(preset);
-        await this.refreshData();
-    }
-    // Removed: getCommonGrowspaceId - now internal to ui-actions
-    openBatchPrintLabelsDialog() {
-        openBatchPrintLabelsDialog(this.context);
-    }
-    openBatchCloneDialog() {
-        openBatchCloneDialog(this.context);
-    }
-    openBatchWateringDialog(growspaceId) {
-        openBatchWateringDialog(this.context, growspaceId);
-    }
-    openBatchTrainingDialog(growspaceId) {
-        openBatchTrainingDialog(this.context, growspaceId);
-    }
-    openAddPlantDialog(row, col) {
-        openAddPlantDialog(this.context, row, col);
-    }
-    openStrainRecommendationDialog() {
-        openStrainRecommendationDialog(this.context);
-    }
+    // Strain recommendation — has non-trivial loading-state management within the dialog
     async getStrainRecommendation(userQuery) {
         this._updateStrainRecommendationDialog({ isLoading: true });
         try {
@@ -113475,10 +113371,7 @@ class GrowspaceStore {
         catch (e) {
             const error = e instanceof Error ? e.message : 'Unknown error';
             console.error('Error getting strain recommendation:', e);
-            this._updateStrainRecommendationDialog({
-                isLoading: false,
-                response: 'Error: ' + error,
-            });
+            this._updateStrainRecommendationDialog({ isLoading: false, response: 'Error: ' + error });
             throw e;
         }
     }
@@ -113489,95 +113382,6 @@ class GrowspaceStore {
                 ...currentDialog,
                 payload: { ...currentDialog.payload, ...payload },
             });
-        }
-    }
-    openNutrientPresetsDialog() {
-        openNutrientPresetsDialog(this.context);
-    }
-    openIPMDialog(context) {
-        openIPMDialog(this.context, context);
-    }
-    async applyIPM(detail) {
-        await applyIPM(this.context, detail);
-    }
-    openConfigDialog(device) {
-        openConfigDialog(this.context, device);
-    }
-    openStrainLibraryDialog() {
-        openStrainLibraryDialog(this.context);
-    }
-    openIrrigationDialog() {
-        openIrrigationDialog(this.context);
-    }
-    openGrowMasterDialog(growspaceId) {
-        openGrowMasterDialog(this.context, growspaceId);
-    }
-    openWateringDialog(options) {
-        openWateringDialog(this.context, options);
-    }
-    openNutrientsDialog() {
-        openNutrientsDialog(this.context);
-    }
-    openSnapshotsDialog(growspaceId) {
-        openSnapshotsDialog(this.context, growspaceId);
-    }
-    openCropSteeringDialog(growspaceId) {
-        openCropSteeringDialog(this.context, growspaceId);
-    }
-    openLogbookDialog() {
-        openLogbookDialog(this.context);
-    }
-    openGrowReportDialog(growspaceId) {
-        openGrowReportDialog(this.context, growspaceId);
-    }
-    async handleExportLibrary() {
-        await exportStrainLibrary(this.context);
-    }
-    async toggleDehumidifierControl(_deviceId) {
-        console.warn('toggleDehumidifierControl not fully implemented in data service (deprecated or future)');
-    }
-    async performImport(file, _replace) {
-        try {
-            const content = await file.text();
-            const strains = JSON.parse(content);
-            if (!Array.isArray(strains))
-                throw new Error('Invalid format');
-            for (const strain of strains) {
-                await this.addStrain(strain);
-            }
-            this.showToast('Library imported successfully', 'success');
-            this.fetchStrainLibrary(true);
-        }
-        catch (e) {
-            const error = e instanceof Error ? e.message : 'Unknown error';
-            console.error('Import failed', e);
-            this.showToast('Import failed: ' + error, 'error');
-        }
-    }
-    async batchAction(action, entityIds, data) {
-        if (entityIds.length === 0)
-            return;
-        if (action === 'remove') {
-            entityIds.forEach((id) => this.data.addOptimisticDeletedPlantId(id));
-        }
-        try {
-            await this.dataService.callService('growspace_manager', 'batch_action', {
-                entity_ids: entityIds,
-                action,
-                data: data || {},
-            });
-            this.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
-            this.ui.clearPlantSelection();
-            this.ui.setEditMode(false);
-            await this.refreshData();
-        }
-        catch (err) {
-            const error = err instanceof Error ? err.message : 'Unknown error';
-            console.error(`Batch ${action} failed:`, err);
-            this.showToast(`Batch ${action} failed: ${error}`, 'error');
-            if (action === 'remove') {
-                entityIds.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
-            }
         }
     }
 }
@@ -113901,7 +113705,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             this._downloadFile(e.detail.url);
         };
         this._handleDeleteSelected = () => {
-            this.store.deleteSelectedPlants();
+            void this.store.actions.ui.deleteSelectedPlants();
         };
         this._handleTransplantMode = () => {
             this.store.ui.toggleTransplantMode();
@@ -113934,10 +113738,10 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             this.store.updateHass(this.hass);
         }
         this.store.initializeSelectedDevice(this._config);
-        this.store.fetchStrainLibrary();
-        this.store.fetchNutrientPresets();
-        this.store.fetchIPMPresets();
-        this.store.fetchNutrientInventory();
+        this.store.actions.library.fetchStrains();
+        this.store.actions.library.fetchNutrientPresets();
+        this.store.actions.library.fetchIPMPresets();
+        this.store.actions.library.fetchNutrientInventory();
         // Check for deep link
         this._checkDeepLink();
     }
@@ -113953,7 +113757,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             const url = new URL(window.location.href);
             url.searchParams.delete('plantId');
             window.history.replaceState({}, '', url.toString());
-            this.store.handleDeepLink(plantId);
+            this.store.actions.ui.handleDeepLink(plantId);
         }
     }
     connectedCallback() {
@@ -113988,7 +113792,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             // Re-check for pending deep link when hass (and thus devices) updates
             const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
             if (pendingId) {
-                this.store.handleDeepLink(pendingId);
+                this.store.actions.ui.handleDeepLink(pendingId);
             }
         }
         if (this._dialogPortal && (changedProps.has('hass') || changedProps.has('_config'))) {
@@ -114033,7 +113837,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     // Event handlers
     _handleKeyboardNav(e) {
-        this.store.handleKeyboardNavigation(e.key);
+        this.store.actions.ui.handleKeyboardNavigation(e.key);
     }
     _downloadFile(url) {
         const a = document.createElement('a');
@@ -114051,34 +113855,34 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.handleDeviceChange(e.detail);
     }
     _handleSelectAll() {
-        this.store.selectAllPlants();
+        this.store.actions.ui.selectAllPlants();
     }
     _handleClearSelection() {
-        this.store.clearPlantSelection();
+        this.store.actions.ui.clearPlantSelection();
     }
     _handleWaterSelected() {
-        this.store.openBatchWateringDialog();
+        this.store.actions.ui.openBatchWateringDialog();
     }
     _handleExitEditMode() {
         this.store.ui.setEditMode(false);
     }
     _handleIPMSelected() {
-        this.store.openIPMDialog();
+        this.store.actions.ui.openIPMDialog();
     }
     _handleToggleExpansion() {
-        this.store.toggleHeaderExpansion();
+        this.store.actions.ui.exitEditMode();
     }
     _handleTrainingSelected() {
-        this.store.openBatchTrainingDialog();
+        this.store.actions.ui.openBatchTrainingDialog();
     }
     _handleBatchAddPlants() {
         this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
     }
     _handlePrintLabelsSelected() {
-        this.store.openBatchPrintLabelsDialog();
+        this.store.actions.ui.openBatchPrintLabelsDialog();
     }
     _handleCloneSelected() {
-        this.store.openBatchCloneDialog();
+        this.store.actions.ui.openBatchCloneDialog();
     }
     render() {
         if (!this.hass) {
@@ -114179,14 +113983,14 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
         this._sharedStore = growspaceStoreRegistry.acquire();
         this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
-        this._handleSelectAll = () => this.store.selectAllPlants();
-        this._handleClearSelection = () => this.store.clearPlantSelection();
-        this._handleWaterSelected = () => this.store.openBatchWateringDialog();
+        this._handleSelectAll = () => this.store.actions.ui.selectAllPlants();
+        this._handleClearSelection = () => this.store.actions.ui.clearPlantSelection();
+        this._handleWaterSelected = () => this.store.actions.ui.openBatchWateringDialog();
         this._handleExitEditMode = () => this.store.ui.setEditMode(false);
-        this._handleIPMSelected = () => this.store.openIPMDialog();
-        this._handleTrainingSelected = () => this.store.openBatchTrainingDialog();
+        this._handleIPMSelected = () => this.store.actions.ui.openIPMDialog();
+        this._handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
         this._handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
-        this._handleDeleteSelected = () => this.store.deleteSelectedPlants();
+        this._handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
         this._handleTransplantMode = () => this.store.ui.toggleTransplantMode();
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Grid Card caught error:', error, errorInfo);
@@ -114260,7 +114064,7 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
     }
     // Event handlers
     _handleKeyboardNav(e) {
-        this.store.handleKeyboardNavigation(e.key);
+        this.store.actions.ui.handleKeyboardNavigation(e.key);
     }
     // We ignore growspace changes and view mode changes as this card is dedicated 
     // to a specific view. Growspace changes are handled contextually if needed.
@@ -114398,7 +114202,7 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
         // The standalone analytics card has no header chips to toggle graphs,
         // so default to the primary env metrics if none are active yet.
         if (this.store.history.$activeEnvGraphs.get().size === 0) {
-            ['temperature', 'humidity', 'vpd', 'co2'].forEach((m) => this.store.toggleEnvGraph(m));
+            ['temperature', 'humidity', 'vpd', 'co2'].forEach((m) => this.store.actions.ui.toggleEnvGraph(m));
         }
     }
     disconnectedCallback() {
@@ -115581,7 +115385,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         };
     }
     _toggleMetricGraph(metric) {
-        this.store?.toggleEnvGraph(metric);
+        this.store?.actions.ui.toggleEnvGraph(metric);
     }
     render() {
         if (!this.hass) {

@@ -130,17 +130,17 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
 
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
-    this.store.handleKeyboardNavigation(e.key);
+    this.store.actions.ui.handleKeyboardNavigation(e.key);
   }
 
-  private _handleSelectAll = () => this.store.selectAllPlants();
-  private _handleClearSelection = () => this.store.clearPlantSelection();
-  private _handleWaterSelected = () => this.store.openBatchWateringDialog();
+  private _handleSelectAll = () => this.store.actions.ui.selectAllPlants();
+  private _handleClearSelection = () => this.store.actions.ui.clearPlantSelection();
+  private _handleWaterSelected = () => this.store.actions.ui.openBatchWateringDialog();
   private _handleExitEditMode = () => this.store.ui.setEditMode(false);
-  private _handleIPMSelected = () => this.store.openIPMDialog();
-  private _handleTrainingSelected = () => this.store.openBatchTrainingDialog();
+  private _handleIPMSelected = () => this.store.actions.ui.openIPMDialog();
+  private _handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
   private _handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
-  private _handleDeleteSelected = () => this.store.deleteSelectedPlants();
+  private _handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
   private _handleTransplantMode = () => this.store.ui.toggleTransplantMode();
 
   // We ignore growspace changes and view mode changes as this card is dedicated 

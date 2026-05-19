@@ -120,7 +120,7 @@ export class PrintLabelDialog extends LitElement {
 
         try {
             // 1. Trigger the generation
-            await this.store.printLabel({
+            await this.store.actions.plant.printLabel({
                 plantId: this.dialogState.plantId,
                 strain: this.dialogState.strainName,
                 phenotype: this.dialogState.phenotype,
@@ -184,7 +184,7 @@ export class PrintLabelDialog extends LitElement {
         this._isSubmitting = true;
 
         try {
-            await this.store.printLabel({
+            await this.store.actions.plant.printLabel({
                 plantId: this.dialogState.plantId,
                 strain: this.dialogState.strainName,
                 phenotype: this.dialogState.phenotype,

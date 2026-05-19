@@ -70,7 +70,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   it('opens BATCH_CLONE dialog via store method', () => {
     store.ui.$selectedPlants.set(new Set(['p1', 'p2']));
 
-    store.openBatchCloneDialog();
+    store.actions.ui.openBatchCloneDialog();
 
     const active = store.ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_CLONE');
@@ -81,7 +81,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   });
 
   it('does not open dialog when no plants are selected', () => {
-    store.openBatchCloneDialog();
+    store.actions.ui.openBatchCloneDialog();
 
     expect(store.ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -90,7 +90,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
     const ids = ['alpha', 'beta', 'gamma', 'delta'];
     store.ui.$selectedPlants.set(new Set(ids));
 
-    store.openBatchCloneDialog();
+    store.actions.ui.openBatchCloneDialog();
 
     const active = store.ui.$activeDialog.get();
     if (active.type === 'BATCH_CLONE') {
@@ -104,7 +104,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   it('reflects dialogHostState after opening', () => {
     store.ui.$selectedPlants.set(new Set(['p1']));
 
-    store.openBatchCloneDialog();
+    store.actions.ui.openBatchCloneDialog();
 
     expect(store.$dialogHostState.get().activeDialog.type).toBe('BATCH_CLONE');
   });

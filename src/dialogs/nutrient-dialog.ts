@@ -188,8 +188,8 @@ export class NutrientDialog extends LitElement {
                   .open=${true}
                   .embedded=${true}
                   .inventory=${this._inventoryController?.value ?? null}
-                  @update-stock=${(e: CustomEvent) => this.store.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-                  @add-stock=${(e: CustomEvent) => this.store.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+                  @update-stock=${(e: CustomEvent) => this.store.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
+                  @add-stock=${(e: CustomEvent) => this.store.actions.library.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
                 ></growspace-nutrient-inventory-dialog-ui>`
               : html`<growspace-nutrient-presets-editor
                   .open=${true}

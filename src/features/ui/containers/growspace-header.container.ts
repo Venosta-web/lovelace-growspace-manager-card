@@ -83,7 +83,7 @@ export class GrowspaceHeaderContainer extends LitElement {
     const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
     const heroChips: HeaderChip[] = [];
     const secondaryChips: HeaderChip[] = [];
-    
+
     mainChips.forEach(chip => {
       if (heroKeySet.has(chip.key)) {
         heroChips.push(chip);
@@ -119,7 +119,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _handleToggleGraph(e: CustomEvent) {
     const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
     if (metric) {
-      this.store?.toggleEnvGraph(metric);
+      this.store?.actions.ui.toggleEnvGraph(metric);
     }
   }
 
@@ -142,40 +142,40 @@ export class GrowspaceHeaderContainer extends LitElement {
   }
 
   private _handleOpenNutrients() {
-    this.store?.openNutrientsDialog();
+    this.store?.actions.ui.openNutrientsDialog();
   }
 
   private _handleActionTriggered(e: CustomEvent<{ action: string }>) {
     const { action } = e.detail;
     console.log(`[GrowspaceHeaderContainer] Action triggered: ${action}`);
     if (!this.store) return;
-    
+
     switch (action) {
       case 'add_plant':
-        this.store.openAddPlantDialog();
+        this.store.actions.ui.openAddPlantDialog();
         break;
       case 'config': {
-        if (this.device) this.store.openConfigDialog(this.device);
+        if (this.device) this.store.actions.ui.openConfigDialog(this.device);
         break;
       }
       case 'strains':
-        this.store.openStrainLibraryDialog();
+        this.store.actions.ui.openStrainLibraryDialog();
         break;
       case 'irrigation':
-        if (this.device?.deviceId) this.store.openIrrigationDialog();
+        if (this.device?.deviceId) this.store.actions.ui.openIrrigationDialog();
         break;
       case 'ai':
-        this.store.openGrowMasterDialog(this.device?.deviceId || '');
+        this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
         break;
       case 'logbook':
-        this.store.openLogbookDialog();
+        this.store.actions.ui.openLogbookDialog();
         break;
       case 'snapshots':
-        this.store.openSnapshotsDialog(this.device?.deviceId || undefined);
+        this.store.actions.ui.openSnapshotsDialog(this.device?.deviceId || undefined);
         break;
       case 'water': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.openWateringDialog({
+        this.store.actions.ui.openWateringDialog({
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
           growspaceId: this.device?.deviceId || undefined,
           mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
@@ -184,7 +184,7 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'ipm': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.openIPMDialog({
+        this.store.actions.ui.openIPMDialog({
           growspaceId: this.device?.deviceId || '',
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
         });
@@ -199,13 +199,13 @@ export class GrowspaceHeaderContainer extends LitElement {
         break;
       }
       case 'nutrients':
-        this.store.openNutrientsDialog();
+        this.store.actions.ui.openNutrientsDialog();
         break;
       case 'ec_ramp':
-        this.store.openECRampDialog(this.device?.deviceId || undefined);
+        this.store.actions.ui.openECRampDialog(this.device?.deviceId || undefined);
         break;
       case 'report':
-        this.store.openGrowReportDialog(this.device?.deviceId || undefined);
+        this.store.actions.ui.openGrowReportDialog(this.device?.deviceId || undefined);
         break;
       case 'edit': {
         const newEditMode = !this.store.ui.$isEditMode.get();

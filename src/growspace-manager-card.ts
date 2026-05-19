@@ -70,10 +70,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       this.store.updateHass(this.hass);
     }
     this.store.initializeSelectedDevice(this._config);
-    this.store.fetchStrainLibrary();
-    this.store.fetchNutrientPresets();
-    this.store.fetchIPMPresets();
-    this.store.fetchNutrientInventory();
+    this.store.actions.library.fetchStrains();
+    this.store.actions.library.fetchNutrientPresets();
+    this.store.actions.library.fetchIPMPresets();
+    this.store.actions.library.fetchNutrientInventory();
 
     // Check for deep link
     this._checkDeepLink();
@@ -95,7 +95,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       url.searchParams.delete('plantId');
       window.history.replaceState({}, '', url.toString());
 
-      this.store.handleDeepLink(plantId);
+      this.store.actions.ui.handleDeepLink(plantId);
     }
   }
 
@@ -138,7 +138,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       // Re-check for pending deep link when hass (and thus devices) updates
       const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
       if (pendingId) {
-        this.store.handleDeepLink(pendingId);
+        this.store.actions.ui.handleDeepLink(pendingId);
       }
     }
 
@@ -193,7 +193,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
-    this.store.handleKeyboardNavigation(e.key);
+    this.store.actions.ui.handleKeyboardNavigation(e.key);
   }
 
   private _downloadFile(url: string) {
@@ -215,15 +215,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleSelectAll() {
-    this.store.selectAllPlants();
+    this.store.actions.ui.selectAllPlants();
   }
 
   private _handleClearSelection() {
-    this.store.clearPlantSelection();
+    this.store.actions.ui.clearPlantSelection();
   }
 
   private _handleWaterSelected() {
-    this.store.openBatchWateringDialog();
+    this.store.actions.ui.openBatchWateringDialog();
   }
 
   private _handleExitEditMode() {
@@ -231,15 +231,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleIPMSelected() {
-    this.store.openIPMDialog();
+    this.store.actions.ui.openIPMDialog();
   }
 
   private _handleToggleExpansion() {
-    this.store.toggleHeaderExpansion();
+    this.store.actions.ui.exitEditMode();
   }
 
   private _handleTrainingSelected() {
-    this.store.openBatchTrainingDialog();
+    this.store.actions.ui.openBatchTrainingDialog();
   }
 
   private _handleBatchAddPlants() {
@@ -247,15 +247,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handlePrintLabelsSelected() {
-    this.store.openBatchPrintLabelsDialog();
+    this.store.actions.ui.openBatchPrintLabelsDialog();
   }
 
   private _handleCloneSelected() {
-    this.store.openBatchCloneDialog();
+    this.store.actions.ui.openBatchCloneDialog();
   }
 
   private _handleDeleteSelected = () => {
-    this.store.deleteSelectedPlants();
+    void this.store.actions.ui.deleteSelectedPlants();
   };
 
   private _handleTransplantMode = () => {

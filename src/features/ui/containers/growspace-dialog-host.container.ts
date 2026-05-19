@@ -253,7 +253,7 @@ export class GrowspaceDialogHost extends LitElement {
         .targetGrowspaceId=${targetGrowspaceId}
         .siblingPlants=${selectedDeviceData?.plants || []}
         @close=${() => this._closeDialogIfActive('ADD_PLANT')}
-        @add-plant-submit=${(e: CustomEvent) => store.confirmAddPlant(e.detail)}
+        @add-plant-submit=${(e: CustomEvent) => store.actions.plant.confirmAdd(e.detail)}
         @transplant-plant-submit=${(e: CustomEvent) => this._handleTransplant(e.detail)}
         @create-new-strain=${(e: CustomEvent) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}

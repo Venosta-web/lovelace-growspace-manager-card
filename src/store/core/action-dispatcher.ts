@@ -10,8 +10,10 @@ import * as breederActions from '../plant/breeder-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as ipmActions from '../plant/ipm-actions';
 import * as dryingActions from '../plant/drying-actions';
-import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState } from '../../types';
+import * as keyboardActions from '../system/keyboard-actions';
+import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState, AddPlantDialogState } from '../../types';
 import { ActionContext } from './action-context';
+import { ViewMode } from '../../constants';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
 
 interface IGrowspaceStore {
@@ -81,6 +83,40 @@ export class ActionDispatcher {
 
     setVisualTag: (plantId: string, visualTag: string | null) =>
       dryingActions.setVisualTag(this.ctx, plantId, visualTag),
+
+    confirmAdd: async (detail: AddPlantDialogState) => {
+      if (!detail.strain) return;
+      await plantActions.confirmAddPlant(this.ctx, detail as Required<AddPlantDialogState>);
+    },
+
+    batchAction: async (
+      action: 'remove' | 'transition' | 'harvest',
+      entityIds: string[],
+      data?: Record<string, unknown>
+    ): Promise<void> => {
+      if (entityIds.length === 0) return;
+      if (action === 'remove') {
+        entityIds.forEach((id) => this.ctx.data.addOptimisticDeletedPlantId(id));
+      }
+      try {
+        await this.ctx.dataService.callService('growspace_manager', 'batch_action', {
+          entity_ids: entityIds,
+          action,
+          data: data || {},
+        });
+        this.ctx.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+        this.ctx.ui.clearPlantSelection();
+        this.ctx.ui.setEditMode(false);
+        await this.ctx.refreshData();
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err.message : 'Unknown error';
+        console.error(`Batch ${action} failed:`, err);
+        this.ctx.showToast(`Batch ${action} failed: ${error}`, 'error');
+        if (action === 'remove') {
+          entityIds.forEach((id) => this.ctx.data.removeOptimisticDeletedPlantId(id));
+        }
+      }
+    },
   };
 
   public readonly growspace = {
@@ -190,6 +226,30 @@ export class ActionDispatcher {
     openCropSteeringDialog: (growspaceId?: string) => uiActions.openCropSteeringDialog(this.ctx, growspaceId),
     openECRampDialog: (growspaceId?: string) => uiActions.openECRampDialog(this.ctx, growspaceId),
     openGrowReportDialog: (growspaceId?: string) => uiActions.openGrowReportDialog(this.ctx, growspaceId),
+    openBatchWateringDialog: (growspaceId?: string) => uiActions.openBatchWateringDialog(this.ctx, growspaceId),
+    openBatchTrainingDialog: (growspaceId?: string) => uiActions.openBatchTrainingDialog(this.ctx, growspaceId),
+    openBatchCloneDialog: () => uiActions.openBatchCloneDialog(this.ctx),
+    openBatchPrintLabelsDialog: () => uiActions.openBatchPrintLabelsDialog(this.ctx),
+    clearPlantSelection: () => uiActions.clearPlantSelection(this.ctx),
+    exitEditMode: () => uiActions.exitEditMode(this.ctx),
+    handleDeepLink: (plantId: string) => uiActions.handleDeepLink(this.ctx, plantId),
+    handleKeyboardNavigation: (key: string) => keyboardActions.handleKeyboardNavigation(this.ctx, key),
+    deleteSelectedPlants: async () => {
+      const ids = Array.from(this.ctx.ui.$selectedPlants.get());
+      if (!ids.length) return;
+      await plantActions.handleDeletePlant(this.ctx, ids);
+    },
+    toggleEnvGraph: (metric: string) => {
+      if (metric === 'crop_steering') {
+        const gsId = this.ctx.grid.$selectedDevice.get();
+        if (gsId) uiActions.openCropSteeringDialog(this.ctx, gsId);
+        return;
+      }
+      const isNowActive = this.ctx.history.toggleEnvGraph(metric);
+      if (isNowActive && this.ctx.ui.$viewMode.get() === ViewMode.HEADER) {
+        this.ctx.ui.setViewMode(ViewMode.STANDARD);
+      }
+    },
   };
 
   public readonly library = {
@@ -204,7 +264,22 @@ export class ActionDispatcher {
     saveECRampCurve: (data: Parameters<typeof libraryActions.saveECRampCurve>[1]) =>
       libraryActions.saveECRampCurve(this.ctx, data),
     removeECRampCurve: (id: string) => libraryActions.removeECRampCurve(this.ctx, id),
-    import: (file: File, replace: boolean) => this.ctx.dataService.importStrainLibrary(file, replace), // Temporarily calling dataService until library action exists
+    import: async (file: File, _replace: boolean) => {
+      try {
+        const content = await file.text();
+        const strains = JSON.parse(content);
+        if (!Array.isArray(strains)) throw new Error('Invalid format');
+        for (const strain of strains) {
+          await strainActions.addStrain(this.ctx, strain);
+        }
+        this.ctx.showToast('Library imported successfully', 'success');
+        await libraryActions.fetchStrainLibrary(this.ctx, true);
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Import failed', e);
+        this.ctx.showToast('Import failed: ' + error, 'error');
+      }
+    },
   };
 
   public readonly nutrient = {

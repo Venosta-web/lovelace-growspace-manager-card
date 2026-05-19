@@ -617,7 +617,7 @@ export class Heatmap3D extends LitElement {
                 this.store?.actions.ui.openPlantOverviewDialog(data.plant);
             } else if (data.plant.row !== undefined && data.plant.col !== undefined) {
                 // Empty slot
-                this.store?.openAddPlantDialog(data.plant.row, data.plant.col);
+                this.store?.actions.ui.openAddPlantDialog(data.plant.row, data.plant.col);
             }
         }
     }

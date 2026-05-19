@@ -396,7 +396,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
 
     private _toggleMetricGraph(metric: string): void {
-        this.store?.toggleEnvGraph(metric);
+        this.store?.actions.ui.toggleEnvGraph(metric);
     }
 
     protected render(): TemplateResult {

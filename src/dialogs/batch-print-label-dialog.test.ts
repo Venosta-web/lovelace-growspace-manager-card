@@ -70,7 +70,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   it('opens BATCH_PRINT_LABELS dialog via store method', () => {
     store.ui.$selectedPlants.set(new Set(['p1', 'p2']));
 
-    store.openBatchPrintLabelsDialog();
+    store.actions.ui.openBatchPrintLabelsDialog();
 
     const active = store.ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_PRINT_LABELS');
@@ -81,7 +81,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   });
 
   it('does not open dialog when no plants are selected', () => {
-    store.openBatchPrintLabelsDialog();
+    store.actions.ui.openBatchPrintLabelsDialog();
 
     expect(store.ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -90,7 +90,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
     const ids = ['alpha', 'beta', 'gamma', 'delta'];
     store.ui.$selectedPlants.set(new Set(ids));
 
-    store.openBatchPrintLabelsDialog();
+    store.actions.ui.openBatchPrintLabelsDialog();
 
     const active = store.ui.$activeDialog.get();
     if (active.type === 'BATCH_PRINT_LABELS') {
@@ -104,7 +104,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   it('reflects dialogHostState after opening', () => {
     store.ui.$selectedPlants.set(new Set(['p1']));
 
-    store.openBatchPrintLabelsDialog();
+    store.actions.ui.openBatchPrintLabelsDialog();
 
     expect(store.$dialogHostState.get().activeDialog.type).toBe('BATCH_PRINT_LABELS');
   });
@@ -123,10 +123,12 @@ for (const tag of mockTags) {
 
 function makeMockStore(overrides: Record<string, unknown> = {}) {
   return {
-    printLabel: vi.fn().mockResolvedValue(undefined),
     actions: {
       ui: {
         toast: vi.fn(),
+      },
+      plant: {
+        printLabel: vi.fn().mockResolvedValue(undefined),
       },
     },
     ...overrides,
@@ -278,7 +280,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.printLabel).not.toHaveBeenCalled();
+    expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
   });
 
   it('performs warm-up call with preview:true before batch', async () => {
@@ -289,7 +291,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.printLabel).toHaveBeenNthCalledWith(1, {
+    expect(mockStore.actions.plant.printLabel).toHaveBeenNthCalledWith(1, {
       plantId: 'plant-1',
       deviceId: 'image.printer_a_last_label_made',
       preview: true,
@@ -298,9 +300,9 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
   it('continues batch even when warm-up fails', async () => {
     const mockStore = makeMockStore({
-      printLabel: vi.fn()
+      actions: { ui: { toast: vi.fn() }, plant: { printLabel: vi.fn()
         .mockRejectedValueOnce(new Error('warm-up error'))
-        .mockResolvedValue(undefined),
+        .mockResolvedValue(undefined) } },
     });
     const el = createElement(mockStore);
     (el as any).dialogState = { plantIds: ['plant-1'] };
@@ -308,7 +310,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
     await (el as any)._submit();
 
     // warm-up + 1 batch call
-    expect(mockStore.printLabel).toHaveBeenCalledTimes(2);
+    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(2);
     expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('1 label'), 'success');
   });
 
@@ -321,7 +323,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
     await (el as any)._submit();
 
     // 1 warm-up + 3 copies × 2 plants = 7 total calls
-    expect(mockStore.printLabel).toHaveBeenCalledTimes(7);
+    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(7);
   });
 
   it('shows success toast when all prints succeed', async () => {
@@ -338,12 +340,12 @@ describe('BatchPrintLabelDialog – _submit', () => {
   it('shows error toast when some prints fail', async () => {
     let callCount = 0;
     const mockStore = makeMockStore({
-      printLabel: vi.fn().mockImplementation(() => {
+      actions: { ui: { toast: vi.fn() }, plant: { printLabel: vi.fn().mockImplementation(() => {
         callCount++;
         // warm-up succeeds, first batch print fails
         if (callCount === 2) return Promise.reject(new Error('print error'));
         return Promise.resolve(undefined);
-      }),
+      }) } },
     });
     const el = createElement(mockStore);
     (el as any).dialogState = { plantIds: ['p1', 'p2'] };
@@ -384,7 +386,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    const batchCall = mockStore.printLabel.mock.calls[1];
+    const batchCall = mockStore.actions.plant.printLabel.mock.calls[1];
     expect(batchCall[0].deviceId).toBeUndefined();
   });
 });
