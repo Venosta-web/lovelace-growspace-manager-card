@@ -35,6 +35,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   private _dialogPortal: GrowspaceDialogHost | null = null;
+  private _viewModeInitialized = false;
 
   protected _viewController = new StoreController(this, this.store.$mainCardState);
 
@@ -171,8 +172,9 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    if (this._config.initial_view_mode) {
+    if (!this._viewModeInitialized && this._config.initial_view_mode) {
       this.store.ui.setViewMode(this._config.initial_view_mode);
+      this._viewModeInitialized = true;
     }
 
     // Initialize store config immediately to prevent race conditions with updateHass
@@ -235,7 +237,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleToggleExpansion() {
-    this.store.actions.ui.exitEditMode();
+    this.store.actions.ui.toggleHeaderExpansion();
   }
 
   private _handleTrainingSelected() {

@@ -1134,9 +1134,9 @@ describe('GrowspaceStore', () => {
 
     });
 
-    it('should handle initializeSelectedDevice with initial_view_mode', () => {
+    it('should handle initializeSelectedDevice without resetting view mode from config', () => {
         store.initializeSelectedDevice({ default_growspace: 'd1', initial_view_mode: 'header' } as any);
-        expect(uiStore.setViewMode).toHaveBeenCalledWith('header');
+        expect(uiStore.setViewMode).not.toHaveBeenCalledWith('header');
     });
 
     it('should handle _areDeviceArraysEqual false on content mismatch', () => {

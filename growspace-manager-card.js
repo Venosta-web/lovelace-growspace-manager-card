@@ -113183,9 +113183,6 @@ class GrowspaceStore {
             return;
         this.data.setConfig(config);
         this.syncService.setCardConfig(config);
-        if (config?.initial_view_mode) {
-            this.ui.setViewMode(config.initial_view_mode);
-        }
         this.syncService.updateDevicesState();
     }
     handleDeviceChange(deviceId) {
@@ -113546,6 +113543,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this._sharedStore = growspaceStoreRegistry.acquire();
         this.store = new GrowspaceStore(this._sharedStore);
         this._dialogPortal = null;
+        this._viewModeInitialized = false;
         this._viewController = new libExports.StoreController(this, this.store.$mainCardState);
         this._strainLibrary = [];
         this._handleLibraryExportReady = (e) => {
@@ -113666,8 +113664,9 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (!config)
             throw new Error('Invalid configuration');
         this._config = config;
-        if (this._config.initial_view_mode) {
+        if (!this._viewModeInitialized && this._config.initial_view_mode) {
             this.store.ui.setViewMode(this._config.initial_view_mode);
+            this._viewModeInitialized = true;
         }
         // Initialize store config immediately to prevent race conditions with updateHass
         this.store.initializeSelectedDevice(this._config);
@@ -113717,7 +113716,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this.store.actions.ui.openIPMDialog();
     }
     _handleToggleExpansion() {
-        this.store.actions.ui.exitEditMode();
+        this.store.actions.ui.toggleHeaderExpansion();
     }
     _handleTrainingSelected() {
         this.store.actions.ui.openBatchTrainingDialog();

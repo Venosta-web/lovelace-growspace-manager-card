@@ -306,9 +306,6 @@ export class GrowspaceStore {
     if (!config) return;
     this.data.setConfig(config);
     this.syncService.setCardConfig(config);
-    if (config?.initial_view_mode) {
-      this.ui.setViewMode(config.initial_view_mode);
-    }
     this.syncService.updateDevicesState();
   }
 

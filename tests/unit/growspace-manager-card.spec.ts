@@ -112,6 +112,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
                 openIPMDialog: vi.fn(),
                 handleDeepLink: vi.fn(),
                 exitEditMode: vi.fn(),
+                toggleHeaderExpansion: vi.fn(),
                 toggleEnvGraph: vi.fn(),
                 toast: vi.fn(),
             },
@@ -545,7 +546,7 @@ describe('GrowspaceManagerCard', () => {
 
             // Toggle expansion (if available)
             if (typeof (element as any)._handleToggleExpansion === 'function') {
-                const toggleSpy = vi.spyOn(element.store.actions.ui, 'exitEditMode');
+                const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleHeaderExpansion');
                 (element as any)._handleToggleExpansion();
                 expect(toggleSpy).toHaveBeenCalled();
             }

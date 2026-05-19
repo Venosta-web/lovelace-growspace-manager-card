@@ -83,4 +83,54 @@ describe('GrowspaceManagerCard', () => {
     element.setConfig(config);
     expect(spy).toHaveBeenCalledWith(ViewMode.COMPACT);
   });
+
+  test('_handleToggleExpansion switches from header view to standard view', () => {
+    element.store.ui.setViewMode(ViewMode.HEADER);
+    (element as any)._handleToggleExpansion();
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
+  });
+
+  test('_handleToggleExpansion switches from standard view to header view', () => {
+    element.store.ui.setViewMode(ViewMode.STANDARD);
+    (element as any)._handleToggleExpansion();
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.HEADER);
+  });
+
+  test('expand button: view mode stays standard after user switches from compact, even when setConfig is called again', () => {
+    const config: GrowspaceManagerCardConfig = {
+      type: 'custom:growspace-manager-card',
+      default_growspace: 'tent',
+      initial_view_mode: ViewMode.COMPACT,
+    };
+    element.setConfig(config);
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.COMPACT);
+
+    // User clicks the expand button → view-mode-changed fires → setViewMode('standard')
+    element.store.ui.setViewMode(ViewMode.STANDARD);
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
+
+    // HA calls setConfig again (e.g., reconnect, editor save) — view mode must NOT reset
+    element.setConfig(config);
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
+  });
+
+  test('initial_view_mode is applied on first setConfig but ignored on subsequent calls', () => {
+    const config: GrowspaceManagerCardConfig = {
+      type: 'custom:growspace-manager-card',
+      default_growspace: 'tent',
+      initial_view_mode: ViewMode.COMPACT,
+    };
+
+    element.setConfig(config);
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.COMPACT);
+
+    element.store.ui.setViewMode(ViewMode.STANDARD);
+
+    const updatedConfig: GrowspaceManagerCardConfig = {
+      ...config,
+      keyboard_rotate_enabled: true,
+    };
+    element.setConfig(updatedConfig);
+    expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
+  });
 });
