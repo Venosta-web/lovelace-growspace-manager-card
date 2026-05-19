@@ -270,7 +270,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`
         <ha-card>
           <div class="loading-container">
-            <div class="loading-spinner"></div>
+            <ha-circular-progress active></ha-circular-progress>
           </div>
         </ha-card>
       `;
