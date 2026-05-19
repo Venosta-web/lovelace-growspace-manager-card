@@ -8,7 +8,6 @@ import { styleMap } from 'lit/directives/style-map.js';
 import type { GrowspaceDevice } from '../../../services/types';
 import type { GraphSeries, TooltipData, GraphDataPoint, SensorHistories } from '../types';
 import { ChartUtils } from '../../../utils/chart-utils';
-import { GraphDataTransformer } from '../utils/graph-transformer';
 import {
   METRIC_CONFIG,
   MetricKey,
@@ -336,7 +335,7 @@ export class GrowspaceEnvChart extends LitElement {
             ? BINARY_ON_STATES.includes(initialState.state)
               ? 1
               : 0
-            : GraphDataTransformer.normalizeSensorValue(initialState, key);
+            : ChartUtils.normalizeSensorValue(initialState, key);
         if (val !== undefined) dataPoints.push({ time: startTimeMs, value: val });
       }
 
@@ -353,7 +352,7 @@ export class GrowspaceEnvChart extends LitElement {
             dataPoints.push({ time: t, value: val, meta: { reasons: h.attributes.reasons } });
           else dataPoints.push({ time: t, value: val });
         } else {
-          val = GraphDataTransformer.normalizeSensorValue(h, key);
+          val = ChartUtils.normalizeSensorValue(h, key);
           if (val !== undefined) dataPoints.push({ time: t, value: val });
         }
       }

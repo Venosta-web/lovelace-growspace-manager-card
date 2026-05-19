@@ -7904,163 +7904,11 @@ class ChartUtils {
         });
     }
     /**
-     * Normalizes raw HA history data into GraphDataPoints.
-     * Handles binary conversions (on=1/off=0), numeric parsing, and time filtering.
+     * Canonical conversion of a single HA sensor state string to a number.
+     * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT, EXHAUST, HUMIDIFIER)
+     * and falls back to float parsing for all other metrics.
+     * Returns undefined for unavailable/unknown/unparseable states.
      */
-    static normalizeHistory(historyData, metricKey) {
-        if (!historyData || historyData.length === 0)
-            return [];
-        const points = [];
-        // Sort first
-        const sorted = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
-        for (const h of sorted) {
-            const rawTime = new Date(h.last_changed).getTime();
-            // Allow points slightly before startTime to establish initial state if needed,
-            // but primarily we filter by window here or let caller handle it.
-            // For now, let's include everything and let charts filter/clip.
-            let val = 0;
-            let isValid = false;
-            if (metricKey === 'light' ||
-                metricKey === 'irrigation' ||
-                metricKey === 'drain' ||
-                h.state === 'on' ||
-                h.state === 'off') {
-                if (h.state === 'on') {
-                    val = 1;
-                    isValid = true;
-                }
-                else if (h.state === 'off') {
-                    val = 0;
-                    isValid = true;
-                }
-                else {
-                    // Try parsing float for safety
-                    const f = parseFloat(h.state);
-                    if (!isNaN(f)) {
-                        val = f;
-                        isValid = true;
-                    }
-                }
-            }
-            else {
-                const f = parseFloat(h.state);
-                if (!isNaN(f)) {
-                    val = f;
-                    isValid = true;
-                }
-            }
-            if (isValid && h.state !== 'unavailable' && h.state !== 'unknown') {
-                const point = { time: rawTime, value: val };
-                if (h.attributes)
-                    point.meta = h.attributes;
-                points.push(point);
-            }
-        }
-        return points;
-    }
-}
-
-class GraphDataTransformer {
-    /**
-     * Transforms start/end time events into a time-series of 0/1 data points for a step graph.
-     *
-     * @param times Array of event objects with time string "HH:MM" and duration in seconds.
-     * @param startTime The start time of the graph window (ms timestamp).
-     * @param endTime The end time of the graph window (ms timestamp) - usually "now".
-     * @returns Array of GraphDataPoint
-     */
-    static transformEventsToTimeSeries(times, startTime, endTime) {
-        const dataPoints = [];
-        if (!times || !Array.isArray(times)) {
-            return dataPoints;
-        }
-        const events = [];
-        // We look at reference days covering the window
-        // The window might span multiple calendar days, so we check "now" and "startTime" days
-        // A safer approach for short windows (<= 7 days) is to iterate daily,
-        // but the original logic just checked simplistic referenceDays.
-        // We will preserve the original logic's intent but robustify if needed.
-        // Original used: const referenceDays = [new Date(now), new Date(startTime)];
-        const now = new Date(endTime);
-        const start = new Date(startTime);
-        const referenceDays = [now, start];
-        times.forEach((t) => {
-            const [h, m] = t.time.split(':').map(Number);
-            const duration = (t.duration || 60) * 1000;
-            const durationSeconds = duration / 1000;
-            let durationStr = `${durationSeconds}s`;
-            if (durationSeconds >= 60)
-                durationStr = `${Math.round(durationSeconds / 60)}m`;
-            referenceDays.forEach((refDay) => {
-                const eventStart = new Date(refDay);
-                eventStart.setHours(h, m, 0, 0);
-                const eventEnd = new Date(eventStart.getTime() + duration);
-                // Check overlap with window [startTime, endTime]
-                if (eventEnd.getTime() > startTime && eventStart.getTime() < endTime) {
-                    events.push({
-                        start: Math.max(eventStart.getTime(), startTime),
-                        end: Math.min(eventEnd.getTime(), endTime),
-                        durationStr,
-                    });
-                }
-            });
-        });
-        events.sort((a, b) => a.start - b.start);
-        // Initial point
-        dataPoints.push({ time: startTime, value: 0 });
-        events.forEach((ev) => {
-            // "Step" up 1ms before
-            dataPoints.push({ time: ev.start - 1, value: 0 });
-            // Start of event
-            dataPoints.push({ time: ev.start, value: 1, meta: { duration: ev.durationStr } });
-            // End of event
-            dataPoints.push({ time: ev.end, value: 1, meta: { duration: ev.durationStr } });
-            // "Step" down 1ms after
-            dataPoints.push({ time: ev.end + 1, value: 0 });
-        });
-        // Final point
-        dataPoints.push({ time: endTime, value: 0 });
-        return dataPoints;
-    }
-    static synthesizeLiveDataPoint(metricKey, overviewEntity, now, lastDataPoint) {
-        // Type guard: check if entity has attributes property
-        const entity = overviewEntity;
-        if (metricKey === MetricKey.DEHUMIDIFIER) {
-            const dehumState = entity?.attributes?.dehumidifier_state;
-            if (dehumState) {
-                const val = BINARY_ON_STATES.includes(dehumState) ? 1 : 0;
-                return { time: now.getTime(), value: val, meta: { state: val ? 'ON' : 'OFF' } };
-            }
-        }
-        else if (metricKey === MetricKey.EXHAUST || metricKey === MetricKey.HUMIDIFIER) {
-            const val = metricKey === MetricKey.EXHAUST
-                ? entity?.attributes?.exhaust_value
-                : entity?.attributes?.humidifier_value;
-            if (val !== undefined && val !== null) {
-                let numVal = parseFloat(String(val));
-                let meta;
-                if (isNaN(numVal)) {
-                    const lowerVal = String(val).toLowerCase();
-                    if (lowerVal === EntityState.ON || lowerVal === EntityState.ACTIVE) {
-                        numVal = 1;
-                        meta = { state: 'ON' };
-                    }
-                    else if (lowerVal === EntityState.OFF || lowerVal === EntityState.IDLE) {
-                        numVal = 0;
-                        meta = { state: 'OFF' };
-                    }
-                }
-                if (!isNaN(numVal)) {
-                    return { time: now.getTime(), value: numVal, meta };
-                }
-            }
-        }
-        // Generic fallback: extend last value
-        if (lastDataPoint) {
-            return { time: now.getTime(), value: lastDataPoint.value, meta: lastDataPoint.meta };
-        }
-        return null;
-    }
     static normalizeSensorValue(ent, key) {
         const s = ent.state;
         if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN)
@@ -8069,22 +7917,17 @@ class GraphDataTransformer {
             return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
         }
         if (key === MetricKey.LIGHT) {
-            // Text based check
             if (s === EntityState.ON || s === EntityState.TRUE)
                 return 1;
             if (s === EntityState.OFF || s === EntityState.FALSE)
                 return 0;
-            // Numeric check for dimmers/percentages (0 = off, >0 = on)
             const val = parseFloat(s);
-            if (!isNaN(val)) {
+            if (!isNaN(val))
                 return val > 0 ? 1 : 0;
-            }
             return 0;
         }
         const val = parseFloat(s);
         if (isNaN(val)) {
-            // Try to handle ON/OFF for 0-10 sensors if state comes as text?
-            // Usually they are numbers, but just in case
             if (s === 'on')
                 return 1;
             if (s === 'off')
@@ -8092,6 +7935,27 @@ class GraphDataTransformer {
             return undefined;
         }
         return val;
+    }
+    /**
+     * Normalizes raw HA history data into time-value points.
+     * Delegates per-point conversion to normalizeSensorValue so all metric-specific
+     * logic lives in one place.
+     */
+    static normalizeHistory(historyData, metricKey) {
+        if (!historyData || historyData.length === 0)
+            return [];
+        const sorted = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
+        const points = [];
+        for (const h of sorted) {
+            const val = ChartUtils.normalizeSensorValue(h, metricKey);
+            if (val === undefined)
+                continue;
+            const point = { time: new Date(h.last_changed).getTime(), value: val };
+            if (h.attributes)
+                point.meta = h.attributes;
+            points.push(point);
+        }
+        return points;
     }
 }
 
@@ -8661,7 +8525,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     ? BINARY_ON_STATES.includes(initialState.state)
                         ? 1
                         : 0
-                    : GraphDataTransformer.normalizeSensorValue(initialState, key);
+                    : ChartUtils.normalizeSensorValue(initialState, key);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -8680,7 +8544,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         dataPoints.push({ time: t, value: val });
                 }
                 else {
-                    val = GraphDataTransformer.normalizeSensorValue(h, key);
+                    val = ChartUtils.normalizeSensorValue(h, key);
                     if (val !== undefined)
                         dataPoints.push({ time: t, value: val });
                 }
@@ -33522,9 +33386,9 @@ function canSaveAttributes(editedAttributes) {
     return true;
 }
 /**
- * Create a STABLE ViewModel for plant overview dialog.
- * This version takes atoms for all inputs, allowing it to be used with a
- * single persistent StoreController in the container component.
+ * Create ViewModel for plant overview dialog.
+ * Takes atoms for all inputs, allowing it to be used with a single persistent
+ * StoreController in the container component.
  */
 function createStablePlantOverviewViewModel($plant, $editedAttributes, $uiState, store, $logbookEvents) {
     return computed([
@@ -33532,9 +33396,8 @@ function createStablePlantOverviewViewModel($plant, $editedAttributes, $uiState,
         $editedAttributes,
         $uiState,
         $logbookEvents,
-        store.data.$strainLibrary,
         store.grid.$growspaceOptions,
-    ], (plant, editedAttributes, uiState, logbookEvents, strainLibrary, growspaceOptions) => {
+    ], (plant, editedAttributes, uiState, logbookEvents, growspaceOptions) => {
         // Fallback for null plant (initial state)
         if (!plant) {
             return {
@@ -50310,28 +50173,27 @@ function hasRecommendedPreset(plant, nutrientPresets, devices) {
         (!preset.min_days_in_stage || daysInStage >= preset.min_days_in_stage));
 }
 /**
- * Create plant card view model
+ * Create plant card view model.
  *
- * @param plant - Plant entity to display
- * @param store - Global store instance
- * @returns Computed atom with view model data
+ * @param $plant - Reactive atom holding the plant entity (null during init)
+ * @param deps - The specific store atoms this ViewModel needs
+ * @returns Computed atom; null when plant is not yet available
  */
-function createPlantCardViewModel(plant, store) {
+function createPlantCardViewModel($plant, deps) {
     return computed([
-        store.ui.$isEditMode,
-        store.ui.$selectedPlants,
-        store.data.$strainLibrary,
-        store.data.$nutrientPresets,
-        store.data.$devices,
-    ], (isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices) => {
-        // Get plant ID
+        $plant,
+        deps.$isEditMode,
+        deps.$selectedPlants,
+        deps.$strainLibrary,
+        deps.$nutrientPresets,
+        deps.$devices,
+    ], (plant, isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices) => {
+        if (!plant)
+            return null;
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        // Compute display data
         const displayData = PlantUtils.getPlantDisplayData(plant, strainLibrary);
-        // Find strain for growth deviation calculation
         const strain = strainLibrary.find((s) => s.strain === plant.attributes.strain);
         const growthDeviation = calculateGrowthDeviation(plant, strain);
-        // Compute status indicators
         const statusIndicators = {
             hasTraining: !!plant.attributes.last_training_technique,
             hasIPM: !!plant.attributes.last_ipm,
@@ -50340,11 +50202,8 @@ function createPlantCardViewModel(plant, store) {
             hasGrowthDeviation: growthDeviation !== 0,
             hasRecommendedPreset: hasRecommendedPreset(plant, nutrientPresets, devices),
         };
-        // Accessibility labels
         const strainName = displayData.strainName || 'Unknown strain';
         const stageName = plant.state || 'unknown';
-        const ariaLabel = `${strainName} in ${stageName} stage`;
-        const checkboxAriaLabel = `Select ${strainName}`;
         return {
             plant,
             displayData,
@@ -50353,8 +50212,8 @@ function createPlantCardViewModel(plant, store) {
             isDraggable: !isEditMode,
             growthDeviation,
             statusIndicators,
-            ariaLabel,
-            checkboxAriaLabel,
+            ariaLabel: `${strainName} in ${stageName} stage`,
+            checkboxAriaLabel: `Select ${strainName}`,
         };
     });
 }
@@ -51080,6 +50939,8 @@ let PlantCardContainer = class PlantCardContainer extends i$3 {
     constructor() {
         super(...arguments);
         this.forceDraggable = false;
+        // Reactive plant atom — updated via willUpdate so the ViewModel reacts to entity changes
+        this.$plant = atom(null);
         // Drag & drop controller
         this.dragController = new DragDropController(this);
     }
@@ -51092,10 +50953,23 @@ let PlantCardContainer = class PlantCardContainer extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        if (this.plant && this.store) {
-            // Create ViewModel for this plant
-            this.viewModel = createPlantCardViewModel(this.plant, this.store);
+        if (this.plant) {
+            this.$plant.set(this.plant);
+        }
+        if (this.store) {
+            this.viewModel = createPlantCardViewModel(this.$plant, {
+                $isEditMode: this.store.ui.$isEditMode,
+                $selectedPlants: this.store.ui.$selectedPlants,
+                $strainLibrary: this.store.data.$strainLibrary,
+                $nutrientPresets: this.store.data.$nutrientPresets,
+                $devices: this.store.data.$devices,
+            });
             this.viewModelController = new libExports.StoreController(this, this.viewModel);
+        }
+    }
+    willUpdate(changedProperties) {
+        if (changedProperties.has('plant') && this.plant) {
+            this.$plant.set(this.plant);
         }
     }
     /**
@@ -51110,10 +50984,10 @@ let PlantCardContainer = class PlantCardContainer extends i$3 {
         }
     }
     render() {
-        if (!this.viewModelController) {
-            return x ``;
+        const vm = this.viewModelController?.value ?? null;
+        if (!vm) {
+            return x `<div class="plant-card-skeleton"></div>`;
         }
-        const vm = this.viewModelController.value;
         return x `
       <plant-card-ui
         .plant=${vm.plant}
@@ -51150,6 +51024,18 @@ let PlantCardContainer = class PlantCardContainer extends i$3 {
         this.store.ui.togglePlantSelection(plantId);
     }
 };
+PlantCardContainer.styles = i$6 `
+    .plant-card-skeleton {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: var(--card-background-color, #1c1c1e);
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+  `;
 __decorate([
     n$5({ attribute: false })
 ], PlantCardContainer.prototype, "plant", void 0);

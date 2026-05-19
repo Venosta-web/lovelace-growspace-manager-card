@@ -1,4 +1,5 @@
-import { METRIC_CONFIG } from '../constants';
+import { METRIC_CONFIG, MetricKey } from '../constants';
+import { EntityState, BINARY_ON_STATES } from '../lib/types/hass';
 import type { RawHistoryDataPoint, NormalizedHistoryPoint } from '../adapters/hass-types';
 
 export class ChartUtils {
@@ -480,8 +481,39 @@ export class ChartUtils {
   }
 
   /**
-   * Normalizes raw HA history data into GraphDataPoints.
-   * Handles binary conversions (on=1/off=0), numeric parsing, and time filtering.
+   * Canonical conversion of a single HA sensor state string to a number.
+   * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT, EXHAUST, HUMIDIFIER)
+   * and falls back to float parsing for all other metrics.
+   * Returns undefined for unavailable/unknown/unparseable states.
+   */
+  public static normalizeSensorValue(ent: { state: string }, key: string): number | undefined {
+    const s = ent.state;
+    if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN) return undefined;
+
+    if (key === MetricKey.DEHUMIDIFIER) {
+      return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
+    }
+    if (key === MetricKey.LIGHT) {
+      if (s === EntityState.ON || s === EntityState.TRUE) return 1;
+      if (s === EntityState.OFF || s === EntityState.FALSE) return 0;
+      const val = parseFloat(s);
+      if (!isNaN(val)) return val > 0 ? 1 : 0;
+      return 0;
+    }
+
+    const val = parseFloat(s);
+    if (isNaN(val)) {
+      if (s === 'on') return 1;
+      if (s === 'off') return 0;
+      return undefined;
+    }
+    return val;
+  }
+
+  /**
+   * Normalizes raw HA history data into time-value points.
+   * Delegates per-point conversion to normalizeSensorValue so all metric-specific
+   * logic lives in one place.
    */
   public static normalizeHistory(
     historyData: RawHistoryDataPoint[],
@@ -489,59 +521,18 @@ export class ChartUtils {
   ): NormalizedHistoryPoint[] {
     if (!historyData || historyData.length === 0) return [];
 
-    const points: NormalizedHistoryPoint[] = [];
-
-    // Sort first
     const sorted = [...historyData].sort(
       (a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime()
     );
 
+    const points: NormalizedHistoryPoint[] = [];
     for (const h of sorted) {
-      const rawTime = new Date(h.last_changed).getTime();
-
-      // Allow points slightly before startTime to establish initial state if needed,
-      // but primarily we filter by window here or let caller handle it.
-      // For now, let's include everything and let charts filter/clip.
-
-      let val = 0;
-      let isValid = false;
-
-      if (
-        metricKey === 'light' ||
-        metricKey === 'irrigation' ||
-        metricKey === 'drain' ||
-        h.state === 'on' ||
-        h.state === 'off'
-      ) {
-        if (h.state === 'on') {
-          val = 1;
-          isValid = true;
-        } else if (h.state === 'off') {
-          val = 0;
-          isValid = true;
-        } else {
-          // Try parsing float for safety
-          const f = parseFloat(h.state);
-          if (!isNaN(f)) {
-            val = f;
-            isValid = true;
-          }
-        }
-      } else {
-        const f = parseFloat(h.state);
-        if (!isNaN(f)) {
-          val = f;
-          isValid = true;
-        }
-      }
-
-      if (isValid && h.state !== 'unavailable' && h.state !== 'unknown') {
-        const point: NormalizedHistoryPoint = { time: rawTime, value: val };
-        if (h.attributes) point.meta = h.attributes;
-        points.push(point);
-      }
+      const val = ChartUtils.normalizeSensorValue(h, metricKey);
+      if (val === undefined) continue;
+      const point: NormalizedHistoryPoint = { time: new Date(h.last_changed).getTime(), value: val };
+      if (h.attributes) point.meta = h.attributes;
+      points.push(point);
     }
-
     return points;
   }
 }
