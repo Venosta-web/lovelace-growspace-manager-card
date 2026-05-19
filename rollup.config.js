@@ -1,7 +1,11 @@
+import { createRequire } from 'module';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
+
+const require = createRequire(import.meta.url);
+const pkg = require('./package.json');
 import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
 import replace from '@rollup/plugin-replace';
@@ -14,6 +18,7 @@ const isCoverage = process.env.COVERAGE === 'true';
 const plugins = [
   replace({
     'process.env.NODE_ENV': JSON.stringify(isProduction ? 'production' : 'development'),
+    '__VERSION__': JSON.stringify(pkg.version),
     preventAssignment: true,
   }),
   resolve(),
