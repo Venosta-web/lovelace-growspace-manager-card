@@ -859,71 +859,7 @@ export class AddPlantDialog extends LitElement {
     }
   }
 
-  private _renderAddPlantForm(uniqueStrains: string[], relevantPhenotypes: string[]) {
-    return html`
-      <!-- IDENTITY CARD -->
-      <div class="detail-card">
-        <h3>Identity & Location</h3>
-        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
-          <md3-select
-            style="width: 100%;"
-            label="Strain *"
-            .value=${this.strain}
-            .options=${uniqueStrains}
-            @change=${(e: CustomEvent) => (this.strain = e.detail)}
-          ></md3-select>
-          <button
-            class="md3-button tonal"
-            style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
-            @click=${this._openStrainCreator}
-            title="Add New Strain"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDna}"></path>
-            </svg>
-          </button>
-        </div>
-        <md3-text-input
-          label="Phenotype"
-          .value=${this.phenotype}
-          .suggestions=${relevantPhenotypes}
-          @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
-        ></md3-text-input>
 
-        <div
-          class="toggle-container"
-          style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
-        >
-          <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
-            >Add to Strain Library</span
-          >
-          <md3-switch
-            .checked=${this.addToLibrary}
-            @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
-            ?disabled=${!this.strain}
-          ></md3-switch>
-        </div>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Row"
-            .value=${this.row + 1}
-            @change=${(e: CustomEvent) => (this.row = parseInt(e.detail) - 1)}
-          ></md3-number-input>
-          <md3-number-input
-            label="Col"
-            .value=${this.col + 1}
-            @change=${(e: CustomEvent) => (this.col = parseInt(e.detail) - 1)}
-          ></md3-number-input>
-        </div>
-      </div>
-
-      <!-- TIMELINE CARD -->
-      <div class="detail-card">
-        <h3>Timeline</h3>
-        ${this.renderTimelineContent()}
-      </div>
-    `;
-  }
 
   private _renderTransplantForm(stage: 'clone' | 'seedling') {
     const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;

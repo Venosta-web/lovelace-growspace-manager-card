@@ -39,7 +39,7 @@ export async function addIrrigationTime(ctx: ActionContext, params: IrrigationTi
     });
   } catch (e) {
     ctx.optimisticManager.rollbackUpdate(actionId);
-    ctx.showToast('Failed to add irrigation time', 'error');
+    ctx.ui.showToast('Failed to add irrigation time', 'error');
     throw e;
   }
 }
@@ -64,7 +64,7 @@ export async function removeIrrigationTime(ctx: ActionContext, params: RemoveTim
     });
   } catch (e) {
     ctx.optimisticManager.rollbackUpdate(actionId);
-    ctx.showToast('Failed to remove irrigation time', 'error');
+    ctx.ui.showToast('Failed to remove irrigation time', 'error');
     throw e;
   }
 }
@@ -92,7 +92,7 @@ export async function addDrainTime(ctx: ActionContext, params: IrrigationTimePar
     });
   } catch (e) {
     ctx.optimisticManager.rollbackUpdate(actionId);
-    ctx.showToast('Failed to add drain time', 'error');
+    ctx.ui.showToast('Failed to add drain time', 'error');
     throw e;
   }
 }
@@ -117,7 +117,7 @@ export async function removeDrainTime(ctx: ActionContext, params: RemoveTimePara
     });
   } catch (e) {
     ctx.optimisticManager.rollbackUpdate(actionId);
-    ctx.showToast('Failed to remove drain time', 'error');
+    ctx.ui.showToast('Failed to remove drain time', 'error');
     throw e;
   }
 }
@@ -151,7 +151,7 @@ export async function setIrrigationSettings(
     });
   } catch (e) {
     ctx.optimisticManager.rollbackUpdate(actionId);
-    ctx.showToast('Failed to save irrigation settings', 'error');
+    ctx.ui.showToast('Failed to save irrigation settings', 'error');
     throw e;
   }
 }

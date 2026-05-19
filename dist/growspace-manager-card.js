@@ -7924,7 +7924,7 @@ class ChartUtils {
             const val = parseFloat(s);
             if (!isNaN(val))
                 return val > 0 ? 1 : 0;
-            return 0;
+            return undefined;
         }
         const val = parseFloat(s);
         if (isNaN(val)) {
@@ -13325,71 +13325,6 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         ></md3-date-input>
       `;
         }
-    }
-    _renderAddPlantForm(uniqueStrains, relevantPhenotypes) {
-        return x `
-      <!-- IDENTITY CARD -->
-      <div class="detail-card">
-        <h3>Identity & Location</h3>
-        <div style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;">
-          <md3-select
-            style="width: 100%;"
-            label="Strain *"
-            .value=${this.strain}
-            .options=${uniqueStrains}
-            @change=${(e) => (this.strain = e.detail)}
-          ></md3-select>
-          <button
-            class="md3-button tonal"
-            style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
-            @click=${this._openStrainCreator}
-            title="Add New Strain"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDna}"></path>
-            </svg>
-          </button>
-        </div>
-        <md3-text-input
-          label="Phenotype"
-          .value=${this.phenotype}
-          .suggestions=${relevantPhenotypes}
-          @change=${(e) => (this.phenotype = e.detail)}
-        ></md3-text-input>
-
-        <div
-          class="toggle-container"
-          style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
-        >
-          <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
-            >Add to Strain Library</span
-          >
-          <md3-switch
-            .checked=${this.addToLibrary}
-            @change=${(e) => (this.addToLibrary = e.target.checked)}
-            ?disabled=${!this.strain}
-          ></md3-switch>
-        </div>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Row"
-            .value=${this.row + 1}
-            @change=${(e) => (this.row = parseInt(e.detail) - 1)}
-          ></md3-number-input>
-          <md3-number-input
-            label="Col"
-            .value=${this.col + 1}
-            @change=${(e) => (this.col = parseInt(e.detail) - 1)}
-          ></md3-number-input>
-        </div>
-      </div>
-
-      <!-- TIMELINE CARD -->
-      <div class="detail-card">
-        <h3>Timeline</h3>
-        ${this.renderTimelineContent()}
-      </div>
-    `;
     }
     _renderTransplantForm(stage) {
         const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
@@ -18965,7 +18900,7 @@ async function addIrrigationTime(ctx, params) {
     }
     catch (e) {
         ctx.optimisticManager.rollbackUpdate(actionId);
-        ctx.showToast('Failed to add irrigation time', 'error');
+        ctx.ui.showToast('Failed to add irrigation time', 'error');
         throw e;
     }
 }
@@ -18983,7 +18918,7 @@ async function removeIrrigationTime(ctx, params) {
     }
     catch (e) {
         ctx.optimisticManager.rollbackUpdate(actionId);
-        ctx.showToast('Failed to remove irrigation time', 'error');
+        ctx.ui.showToast('Failed to remove irrigation time', 'error');
         throw e;
     }
 }
@@ -19002,7 +18937,7 @@ async function addDrainTime(ctx, params) {
     }
     catch (e) {
         ctx.optimisticManager.rollbackUpdate(actionId);
-        ctx.showToast('Failed to add drain time', 'error');
+        ctx.ui.showToast('Failed to add drain time', 'error');
         throw e;
     }
 }
@@ -19020,7 +18955,7 @@ async function removeDrainTime(ctx, params) {
     }
     catch (e) {
         ctx.optimisticManager.rollbackUpdate(actionId);
-        ctx.showToast('Failed to remove drain time', 'error');
+        ctx.ui.showToast('Failed to remove drain time', 'error');
         throw e;
     }
 }
@@ -19043,7 +18978,7 @@ async function setIrrigationSettings(ctx, params) {
     }
     catch (e) {
         ctx.optimisticManager.rollbackUpdate(actionId);
-        ctx.showToast('Failed to save irrigation settings', 'error');
+        ctx.ui.showToast('Failed to save irrigation settings', 'error');
         throw e;
     }
 }
@@ -19230,7 +19165,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             });
         }
         catch (e) {
-            this.store.context.showToast('Failed to add drain time', 'error');
+            this.store.ui.showToast('Failed to add drain time', 'error');
         }
     }
     async _removeDrainTime(time) {
@@ -19240,7 +19175,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
         }
         catch (e) {
-            this.store.context.showToast('Failed to remove drain time', 'error');
+            this.store.ui.showToast('Failed to remove drain time', 'error');
         }
     }
     _notifyDataChanged() {
@@ -19292,7 +19227,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         if (originalTime !== formattedNewTime) {
             const currentTimes = this.device.irrigationConfig?.irrigationTimes || [];
             if (currentTimes.some((t) => t.time === formattedNewTime)) {
-                this.store.context.showToast(`Irrigation time ${time} already exists`, 'error');
+                this.store.ui.showToast(`Irrigation time ${time} already exists`, 'error');
                 return;
             }
         }
@@ -19330,7 +19265,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         if (originalTime !== formattedNewTime) {
             const currentTimes = this.device.irrigationConfig?.drainTimes || [];
             if (currentTimes.some((t) => t.time === formattedNewTime)) {
-                this.store.context.showToast(`Drain time ${time} already exists`, 'error');
+                this.store.ui.showToast(`Drain time ${time} already exists`, 'error');
                 return;
             }
         }
@@ -19347,7 +19282,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
         }
         catch (e) {
-            this.store.context.showToast('Failed to remove irrigation time', 'error');
+            this.store.ui.showToast('Failed to remove irrigation time', 'error');
         }
     }
     async _deleteDrainTimeFromEdit() {
@@ -19359,7 +19294,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
         }
         catch (e) {
-            this.store.context.showToast('Failed to remove drain time', 'error');
+            this.store.ui.showToast('Failed to remove drain time', 'error');
         }
     }
     _close() {
@@ -26169,7 +26104,8 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         const breederMap = new Map();
         this.strains.forEach((s) => {
             if (s.breeder && s.breeder.trim()) {
-                const existing = breederMap.get(s.breeder);
+                const name = s.breeder.trim();
+                const existing = breederMap.get(name);
                 if (existing) {
                     existing.strainCount++;
                     if (!existing.logo && s.breeder_logo) {
@@ -26177,7 +26113,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                     }
                 }
                 else {
-                    breederMap.set(s.breeder, {
+                    breederMap.set(name, {
                         logo: s.breeder_logo || '',
                         strainCount: 1,
                     });
@@ -110553,8 +110489,6 @@ async function fetchStrainLibrary(ctx, force = false) {
     // We can check if dataService is initialized or catch errors.
     const CACHE_KEY = 'growspace_strain_library_v2';
     const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
-    if (!ctx.hass)
-        return;
     const cachedRaw = localStorage.getItem(CACHE_KEY);
     let usedCache = false;
     if (!force && cachedRaw) {
@@ -110592,8 +110526,6 @@ async function fetchStrainLibrary(ctx, force = false) {
 async function fetchNutrientPresets(ctx, force = false) {
     const CACHE_KEY = 'growspace_nutrient_presets';
     const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
     const cachedRaw = localStorage.getItem(CACHE_KEY);
     if (!force && cachedRaw) {
         try {
@@ -110628,8 +110560,6 @@ async function fetchNutrientPresets(ctx, force = false) {
 async function fetchIPMPresets(ctx, force = false) {
     const CACHE_KEY = 'growspace_ipm_presets';
     const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
     const cachedRaw = localStorage.getItem(CACHE_KEY);
     if (!force && cachedRaw) {
         try {
@@ -110664,8 +110594,6 @@ async function fetchIPMPresets(ctx, force = false) {
 async function fetchNutrientInventory(ctx, force = false) {
     const CACHE_KEY = 'growspace_nutrient_inventory';
     const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-    if (!ctx.hass)
-        return;
     const cachedRaw = localStorage.getItem(CACHE_KEY);
     if (!force && cachedRaw) {
         try {
@@ -110698,29 +110626,27 @@ async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) 
     try {
         await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
         await fetchNutrientInventory(ctx, true);
-        ctx.showToast(`Updated stock: ${name}`, 'success');
+        ctx.ui.showToast(`Updated stock: ${name}`, 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to update stock: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to update stock: ${error}`, 'error');
     }
 }
 async function removeNutrientStock(ctx, nutrientId) {
     try {
         await ctx.dataService.removeNutrientStock(nutrientId);
         await fetchNutrientInventory(ctx, true);
-        ctx.showToast('Removed nutrient stock', 'success');
+        ctx.ui.showToast('Removed nutrient stock', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to remove stock: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to remove stock: ${error}`, 'error');
     }
 }
 async function fetchECRampCurves(ctx, force = false) {
     const CACHE_KEY = 'growspace_ec_ramp_curves';
     const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
-    if (!ctx.hass)
-        return;
     const cachedRaw = localStorage.getItem(CACHE_KEY);
     if (!force && cachedRaw) {
         try {
@@ -110756,33 +110682,33 @@ async function saveECRampCurve(ctx, data) {
     try {
         await ctx.dataService.saveECRampCurve(data);
         await fetchECRampCurves(ctx, true);
-        ctx.showToast(`Saved EC ramp: ${data.name}`, 'success');
+        ctx.ui.showToast(`Saved EC ramp: ${data.name}`, 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to save EC ramp: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to save EC ramp: ${error}`, 'error');
     }
 }
 async function removeECRampCurve(ctx, curveId) {
     try {
         await ctx.dataService.removeECRampCurve(curveId);
         await fetchECRampCurves(ctx, true);
-        ctx.showToast('Removed EC ramp curve', 'success');
+        ctx.ui.showToast('Removed EC ramp curve', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to remove EC ramp: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to remove EC ramp: ${error}`, 'error');
     }
 }
 async function saveNutrientPreset(ctx, preset) {
     try {
         await ctx.dataService.saveNutrientPreset(preset);
         await fetchNutrientPresets(ctx, true);
-        ctx.showToast(`Saved preset: ${preset.name}`, 'success');
+        ctx.ui.showToast(`Saved preset: ${preset.name}`, 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to save preset: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to save preset: ${error}`, 'error');
         throw e;
     }
 }
@@ -110790,11 +110716,11 @@ async function removeNutrientPreset(ctx, presetId) {
     try {
         await ctx.dataService.removeNutrientPreset(presetId);
         await fetchNutrientPresets(ctx, true);
-        ctx.showToast('Removed nutrient preset', 'success');
+        ctx.ui.showToast('Removed nutrient preset', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to remove preset: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to remove preset: ${error}`, 'error');
         throw e;
     }
 }
@@ -110808,12 +110734,12 @@ async function removeNutrientPreset(ctx, presetId) {
 async function updatePlant(ctx, plantId, updates) {
     try {
         await ctx.dataService.updatePlant({ plant_id: plantId, ...updates });
-        ctx.showToast('Plant updated', 'success');
+        ctx.ui.showToast('Plant updated', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to update plant:', e);
-        ctx.showToast(`Failed to update plant: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to update plant: ${error}`, 'error');
     }
 }
 /**
@@ -110854,7 +110780,7 @@ async function _deletePlantsApi(ctx, plantIds) {
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to delete plant:', e);
-        ctx.showToast(`Failed to delete: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to delete: ${error}`, 'error');
         plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
         return false;
     }
@@ -110928,7 +110854,7 @@ async function movePlantToNextStage(ctx, plant, metrics) {
     let targetGrowspace = '';
     const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
     if (!stage || !movableStages.has(stage)) {
-        ctx.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
+        ctx.ui.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
         return false;
     }
     if (stage === 'flower') {
@@ -110947,7 +110873,7 @@ async function movePlantToNextStage(ctx, plant, metrics) {
     try {
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
-        ctx.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+        ctx.ui.showToast(`Plant moved to ${targetGrowspace}`, 'success');
         // Small delay to allow backend commit to complete before fetching updated data
         await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
@@ -110957,7 +110883,7 @@ async function movePlantToNextStage(ctx, plant, metrics) {
     catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';
         console.error('Error moving plant to next stage:', err);
-        ctx.showToast(`Failed to move plant: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to move plant: ${error}`, 'error');
         return false;
     }
 }
@@ -111001,7 +110927,7 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
     catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';
         console.error('Error moving plant:', err);
-        ctx.showToast(`Failed to move plant: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to move plant: ${error}`, 'error');
         return false;
     }
 }
@@ -111017,13 +110943,13 @@ async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
             target_growspace_id: targetGrowspaceId,
         });
         console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`, targetGrowspaceId ? `to ${targetGrowspaceId}` : '');
-        ctx.showToast(`Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`, 'success');
+        ctx.ui.showToast(`Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`, 'success');
         return true;
     }
     catch (error) {
         const e = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Failed to take clone: ${e}`);
-        ctx.showToast(`Failed to take clone: ${e}`, 'error');
+        ctx.ui.showToast(`Failed to take clone: ${e}`, 'error');
         return false;
     }
 }
@@ -111166,7 +111092,7 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
 async function confirmAddPlant(ctx, detail) {
     const selectedDevice = ctx.grid.$selectedDevice.get();
     if (!selectedDevice) {
-        ctx.showToast('No growspace selected', 'error');
+        ctx.ui.showToast('No growspace selected', 'error');
         return false;
     }
     try {
@@ -111177,11 +111103,11 @@ async function confirmAddPlant(ctx, detail) {
                     phenotype: detail.phenotype,
                 });
                 await fetchStrainLibrary(ctx, true);
-                ctx.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+                ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
             }
             catch (e) {
                 console.error('Failed to add strain to library:', e);
-                ctx.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
+                ctx.ui.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
             }
         }
         await ctx.dataService.addPlant({
@@ -111200,13 +111126,13 @@ async function confirmAddPlant(ctx, detail) {
         });
         ctx.closeDialog();
         await ctx.refreshData();
-        ctx.showToast('Plant added successfully', 'success');
+        ctx.ui.showToast('Plant added successfully', 'success');
         return true;
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to add plant:', e);
-        ctx.showToast(`Failed to add plant: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to add plant: ${error}`, 'error');
         return false;
     }
 }
@@ -111216,7 +111142,7 @@ async function confirmAddPlant(ctx, detail) {
 async function confirmAddPlants(ctx, detail) {
     const selectedDevice = ctx.grid.$selectedDevice.get();
     if (!selectedDevice) {
-        ctx.showToast('No growspace selected', 'error');
+        ctx.ui.showToast('No growspace selected', 'error');
         return;
     }
     const devices = ctx.data.$devices.get();
@@ -111246,11 +111172,11 @@ async function confirmAddPlants(ctx, detail) {
                 }
                 await Promise.all(promises);
                 await fetchStrainLibrary(ctx, true);
-                ctx.showToast(`Added ${amount} strain variants to library`, 'success');
+                ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
             }
             catch (e) {
                 console.error('Failed to add strains to library:', e);
-                ctx.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
+                ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
             }
         }
         // Exclude addToLibrary from payload sent to backend
@@ -111285,12 +111211,12 @@ async function confirmAddPlants(ctx, detail) {
                 },
             });
         }
-        ctx.showToast('Batch plants added successfully', 'success');
+        ctx.ui.showToast('Batch plants added successfully', 'success');
         ctx.closeDialog();
     }
     catch (err) {
         const error = err instanceof Error ? err.message : 'Unknown error';
-        ctx.showToast(`Error: ${error}`, 'error');
+        ctx.ui.showToast(`Error: ${error}`, 'error');
     }
 }
 /**
@@ -111307,7 +111233,7 @@ async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to water plant:', e);
-        ctx.showToast(`Failed to water plant: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to water plant: ${error}`, 'error');
         throw e;
     }
 }
@@ -111325,7 +111251,7 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to water growspace:', e);
-        ctx.showToast(`Failed to water growspace: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to water growspace: ${error}`, 'error');
         throw e;
     }
 }
@@ -111348,14 +111274,14 @@ async function printLabel(ctx, params) {
             base_url: baseUrl,
         });
         if (!preview) {
-            ctx.showToast('Label printing command sent', 'success');
+            ctx.ui.showToast('Label printing command sent', 'success');
         }
         return result;
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to print label:', e);
-        ctx.showToast(`Failed to print label: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to print label: ${error}`, 'error');
         throw e;
     }
 }
@@ -111368,11 +111294,11 @@ async function saveHarvestMetrics(ctx, plantId, metrics) {
         return;
     try {
         await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
-        ctx.showToast('Harvest metrics saved', 'success');
+        ctx.ui.showToast('Harvest metrics saved', 'success');
         await ctx.refreshData(true);
     }
     catch (error) {
-        ctx.showToast(`Failed to save harvest metrics: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to save harvest metrics: ${error}`, 'error');
         throw error;
     }
 }
@@ -111386,11 +111312,11 @@ async function scorePhenotype(ctx, plantId, scores) {
         return;
     try {
         await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
-        ctx.showToast('Scores saved', 'success');
+        ctx.ui.showToast('Scores saved', 'success');
         await ctx.refreshData(true);
     }
     catch (error) {
-        ctx.showToast(`Failed to save scores: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to save scores: ${error}`, 'error');
         throw error;
     }
 }
@@ -111436,13 +111362,13 @@ async function addStrain(ctx, strainData) {
         if (tree?.parents?.length) {
             await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
         }
-        ctx.showToast('Strain added successfully!', 'success');
+        ctx.ui.showToast('Strain added successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
     }
     catch (err) {
         console.error('Error adding strain:', err);
-        ctx.showToast('Failed to add strain', 'error');
+        ctx.ui.showToast('Failed to add strain', 'error');
         return false;
     }
 }
@@ -111459,13 +111385,13 @@ async function updateStrain(ctx, strainData) {
         if (tree?.parents?.length) {
             await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
         }
-        ctx.showToast('Strain updated successfully!', 'success');
+        ctx.ui.showToast('Strain updated successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
     }
     catch (err) {
         console.error('Error updating strain:', err);
-        ctx.showToast('Failed to update strain', 'error');
+        ctx.ui.showToast('Failed to update strain', 'error');
         return false;
     }
 }
@@ -111493,7 +111419,7 @@ async function removeStrain(ctx, strainKey) {
  */
 async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationService = 'mobile_app_notify') {
     if (!name) {
-        ctx.showToast('Name is required', 'error');
+        ctx.ui.showToast('Name is required', 'error');
         return false;
     }
     try {
@@ -111503,14 +111429,14 @@ async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationS
             plantsPerRow,
             notificationService,
         });
-        ctx.showToast('Growspace added successfully!', 'success');
+        ctx.ui.showToast('Growspace added successfully!', 'success');
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Error: ${error}`, 'error');
+        ctx.ui.showToast(`Error: ${error}`, 'error');
         return false;
     }
 }
@@ -111542,14 +111468,14 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
         // Wait for the backend update and data refresh to complete
         await ctx.refreshData();
         // Only show success and close after data is refreshed
-        ctx.showToast('Growspace updated successfully', 'success');
+        ctx.ui.showToast('Growspace updated successfully', 'success');
         ctx.closeDialog();
         return true;
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('[StrainActions] Update failed:', e);
-        ctx.showToast(`Failed to update growspace: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to update growspace: ${error}`, 'error');
         return false;
     }
 }
@@ -111559,7 +111485,7 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
 async function removeGrowspace(ctx, growspaceId) {
     try {
         await ctx.dataService.removeGrowspace(growspaceId);
-        ctx.showToast('Growspace removed successfully', 'success');
+        ctx.ui.showToast('Growspace removed successfully', 'success');
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
@@ -111567,19 +111493,35 @@ async function removeGrowspace(ctx, growspaceId) {
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('[StrainActions] Removal failed:', e);
-        ctx.showToast(`Failed to remove growspace: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to remove growspace: ${error}`, 'error');
         return false;
     }
 }
 
+function setIsCompactView(ctx, value) {
+    if (value) {
+        ctx.ui.setViewMode(ViewMode.COMPACT);
+    }
+    else if (ctx.ui.$viewMode.get() === ViewMode.COMPACT) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+}
 function showToast(ctx, message, type = 'info') {
-    ctx.showToast(message, type);
+    ctx.ui.showToast(message, type);
 }
 function setActiveDialog(ctx, dialog) {
     ctx.ui.setActiveDialog(dialog);
 }
 function closeDialog(ctx) {
     ctx.ui.closeDialog();
+}
+function toggleHeaderExpansion(ctx) {
+    if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
+        ctx.ui.setViewMode(ViewMode.STANDARD);
+    }
+    else {
+        ctx.ui.setViewMode(ViewMode.HEADER);
+    }
 }
 function togglePlantSelection(ctx, plantOrId) {
     const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
@@ -111817,7 +111759,7 @@ async function exportStrainLibrary(ctx) {
     }
     catch (e) {
         console.error(e);
-        ctx.showToast('Failed to export library', 'error');
+        ctx.ui.showToast('Failed to export library', 'error');
     }
 }
 /** HELPER: Get common growspace ID for multiple plants */
@@ -111985,11 +111927,11 @@ async function getSnapshots(ctx, growspaceId) {
 async function captureSnapshot(ctx, growspaceId) {
     try {
         await ctx.dataService.captureSnapshot(growspaceId);
-        ctx.showToast('Snapshot captured', 'success');
+        ctx.ui.showToast('Snapshot captured', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to capture snapshot: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to capture snapshot: ${error}`, 'error');
         throw e;
     }
 }
@@ -112005,12 +111947,12 @@ async function getVisionHistory(ctx, growspaceId) {
 async function triggerVisionCheckup(ctx, growspaceId) {
     try {
         await ctx.dataService.triggerVisionCheckup(growspaceId);
-        ctx.showToast('Vision checkup triggered', 'success');
+        ctx.ui.showToast('Vision checkup triggered', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to trigger checkup: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to trigger checkup: ${error}`, 'error');
         throw e;
     }
 }
@@ -112020,12 +111962,12 @@ async function triggerVisionCheckup(ctx, growspaceId) {
 async function updateVisionCheckupConfig(ctx, growspaceId, config) {
     try {
         await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
-        ctx.showToast('Vision config saved', 'success');
+        ctx.ui.showToast('Vision config saved', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to save vision config: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to save vision config: ${error}`, 'error');
         throw e;
     }
 }
@@ -112048,11 +111990,11 @@ async function fetchGrowReport(ctx, growspaceId) {
 async function exportGrowReport(ctx, growspaceId, format) {
     try {
         await ctx.dataService.exportGrowReport(growspaceId, format);
-        ctx.showToast('Grow report exported', 'success');
+        ctx.ui.showToast('Grow report exported', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to export report: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to export report: ${error}`, 'error');
         throw e;
     }
 }
@@ -112152,12 +112094,12 @@ async function getStrainRecommendation(ctx, userQuery) {
 async function configureEnvironment(ctx, data) {
     try {
         await ctx.dataService.configureEnvironment(data);
-        ctx.showToast('Environment configured successfully!', 'success');
+        ctx.ui.showToast('Environment configured successfully!', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Error: ${error}`, 'error');
+        ctx.ui.showToast(`Error: ${error}`, 'error');
         throw e;
     }
 }
@@ -112165,12 +112107,12 @@ async function configureEnvironment(ctx, data) {
 async function removeEnvironment(ctx, growspaceId) {
     try {
         await ctx.dataService.removeEnvironment(growspaceId);
-        ctx.showToast('Environment configuration removed', 'success');
+        ctx.ui.showToast('Environment configuration removed', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to remove environment: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to remove environment: ${error}`, 'error');
         throw e;
     }
 }
@@ -112178,12 +112120,12 @@ async function removeEnvironment(ctx, growspaceId) {
 async function resetWaterTracking(ctx, growspaceId) {
     try {
         await ctx.dataService.resetWaterTracking(growspaceId);
-        ctx.showToast('Water tracking reset', 'success');
+        ctx.ui.showToast('Water tracking reset', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to reset water tracking: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to reset water tracking: ${error}`, 'error');
         throw e;
     }
 }
@@ -112201,11 +112143,11 @@ async function resetWaterTracking(ctx, growspaceId) {
 async function updateBreeder(ctx, oldName, newName, logo) {
     try {
         await ctx.dataService.strainAPI.updateBreeder(oldName, newName, logo);
-        ctx.showToast('Breeder updated successfully!', 'success');
+        ctx.ui.showToast('Breeder updated successfully!', 'success');
         await ctx.refreshData();
     }
     catch (e) {
-        ctx.showToast('Failed to update breeder', 'error');
+        ctx.ui.showToast('Failed to update breeder', 'error');
         throw e;
     }
 }
@@ -112213,11 +112155,11 @@ async function updateBreeder(ctx, oldName, newName, logo) {
 async function deleteBreeder(ctx, name) {
     try {
         await ctx.dataService.strainAPI.deleteBreeder(name);
-        ctx.showToast('Breeder deleted successfully!', 'success');
+        ctx.ui.showToast('Breeder deleted successfully!', 'success');
         await ctx.refreshData();
     }
     catch (e) {
-        ctx.showToast('Failed to delete breeder', 'error');
+        ctx.ui.showToast('Failed to delete breeder', 'error');
         throw e;
     }
 }
@@ -112232,12 +112174,12 @@ async function deleteBreeder(ctx, name) {
 async function addSeedBatch(ctx, data) {
     try {
         await ctx.dataService.addSeedBatch(data);
-        ctx.showToast('Seed batch added', 'success');
+        ctx.ui.showToast('Seed batch added', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to add seed batch: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to add seed batch: ${error}`, 'error');
         throw e;
     }
 }
@@ -112245,12 +112187,12 @@ async function addSeedBatch(ctx, data) {
 async function updateSeedBatch(ctx, data) {
     try {
         await ctx.dataService.updateSeedBatch(data);
-        ctx.showToast('Seed batch updated', 'success');
+        ctx.ui.showToast('Seed batch updated', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to update seed batch: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to update seed batch: ${error}`, 'error');
         throw e;
     }
 }
@@ -112258,12 +112200,12 @@ async function updateSeedBatch(ctx, data) {
 async function logPollination(ctx, data) {
     try {
         await ctx.dataService.logPollination(data);
-        ctx.showToast('Pollination event logged', 'success');
+        ctx.ui.showToast('Pollination event logged', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to log pollination: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to log pollination: ${error}`, 'error');
         throw e;
     }
 }
@@ -112271,12 +112213,12 @@ async function logPollination(ctx, data) {
 async function updatePollination(ctx, data) {
     try {
         await ctx.dataService.updatePollination(data);
-        ctx.showToast('Pollination event updated', 'success');
+        ctx.ui.showToast('Pollination event updated', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to update pollination: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to update pollination: ${error}`, 'error');
         throw e;
     }
 }
@@ -112284,12 +112226,12 @@ async function updatePollination(ctx, data) {
 async function deletePollination(ctx, eventId) {
     try {
         await ctx.dataService.deletePollination(eventId);
-        ctx.showToast('Pollination event deleted', 'success');
+        ctx.ui.showToast('Pollination event deleted', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to delete pollination: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to delete pollination: ${error}`, 'error');
         throw e;
     }
 }
@@ -112297,12 +112239,12 @@ async function deletePollination(ctx, eventId) {
 async function harvestSeeds(ctx, data) {
     try {
         await ctx.dataService.harvestSeeds(data);
-        ctx.showToast('Seeds harvested', 'success');
+        ctx.ui.showToast('Seeds harvested', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to harvest seeds: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to harvest seeds: ${error}`, 'error');
         throw e;
     }
 }
@@ -112313,7 +112255,7 @@ async function fetchGeneticsData(ctx) {
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to fetch genetics data: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to fetch genetics data: ${error}`, 'error');
         throw e;
     }
 }
@@ -112321,12 +112263,12 @@ async function fetchGeneticsData(ctx) {
 async function deleteSeedBatch(ctx, batchId) {
     try {
         await ctx.dataService.deleteSeedBatch(batchId);
-        ctx.showToast('Seed batch deleted', 'success');
+        ctx.ui.showToast('Seed batch deleted', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to delete seed batch: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to delete seed batch: ${error}`, 'error');
         throw e;
     }
 }
@@ -112334,12 +112276,12 @@ async function deleteSeedBatch(ctx, batchId) {
 async function setPlantSex(ctx, plantId, sex) {
     try {
         await ctx.dataService.setPlantSex(plantId, sex);
-        ctx.showToast('Plant sex updated', 'success');
+        ctx.ui.showToast('Plant sex updated', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to set plant sex: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to set plant sex: ${error}`, 'error');
         throw e;
     }
 }
@@ -112347,12 +112289,12 @@ async function setPlantSex(ctx, plantId, sex) {
 async function sowSeed(ctx, batchId, plantId) {
     try {
         await ctx.dataService.sowSeed(batchId, plantId);
-        ctx.showToast('Seed sown — plant linked to batch', 'success');
+        ctx.ui.showToast('Seed sown — plant linked to batch', 'success');
         await ctx.refreshData();
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to sow seed: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to sow seed: ${error}`, 'error');
         throw e;
     }
 }
@@ -112363,7 +112305,7 @@ async function getLineageTree(ctx, plantId) {
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
         throw e;
     }
 }
@@ -112374,7 +112316,7 @@ async function getStrainLineageTree(ctx, strainName) {
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
         throw e;
     }
 }
@@ -112386,7 +112328,7 @@ async function updateStrainLineageTree(ctx, strainName, parents) {
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
         throw e;
     }
 }
@@ -112402,12 +112344,12 @@ async function applyIPM(ctx, detail) {
         await ctx.dataService.applyIPM(detail);
         // Refresh nutrient inventory as IPM products often deduct from stock
         await fetchNutrientInventory(ctx, true);
-        ctx.showToast('IPM treatment applied successfully', 'success');
+        ctx.ui.showToast('IPM treatment applied successfully', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Failed to apply IPM:', e);
-        ctx.showToast(`Failed to apply IPM: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to apply IPM: ${error}`, 'error');
         throw e;
     }
 }
@@ -112415,33 +112357,33 @@ async function applyIPM(ctx, detail) {
 async function logDryingWeight(ctx, plantId, weightGrams, date) {
     try {
         await ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date });
-        ctx.showToast('Weight logged', 'success');
+        ctx.ui.showToast('Weight logged', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to log weight: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to log weight: ${error}`, 'error');
         throw e;
     }
 }
 async function logMoistureReading(ctx, plantId, moisturePercent, date) {
     try {
         await ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date });
-        ctx.showToast('Moisture logged', 'success');
+        ctx.ui.showToast('Moisture logged', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to log moisture: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to log moisture: ${error}`, 'error');
         throw e;
     }
 }
 async function setVisualTag(ctx, plantId, visualTag) {
     try {
         await ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag });
-        ctx.showToast('Visual tag saved', 'success');
+        ctx.ui.showToast('Visual tag saved', 'success');
     }
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.showToast(`Failed to save visual tag: ${error}`, 'error');
+        ctx.ui.showToast(`Failed to save visual tag: ${error}`, 'error');
         throw e;
     }
 }
@@ -112556,7 +112498,7 @@ class ActionDispatcher {
                         action,
                         data: data || {},
                     });
-                    this.ctx.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+                    this.ctx.ui.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
                     this.ctx.ui.clearPlantSelection();
                     this.ctx.ui.setEditMode(false);
                     await this.ctx.refreshData();
@@ -112564,7 +112506,7 @@ class ActionDispatcher {
                 catch (err) {
                     const error = err instanceof Error ? err.message : 'Unknown error';
                     console.error(`Batch ${action} failed:`, err);
-                    this.ctx.showToast(`Batch ${action} failed: ${error}`, 'error');
+                    this.ctx.ui.showToast(`Batch ${action} failed: ${error}`, 'error');
                     if (action === 'remove') {
                         entityIds.forEach((id) => this.ctx.data.removeOptimisticDeletedPlantId(id));
                     }
@@ -112604,6 +112546,8 @@ class ActionDispatcher {
             openStrainRecommendationDialog: () => openStrainRecommendationDialog(this.ctx),
             /** Export strain library as JSON */
             exportStrainLibrary: () => exportStrainLibrary(this.ctx),
+            setIsCompactView: (value) => setIsCompactView(this.ctx, value),
+            toggleHeaderExpansion: () => toggleHeaderExpansion(this.ctx),
             showToast: (message, type = 'info') => showToast(this.ctx, message, type),
             /** Refresh all data */
             refreshData: () => this.store.refreshData(),
@@ -112647,7 +112591,9 @@ class ActionDispatcher {
                         openCropSteeringDialog(this.ctx, gsId);
                     return;
                 }
-                const isNowActive = this.ctx.history.toggleEnvGraph(metric);
+                if (!this.store.history)
+                    return;
+                const isNowActive = this.store.history.toggleEnvGraph(metric);
                 if (isNowActive && this.ctx.ui.$viewMode.get() === ViewMode.HEADER) {
                     this.ctx.ui.setViewMode(ViewMode.STANDARD);
                 }
@@ -112672,13 +112618,13 @@ class ActionDispatcher {
                     for (const strain of strains) {
                         await addStrain(this.ctx, strain);
                     }
-                    this.ctx.showToast('Library imported successfully', 'success');
+                    this.ctx.ui.showToast('Library imported successfully', 'success');
                     await fetchStrainLibrary(this.ctx, true);
                 }
                 catch (e) {
                     const error = e instanceof Error ? e.message : 'Unknown error';
                     console.error('Import failed', e);
-                    this.ctx.showToast('Import failed: ' + error, 'error');
+                    this.ctx.ui.showToast('Import failed: ' + error, 'error');
                 }
             },
         };
@@ -112738,20 +112684,6 @@ class ActionDispatcher {
     get ctx() {
         return this.store.context;
     }
-}
-
-function initializeSelectedDevice(ctx, config) {
-    ctx.data.setConfig(config);
-    ctx.syncService.setCardConfig(config);
-    // Set view mode from config
-    if (config?.initial_view_mode) {
-        ctx.ui.setViewMode(config.initial_view_mode);
-    }
-    // Trigger update logic via sync service
-    ctx.syncService.updateDevicesState();
-}
-function handleDeviceChange(ctx, deviceId) {
-    ctx.grid.setSelectedDevice(deviceId);
 }
 
 /**
@@ -113209,13 +113141,9 @@ class GrowspaceStore {
             dataService: this.dataService,
             data: this.data,
             ui: this.ui,
-            history: this.history,
             grid: this.grid,
             undoRedoManager: this.undoRedoManager,
             optimisticManager: this.optimisticManager,
-            syncService: this.syncService,
-            hass: this.hass,
-            showToast: (msg, type, action) => this.ui.showToast(msg, type, action),
             closeDialog: () => this.ui.closeDialog(),
             refreshData: (force) => this.refreshData(force),
         };
@@ -113339,10 +113267,17 @@ class GrowspaceStore {
     }
     // Device coordination — these belong on the store as they manage lifecycle state
     initializeSelectedDevice(config) {
-        initializeSelectedDevice(this.context, config);
+        if (!config)
+            return;
+        this.data.setConfig(config);
+        this.syncService.setCardConfig(config);
+        if (config?.initial_view_mode) {
+            this.ui.setViewMode(config.initial_view_mode);
+        }
+        this.syncService.updateDevicesState();
     }
     handleDeviceChange(deviceId) {
-        handleDeviceChange(this.context, deviceId);
+        this.grid.setSelectedDevice(deviceId);
     }
     // Grid helper — triggers a data refresh after a position change
     updateGrid() {

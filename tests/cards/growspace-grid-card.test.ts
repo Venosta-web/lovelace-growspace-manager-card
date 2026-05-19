@@ -115,12 +115,12 @@ describe('GrowspaceGridCard', () => {
         const cardContainer = element.shadowRoot?.querySelector('.unified-growspace-card');
         
         const handlers = [
-            { event: 'select-all', spy: vi.spyOn(element.store, 'selectAllPlants') },
-            { event: 'clear-selection', spy: vi.spyOn(element.store, 'clearPlantSelection') },
-            { event: 'water-selected', spy: vi.spyOn(element.store, 'openBatchWateringDialog') },
-            { event: 'training-selected', spy: vi.spyOn(element.store, 'openBatchTrainingDialog') },
-            { event: 'ipm-selected', spy: vi.spyOn(element.store, 'openIPMDialog') },
-            { event: 'delete-selected', spy: vi.spyOn(element.store, 'deleteSelectedPlants') },
+            { event: 'select-all', spy: vi.spyOn(element.store.actions.ui, 'selectAllPlants') },
+            { event: 'clear-selection', spy: vi.spyOn(element.store.actions.ui, 'clearPlantSelection') },
+            { event: 'water-selected', spy: vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog') },
+            { event: 'training-selected', spy: vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog') },
+            { event: 'ipm-selected', spy: vi.spyOn(element.store.actions.ui, 'openIPMDialog') },
+            { event: 'delete-selected', spy: vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants') },
             { event: 'transplant-mode', spy: vi.spyOn(element.store.ui, 'toggleTransplantMode') },
         ];
 
@@ -221,13 +221,13 @@ describe('GrowspaceGridCard', () => {
         expect(haCard?.classList.contains('wide-growspace')).toBe(true);
         
         // Mock store action methods before firing events
-        const keyboardSpy = vi.spyOn(element.store, 'handleKeyboardNavigation').mockImplementation(() => {});
-        const selectAllSpy = vi.spyOn(element.store, 'selectAllPlants').mockImplementation(() => {});
-        const clearSpy = vi.spyOn(element.store, 'clearPlantSelection').mockImplementation(() => {});
-        const waterSpy = vi.spyOn(element.store, 'openBatchWateringDialog').mockImplementation(() => {});
-        const ipmSpy = vi.spyOn(element.store, 'openIPMDialog').mockImplementation(() => {});
-        const trainingSpy = vi.spyOn(element.store, 'openBatchTrainingDialog').mockImplementation(() => {});
-        const deleteSpy = vi.spyOn(element.store, 'deleteSelectedPlants').mockResolvedValue(undefined as any);
+        const keyboardSpy = vi.spyOn(element.store.actions.ui, 'handleKeyboardNavigation').mockImplementation(() => {});
+        const selectAllSpy = vi.spyOn(element.store.actions.ui, 'selectAllPlants').mockImplementation(() => {});
+        const clearSpy = vi.spyOn(element.store.actions.ui, 'clearPlantSelection').mockImplementation(() => {});
+        const waterSpy = vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog').mockImplementation(() => {});
+        const ipmSpy = vi.spyOn(element.store.actions.ui, 'openIPMDialog').mockImplementation(() => {});
+        const trainingSpy = vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog').mockImplementation(() => {});
+        const deleteSpy = vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants').mockResolvedValue(undefined as any);
         const deviceChangeSpy = vi.spyOn(element.store, 'handleDeviceChange').mockImplementation(() => {});
         const setActiveDialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
         const setEditModeSpy = vi.spyOn(element.store.ui, 'setEditMode');

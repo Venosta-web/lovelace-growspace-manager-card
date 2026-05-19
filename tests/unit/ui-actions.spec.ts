@@ -60,6 +60,7 @@ describe('ui-actions', () => {
 
         ctx = {
             ui: {
+                showToast: vi.fn(),
                 setActiveDialog: setActiveDialogSpy,
                 setViewMode: setViewModeSpy,
                 togglePlantSelection: togglePlantSelectionSpy,
@@ -304,7 +305,7 @@ describe('ui-actions', () => {
 
             await exportStrainLibrary(ctx);
 
-            expect(showToastSpy).toHaveBeenCalledWith('Failed to export library', 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to export library', 'error');
             spy.mockRestore();
         });
     });

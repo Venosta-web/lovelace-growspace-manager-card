@@ -115,7 +115,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
                 showToast: vi.fn(),
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
-                ui: {}, history: {}, grid: {}, hass: {}, syncService: {},
+                ui: {
+                    showToast: vi.fn(),
+                },
+                history: {}, grid: {}, hass: {}, syncService: {},
+            },
+            ui: {
+                showToast: vi.fn(),
             },
         };
     }
@@ -595,7 +601,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
             await (element as any)._saveEditedIrrigationTime();
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
                 expect.stringContaining('already exists'), 'error'
             );
             expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
@@ -612,7 +618,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
             await expect((element as any)._saveEditedIrrigationTime()).rejects.toThrow();
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -744,7 +750,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
             await (element as any)._saveEditedDrainTime();
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
                 expect.stringContaining('already exists'), 'error'
             );
             expect(mocks.removeDrainTime).not.toHaveBeenCalled();
@@ -761,7 +767,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
             await expect((element as any)._saveEditedIrrigationTime()).rejects.toThrow();
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -777,7 +783,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
             await expect((element as any)._saveEditedDrainTime()).rejects.toThrow();
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -792,7 +798,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         it('should handle _removeIrrigationTime error and show toast', async () => {
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('Remove Error'));
             await expect((element as any)._removeIrrigationTime('08:00')).rejects.toThrow('Remove Error');
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -807,7 +813,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         it('should handle _removeDrainTime error and show toast', async () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Error'));
             await (element as any)._removeDrainTime('09:00');
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });

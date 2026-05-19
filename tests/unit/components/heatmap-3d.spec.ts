@@ -841,16 +841,7 @@ describe('Heatmap3D Logic', () => {
     });
 
     describe('Keyboard and Resize', () => {
-        it.skip('should handle keyboard rotation keys', () => {
-            (element as any).keyboardRotateEnabled = true;
-            const keyDown = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-            (element as any)._handleKeyDown(keyDown);
-            expect((element as any)._keysPressed.has('ArrowLeft')).toBe(true);
 
-            const keyUp = new KeyboardEvent('keyup', { key: 'ArrowLeft' });
-            (element as any)._handleKeyUp(keyUp);
-            expect((element as any)._keysPressed.has('ArrowLeft')).toBe(false);
-        });
 
         it('should handle resize', () => {
             const spy = vi.spyOn(element as any, 'handleResize');
@@ -964,8 +955,7 @@ describe('Heatmap3D Logic', () => {
             const openPlantOverviewDialog = vi.fn();
             const openAddPlantDialog = vi.fn();
             const storeSpy = {
-                actions: { ui: { openPlantOverviewDialog } },
-                openAddPlantDialog,
+                actions: { ui: { openPlantOverviewDialog, openAddPlantDialog } },
             };
             (element as any).store = storeSpy;
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };

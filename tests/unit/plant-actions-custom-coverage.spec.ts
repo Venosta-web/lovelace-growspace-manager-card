@@ -62,6 +62,7 @@ describe('plant-actions-custom-coverage', () => {
             undoRedoManager: { pushAction: vi.fn() },
             refreshData: vi.fn().mockResolvedValue(undefined),
             ui: {
+                showToast: vi.fn(),
                 deselectPlants: vi.fn(),
                 $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) },
                 $isEditMode: { get: vi.fn().mockReturnValue(false) },

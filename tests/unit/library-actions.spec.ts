@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { 
-  fetchStrainLibrary, 
-  fetchNutrientPresets, 
-  fetchIPMPresets, 
-  fetchNutrientInventory, 
-  updateNutrientStock, 
-  removeNutrientStock, 
-  fetchECRampCurves, 
-  saveECRampCurve, 
-  removeECRampCurve 
+import {
+    fetchStrainLibrary,
+    fetchNutrientPresets,
+    fetchIPMPresets,
+    fetchNutrientInventory,
+    updateNutrientStock,
+    removeNutrientStock,
+    fetchECRampCurves,
+    saveECRampCurve,
+    removeECRampCurve
 } from '../../src/store/plant/library-actions';
 import { ActionContext } from '../../src/store/core/action-context';
 
@@ -47,6 +47,7 @@ describe('LibraryActions', () => {
             dataService: mockDataService,
             data: mockData,
             showToast: vi.fn(),
+            ui: { showToast: vi.fn() } as any,
             refreshData: vi.fn(),
         } as any;
     });
@@ -59,11 +60,7 @@ describe('LibraryActions', () => {
         const CACHE_KEY = 'growspace_ec_ramp_curves';
         const mockCurves = [{ curve_id: 'c1', name: 'Curve 1' }];
 
-        it('should return if hass is missing', async () => {
-            ctx.hass = null as any;
-            await fetchECRampCurves(ctx);
-            expect(mockDataService.fetchECRampCurves).not.toHaveBeenCalled();
-        });
+        // hass guard removed — ActionDispatcher guards against calling fetches before hass is ready
 
         it('should fetch from server and cache when no cache exists', async () => {
             mockDataService.fetchECRampCurves.mockResolvedValue(mockCurves);
@@ -72,7 +69,7 @@ describe('LibraryActions', () => {
 
             expect(mockDataService.fetchECRampCurves).toHaveBeenCalled();
             expect(mockData.setECRampCurves).toHaveBeenCalledWith(mockCurves);
-            
+
             const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
             expect(cached.data).toEqual(mockCurves);
             expect(cached.timestamp).toBeDefined();
@@ -132,7 +129,7 @@ describe('LibraryActions', () => {
         it('should log error on fetch failure', async () => {
             const error = new Error('Fetch failed');
             mockDataService.fetchECRampCurves.mockRejectedValue(error);
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             await fetchECRampCurves(ctx);
 
@@ -141,14 +138,14 @@ describe('LibraryActions', () => {
         });
 
         it('should handle missing timestamp in cache (line 210)', async () => {
-             const cacheData = {
-                 data: mockCurves
-             };
-             localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
-             // Should fallback to 0 and likely be expired (Age = Date.now())
-             mockDataService.fetchECRampCurves.mockResolvedValue(mockCurves);
-             await fetchECRampCurves(ctx);
-             expect(mockDataService.fetchECRampCurves).toHaveBeenCalled();
+            const cacheData = {
+                data: mockCurves
+            };
+            localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+            // Should fallback to 0 and likely be expired (Age = Date.now())
+            mockDataService.fetchECRampCurves.mockResolvedValue(mockCurves);
+            await fetchECRampCurves(ctx);
+            expect(mockDataService.fetchECRampCurves).toHaveBeenCalled();
         });
     });
 
@@ -162,7 +159,7 @@ describe('LibraryActions', () => {
 
             expect(mockDataService.saveECRampCurve).toHaveBeenCalledWith(curveData);
             expect(mockDataService.fetchECRampCurves).toHaveBeenCalled(); // via refresh
-            expect(ctx.showToast).toHaveBeenCalledWith(`Saved EC ramp: ${curveData.name}`, 'success');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(`Saved EC ramp: ${curveData.name}`, 'success');
         });
 
         it('should handle errors and show error toast', async () => {
@@ -170,7 +167,7 @@ describe('LibraryActions', () => {
 
             await saveECRampCurve(ctx, curveData);
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to save EC ramp: Save error', 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to save EC ramp: Save error', 'error');
         });
 
         it('should handle unknown errors gently', async () => {
@@ -178,7 +175,7 @@ describe('LibraryActions', () => {
 
             await saveECRampCurve(ctx, curveData);
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to save EC ramp: Unknown error', 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to save EC ramp: Unknown error', 'error');
         });
     });
 
@@ -190,7 +187,7 @@ describe('LibraryActions', () => {
 
             expect(mockDataService.removeECRampCurve).toHaveBeenCalledWith('c1');
             expect(mockDataService.fetchECRampCurves).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith('Removed EC ramp curve', 'success');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Removed EC ramp curve', 'success');
         });
 
         it('should handle removal errors', async () => {
@@ -198,13 +195,13 @@ describe('LibraryActions', () => {
 
             await removeECRampCurve(ctx, 'c1');
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove EC ramp: Remove error', 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove EC ramp: Remove error', 'error');
         });
 
         it('should handle non-Error catch in removeECRampCurve (line 261)', async () => {
             mockDataService.removeECRampCurve.mockRejectedValue('string error');
             await removeECRampCurve(ctx, 'c1');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
         });
     });
 
@@ -212,11 +209,7 @@ describe('LibraryActions', () => {
         const CACHE_KEY = 'growspace_strain_library_v2';
         const mockStrains = [{ name: 'S1' }];
 
-        it('should return if hass is missing', async () => {
-            ctx.hass = null as any;
-            await fetchStrainLibrary(ctx);
-            expect(mockDataService.fetchStrainLibrary).not.toHaveBeenCalled();
-        });
+        // hass guard removed — ActionDispatcher guards against calling fetches before hass is ready
 
         it('should handle fetchStrainLibrary correctly (cache miss)', async () => {
             mockDataService.fetchStrainLibrary.mockResolvedValue(mockStrains);
@@ -255,7 +248,7 @@ describe('LibraryActions', () => {
         it('should handle fetch error', async () => {
             const error = new Error('fail');
             mockDataService.fetchStrainLibrary.mockRejectedValue(error);
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
             await fetchStrainLibrary(ctx);
             expect(spy).toHaveBeenCalledWith('Failed to fetch strain library:', error);
             spy.mockRestore();
@@ -280,7 +273,7 @@ describe('LibraryActions', () => {
 
         it('should handle fetch error', async () => {
             mockDataService.fetchNutrientPresets.mockRejectedValue('error');
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
             await fetchNutrientPresets(ctx);
             expect(spy).toHaveBeenCalled();
             spy.mockRestore();
@@ -313,7 +306,7 @@ describe('LibraryActions', () => {
 
         it('should handle fetch error', async () => {
             mockDataService.fetchIPMPresets.mockRejectedValue('error');
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
             await fetchIPMPresets(ctx);
             expect(spy).toHaveBeenCalled();
             spy.mockRestore();
@@ -346,7 +339,7 @@ describe('LibraryActions', () => {
 
         it('should handle fetch error', async () => {
             mockDataService.fetchNutrientInventory.mockRejectedValue(new Error('fail'));
-            const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
             await fetchNutrientInventory(ctx);
             expect(spy).toHaveBeenCalled(); // Line 168
             spy.mockRestore();
@@ -371,13 +364,13 @@ describe('LibraryActions', () => {
         it('should handle update error', async () => {
             mockDataService.updateNutrientStock.mockRejectedValue(new Error('fail'));
             await updateNutrientStock(ctx, 'n1', 'Nutrient', 100, 1000);
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed'), 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed'), 'error');
         });
 
         it('should handle non-Error catch', async () => {
             mockDataService.updateNutrientStock.mockRejectedValue('string error');
             await updateNutrientStock(ctx, 'n1', 'Nutrient', 100, 1000);
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
         });
     });
 
@@ -387,15 +380,15 @@ describe('LibraryActions', () => {
             expect(mockDataService.removeNutrientStock).toHaveBeenCalled();
         });
         it('should handle removal errors', async () => {
-             mockDataService.removeNutrientStock.mockRejectedValue(new Error('delete fail'));
-             await removeNutrientStock(ctx, 'n1');
-             expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove stock: delete fail', 'error');
+            mockDataService.removeNutrientStock.mockRejectedValue(new Error('delete fail'));
+            await removeNutrientStock(ctx, 'n1');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove stock: delete fail', 'error');
         });
 
         it('should handle non-Error catch in removeNutrientStock (line 195)', async () => {
             mockDataService.removeNutrientStock.mockRejectedValue('string error');
             await removeNutrientStock(ctx, 'n1');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
         });
     });
 });

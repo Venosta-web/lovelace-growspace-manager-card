@@ -28,19 +28,23 @@ const createViewStateAtom = (overrides: Partial<{
     ...overrides,
 });
 
-const buildMockStore = ($analyticsViewState: ReturnType<typeof atom>) => ({
-    history: {
-        $analyticsViewState,
-        startAutoRefresh: vi.fn(),
-        stopAutoRefresh: vi.fn(),
-        loadHistoryOnDemand: vi.fn(),
-        setGraphRange: vi.fn(),
-        unlinkGraphGroup: vi.fn(),
-        unlinkGraphMetric: vi.fn(),
-        getRange: vi.fn().mockReturnValue('24h'),
-    },
-    toggleEnvGraph: vi.fn(),
-});
+const buildMockStore = ($analyticsViewState: ReturnType<typeof atom>) => {
+    const toggleEnvGraph = vi.fn();
+    return {
+        history: {
+            $analyticsViewState,
+            startAutoRefresh: vi.fn(),
+            stopAutoRefresh: vi.fn(),
+            loadHistoryOnDemand: vi.fn(),
+            setGraphRange: vi.fn(),
+            unlinkGraphGroup: vi.fn(),
+            unlinkGraphMetric: vi.fn(),
+            getRange: vi.fn().mockReturnValue('24h'),
+        },
+        toggleEnvGraph,
+        actions: { ui: { toggleEnvGraph } },
+    };
+};
 
 const mockDevice = { deviceId: 'grow1', name: 'Growspace 1', plants: [] };
 
@@ -163,13 +167,13 @@ describe('GrowspaceAnalyticsContainer', () => {
         expect(items).toEqual([]);
     });
 
-    it('toggle-graph event with string detail calls store.toggleEnvGraph', async () => {
+    it('toggle-graph event with string detail calls store.actions.ui.toggleEnvGraph', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'temperature' }));
         expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
     });
 
-    it('toggle-graph event with object detail calls store.toggleEnvGraph with metric', async () => {
+    it('toggle-graph event with object detail calls store.actions.ui.toggleEnvGraph with metric', async () => {
         const ui = element.shadowRoot!.querySelector('growspace-analytics-ui')!;
         ui.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'co2' } }));
         expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('co2');

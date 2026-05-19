@@ -710,7 +710,7 @@ export class IrrigationDialog extends LitElement {
         duration: duration || this._drainDuration,
       });
     } catch (e) {
-      this.store.context.showToast('Failed to add drain time', 'error');
+      this.store.ui.showToast('Failed to add drain time', 'error');
     }
   }
 
@@ -719,7 +719,7 @@ export class IrrigationDialog extends LitElement {
     try {
       await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
     } catch (e) {
-      this.store.context.showToast('Failed to remove drain time', 'error');
+      this.store.ui.showToast('Failed to remove drain time', 'error');
     }
   }
 
@@ -780,7 +780,7 @@ export class IrrigationDialog extends LitElement {
     if (originalTime !== formattedNewTime) {
       const currentTimes = this.device.irrigationConfig?.irrigationTimes || [];
       if (currentTimes.some((t) => t.time === formattedNewTime)) {
-        this.store.context.showToast(`Irrigation time ${time} already exists`, 'error');
+        this.store.ui.showToast(`Irrigation time ${time} already exists`, 'error');
         return;
       }
     }
@@ -825,7 +825,7 @@ export class IrrigationDialog extends LitElement {
     if (originalTime !== formattedNewTime) {
       const currentTimes = this.device.irrigationConfig?.drainTimes || [];
       if (currentTimes.some((t) => t.time === formattedNewTime)) {
-        this.store.context.showToast(`Drain time ${time} already exists`, 'error');
+        this.store.ui.showToast(`Drain time ${time} already exists`, 'error');
         return;
       }
     }
@@ -842,7 +842,7 @@ export class IrrigationDialog extends LitElement {
     try {
       await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
     } catch (e) {
-      this.store.context.showToast('Failed to remove irrigation time', 'error');
+      this.store.ui.showToast('Failed to remove irrigation time', 'error');
     }
   }
 
@@ -853,7 +853,7 @@ export class IrrigationDialog extends LitElement {
     try {
       await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
     } catch (e) {
-      this.store.context.showToast('Failed to remove drain time', 'error');
+      this.store.ui.showToast('Failed to remove drain time', 'error');
     }
   }
 

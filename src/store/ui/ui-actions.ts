@@ -12,7 +12,7 @@ export function setIsCompactView(ctx: ActionContext, value: boolean) {
 }
 
 export function showToast(ctx: ActionContext, message: string, type: 'success' | 'error' | 'info' = 'info') {
-  ctx.showToast(message, type);
+  ctx.ui.showToast(message, type);
 }
 
 export function setActiveDialog(ctx: ActionContext, dialog: import('../../ui-state').ActiveDialogState) {
@@ -314,7 +314,7 @@ export async function exportStrainLibrary(ctx: ActionContext) {
     downloadAnchorNode.remove();
   } catch (e) {
     console.error(e);
-    ctx.showToast('Failed to export library', 'error');
+    ctx.ui.showToast('Failed to export library', 'error');
   }
 }
 

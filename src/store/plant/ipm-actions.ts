@@ -23,11 +23,11 @@ export async function applyIPM(
     // Refresh nutrient inventory as IPM products often deduct from stock
     await libraryActions.fetchNutrientInventory(ctx, true);
 
-    ctx.showToast('IPM treatment applied successfully', 'success');
+    ctx.ui.showToast('IPM treatment applied successfully', 'success');
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     console.error('Failed to apply IPM:', e);
-    ctx.showToast(`Failed to apply IPM: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to apply IPM: ${error}`, 'error');
     throw e;
   }
 }

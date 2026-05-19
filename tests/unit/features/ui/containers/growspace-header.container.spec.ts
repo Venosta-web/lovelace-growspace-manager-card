@@ -35,27 +35,41 @@ vi.mock('../../../../../src/utils/metrics-utils', () => ({
 
 const mockDevice = { deviceId: 'grow1', name: 'Test Growspace', plants: [] };
 
-const buildMockStore = () => ({
-    openAddPlantDialog: vi.fn(),
-    openConfigDialog: vi.fn(),
-    openStrainLibraryDialog: vi.fn(),
-    openIrrigationDialog: vi.fn(),
-    openGrowMasterDialog: vi.fn(),
-    openLogbookDialog: vi.fn(),
-    openSnapshotsDialog: vi.fn(),
-    openWateringDialog: vi.fn(),
-    openIPMDialog: vi.fn(),
-    actions: {
-        ui: {
-            openTrainingDialog: vi.fn(),
-        },
-    },
-    openTrainingDialog: vi.fn(),
-    openNutrientsDialog: vi.fn(),
-    openECRampDialog: vi.fn(),
-    openGrowReportDialog: vi.fn(),
+const buildMockStore = () => {
+    const ui_actions = {
+        openAddPlantDialog: vi.fn(),
+        openConfigDialog: vi.fn(),
+        openStrainLibraryDialog: vi.fn(),
+        openIrrigationDialog: vi.fn(),
+        openGrowMasterDialog: vi.fn(),
+        openLogbookDialog: vi.fn(),
+        openSnapshotsDialog: vi.fn(),
+        openWateringDialog: vi.fn(),
+        openIPMDialog: vi.fn(),
+        openTrainingDialog: vi.fn(),
+        openNutrientsDialog: vi.fn(),
+        openECRampDialog: vi.fn(),
+        openGrowReportDialog: vi.fn(),
+        toggleEnvGraph: vi.fn(),
+        showToast: vi.fn(),
+    };
+    return {
+    // Keep top-level references so old assertions still work
+    get openAddPlantDialog() { return ui_actions.openAddPlantDialog; },
+    get openConfigDialog() { return ui_actions.openConfigDialog; },
+    get openStrainLibraryDialog() { return ui_actions.openStrainLibraryDialog; },
+    get openIrrigationDialog() { return ui_actions.openIrrigationDialog; },
+    get openGrowMasterDialog() { return ui_actions.openGrowMasterDialog; },
+    get openLogbookDialog() { return ui_actions.openLogbookDialog; },
+    get openSnapshotsDialog() { return ui_actions.openSnapshotsDialog; },
+    get openWateringDialog() { return ui_actions.openWateringDialog; },
+    get openIPMDialog() { return ui_actions.openIPMDialog; },
+    get openNutrientsDialog() { return ui_actions.openNutrientsDialog; },
+    get openECRampDialog() { return ui_actions.openECRampDialog; },
+    get openGrowReportDialog() { return ui_actions.openGrowReportDialog; },
+    get toggleEnvGraph() { return ui_actions.toggleEnvGraph; },
+    actions: { ui: ui_actions },
     handleDeviceChange: vi.fn(),
-    toggleEnvGraph: vi.fn(),
     history: {
         $historyCache: atom({}),
         linkGraphs: vi.fn(),
@@ -73,7 +87,8 @@ const buildMockStore = () => ({
     },
     $headerState: atom<any>(null),
     $headerActionsState: atom({ viewMode: 'standard', isEditMode: false, selectedPlants: new Set() }),
-});
+    };
+};
 
 describe('GrowspaceHeaderContainer', () => {
     let element: GrowspaceHeaderContainer;
@@ -247,12 +262,12 @@ describe('GrowspaceHeaderContainer', () => {
 
     // --- _handleToggleGraph ---
 
-    it('_handleToggleGraph with string detail calls store.toggleEnvGraph', () => {
+    it('_handleToggleGraph with string detail calls store.actions.ui.toggleEnvGraph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: 'temperature' }));
         expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
     });
 
-    it('_handleToggleGraph with object detail calls store.toggleEnvGraph with metric', () => {
+    it('_handleToggleGraph with object detail calls store.actions.ui.toggleEnvGraph with metric', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'humidity' } }));
         expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('humidity');
     });
@@ -289,7 +304,7 @@ describe('GrowspaceHeaderContainer', () => {
 
     // --- _handleActionTriggered ---
 
-    it('add_plant action calls store.openAddPlantDialog', () => {
+    it('add_plant action calls store.actions.ui.openAddPlantDialog', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'add_plant' } })
         );

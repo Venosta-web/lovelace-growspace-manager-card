@@ -24,10 +24,10 @@ export async function exportGrowReport(
 ): Promise<void> {
   try {
     await ctx.dataService.exportGrowReport(growspaceId, format);
-    ctx.showToast('Grow report exported', 'success');
+    ctx.ui.showToast('Grow report exported', 'success');
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to export report: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to export report: ${error}`, 'error');
     throw e;
   }
 }

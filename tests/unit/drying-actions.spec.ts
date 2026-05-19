@@ -29,6 +29,7 @@ describe('drying-actions', () => {
       undoRedoManager: { pushAction: vi.fn() },
       refreshData: vi.fn().mockResolvedValue(undefined),
       ui: {
+          showToast: vi.fn(),
         deselectPlants: vi.fn(),
         $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) },
         $isEditMode: { get: vi.fn().mockReturnValue(false) },
@@ -61,7 +62,7 @@ describe('drying-actions', () => {
         weight_grams: 50.5,
         date: '2026-05-19',
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Weight logged', 'success');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Weight logged', 'success');
     });
 
     it('should show error toast and throw error when logDryingWeight fails with Error object', async () => {
@@ -75,7 +76,7 @@ describe('drying-actions', () => {
         weight_grams: 50.5,
         date: undefined,
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Failed to log weight: Database connection failed', 'error');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to log weight: Database connection failed', 'error');
     });
 
     it('should show error toast with Unknown error and throw error when logDryingWeight fails with non-Error object', async () => {
@@ -83,7 +84,7 @@ describe('drying-actions', () => {
 
       await expect(logDryingWeight(ctx, 'plant-123', 50.5)).rejects.toEqual('Some string error');
 
-      expect(ctx.showToast).toHaveBeenCalledWith('Failed to log weight: Unknown error', 'error');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to log weight: Unknown error', 'error');
     });
   });
 
@@ -96,7 +97,7 @@ describe('drying-actions', () => {
         moisture_percent: 12.3,
         date: '2026-05-19',
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Moisture logged', 'success');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Moisture logged', 'success');
     });
 
     it('should show error toast and throw error when logMoistureReading fails with Error object', async () => {
@@ -110,7 +111,7 @@ describe('drying-actions', () => {
         moisture_percent: 12.3,
         date: undefined,
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Failed to log moisture: Network timeout', 'error');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to log moisture: Network timeout', 'error');
     });
 
     it('should show error toast with Unknown error and throw error when logMoistureReading fails with non-Error object', async () => {
@@ -118,7 +119,7 @@ describe('drying-actions', () => {
 
       await expect(logMoistureReading(ctx, 'plant-123', 12.3)).rejects.toEqual({ custom: 'object error' });
 
-      expect(ctx.showToast).toHaveBeenCalledWith('Failed to log moisture: Unknown error', 'error');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to log moisture: Unknown error', 'error');
     });
   });
 
@@ -130,7 +131,7 @@ describe('drying-actions', () => {
         plant_id: 'plant-123',
         visual_tag: 'Trichomes Cloudy',
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Visual tag saved', 'success');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Visual tag saved', 'success');
     });
 
     it('should successfully set visual tag to null and show success toast', async () => {
@@ -140,7 +141,7 @@ describe('drying-actions', () => {
         plant_id: 'plant-123',
         visual_tag: null,
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Visual tag saved', 'success');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Visual tag saved', 'success');
     });
 
     it('should show error toast and throw error when setVisualTag fails with Error object', async () => {
@@ -153,7 +154,7 @@ describe('drying-actions', () => {
         plant_id: 'plant-123',
         visual_tag: 'test-tag',
       });
-      expect(ctx.showToast).toHaveBeenCalledWith('Failed to save visual tag: Validation failed', 'error');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to save visual tag: Validation failed', 'error');
     });
 
     it('should show error toast with Unknown error and throw error when setVisualTag fails with non-Error object', async () => {
@@ -161,7 +162,7 @@ describe('drying-actions', () => {
 
       await expect(setVisualTag(ctx, 'plant-123', 'test-tag')).rejects.toBeNull();
 
-      expect(ctx.showToast).toHaveBeenCalledWith('Failed to save visual tag: Unknown error', 'error');
+      expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to save visual tag: Unknown error', 'error');
     });
   });
 });

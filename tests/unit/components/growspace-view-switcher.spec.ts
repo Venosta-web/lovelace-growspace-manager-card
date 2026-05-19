@@ -1,5 +1,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+vi.unmock('../../../src/features/shared/layouts/growspace-view-switcher');
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceViewSwitcher } from '../../../src/features/shared/layouts/growspace-view-switcher';
 import { GrowspaceDevice } from '../../../src/types';
@@ -13,6 +14,9 @@ vi.mock('../../../src/features/shared/layouts/growspace-view-compact', () => ({
 }));
 vi.mock('../../../src/features/shared/layouts/growspace-view-header', () => ({
     GrowspaceViewHeader: class extends HTMLElement { }
+}));
+vi.mock('../../../src/features/shared/layouts/growspace-view-heatmap', () => ({
+    GrowspaceViewHeatmap: class extends HTMLElement { }
 }));
 
 describe('GrowspaceViewSwitcher', () => {

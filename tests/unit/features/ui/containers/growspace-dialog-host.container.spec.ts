@@ -132,6 +132,7 @@ describe('GrowspaceDialogHostContainer', () => {
                     delete: vi.fn().mockResolvedValue(true),
                     movePlantToNextStage: vi.fn().mockResolvedValue(true),
                     add: vi.fn().mockResolvedValue(true),
+                    confirmAdd: vi.fn().mockResolvedValue(true),
                     addBatch: vi.fn().mockResolvedValue(true),
                     update: vi.fn().mockResolvedValue(true),
                     remove: vi.fn().mockResolvedValue(true),
@@ -1819,7 +1820,7 @@ describe('GrowspaceDialogHostContainer', () => {
             await openDialog('ADD_PLANT', { row: 0, col: 0 });
             const dialog = element.shadowRoot?.querySelector('add-plant-dialog');
             dialog?.dispatchEvent(new CustomEvent('add-plant-submit', { detail: { strain: 'Test' } }));
-            expect(mockStore.actions.plant.add).toHaveBeenCalledWith({ strain: 'Test' });
+            expect(mockStore.actions.plant.confirmAdd).toHaveBeenCalledWith({ strain: 'Test' });
         });
 
         it('should handle @close on ADD_PLANTS dialog', async () => {

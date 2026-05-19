@@ -25,7 +25,6 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
     data,
     undoRedoManager,
     optimisticManager,
-    showToast,
     dataService: {
       addIrrigationTime: vi.fn().mockResolvedValue(undefined),
       removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
@@ -33,13 +32,11 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
       removeDrainTime: vi.fn().mockResolvedValue(undefined),
       setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
     } as unknown as ActionContext['dataService'],
-    ui: {} as ActionContext['ui'],
-    history: {} as ActionContext['history'],
+    ui: { showToast } as unknown as ActionContext['ui'],
     grid: {} as ActionContext['grid'],
-    syncService: {} as ActionContext['syncService'],
-    hass: {} as ActionContext['hass'],
     closeDialog: vi.fn(),
     refreshData: vi.fn().mockResolvedValue(undefined),
+    ...overrides,
   } satisfies ActionContext;
 }
 
@@ -97,7 +94,7 @@ describe('addIrrigationTime', () => {
       addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00', duration: 60 })
     ).rejects.toThrow();
 
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.any(String), 'error');
+    expect(ctx.ui.showToast as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(expect.any(String), 'error');
   });
 });
 

@@ -229,14 +229,15 @@ export class StrainEditorView extends LitElement {
     const breederMap = new Map<string, { logo: string; strainCount: number }>();
     this.strains.forEach((s) => {
       if (s.breeder && s.breeder.trim()) {
-        const existing = breederMap.get(s.breeder);
+        const name = s.breeder.trim();
+        const existing = breederMap.get(name);
         if (existing) {
           existing.strainCount++;
           if (!existing.logo && s.breeder_logo) {
             existing.logo = s.breeder_logo;
           }
         } else {
-          breederMap.set(s.breeder, {
+          breederMap.set(name, {
             logo: s.breeder_logo || '',
             strainCount: 1,
           });

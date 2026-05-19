@@ -18,7 +18,6 @@ import { ActionContext } from './action-context';
 
 // Action Modules
 import * as plantActions from '../plant/plant-actions';
-import * as deviceActions from '../system/device-actions';
 import * as aiActions from '../system/ai-actions';
 
 // Services
@@ -116,13 +115,9 @@ export class GrowspaceStore {
       dataService: this.dataService,
       data: this.data,
       ui: this.ui,
-      history: this.history,
       grid: this.grid,
       undoRedoManager: this.undoRedoManager,
       optimisticManager: this.optimisticManager,
-      syncService: this.syncService,
-      hass: this.hass,
-      showToast: (msg, type, action) => this.ui.showToast(msg, type, action),
       closeDialog: () => this.ui.closeDialog(),
       refreshData: (force?: boolean) => this.refreshData(force),
     };
@@ -308,11 +303,17 @@ export class GrowspaceStore {
 
   // Device coordination — these belong on the store as they manage lifecycle state
   initializeSelectedDevice(config: GrowspaceManagerCardConfig) {
-    deviceActions.initializeSelectedDevice(this.context, config);
+    if (!config) return;
+    this.data.setConfig(config);
+    this.syncService.setCardConfig(config);
+    if (config?.initial_view_mode) {
+      this.ui.setViewMode(config.initial_view_mode);
+    }
+    this.syncService.updateDevicesState();
   }
 
   handleDeviceChange(deviceId: string) {
-    deviceActions.handleDeviceChange(this.context, deviceId);
+    this.grid.setSelectedDevice(deviceId);
   }
 
   // Grid helper — triggers a data refresh after a position change

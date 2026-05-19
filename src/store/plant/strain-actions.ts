@@ -50,12 +50,12 @@ export async function addStrain(
       await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
     }
 
-    ctx.showToast('Strain added successfully!', 'success');
+    ctx.ui.showToast('Strain added successfully!', 'success');
     await fetchStrainLibrary(ctx, true);
     return true;
   } catch (err) {
     console.error('Error adding strain:', err);
-    ctx.showToast('Failed to add strain', 'error');
+    ctx.ui.showToast('Failed to add strain', 'error');
     return false;
   }
 }
@@ -78,12 +78,12 @@ export async function updateStrain(
       await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
     }
 
-    ctx.showToast('Strain updated successfully!', 'success');
+    ctx.ui.showToast('Strain updated successfully!', 'success');
     await fetchStrainLibrary(ctx, true);
     return true;
   } catch (err) {
     console.error('Error updating strain:', err);
-    ctx.showToast('Failed to update strain', 'error');
+    ctx.ui.showToast('Failed to update strain', 'error');
     return false;
   }
 }
@@ -121,7 +121,7 @@ export async function addGrowspace(
   notificationService: string = 'mobile_app_notify'
 ): Promise<boolean> {
   if (!name) {
-    ctx.showToast('Name is required', 'error');
+    ctx.ui.showToast('Name is required', 'error');
     return false;
   }
 
@@ -132,13 +132,13 @@ export async function addGrowspace(
       plantsPerRow,
       notificationService,
     });
-    ctx.showToast('Growspace added successfully!', 'success');
+    ctx.ui.showToast('Growspace added successfully!', 'success');
     await ctx.refreshData();
     ctx.closeDialog();
     return true;
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Error: ${error}`, 'error');
+    ctx.ui.showToast(`Error: ${error}`, 'error');
     return false;
   }
 }
@@ -181,13 +181,13 @@ export async function updateGrowspace(
     await ctx.refreshData();
 
     // Only show success and close after data is refreshed
-    ctx.showToast('Growspace updated successfully', 'success');
+    ctx.ui.showToast('Growspace updated successfully', 'success');
     ctx.closeDialog();
     return true;
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     console.error('[StrainActions] Update failed:', e);
-    ctx.showToast(`Failed to update growspace: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to update growspace: ${error}`, 'error');
     return false;
   }
 }
@@ -198,14 +198,14 @@ export async function updateGrowspace(
 export async function removeGrowspace(ctx: ActionContext, growspaceId: string): Promise<boolean> {
   try {
     await ctx.dataService.removeGrowspace(growspaceId);
-    ctx.showToast('Growspace removed successfully', 'success');
+    ctx.ui.showToast('Growspace removed successfully', 'success');
     await ctx.refreshData();
     ctx.closeDialog();
     return true;
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     console.error('[StrainActions] Removal failed:', e);
-    ctx.showToast(`Failed to remove growspace: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to remove growspace: ${error}`, 'error');
     return false;
   }
 }

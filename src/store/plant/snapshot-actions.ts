@@ -24,10 +24,10 @@ export async function getSnapshots(ctx: ActionContext, growspaceId: string) {
 export async function captureSnapshot(ctx: ActionContext, growspaceId: string): Promise<void> {
   try {
     await ctx.dataService.captureSnapshot(growspaceId);
-    ctx.showToast('Snapshot captured', 'success');
+    ctx.ui.showToast('Snapshot captured', 'success');
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to capture snapshot: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to capture snapshot: ${error}`, 'error');
     throw e;
   }
 }
@@ -45,11 +45,11 @@ export async function getVisionHistory(ctx: ActionContext, growspaceId: string) 
 export async function triggerVisionCheckup(ctx: ActionContext, growspaceId: string): Promise<void> {
   try {
     await ctx.dataService.triggerVisionCheckup(growspaceId);
-    ctx.showToast('Vision checkup triggered', 'success');
+    ctx.ui.showToast('Vision checkup triggered', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to trigger checkup: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to trigger checkup: ${error}`, 'error');
     throw e;
   }
 }
@@ -64,11 +64,11 @@ export async function updateVisionCheckupConfig(
 ): Promise<void> {
   try {
     await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
-    ctx.showToast('Vision config saved', 'success');
+    ctx.ui.showToast('Vision config saved', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to save vision config: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to save vision config: ${error}`, 'error');
     throw e;
   }
 }

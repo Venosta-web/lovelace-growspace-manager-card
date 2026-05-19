@@ -61,3 +61,5 @@ tests/**/*.png
 playwright-report-mock/index.html
 .gitignore
 test-results-mock/.last-run.json
+coverage.txt
+test_run.log

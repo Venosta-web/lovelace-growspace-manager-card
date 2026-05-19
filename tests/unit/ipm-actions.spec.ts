@@ -25,7 +25,8 @@ describe('ipm-actions', () => {
             showToast: vi.fn(),
             hass: {} as any,
             store: {} as any,
-            ui: {} as any
+            ui: {
+                showToast: vi.fn(),} as any
         } as unknown as ActionContext;
     });
 
@@ -47,7 +48,7 @@ describe('ipm-actions', () => {
             expect(libraryActions.fetchNutrientInventory).toHaveBeenCalledWith(ctx, true);
 
             // Check toast
-            expect(ctx.showToast).toHaveBeenCalledWith('IPM treatment applied successfully', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('IPM treatment applied successfully', 'success');
         });
 
         it('should handle errors when applying IPM', async () => {
@@ -58,7 +59,7 @@ describe('ipm-actions', () => {
             await expect(applyIPM(ctx, ipmDetails)).rejects.toThrow('API failure');
 
             // Check error toast
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to apply IPM: API failure', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to apply IPM: API failure', 'error');
 
             // Inventory refresh should NOT be called on error
             expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
@@ -71,7 +72,7 @@ describe('ipm-actions', () => {
             await expect(applyIPM(ctx, ipmDetails)).rejects.toBe('String error');
 
             // Check error toast - should use 'Unknown error' as fallback for non-Error instances
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to apply IPM: Unknown error', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to apply IPM: Unknown error', 'error');
         });
     });
 });

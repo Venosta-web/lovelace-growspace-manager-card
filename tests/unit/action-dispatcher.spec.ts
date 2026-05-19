@@ -49,6 +49,7 @@ vi.mock('../../src/store/ui/ui-actions', () => ({
     openStrainRecommendationDialog: vi.fn(),
     exportStrainLibrary: vi.fn(),
     showToast: vi.fn(),
+    ui: { showToast: vi.fn() } as any,
     setActiveDialog: vi.fn(),
     closeDialog: vi.fn(),
     openNutrientPresetsDialog: vi.fn(),
@@ -144,6 +145,7 @@ describe('ActionDispatcher', () => {
                     resetWaterTracking: vi.fn(),
                     importStrainLibrary: vi.fn(),
                 },
+                ui: { showToast: vi.fn() },
             },
         };
 
@@ -502,10 +504,13 @@ describe('ActionDispatcher', () => {
             expect(libraryActions.removeECRampCurve).toHaveBeenCalledWith(mockStore.context, 'curve1');
         });
 
-        it('should delegate import to dataService', () => {
-            const file = new File(['{}'], 'library.json');
-            dispatcher.library.import(file, true);
-            expect(mockStore.context.dataService.importStrainLibrary).toHaveBeenCalledWith(file, true);
+        it('should delegate import to strainActions.addStrain for each entry', async () => {
+            const strains = [{ name: 'Blue Dream' }, { name: 'OG Kush' }];
+            const file = new File([JSON.stringify(strains)], 'library.json');
+            await dispatcher.library.import(file, true);
+            expect(strainActions.addStrain).toHaveBeenCalledTimes(2);
+            expect(strainActions.addStrain).toHaveBeenCalledWith(mockStore.context, strains[0]);
+            expect(strainActions.addStrain).toHaveBeenCalledWith(mockStore.context, strains[1]);
         });
     });
 

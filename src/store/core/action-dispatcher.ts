@@ -15,9 +15,11 @@ import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogStat
 import { ActionContext } from './action-context';
 import { ViewMode } from '../../constants';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
+import type { GrowspaceHistoryStore } from '../history/history-store';
 
 interface IGrowspaceStore {
   context: ActionContext;
+  history: GrowspaceHistoryStore;
   undo(): Promise<void>;
   redo(): Promise<void>;
   refreshData(): void;
@@ -52,7 +54,7 @@ export class ActionDispatcher {
     takeClone: (mother: PlantEntity, num?: number, targetGrowspaceId?: string) =>
       plantActions.takeClone(this.ctx, mother, num, targetGrowspaceId),
 
-    updateFromDialog: (state: PlantOverviewDialogState) => plantActions.updatePlantFromDialog(this.ctx, state),
+    updateFromDialog: (state: Pick<PlantOverviewDialogState, 'plant' | 'editedAttributes' | 'selectedPlantIds' | 'activeTab'>) => plantActions.updatePlantFromDialog(this.ctx, state),
 
     finishDrying: (plant: PlantEntity) => plantActions.movePlantToNextStage(this.ctx, plant),
 
@@ -104,14 +106,14 @@ export class ActionDispatcher {
           action,
           data: data || {},
         });
-        this.ctx.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+        this.ctx.ui.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
         this.ctx.ui.clearPlantSelection();
         this.ctx.ui.setEditMode(false);
         await this.ctx.refreshData();
       } catch (err: unknown) {
         const error = err instanceof Error ? err.message : 'Unknown error';
         console.error(`Batch ${action} failed:`, err);
-        this.ctx.showToast(`Batch ${action} failed: ${error}`, 'error');
+        this.ctx.ui.showToast(`Batch ${action} failed: ${error}`, 'error');
         if (action === 'remove') {
           entityIds.forEach((id) => this.ctx.data.removeOptimisticDeletedPlantId(id));
         }
@@ -193,6 +195,12 @@ export class ActionDispatcher {
     exportStrainLibrary: () =>
       uiActions.exportStrainLibrary(this.ctx),
 
+    setIsCompactView: (value: boolean) =>
+      uiActions.setIsCompactView(this.ctx, value),
+
+    toggleHeaderExpansion: () =>
+      uiActions.toggleHeaderExpansion(this.ctx),
+
     showToast: (message: string, type: 'success' | 'error' | 'info' = 'info') =>
       uiActions.showToast(this.ctx, message, type),
 
@@ -245,7 +253,8 @@ export class ActionDispatcher {
         if (gsId) uiActions.openCropSteeringDialog(this.ctx, gsId);
         return;
       }
-      const isNowActive = this.ctx.history.toggleEnvGraph(metric);
+      if (!this.store.history) return;
+      const isNowActive = this.store.history.toggleEnvGraph(metric);
       if (isNowActive && this.ctx.ui.$viewMode.get() === ViewMode.HEADER) {
         this.ctx.ui.setViewMode(ViewMode.STANDARD);
       }
@@ -272,12 +281,12 @@ export class ActionDispatcher {
         for (const strain of strains) {
           await strainActions.addStrain(this.ctx, strain);
         }
-        this.ctx.showToast('Library imported successfully', 'success');
+        this.ctx.ui.showToast('Library imported successfully', 'success');
         await libraryActions.fetchStrainLibrary(this.ctx, true);
       } catch (e: unknown) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         console.error('Import failed', e);
-        this.ctx.showToast('Import failed: ' + error, 'error');
+        this.ctx.ui.showToast('Import failed: ' + error, 'error');
       }
     },
   };

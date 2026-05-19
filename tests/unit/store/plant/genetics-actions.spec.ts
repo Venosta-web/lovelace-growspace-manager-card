@@ -38,7 +38,7 @@ describe('addSeedBatch', () => {
     await addSeedBatch(ctx, seedBatchData);
 
     expect(ctx.dataService.addSeedBatch).toHaveBeenCalledWith(seedBatchData);
-    expect(ctx.showToast).toHaveBeenCalledWith('Seed batch added', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Seed batch added', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
@@ -46,13 +46,13 @@ describe('addSeedBatch', () => {
     ctx.dataService.addSeedBatch.mockRejectedValue(new Error('add-err'));
 
     await expect(addSeedBatch(ctx, seedBatchData)).rejects.toThrow('add-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('add-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('add-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.addSeedBatch.mockRejectedValue('raw string');
     await expect(addSeedBatch(ctx, seedBatchData)).rejects.toBe('raw string');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -65,20 +65,20 @@ describe('updateSeedBatch', () => {
     await updateSeedBatch(ctx, data);
 
     expect(ctx.dataService.updateSeedBatch).toHaveBeenCalledWith(data);
-    expect(ctx.showToast).toHaveBeenCalledWith('Seed batch updated', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Seed batch updated', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.updateSeedBatch.mockRejectedValue(new Error('upd-err'));
     await expect(updateSeedBatch(ctx, { batch_id: 'b1' } as any)).rejects.toThrow('upd-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('upd-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('upd-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.updateSeedBatch.mockRejectedValue(42);
     await expect(updateSeedBatch(ctx, { batch_id: 'b1' } as any)).rejects.toBe(42);
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -90,20 +90,20 @@ describe('logPollination', () => {
     await logPollination(ctx, pollinationData);
 
     expect(ctx.dataService.logPollination).toHaveBeenCalledWith(pollinationData);
-    expect(ctx.showToast).toHaveBeenCalledWith('Pollination event logged', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Pollination event logged', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.logPollination.mockRejectedValue(new Error('poll-err'));
     await expect(logPollination(ctx, pollinationData)).rejects.toThrow('poll-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('poll-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('poll-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.logPollination.mockRejectedValue(null);
     await expect(logPollination(ctx, pollinationData)).rejects.toBeNull();
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -116,20 +116,20 @@ describe('updatePollination', () => {
     await updatePollination(ctx, data);
 
     expect(ctx.dataService.updatePollination).toHaveBeenCalledWith(data);
-    expect(ctx.showToast).toHaveBeenCalledWith('Pollination event updated', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Pollination event updated', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.updatePollination.mockRejectedValue(new Error('upd2-err'));
     await expect(updatePollination(ctx, { event_id: 'ev-1' } as any)).rejects.toThrow('upd2-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('upd2-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('upd2-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.updatePollination.mockRejectedValue('oops');
     await expect(updatePollination(ctx, { event_id: 'ev-1' } as any)).rejects.toBe('oops');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -141,20 +141,20 @@ describe('deletePollination', () => {
     await deletePollination(ctx, 'ev-1');
 
     expect(ctx.dataService.deletePollination).toHaveBeenCalledWith('ev-1');
-    expect(ctx.showToast).toHaveBeenCalledWith('Pollination event deleted', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Pollination event deleted', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.deletePollination.mockRejectedValue(new Error('del-err'));
     await expect(deletePollination(ctx, 'ev-1')).rejects.toThrow('del-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.deletePollination.mockRejectedValue({});
     await expect(deletePollination(ctx, 'ev-1')).rejects.toEqual({});
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -167,20 +167,20 @@ describe('harvestSeeds', () => {
     await harvestSeeds(ctx, data);
 
     expect(ctx.dataService.harvestSeeds).toHaveBeenCalledWith(data);
-    expect(ctx.showToast).toHaveBeenCalledWith('Seeds harvested', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Seeds harvested', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.harvestSeeds.mockRejectedValue(new Error('harvest-err'));
     await expect(harvestSeeds(ctx, { pollination_event_id: 'ev-1' } as any)).rejects.toThrow('harvest-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('harvest-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('harvest-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.harvestSeeds.mockRejectedValue('bad');
     await expect(harvestSeeds(ctx, { pollination_event_id: 'ev-1' } as any)).rejects.toBe('bad');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -201,13 +201,13 @@ describe('fetchGeneticsData', () => {
   it('toasts error and rethrows on failure', async () => {
     ctx.dataService.fetchGeneticsData.mockRejectedValue(new Error('fetch-err'));
     await expect(fetchGeneticsData(ctx)).rejects.toThrow('fetch-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('fetch-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('fetch-err'), 'error');
   });
 
   it('uses "Unknown error" when thrown value is not an Error', async () => {
     ctx.dataService.fetchGeneticsData.mockRejectedValue('nope');
     await expect(fetchGeneticsData(ctx)).rejects.toBe('nope');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -219,14 +219,14 @@ describe('deleteSeedBatch', () => {
     await deleteSeedBatch(ctx, 'batch-1');
 
     expect(ctx.dataService.deleteSeedBatch).toHaveBeenCalledWith('batch-1');
-    expect(ctx.showToast).toHaveBeenCalledWith('Seed batch deleted', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Seed batch deleted', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.deleteSeedBatch.mockRejectedValue(new Error('del-err'));
     await expect(deleteSeedBatch(ctx, 'batch-1')).rejects.toThrow('del-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
   });
 });
 
@@ -238,14 +238,14 @@ describe('setPlantSex', () => {
     await setPlantSex(ctx, 'plant-1', 'female');
 
     expect(ctx.dataService.setPlantSex).toHaveBeenCalledWith('plant-1', 'female');
-    expect(ctx.showToast).toHaveBeenCalledWith('Plant sex updated', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Plant sex updated', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.setPlantSex.mockRejectedValue(new Error('sex-err'));
     await expect(setPlantSex(ctx, 'plant-1', 'female')).rejects.toThrow('sex-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('sex-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('sex-err'), 'error');
   });
 });
 
@@ -257,14 +257,14 @@ describe('sowSeed', () => {
     await sowSeed(ctx, 'batch-1', 'plant-1');
 
     expect(ctx.dataService.sowSeed).toHaveBeenCalledWith('batch-1', 'plant-1');
-    expect(ctx.showToast).toHaveBeenCalledWith('Seed sown — plant linked to batch', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Seed sown — plant linked to batch', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('toasts error and rethrows', async () => {
     ctx.dataService.sowSeed.mockRejectedValue(new Error('sow-err'));
     await expect(sowSeed(ctx, 'batch-1', 'plant-1')).rejects.toThrow('sow-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('sow-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('sow-err'), 'error');
   });
 });
 
@@ -285,7 +285,7 @@ describe('getLineageTree', () => {
   it('toasts error and rethrows on failure', async () => {
     ctx.dataService.getLineageTree.mockRejectedValue(new Error('tree-err'));
     await expect(getLineageTree(ctx, 'plant-1')).rejects.toThrow('tree-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('tree-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('tree-err'), 'error');
   });
 });
 
@@ -306,7 +306,7 @@ describe('getStrainLineageTree', () => {
   it('toasts error and rethrows on failure', async () => {
     ctx.dataService.getStrainLineageTree.mockRejectedValue(new Error('strain-tree-err'));
     await expect(getStrainLineageTree(ctx, 'OG Kush')).rejects.toThrow('strain-tree-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('strain-tree-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('strain-tree-err'), 'error');
   });
 });
 
@@ -328,6 +328,6 @@ describe('updateStrainLineageTree', () => {
   it('toasts error and rethrows on failure', async () => {
     ctx.dataService.updateStrainLineageTree.mockRejectedValue(new Error('upd-tree-err'));
     await expect(updateStrainLineageTree(ctx, 'OG Kush', [])).rejects.toThrow('upd-tree-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('upd-tree-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('upd-tree-err'), 'error');
   });
 });

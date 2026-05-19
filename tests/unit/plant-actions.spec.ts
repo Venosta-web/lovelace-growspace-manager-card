@@ -86,6 +86,7 @@ describe('plant-actions', () => {
             undoRedoManager: { pushAction: vi.fn() },
             refreshData: vi.fn().mockResolvedValue(undefined),
             ui: {
+                showToast: vi.fn(),
                 deselectPlants: vi.fn(),
                 $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) },
                 $isEditMode: { get: vi.fn().mockReturnValue(false) },
@@ -134,7 +135,7 @@ describe('plant-actions', () => {
                 plant_id: 'test123',
                 strain: 'New Strain',
             });
-            expect(ctx.showToast).toHaveBeenCalledWith('Plant updated', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Plant updated', 'success');
         });
 
         it('should show error toast on failure', async () => {
@@ -142,7 +143,7 @@ describe('plant-actions', () => {
 
             await updatePlant(ctx, 'test123', { strain: 'New Strain' });
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to update plant: Network error', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update plant: Network error', 'error');
         });
     });
 
@@ -233,7 +234,7 @@ describe('plant-actions', () => {
             expect(mockDataService.removePlant).toHaveBeenCalled();
             expect(ctx.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
             expect(ctx.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
         });
 
         it('should handle redo action', async () => {
@@ -363,7 +364,7 @@ describe('plant-actions', () => {
             const result = await movePlantToNextStage(ctx, vegPlant);
 
             expect(result).toBe(false);
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('stage is veg'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('stage is veg'), 'error');
         });
 
         it('should return false for cure stage (edge case)', async () => {
@@ -418,7 +419,7 @@ describe('plant-actions', () => {
             const result = await movePlantToGrowspace(ctx, mockPlant, 'target');
 
             expect(result).toBe(false);
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to move plant: Move failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to move plant: Move failed', 'error');
         });
 
         it('should use entity_id fallback when plant_id is missing', async () => {
@@ -828,7 +829,7 @@ describe('plant-actions', () => {
                 phenotype: 'Pheno A',
             });
             expect(ctx.closeDialog).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith('Plant added successfully', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Plant added successfully', 'success');
             expect(ctx.refreshData).toHaveBeenCalled();
         });
 
@@ -878,7 +879,7 @@ describe('plant-actions', () => {
             const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'Test' });
 
             expect(result).toBe(false);
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');
         });
 
         it('should add strain to library if addToLibrary is true', async () => {
@@ -894,7 +895,7 @@ describe('plant-actions', () => {
                 phenotype: 'P1'
             });
             expect(mockDataService.addPlant).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('to library'), 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('to library'), 'success');
         });
 
         it('should continue adding plant if adding strain fails', async () => {
@@ -907,7 +908,7 @@ describe('plant-actions', () => {
             });
 
             expect(mockDataService.addStrain).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strain'), 'info');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strain'), 'info');
             expect(mockDataService.addPlant).toHaveBeenCalled(); // Should still proceed
         });
 
@@ -966,7 +967,7 @@ describe('plant-actions', () => {
             });
             expect(ctx.refreshData).toHaveBeenCalled();
             expect(ctx.closeDialog).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success');
             expect(ctx.undoRedoManager.pushAction).toHaveBeenCalled();
         });
 
@@ -975,7 +976,7 @@ describe('plant-actions', () => {
 
             await confirmAddPlants(ctx, { count: 1 });
 
-            expect(ctx.showToast).toHaveBeenCalledWith('No growspace selected', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('No growspace selected', 'error');
             expect(mockDataService.addPlants).not.toHaveBeenCalled();
         });
 
@@ -986,7 +987,7 @@ describe('plant-actions', () => {
 
             await confirmAddPlants(ctx, { count: 5 });
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Error: Batch failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Error: Batch failed', 'error');
         });
 
         it('should add strain to library during batch add if requested', async () => {
@@ -1014,7 +1015,7 @@ describe('plant-actions', () => {
             });
 
             expect(mockDataService.addStrain).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strains'), 'info');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strains'), 'info');
             expect(mockDataService.addPlants).toHaveBeenCalled();
         });
 
@@ -1160,7 +1161,7 @@ describe('plant-actions', () => {
             mockDataService.waterPlant.mockRejectedValue(error);
 
             await expect(waterPlant(ctx, plantId, amount)).rejects.toThrow('Watering failed');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water plant'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water plant'), 'error');
         });
     });
 
@@ -1187,7 +1188,7 @@ describe('plant-actions', () => {
             mockDataService.waterGrowspace.mockRejectedValue(error);
 
             await expect(waterGrowspace(ctx, growspaceId, amount)).rejects.toThrow('GS Watering failed');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water growspace'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water growspace'), 'error');
         });
     });
 }); // End plant-actions

@@ -16,11 +16,11 @@ export async function configureEnvironment(
 ): Promise<void> {
   try {
     await ctx.dataService.configureEnvironment(data);
-    ctx.showToast('Environment configured successfully!', 'success');
+    ctx.ui.showToast('Environment configured successfully!', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Error: ${error}`, 'error');
+    ctx.ui.showToast(`Error: ${error}`, 'error');
     throw e;
   }
 }
@@ -29,11 +29,11 @@ export async function configureEnvironment(
 export async function removeEnvironment(ctx: ActionContext, growspaceId: string): Promise<void> {
   try {
     await ctx.dataService.removeEnvironment(growspaceId);
-    ctx.showToast('Environment configuration removed', 'success');
+    ctx.ui.showToast('Environment configuration removed', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to remove environment: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to remove environment: ${error}`, 'error');
     throw e;
   }
 }
@@ -42,11 +42,11 @@ export async function removeEnvironment(ctx: ActionContext, growspaceId: string)
 export async function resetWaterTracking(ctx: ActionContext, growspaceId: string): Promise<void> {
   try {
     await ctx.dataService.resetWaterTracking(growspaceId);
-    ctx.showToast('Water tracking reset', 'success');
+    ctx.ui.showToast('Water tracking reset', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to reset water tracking: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to reset water tracking: ${error}`, 'error');
     throw e;
   }
 }

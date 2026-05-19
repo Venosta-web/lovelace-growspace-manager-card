@@ -8,10 +8,10 @@ export async function logDryingWeight(
 ): Promise<void> {
   try {
     await ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date });
-    ctx.showToast('Weight logged', 'success');
+    ctx.ui.showToast('Weight logged', 'success');
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to log weight: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to log weight: ${error}`, 'error');
     throw e;
   }
 }
@@ -24,10 +24,10 @@ export async function logMoistureReading(
 ): Promise<void> {
   try {
     await ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date });
-    ctx.showToast('Moisture logged', 'success');
+    ctx.ui.showToast('Moisture logged', 'success');
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to log moisture: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to log moisture: ${error}`, 'error');
     throw e;
   }
 }
@@ -39,10 +39,10 @@ export async function setVisualTag(
 ): Promise<void> {
   try {
     await ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag });
-    ctx.showToast('Visual tag saved', 'success');
+    ctx.ui.showToast('Visual tag saved', 'success');
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to save visual tag: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to save visual tag: ${error}`, 'error');
     throw e;
   }
 }

@@ -143,7 +143,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('toggles metric graph on hero sensor click', async () => {
-        const toggleSpy = vi.spyOn(element.store, 'toggleEnvGraph');
+        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
         const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as HTMLElement;
         heroUI.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true }));
         expect(toggleSpy).toHaveBeenCalledWith('temperature');
@@ -343,7 +343,7 @@ describe('GrowspaceSubareaCard', () => {
     });
 
     test('toggles device chip metric graph on click', async () => {
-        const toggleSpy = vi.spyOn(element.store, 'toggleEnvGraph');
+        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
         const chip = element.shadowRoot?.querySelector('growspace-chip') as HTMLElement;
         chip.dispatchEvent(new CustomEvent('click'));
         expect(toggleSpy).toHaveBeenCalledWith('light'); // MetricKey.LIGHT = 'light'

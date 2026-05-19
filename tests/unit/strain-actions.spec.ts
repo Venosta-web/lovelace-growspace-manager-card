@@ -35,6 +35,7 @@ describe('strain-actions', () => {
             ctx = {
                 dataService: mockDataService,
                 showToast: vi.fn(),
+                ui: { showToast: vi.fn() } as any,
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
                 hass: {} as any,
@@ -74,7 +75,7 @@ describe('strain-actions', () => {
                     flowering_days_min: 60,
                     flowering_days_max: 70,
                 }));
-                expect(ctx.showToast).toHaveBeenCalledWith('Strain added successfully!', 'success');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Strain added successfully!', 'success');
                 expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
@@ -160,7 +161,7 @@ describe('strain-actions', () => {
                     phenotype: 'Pheno1',
                     breeder: 'Updated Breeder',
                 }));
-                expect(ctx.showToast).toHaveBeenCalledWith('Strain updated successfully!', 'success');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Strain updated successfully!', 'success');
                 expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
@@ -177,7 +178,7 @@ describe('strain-actions', () => {
                 const result = await updateStrain(ctx, { strain: 'Test' });
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Failed to update strain', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to update strain', 'error');
             });
         });
     });
@@ -199,6 +200,7 @@ describe('strain-actions', () => {
             ctx = {
                 dataService: mockDataService,
                 showToast: vi.fn(),
+                ui: { showToast: vi.fn() } as any,
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
                 data: {
@@ -238,7 +240,7 @@ describe('strain-actions', () => {
                 const result = await addGrowspace(ctx, '');
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Name is required', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Name is required', 'error');
             });
 
             it('should return false on service error', async () => {
@@ -247,7 +249,7 @@ describe('strain-actions', () => {
                 const result = await addGrowspace(ctx, 'Test Room');
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Error: Add failed', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Error: Add failed', 'error');
             });
         });
 
@@ -262,7 +264,7 @@ describe('strain-actions', () => {
                     rows: 5,
                     plantsPerRow: 6,
                 });
-                expect(ctx.showToast).toHaveBeenCalledWith('Growspace updated successfully', 'success');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Growspace updated successfully', 'success');
                 expect(ctx.refreshData).toHaveBeenCalled();
                 expect(ctx.closeDialog).toHaveBeenCalled();
             });
@@ -289,7 +291,7 @@ describe('strain-actions', () => {
                 const result = await updateGrowspace(ctx, 'gs123', 'Name', 4, 4);
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Failed to update growspace: Update failed', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to update growspace: Update failed', 'error');
             });
         });
 
@@ -299,7 +301,7 @@ describe('strain-actions', () => {
 
                 expect(result).toBe(true);
                 expect(mockDataService.removeGrowspace).toHaveBeenCalledWith('gs123');
-                expect(ctx.showToast).toHaveBeenCalledWith('Growspace removed successfully', 'success');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Growspace removed successfully', 'success');
                 expect(ctx.refreshData).toHaveBeenCalled();
                 expect(ctx.closeDialog).toHaveBeenCalled();
             });
@@ -310,7 +312,7 @@ describe('strain-actions', () => {
                 const result = await removeGrowspace(ctx, 'gs123');
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove growspace: Removal failed', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove growspace: Removal failed', 'error');
             });
         });
 
@@ -321,7 +323,7 @@ describe('strain-actions', () => {
                 const result = await addGrowspace(ctx, 'Test Room');
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Error: Unknown error', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Error: Unknown error', 'error');
             });
 
             it('should handle unknown error in updateGrowspace', async () => {
@@ -330,7 +332,7 @@ describe('strain-actions', () => {
                 const result = await updateGrowspace(ctx, 'gs123', 'Name', 4, 4);
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Failed to update growspace: Unknown error', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to update growspace: Unknown error', 'error');
             });
 
             it('should handle unknown error in removeGrowspace', async () => {
@@ -339,7 +341,7 @@ describe('strain-actions', () => {
                 const result = await removeGrowspace(ctx, 'gs123');
 
                 expect(result).toBe(false);
-                expect(ctx.showToast).toHaveBeenCalledWith('Failed to remove growspace: Unknown error', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove growspace: Unknown error', 'error');
             });
         });
     });

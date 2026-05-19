@@ -92,7 +92,7 @@ describe('Batch Actions', () => {
         store.ui.togglePlantSelection('p1');
         store.ui.togglePlantSelection('p2');
 
-        store.openBatchWateringDialog();
+        store.actions.ui.openBatchWateringDialog();
 
         expect(mockSetActiveDialog).toHaveBeenCalledWith({
             type: 'WATERING',
@@ -109,7 +109,7 @@ describe('Batch Actions', () => {
         store.ui.togglePlantSelection('p1');
         store.ui.togglePlantSelection('p3');
 
-        store.openBatchWateringDialog();
+        store.actions.ui.openBatchWateringDialog();
 
         // growspaceId should be undefined as they are mixed
         expect(mockSetActiveDialog).toHaveBeenCalledWith({
@@ -123,7 +123,7 @@ describe('Batch Actions', () => {
     });
 
     it('should do nothing if no plants selected', () => {
-        store.openBatchWateringDialog();
+        store.actions.ui.openBatchWateringDialog();
         expect(mockSetActiveDialog).not.toHaveBeenCalled();
     });
 });

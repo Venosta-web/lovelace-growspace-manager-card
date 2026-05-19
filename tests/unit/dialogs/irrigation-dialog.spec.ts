@@ -120,7 +120,13 @@ describe('IrrigationDialog', () => {
                 showToast: vi.fn(),
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
-                ui: {}, history: {}, grid: {}, hass: {}, syncService: {},
+                ui: {
+                    showToast: vi.fn(),
+                },
+                history: {}, grid: {}, hass: {}, syncService: {},
+            },
+            ui: {
+                showToast: vi.fn(),
             },
         };
     }
@@ -391,7 +397,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
             await new Promise((r) => setTimeout(r, 0));
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -409,7 +415,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
             await new Promise((r) => setTimeout(r, 0));
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -429,7 +435,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
             await new Promise((r) => setTimeout(r, 0));
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -448,7 +454,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
             await new Promise((r) => setTimeout(r, 0));
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });
@@ -474,7 +480,7 @@ describe('IrrigationDialog', () => {
 
             await expect((element as any)._saveSettings()).rejects.toThrow('API Error');
 
-            expect((element as any).store.context.showToast).toHaveBeenCalledWith(
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );
         });

@@ -18,7 +18,7 @@ describe('getSnapshots (read-only)', () => {
 
     expect(ctx.dataService.getSnapshots).toHaveBeenCalledWith('gs-1');
     expect(result).toEqual(fakeData);
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
   });
 
   it('propagates errors without toasting', async () => {
@@ -26,7 +26,7 @@ describe('getSnapshots (read-only)', () => {
     ctx.dataService.getSnapshots.mockRejectedValue(new Error('net-err'));
 
     await expect(getSnapshots(ctx, 'gs-1')).rejects.toThrow('net-err');
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
   });
 });
 
@@ -41,14 +41,14 @@ describe('captureSnapshot', () => {
     await captureSnapshot(ctx, 'gs-1');
 
     expect(ctx.dataService.captureSnapshot).toHaveBeenCalledWith('gs-1');
-    expect(ctx.showToast).toHaveBeenCalledWith('Snapshot captured', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Snapshot captured', 'success');
   });
 
   it('shows error toast and rethrows on failure', async () => {
     ctx.dataService.captureSnapshot.mockRejectedValue(new Error('camera-err'));
 
     await expect(captureSnapshot(ctx, 'gs-1')).rejects.toThrow('camera-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('camera-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('camera-err'), 'error');
   });
 });
 
@@ -61,7 +61,7 @@ describe('getVisionHistory (read-only)', () => {
     const result = await getVisionHistory(ctx, 'gs-1');
 
     expect(result).toEqual(history);
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
   });
 });
 
@@ -76,7 +76,7 @@ describe('triggerVisionCheckup', () => {
     await triggerVisionCheckup(ctx, 'gs-1');
 
     expect(ctx.dataService.triggerVisionCheckup).toHaveBeenCalledWith('gs-1');
-    expect(ctx.showToast).toHaveBeenCalledWith('Vision checkup triggered', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Vision checkup triggered', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
@@ -84,7 +84,7 @@ describe('triggerVisionCheckup', () => {
     ctx.dataService.triggerVisionCheckup.mockRejectedValue(new Error('vision-err'));
 
     await expect(triggerVisionCheckup(ctx, 'gs-1')).rejects.toThrow('vision-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('vision-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('vision-err'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });
@@ -101,7 +101,7 @@ describe('updateVisionCheckupConfig', () => {
     await updateVisionCheckupConfig(ctx, 'gs-1', config);
 
     expect(ctx.dataService.updateVisionCheckupConfig).toHaveBeenCalledWith('gs-1', config);
-    expect(ctx.showToast).toHaveBeenCalledWith('Vision config saved', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Vision config saved', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
@@ -110,7 +110,7 @@ describe('updateVisionCheckupConfig', () => {
     const config = { enabled: false } as any;
 
     await expect(updateVisionCheckupConfig(ctx, 'gs-1', config)).rejects.toThrow('config-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('config-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('config-err'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });

@@ -17,7 +17,7 @@ describe('updateBreeder', () => {
     await updateBreeder(ctx, 'OldName', 'NewName', 'logo.png');
 
     expect(ctx.dataService.strainAPI.updateBreeder).toHaveBeenCalledWith('OldName', 'NewName', 'logo.png');
-    expect(ctx.showToast).toHaveBeenCalledWith('Breeder updated successfully!', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Breeder updated successfully!', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
@@ -25,7 +25,7 @@ describe('updateBreeder', () => {
     ctx.dataService.strainAPI.updateBreeder.mockRejectedValue(new Error('update-err'));
 
     await expect(updateBreeder(ctx, 'OldName', 'NewName')).rejects.toThrow('update-err');
-    expect(ctx.showToast).toHaveBeenCalledWith('Failed to update breeder', 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update breeder', 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });
@@ -45,7 +45,7 @@ describe('deleteBreeder', () => {
     await deleteBreeder(ctx, 'BreederX');
 
     expect(ctx.dataService.strainAPI.deleteBreeder).toHaveBeenCalledWith('BreederX');
-    expect(ctx.showToast).toHaveBeenCalledWith('Breeder deleted successfully!', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Breeder deleted successfully!', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
@@ -53,6 +53,6 @@ describe('deleteBreeder', () => {
     ctx.dataService.strainAPI.deleteBreeder.mockRejectedValue(new Error('delete-err'));
 
     await expect(deleteBreeder(ctx, 'BreederX')).rejects.toThrow('delete-err');
-    expect(ctx.showToast).toHaveBeenCalledWith('Failed to delete breeder', 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to delete breeder', 'error');
   });
 });

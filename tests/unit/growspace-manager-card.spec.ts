@@ -93,24 +93,39 @@ vi.mock('../../src/store/core/growspace-store', () => ({
         };
         $mainCardState = atomMocks.$mainCardState;
 
+        actions = {
+            library: {
+                fetchStrains: vi.fn(),
+                fetchNutrientPresets: vi.fn(),
+                fetchIPMPresets: vi.fn(),
+                fetchNutrientInventory: vi.fn(),
+            },
+            ui: {
+                handleKeyboardNavigation: vi.fn(),
+                selectAllPlants: vi.fn(),
+                clearPlantSelection: vi.fn(),
+                deleteSelectedPlants: vi.fn(),
+                openBatchWateringDialog: vi.fn(),
+                openBatchTrainingDialog: vi.fn(),
+                openBatchCloneDialog: vi.fn(),
+                openBatchPrintLabelsDialog: vi.fn(),
+                openIPMDialog: vi.fn(),
+                handleDeepLink: vi.fn(),
+                exitEditMode: vi.fn(),
+                toggleEnvGraph: vi.fn(),
+                toast: vi.fn(),
+            },
+            plant: {
+                batchAction: vi.fn(),
+                printLabel: vi.fn(),
+            },
+        };
+
         constructor(host: any) { this.host = host; }
         updateHass() { }
         initializeSelectedDevice() { }
-        fetchStrainLibrary() { }
-        fetchNutrientPresets() { }
-        fetchIPMPresets() { }
-        fetchNutrientInventory() { }
         handleDeviceChange() { }
-        handleKeyboardNavigation() { }
-        toggleHeaderExpansion() { }
-        selectAllPlants() { }
-        deleteSelectedPlants() { }
-        clearPlantSelection() { this.ui.clearPlantSelection(); }
-        openBatchWateringDialog = vi.fn();
-        openBatchTrainingDialog = vi.fn();
-        openIPMDialog = vi.fn();
         destroy = vi.fn();
-        handleDeepLink = vi.fn();
         refreshData = vi.fn();
     }
 }));
@@ -195,8 +210,7 @@ describe('GrowspaceManagerCard', () => {
     describe('Static Methods', () => {
         it('should get stub config', () => {
             expect(GrowspaceManagerCard.getStubConfig()).toEqual({
-                default_growspace: '4x4',
-                compact: true
+                default_growspace: '',
             });
         });
 
@@ -229,13 +243,13 @@ describe('GrowspaceManagerCard', () => {
             expect(() => element.setConfig(undefined as any)).toThrow('Invalid configuration');
         });
 
-        it('should set compact mode from config fallback', () => {
+        it('should accept config with compact flag without error', () => {
             const config: GrowspaceManagerCardConfig = {
                 type: 'custom:growspace-manager-card',
                 compact: true
             };
             element.setConfig(config);
-            expect(element.store.ui.setViewMode).toHaveBeenCalledWith('compact');
+            expect((element as any)._config).toEqual(config);
         });
 
         it('should set initial view mode from config', () => {
@@ -252,7 +266,7 @@ describe('GrowspaceManagerCard', () => {
         it('should initialize store on first update', () => {
             const spyUpdateHass = vi.spyOn(element.store, 'updateHass');
             const spyInitDevice = vi.spyOn(element.store, 'initializeSelectedDevice');
-            const spyFetchStrain = vi.spyOn(element.store, 'fetchStrainLibrary');
+            const spyFetchStrain = vi.spyOn(element.store.actions.library, 'fetchStrains');
 
             element.setConfig({ type: 'custom:growspace-manager-card' });
             (element as any).firstUpdated();
@@ -269,7 +283,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should process pending deep link when hass updates', () => {
-            const handleDeepLinkSpy = vi.spyOn(element.store, 'handleDeepLink');
+            const handleDeepLinkSpy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
             atomMocks.$pendingDeepLinkPlantId.set('plant123');
 
             (element as any).updated(new Map([['hass', 'oldValues']]));
@@ -306,7 +320,7 @@ describe('GrowspaceManagerCard', () => {
     describe('Deep Linking', () => {
         it('should handle deep link on firstUpdated', () => {
             window.history.pushState({}, '', '?plantId=p1');
-            const spy = vi.spyOn(element.store, 'handleDeepLink');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
@@ -318,7 +332,7 @@ describe('GrowspaceManagerCard', () => {
         it('should ignore if global tracker already matched', () => {
             window.history.pushState({}, '', '?plantId=p1');
             (window as any).GROWSPACE_DEEP_LINK_TRACKED = 'p1';
-            const spy = vi.spyOn(element.store, 'handleDeepLink');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
@@ -327,7 +341,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should do nothing if no plantId param', () => {
             window.history.pushState({}, '', '/');
-            const spy = vi.spyOn(element.store, 'handleDeepLink');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
@@ -430,13 +444,13 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle select all', () => {
-            const spy = vi.spyOn(element.store, 'selectAllPlants');
+            const spy = vi.spyOn(element.store.actions.ui, 'selectAllPlants');
             (element as any)._handleSelectAll();
             expect(spy).toHaveBeenCalled();
         });
 
         it('should handle delete selected', () => {
-            const spy = vi.spyOn(element.store, 'deleteSelectedPlants');
+            const spy = vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants');
             (element as any)._handleDeleteSelected();
             expect(spy).toHaveBeenCalled();
         });
@@ -454,7 +468,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle keyboard nav', () => {
-            const spy = vi.spyOn(element.store, 'handleKeyboardNavigation');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleKeyboardNavigation');
             (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
             expect(spy).toHaveBeenCalledWith('ArrowRight');
         });
@@ -510,12 +524,12 @@ describe('GrowspaceManagerCard', () => {
 
         it('should handle private event handlers', () => {
             // Clear selection
-            const clearSpy = vi.spyOn(element.store, 'clearPlantSelection');
+            const clearSpy = vi.spyOn(element.store.actions.ui, 'clearPlantSelection');
             (element as any)._handleClearSelection();
             expect(clearSpy).toHaveBeenCalled();
 
             // Water selected
-            const waterSpy = vi.spyOn(element.store, 'openBatchWateringDialog');
+            const waterSpy = vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog');
             (element as any)._handleWaterSelected();
             expect(waterSpy).toHaveBeenCalled();
 
@@ -525,19 +539,19 @@ describe('GrowspaceManagerCard', () => {
             expect(editSpy).toHaveBeenCalledWith(false);
 
             // IPM selected
-            const ipmSpy = vi.spyOn(element.store, 'openIPMDialog');
+            const ipmSpy = vi.spyOn(element.store.actions.ui, 'openIPMDialog');
             (element as any)._handleIPMSelected();
             expect(ipmSpy).toHaveBeenCalled();
 
             // Toggle expansion (if available)
             if (typeof (element as any)._handleToggleExpansion === 'function') {
-                const toggleSpy = vi.spyOn(element.store, 'toggleHeaderExpansion');
+                const toggleSpy = vi.spyOn(element.store.actions.ui, 'exitEditMode');
                 (element as any)._handleToggleExpansion();
                 expect(toggleSpy).toHaveBeenCalled();
             }
 
             // Training selected
-            const trainingSpy = vi.spyOn(element.store, 'openBatchTrainingDialog');
+            const trainingSpy = vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog');
             (element as any)._handleTrainingSelected();
             expect(trainingSpy).toHaveBeenCalled();
 

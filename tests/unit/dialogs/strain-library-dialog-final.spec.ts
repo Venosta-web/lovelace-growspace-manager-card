@@ -109,5 +109,93 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             (element as any)._cancelDeleteBreeder();
             expect((element as any)._pendingDeleteBreeder).toBeNull();
         });
+
+        it('covers _buildTreeNodes lineage, parents array, and pendingParents loops', () => {
+            element.strains = [
+                {
+                    key: 'strain-child',
+                    strain: 'Child Strain',
+                    parents: [
+                        { name: 'Mother Strain' },
+                        { name: 'Father Strain' }
+                    ],
+                    phenotype: 'V1',
+                    breeder: 'Breeder X',
+                    image: ''
+                },
+                {
+                    key: 'mother-strain-key',
+                    strain: 'Mother Strain',
+                    parents: [
+                        { name: 'Grandmother' },
+                        { name: 'Grandfather' }
+                    ],
+                    phenotype: '',
+                    breeder: '',
+                    image: ''
+                },
+                {
+                    key: 'grandmother-other-key',
+                    strain: 'Grandmother',
+                    lineage: 'Great Grandma x Great Grandpa',
+                    phenotype: '',
+                    breeder: '',
+                    image: ''
+                }
+            ];
+
+            element.seedBatches = [
+                {
+                    batch_id: 'batch-1',
+                    strain_name: 'Child Strain',
+                    breeder: 'Breeder X',
+                    quantity: 10,
+                    acquisition_date: '2026-01-01',
+                    generation: 'F2',
+                    parent_1_strain: 'Mother Strain',
+                    parent_2_strain: 'Father Strain',
+                    lineage: '',
+                    notes: ''
+                }
+            ];
+
+            // Only pass Child Strain as primary strain.
+            // Mother Strain and Grandmother are resolved as ancestors.
+            const nodes = (element as any)._buildTreeNodes([element.strains[0]]);
+            expect(nodes).toBeTruthy();
+            
+            // Verify nodes include the child strain, mother strain, and grandmother strain
+            const motherNode = nodes.find((n: any) => n.id === 'mother-strain-key');
+            expect(motherNode).toBeTruthy();
+            expect(motherNode.parents.mother).toBe('grandmother-other-key'); // resolved via lowercase name lookup fallback!
+
+            const grandmotherNode = nodes.find((n: any) => n.id === 'grandmother-other-key');
+            expect(grandmotherNode).toBeTruthy();
+            expect(grandmotherNode.parents.mother).toBe('Great Grandma');
+            expect(grandmotherNode.parents.father).toBe('Great Grandpa');
+        });
+
+        it('covers clicking on library filter chips in _renderFilterChips', async () => {
+            element.open = true;
+            await element.updateComplete;
+
+            const chips = element.shadowRoot?.querySelectorAll('.filter-chip');
+            expect(chips?.length).toBe(3);
+
+            const activeChip = Array.from(chips || []).find(c => c.textContent?.trim() === 'Active') as HTMLElement;
+            expect(activeChip).toBeTruthy();
+            activeChip.click();
+            await element.updateComplete;
+
+            expect((element as any)._libraryFilter).toBe('active');
+            expect((element as any)._currentPage).toBe(1);
+
+            const allChip = Array.from(chips || []).find(c => c.textContent?.trim() === 'All') as HTMLElement;
+            expect(allChip).toBeTruthy();
+            allChip.click();
+            await element.updateComplete;
+
+            expect((element as any)._libraryFilter).toBe('all');
+        });
     });
 });

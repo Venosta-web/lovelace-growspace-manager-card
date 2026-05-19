@@ -12,7 +12,7 @@ describe('fetchGrowReport (read-only)', () => {
 
     expect(ctx.dataService.fetchGrowReport).toHaveBeenCalledWith('gs-1');
     expect(result).toEqual(fakeReport);
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
   });
 
   it('propagates errors without toasting', async () => {
@@ -20,7 +20,7 @@ describe('fetchGrowReport (read-only)', () => {
     ctx.dataService.fetchGrowReport.mockRejectedValue(new Error('not-found'));
 
     await expect(fetchGrowReport(ctx, 'gs-1')).rejects.toThrow('not-found');
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
   });
 });
 
@@ -35,13 +35,13 @@ describe('exportGrowReport', () => {
     await exportGrowReport(ctx, 'gs-1', 'pdf');
 
     expect(ctx.dataService.exportGrowReport).toHaveBeenCalledWith('gs-1', 'pdf');
-    expect(ctx.showToast).toHaveBeenCalledWith('Grow report exported', 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Grow report exported', 'success');
   });
 
   it('shows error toast and rethrows on failure', async () => {
     ctx.dataService.exportGrowReport.mockRejectedValue(new Error('export-err'));
 
     await expect(exportGrowReport(ctx, 'gs-1', 'csv')).rejects.toThrow('export-err');
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('export-err'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('export-err'), 'error');
   });
 });

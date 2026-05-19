@@ -17,7 +17,7 @@ describe('saveHarvestMetrics', () => {
       wet_weight: 120,
       dry_weight: 28,
     });
-    expect(ctx.showToast).toHaveBeenCalledWith(
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
       expect.stringContaining('Harvest metrics saved'),
       'success'
     );
@@ -29,7 +29,7 @@ describe('saveHarvestMetrics', () => {
 
     await expect(saveHarvestMetrics(ctx, 'p', { wet_weight: 10 })).rejects.toThrow('boom');
 
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('boom'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('boom'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 
@@ -37,7 +37,7 @@ describe('saveHarvestMetrics', () => {
     await saveHarvestMetrics(ctx, 'p', {});
 
     expect(ctx.dataService.updateHarvestMetrics).not.toHaveBeenCalled();
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });
@@ -57,7 +57,7 @@ describe('scorePhenotype', () => {
       vigor: 4,
       aroma: 5,
     });
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Scores saved'), 'success');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Scores saved'), 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
@@ -65,7 +65,7 @@ describe('scorePhenotype', () => {
     await scorePhenotype(ctx, 'p', { vigor: null, aroma: null });
 
     expect(ctx.dataService.scorePlant).not.toHaveBeenCalled();
-    expect(ctx.showToast).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 
@@ -80,7 +80,7 @@ describe('scorePhenotype', () => {
 
     await expect(scorePhenotype(ctx, 'p', { vigor: 3 })).rejects.toThrow('score boom');
 
-    expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('score boom'), 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('score boom'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 

@@ -9,14 +9,19 @@
  *
  * The returned ctx.dataService is typed as `any` so callers can freely call
  * `.mockResolvedValue`, `.mockRejectedValue`, etc. without TS errors.
+ *
+ * ctx.showToast and ctx.ui.showToast reference the SAME mock so tests can
+ * assert on either path interchangeably.
  */
 import { vi } from 'vitest';
 import type { ActionContext } from '../../../src/store/core/action-context';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type FakeCtx = Omit<ActionContext, 'dataService'> & { dataService: any };
+type FakeCtx = Omit<ActionContext, 'dataService'> & { dataService: any; showToast: ReturnType<typeof vi.fn> };
 
 export function makeFakeCtx(): FakeCtx {
+  const showToast = vi.fn();
+
   const dataService: Record<string, ReturnType<typeof vi.fn>> = new Proxy(
     {},
     {
@@ -31,7 +36,7 @@ export function makeFakeCtx(): FakeCtx {
 
   return {
     dataService: dataService as any,
-    showToast: vi.fn(),
+    showToast,
     closeDialog: vi.fn(),
     refreshData: vi.fn().mockResolvedValue(undefined),
     undoRedoManager: { pushAction: vi.fn() } as any,
@@ -41,6 +46,7 @@ export function makeFakeCtx(): FakeCtx {
       rollbackUpdate: vi.fn(),
     } as any,
     ui: {
+      showToast,
       deselectPlants: vi.fn(),
       $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) },
       $isEditMode: { get: vi.fn().mockReturnValue(false) },
@@ -53,12 +59,8 @@ export function makeFakeCtx(): FakeCtx {
       removeOptimisticDeletedPlantId: vi.fn(),
       updateWsDataCacheGrid: vi.fn(),
     } as any,
-    syncService: {} as any,
-    history: {} as any,
     grid: {
       $selectedDevice: { get: vi.fn() },
     } as any,
-    hass: {} as any,
   } as any;
 }
-

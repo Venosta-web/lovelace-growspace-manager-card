@@ -27,15 +27,11 @@ const makeStore = (overrides: Partial<{
   nutrientPresets: Record<string, any>;
   devices: any[];
 }> = {}) => ({
-  ui: {
-    $isEditMode: atom(overrides.isEditMode ?? false),
-    $selectedPlants: atom(overrides.selectedPlants ?? new Set<string>()),
-  },
-  data: {
-    $strainLibrary: atom(overrides.strainLibrary ?? []),
-    $nutrientPresets: atom(overrides.nutrientPresets ?? {}),
-    $devices: atom(overrides.devices ?? []),
-  },
+  $isEditMode: atom(overrides.isEditMode ?? false),
+  $selectedPlants: atom(overrides.selectedPlants ?? new Set<string>()),
+  $strainLibrary: atom(overrides.strainLibrary ?? []),
+  $nutrientPresets: atom(overrides.nutrientPresets ?? {}),
+  $devices: atom(overrides.devices ?? []),
 });
 
 describe('createPlantCardViewModel', () => {
@@ -43,7 +39,7 @@ describe('createPlantCardViewModel', () => {
     it('returns false when no device matches growspace_id', () => {
       const store = makeStore({ devices: [{ deviceId: 'other_gs' }] });
       const plant = makePlant({ growspace_id: 'gs1' });
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.hasRecommendedPreset).toBe(false);
     });
 
@@ -52,7 +48,7 @@ describe('createPlantCardViewModel', () => {
         devices: [{ deviceId: 'gs1' }],
         nutrientPresets: {},
       });
-      const vm$ = createPlantCardViewModel(makePlant(), store as any);
+      const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
       expect(vm$.get().statusIndicators.hasRecommendedPreset).toBe(false);
     });
 
@@ -64,7 +60,7 @@ describe('createPlantCardViewModel', () => {
         },
       });
       const plant = makePlant({ stage: 'veg', days_in_stage: 10 });
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.hasRecommendedPreset).toBe(true);
     });
 
@@ -76,7 +72,7 @@ describe('createPlantCardViewModel', () => {
         },
       });
       const plant = makePlant({ stage: 'veg', days_in_stage: 5 });
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.hasRecommendedPreset).toBe(false);
     });
 
@@ -88,7 +84,7 @@ describe('createPlantCardViewModel', () => {
         },
       });
       const plant = makePlant({ stage: 'veg', days_in_stage: 0 });
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.hasRecommendedPreset).toBe(true);
     });
   });
@@ -106,7 +102,7 @@ describe('createPlantCardViewModel', () => {
       const twelveHoursAgo = new Date('2026-01-15T00:00:00Z').toISOString();
       const plant = makePlant({ last_watered: twelveHoursAgo });
       const store = makeStore();
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.isRecentlyWatered).toBe(true);
     });
 
@@ -118,14 +114,14 @@ describe('createPlantCardViewModel', () => {
       const twoDaysAgo = new Date('2026-01-13T12:00:00Z').toISOString();
       const plant = makePlant({ last_watered: twoDaysAgo });
       const store = makeStore();
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.isRecentlyWatered).toBe(false);
     });
 
     it('returns false when last_watered is absent', () => {
       const plant = makePlant({ last_watered: undefined });
       const store = makeStore();
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       expect(vm$.get().statusIndicators.isRecentlyWatered).toBe(false);
     });
   });
@@ -133,19 +129,19 @@ describe('createPlantCardViewModel', () => {
   describe('selection and edit mode', () => {
     it('marks plant as selected when plant_id is in selectedPlants', () => {
       const store = makeStore({ selectedPlants: new Set(['plant_test']) });
-      const vm$ = createPlantCardViewModel(makePlant(), store as any);
+      const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
       expect(vm$.get().isSelected).toBe(true);
     });
 
     it('isDraggable is false when isEditMode is true', () => {
       const store = makeStore({ isEditMode: true });
-      const vm$ = createPlantCardViewModel(makePlant(), store as any);
+      const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
       expect(vm$.get().isDraggable).toBe(false);
     });
 
     it('isDraggable is true when isEditMode is false', () => {
       const store = makeStore({ isEditMode: false });
-      const vm$ = createPlantCardViewModel(makePlant(), store as any);
+      const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
       expect(vm$.get().isDraggable).toBe(true);
     });
   });
@@ -153,7 +149,7 @@ describe('createPlantCardViewModel', () => {
   describe('accessibility labels', () => {
     it('builds ariaLabel from strain and stage', () => {
       const store = makeStore();
-      const vm$ = createPlantCardViewModel(makePlant(), store as any);
+      const vm$ = createPlantCardViewModel(atom(makePlant()), store as any);
       const label = vm$.get().ariaLabel;
       expect(label).toContain('Vegetative');
     });
@@ -161,7 +157,7 @@ describe('createPlantCardViewModel', () => {
     it('uses entity_id fallback when plant_id is missing', () => {
       const plant = makePlant({ plant_id: undefined as any });
       const store = makeStore({ selectedPlants: new Set(['plant_test']) });
-      const vm$ = createPlantCardViewModel(plant, store as any);
+      const vm$ = createPlantCardViewModel(atom(plant), store as any);
       // Should not throw; selection may not match but ViewModel builds correctly
       expect(vm$.get().ariaLabel).toBeDefined();
     });

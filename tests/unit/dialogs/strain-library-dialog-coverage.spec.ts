@@ -310,4 +310,228 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       expect(detail.breeder).toBe('HSO');
     });
   });
+
+  describe('Comprehensive Coverage Gaps', () => {
+    it('handles seeds-genetics-tab close event forwarding', async () => {
+      (element as any)._activeMainTab = 'seeds';
+      await element.updateComplete;
+
+      const seedsTab = element.shadowRoot?.querySelector('seeds-genetics-tab');
+      expect(seedsTab).toBeTruthy();
+
+      const closeHandler = vi.fn();
+      element.addEventListener('close', closeHandler);
+
+      seedsTab?.dispatchEvent(new CustomEvent('close'));
+      expect(closeHandler).toHaveBeenCalled();
+    });
+
+    it('forwards various editor view events', async () => {
+      (element as any)._view = 'editor';
+      await element.updateComplete;
+
+      const editorView = element.shadowRoot?.querySelector('strain-editor-view');
+      expect(editorView).toBeTruthy();
+
+      const eventTypes = ['import-library', 'update-breeder', 'save-breeder', 'delete-breeder', 'close'];
+      for (const type of eventTypes) {
+        const handler = vi.fn();
+        element.addEventListener(type, handler);
+
+        editorView?.dispatchEvent(new CustomEvent(type, {
+          detail: { test: 'payload' }
+        }));
+
+        expect(handler).toHaveBeenCalled();
+        if (type !== 'close') {
+          expect(handler.mock.calls[0][0].detail).toEqual({ test: 'payload' });
+        }
+      }
+    });
+
+    it('toggles breeder dialog when manage breeders button clicked', async () => {
+      (element as any)._view = 'browse';
+      (element as any)._activeMainTab = 'strains';
+      await element.updateComplete;
+
+      const manageBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+        .find(b => b.textContent?.includes('Manage Breeders')) as HTMLElement | undefined;
+      expect(manageBtn).toBeTruthy();
+
+      manageBtn?.click();
+      expect((element as any)._breederDialogOpen).toBe(true);
+    });
+
+    it('handles Select File button and triggers import-library event on file selection', async () => {
+      (element as any)._importDialogOpen = true;
+      await element.updateComplete;
+
+      const mockInput = {
+        type: '',
+        accept: '',
+        onchange: null as any,
+        click: vi.fn(),
+      };
+
+      const createElementSpy = vi.spyOn(document, 'createElement')
+        .mockImplementation((tagName: string) => {
+          if (tagName === 'input') {
+            return mockInput as any;
+          }
+          return document.createElement(tagName);
+        });
+
+      const selectFileBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+        .find(b => b.textContent?.includes('Select File')) as HTMLElement | undefined;
+      expect(selectFileBtn).toBeTruthy();
+
+      selectFileBtn?.click();
+
+      expect(createElementSpy).toHaveBeenCalledWith('input');
+      expect(mockInput.type).toBe('file');
+      expect(mockInput.accept).toBe('.zip');
+      expect(mockInput.click).toHaveBeenCalled();
+
+      const importHandler = vi.fn();
+      element.addEventListener('import-library', importHandler);
+
+      // Simulate file selection change
+      const file = new File(['test'], 'strains.zip', { type: 'application/zip' });
+      mockInput.onchange({
+        target: {
+          files: [file]
+        }
+      } as any);
+
+      expect(importHandler).toHaveBeenCalled();
+      const detail = importHandler.mock.calls[0][0].detail;
+      expect(detail.file).toBe(file);
+      expect(detail.replace).toBe(false); // default importReplace is false
+      expect((element as any)._importDialogOpen).toBe(false);
+
+      createElementSpy.mockRestore();
+    });
+
+    it('triggers click on breeder editor logo file input when change/upload button clicked', async () => {
+      (element as any)._breederDialogOpen = true;
+      (element as any)._breederEditorState = { name: 'Test Breeder', logo: '', originalName: '' };
+      await element.updateComplete;
+
+      const fileInput = element.shadowRoot?.querySelector('input[type="file"]') as HTMLInputElement;
+      expect(fileInput).toBeTruthy();
+
+      const clickSpy = vi.spyOn(fileInput, 'click');
+
+      const uploadBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+        .find(b => b.textContent?.includes('Upload Logo')) as HTMLElement | undefined;
+      expect(uploadBtn).toBeTruthy();
+
+      uploadBtn?.click();
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it('switches main tab to tree view on click', async () => {
+      const treeTabBtn = Array.from(element.shadowRoot?.querySelectorAll('.tab-btn') || [])
+        .find(b => b.textContent?.includes('Tree View')) as HTMLElement | undefined;
+      expect(treeTabBtn).toBeTruthy();
+
+      treeTabBtn?.click();
+      expect((element as any)._activeMainTab).toBe('tree');
+    });
+
+    it('applies library filter correctly for active and all states', () => {
+      element.strains = [
+        { strain: 'Strain A', phenotype: 'P1', breeder: 'B1', key: 's1' },
+        { strain: 'Strain B', phenotype: 'P2', breeder: 'B2', key: 's2', is_stub: true },
+      ];
+      element.activePlantCounts = {
+        'Strain A': 2,
+        'Strain B': 0,
+      };
+
+      // Filter active
+      (element as any)._libraryFilter = 'active';
+      const activeFiltered = (element as any)._applyLibraryFilter(element.strains);
+      expect(activeFiltered).toHaveLength(1);
+      expect(activeFiltered[0].strain).toBe('Strain A');
+
+      // Filter library
+      (element as any)._libraryFilter = 'library';
+      const libraryFiltered = (element as any)._applyLibraryFilter(element.strains);
+      expect(libraryFiltered).toHaveLength(1);
+      expect(libraryFiltered[0].strain).toBe('Strain A'); // Since s2 is_stub is true
+
+      // Filter all
+      (element as any)._libraryFilter = 'all';
+      const allFiltered = (element as any)._applyLibraryFilter(element.strains);
+      expect(allFiltered).toHaveLength(2);
+    });
+
+    it('builds tree nodes with structured parents, legacy lineage strings, stubs, and seed batches', async () => {
+      element.strains = [
+        {
+          key: 'pm1',
+          strain: 'Mother Strain',
+          breeder: 'Breeder 1',
+          phenotype: 'Pheno A',
+          parents: []
+        } as any,
+        {
+          key: 'pf1',
+          strain: 'Father Strain',
+          breeder: 'Breeder 2',
+          phenotype: '',
+          lineage: 'Grand Mother X Grand Father'
+        } as any,
+        {
+          key: 'cs1',
+          strain: 'Child Strain',
+          breeder: 'Breeder 3',
+          phenotype: '',
+          parents: [{ name: 'Mother Strain' }, { name: 'Father Strain' }]
+        } as any,
+      ];
+
+      element.seedBatches = [
+        {
+          batch_id: 'batch_1',
+          strain_name: 'Seed Batch 1',
+          breeder: 'Breeder 3',
+          generation: 'F2',
+          parent_1_strain: 'Child Strain',
+          parent_2_strain: 'Unknown Strain Parent',
+        } as any
+      ];
+
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const geneticsTree = element.shadowRoot?.querySelector('genetics-tree-view');
+      expect(geneticsTree).toBeTruthy();
+
+      const nodes = (geneticsTree as any).nodes;
+      expect(nodes).toBeTruthy();
+      
+      const childNode = nodes.find((n: any) => n.id === 'cs1');
+      expect(childNode).toBeTruthy();
+      expect(childNode.parents.mother).toBe('pm1');
+      expect(childNode.parents.father).toBe('pf1');
+
+      const fatherNode = nodes.find((n: any) => n.id === 'pf1');
+      expect(fatherNode).toBeTruthy();
+      expect(fatherNode.parents.mother).toBe('Grand Mother');
+      expect(fatherNode.parents.father).toBe('Grand Father');
+
+      const batchNode = nodes.find((n: any) => n.id === 'batch_1');
+      expect(batchNode).toBeTruthy();
+      expect(batchNode.parents.mother).toBe('cs1');
+      expect(batchNode.parents.father).toBe('Unknown Strain Parent');
+
+      const stubNode = nodes.find((n: any) => n.id === 'Unknown Strain Parent');
+      expect(stubNode).toBeTruthy();
+      expect(stubNode.type).toBe('strain');
+      expect(stubNode.parents.mother).toBeNull();
+    });
+  });
 });
+

@@ -498,7 +498,7 @@ export class ChartUtils {
       if (s === EntityState.OFF || s === EntityState.FALSE) return 0;
       const val = parseFloat(s);
       if (!isNaN(val)) return val > 0 ? 1 : 0;
-      return 0;
+      return undefined;
     }
 
     const val = parseFloat(s);

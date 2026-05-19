@@ -19,10 +19,10 @@ export async function updateBreeder(
 ): Promise<void> {
   try {
     await ctx.dataService.strainAPI.updateBreeder(oldName, newName, logo);
-    ctx.showToast('Breeder updated successfully!', 'success');
+    ctx.ui.showToast('Breeder updated successfully!', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
-    ctx.showToast('Failed to update breeder', 'error');
+    ctx.ui.showToast('Failed to update breeder', 'error');
     throw e;
   }
 }
@@ -31,10 +31,10 @@ export async function updateBreeder(
 export async function deleteBreeder(ctx: ActionContext, name: string): Promise<void> {
   try {
     await ctx.dataService.strainAPI.deleteBreeder(name);
-    ctx.showToast('Breeder deleted successfully!', 'success');
+    ctx.ui.showToast('Breeder deleted successfully!', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
-    ctx.showToast('Failed to delete breeder', 'error');
+    ctx.ui.showToast('Failed to delete breeder', 'error');
     throw e;
   }
 }

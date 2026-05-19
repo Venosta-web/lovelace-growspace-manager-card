@@ -18,11 +18,11 @@ type HarvestSeedsData = Parameters<ActionContext['dataService']['harvestSeeds']>
 export async function addSeedBatch(ctx: ActionContext, data: AddSeedBatchData): Promise<void> {
   try {
     await ctx.dataService.addSeedBatch(data);
-    ctx.showToast('Seed batch added', 'success');
+    ctx.ui.showToast('Seed batch added', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to add seed batch: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to add seed batch: ${error}`, 'error');
     throw e;
   }
 }
@@ -34,11 +34,11 @@ export async function updateSeedBatch(
 ): Promise<void> {
   try {
     await ctx.dataService.updateSeedBatch(data);
-    ctx.showToast('Seed batch updated', 'success');
+    ctx.ui.showToast('Seed batch updated', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to update seed batch: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to update seed batch: ${error}`, 'error');
     throw e;
   }
 }
@@ -50,11 +50,11 @@ export async function logPollination(
 ): Promise<void> {
   try {
     await ctx.dataService.logPollination(data);
-    ctx.showToast('Pollination event logged', 'success');
+    ctx.ui.showToast('Pollination event logged', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to log pollination: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to log pollination: ${error}`, 'error');
     throw e;
   }
 }
@@ -66,11 +66,11 @@ export async function updatePollination(
 ): Promise<void> {
   try {
     await ctx.dataService.updatePollination(data);
-    ctx.showToast('Pollination event updated', 'success');
+    ctx.ui.showToast('Pollination event updated', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to update pollination: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to update pollination: ${error}`, 'error');
     throw e;
   }
 }
@@ -79,11 +79,11 @@ export async function updatePollination(
 export async function deletePollination(ctx: ActionContext, eventId: string): Promise<void> {
   try {
     await ctx.dataService.deletePollination(eventId);
-    ctx.showToast('Pollination event deleted', 'success');
+    ctx.ui.showToast('Pollination event deleted', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to delete pollination: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to delete pollination: ${error}`, 'error');
     throw e;
   }
 }
@@ -92,11 +92,11 @@ export async function deletePollination(ctx: ActionContext, eventId: string): Pr
 export async function harvestSeeds(ctx: ActionContext, data: HarvestSeedsData): Promise<void> {
   try {
     await ctx.dataService.harvestSeeds(data);
-    ctx.showToast('Seeds harvested', 'success');
+    ctx.ui.showToast('Seeds harvested', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to harvest seeds: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to harvest seeds: ${error}`, 'error');
     throw e;
   }
 }
@@ -107,7 +107,7 @@ export async function fetchGeneticsData(ctx: ActionContext) {
     return await ctx.dataService.fetchGeneticsData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to fetch genetics data: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to fetch genetics data: ${error}`, 'error');
     throw e;
   }
 }
@@ -116,11 +116,11 @@ export async function fetchGeneticsData(ctx: ActionContext) {
 export async function deleteSeedBatch(ctx: ActionContext, batchId: string): Promise<void> {
   try {
     await ctx.dataService.deleteSeedBatch(batchId);
-    ctx.showToast('Seed batch deleted', 'success');
+    ctx.ui.showToast('Seed batch deleted', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to delete seed batch: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to delete seed batch: ${error}`, 'error');
     throw e;
   }
 }
@@ -133,11 +133,11 @@ export async function setPlantSex(
 ): Promise<void> {
   try {
     await ctx.dataService.setPlantSex(plantId, sex);
-    ctx.showToast('Plant sex updated', 'success');
+    ctx.ui.showToast('Plant sex updated', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to set plant sex: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to set plant sex: ${error}`, 'error');
     throw e;
   }
 }
@@ -150,11 +150,11 @@ export async function sowSeed(
 ): Promise<void> {
   try {
     await ctx.dataService.sowSeed(batchId, plantId);
-    ctx.showToast('Seed sown — plant linked to batch', 'success');
+    ctx.ui.showToast('Seed sown — plant linked to batch', 'success');
     await ctx.refreshData();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to sow seed: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to sow seed: ${error}`, 'error');
     throw e;
   }
 }
@@ -168,7 +168,7 @@ export async function getLineageTree(
     return await ctx.dataService.getLineageTree(plantId);
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
     throw e;
   }
 }
@@ -182,7 +182,7 @@ export async function getStrainLineageTree(
     return await ctx.dataService.getStrainLineageTree(strainName);
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
     throw e;
   }
 }
@@ -198,7 +198,7 @@ export async function updateStrainLineageTree(
     return result;
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
+    ctx.ui.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
     throw e;
   }
 }
