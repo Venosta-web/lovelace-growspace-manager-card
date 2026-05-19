@@ -84,6 +84,14 @@ export const dialogStyles = [
       flex-wrap: wrap;
     }
 
+    .dialog-content,
+    .dialog-content-grid {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
     .row-col-grid {
       display: flex;
       gap: 16px;
@@ -113,10 +121,9 @@ export const dialogStyles = [
         padding: 12px 16px;
       }
 
+      .dialog-content,
       .dialog-content-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 8px;
+        padding: 16px;
       }
       .dialog-header .md3-button.text,
       .dialog-header .md3-button.text.close {

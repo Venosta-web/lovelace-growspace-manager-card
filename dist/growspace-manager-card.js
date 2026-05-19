@@ -10082,6 +10082,14 @@ const dialogStyles = [
       flex-wrap: wrap;
     }
 
+    .dialog-content,
+    .dialog-content-grid {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
     .row-col-grid {
       display: flex;
       gap: 16px;
@@ -10111,10 +10119,9 @@ const dialogStyles = [
         padding: 12px 16px;
       }
 
+      .dialog-content,
       .dialog-content-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 8px;
+        padding: 16px;
       }
       .dialog-header .md3-button.text,
       .dialog-header .md3-button.text.close {
@@ -32329,7 +32336,7 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
             subtitle = 'Define treatment details';
         }
         return x `
-      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
+      <ha-dialog open @closed=${this._close} hideActions width="large" .heading=${title}>
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
@@ -32789,7 +32796,7 @@ let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
             return E;
         const dialogColor = '#2196F3';
         return x `
-      <ha-dialog open @closed=${this._close} hideActions width="full">
+      <ha-dialog open @closed=${this._close} hideActions width="large">
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon">
