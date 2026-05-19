@@ -23,5 +23,14 @@
   },
   "errors": {
     "fetch_failed": "Failed to fetch data"
+  },
+  "editor": {
+    "select_growspace": "Select a growspace...",
+    "theme_default": "Default",
+    "theme_dark": "Dark",
+    "theme_green": "Green",
+    "view_mode_standard": "Standard",
+    "view_mode_compact": "Compact (Grid Only)",
+    "view_mode_header": "Header Only"
   }
 }

@@ -5,6 +5,7 @@ import type { LovelaceCardEditor, HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import { GrowspaceOptionsController } from './controllers/growspace-options-controller';
 import { computeEditorLabel } from './lib/editor-utils';
+import { localize } from './localize/localize';
 
 @customElement('growspace-manager-card-editor')
 export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCardEditor {
@@ -24,13 +25,15 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
   }
 
   private _computeSchema() {
+    const lang = this.hass?.language;
+    const l = (key: string) => localize(key, '', '', lang);
     return [
       {
         name: 'default_growspace',
         selector: {
           select: {
             options: [
-              { label: 'Select a growspace...', value: '' },
+              { label: l('editor.select_growspace'), value: '' },
               ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
             ],
           },
@@ -41,9 +44,9 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
         selector: {
           select: {
             options: [
-              { label: 'Default', value: 'default' },
-              { label: 'Dark', value: 'dark' },
-              { label: 'Green', value: 'green' },
+              { label: l('editor.theme_default'), value: 'default' },
+              { label: l('editor.theme_dark'), value: 'dark' },
+              { label: l('editor.theme_green'), value: 'green' },
             ],
           },
         },
@@ -53,9 +56,9 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
         selector: {
           select: {
             options: [
-              { label: 'Standard', value: 'standard' },
-              { label: 'Compact (Grid Only)', value: 'compact' },
-              { label: 'Header Only', value: 'header' },
+              { label: l('editor.view_mode_standard'), value: 'standard' },
+              { label: l('editor.view_mode_compact'), value: 'compact' },
+              { label: l('editor.view_mode_header'), value: 'header' },
             ],
           },
         },
