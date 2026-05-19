@@ -269,4 +269,119 @@ describe('GrowspaceGridContainer', () => {
 
     expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
   });
+
+  it('handles cell-click when cell has no plant', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('cell-click', {
+      detail: { cell: { plant: null } }
+    }));
+
+    expect(mockStore.actions.ui.handlePlantClick).not.toHaveBeenCalled();
+  });
+
+  it('handles grid-drop when transplantData is invalid JSON', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: {
+          dataTransfer: {
+            getData: (type: string) => type === 'application/json' ? '{invalid-json' : ''
+          }
+        }
+      }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-drop when transplantData has type other than transplant', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: {
+          dataTransfer: {
+            getData: (type: string) => type === 'application/json' ? JSON.stringify({ type: 'other' }) : ''
+          }
+        }
+      }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-drop when transplantData is empty string', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: {
+          dataTransfer: {
+            getData: (type: string) => type === 'application/json' ? '' : ''
+          }
+        }
+      }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-mobile-drop when shadowRoot is undefined', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    Object.defineProperty(element, 'shadowRoot', {
+      get: () => null,
+      configurable: true
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+  });
+
+  it('handles grid-mobile-drop targeting plant-card-empty with missing attributes', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue({
+      closest: () => ({
+        classList: { contains: (c: string) => c === 'plant-card-empty' },
+        getAttribute: () => null
+      })
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-mobile-drop when dropTarget does not match expected types', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue({
+      closest: () => ({
+        classList: { contains: () => false },
+        tagName: 'OTHER-TAG'
+      })
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+  });
 });

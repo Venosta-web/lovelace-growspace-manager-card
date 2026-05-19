@@ -142,6 +142,53 @@ describe('GrowspaceIPMDialogUI', () => {
       expect(applyBtn.textContent).toContain('Applying...');
     });
 
+    it('dispatches apply-ipm event when Apply Treatment button is clicked', async () => {
+      const handler = vi.fn();
+      const el = await fixture<GrowspaceIPMDialogUI>(html`
+        <growspace-ipm-dialog-ui
+          .open=${true}
+          .presets=${mockPresets}
+          @apply-ipm=${handler}
+        ></growspace-ipm-dialog-ui>
+      `);
+      (el as any)._selectedPresetId = 'preset-1';
+      (el as any)._notes = 'Test notes';
+      await el.updateComplete;
+      
+      const applyBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
+      applyBtn?.click();
+      
+      expect(handler).toHaveBeenCalledOnce();
+      expect(handler.mock.calls[0][0].detail).toEqual({
+        presetId: 'preset-1',
+        notes: 'Test notes',
+      });
+    });
+
+    it('switches to LIST view when Manage Presets is clicked from APPLY view', async () => {
+      const el = await fixture<GrowspaceIPMDialogUI>(html`
+        <growspace-ipm-dialog-ui .open=${true} .presets=${mockPresets}></growspace-ipm-dialog-ui>
+      `);
+      const manageBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.tonal') as HTMLElement;
+      manageBtn?.click();
+      await el.updateComplete;
+      expect((el as any)._view).toBe('LIST');
+    });
+
+    it('dispatches close event when ha-dialog closed event is triggered', async () => {
+      const handler = vi.fn();
+      const el = await fixture<GrowspaceIPMDialogUI>(html`
+        <growspace-ipm-dialog-ui
+          .open=${true}
+          .presets=${{}}
+          @close=${handler}
+        ></growspace-ipm-dialog-ui>
+      `);
+      const dialog = el.shadowRoot!.querySelector('ha-dialog');
+      dialog?.dispatchEvent(new CustomEvent('closed'));
+      expect(handler).toHaveBeenCalledOnce();
+    });
+
   describe('LIST view', () => {
     let el: GrowspaceIPMDialogUI;
 
@@ -165,7 +212,7 @@ describe('GrowspaceIPMDialogUI', () => {
     });
 
     it('shows empty state when no presets', async () => {
-      el.presets = {};
+      el.presets = undefined as any;
       await el.updateComplete;
       expect(el.shadowRoot!.querySelector('.empty-state')).not.toBeNull();
     });
@@ -294,6 +341,101 @@ describe('GrowspaceIPMDialogUI', () => {
       await el.updateComplete;
       expect((el as any)._view).toBe('LIST');
     });
+
+    it('updates recommended stage on select change', async () => {
+      const stageSelect = el.shadowRoot!.querySelectorAll('select.md3-input')[1] as HTMLSelectElement;
+      expect(stageSelect).toBeDefined();
+      
+      stageSelect.value = 'veg';
+      stageSelect.dispatchEvent(new Event('change'));
+      expect((el as any)._editingPreset.stage).toBe('veg');
+
+      stageSelect.value = '';
+      stageSelect.dispatchEvent(new Event('change'));
+      expect((el as any)._editingPreset.stage).toBeUndefined();
+    });
+
+    it('updates min days on input change', async () => {
+      const minDaysInput = el.shadowRoot!.querySelector('md3-number-input[label="Min Days"]') as any;
+      expect(minDaysInput).not.toBeNull();
+      minDaysInput.dispatchEvent(new CustomEvent('change', { detail: '12' }));
+      expect((el as any)._editingPreset.min_days_in_stage).toBe(12);
+    });
+
+    it('returns early from edit operations when _editingPreset is null', () => {
+      (el as any)._editingPreset = null;
+      
+      (el as any)._addProduct();
+      expect((el as any)._editingPreset).toBeNull();
+      
+      (el as any)._removeProduct(0);
+      expect((el as any)._editingPreset).toBeNull();
+      
+      (el as any)._updateProduct(0, { name: 'Test' });
+      expect((el as any)._editingPreset).toBeNull();
+      
+      const handler = vi.fn();
+      el.addEventListener('save-preset', handler);
+      (el as any)._handleSavePreset();
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('handles falsy type and items when rendering edit view', async () => {
+      (el as any)._editingPreset = {
+        name: 'Empty Preset',
+        type: undefined,
+        items: undefined,
+      };
+      await el.updateComplete;
+      
+      const typeSelect = el.shadowRoot!.querySelector('select.md3-input') as HTMLSelectElement;
+      expect(typeSelect.value).toBe('foliar');
+      
+      const productRows = el.shadowRoot!.querySelectorAll('.product-row');
+      expect(productRows.length).toBe(0);
+    });
+
+    it('handles fallback to 0 when PHI is not a valid number', async () => {
+      const productRow = el.shadowRoot!.querySelector('.product-row');
+      const phiInput = productRow!.querySelector('md3-number-input[label="PHI (Days)"]') as any;
+      
+      phiInput.dispatchEvent(new CustomEvent('change', { detail: 'invalid-number' }));
+      const item = (el as any)._editingPreset.items[0];
+      expect(item.phi_days).toBe(0);
+    });
+
+    it('handles falsy items when removing product', async () => {
+      (el as any)._editingPreset = {
+        name: 'Empty Preset',
+        type: 'foliar',
+        items: undefined,
+      };
+      await el.updateComplete;
+      (el as any)._removeProduct(0);
+      expect((el as any)._editingPreset.items).toEqual([]);
+    });
+
+    it('handles falsy items when updating product', async () => {
+      (el as any)._editingPreset = {
+        name: 'Empty Preset',
+        type: 'foliar',
+        items: undefined,
+      };
+      await el.updateComplete;
+      (el as any)._updateProduct(0, { name: 'New Product' });
+      expect((el as any)._editingPreset.items[0]).toEqual({ name: 'New Product' });
+    });
+
+    it('handles falsy items when adding product', async () => {
+      (el as any)._editingPreset = {
+        name: 'Empty Preset',
+        type: 'foliar',
+        items: undefined,
+      };
+      await el.updateComplete;
+      (el as any)._addProduct();
+      expect((el as any)._editingPreset.items.length).toBe(1);
+    });
   });
 
   it('resets to APPLY view when dialog is reopened', async () => {
@@ -307,5 +449,25 @@ describe('GrowspaceIPMDialogUI', () => {
     el.open = true;
     await el.updateComplete;
     expect((el as any)._view).toBe('APPLY');
+  });
+
+  it('does not reset view when dialog is reopened and editing preset is active', async () => {
+    const el = await fixture<GrowspaceIPMDialogUI>(html`
+      <growspace-ipm-dialog-ui .open=${true} .presets=${mockPresets}></growspace-ipm-dialog-ui>
+    `);
+    (el as any)._startNew();
+    await el.updateComplete;
+    el.open = false;
+    await el.updateComplete;
+    el.open = true;
+    await el.updateComplete;
+    expect((el as any)._view).toBe('EDIT');
+  });
+
+  it('renders correctly in APPLY view when presets is undefined', async () => {
+    const el = await fixture<GrowspaceIPMDialogUI>(html`
+      <growspace-ipm-dialog-ui .open=${true} .presets=${undefined}></growspace-ipm-dialog-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('md3-select')).not.toBeNull();
   });
 });

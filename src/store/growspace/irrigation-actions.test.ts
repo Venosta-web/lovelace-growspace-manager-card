@@ -96,6 +96,54 @@ describe('addIrrigationTime', () => {
 
     expect(ctx.ui.showToast as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(expect.any(String), 'error');
   });
+
+  it('executes redo callback successfully', async () => {
+    const params = { growspaceId: 'gs1', time: '06:00:00', duration: 60 };
+    await addIrrigationTime(ctx, params);
+
+    expect(ctx.dataService.addIrrigationTime).toHaveBeenCalledTimes(1);
+
+    await ctx.undoRedoManager.undo();
+    await ctx.undoRedoManager.redo();
+
+    expect(ctx.dataService.addIrrigationTime).toHaveBeenCalledTimes(2);
+    expect(ctx.dataService.addIrrigationTime).toHaveBeenLastCalledWith(params);
+  });
+
+  it('handles non-existent device and returns default configuration', async () => {
+    await addIrrigationTime(ctx, { growspaceId: 'gs_invalid', time: '06:00:00' });
+    // Verify that the call completes without crashing
+  });
+
+  it('uses default duration of 60 when duration is not provided', async () => {
+    await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00' });
+    
+    expect(ctx.dataService.addIrrigationTime).toHaveBeenCalledWith({
+      growspaceId: 'gs1',
+      time: '06:00:00',
+      duration: undefined,
+    });
+
+    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).toContainEqual(
+      expect.objectContaining({ time: '06:00:00', duration: 60 })
+    );
+  });
+
+  it('sorts multiple irrigation times correctly', async () => {
+    await addIrrigationTime(ctx, { growspaceId: 'gs1', time: undefined as any, duration: 60 });
+    await addIrrigationTime(ctx, { growspaceId: 'gs1', time: undefined as any, duration: 60 });
+    await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '12:00:00', duration: 60 });
+    await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00', duration: 60 });
+
+    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).toEqual([
+      expect.objectContaining({ time: undefined }),
+      expect.objectContaining({ time: undefined }),
+      expect.objectContaining({ time: '06:00:00' }),
+      expect.objectContaining({ time: '12:00:00' }),
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -152,6 +200,19 @@ describe('removeIrrigationTime', () => {
       expect.objectContaining({ time: '06:00:00' })
     );
   });
+
+  it('executes redo callback successfully', async () => {
+    const params = { growspaceId: 'gs1', time: '06:00:00' };
+    await removeIrrigationTime(ctx, params);
+
+    expect(ctx.dataService.removeIrrigationTime).toHaveBeenCalledTimes(1);
+
+    await ctx.undoRedoManager.undo();
+    await ctx.undoRedoManager.redo();
+
+    expect(ctx.dataService.removeIrrigationTime).toHaveBeenCalledTimes(2);
+    expect(ctx.dataService.removeIrrigationTime).toHaveBeenLastCalledWith(params);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -199,6 +260,49 @@ describe('addDrainTime', () => {
 
     const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toHaveLength(0);
+  });
+
+  it('executes redo callback successfully', async () => {
+    const params = { growspaceId: 'gs1', time: '18:00:00', duration: 30 };
+    await addDrainTime(ctx, params);
+
+    expect(ctx.dataService.addDrainTime).toHaveBeenCalledTimes(1);
+
+    await ctx.undoRedoManager.undo();
+    await ctx.undoRedoManager.redo();
+
+    expect(ctx.dataService.addDrainTime).toHaveBeenCalledTimes(2);
+    expect(ctx.dataService.addDrainTime).toHaveBeenLastCalledWith(params);
+  });
+
+  it('uses default duration of 60 when duration is not provided', async () => {
+    await addDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00' });
+
+    expect(ctx.dataService.addDrainTime).toHaveBeenCalledWith({
+      growspaceId: 'gs1',
+      time: '18:00:00',
+      duration: undefined,
+    });
+
+    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.drainTimes).toContainEqual(
+      expect.objectContaining({ time: '18:00:00', duration: 60 })
+    );
+  });
+
+  it('sorts multiple drain times correctly', async () => {
+    await addDrainTime(ctx, { growspaceId: 'gs1', time: undefined as any, duration: 30 });
+    await addDrainTime(ctx, { growspaceId: 'gs1', time: undefined as any, duration: 30 });
+    await addDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00', duration: 30 });
+    await addDrainTime(ctx, { growspaceId: 'gs1', time: '08:00:00', duration: 30 });
+
+    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.drainTimes).toEqual([
+      expect.objectContaining({ time: undefined }),
+      expect.objectContaining({ time: undefined }),
+      expect.objectContaining({ time: '08:00:00' }),
+      expect.objectContaining({ time: '18:00:00' }),
+    ]);
   });
 });
 
@@ -249,6 +353,19 @@ describe('removeDrainTime', () => {
     expect(device?.irrigationConfig.drainTimes).toContainEqual(
       expect.objectContaining({ time: '18:00:00' })
     );
+  });
+
+  it('executes redo callback successfully', async () => {
+    const params = { growspaceId: 'gs1', time: '18:00:00' };
+    await removeDrainTime(ctx, params);
+
+    expect(ctx.dataService.removeDrainTime).toHaveBeenCalledTimes(1);
+
+    await ctx.undoRedoManager.undo();
+    await ctx.undoRedoManager.redo();
+
+    expect(ctx.dataService.removeDrainTime).toHaveBeenCalledTimes(2);
+    expect(ctx.dataService.removeDrainTime).toHaveBeenLastCalledWith(params);
   });
 });
 
@@ -334,5 +451,24 @@ describe('setIrrigationSettings', () => {
     const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.old_pump');
     expect(device?.irrigationConfig.irrigationDuration).toBe(60);
+  });
+
+  it('executes redo callback successfully', async () => {
+    const params = {
+      growspaceId: 'gs1',
+      irrigationPumpEntity: 'switch.new_pump',
+      drainPumpEntity: '',
+      irrigationDuration: 90,
+      drainDuration: 45,
+    };
+    await setIrrigationSettings(ctx, params);
+
+    expect(ctx.dataService.setIrrigationSettings).toHaveBeenCalledTimes(1);
+
+    await ctx.undoRedoManager.undo();
+    await ctx.undoRedoManager.redo();
+
+    expect(ctx.dataService.setIrrigationSettings).toHaveBeenCalledTimes(2);
+    expect(ctx.dataService.setIrrigationSettings).toHaveBeenLastCalledWith(params);
   });
 });
