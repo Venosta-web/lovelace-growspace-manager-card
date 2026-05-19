@@ -1,5 +1,6 @@
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import css from 'rollup-plugin-css-only';
@@ -17,6 +18,7 @@ const plugins = [
   }),
   resolve(),
   commonjs(),
+  json(),
   typescript({
     tsconfig: './tsconfig.json',
     sourceMap: !isProduction || isCoverage,

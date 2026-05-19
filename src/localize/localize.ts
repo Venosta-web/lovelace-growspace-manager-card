@@ -1,6 +1,5 @@
-import { en } from './languages/en';
+import en from './languages/en.json';
 
-// Define types for localization structure
 interface LocaleStrings {
   [key: string]: string;
 }
