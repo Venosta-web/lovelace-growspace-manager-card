@@ -7,7 +7,6 @@
 
 import { computed, type ReadableAtom } from 'nanostores';
 import type { PlantEntity, PlantDisplayData, StrainEntry, NutrientPreset, GrowspaceDevice } from '../../../types';
-import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { calculateGrowthDeviation } from '../../../utils/analytics-utils';
 
@@ -21,6 +20,18 @@ export interface PlantStatusIndicators {
   hasProblem: boolean;
   hasGrowthDeviation: boolean;
   hasRecommendedPreset: boolean;
+}
+
+/**
+ * Exact atoms createPlantCardViewModel depends on.
+ * Callers pass these directly so the function's interface matches its actual needs.
+ */
+export interface PlantCardAtoms {
+  $isEditMode: ReadableAtom<boolean>;
+  $selectedPlants: ReadableAtom<Set<string>>;
+  $strainLibrary: ReadableAtom<StrainEntry[]>;
+  $nutrientPresets: ReadableAtom<Record<string, NutrientPreset>>;
+  $devices: ReadableAtom<GrowspaceDevice[]>;
 }
 
 /**
@@ -80,36 +91,33 @@ function hasRecommendedPreset(
 }
 
 /**
- * Create plant card view model
+ * Create plant card view model.
  *
- * @param plant - Plant entity to display
- * @param store - Global store instance
- * @returns Computed atom with view model data
+ * @param $plant - Reactive atom holding the plant entity (null during init)
+ * @param deps - The specific store atoms this ViewModel needs
+ * @returns Computed atom; null when plant is not yet available
  */
 export function createPlantCardViewModel(
-  plant: PlantEntity,
-  store: GrowspaceStore
-): ReadableAtom<PlantCardViewModel> {
+  $plant: ReadableAtom<PlantEntity | null>,
+  deps: PlantCardAtoms
+): ReadableAtom<PlantCardViewModel | null> {
   return computed(
     [
-      store.ui.$isEditMode,
-      store.ui.$selectedPlants,
-      store.data.$strainLibrary,
-      store.data.$nutrientPresets,
-      store.data.$devices,
+      $plant,
+      deps.$isEditMode,
+      deps.$selectedPlants,
+      deps.$strainLibrary,
+      deps.$nutrientPresets,
+      deps.$devices,
     ],
-    (isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices) => {
-      // Get plant ID
+    (plant, isEditMode, selectedPlants, strainLibrary, nutrientPresets, devices) => {
+      if (!plant) return null;
+
       const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-
-      // Compute display data
       const displayData = PlantUtils.getPlantDisplayData(plant, strainLibrary);
-
-      // Find strain for growth deviation calculation
       const strain = strainLibrary.find((s: StrainEntry) => s.strain === plant.attributes.strain);
       const growthDeviation = calculateGrowthDeviation(plant, strain);
 
-      // Compute status indicators
       const statusIndicators: PlantStatusIndicators = {
         hasTraining: !!plant.attributes.last_training_technique,
         hasIPM: !!plant.attributes.last_ipm,
@@ -119,11 +127,8 @@ export function createPlantCardViewModel(
         hasRecommendedPreset: hasRecommendedPreset(plant, nutrientPresets, devices),
       };
 
-      // Accessibility labels
       const strainName = displayData.strainName || 'Unknown strain';
       const stageName = plant.state || 'unknown';
-      const ariaLabel = `${strainName} in ${stageName} stage`;
-      const checkboxAriaLabel = `Select ${strainName}`;
 
       return {
         plant,
@@ -133,8 +138,8 @@ export function createPlantCardViewModel(
         isDraggable: !isEditMode,
         growthDeviation,
         statusIndicators,
-        ariaLabel,
-        checkboxAriaLabel,
+        ariaLabel: `${strainName} in ${stageName} stage`,
+        checkboxAriaLabel: `Select ${strainName}`,
       };
     }
   );

@@ -4,7 +4,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { atom } from 'nanostores';
-import { createPlantOverviewViewModel } from './plant-overview.viewmodel';
+import { createStablePlantOverviewViewModel } from './plant-overview.viewmodel';
 import type { PlantEntity, PlantOverviewEditedAttributes } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 
@@ -13,7 +13,7 @@ describe('PlantOverviewViewModel', () => {
   let mockPlant: PlantEntity;
   let mockEditedAttributes: PlantOverviewEditedAttributes;
   let mockUIState: {
-    activeTab: 'dashboard' | 'actions' | 'timeline';
+    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
     showAllDates: boolean;
     showDeleteConfirmation: boolean;
@@ -93,11 +93,12 @@ describe('PlantOverviewViewModel', () => {
   });
 
   it('should create view model with correct structure', () => {
-    const viewModel = createPlantOverviewViewModel(
-      mockPlant,
-      mockEditedAttributes,
-      mockUIState,
-      mockStore as GrowspaceStore
+    const viewModel = createStablePlantOverviewViewModel(
+      atom(mockPlant),
+      atom(mockEditedAttributes),
+      atom(mockUIState),
+      mockStore as GrowspaceStore,
+      atom([])
     );
     const value = viewModel.get();
 
@@ -120,11 +121,12 @@ describe('PlantOverviewViewModel', () => {
   });
 
   it('should compute plantId correctly', () => {
-    const viewModel = createPlantOverviewViewModel(
-      mockPlant,
-      mockEditedAttributes,
-      mockUIState,
-      mockStore as GrowspaceStore
+    const viewModel = createStablePlantOverviewViewModel(
+      atom(mockPlant),
+      atom(mockEditedAttributes),
+      atom(mockUIState),
+      mockStore as GrowspaceStore,
+      atom([])
     );
     const value = viewModel.get();
 
@@ -132,11 +134,12 @@ describe('PlantOverviewViewModel', () => {
   });
 
   it('should compute displayName from edited attributes', () => {
-    const viewModel = createPlantOverviewViewModel(
-      mockPlant,
-      mockEditedAttributes,
-      mockUIState,
-      mockStore as GrowspaceStore
+    const viewModel = createStablePlantOverviewViewModel(
+      atom(mockPlant),
+      atom(mockEditedAttributes),
+      atom(mockUIState),
+      mockStore as GrowspaceStore,
+      atom([])
     );
     const value = viewModel.get();
 
@@ -145,11 +148,12 @@ describe('PlantOverviewViewModel', () => {
 
   it('should handle missing strain gracefully', () => {
     const editedWithoutStrain = { ...mockEditedAttributes, strain: undefined };
-    const viewModel = createPlantOverviewViewModel(
-      mockPlant,
-      editedWithoutStrain,
-      mockUIState,
-      mockStore as GrowspaceStore
+    const viewModel = createStablePlantOverviewViewModel(
+      atom(mockPlant),
+      atom(editedWithoutStrain),
+      atom(mockUIState),
+      mockStore as GrowspaceStore,
+      atom([])
     );
     const value = viewModel.get();
 
@@ -157,11 +161,12 @@ describe('PlantOverviewViewModel', () => {
   });
 
   it('should compute displaySubtitle correctly', () => {
-    const viewModel = createPlantOverviewViewModel(
-      mockPlant,
-      mockEditedAttributes,
-      mockUIState,
-      mockStore as GrowspaceStore
+    const viewModel = createStablePlantOverviewViewModel(
+      atom(mockPlant),
+      atom(mockEditedAttributes),
+      atom(mockUIState),
+      mockStore as GrowspaceStore,
+      atom([])
     );
     const value = viewModel.get();
 
@@ -169,11 +174,12 @@ describe('PlantOverviewViewModel', () => {
   });
 
   it('should reflect UI state correctly', () => {
-    const viewModel = createPlantOverviewViewModel(
-      mockPlant,
-      mockEditedAttributes,
-      mockUIState,
-      mockStore as GrowspaceStore
+    const viewModel = createStablePlantOverviewViewModel(
+      atom(mockPlant),
+      atom(mockEditedAttributes),
+      atom(mockUIState),
+      mockStore as GrowspaceStore,
+      atom([])
     );
     const value = viewModel.get();
 
@@ -185,11 +191,12 @@ describe('PlantOverviewViewModel', () => {
 
   describe('Plant Stats', () => {
     it('should calculate plant stats correctly', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -204,11 +211,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should include total days stat', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -218,11 +226,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should include last watered stat', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -233,11 +242,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should include training technique stat', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -247,11 +257,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should include IPM stat', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -270,11 +281,12 @@ describe('PlantOverviewViewModel', () => {
         },
       };
 
-      const viewModel = createPlantOverviewViewModel(
-        plantWithHarvest,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(plantWithHarvest),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -292,11 +304,12 @@ describe('PlantOverviewViewModel', () => {
 
   describe('Available Actions', () => {
     it('should enable water action for vegetative plants', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -307,11 +320,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should disable water action for harvested plants', () => {
       const harvestedPlant = { ...mockPlant, state: 'harvested' };
-      const viewModel = createPlantOverviewViewModel(
-        harvestedPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(harvestedPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -321,11 +335,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should enable training action for vegetative plants', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -336,11 +351,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should enable training action for flowering plants', () => {
       const floweringPlant = { ...mockPlant, state: 'flower' };
-      const viewModel = createPlantOverviewViewModel(
-        floweringPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(floweringPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -351,11 +367,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should disable training action for seedling plants', () => {
       const seedlingPlant = { ...mockPlant, state: 'seedling' };
-      const viewModel = createPlantOverviewViewModel(
-        seedlingPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(seedlingPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -366,11 +383,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should enable clone action for mother plants', () => {
       const motherPlant = { ...mockPlant, state: 'mother' };
-      const viewModel = createPlantOverviewViewModel(
-        motherPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(motherPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -380,11 +398,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should enable clone action for vegetative plants', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -395,11 +414,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should disable clone action for drying plants', () => {
       const dryingPlant = { ...mockPlant, state: 'dry' };
-      const viewModel = createPlantOverviewViewModel(
-        dryingPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(dryingPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -410,11 +430,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should enable clone action for flowering plants', () => {
       const floweringPlant = { ...mockPlant, state: 'flower' };
-      const viewModel = createPlantOverviewViewModel(
-        floweringPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(floweringPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -424,11 +445,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should enable IPM action for active plants', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -439,11 +461,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should disable IPM action for harvested plants', () => {
       const harvestedPlant = { ...mockPlant, state: 'harvested' };
-      const viewModel = createPlantOverviewViewModel(
-        harvestedPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(harvestedPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -464,11 +487,12 @@ describe('PlantOverviewViewModel', () => {
         },
       };
 
-      const viewModel = createPlantOverviewViewModel(
-        plantWithMilestones,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(plantWithMilestones),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -493,11 +517,12 @@ describe('PlantOverviewViewModel', () => {
         },
       };
 
-      const viewModel = createPlantOverviewViewModel(
-        plantWithEvents,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(plantWithEvents),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -523,11 +548,12 @@ describe('PlantOverviewViewModel', () => {
         },
       };
 
-      const viewModel = createPlantOverviewViewModel(
-        plantWithNotes,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(plantWithNotes),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -552,11 +578,12 @@ describe('PlantOverviewViewModel', () => {
         },
       };
 
-      const viewModel = createPlantOverviewViewModel(
-        plantWithMilestoneEvent,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(plantWithMilestoneEvent),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -583,11 +610,12 @@ describe('PlantOverviewViewModel', () => {
         },
       };
 
-      const viewModel = createPlantOverviewViewModel(
-        plantWithMultipleEvents,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(plantWithMultipleEvents),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -605,11 +633,12 @@ describe('PlantOverviewViewModel', () => {
   describe('Validation', () => {
     it('should detect unsaved changes in strain', () => {
       const modifiedAttributes = { ...mockEditedAttributes, strain: 'Modified Strain' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        modifiedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(modifiedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -618,11 +647,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should detect unsaved changes in phenotype', () => {
       const modifiedAttributes = { ...mockEditedAttributes, phenotype: 'Pheno B' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        modifiedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(modifiedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -631,11 +661,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should detect unsaved changes in position', () => {
       const modifiedAttributes = { ...mockEditedAttributes, row: 5, col: 3 };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        modifiedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(modifiedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -643,11 +674,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should detect no changes when attributes match', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -656,11 +688,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should allow saving when strain is valid and has changes', () => {
       const modifiedAttributes = { ...mockEditedAttributes, strain: 'Valid Strain' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        modifiedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(modifiedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -669,11 +702,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should not allow saving when strain is empty', () => {
       const invalidAttributes = { ...mockEditedAttributes, strain: '' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        invalidAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(invalidAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -682,11 +716,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should not allow saving when strain is only whitespace', () => {
       const invalidAttributes = { ...mockEditedAttributes, strain: '   ' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        invalidAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(invalidAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -695,11 +730,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should not allow saving when row is negative', () => {
       const invalidAttributes = { ...mockEditedAttributes, row: -1, strain: 'Modified' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        invalidAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(invalidAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -708,11 +744,12 @@ describe('PlantOverviewViewModel', () => {
 
     it('should not allow saving when col is negative', () => {
       const invalidAttributes = { ...mockEditedAttributes, col: -1, strain: 'Modified' };
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        invalidAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(invalidAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -720,11 +757,12 @@ describe('PlantOverviewViewModel', () => {
     });
 
     it('should not allow saving when there are no changes', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
       const value = viewModel.get();
 
@@ -734,11 +772,12 @@ describe('PlantOverviewViewModel', () => {
 
   describe('Reactive Updates', () => {
     it('should recompute when strain library changes', () => {
-      const viewModel = createPlantOverviewViewModel(
-        mockPlant,
-        mockEditedAttributes,
-        mockUIState,
-        mockStore as GrowspaceStore
+      const viewModel = createStablePlantOverviewViewModel(
+        atom(mockPlant),
+        atom(mockEditedAttributes),
+        atom(mockUIState),
+        mockStore as GrowspaceStore,
+        atom([])
       );
 
       // Initial state

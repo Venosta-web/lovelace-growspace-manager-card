@@ -10,7 +10,6 @@ import type {
   PlantEntity,
   PlantOverviewEditedAttributes,
   GrowspaceEvent,
-  PlantTimelineEvent,
 } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { PlantUtils } from '../../../utils/plant-utils';
@@ -334,95 +333,9 @@ function canSaveAttributes(editedAttributes: PlantOverviewEditedAttributes): boo
 }
 
 /**
- * Create ViewModel for plant overview dialog
- */
-export function createPlantOverviewViewModel(
-  plant: PlantEntity,
-  editedAttributes: PlantOverviewEditedAttributes,
-  uiState: {
-    activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
-    isEditing: boolean;
-    showAllDates: boolean;
-    showDeleteConfirmation: boolean;
-  },
-  store: GrowspaceStore,
-  logbookEvents: GrowspaceEvent[] = []
-): ReadableAtom<PlantOverviewViewModel> {
-  return computed(
-    [
-      // We don't need many store subscriptions for this dialog
-      // Most data comes from props (plant, editedAttributes)
-      // But we do watch for new logbook events
-      store.data.$strainLibrary, // For strain data
-      store.grid.$growspaceOptions, // For stage moves
-    ],
-    (strainLibrary, growspaceOptions) => {
-      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-      const stageColor = PlantUtils.getPlantStageColor(plant.state);
-      const stageIcon = PlantUtils.getPlantStageIcon(plant.state);
-
-      // Ensure displayName is a string (editedAttributes.strain is PlantAttributeValue)
-      const strainValue = editedAttributes?.strain;
-      const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
-
-      const phenoValue = editedAttributes?.phenotype;
-      const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
-        }`;
-
-      const timelineEvents = processTimelineEvents(plant, logbookEvents);
-
-      // Calculate stats
-      const plantStats = calculatePlantStats(plant);
-
-      // Available actions
-      const availableActions = getAvailableActions(plant);
-
-      // Validation
-      const unsavedChanges = hasUnsavedChanges(plant, editedAttributes);
-      const canSave = canSaveAttributes(editedAttributes);
-
-      return {
-        // Core data
-        plant,
-        editedAttributes,
-
-        // UI state
-        activeTab: uiState.activeTab,
-        isEditing: uiState.isEditing,
-        showAllDates: uiState.showAllDates,
-        showDeleteConfirmation: uiState.showDeleteConfirmation,
-
-        // Computed identifiers
-        plantId,
-        stageColor,
-        stageIcon,
-        displayName,
-        displaySubtitle,
-
-        // Timeline data
-        timelineEvents,
-
-        // Plant stats
-        plantStats,
-
-        // Available actions
-        availableActions,
-
-        // Data for selectors
-        growspaceOptions,
-
-        // Validation
-        hasUnsavedChanges: unsavedChanges,
-        canSave: canSave && unsavedChanges,
-      };
-    }
-  );
-}
-
-/**
- * Create a STABLE ViewModel for plant overview dialog.
- * This version takes atoms for all inputs, allowing it to be used with a
- * single persistent StoreController in the container component.
+ * Create ViewModel for plant overview dialog.
+ * Takes atoms for all inputs, allowing it to be used with a single persistent
+ * StoreController in the container component.
  */
 export function createStablePlantOverviewViewModel(
   $plant: ReadableAtom<PlantEntity | null>,
@@ -442,10 +355,9 @@ export function createStablePlantOverviewViewModel(
       $editedAttributes,
       $uiState,
       $logbookEvents,
-      store.data.$strainLibrary,
       store.grid.$growspaceOptions,
     ],
-    (plant, editedAttributes, uiState, logbookEvents, strainLibrary, growspaceOptions) => {
+    (plant, editedAttributes, uiState, logbookEvents, growspaceOptions) => {
       // Fallback for null plant (initial state)
       if (!plant) {
         return {

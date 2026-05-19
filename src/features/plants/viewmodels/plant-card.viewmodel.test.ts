@@ -3,38 +3,16 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { atom } from 'nanostores';
-import { createPlantCardViewModel } from './plant-card.viewmodel';
+import { atom, type WritableAtom } from 'nanostores';
+import { createPlantCardViewModel, type PlantCardAtoms } from './plant-card.viewmodel';
 import type { PlantEntity, StrainEntry } from '../../../types';
-import type { GrowspaceStore } from '../../../store/core/growspace-store';
 
 describe('PlantCardViewModel', () => {
-  let mockStore: Partial<GrowspaceStore>;
+  let $plant: WritableAtom<PlantEntity | null>;
+  let deps: PlantCardAtoms;
   let mockPlant: PlantEntity;
 
   beforeEach(() => {
-    // Mock store with necessary atoms
-    mockStore = {
-      ui: {
-        $isEditMode: atom(false),
-        $selectedPlants: atom(new Set<string>()),
-      } as any,
-      data: {
-        $strainLibrary: atom<StrainEntry[]>([
-          {
-            strain: 'Test Strain',
-            phenotype: 'Pheno A',
-            key: 'test-plant-1',
-            averageFlowerDays: 60,
-            averageVegDays: 30,
-          } as StrainEntry,
-        ]),
-        $nutrientPresets: atom({}),
-        $devices: atom([]),
-      } as any,
-    };
-
-    // Mock plant
     mockPlant = {
       entity_id: 'sensor.test_plant',
       state: 'vegetative',
@@ -49,10 +27,34 @@ describe('PlantCardViewModel', () => {
         col: 0,
       },
     } as PlantEntity;
+
+    $plant = atom<PlantEntity | null>(mockPlant);
+
+    deps = {
+      $isEditMode: atom(false),
+      $selectedPlants: atom(new Set<string>()),
+      $strainLibrary: atom<StrainEntry[]>([
+        {
+          strain: 'Test Strain',
+          phenotype: 'Pheno A',
+          key: 'test-plant-1',
+          averageFlowerDays: 60,
+          averageVegDays: 30,
+        } as StrainEntry,
+      ]),
+      $nutrientPresets: atom({}),
+      $devices: atom([]),
+    };
+  });
+
+  it('should return null when plant is null', () => {
+    $plant.set(null);
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()).toBeNull();
   });
 
   it('should create view model with correct structure', () => {
-    const viewModel = createPlantCardViewModel(mockPlant, mockStore as GrowspaceStore);
+    const viewModel = createPlantCardViewModel($plant, deps);
     const value = viewModel.get();
 
     expect(value).toHaveProperty('plant');
@@ -67,35 +69,41 @@ describe('PlantCardViewModel', () => {
   });
 
   it('should compute isSelected correctly', () => {
-    const viewModel = createPlantCardViewModel(mockPlant, mockStore as GrowspaceStore);
+    const viewModel = createPlantCardViewModel($plant, deps);
 
-    // Initially not selected
-    expect(viewModel.get().isSelected).toBe(false);
+    expect(viewModel.get()!.isSelected).toBe(false);
 
-    // Select plant
-    mockStore.ui!.$selectedPlants.set(new Set(['test-plant-1']));
-    expect(viewModel.get().isSelected).toBe(true);
+    (deps.$selectedPlants as WritableAtom<Set<string>>).set(new Set(['test-plant-1']));
+    expect(viewModel.get()!.isSelected).toBe(true);
 
-    // Deselect plant
-    mockStore.ui!.$selectedPlants.set(new Set());
-    expect(viewModel.get().isSelected).toBe(false);
+    (deps.$selectedPlants as WritableAtom<Set<string>>).set(new Set());
+    expect(viewModel.get()!.isSelected).toBe(false);
   });
 
   it('should compute isEditMode correctly', () => {
-    const viewModel = createPlantCardViewModel(mockPlant, mockStore as GrowspaceStore);
+    const viewModel = createPlantCardViewModel($plant, deps);
 
-    // Initially not in edit mode
-    expect(viewModel.get().isEditMode).toBe(false);
+    expect(viewModel.get()!.isEditMode).toBe(false);
 
-    // Enter edit mode
-    mockStore.ui!.$isEditMode.set(true);
-    expect(viewModel.get().isEditMode).toBe(true);
-    expect(viewModel.get().isDraggable).toBe(false); // Drag is disabled in edit mode
+    (deps.$isEditMode as WritableAtom<boolean>).set(true);
+    expect(viewModel.get()!.isEditMode).toBe(true);
+    expect(viewModel.get()!.isDraggable).toBe(false);
+  });
+
+  it('should recompute when plant entity changes', () => {
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()!.statusIndicators.hasTraining).toBe(false);
+
+    $plant.set({
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, last_training_technique: 'LST' },
+    });
+    expect(viewModel.get()!.statusIndicators.hasTraining).toBe(true);
   });
 
   it('should compute status indicators correctly', () => {
-    const viewModel = createPlantCardViewModel(mockPlant, mockStore as GrowspaceStore);
-    const indicators = viewModel.get().statusIndicators;
+    const viewModel = createPlantCardViewModel($plant, deps);
+    const indicators = viewModel.get()!.statusIndicators;
 
     expect(indicators).toHaveProperty('hasTraining');
     expect(indicators).toHaveProperty('hasIPM');
@@ -106,98 +114,55 @@ describe('PlantCardViewModel', () => {
   });
 
   it('should detect training status', () => {
-    const plantWithTraining = {
-      ...mockPlant,
-      attributes: {
-        ...mockPlant.attributes,
-        last_training_technique: 'LST',
-      },
-    };
-
-    const viewModel = createPlantCardViewModel(plantWithTraining, mockStore as GrowspaceStore);
-    expect(viewModel.get().statusIndicators.hasTraining).toBe(true);
+    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_training_technique: 'LST' } });
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()!.statusIndicators.hasTraining).toBe(true);
   });
 
   it('should detect IPM status', () => {
-    const plantWithIPM = {
-      ...mockPlant,
-      attributes: {
-        ...mockPlant.attributes,
-        last_ipm: '2024-01-01',
-        last_ipm_type: 'Neem Oil',
-      },
-    };
-
-    const viewModel = createPlantCardViewModel(plantWithIPM, mockStore as GrowspaceStore);
-    expect(viewModel.get().statusIndicators.hasIPM).toBe(true);
+    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_ipm: '2024-01-01', last_ipm_type: 'Neem Oil' } });
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()!.statusIndicators.hasIPM).toBe(true);
   });
 
   it('should detect problem status', () => {
-    const plantWithProblem = {
-      ...mockPlant,
-      attributes: {
-        ...mockPlant.attributes,
-        problem: 'Nutrient deficiency',
-      },
-    };
-
-    const viewModel = createPlantCardViewModel(plantWithProblem, mockStore as GrowspaceStore);
-    expect(viewModel.get().statusIndicators.hasProblem).toBe(true);
+    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, problem: 'Nutrient deficiency' } });
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()!.statusIndicators.hasProblem).toBe(true);
   });
 
   it('should detect recent watering', () => {
-    const now = new Date();
-    const recentWatering = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 12 hours ago
-
-    const plantWithWatering = {
-      ...mockPlant,
-      attributes: {
-        ...mockPlant.attributes,
-        last_watered: recentWatering.toISOString(),
-      },
-    };
-
-    const viewModel = createPlantCardViewModel(plantWithWatering, mockStore as GrowspaceStore);
-    expect(viewModel.get().statusIndicators.isRecentlyWatered).toBe(true);
+    const recentWatering = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_watered: recentWatering } });
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()!.statusIndicators.isRecentlyWatered).toBe(true);
   });
 
   it('should not detect old watering as recent', () => {
-    const now = new Date();
-    const oldWatering = new Date(now.getTime() - 48 * 60 * 60 * 1000); // 48 hours ago
-
-    const plantWithOldWatering = {
-      ...mockPlant,
-      attributes: {
-        ...mockPlant.attributes,
-        last_watered: oldWatering.toISOString(),
-      },
-    };
-
-    const viewModel = createPlantCardViewModel(plantWithOldWatering, mockStore as GrowspaceStore);
-    expect(viewModel.get().statusIndicators.isRecentlyWatered).toBe(false);
+    const oldWatering = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_watered: oldWatering } });
+    const viewModel = createPlantCardViewModel($plant, deps);
+    expect(viewModel.get()!.statusIndicators.isRecentlyWatered).toBe(false);
   });
 
   it('should generate correct accessibility labels', () => {
-    const viewModel = createPlantCardViewModel(mockPlant, mockStore as GrowspaceStore);
-    const value = viewModel.get();
+    const viewModel = createPlantCardViewModel($plant, deps);
+    const value = viewModel.get()!;
 
     expect(value.ariaLabel).toContain('Test Strain');
     expect(value.ariaLabel).toContain('vegetative');
     expect(value.checkboxAriaLabel).toContain('Test Strain');
   });
 
-  it('should recompute when dependencies change', () => {
-    const viewModel = createPlantCardViewModel(mockPlant, mockStore as GrowspaceStore);
+  it('should recompute when store atoms change', () => {
+    const viewModel = createPlantCardViewModel($plant, deps);
 
-    // Initial state
-    expect(viewModel.get().isEditMode).toBe(false);
+    expect(viewModel.get()!.isEditMode).toBe(false);
 
-    // Change edit mode
-    mockStore.ui!.$isEditMode.set(true);
-    expect(viewModel.get().isEditMode).toBe(true);
+    (deps.$isEditMode as WritableAtom<boolean>).set(true);
+    expect(viewModel.get()!.isEditMode).toBe(true);
 
-    // Change selection
-    mockStore.ui!.$selectedPlants.set(new Set(['test-plant-1']));
-    expect(viewModel.get().isSelected).toBe(true);
+    (deps.$selectedPlants as WritableAtom<Set<string>>).set(new Set(['test-plant-1']));
+    expect(viewModel.get()!.isSelected).toBe(true);
   });
 });
