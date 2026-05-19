@@ -4,10 +4,12 @@ import {
     addStrain,
     updateStrain,
     removeStrain,
+} from '../../src/store/plant/strain-actions';
+import {
     addGrowspace,
     updateGrowspace,
     removeGrowspace,
-} from '../../src/store/plant/strain-actions';
+} from '../../src/store/growspace/growspace-actions';
 import { StrainEntry } from '../../src/types';
 
 describe('strain-actions', () => {

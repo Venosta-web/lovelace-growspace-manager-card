@@ -111220,42 +111220,6 @@ async function confirmAddPlants(ctx, detail) {
     }
 }
 /**
- * Water a single plant and refresh inventory.
- */
-async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
-    try {
-        await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
-        // If nutrients were used, refresh the inventory
-        if (nutrients && Object.keys(nutrients).length > 0) {
-            await fetchNutrientInventory(ctx, true);
-        }
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to water plant:', e);
-        ctx.ui.showToast(`Failed to water plant: ${error}`, 'error');
-        throw e;
-    }
-}
-/**
- * Water a growspace and refresh inventory.
- */
-async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
-    try {
-        await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
-        // If nutrients were used, refresh the inventory
-        if (nutrients && Object.keys(nutrients).length > 0) {
-            await fetchNutrientInventory(ctx, true);
-        }
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to water growspace:', e);
-        ctx.ui.showToast(`Failed to water growspace: ${error}`, 'error');
-        throw e;
-    }
-}
-/**
  * Print a label for a plant or strain.
  */
 async function printLabel(ctx, params) {
@@ -111411,89 +111375,6 @@ async function removeStrain(ctx, strainKey) {
     }
     catch (err) {
         console.error('Error removing strain:', err);
-        return false;
-    }
-}
-/**
- * Add a new growspace.
- */
-async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationService = 'mobile_app_notify') {
-    if (!name) {
-        ctx.ui.showToast('Name is required', 'error');
-        return false;
-    }
-    try {
-        await ctx.dataService.addGrowspace({
-            name,
-            rows,
-            plantsPerRow,
-            notificationService,
-        });
-        ctx.ui.showToast('Growspace added successfully!', 'success');
-        await ctx.refreshData();
-        ctx.closeDialog();
-        return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Error: ${error}`, 'error');
-        return false;
-    }
-}
-/**
- * Update an existing growspace.
- */
-async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
-    try {
-        // Optimistic update for immediate UI feedback
-        const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
-        if (deviceIdx >= 0) {
-            const newDevices = [...devices];
-            // Shallow clone device, update dimensions and name
-            newDevices[deviceIdx] = {
-                ...newDevices[deviceIdx],
-                name,
-                rows,
-                plantsPerRow,
-            };
-            ctx.data.$devices.set(newDevices);
-        }
-        await ctx.dataService.updateGrowspace({
-            growspaceId,
-            name,
-            rows,
-            plantsPerRow,
-        });
-        // Wait for the backend update and data refresh to complete
-        await ctx.refreshData();
-        // Only show success and close after data is refreshed
-        ctx.ui.showToast('Growspace updated successfully', 'success');
-        ctx.closeDialog();
-        return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('[StrainActions] Update failed:', e);
-        ctx.ui.showToast(`Failed to update growspace: ${error}`, 'error');
-        return false;
-    }
-}
-/**
- * Remove a growspace.
- */
-async function removeGrowspace(ctx, growspaceId) {
-    try {
-        await ctx.dataService.removeGrowspace(growspaceId);
-        ctx.ui.showToast('Growspace removed successfully', 'success');
-        await ctx.refreshData();
-        ctx.closeDialog();
-        return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('[StrainActions] Removal failed:', e);
-        ctx.ui.showToast(`Failed to remove growspace: ${error}`, 'error');
         return false;
     }
 }
@@ -112127,6 +112008,96 @@ async function resetWaterTracking(ctx, growspaceId) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         ctx.ui.showToast(`Failed to reset water tracking: ${error}`, 'error');
         throw e;
+    }
+}
+/** Water a single plant and refresh nutrient inventory if nutrients were applied */
+async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
+    try {
+        await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
+        if (nutrients && Object.keys(nutrients).length > 0) {
+            await fetchNutrientInventory(ctx, true);
+        }
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Failed to water plant: ${error}`, 'error');
+        throw e;
+    }
+}
+/** Water an entire growspace and refresh nutrient inventory if nutrients were applied */
+async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
+    try {
+        await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
+        if (nutrients && Object.keys(nutrients).length > 0) {
+            await fetchNutrientInventory(ctx, true);
+        }
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Failed to water growspace: ${error}`, 'error');
+        throw e;
+    }
+}
+
+/**
+ * Growspace Actions - CRUD operations for growspace management.
+ */
+async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationService = 'mobile_app_notify') {
+    if (!name) {
+        ctx.ui.showToast('Name is required', 'error');
+        return false;
+    }
+    try {
+        await ctx.dataService.addGrowspace({
+            name,
+            rows,
+            plantsPerRow,
+            notificationService,
+        });
+        ctx.ui.showToast('Growspace added successfully!', 'success');
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Error: ${error}`, 'error');
+        return false;
+    }
+}
+async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
+    try {
+        const devices = ctx.data.$devices.get();
+        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
+        if (deviceIdx >= 0) {
+            const newDevices = [...devices];
+            newDevices[deviceIdx] = { ...newDevices[deviceIdx], name, rows, plantsPerRow };
+            ctx.data.$devices.set(newDevices);
+        }
+        await ctx.dataService.updateGrowspace({ growspaceId, name, rows, plantsPerRow });
+        await ctx.refreshData();
+        ctx.ui.showToast('Growspace updated successfully', 'success');
+        ctx.closeDialog();
+        return true;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Failed to update growspace: ${error}`, 'error');
+        return false;
+    }
+}
+async function removeGrowspace(ctx, growspaceId) {
+    try {
+        await ctx.dataService.removeGrowspace(growspaceId);
+        ctx.ui.showToast('Growspace removed successfully', 'success');
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Failed to remove growspace: ${error}`, 'error');
+        return false;
     }
 }
 

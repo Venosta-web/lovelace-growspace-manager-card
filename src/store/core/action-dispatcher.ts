@@ -6,6 +6,7 @@ import * as snapshotActions from '../plant/snapshot-actions';
 import * as reportActions from '../plant/report-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
+import * as growspaceActions from '../growspace/growspace-actions';
 import * as breederActions from '../plant/breeder-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as ipmActions from '../plant/ipm-actions';
@@ -128,7 +129,7 @@ export class ActionDispatcher {
       plantsPerRow: number;
       notificationService: string;
     }) =>
-      strainActions.addGrowspace(
+      growspaceActions.addGrowspace(
         this.ctx,
         detail.name,
         detail.rows,
@@ -141,14 +142,14 @@ export class ActionDispatcher {
       rows: number;
       plantsPerRow: number;
     }) =>
-      strainActions.updateGrowspace(
+      growspaceActions.updateGrowspace(
         this.ctx,
         detail.growspaceId,
         detail.name,
         detail.rows,
         detail.plantsPerRow
       ),
-    remove: (id: string) => strainActions.removeGrowspace(this.ctx, id),
+    remove: (id: string) => growspaceActions.removeGrowspace(this.ctx, id),
     removeEnvironment: (id: string) => this.ctx.dataService.removeEnvironment(id),
     resetWaterTracking: (id: string) => this.ctx.dataService.resetWaterTracking(id),
   };
@@ -328,9 +329,9 @@ export class ActionDispatcher {
     resetWaterTracking: (growspaceId: string) =>
       environmentActions.resetWaterTracking(this.ctx, growspaceId),
     waterPlant: (plantId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
-      plantActions.waterPlant(this.ctx, plantId, amount, nutrients, presetId),
+      environmentActions.waterPlant(this.ctx, plantId, amount, nutrients, presetId),
     waterGrowspace: (growspaceId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
-      plantActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
+      environmentActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
   };
 
   public readonly breeder = {

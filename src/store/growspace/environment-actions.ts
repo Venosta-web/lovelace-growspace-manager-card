@@ -6,6 +6,7 @@
  */
 
 import { ActionContext } from '../core/action-context';
+import * as libraryActions from '../plant/library-actions';
 
 type ConfigureEnvironmentData = Parameters<ActionContext['dataService']['configureEnvironment']>[0];
 
@@ -47,6 +48,46 @@ export async function resetWaterTracking(ctx: ActionContext, growspaceId: string
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     ctx.ui.showToast(`Failed to reset water tracking: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Water a single plant and refresh nutrient inventory if nutrients were applied */
+export async function waterPlant(
+  ctx: ActionContext,
+  plantId: string,
+  amount: number,
+  nutrients?: Record<string, number>,
+  presetId?: string
+): Promise<void> {
+  try {
+    await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
+    if (nutrients && Object.keys(nutrients).length > 0) {
+      await libraryActions.fetchNutrientInventory(ctx, true);
+    }
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.ui.showToast(`Failed to water plant: ${error}`, 'error');
+    throw e;
+  }
+}
+
+/** Water an entire growspace and refresh nutrient inventory if nutrients were applied */
+export async function waterGrowspace(
+  ctx: ActionContext,
+  growspaceId: string,
+  amount: number,
+  nutrients?: Record<string, number>,
+  presetId?: string
+): Promise<void> {
+  try {
+    await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
+    if (nutrients && Object.keys(nutrients).length > 0) {
+      await libraryActions.fetchNutrientInventory(ctx, true);
+    }
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.ui.showToast(`Failed to water growspace: ${error}`, 'error');
     throw e;
   }
 }

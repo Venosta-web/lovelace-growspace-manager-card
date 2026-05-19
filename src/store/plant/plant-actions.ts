@@ -624,54 +624,6 @@ export async function confirmAddPlants(ctx: ActionContext, detail: AddPlantsDial
 }
 
 /**
- * Water a single plant and refresh inventory.
- */
-export async function waterPlant(
-  ctx: ActionContext,
-  plantId: string,
-  amount: number,
-  nutrients?: Record<string, number>,
-  presetId?: string
-): Promise<void> {
-  try {
-    await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
-    // If nutrients were used, refresh the inventory
-    if (nutrients && Object.keys(nutrients).length > 0) {
-      await libraryActions.fetchNutrientInventory(ctx, true);
-    }
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    console.error('Failed to water plant:', e);
-    ctx.ui.showToast(`Failed to water plant: ${error}`, 'error');
-    throw e;
-  }
-}
-
-/**
- * Water a growspace and refresh inventory.
- */
-export async function waterGrowspace(
-  ctx: ActionContext,
-  growspaceId: string,
-  amount: number,
-  nutrients?: Record<string, number>,
-  presetId?: string
-): Promise<void> {
-  try {
-    await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
-    // If nutrients were used, refresh the inventory
-    if (nutrients && Object.keys(nutrients).length > 0) {
-      await libraryActions.fetchNutrientInventory(ctx, true);
-    }
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    console.error('Failed to water growspace:', e);
-    ctx.ui.showToast(`Failed to water growspace: ${error}`, 'error');
-    throw e;
-  }
-}
-
-/**
  * Print a label for a plant or strain.
  */
 export async function printLabel(

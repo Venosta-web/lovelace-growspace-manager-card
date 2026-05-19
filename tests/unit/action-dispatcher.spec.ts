@@ -9,6 +9,7 @@ import * as snapshotActions from '../../src/store/plant/snapshot-actions';
 import * as reportActions from '../../src/store/plant/report-actions';
 import * as aiActions from '../../src/store/system/ai-actions';
 import * as environmentActions from '../../src/store/growspace/environment-actions';
+import * as growspaceActions from '../../src/store/growspace/growspace-actions';
 import * as breederActions from '../../src/store/plant/breeder-actions';
 import * as geneticsActions from '../../src/store/plant/genetics-actions';
 import * as ipmActions from '../../src/store/plant/ipm-actions';
@@ -27,14 +28,9 @@ vi.mock('../../src/store/plant/plant-actions', () => ({
     saveHarvestMetrics: vi.fn(),
     scorePhenotype: vi.fn(),
     printLabel: vi.fn(),
-    waterPlant: vi.fn(),
-    waterGrowspace: vi.fn(),
 }));
 
 vi.mock('../../src/store/plant/strain-actions', () => ({
-    addGrowspace: vi.fn(),
-    updateGrowspace: vi.fn(),
-    removeGrowspace: vi.fn(),
     addStrain: vi.fn(),
     updateStrain: vi.fn(),
     removeStrain: vi.fn(),
@@ -104,6 +100,14 @@ vi.mock('../../src/store/growspace/environment-actions', () => ({
     configureEnvironment: vi.fn(),
     removeEnvironment: vi.fn(),
     resetWaterTracking: vi.fn(),
+    waterPlant: vi.fn(),
+    waterGrowspace: vi.fn(),
+}));
+
+vi.mock('../../src/store/growspace/growspace-actions', () => ({
+    addGrowspace: vi.fn(),
+    updateGrowspace: vi.fn(),
+    removeGrowspace: vi.fn(),
 }));
 
 vi.mock('../../src/store/plant/breeder-actions', () => ({
@@ -241,21 +245,21 @@ describe('ActionDispatcher', () => {
     });
 
     describe('Growspace Actions', () => {
-        it('should delegate add to strainActions', () => {
+        it('should delegate add to growspaceActions', () => {
             const detail = { name: 'New Tent', rows: 4, plantsPerRow: 2, notificationService: 'gs' };
             dispatcher.growspace.add(detail);
-            expect(strainActions.addGrowspace).toHaveBeenCalledWith(mockStore.context, 'New Tent', 4, 2, 'gs');
+            expect(growspaceActions.addGrowspace).toHaveBeenCalledWith(mockStore.context, 'New Tent', 4, 2, 'gs');
         });
 
-        it('should delegate update to strainActions', () => {
+        it('should delegate update to growspaceActions', () => {
             const detail = { growspaceId: 'gs1', name: 'Updated', rows: 4, plantsPerRow: 2 };
             dispatcher.growspace.update(detail);
-            expect(strainActions.updateGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1', 'Updated', 4, 2);
+            expect(growspaceActions.updateGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1', 'Updated', 4, 2);
         });
 
-        it('should delegate remove to strainActions', () => {
+        it('should delegate remove to growspaceActions', () => {
             dispatcher.growspace.remove('gs1');
-            expect(strainActions.removeGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1');
+            expect(growspaceActions.removeGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1');
         });
 
         it('should delegate removeEnvironment to dataService', () => {
@@ -601,15 +605,15 @@ describe('ActionDispatcher', () => {
             expect(environmentActions.resetWaterTracking).toHaveBeenCalledWith(mockStore.context, 'gs1');
         });
 
-        it('should delegate waterPlant to plantActions', () => {
+        it('should delegate waterPlant to environmentActions', () => {
             const nutrients = { CalMag: 2 };
             dispatcher.environment.waterPlant('p1', 500, nutrients, 'preset1');
-            expect(plantActions.waterPlant).toHaveBeenCalledWith(mockStore.context, 'p1', 500, nutrients, 'preset1');
+            expect(environmentActions.waterPlant).toHaveBeenCalledWith(mockStore.context, 'p1', 500, nutrients, 'preset1');
         });
 
-        it('should delegate waterGrowspace to plantActions', () => {
+        it('should delegate waterGrowspace to environmentActions', () => {
             dispatcher.environment.waterGrowspace('gs1', 1000);
-            expect(plantActions.waterGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1', 1000, undefined, undefined);
+            expect(environmentActions.waterGrowspace).toHaveBeenCalledWith(mockStore.context, 'gs1', 1000, undefined, undefined);
         });
     });
 

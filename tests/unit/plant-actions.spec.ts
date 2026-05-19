@@ -11,9 +11,8 @@ import {
     handlePlantDrop,
     confirmAddPlant,
     confirmAddPlants,
-    waterPlant,
-    waterGrowspace,
 } from '../../src/store/plant/plant-actions';
+import { waterPlant, waterGrowspace } from '../../src/store/growspace/environment-actions';
 import * as libraryActions from '../../src/store/plant/library-actions';
 import { OptimisticAction } from '../../src/store/system/optimistic-manager';
 
