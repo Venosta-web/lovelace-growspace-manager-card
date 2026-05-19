@@ -49718,12 +49718,12 @@ GrowspaceGridUI.styles = [
         justify-content: center;
         height: 100%;
         aspect-ratio: 1;
-        border: 1.5px dashed rgba(76, 175, 80, 0.3);
+        border: 1.5px dashed color-mix(in srgb, var(--primary-color, #4caf50) 30%, transparent);
         border-radius: var(--border-radius-lg, 16px);
-        color: rgba(76, 175, 80, 0.65);
+        color: color-mix(in srgb, var(--primary-color, #4caf50) 65%, transparent);
         cursor: pointer;
         transition: all 0.2s ease;
-        background: rgba(76, 175, 80, 0.04);
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 4%, transparent);
       }
 
       /* Skeleton Loading */
