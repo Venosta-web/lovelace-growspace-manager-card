@@ -112816,6 +112816,9 @@ function handleKeyboardNavigation(ctx, key) {
  */
 class SyncService {
     setCardConfig(config) {
+        if (config.default_growspace !== this._cardConfig?.default_growspace) {
+            this.uiStore.setDefaultApplied(false);
+        }
         this._cardConfig = config;
     }
     constructor(dataService, dataStore, uiStore, gridStore) {
@@ -112865,6 +112868,7 @@ class SyncService {
         }
         // Just re-calculate derived state (sync) because entities might have changed
         this.updateDevicesState();
+        this.uiStore.setIsLoading(false);
         this._lastHassRef = hass;
     }
     /**
@@ -112889,10 +112893,7 @@ class SyncService {
         }
         finally {
             this._isFetchingWS = false;
-            // Check if devices loaded or if a device is selected to turn off loading
-            if (this.dataStore.$devices.get().length === 0 || this.gridStore.$selectedDevice.get()) {
-                this.uiStore.setIsLoading(false);
-            }
+            this.uiStore.setIsLoading(false);
         }
     }
     /**
