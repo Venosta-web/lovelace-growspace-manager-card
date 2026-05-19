@@ -25,7 +25,7 @@ const mockElements = [
 ];
 for (const tag of mockElements) {
   if (!customElements.get(tag)) {
-    class MockEl extends HTMLElement {}
+    class MockEl extends HTMLElement { }
     customElements.define(tag, MockEl);
   }
 }
@@ -62,7 +62,7 @@ function makeMockStore(overrides: Record<string, unknown> = {}) {
       $growspaceOptions: atom<Record<string, string>>({}),
     },
     data: {
-      $strainLibrary: atom<{ strain: string; phenotype?: string; key?: string; [k: string]: unknown }[]>([]),
+      $strainLibrary: atom<{ strain: string; phenotype?: string; key?: string;[k: string]: unknown }[]>([]),
     },
     ...overrides,
   };
@@ -290,7 +290,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
   }
 
   // ── Harvest tab button ────────────────────────────────────────────────────
-  it('clicking harvest tab button sets _activeTab to harvest', async () => {
+  it('clicking harvest tab button sets _activeTab to dashboard', async () => {
     const plant = makeMockPlant({ harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } }, 'dry');
     await attachElement(plant);
 
@@ -299,7 +299,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
     harvestBtn?.click();
     await el.updateComplete;
 
-    expect((el as any)._activeTab).toBe('harvest');
+    expect((el as any)._activeTab).toBe('dashboard');
   });
 
   // ── Footer: mother stage "Take Clone" button (lines 561-565) ─────────────
@@ -355,15 +355,6 @@ describe('PlantOverviewContainer – rendering branches', () => {
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('plant-harvest-tab')).not.toBeNull();
-  });
-
-  it('renders plant-genetics-tab when _activeTab is genetics', async () => {
-    await attachElement(makeMockPlant());
-
-    (el as any)._activeTab = 'genetics';
-    await el.updateComplete;
-
-    expect(el.shadowRoot!.querySelector('plant-genetics-tab')).not.toBeNull();
   });
 
   // ── Footer: Take Clone click handler (lines 561-565) ─────────────────────

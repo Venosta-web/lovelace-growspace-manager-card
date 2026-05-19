@@ -9878,6 +9878,7 @@ const uiStyles = i$6 `
     width: 100%;
     padding: 24px 16px 8px;
     border: none;
+    background: transparent;
     color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
     font-family: 'Roboto', sans-serif;
@@ -19357,16 +19358,26 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
         this._addingDrainTime = undefined;
-        await addDrainTime(this.store.context, {
-            growspaceId: this.device.deviceId,
-            time: formattedTime,
-            duration: duration || this._drainDuration,
-        });
+        try {
+            await addDrainTime(this.store.context, {
+                growspaceId: this.device.deviceId,
+                time: formattedTime,
+                duration: duration || this._drainDuration,
+            });
+        }
+        catch (e) {
+            this.store.context.showToast('Failed to add drain time', 'error');
+        }
     }
     async _removeDrainTime(time) {
         if (!this.device?.deviceId || !this.store)
             return;
-        await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
+        try {
+            await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
+        }
+        catch (e) {
+            this.store.context.showToast('Failed to remove drain time', 'error');
+        }
     }
     _notifyDataChanged() {
         this.dispatchEvent(new CustomEvent('data-changed', { bubbles: true, composed: true }));
@@ -19468,14 +19479,24 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             return;
         const { originalTime } = this._editingIrrigationTime;
         this._editingIrrigationTime = undefined;
-        await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+        try {
+            await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+        }
+        catch (e) {
+            this.store.context.showToast('Failed to remove irrigation time', 'error');
+        }
     }
     async _deleteDrainTimeFromEdit() {
         if (!this._editingDrainTime || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = this._editingDrainTime;
         this._editingDrainTime = undefined;
-        await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+        try {
+            await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+        }
+        catch (e) {
+            this.store.context.showToast('Failed to remove drain time', 'error');
+        }
     }
     _close() {
         this._editingIrrigationTime = undefined;
@@ -47541,6 +47562,7 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
         const selectedCount = this.selectedPlants?.size || 0;
         return x `
       <div id="header-menu" popover="auto" class="menu-dropdown">
+        <div class="drag-handle"></div>
         ${this.isMobile ? x `
           <div class="menu-header">Growspace</div>
           <div class="menu-item" @click=${() => this._triggerAction('config')}>
@@ -47759,6 +47781,10 @@ GrowspaceHeaderActionsUI.styles = i$6 `
       margin: 4px 0;
     }
 
+    .drag-handle {
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .menu-dropdown:popover-open {
         inset: auto 0 0 0;
@@ -47766,6 +47792,9 @@ GrowspaceHeaderActionsUI.styles = i$6 `
         position-anchor: none;
         border-radius: 20px 20px 0 0;
         margin: 0;
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+        overflow-y: auto;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
       }
       @keyframes slide-up {
@@ -47775,6 +47804,18 @@ GrowspaceHeaderActionsUI.styles = i$6 `
         to {
           transform: translateY(0);
         }
+      }
+      .drag-handle {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 4px;
+      }
+      .drag-handle::before {
+        content: '';
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.3));
       }
     }
 

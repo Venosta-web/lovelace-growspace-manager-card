@@ -5,11 +5,12 @@ export default defineConfig({
     test: {
         browser: {
             enabled: true,
-            provider: playwright(),
+            provider: playwright({ contextOptions: { viewport: { width: 1280, height: 720 } } }),
             instances: [
                 { browser: 'chromium' },
             ],
             headless: true,
+            viewport: { width: 1280, height: 720 },
         },
         setupFiles: ['./tests/setup.ts'],
         include: [

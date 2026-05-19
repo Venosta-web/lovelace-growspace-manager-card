@@ -81,7 +81,7 @@ describe('GrowspaceTankCard', () => {
         element.store.data.$devices.set([]);
         await element.updateComplete;
 
-        const loader = element.shadowRoot?.querySelector('.loading-spinner');
+        const loader = element.shadowRoot?.querySelector('ha-circular-progress');
         expect(loader).toBeTruthy();
     });
 

@@ -205,6 +205,7 @@ export const uiStyles = css`
     width: 100%;
     padding: 24px 16px 8px;
     border: none;
+    background: transparent;
     color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
     font-family: 'Roboto', sans-serif;

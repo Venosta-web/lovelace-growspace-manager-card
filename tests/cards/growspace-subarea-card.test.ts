@@ -161,7 +161,7 @@ describe('GrowspaceSubareaCard', () => {
     test('renders loading state', async () => {
         (element as any)._loading = true;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('.loading-spinner')).not.toBeNull();
+        expect(element.shadowRoot?.querySelector('ha-circular-progress')).not.toBeNull();
     });
 
     test('renders error state when subarea not found', async () => {

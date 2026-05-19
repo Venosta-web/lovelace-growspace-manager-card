@@ -152,7 +152,7 @@ describe('GrowspaceGridCard', () => {
         element.store.ui.$focusedPlantIndex.set(-1);
         await element.updateComplete;
         
-        const loader = element.shadowRoot?.querySelector('.loading-spinner');
+        const loader = element.shadowRoot?.querySelector('ha-circular-progress');
         expect(loader).toBeTruthy();
     });
 

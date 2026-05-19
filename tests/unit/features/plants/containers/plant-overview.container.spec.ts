@@ -8,9 +8,9 @@ import type { PlantOverviewContainer } from '../../../../../src/features/plants/
 import type { PlantEntity } from '../../../../../src/types';
 
 // Mock dependencies
-vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({ default: class {} }));
-vi.mock('../../../../../src/features/plants/components/plant-actions-tab', () => ({ default: class {} }));
-vi.mock('../../../../../src/features/plants/components/plant-timeline-tab', () => ({ default: class {} }));
+vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({ default: class { } }));
+vi.mock('../../../../../src/features/plants/components/plant-actions-tab', () => ({ default: class { } }));
+vi.mock('../../../../../src/features/plants/components/plant-timeline-tab', () => ({ default: class { } }));
 
 describe('PlantOverviewContainer', () => {
   let element: PlantOverviewContainer;
@@ -49,7 +49,7 @@ describe('PlantOverviewContainer', () => {
       },
       updatePlantFromDialog: vi.fn(),
       data: {
-        $strainLibrary: { get: () => [], listen: () => () => {} },
+        $strainLibrary: { get: () => [], listen: () => () => { } },
       },
       grid: {
         $growspaceOptions: atom({}),
@@ -58,7 +58,7 @@ describe('PlantOverviewContainer', () => {
       plants: { get: () => [] },
       $state: {
         get: () => ({ plants: [mockPlant] }),
-        listen: () => () => {},
+        listen: () => () => { },
       }
     };
 
@@ -66,7 +66,7 @@ describe('PlantOverviewContainer', () => {
       callService: vi.fn(),
       callWS: vi.fn(),
       connection: {
-        subscribeEvents: vi.fn(() => Promise.resolve(() => {})),
+        subscribeEvents: vi.fn(() => Promise.resolve(() => { })),
       },
     };
 
@@ -75,7 +75,7 @@ describe('PlantOverviewContainer', () => {
     const Wrapper = class extends HTMLElement {
       private hassProvider = new ContextProvider(this, { context: hassContext, initialValue: mockHass });
       private storeProvider = new ContextProvider(this, { context: storeContext, initialValue: mockStore });
-      
+
       connectedCallback() {
         this.innerHTML = '<plant-overview-container></plant-overview-container>';
       }
@@ -90,7 +90,7 @@ describe('PlantOverviewContainer', () => {
     // Set properties
     element.plant = mockPlant;
     element.editedAttributes = {};
-    
+
     // Trigger update
     await element.updateComplete;
   });
@@ -110,16 +110,15 @@ describe('PlantOverviewContainer', () => {
 
     // Verify tabs are present
     const tabs = element.shadowRoot!.querySelectorAll('.tab-btn');
-    expect(tabs.length).toBe(4);
+    expect(tabs.length).toBe(3);
     expect(tabs[0].textContent).toContain('Overview');
     expect(tabs[1].textContent).toContain('Actions');
     expect(tabs[2].textContent).toContain('Timeline');
-    expect(tabs[3].textContent).toContain('Genetics');
   });
 
   it('should switch tabs', async () => {
     const tabs = element.shadowRoot!.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
-    
+
     // Default is explicit "dashboard"
     expect(tabs[0].classList.contains('active')).toBe(true);
     expect(element.shadowRoot!.querySelector('plant-dashboard-tab')).toBeTruthy();
@@ -128,14 +127,14 @@ describe('PlantOverviewContainer', () => {
     // Switch to Actions tab
     tabs[1].click();
     await element.updateComplete;
-    
+
     expect(tabs[1].classList.contains('active')).toBe(true);
     expect(element.shadowRoot!.querySelector('plant-actions-tab')).toBeTruthy();
 
     // Switch to Timeline tab
     tabs[2].click();
     await element.updateComplete;
-    
+
     expect(tabs[2].classList.contains('active')).toBe(true);
     expect(element.shadowRoot!.querySelector('plant-timeline-tab')).toBeTruthy();
   });
@@ -143,9 +142,9 @@ describe('PlantOverviewContainer', () => {
   it('should call closeDialog on Close button click', async () => {
     const closeBtn = element.shadowRoot!.querySelector('button[aria-label="Close"]') as HTMLButtonElement;
     expect(closeBtn).toBeTruthy();
-    
+
     closeBtn.click();
-    
+
     expect(mockStore.ui.closeDialog).toHaveBeenCalled();
   });
 
@@ -437,9 +436,9 @@ describe('PlantOverviewContainer', () => {
   it('should open Strain Editor from header button', async () => {
     const editStrainBtn = element.shadowRoot!.querySelector('button[title="Edit Strain Library Entry"]') as HTMLButtonElement;
     expect(editStrainBtn).toBeTruthy();
-    
+
     editStrainBtn.click();
-    
+
     expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
       type: 'STRAIN_LIBRARY',
       payload: {

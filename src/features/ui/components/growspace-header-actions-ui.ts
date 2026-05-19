@@ -266,6 +266,10 @@ export class GrowspaceHeaderActionsUI extends LitElement {
       margin: 4px 0;
     }
 
+    .drag-handle {
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .menu-dropdown:popover-open {
         inset: auto 0 0 0;
@@ -273,6 +277,9 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         position-anchor: none;
         border-radius: 20px 20px 0 0;
         margin: 0;
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px));
+        overflow-y: auto;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         animation: slide-up 0.3s cubic-bezier(0.1, 0.7, 0.1, 1);
       }
       @keyframes slide-up {
@@ -282,6 +289,18 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         to {
           transform: translateY(0);
         }
+      }
+      .drag-handle {
+        display: flex;
+        justify-content: center;
+        padding: 10px 0 4px;
+      }
+      .drag-handle::before {
+        content: '';
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.3));
       }
     }
 
@@ -372,6 +391,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     const selectedCount = this.selectedPlants?.size || 0;
     return html`
       <div id="header-menu" popover="auto" class="menu-dropdown">
+        <div class="drag-handle"></div>
         ${this.isMobile ? html`
           <div class="menu-header">Growspace</div>
           <div class="menu-item" @click=${() => this._triggerAction('config')}>

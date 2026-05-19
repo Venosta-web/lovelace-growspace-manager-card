@@ -806,7 +806,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should handle _removeDrainTime error and show toast', async () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Error'));
-            await expect((element as any)._removeDrainTime('09:00')).rejects.toThrow('Remove Error');
+            await (element as any)._removeDrainTime('09:00');
             expect((element as any).store.context.showToast).toHaveBeenCalledWith(
                 expect.any(String), 'error'
             );

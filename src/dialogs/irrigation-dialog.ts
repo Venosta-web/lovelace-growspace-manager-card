@@ -703,16 +703,24 @@ export class IrrigationDialog extends LitElement {
     if (!this.device?.deviceId || !this.store) return;
     const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
     this._addingDrainTime = undefined;
-    await addDrainTime(this.store.context, {
-      growspaceId: this.device.deviceId,
-      time: formattedTime,
-      duration: duration || this._drainDuration,
-    });
+    try {
+      await addDrainTime(this.store.context, {
+        growspaceId: this.device.deviceId,
+        time: formattedTime,
+        duration: duration || this._drainDuration,
+      });
+    } catch (e) {
+      this.store.context.showToast('Failed to add drain time', 'error');
+    }
   }
 
   private async _removeDrainTime(time: string) {
     if (!this.device?.deviceId || !this.store) return;
-    await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
+    try {
+      await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
+    } catch (e) {
+      this.store.context.showToast('Failed to remove drain time', 'error');
+    }
   }
 
   private _notifyDataChanged() {
@@ -831,14 +839,22 @@ export class IrrigationDialog extends LitElement {
     if (!this._editingIrrigationTime || !this.device?.deviceId || !this.store) return;
     const { originalTime } = this._editingIrrigationTime;
     this._editingIrrigationTime = undefined;
-    await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+    try {
+      await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+    } catch (e) {
+      this.store.context.showToast('Failed to remove irrigation time', 'error');
+    }
   }
 
   private async _deleteDrainTimeFromEdit() {
     if (!this._editingDrainTime || !this.device?.deviceId || !this.store) return;
     const { originalTime } = this._editingDrainTime;
     this._editingDrainTime = undefined;
-    await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+    try {
+      await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
+    } catch (e) {
+      this.store.context.showToast('Failed to remove drain time', 'error');
+    }
   }
 
   private _close() {

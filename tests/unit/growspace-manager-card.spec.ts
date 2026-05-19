@@ -353,7 +353,7 @@ describe('GrowspaceManagerCard', () => {
             atomMocks.$isLoading.set(true);
             document.body.appendChild(element);
             await element.updateComplete;
-            const spinner = element.shadowRoot?.querySelector('.loading-spinner');
+            const spinner = element.shadowRoot?.querySelector('ha-circular-progress');
             expect(spinner).toBeTruthy();
         });
 
