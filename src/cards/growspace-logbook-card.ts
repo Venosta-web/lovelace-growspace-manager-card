@@ -2,7 +2,7 @@ import { LitElement, html, css, CSSResultGroup, PropertyValues, TemplateResult }
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
-import { GrowspaceManagerCardConfig } from '../lib/types/config';
+import { GrowspaceLogbookCardConfig } from '../lib/types/config';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 import { StoreController } from '@nanostores/lit';
@@ -17,21 +17,17 @@ import '../features/shared/ui/error-boundary';
 
 @customElement('growspace-logbook-card')
 export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
+  @provide({ context: hassContext })
   @property({ attribute: false }) public hass!: HomeAssistant;
 
-  @state() private _config?: GrowspaceManagerCardConfig;
+  @provide({ context: configContext })
+  @state() private _config?: GrowspaceLogbookCardConfig;
   @state() private _activeTab: 'list' | 'timeline' = 'list';
 
   private _sharedStore = growspaceStoreRegistry.acquire();
 
   @provide({ context: storeContext })
   private _store = new GrowspaceStore(this._sharedStore);
-
-  @provide({ context: hassContext })
-  private _hassContext = this.hass;
-
-  @provide({ context: configContext })
-  private _configContext = this._config;
 
   private _viewController = new StoreController(this, this._store.$sharedCardViewState);
 
@@ -40,7 +36,7 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     return document.createElement('growspace-logbook-card-editor') as unknown as LovelaceCardEditor;
   }
 
-  public static getStubConfig(): Partial<GrowspaceManagerCardConfig> {
+  public static getStubConfig(): Partial<GrowspaceLogbookCardConfig> {
     return {
       type: 'custom:growspace-logbook-card',
       default_growspace: '',
@@ -48,14 +44,13 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
     };
   }
 
-  public setConfig(config: GrowspaceManagerCardConfig): void {
+  public setConfig(config: GrowspaceLogbookCardConfig): void {
     if (!config) {
       throw new Error('Invalid configuration');
     }
     this._config = config;
-    this._configContext = config;
     this._activeTab = config.default_view || 'list';
-    
+
     this._store.initializeSelectedDevice(config);
   }
 
@@ -68,13 +63,21 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass) {
-      this._hassContext = this.hass;
       this._store.updateHass(this.hass);
     }
   }
 
   public getCardSize(): number {
     return 5;
+  }
+
+  public getLayoutOptions() {
+    return {
+      grid_columns: 4,
+      grid_min_columns: 2,
+      grid_rows: 10,
+      grid_min_rows: 8,
+    };
   }
 
   private _handleTabClick(tab: 'list' | 'timeline'): void {
@@ -131,10 +134,10 @@ export class GrowspaceLogbookCard extends LitElement implements LovelaceCard {
             </div>
 
             <div class="tab-content">
-              ${this._activeTab === 'list' 
-                ? html`<growspace-logbook .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-logbook>`
-                : html`<growspace-timeline .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-timeline>`
-              }
+              ${this._activeTab === 'list'
+        ? html`<growspace-logbook .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-logbook>`
+        : html`<growspace-timeline .hass=${this.hass} .growspaceId=${selectedDevice}></growspace-timeline>`
+      }
             </div>
           </div>
         </ha-card>

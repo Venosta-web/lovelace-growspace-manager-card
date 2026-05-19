@@ -141,7 +141,7 @@ export class SyncService {
     if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
       const config = this._cardConfig;
       // Default to true if not defined
-      const autoSelect = config?.auto_select_growspace ?? true;
+      const autoSelect = true;
 
       if (this.uiStore.$defaultApplied.get()) return;
 

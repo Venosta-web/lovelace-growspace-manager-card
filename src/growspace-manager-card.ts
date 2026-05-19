@@ -7,7 +7,6 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
-import { ViewMode } from './features/environment/constants';
 
 import './growspace-env-chart';
 import './features/ui/containers/growspace-dialog-host.container';
@@ -165,8 +164,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   public static getStubConfig() {
     return {
-      default_growspace: '4x4',
-      compact: true,
+      default_growspace: '',
     };
   }
 
@@ -175,8 +173,6 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     this._config = config;
     if (this._config.initial_view_mode) {
       this.store.ui.setViewMode(this._config.initial_view_mode);
-    } else if (this._config.compact !== undefined && this._config.compact) {
-      this.store.ui.setViewMode(ViewMode.COMPACT);
     }
 
     // Initialize store config immediately to prevent race conditions with updateHass
@@ -185,6 +181,14 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   public getCardSize(): number {
     return 4;
+  }
+
+  public getLayoutOptions() {
+    return {
+      grid_columns: 12,
+      grid_min_columns: 6,
+      grid_min_rows: 4,
+    };
   }
 
   // Event handlers

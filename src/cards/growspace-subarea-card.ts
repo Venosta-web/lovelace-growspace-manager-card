@@ -53,7 +53,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     store = new GrowspaceStore(this._sharedStore);
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
-    private _resizeController = new ResizeController(this, () => {});
+    private _resizeController = new ResizeController(this, () => { });
 
     private _dataService: DataService | null = null;
     private _analyticsStateController: StoreController<any> | null = null;
@@ -386,9 +386,14 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         return 4;
     }
 
-    private _isMetricActive(metric: string): boolean {
-        return this._analyticsStateController?.value?.activeEnvGraphs?.has(metric) ?? false;
+    public getLayoutOptions() {
+        return {
+            grid_columns: 12,
+            grid_min_columns: 6,
+            grid_min_rows: 4,
+        };
     }
+
 
     private _toggleMetricGraph(metric: string): void {
         this.store?.toggleEnvGraph(metric);
@@ -498,8 +503,8 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                             ${this._renderHeaderMetrics(ec, parentDevice)}
 
                             ${parentDevice
-                                ? html`<growspace-analytics .device=${parentDevice} @set-range=${this._handleSubareaRangeChange}></growspace-analytics>`
-                                : ''}
+                ? html`<growspace-analytics .device=${parentDevice} @set-range=${this._handleSubareaRangeChange}></growspace-analytics>`
+                : ''}
                         </div>
                     </div>
                 </ha-card>

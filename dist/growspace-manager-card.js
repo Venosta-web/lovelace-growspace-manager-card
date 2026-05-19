@@ -49748,9 +49748,9 @@ GrowspaceGridUI.styles = [
       }
 
       .plant-card-empty:hover {
-        border-color: #4caf50;
-        color: #4caf50;
-        background: rgba(76, 175, 80, 0.08);
+        border-color: var(--primary-color, #4caf50);
+        color: var(--primary-color, #4caf50);
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 8%, transparent);
         transform: translateY(-2px);
       }
 
@@ -112932,8 +112932,6 @@ class SyncService {
         // Auto-select if needed
         if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
             const config = this._cardConfig;
-            // Default to true if not defined
-            const autoSelect = config?.auto_select_growspace ?? true;
             if (this.uiStore.$defaultApplied.get())
                 return;
             const defaultDevice = devices.find((d) => d.deviceId === config.default_growspace || d.name === config.default_growspace);
@@ -112943,7 +112941,7 @@ class SyncService {
                 return;
             }
             // Fallback to first device only if autoSelect is enabled
-            if (autoSelect) {
+            {
                 this.gridStore.setSelectedDevice(devices[0].deviceId);
             }
             this.uiStore.setDefaultApplied(true);
@@ -114123,8 +114121,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     static getStubConfig() {
         return {
-            default_growspace: '4x4',
-            compact: true,
+            default_growspace: '',
         };
     }
     setConfig(config) {
@@ -114134,14 +114131,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (this._config.initial_view_mode) {
             this.store.ui.setViewMode(this._config.initial_view_mode);
         }
-        else if (this._config.compact !== undefined && this._config.compact) {
-            this.store.ui.setViewMode(ViewMode.COMPACT);
-        }
         // Initialize store config immediately to prevent race conditions with updateHass
         this.store.initializeSelectedDevice(this._config);
     }
     getCardSize() {
         return 4;
+    }
+    getLayoutOptions() {
+        return {
+            grid_columns: 12,
+            grid_min_columns: 6,
+            grid_min_rows: 4,
+        };
     }
     // Event handlers
     _handleKeyboardNav(e) {
@@ -114363,6 +114364,13 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
     getCardSize() {
         return 3;
     }
+    getLayoutOptions() {
+        return {
+            grid_columns: 12,
+            grid_min_columns: 6,
+            grid_min_rows: 4,
+        };
+    }
     // Event handlers
     _handleKeyboardNav(e) {
         this.store.handleKeyboardNavigation(e.key);
@@ -114536,6 +114544,14 @@ let GrowspaceAnalyticsCard = class GrowspaceAnalyticsCard extends i$3 {
     getCardSize() {
         return 4;
     }
+    getLayoutOptions() {
+        return {
+            grid_columns: 8,
+            grid_min_columns: 4,
+            grid_rows: 5,
+            grid_min_rows: 4,
+        };
+    }
     render() {
         if (!this.hass) {
             return x `<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -114665,6 +114681,14 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     }
     getCardSize() {
         return 4;
+    }
+    getLayoutOptions() {
+        return {
+            grid_columns: 4,
+            grid_min_columns: 2,
+            grid_rows: 6,
+            grid_min_rows: 5,
+        };
     }
     _extractText(res) {
         if (typeof res === 'string')
@@ -114975,6 +114999,14 @@ let GrowspaceTankCard = class GrowspaceTankCard extends i$3 {
     }
     getCardSize() {
         return 3;
+    }
+    getLayoutOptions() {
+        return {
+            grid_columns: 4,
+            grid_min_columns: 2,
+            grid_rows: 6,
+            grid_min_rows: 5,
+        };
     }
     render() {
         if (!this.hass) {
@@ -115654,8 +115686,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     getCardSize() {
         return 4;
     }
-    _isMetricActive(metric) {
-        return this._analyticsStateController?.value?.activeEnvGraphs?.has(metric) ?? false;
+    getLayoutOptions() {
+        return {
+            grid_columns: 12,
+            grid_min_columns: 6,
+            grid_min_rows: 4,
+        };
     }
     _toggleMetricGraph(metric) {
         this.store?.toggleEnvGraph(metric);
@@ -116001,8 +116037,6 @@ let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
         this._activeTab = 'list';
         this._sharedStore = growspaceStoreRegistry.acquire();
         this._store = new GrowspaceStore(this._sharedStore);
-        this._hassContext = this.hass;
-        this._configContext = this._config;
         this._viewController = new libExports.StoreController(this, this._store.$sharedCardViewState);
     }
     static async getConfigElement() {
@@ -116021,7 +116055,6 @@ let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
             throw new Error('Invalid configuration');
         }
         this._config = config;
-        this._configContext = config;
         this._activeTab = config.default_view || 'list';
         this._store.initializeSelectedDevice(config);
     }
@@ -116033,12 +116066,19 @@ let GrowspaceLogbookCard = class GrowspaceLogbookCard extends i$3 {
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass') && this.hass) {
-            this._hassContext = this.hass;
             this._store.updateHass(this.hass);
         }
     }
     getCardSize() {
         return 5;
+    }
+    getLayoutOptions() {
+        return {
+            grid_columns: 4,
+            grid_min_columns: 2,
+            grid_rows: 10,
+            grid_min_rows: 8,
+        };
     }
     _handleTabClick(tab) {
         this._activeTab = tab;
@@ -116184,9 +116224,11 @@ GrowspaceLogbookCard.styles = [
     `
 ];
 __decorate([
+    e$3({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceLogbookCard.prototype, "hass", void 0);
 __decorate([
+    e$3({ context: configContext }),
     r$3()
 ], GrowspaceLogbookCard.prototype, "_config", void 0);
 __decorate([
@@ -116195,12 +116237,6 @@ __decorate([
 __decorate([
     e$3({ context: storeContext })
 ], GrowspaceLogbookCard.prototype, "_store", void 0);
-__decorate([
-    e$3({ context: hassContext })
-], GrowspaceLogbookCard.prototype, "_hassContext", void 0);
-__decorate([
-    e$3({ context: configContext })
-], GrowspaceLogbookCard.prototype, "_configContext", void 0);
 GrowspaceLogbookCard = __decorate([
     t$2('growspace-logbook-card')
 ], GrowspaceLogbookCard);
@@ -116222,6 +116258,13 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
     }
     getCardSize() {
         return 4;
+    }
+    getLayoutOptions() {
+        return {
+            grid_columns: 4,
+            grid_min_columns: 2,
+            grid_min_rows: 4,
+        };
     }
     static async getConfigElement() {
         await Promise.resolve().then(function () { return growspaceCarouselCardEditor; });
@@ -117494,18 +117537,6 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
                         options: [
                             { label: l('editor.select_growspace'), value: '' },
                             ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
-                        ],
-                    },
-                },
-            },
-            {
-                name: 'theme',
-                selector: {
-                    select: {
-                        options: [
-                            { label: l('editor.theme_default'), value: 'default' },
-                            { label: l('editor.theme_dark'), value: 'dark' },
-                            { label: l('editor.theme_green'), value: 'green' },
                         ],
                     },
                 },

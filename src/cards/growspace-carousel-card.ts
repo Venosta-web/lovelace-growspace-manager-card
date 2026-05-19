@@ -9,7 +9,7 @@ import type { GrowspaceManagerCard } from '../growspace-manager-card';
 export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: GrowspaceCarouselCardConfig;
-  
+
   @query('.carousel-wrapper') private _wrapper!: HTMLElement;
   @query('growspace-manager-card') private _managerCard!: GrowspaceManagerCard;
 
@@ -21,7 +21,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     if (!config.growspaces || config.growspaces.length === 0) {
       throw new Error("You need to define at least one growspace");
     }
-    
+
     this._config = {
       interval: 15,
       ...config
@@ -30,6 +30,14 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
 
   public getCardSize(): number {
     return 4;
+  }
+
+  public getLayoutOptions() {
+    return {
+      grid_columns: 4,
+      grid_min_columns: 2,
+      grid_min_rows: 4,
+    };
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -79,37 +87,37 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
 
   private async _nextSlide() {
     if (!this._config || !this._config.growspaces || this._config.growspaces.length <= 1 || this._isAnimating) return;
-    
+
     this._isAnimating = true;
-    
+
     // Slide out to the left
     this._wrapper.classList.add('slide-out');
-    
+
     // Wait for slide out animation (matches CSS transition duration)
     await new Promise(resolve => setTimeout(resolve, 300));
-    
+
     // Update active growspace index
     this._currentIndex = (this._currentIndex + 1) % this._config.growspaces.length;
     const nextDeviceId = this._config.growspaces[this._currentIndex];
-    
+
     // Instruct the inner manager card to switch context
     if (this._managerCard && this._managerCard.store) {
       this._managerCard.store.handleDeviceChange(nextDeviceId);
     }
-    
+
     // Jump to the right side seamlessly (prepare for slide in)
     this._wrapper.classList.remove('slide-out');
     this._wrapper.classList.add('slide-in-prepare');
-    
+
     // eslint-disable-next-line no-void
     void this._wrapper.offsetWidth;
-    
+
     // Slide in from the right
     this._wrapper.classList.remove('slide-in-prepare');
-    
+
     // Wait for slide in animation
     await new Promise(resolve => setTimeout(resolve, 300));
-    
+
     this._isAnimating = false;
   }
 
@@ -120,7 +128,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
 
     // Use current growspace as default for the inner card config
     const currentDeviceId = this._config.growspaces[this._currentIndex];
-    
+
     const managerConfig = {
       type: 'custom:growspace-manager-card',
       default_growspace: currentDeviceId,

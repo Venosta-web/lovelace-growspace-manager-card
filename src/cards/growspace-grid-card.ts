@@ -25,31 +25,31 @@ import { StoreController } from '@nanostores/lit';
 
 @customElement('growspace-grid-card')
 export class GrowspaceGridCard extends LitElement implements LovelaceCard {
-    private _sharedStore = growspaceStoreRegistry.acquire();
+  private _sharedStore = growspaceStoreRegistry.acquire();
 
-    @provide({ context: storeContext })
-    store = new GrowspaceStore(this._sharedStore);
+  @provide({ context: storeContext })
+  store = new GrowspaceStore(this._sharedStore);
 
-    protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
 
-    get selectedDevice() {
-        return this._viewController.value.grid.selectedDevice;
-    }
+  get selectedDevice() {
+    return this._viewController.value.grid.selectedDevice;
+  }
 
-    @provide({ context: hassContext })
-    @property({ attribute: false })
-    hass!: HomeAssistant;
+  @provide({ context: hassContext })
+  @property({ attribute: false })
+  hass!: HomeAssistant;
 
-    @provide({ context: configContext })
-    @property({ attribute: false })
-    _config!: GrowspaceManagerCardConfig;
+  @provide({ context: configContext })
+  @property({ attribute: false })
+  _config!: GrowspaceManagerCardConfig;
 
-    static styles: CSSResultGroup = [
-        variables,
-        sharedStyles,
-        uiStyles,
-        growspaceCardStyles,
-        css`
+  static styles: CSSResultGroup = [
+    variables,
+    sharedStyles,
+    uiStyles,
+    growspaceCardStyles,
+    css`
       ha-card {
         padding: 0;
         background: transparent;
@@ -61,116 +61,124 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
         margin: 0;
       }
     `
-    ];
+  ];
 
-    protected firstUpdated() {
-        if (this.hass) {
-            this.store.updateHass(this.hass);
-        }
-        const forcedConfig = {
-            ...this._config,
-            compact: true,
-            initial_view_mode: ViewMode.STANDARD as unknown as string
-        };
-        this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
-        this.store.ui.setViewMode(ViewMode.STANDARD);
+  protected firstUpdated() {
+    if (this.hass) {
+      this.store.updateHass(this.hass);
+    }
+    const forcedConfig = {
+      ...this._config,
+      compact: true,
+      initial_view_mode: ViewMode.STANDARD as unknown as string
+    };
+    this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
+    this.store.ui.setViewMode(ViewMode.STANDARD);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this.store.destroy();
+    growspaceStoreRegistry.release();
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    super.updated(changedProps);
+
+    if (changedProps.has('hass') && this.hass) {
+      this.store.updateHass(this.hass);
+    }
+  }
+
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import('./editors/growspace-grid-card-editor.js');
+    return document.createElement('growspace-grid-card-editor') as unknown as LovelaceCardEditor;
+  }
+
+  public static getStubConfig() {
+    return {
+      type: 'custom:growspace-grid-card',
+      default_growspace: '',
+    };
+  }
+
+  public setConfig(config: GrowspaceManagerCardConfig): void {
+    if (!config) throw new Error('Invalid configuration');
+    this._config = config;
+
+    // Force configuration overrides for the dedicated grid card
+    const forcedConfig = {
+      ...this._config,
+      compact: true,
+      initial_view_mode: ViewMode.STANDARD as unknown as string
+    };
+    this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
+    this.store.ui.setViewMode(ViewMode.STANDARD);
+  }
+
+  public getCardSize(): number {
+    return 3;
+  }
+
+  public getLayoutOptions() {
+    return {
+      grid_columns: 12,
+      grid_min_columns: 6,
+      grid_min_rows: 4,
+    };
+  }
+
+  // Event handlers
+  private _handleKeyboardNav(e: KeyboardEvent) {
+    this.store.handleKeyboardNavigation(e.key);
+  }
+
+  private _handleSelectAll = () => this.store.selectAllPlants();
+  private _handleClearSelection = () => this.store.clearPlantSelection();
+  private _handleWaterSelected = () => this.store.openBatchWateringDialog();
+  private _handleExitEditMode = () => this.store.ui.setEditMode(false);
+  private _handleIPMSelected = () => this.store.openIPMDialog();
+  private _handleTrainingSelected = () => this.store.openBatchTrainingDialog();
+  private _handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+  private _handleDeleteSelected = () => this.store.deleteSelectedPlants();
+  private _handleTransplantMode = () => this.store.ui.toggleTransplantMode();
+
+  // We ignore growspace changes and view mode changes as this card is dedicated 
+  // to a specific view. Growspace changes are handled contextually if needed.
+  private _handleGrowspaceChanged(e: CustomEvent) {
+    this.store.handleDeviceChange(e.detail);
+  }
+
+  protected render(): TemplateResult {
+    if (!this.hass) {
+      return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.store.destroy();
-        growspaceStoreRegistry.release();
-    }
+    const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+    const { effectiveRows, grid } = gridLayout;
 
-    protected updated(changedProps: PropertyValues): void {
-        super.updated(changedProps);
-
-        if (changedProps.has('hass') && this.hass) {
-            this.store.updateHass(this.hass);
-        }
-    }
-
-    public static async getConfigElement(): Promise<LovelaceCardEditor> {
-        await import('./editors/growspace-grid-card-editor.js');
-        return document.createElement('growspace-grid-card-editor') as unknown as LovelaceCardEditor;
-    }
-
-    public static getStubConfig() {
-        return {
-            type: 'custom:growspace-grid-card',
-            default_growspace: '',
-        };
-    }
-
-    public setConfig(config: GrowspaceManagerCardConfig): void {
-        if (!config) throw new Error('Invalid configuration');
-        this._config = config;
-
-        // Force configuration overrides for the dedicated grid card
-        const forcedConfig = {
-            ...this._config,
-            compact: true,
-            initial_view_mode: ViewMode.STANDARD as unknown as string
-        };
-        this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
-        this.store.ui.setViewMode(ViewMode.STANDARD);
-    }
-
-    public getCardSize(): number {
-        return 3;
-    }
-
-    // Event handlers
-    private _handleKeyboardNav(e: KeyboardEvent) {
-        this.store.handleKeyboardNavigation(e.key);
-    }
-
-    private _handleSelectAll = () => this.store.selectAllPlants();
-    private _handleClearSelection = () => this.store.clearPlantSelection();
-    private _handleWaterSelected = () => this.store.openBatchWateringDialog();
-    private _handleExitEditMode = () => this.store.ui.setEditMode(false);
-    private _handleIPMSelected = () => this.store.openIPMDialog();
-    private _handleTrainingSelected = () => this.store.openBatchTrainingDialog();
-    private _handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
-    private _handleDeleteSelected = () => this.store.deleteSelectedPlants();
-    private _handleTransplantMode = () => this.store.ui.toggleTransplantMode();
-
-    // We ignore growspace changes and view mode changes as this card is dedicated 
-    // to a specific view. Growspace changes are handled contextually if needed.
-    private _handleGrowspaceChanged(e: CustomEvent) {
-        this.store.handleDeviceChange(e.detail);
-    }
-
-    protected render(): TemplateResult {
-        if (!this.hass) {
-            return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
-        }
-
-        const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
-        const { effectiveRows, grid } = gridLayout;
-
-        if (this._viewController.value.ui.isLoading) {
-            return html`
+    if (this._viewController.value.ui.isLoading) {
+      return html`
         <ha-card>
           <div class="loading-container">
             <ha-circular-progress active></ha-circular-progress>
           </div>
         </ha-card>
       `;
-        }
+    }
 
-        if (!devices.length) {
-            return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
-        }
+    if (!devices.length) {
+      return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
+    }
 
-        const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
-        if (!selectedDeviceData) {
-            return html`<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
-        }
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
+    if (!selectedDeviceData) {
+      return html`<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
+    }
 
-        const isWide = selectedDeviceData.plantsPerRow > 7;
+    const isWide = selectedDeviceData.plantsPerRow > 7;
 
-        return html`
+    return html`
       <error-boundary
         .fallbackMessage=${'Failed to load Growspace Grid'}
         .onError=${this._handleError}
@@ -215,16 +223,16 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
         <growspace-dialog-host .devices=${devices}></growspace-dialog-host>
       </error-boundary>
     `;
-    }
+  }
 
-    private _handleError = (error: Error, errorInfo: unknown) => {
-        console.error('Growspace Grid Card caught error:', error, errorInfo);
-        if (this.hass) {
-            this.hass.callService('system_log', 'write', {
-                message: `Growspace Grid Card Error: ${error.message}`,
-                level: 'error',
-                logger: 'lovelace_growspace_manager_card',
-            });
-        }
-    };
+  private _handleError = (error: Error, errorInfo: unknown) => {
+    console.error('Growspace Grid Card caught error:', error, errorInfo);
+    if (this.hass) {
+      this.hass.callService('system_log', 'write', {
+        message: `Growspace Grid Card Error: ${error.message}`,
+        level: 'error',
+        logger: 'lovelace_growspace_manager_card',
+      });
+    }
+  };
 }

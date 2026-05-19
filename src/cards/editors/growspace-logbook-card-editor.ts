@@ -1,7 +1,7 @@
 import { LitElement, html, css, CSSResultGroup, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
-import type { GrowspaceManagerCardConfig } from '../../lib/types/config';
+import type { GrowspaceLogbookCardConfig } from '../../lib/types/config';
 import { GrowspaceOptionsController } from '../../controllers/growspace-options-controller';
 import { computeEditorLabel } from '../../lib/editor-utils';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -9,11 +9,11 @@ import { sharedStyles } from '../../styles/shared.styles';
 @customElement('growspace-logbook-card-editor')
 export class GrowspaceLogbookCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) private _config!: GrowspaceManagerCardConfig;
+  @property({ attribute: false }) private _config!: GrowspaceLogbookCardConfig;
 
   private _gsController = new GrowspaceOptionsController(this);
 
-  public setConfig(config: GrowspaceManagerCardConfig): void {
+  public setConfig(config: GrowspaceLogbookCardConfig): void {
     this._config = config;
   }
 

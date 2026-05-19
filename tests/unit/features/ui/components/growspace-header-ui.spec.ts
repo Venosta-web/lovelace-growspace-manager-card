@@ -96,7 +96,6 @@ describe('growspace-header-ui', () => {
   });
 
   it('handles mobile link toggling and inventory nutrients opening', async () => {
-    const mobileLinkHandler = vi.fn(); // Note: _handleToggleMobileLink is private and doesn't emit, but we can check state
     const nutrientsHandler = vi.fn();
     const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
     const el = await fixture<GrowspaceHeaderUI>(html`
@@ -251,6 +250,10 @@ describe('growspace-header-ui', () => {
     
     // Simulate window resize which should trigger the controller's callback
     window.dispatchEvent(new Event('resize'));
+    
+    // Explicitly call the empty callback in resize controller to cover it 100%
+    (el as any)._resizeController._callback?.();
+    
     // Since the callback is () => {}, we just verify it doesn't crash
     expect(el).toBeDefined();
   });
@@ -264,4 +267,135 @@ describe('growspace-header-ui', () => {
     const sizer = el.shadowRoot!.querySelector('.select-sizer');
     expect(sizer!.textContent).toBe('Select Growspace');
   });
+
+  it('renders mobile stage context with various dominant stage and plant count combinations', async () => {
+    const deviceOnePlant = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }] } as any;
+    const deviceTwoPlants = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }, { id: 'p2' }] } as any;
+    const dominantStage = { color: '#00ff00', daysLabel: 'Veg Day 5' } as any;
+
+    const el1 = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${deviceOnePlant}
+        .dominant=${undefined}
+      ></growspace-header-ui>
+    `);
+    const ctx1 = el1.shadowRoot!.querySelector('.mobile-stage-context');
+    expect(ctx1).not.toBeNull();
+    expect(ctx1!.textContent).toContain('1 plant');
+    expect(ctx1!.textContent).not.toContain('Veg Day 5');
+    expect(ctx1!.querySelector('.mobile-stage-dot')).toBeNull();
+
+    const el2 = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${deviceTwoPlants}
+        .dominant=${dominantStage}
+      ></growspace-header-ui>
+    `);
+    const ctx2 = el2.shadowRoot!.querySelector('.mobile-stage-context');
+    expect(ctx2).not.toBeNull();
+    expect(ctx2!.textContent).toContain('2 plants');
+    expect(ctx2!.textContent).toContain('Veg Day 5');
+    expect(ctx2!.querySelector('.mobile-stage-dot')).not.toBeNull();
+    expect(ctx2!.textContent).toContain('·');
+
+    const el3 = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${{ deviceId: 'gs1', name: 'Tent 1', plants: [] }}
+        .dominant=${dominantStage}
+      ></growspace-header-ui>
+    `);
+    const ctx3 = el3.shadowRoot!.querySelector('.mobile-stage-context');
+    expect(ctx3).not.toBeNull();
+    expect(ctx3!.textContent).toContain('Veg Day 5');
+    expect(ctx3!.textContent).not.toContain('plant');
+  });
+
+  it('renders meta row with various plant counts, dominant stages, and problem plant combinations', async () => {
+    const deviceOnePlant = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }] } as any;
+    const deviceTwoPlants = { deviceId: 'gs1', name: 'Tent 1', plants: [{ id: 'p1' }, { id: 'p2' }] } as any;
+    const dominantStage = { color: '#00ff00', daysLabel: 'Veg Day 5' } as any;
+
+    const el1 = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${deviceOnePlant}
+        .dominant=${undefined}
+        .problemPlants=${['p1']}
+      ></growspace-header-ui>
+    `);
+    const meta1 = el1.shadowRoot!.querySelector('.header-meta-row');
+    expect(meta1).not.toBeNull();
+    expect(meta1!.textContent).toContain('1plant');
+    expect(meta1!.textContent).toContain('1needs attention');
+
+    const el2 = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${deviceTwoPlants}
+        .dominant=${dominantStage}
+        .problemPlants=${['p1', 'p2']}
+      ></growspace-header-ui>
+    `);
+    const meta2 = el2.shadowRoot!.querySelector('.header-meta-row');
+    expect(meta2).not.toBeNull();
+    expect(meta2!.textContent).toContain('2plants');
+    expect(meta2!.textContent).toContain('Veg Day 5');
+    expect(meta2!.textContent).toContain('2need attention');
+
+    const el3 = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${{ deviceId: 'gs1', name: 'Tent 1', plants: [] }}
+        .dominant=${dominantStage}
+        .problemPlants=${[]}
+      ></growspace-header-ui>
+    `);
+    const meta3 = el3.shadowRoot!.querySelector('.header-meta-row');
+    expect(meta3).not.toBeNull();
+    expect(meta3!.textContent).toContain('Veg Day 5');
+    expect(meta3!.textContent).not.toContain('plant');
+    expect(meta3!.textContent).not.toContain('attention');
+  });
+
+
+  it('renders secondary mobile stat deck and handles forwarded events', async () => {
+    const toggleHandler = vi.fn();
+    const dragHandler = vi.fn();
+    const dropHandler = vi.fn();
+
+    const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
+    const secondaryChips = [{ id: 'vpd', label: 'VPD', value: '1.2' }] as any;
+
+    const el = await fixture<GrowspaceHeaderUI>(html`
+      <growspace-header-ui
+        .device=${device}
+        .secondaryChips=${secondaryChips}
+        @toggle-graph=${toggleHandler}
+        @chip-drag-start=${dragHandler}
+        @chip-drop=${dropHandler}
+      ></growspace-header-ui>
+    `);
+
+    (el as any)._resizeController.isMobile = true;
+    el.requestUpdate();
+    await el.updateComplete;
+
+    const heroComponents = el.shadowRoot!.querySelectorAll('growspace-header-hero-ui');
+    expect(heroComponents.length).toBe(2);
+
+    const mobileHero = heroComponents[1];
+
+    mobileHero.dispatchEvent(new CustomEvent('toggle-graph', { detail: { metric: 'vpd' } }));
+    expect(toggleHandler).toHaveBeenCalledWith(expect.objectContaining({
+      detail: { metric: 'vpd' }
+    }));
+
+    mobileHero.dispatchEvent(new CustomEvent('chip-drag-start', { detail: { metric: 'vpd' } }));
+    expect(dragHandler).toHaveBeenCalledWith(expect.objectContaining({
+      detail: { metric: 'vpd', event: null }
+    }));
+
+    mobileHero.dispatchEvent(new CustomEvent('chip-drop', { detail: { targetMetric: 'co2' } }));
+    expect(dropHandler).toHaveBeenCalledWith(expect.objectContaining({
+      detail: { targetMetric: 'co2', event: null }
+    }));
+  });
 });
+

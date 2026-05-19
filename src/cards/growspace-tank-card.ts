@@ -405,6 +405,15 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
         return 3;
     }
 
+    public getLayoutOptions() {
+        return {
+            grid_columns: 4,
+            grid_min_columns: 2,
+            grid_rows: 6,
+            grid_min_rows: 5,
+        };
+    }
+
     protected render(): TemplateResult {
         if (!this.hass) {
             return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
@@ -454,14 +463,14 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                                 ${device.name} — Tanks
                             </span>
                             ${warningTanks.length > 0
-                                ? html`<span class="warning-badge">⚠ ${warningTanks.length} low</span>`
-                                : avgLevel !== null
-                                  ? html`<span class="avg-badge">Avg ${avgLevel.toFixed(0)}%</span>`
-                                  : nothing}
+                ? html`<span class="warning-badge">⚠ ${warningTanks.length} low</span>`
+                : avgLevel !== null
+                    ? html`<span class="avg-badge">Avg ${avgLevel.toFixed(0)}%</span>`
+                    : nothing}
                         </div>
 
                         ${tanks.length === 0
-                            ? html`
+                ? html`
                                   <div class="empty-state">
                                       No irrigation tanks configured for this growspace.<br />
                                       <span style="font-size: 0.82rem; opacity: 0.7;"
@@ -469,7 +478,7 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                                       >
                                   </div>
                               `
-                            : html`
+                : html`
                                   <div class="tanks-grid">
                                       ${tanks.map((tank) => this._renderTank(tank))}
                                   </div>
@@ -488,17 +497,17 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
             tank.depletionStatus === 'depleting'
                 ? '↓ Depleting'
                 : tank.depletionStatus === 'refilling'
-                  ? '↑ Refilling'
-                  : tank.depletionStatus === 'static'
-                    ? '— Stable'
-                    : null;
+                    ? '↑ Refilling'
+                    : tank.depletionStatus === 'static'
+                        ? '— Stable'
+                        : null;
 
         const depletionClass =
             tank.depletionStatus === 'depleting'
                 ? 'depleting'
                 : tank.depletionStatus === 'refilling'
-                  ? 'refilling'
-                  : '';
+                    ? 'refilling'
+                    : '';
 
         const timeLeft =
             tank.hoursRemaining != null
@@ -536,8 +545,8 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                             </div>
                             <div class="percentage-text">
                                 ${tank.fillLevel !== null && tank.fillLevel !== undefined
-                                    ? `${fillLevel.toFixed(0)}%`
-                                    : 'N/A'}
+                ? `${fillLevel.toFixed(0)}%`
+                : 'N/A'}
                                 ${isWarning ? html`<span class="warning-icon">⚠️</span>` : nothing}
                             </div>
                         </div>
@@ -547,8 +556,8 @@ export class GrowspaceTankCard extends LitElement implements LovelaceCard {
                 <div class="tank-footer">
                     Warning: ${tank.warningLevel}%
                     ${depletionLabel
-                        ? html`<br /><span class="depletion-label ${depletionClass}">${depletionLabel}</span>`
-                        : nothing}
+                ? html`<br /><span class="depletion-label ${depletionClass}">${depletionLabel}</span>`
+                : nothing}
                 </div>
             </div>
         `;

@@ -40,18 +40,6 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
         },
       },
       {
-        name: 'theme',
-        selector: {
-          select: {
-            options: [
-              { label: l('editor.theme_default'), value: 'default' },
-              { label: l('editor.theme_dark'), value: 'dark' },
-              { label: l('editor.theme_green'), value: 'green' },
-            ],
-          },
-        },
-      },
-      {
         name: 'initial_view_mode',
         selector: {
           select: {

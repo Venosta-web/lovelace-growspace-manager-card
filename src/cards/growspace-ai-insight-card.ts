@@ -29,7 +29,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   store = new GrowspaceStore(this._sharedStore);
 
   protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
-  
+
   get selectedDevice() {
     return this._viewController.value.grid.selectedDevice;
   }
@@ -187,6 +187,15 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
 
   public getCardSize(): number {
     return 4;
+  }
+
+  public getLayoutOptions() {
+    return {
+      grid_columns: 4,
+      grid_min_columns: 2,
+      grid_rows: 6,
+      grid_min_rows: 5,
+    };
   }
 
   private _extractText(res: GrowAdviceResponse | string): string {

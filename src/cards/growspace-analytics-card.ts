@@ -110,6 +110,15 @@ export class GrowspaceAnalyticsCard extends LitElement implements LovelaceCard {
         return 4;
     }
 
+    public getLayoutOptions() {
+        return {
+            grid_columns: 8,
+            grid_min_columns: 4,
+            grid_rows: 5,
+            grid_min_rows: 4,
+        };
+    }
+
     protected render(): TemplateResult {
         if (!this.hass) {
             return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
