@@ -21,12 +21,6 @@ export class GrowReportDialog extends LitElement {
   static styles = [
     sharedStyles,
     css`
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .content {
         display: flex;
         flex-direction: column;

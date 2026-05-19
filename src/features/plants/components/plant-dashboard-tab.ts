@@ -31,8 +31,8 @@ export class PlantDashboardTab extends LitElement {
       }
 
       .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        display: flex;
+        flex-direction: column;
         gap: 16px;
       }
     `,

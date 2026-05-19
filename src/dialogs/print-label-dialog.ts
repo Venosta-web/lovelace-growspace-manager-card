@@ -28,12 +28,6 @@ export class PrintLabelDialog extends LitElement {
     static styles = [
         dialogStyles,
         css`
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .preview-container {
         background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
         border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));

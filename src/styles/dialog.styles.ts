@@ -6,27 +6,29 @@ export const dialogStyles = [
   sharedStyles,
   uiStyles,
   css`
-    .glass-dialog-container {
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-      /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
-    }
-
     ha-dialog {
       --dialog-surface-margin-top: 40px !important;
+      --ha-dialog-width-md: 95vw !important;
       --ha-dialog-max-width: 98vw !important;
       --ha-dialog-width-full: 98vw !important;
       --ha-dialog-min-height: 85vh !important;
       --dialog-surface-width: 98vw !important;
       --dialog-surface-max-width: 98vw !important;
-      --dialog-content-width: 98vw !important;
       --width: 98vw !important;
       --dialog-content-padding: 0 !important;
     }
+
+    @media (min-width: 601px) {
+      ha-dialog {
+        --ha-dialog-max-width: 75vw !important;
+        --dialog-surface-max-width: 75vw !important;
+        --dialog-surface-width: 75vw !important;
+        --width: 75vw !important;
+      }
+    }
+
     .glass-dialog-container {
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       width: 100%;
@@ -35,8 +37,8 @@ export const dialogStyles = [
       max-height: 85vh;
       overflow: hidden;
       position: relative;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif;
     }
 
     .dialog-header {

@@ -22,10 +22,6 @@ export class StrainRecommendationDialog extends LitElement {
     css`
       :host {
         display: block;
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
       }
       .content-padding {
         padding: 24px;

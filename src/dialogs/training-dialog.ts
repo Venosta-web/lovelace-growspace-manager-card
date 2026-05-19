@@ -26,10 +26,6 @@ export class TrainingDialog extends LitElement {
     css`
       :host {
         display: block;
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
       }
       .form-section {
         margin-bottom: 24px;

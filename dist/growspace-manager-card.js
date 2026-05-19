@@ -9655,6 +9655,7 @@ const sharedStyles = i$6 `
   }
 
   .glass-dialog-container {
+    box-sizing: border-box;
     border-radius: var(--border-radius-lg, 16px);
     overflow: hidden;
     background: var(--card-background-color, rgba(20, 20, 20, 0.85));
@@ -10003,27 +10004,29 @@ const dialogStyles = [
     sharedStyles,
     uiStyles,
     i$6 `
-    .glass-dialog-container {
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-      /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
-    }
-
     ha-dialog {
       --dialog-surface-margin-top: 40px !important;
+      --ha-dialog-width-md: 95vw !important;
       --ha-dialog-max-width: 98vw !important;
       --ha-dialog-width-full: 98vw !important;
       --ha-dialog-min-height: 85vh !important;
       --dialog-surface-width: 98vw !important;
       --dialog-surface-max-width: 98vw !important;
-      --dialog-content-width: 98vw !important;
       --width: 98vw !important;
       --dialog-content-padding: 0 !important;
     }
+
+    @media (min-width: 601px) {
+      ha-dialog {
+        --ha-dialog-max-width: 75vw !important;
+        --dialog-surface-max-width: 75vw !important;
+        --dialog-surface-width: 75vw !important;
+        --width: 75vw !important;
+      }
+    }
+
     .glass-dialog-container {
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
       width: 100%;
@@ -10032,8 +10035,8 @@ const dialogStyles = [
       max-height: 85vh;
       overflow: hidden;
       position: relative;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif;
     }
 
     .dialog-header {
@@ -14474,12 +14477,6 @@ let CloneDialog = class CloneDialog extends i$3 {
 CloneDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .form-section {
         margin-bottom: 24px;
       }
@@ -14723,12 +14720,6 @@ let SensorGroupDialog = class SensorGroupDialog extends i$3 {
 SensorGroupDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .group-form {
         display: flex;
         flex-direction: column;
@@ -15039,12 +15030,6 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
 SubareaConfigDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .form-section {
         display: flex;
         flex-direction: column;
@@ -16976,10 +16961,6 @@ ConfigDialog.styles = [
     i$6 `
       :host {
         display: block;
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
       }
 
       /* Config Tabs Specific */
@@ -17539,12 +17520,6 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
 CropSteeringDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .metric-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -18209,13 +18184,6 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
 GrowMasterDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       /* Specific overrides or additions */
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
@@ -18503,12 +18471,6 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
 GrowReportDialog.styles = [
     sharedStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .content {
         display: flex;
         flex-direction: column;
@@ -18949,13 +18911,6 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
 HarvestScoringDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       .score-grid {
         display: flex;
         flex-direction: column;
@@ -20814,13 +20769,6 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
 IrrigationDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       /* Overrides/Specific Layouts */
       .dialog-body {
         padding: 24px;
@@ -22566,13 +22514,6 @@ let LogbookDialog = class LogbookDialog extends i$3 {
 LogbookDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       .dialog-header {
         display: flex;
         justify-content: space-between;
@@ -23115,13 +23056,6 @@ let NutrientDialog = class NutrientDialog extends i$3 {
 NutrientDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       .dialog-header {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 16px;
@@ -23461,12 +23395,6 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
 PrintLabelDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .preview-container {
         background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
         border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
@@ -24312,12 +24240,6 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
 SnapshotsDialog.styles = [
     dialogStyles,
     i$6 `
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .snapshots-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -32062,10 +31984,6 @@ StrainRecommendationDialog.styles = [
     i$6 `
       :host {
         display: block;
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
       }
       .content-padding {
         padding: 24px;
@@ -32282,10 +32200,6 @@ TrainingDialog.styles = [
     i$6 `
       :host {
         display: block;
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
       }
       .form-section {
         margin-bottom: 24px;
@@ -34332,8 +34246,8 @@ PlantDashboardTab.styles = [
       }
 
       .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        display: flex;
+        flex-direction: column;
         gap: 16px;
       }
     `,
@@ -36888,7 +36802,7 @@ PlantOverviewContainer.styles = [
       .overview-grid {
         padding: 24px;
         overflow-y: auto;
-        max-height: 60vh;
+        max-height: 70vh;
       }
 
       .tabs-container {

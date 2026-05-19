@@ -47,13 +47,6 @@ export class NutrientDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       .dialog-header {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 16px;

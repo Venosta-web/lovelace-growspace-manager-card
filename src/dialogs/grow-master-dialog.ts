@@ -17,13 +17,6 @@ export class GrowMasterDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
-
       /* Specific overrides or additions */
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);

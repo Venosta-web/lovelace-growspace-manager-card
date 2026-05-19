@@ -24,12 +24,6 @@ export class CropSteeringDialog extends LitElement {
     static styles = [
         dialogStyles,
         css`
-      :host {
-        --ha-dialog-width-md: 95vw;
-        --ha-dialog-max-width: 98vw;
-        --ha-dialog-width-full: 98vw;
-        --dialog-content-padding: 0;
-      }
       .metric-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);

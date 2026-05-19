@@ -99,7 +99,7 @@ export class PlantOverviewContainer extends LitElement {
       .overview-grid {
         padding: 24px;
         overflow-y: auto;
-        max-height: 60vh;
+        max-height: 70vh;
       }
 
       .tabs-container {
