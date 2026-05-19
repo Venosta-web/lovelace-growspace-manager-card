@@ -110,14 +110,14 @@ describe('DataService Delegation', () => {
       const instance = vi.mocked(HistoryAPI).mock.instances[0];
       const start = new Date();
       dataService.getHistory('ent1', start);
-      expect(instance.getHistory).toHaveBeenCalledWith('ent1', start, undefined);
+      expect(instance.getHistory).toHaveBeenCalledWith('ent1', start);
     });
 
     it('delegates getHistoryStats', () => {
       const instance = vi.mocked(HistoryAPI).mock.instances[0];
       const start = new Date();
       dataService.getHistoryStats(['e1'], start);
-      expect(instance.getHistoryStats).toHaveBeenCalledWith(['e1'], start, undefined, undefined, undefined);
+      expect(instance.getHistoryStats).toHaveBeenCalledWith(['e1'], start);
     });
   });
 
@@ -229,15 +229,6 @@ describe('DataService Delegation', () => {
     });
   });
 
-  describe('API Getters', () => {
-    it('returns strainAPI instance', () => {
-      expect(dataService.strainAPI).toBeDefined();
-    });
-
-    it('returns geneticsAPI instance', () => {
-      expect(dataService.geneticsAPI).toBeDefined();
-    });
-  });
 
   describe('callService', () => {
     it('calls hass.callService', async () => {

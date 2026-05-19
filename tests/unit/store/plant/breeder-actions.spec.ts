@@ -7,22 +7,19 @@ describe('updateBreeder', () => {
 
   beforeEach(() => {
     ctx = makeFakeCtx();
-    ctx.dataService.strainAPI = {
-      updateBreeder: vi.fn().mockResolvedValue(undefined),
-      deleteBreeder: vi.fn().mockResolvedValue(undefined),
-    };
+    ctx.dataService.updateBreeder = vi.fn().mockResolvedValue(undefined);
   });
 
-  it('calls strainAPI, toasts success, and refreshes', async () => {
+  it('calls dataService.updateBreeder, toasts success, and refreshes', async () => {
     await updateBreeder(ctx, 'OldName', 'NewName', 'logo.png');
 
-    expect(ctx.dataService.strainAPI.updateBreeder).toHaveBeenCalledWith('OldName', 'NewName', 'logo.png');
+    expect(ctx.dataService.updateBreeder).toHaveBeenCalledWith('OldName', 'NewName', 'logo.png');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Breeder updated successfully!', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('shows error toast and rethrows on failure', async () => {
-    ctx.dataService.strainAPI.updateBreeder.mockRejectedValue(new Error('update-err'));
+    (ctx.dataService.updateBreeder as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('update-err'));
 
     await expect(updateBreeder(ctx, 'OldName', 'NewName')).rejects.toThrow('update-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update breeder', 'error');
@@ -35,22 +32,19 @@ describe('deleteBreeder', () => {
 
   beforeEach(() => {
     ctx = makeFakeCtx();
-    ctx.dataService.strainAPI = {
-      updateBreeder: vi.fn().mockResolvedValue(undefined),
-      deleteBreeder: vi.fn().mockResolvedValue(undefined),
-    };
+    ctx.dataService.deleteBreeder = vi.fn().mockResolvedValue(undefined);
   });
 
-  it('calls strainAPI, toasts success, and refreshes', async () => {
+  it('calls dataService.deleteBreeder, toasts success, and refreshes', async () => {
     await deleteBreeder(ctx, 'BreederX');
 
-    expect(ctx.dataService.strainAPI.deleteBreeder).toHaveBeenCalledWith('BreederX');
+    expect(ctx.dataService.deleteBreeder).toHaveBeenCalledWith('BreederX');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Breeder deleted successfully!', 'success');
     expect(ctx.refreshData).toHaveBeenCalled();
   });
 
   it('shows error toast and rethrows on failure', async () => {
-    ctx.dataService.strainAPI.deleteBreeder.mockRejectedValue(new Error('delete-err'));
+    (ctx.dataService.deleteBreeder as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('delete-err'));
 
     await expect(deleteBreeder(ctx, 'BreederX')).rejects.toThrow('delete-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to delete breeder', 'error');

@@ -451,7 +451,7 @@ describe('DataService - StrainAPI', () => {
                 });
 
                 it('deleteBreeder should call sendMessagePromise with name', async () => {
-                    await service.strainAPI.deleteBreeder('Me');
+                    await service.deleteBreeder('Me');
                     expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith({
                         type: 'growspace_manager/delete_breeder',
                         breeder_name: 'Me'
@@ -460,11 +460,11 @@ describe('DataService - StrainAPI', () => {
 
                 it('deleteBreeder should handle error', async () => {
                     (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Delete Fail'));
-                    await expect(service.strainAPI.deleteBreeder('Me')).rejects.toThrow('Delete Fail');
+                    await expect(service.deleteBreeder('Me')).rejects.toThrow('Delete Fail');
                 });
 
                 it('updateBreeder should call sendMessagePromise with data', async () => {
-                    await service.strainAPI.updateBreeder('Old', 'New', 'logo.png');
+                    await service.updateBreeder('Old', 'New', 'logo.png');
                     expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith({
                         type: 'growspace_manager/update_breeder',
                         original_name: 'Old',
@@ -475,7 +475,7 @@ describe('DataService - StrainAPI', () => {
 
                 it('updateBreeder should handle error', async () => {
                     (mockHass.connection.sendMessagePromise as any).mockRejectedValue(new Error('Update Fail'));
-                    await expect(service.strainAPI.updateBreeder('Old', 'New')).rejects.toThrow('Update Fail');
+                    await expect(service.updateBreeder('Old', 'New')).rejects.toThrow('Update Fail');
                 });
 
                 it('updateStrainMeta should clean undefined keys and handle non-base64 image', async () => {

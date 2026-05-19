@@ -7120,24 +7120,15 @@ class SubareaAPI extends BaseAPI {
     }
 }
 
-// Import all API services
 /**
- * DataService - Thin facade coordinating domain-specific API services.
+ * DataService — single hass-propagation point for all domain API clients.
  *
- * This service delegates all operations to focused domain services:
- * - GrowspaceAPI: Growspace data, CRUD, caching
- * - StrainAPI: Strain library management
- * - NutrientAPI: Nutrient presets, inventory, IPM
- * - HistoryAPI: Historical sensor data
- * - PlantAPI: Plant CRUD and lifecycle
- * - IrrigationAPI: Irrigation control
- * - AIAPI: AI assistant operations
+ * Owns updateHass() so callers update one object instead of twelve.
+ * All other methods delegate directly to the appropriate API client.
  */
 let DataService$1 = class DataService {
     constructor(hass) {
-        // ========================================
-        // Growspace API Delegations
-        // ========================================
+        // ── Growspace ────────────────────────────────────────────────────────────
         this.fetchGrowspaceData = (growspaceId) => this._growspaceAPI.fetchGrowspaceData(growspaceId);
         this.getGrowspaceDevices = (wsDataMap) => this._growspaceAPI.getGrowspaceDevices(wsDataMap);
         this.invalidateCache = (growspaceId) => this._growspaceAPI.invalidateCache(growspaceId);
@@ -7148,20 +7139,19 @@ let DataService$1 = class DataService {
         this.setDehumidifierControl = (growspaceId, enabled) => this._growspaceAPI.setDehumidifierControl(growspaceId, enabled);
         this.removeEnvironment = (growspaceId) => this._growspaceAPI.removeEnvironment(growspaceId);
         this.resetWaterTracking = (growspaceId) => this._growspaceAPI.resetWaterTracking(growspaceId);
-        // ========================================
-        // Strain API Delegations
-        // ========================================
+        // ── Strain ───────────────────────────────────────────────────────────────
         this.getStrainLibrary = () => this._strainAPI.getStrainLibrary();
         this.fetchStrainLibrary = () => this._strainAPI.fetchStrainLibrary();
         this.addStrain = (data) => this._strainAPI.addStrain(data);
+        this.updateStrainMeta = (data) => this._strainAPI.updateStrainMeta(data);
         this.removeStrain = (strain, phenotype) => this._strainAPI.removeStrain(strain, phenotype);
         this.exportStrainLibrary = () => this._strainAPI.exportStrainLibrary();
         this.importStrainLibrary = (file, replace) => this._strainAPI.importStrainLibrary(file, replace);
         this.clearStrainLibrary = () => this._strainAPI.clearStrainLibrary();
-        this.updateStrainMeta = (data) => this._strainAPI.updateStrainMeta(data);
-        // ========================================
-        // Nutrient API Delegations
-        // ========================================
+        this.updateBreeder = (oldName, newName, logo) => this._strainAPI.updateBreeder(oldName, newName, logo);
+        this.deleteBreeder = (name) => this._strainAPI.deleteBreeder(name);
+        this.importStrainLineageTree = (strain_name, tree) => this._geneticsAPI.importStrainLineageTree(strain_name, tree);
+        // ── Nutrient ─────────────────────────────────────────────────────────────
         this.fetchNutrientPresets = () => this._nutrientAPI.fetchNutrientPresets();
         this.fetchNutrientInventory = () => this._nutrientAPI.fetchNutrientInventory();
         this.updateNutrientStock = (nutrientId, name, currentMl, initialMl) => this._nutrientAPI.updateNutrientStock(nutrientId, name, currentMl, initialMl);
@@ -7175,20 +7165,16 @@ let DataService$1 = class DataService {
         this.fetchECRampCurves = () => this._nutrientAPI.fetchECRampCurves();
         this.saveECRampCurve = (data) => this._nutrientAPI.saveECRampCurve(data);
         this.removeECRampCurve = (curveId) => this._nutrientAPI.removeECRampCurve(curveId);
-        // ========================================
-        // History API Delegations
-        // ========================================
-        this.getHistory = (entityId, startTime, endTime) => this._historyAPI.getHistory(entityId, startTime, endTime);
-        this.getBatchHistory = (entityIds, startTime, endTime) => this._historyAPI.getBatchHistory(entityIds, startTime, endTime);
-        this.getHistoryStats = (entityIds, startTime, endTime, intervalMinutes, significantChangesOnly) => this._historyAPI.getHistoryStats(entityIds, startTime, endTime, intervalMinutes, significantChangesOnly);
-        // ========================================
-        // Plant API Delegations
-        // ========================================
+        // ── History ──────────────────────────────────────────────────────────────
+        this.getHistory = (...args) => this._historyAPI.getHistory(...args);
+        this.getBatchHistory = (...args) => this._historyAPI.getBatchHistory(...args);
+        this.getHistoryStats = (...args) => this._historyAPI.getHistoryStats(...args);
+        // ── Plant ────────────────────────────────────────────────────────────────
         this.addPlant = (params) => this._plantAPI.addPlant(params);
         this.addPlants = (params) => this._plantAPI.addPlants(params);
         this.updatePlant = (params) => this._plantAPI.updatePlant(params);
         this.removePlant = (plantId) => this._plantAPI.removePlant(plantId);
-        this.harvestPlant = (plantId, target, metrics) => this._plantAPI.harvestPlant(plantId, target, metrics);
+        this.harvestPlant = (...args) => this._plantAPI.harvestPlant(...args);
         this.takeClone = (params) => this._plantAPI.takeClone(params);
         this.moveClone = (plantId, targetGrowspaceId, transitionDate) => this._plantAPI.moveClone(plantId, targetGrowspaceId, transitionDate);
         this.movePlant = (plantId, targetGrowspaceId, transitionDate) => this._plantAPI.movePlant(plantId, targetGrowspaceId, transitionDate);
@@ -7200,43 +7186,31 @@ let DataService$1 = class DataService {
         this.logDryingWeight = (params) => this._plantAPI.logDryingWeight(params);
         this.logMoistureReading = (params) => this._plantAPI.logMoistureReading(params);
         this.setVisualTag = (params) => this._plantAPI.setVisualTag(params);
-        // ========================================
-        // Irrigation API Delegations
-        // ========================================
+        // ── Irrigation ───────────────────────────────────────────────────────────
         this.setIrrigationSettings = (params) => this._irrigationAPI.setIrrigationSettings(params);
         this.addIrrigationTime = (params) => this._irrigationAPI.addIrrigationTime(params);
         this.removeIrrigationTime = (params) => this._irrigationAPI.removeIrrigationTime(params);
         this.addDrainTime = (params) => this._irrigationAPI.addDrainTime(params);
         this.removeDrainTime = (params) => this._irrigationAPI.removeDrainTime(params);
-        this.setIrrigationStrategy = (growspaceId, strategy) => this._irrigationAPI.setIrrigationStrategy(growspaceId, strategy);
-        this.configureDrainMonitoring = (growspaceId, params) => this._irrigationAPI.configureDrainMonitoring(growspaceId, params);
-        this.logDrainReading = (growspaceId, params) => this._irrigationAPI.logDrainReading(growspaceId, params);
+        this.setIrrigationStrategy = (...args) => this._irrigationAPI.setIrrigationStrategy(...args);
+        this.configureDrainMonitoring = (...args) => this._irrigationAPI.configureDrainMonitoring(...args);
+        this.logDrainReading = (...args) => this._irrigationAPI.logDrainReading(...args);
         this.waterGrowspace = (growspaceId, amount, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
-        // ========================================
-        // AI API Delegations
-        // ========================================
+        // ── AI ───────────────────────────────────────────────────────────────────
         this.askGrowAdvice = (growspaceId, userQuery) => this._aiAPI.askGrowAdvice(growspaceId, userQuery);
         this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
         this.getStrainRecommendation = (userQuery) => this._aiAPI.getStrainRecommendation(userQuery);
-        // ========================================
-        // Camera API Delegations
-        // ========================================
+        // ── Camera ───────────────────────────────────────────────────────────────
         this.captureSnapshot = (growspaceId) => this._cameraAPI.captureSnapshot(growspaceId);
         this.getSnapshots = (growspaceId, limit, offset) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
-        // ========================================
-        // Vision API Delegations
-        // ========================================
+        // ── Vision ───────────────────────────────────────────────────────────────
         this.getVisionHistory = (growspaceId, limit) => this._visionAPI.getVisionHistory(growspaceId, limit);
         this.triggerVisionCheckup = (growspaceId) => this._visionAPI.triggerVisionCheckup(growspaceId);
-        this.updateVisionCheckupConfig = (growspaceId, config) => this._visionAPI.updateVisionCheckupConfig(growspaceId, config);
-        // ========================================
-        // Report API Delegations
-        // ========================================
+        this.updateVisionCheckupConfig = (...args) => this._visionAPI.updateVisionCheckupConfig(...args);
+        // ── Report ───────────────────────────────────────────────────────────────
         this.exportGrowReport = (growspaceId, format) => this._reportAPI.exportGrowReport(growspaceId, format);
         this.fetchGrowReport = (growspaceId) => this._reportAPI.fetchGrowReport(growspaceId);
-        // ========================================
-        // Genetics API Delegations
-        // ========================================
+        // ── Genetics ─────────────────────────────────────────────────────────────
         this.fetchGeneticsData = () => this._geneticsAPI.fetchGeneticsData();
         this.addSeedBatch = (data) => this._geneticsAPI.addSeedBatch(data);
         this.updateSeedBatch = (data) => this._geneticsAPI.updateSeedBatch(data);
@@ -7249,16 +7223,12 @@ let DataService$1 = class DataService {
         this.sowSeed = (batch_id, plant_id) => this._geneticsAPI.sowSeed(batch_id, plant_id);
         this.getLineageTree = (plant_id) => this._geneticsAPI.getLineageTree(plant_id);
         this.getStrainLineageTree = (strain_name) => this._geneticsAPI.getStrainLineageTree(strain_name);
-        this.updateStrainLineageTree = (strain_name, parents) => this._geneticsAPI.updateStrainLineageTree(strain_name, parents);
-        this.importStrainLineageTree = (strain_name, tree) => this._geneticsAPI.importStrainLineageTree(strain_name, tree);
-        // ========================================
-        // Subarea API Delegations
-        // ========================================
-        this.getSubareas = (growspaceId) => this._subareaAPI.getSubareas(growspaceId);
-        this.addSubarea = (growspaceId, name) => this._subareaAPI.addSubarea(growspaceId, name);
-        this.updateSubarea = (growspaceId, subareaId, environmentConfig) => this._subareaAPI.updateSubarea(growspaceId, subareaId, environmentConfig);
-        this.removeSubarea = (growspaceId, subareaId) => this._subareaAPI.removeSubarea(growspaceId, subareaId);
-        // Initialize all API services
+        this.updateStrainLineageTree = (...args) => this._geneticsAPI.updateStrainLineageTree(...args);
+        // ── Subarea ──────────────────────────────────────────────────────────────
+        this.getSubareas = (...args) => this._subareaAPI.getSubareas(...args);
+        this.addSubarea = (...args) => this._subareaAPI.addSubarea(...args);
+        this.updateSubarea = (...args) => this._subareaAPI.updateSubarea(...args);
+        this.removeSubarea = (...args) => this._subareaAPI.removeSubarea(...args);
         this._growspaceAPI = new GrowspaceAPI(hass);
         this._strainAPI = new StrainAPI(hass);
         this._nutrientAPI = new NutrientAPI(hass);
@@ -7275,9 +7245,7 @@ let DataService$1 = class DataService {
             this.hass = hass;
         }
     }
-    /**
-     * Update Home Assistant instance across all services.
-     */
+    /** Propagate a new hass instance to all API clients atomically. */
     updateHass(hass) {
         this.hass = hass;
         [
@@ -7295,25 +7263,7 @@ let DataService$1 = class DataService {
             this._subareaAPI,
         ].forEach((api) => api.updateHass(hass));
     }
-    /**
-     * Expose StrainAPI for direct access to breeder operations.
-     */
-    get strainAPI() {
-        return this._strainAPI;
-    }
-    /**
-     * Expose GeneticsAPI for direct access to genetics operations.
-     */
-    get geneticsAPI() {
-        return this._geneticsAPI;
-    }
-    // ========================================
-    // Legacy/Generic Service Call Support
-    // ========================================
-    /**
-     * Generic service call wrapper for dynamic/batch operations.
-     * Delegates to BaseAPI's callService method.
-     */
+    // ── Generic ──────────────────────────────────────────────────────────────
     async callService(domain, service, serviceData) {
         if (!this.hass) {
             console.error('[DataService:callService] Hass instance is missing');
@@ -112101,19 +112051,10 @@ async function removeGrowspace(ctx, growspaceId) {
     }
 }
 
-/**
- * Breeder Actions
- *
- * Write-side operations for managing breeder entities via strainAPI.
- * All follow the standard wrap-and-toast pattern.
- *
- * Note: These wrap `strainAPI` sub-object methods because `DataService`
- * does not expose `updateBreeder`/`deleteBreeder` as top-level properties.
- */
 /** Update an existing breeder's name and optional logo */
 async function updateBreeder(ctx, oldName, newName, logo) {
     try {
-        await ctx.dataService.strainAPI.updateBreeder(oldName, newName, logo);
+        await ctx.dataService.updateBreeder(oldName, newName, logo);
         ctx.ui.showToast('Breeder updated successfully!', 'success');
         await ctx.refreshData();
     }
@@ -112125,7 +112066,7 @@ async function updateBreeder(ctx, oldName, newName, logo) {
 /** Delete a breeder by name */
 async function deleteBreeder(ctx, name) {
     try {
-        await ctx.dataService.strainAPI.deleteBreeder(name);
+        await ctx.dataService.deleteBreeder(name);
         ctx.ui.showToast('Breeder deleted successfully!', 'success');
         await ctx.refreshData();
     }
