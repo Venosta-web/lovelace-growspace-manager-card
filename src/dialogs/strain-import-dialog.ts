@@ -64,6 +64,7 @@ export class StrainImportDialog extends LitElement {
   @state() private _importFields = new Set<string>([
     'name', 'breeder', 'type', 'composition', 'flowering', 'description', 'lineage', 'image', 'yield', 'height', 'thc', 'awards'
   ]);
+  @state() private _importing = false;
 
   protected willUpdate(changedProps: Map<string, any>) {
     if (changedProps.has('open') && this.open) {
@@ -141,7 +142,7 @@ export class StrainImportDialog extends LitElement {
     this._importFields = newFields;
   }
 
-  private _import() {
+  private async _import() {
     if (!this._details) return;
 
     const result: Partial<ExternalStrainDetails> = {};
@@ -165,6 +166,37 @@ export class StrainImportDialog extends LitElement {
     if (this._importFields.has('thc')) (result as any).thc = this._details.thc;
     if (this._importFields.has('awards')) (result as any).awards = this._details.awards;
     if (this._importFields.has('lineage')) result.parents = this._details.parents;
+
+    if (this._importFields.has('image') && (result.images?.length || result.image)) {
+      this._importing = true;
+      try {
+        const strainName = result.name ?? this.initialStrain ?? 'unknown';
+        const phenotype = this.initialPheno && this.initialPheno.toLowerCase() !== 'default'
+          ? this.initialPheno
+          : 'default';
+        const imageUrls = result.images ?? (result.image ? [result.image] : []);
+        const downloadedUrls: string[] = [];
+        for (const url of imageUrls) {
+          if (!url) continue;
+          try {
+            const resp = await this.hass.connection.sendMessagePromise<{ path: string }>({
+              type: 'growspace_manager/download_strain_image',
+              url,
+              strain: strainName,
+              phenotype,
+            });
+            downloadedUrls.push(resp.path);
+          } catch {
+            downloadedUrls.push(url);
+          }
+        }
+        result.images = downloadedUrls.length > 0 ? downloadedUrls : undefined;
+        result.image = downloadedUrls[0] ?? undefined;
+      } finally {
+        this._importing = false;
+      }
+      if (!this.open) return;
+    }
 
     this.dispatchEvent(new CustomEvent('import', {
       detail: result
@@ -447,13 +479,18 @@ export class StrainImportDialog extends LitElement {
           </div>
 
           <div class="sd-footer">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
             ${this._details ? html`
-              <button class="md3-button filled" @click=${this._import}>
-                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                  <path d="${mdiCheck}"></path>
-                </svg>
-                Import Selected
+              <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
+                ${this._importing ? html`
+                  <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
+                  Downloading...
+                ` : html`
+                  <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                    <path d="${mdiCheck}"></path>
+                  </svg>
+                  Import Selected
+                `}
               </button>
             ` : nothing}
           </div>

@@ -24119,6 +24119,7 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         this._importFields = new Set([
             'name', 'breeder', 'type', 'composition', 'flowering', 'description', 'lineage', 'image', 'yield', 'height', 'thc', 'awards'
         ]);
+        this._importing = false;
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
@@ -24194,7 +24195,7 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         }
         this._importFields = newFields;
     }
-    _import() {
+    async _import() {
         if (!this._details)
             return;
         const result = {};
@@ -24228,6 +24229,40 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
             result.awards = this._details.awards;
         if (this._importFields.has('lineage'))
             result.parents = this._details.parents;
+        if (this._importFields.has('image') && (result.images?.length || result.image)) {
+            this._importing = true;
+            try {
+                const strainName = result.name ?? this.initialStrain ?? 'unknown';
+                const phenotype = this.initialPheno && this.initialPheno.toLowerCase() !== 'default'
+                    ? this.initialPheno
+                    : 'default';
+                const imageUrls = result.images ?? (result.image ? [result.image] : []);
+                const downloadedUrls = [];
+                for (const url of imageUrls) {
+                    if (!url)
+                        continue;
+                    try {
+                        const resp = await this.hass.connection.sendMessagePromise({
+                            type: 'growspace_manager/download_strain_image',
+                            url,
+                            strain: strainName,
+                            phenotype,
+                        });
+                        downloadedUrls.push(resp.path);
+                    }
+                    catch {
+                        downloadedUrls.push(url);
+                    }
+                }
+                result.images = downloadedUrls.length > 0 ? downloadedUrls : undefined;
+                result.image = downloadedUrls[0] ?? undefined;
+            }
+            finally {
+                this._importing = false;
+            }
+            if (!this.open)
+                return;
+        }
         this.dispatchEvent(new CustomEvent('import', {
             detail: result
         }));
@@ -24316,13 +24351,18 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
           </div>
 
           <div class="sd-footer">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
             ${this._details ? x `
-              <button class="md3-button filled" @click=${this._import}>
-                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                  <path d="${mdiCheck}"></path>
-                </svg>
-                Import Selected
+              <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
+                ${this._importing ? x `
+                  <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
+                  Downloading...
+                ` : x `
+                  <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                    <path d="${mdiCheck}"></path>
+                  </svg>
+                  Import Selected
+                `}
               </button>
             ` : E}
           </div>
@@ -24620,6 +24660,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainImportDialog.prototype, "_importFields", void 0);
+__decorate([
+    r$3()
+], StrainImportDialog.prototype, "_importing", void 0);
 StrainImportDialog = __decorate([
     t$2('strain-import-dialog')
 ], StrainImportDialog);
