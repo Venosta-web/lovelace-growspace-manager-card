@@ -808,7 +808,8 @@ export class StrainLibraryDialog extends LitElement {
         background: rgba(255,255,255,0.06);
       }
 
-      /* Maximized tree view */
+      /* Maximized tree view — ha-dialog width="full" handles dialog sizing;
+         just ensure the inner container fills the full surface */
       :host(.tree-maximized) ha-dialog {
         --ha-dialog-width-md: 100vw;
         --ha-dialog-max-width: 100vw;
@@ -1161,7 +1162,7 @@ export class StrainLibraryDialog extends LitElement {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="large"
+        width="${this._treeMaximized ? 'full' : 'large'}"
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
@@ -1197,28 +1198,28 @@ export class StrainLibraryDialog extends LitElement {
                 @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
                 @save-strain=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
                 @delete-strain=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
-                  this._view = 'browse';
-                  this._editingStrain = undefined;
-                }}
+              this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
+              this._view = 'browse';
+              this._editingStrain = undefined;
+            }}
                 @strain-created-at-source=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('strain-created-at-source', { detail: e.detail, bubbles: true, composed: true }));
-                }}
+              this.dispatchEvent(new CustomEvent('strain-created-at-source', { detail: e.detail, bubbles: true, composed: true }));
+            }}
                 @open-print-label=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('open-print-label', { detail: e.detail, bubbles: true, composed: true }));
-                }}
+              this.dispatchEvent(new CustomEvent('open-print-label', { detail: e.detail, bubbles: true, composed: true }));
+            }}
                 @import-library=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
-                }}
+              this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
+            }}
                 @update-breeder=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
-                }}
+              this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
+            }}
                 @save-breeder=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
-                }}
+              this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
+            }}
                 @delete-breeder=${(e: CustomEvent) => {
-                  this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
-                }}
+              this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
+            }}
                 @close=${() => this.dispatchEvent(new CustomEvent('close'))}
               ></strain-editor-view>
             `)
@@ -1491,8 +1492,8 @@ export class StrainLibraryDialog extends LitElement {
                 loading="lazy"
                 alt="${strain.strain}"
                 style="${strain.image_crop_meta
-          ? `width: 100%; height: 100%; object-fit: cover; object-position: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%; transform: scale(${strain.image_crop_meta.scale}); transform-origin: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%;`
-          : 'width: 100%; height: 100%; object-fit: cover;'}"
+            ? `width: 100%; height: 100%; object-fit: cover; object-position: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%; transform: scale(${strain.image_crop_meta.scale}); transform-origin: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%;`
+            : 'width: 100%; height: 100%; object-fit: cover;'}"
               />`
         : html`<svg
                 style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
@@ -1639,18 +1640,18 @@ export class StrainLibraryDialog extends LitElement {
                 Cancel
               </button>
               <button class="md3-button primary" @click=${() => {
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = '.zip';
-                input.onchange = (e) => {
-                  const file = (e.target as HTMLInputElement).files?.[0];
-                  if (file) {
-                    this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace: this._importReplace } }));
-                    this._importDialogOpen = false;
-                  }
-                };
-                input.click();
-              }}>
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          if (file) {
+            this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace: this._importReplace } }));
+            this._importDialogOpen = false;
+          }
+        };
+        input.click();
+      }}>
                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiCloudUpload}"></path>
                 </svg>
@@ -1961,7 +1962,7 @@ export class StrainLibraryDialog extends LitElement {
           @click=${() => { this._activeMainTab = 'tree'; }}
         >Tree View</button>
         ${this._activeMainTab === 'tree'
-          ? html`
+        ? html`
               <button
                 class="tab-maximize-btn"
                 title="${this._treeMaximized ? 'Restore' : 'Maximize'}"
@@ -1972,7 +1973,7 @@ export class StrainLibraryDialog extends LitElement {
                 </svg>
               </button>
             `
-          : nothing}
+        : nothing}
       </div>
     `;
   }

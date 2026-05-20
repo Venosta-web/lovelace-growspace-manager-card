@@ -29559,7 +29559,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         hideActions
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="large"
+        width="${this._treeMaximized ? 'full' : 'large'}"
       >
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
@@ -31238,7 +31238,8 @@ StrainLibraryDialog.styles = [
         background: rgba(255,255,255,0.06);
       }
 
-      /* Maximized tree view */
+      /* Maximized tree view — ha-dialog width="full" handles dialog sizing;
+         just ensure the inner container fills the full surface */
       :host(.tree-maximized) ha-dialog {
         --ha-dialog-width-md: 100vw;
         --ha-dialog-max-width: 100vw;
