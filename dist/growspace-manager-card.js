@@ -91,6 +91,7 @@ var mdiArrowExpand = "M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
+var mdiBookOpenVariant = "M12 21.5C10.65 20.65 8.2 20 6.5 20C4.85 20 3.15 20.3 1.75 21.05C1.65 21.1 1.6 21.1 1.5 21.1C1.25 21.1 1 20.85 1 20.6V6C1.6 5.55 2.25 5.25 3 5C4.11 4.65 5.33 4.5 6.5 4.5C8.45 4.5 10.55 4.9 12 6C13.45 4.9 15.55 4.5 17.5 4.5C18.67 4.5 19.89 4.65 21 5C21.75 5.25 22.4 5.55 23 6V20.6C23 20.85 22.75 21.1 22.5 21.1C22.4 21.1 22.35 21.1 22.25 21.05C20.85 20.3 19.15 20 17.5 20C15.8 20 13.35 20.65 12 21.5M12 8V19.5C13.35 18.65 15.8 18 17.5 18C18.7 18 19.9 18.15 21 18.5V7C19.9 6.65 18.7 6.5 17.5 6.5C15.8 6.5 13.35 7.15 12 8M13 11.5C14.11 10.82 15.6 10.5 17.5 10.5C18.41 10.5 19.26 10.59 20 10.78V9.23C19.13 9.08 18.29 9 17.5 9C15.73 9 14.23 9.28 13 9.84V11.5M17.5 11.67C15.79 11.67 14.29 11.93 13 12.46V14.15C14.11 13.5 15.6 13.16 17.5 13.16C18.54 13.16 19.38 13.24 20 13.4V11.9C19.13 11.74 18.29 11.67 17.5 11.67M20 14.57C19.13 14.41 18.29 14.33 17.5 14.33C15.67 14.33 14.17 14.6 13 15.13V16.82C14.11 16.16 15.6 15.83 17.5 15.83C18.54 15.83 19.38 15.91 20 16.07V14.57Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
 var mdiBug = "M14,12H10V10H14M14,16H10V14H14M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.5,5 12,5C11.5,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8Z";
@@ -24111,7 +24112,8 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
-            this._searchQuery = this.initialStrain + (this.initialPheno ? ` ${this.initialPheno}` : '');
+            const pheno = this.initialPheno && this.initialPheno.toLowerCase() !== 'default' ? ` ${this.initialPheno}` : '';
+            this._searchQuery = this.initialStrain + pheno;
             this._results = [];
             this._selectedUrl = null;
             this._details = null;
@@ -27977,6 +27979,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         this.nodes = [];
         /** External focal node — switches to lineage mode when set. */
         this.focalId = null;
+        /** Keys of nodes that have a strain library entry (real or stub). */
+        this.libraryKeys = new Set();
         this._mode = 'tree';
         this._focalId = null;
         this._search = '';
@@ -28205,6 +28209,13 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             return;
         }
         this._selectedId = this._selectedId === p.id ? null : p.id;
+    }
+    _openStrainEditor(id) {
+        this.dispatchEvent(new CustomEvent('open-strain-editor', {
+            detail: { id },
+            bubbles: true,
+            composed: true,
+        }));
     }
     _isolateLineage(id) {
         this._focalId = id;
@@ -28692,6 +28703,12 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
             Isolate Lineage
           </button>
+          ${this.libraryKeys.has(n.id) ? x `
+            <button class="pill-btn" @click=${() => this._openStrainEditor(n.id)}>
+              <svg viewBox="0 0 24 24"><path d="${mdiBookOpenVariant}" /></svg>
+              Open in Library
+            </button>
+          ` : E}
         </div>
       </div>
     `;
@@ -29355,6 +29372,9 @@ GeneticsTreeView.styles = i$6 `
     }
     .detail-actions {
       padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     .detail-actions .pill-btn { width: 100%; justify-content: center; }
 
@@ -29444,6 +29464,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], GeneticsTreeView.prototype, "focalId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GeneticsTreeView.prototype, "libraryKeys", void 0);
 __decorate([
     r$3()
 ], GeneticsTreeView.prototype, "_mode", void 0);
@@ -30561,6 +30584,15 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         <genetics-tree-view
           .nodes=${this._treeNodes}
           .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
+          .libraryKeys=${new Set(this.strains.map((s) => s.key))}
+          @open-strain-editor=${(e) => {
+            const strain = this.strains.find((s) => s.key === e.detail.id);
+            if (strain) {
+                this._editingStrain = strain;
+                this._view = 'editor';
+                this._activeMainTab = 'strains';
+            }
+        }}
         ></genetics-tree-view>
       </div>
     `;

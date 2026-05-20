@@ -66,7 +66,8 @@ export class StrainImportDialog extends LitElement {
 
   protected willUpdate(changedProps: Map<string, any>) {
     if (changedProps.has('open') && this.open) {
-      this._searchQuery = this.initialStrain + (this.initialPheno ? ` ${this.initialPheno}` : '');
+      const pheno = this.initialPheno && this.initialPheno.toLowerCase() !== 'default' ? ` ${this.initialPheno}` : '';
+      this._searchQuery = this.initialStrain + pheno;
       this._results = [];
       this._selectedUrl = null;
       this._details = null;

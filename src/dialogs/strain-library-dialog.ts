@@ -2178,6 +2178,15 @@ export class StrainLibraryDialog extends LitElement {
         <genetics-tree-view
           .nodes=${this._treeNodes}
           .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
+          .libraryKeys=${new Set(this.strains.map((s) => s.key))}
+          @open-strain-editor=${(e: CustomEvent<{ id: string }>) => {
+            const strain = this.strains.find((s) => s.key === e.detail.id);
+            if (strain) {
+              this._editingStrain = strain;
+              this._view = 'editor';
+              this._activeMainTab = 'strains';
+            }
+          }}
         ></genetics-tree-view>
       </div>
     `;

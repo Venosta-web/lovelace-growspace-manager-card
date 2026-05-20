@@ -45,6 +45,30 @@ describe('StrainImportDialog', () => {
     });
   });
 
+  it('omits phenotype from search query when phenotype is "default"', async () => {
+    mockHass.callWS.mockResolvedValue([]);
+    element.initialStrain = 'OG Kush';
+    element.initialPheno = 'default';
+    element.open = true;
+    await element.updateComplete;
+
+    expect((element as any)._searchQuery).toBe('OG Kush');
+    expect(mockHass.callWS).toHaveBeenCalledWith({
+      type: 'growspace_manager/query_external_strain',
+      query: 'OG Kush',
+    });
+  });
+
+  it('includes non-default phenotype in search query', async () => {
+    mockHass.callWS.mockResolvedValue([]);
+    element.initialStrain = 'OG Kush';
+    element.initialPheno = 'Alpha';
+    element.open = true;
+    await element.updateComplete;
+
+    expect((element as any)._searchQuery).toBe('OG Kush Alpha');
+  });
+
   it('handles search results', async () => {
     const mockResults = [
       { name: 'Blue Dream', breeder: 'HSO', url: 'url1' },

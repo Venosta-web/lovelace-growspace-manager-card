@@ -8,6 +8,7 @@ import {
   mdiEye,
   mdiChevronDown,
   mdiFitToPageOutline,
+  mdiBookOpenVariant,
 } from '@mdi/js';
 import {
   type TreeNode,
@@ -45,6 +46,8 @@ export class GeneticsTreeView extends LitElement {
   @property({ attribute: false }) nodes: TreeNode[] = [];
   /** External focal node — switches to lineage mode when set. */
   @property({ type: String }) focalId: string | null = null;
+  /** Keys of nodes that have a strain library entry (real or stub). */
+  @property({ attribute: false }) libraryKeys: Set<string> = new Set();
 
   @state() private _mode: ViewMode = 'tree';
   @state() private _focalId: string | null = null;
@@ -301,6 +304,14 @@ export class GeneticsTreeView extends LitElement {
     }
 
     this._selectedId = this._selectedId === p.id ? null : p.id;
+  }
+
+  private _openStrainEditor(id: string): void {
+    this.dispatchEvent(new CustomEvent('open-strain-editor', {
+      detail: { id },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   private _isolateLineage(id: string): void {
@@ -822,6 +833,12 @@ export class GeneticsTreeView extends LitElement {
             <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
             Isolate Lineage
           </button>
+          ${this.libraryKeys.has(n.id) ? html`
+            <button class="pill-btn" @click=${() => this._openStrainEditor(n.id)}>
+              <svg viewBox="0 0 24 24"><path d="${mdiBookOpenVariant}" /></svg>
+              Open in Library
+            </button>
+          ` : nothing}
         </div>
       </div>
     `;
@@ -1496,6 +1513,9 @@ export class GeneticsTreeView extends LitElement {
     }
     .detail-actions {
       padding: 10px 14px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
     .detail-actions .pill-btn { width: 100%; justify-content: center; }
 
