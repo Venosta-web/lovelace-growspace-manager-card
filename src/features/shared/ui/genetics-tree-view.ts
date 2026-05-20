@@ -62,6 +62,7 @@ export class GeneticsTreeView extends LitElement {
   private _computed: LayoutResult | null = null;
   private _childrenOf: Record<string, string[]> = {};
   private _resizeObs?: ResizeObserver;
+  private _userHasInteracted = false;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -133,7 +134,12 @@ export class GeneticsTreeView extends LitElement {
       changed.has('_viewH')
     ) {
       this._recompute();
-      this._fitToScreen();
+      // Only auto-fit when the viewport resizes, or before the user has
+      // panned/zoomed (first load).  Explicit "Fit" / "Reset" buttons call
+      // _fitToScreen() directly and are unaffected by this guard.
+      if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH')) {
+        this._fitToScreen();
+      }
     }
   }
 
@@ -234,6 +240,7 @@ export class GeneticsTreeView extends LitElement {
 
   private _onWheel(e: WheelEvent): void {
     e.preventDefault();
+    this._userHasInteracted = true;
     const delta = -e.deltaY * 0.0015;
     const newScale = Math.min(Math.max(this._scale + delta * this._scale, 0.2), 2.0);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -254,6 +261,7 @@ export class GeneticsTreeView extends LitElement {
       target.closest('.detail-panel')
     )
       return;
+    this._userHasInteracted = true;
     this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
   }
 
@@ -697,6 +705,7 @@ export class GeneticsTreeView extends LitElement {
         <button
           class="icon-btn"
           @click=${() => {
+            this._userHasInteracted = true;
             this._scale = Math.min(this._scale * 1.2, 2.0);
           }}
         >
@@ -706,6 +715,7 @@ export class GeneticsTreeView extends LitElement {
         <button
           class="icon-btn"
           @click=${() => {
+            this._userHasInteracted = true;
             this._scale = Math.max(this._scale / 1.2, 0.2);
           }}
         >

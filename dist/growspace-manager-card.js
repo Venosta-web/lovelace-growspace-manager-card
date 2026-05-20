@@ -27946,6 +27946,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         this._dragging = null;
         this._computed = null;
         this._childrenOf = {};
+        this._userHasInteracted = false;
     }
     // ---------------------------------------------------------------------------
     // Lifecycle
@@ -28013,7 +28014,12 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             changed.has('_viewW') ||
             changed.has('_viewH')) {
             this._recompute();
-            this._fitToScreen();
+            // Only auto-fit when the viewport resizes, or before the user has
+            // panned/zoomed (first load).  Explicit "Fit" / "Reset" buttons call
+            // _fitToScreen() directly and are unaffected by this guard.
+            if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH')) {
+                this._fitToScreen();
+            }
         }
     }
     // ---------------------------------------------------------------------------
@@ -28102,6 +28108,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     // ---------------------------------------------------------------------------
     _onWheel(e) {
         e.preventDefault();
+        this._userHasInteracted = true;
         const delta = -e.deltaY * 0.0015;
         const newScale = Math.min(Math.max(this._scale + delta * this._scale, 0.2), 2.0);
         const rect = e.currentTarget.getBoundingClientRect();
@@ -28120,6 +28127,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             target.closest('.compare-drawer') ||
             target.closest('.detail-panel'))
             return;
+        this._userHasInteracted = true;
         this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
     }
     _onMouseMove(e) {
@@ -28525,6 +28533,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         <button
           class="icon-btn"
           @click=${() => {
+            this._userHasInteracted = true;
             this._scale = Math.min(this._scale * 1.2, 2.0);
         }}
         >
@@ -28534,6 +28543,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         <button
           class="icon-btn"
           @click=${() => {
+            this._userHasInteracted = true;
             this._scale = Math.max(this._scale / 1.2, 0.2);
         }}
         >
@@ -29516,6 +29526,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this.initialTab = 'strains';
         this._activeMainTab = 'strains';
         this._libraryFilter = 'library';
+        this._treeNodes = [];
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
@@ -29531,10 +29542,13 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     }
     willUpdate(changedProps) {
         super.willUpdate(changedProps);
-        // Auto-open editor if editingStrain is provided
         if (changedProps.has('editingStrain') && this.editingStrain) {
             this._editingStrain = this.editingStrain;
             this._view = 'editor';
+        }
+        if (changedProps.has('strains') || changedProps.has('seedBatches') || changedProps.has('_libraryFilter')) {
+            const filteredStrains = this._applyLibraryFilter(this.strains);
+            this._treeNodes = this._buildTreeNodes(filteredStrains);
         }
     }
     updated(changedProperties) {
@@ -30544,15 +30558,13 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         return nodes;
     }
     _renderTreeViewTab() {
-        const filteredStrains = this._applyLibraryFilter(this.strains);
-        const nodes = this._buildTreeNodes(filteredStrains);
         return x `
       <div class="tab-content-tree">
         <div style="padding: 8px 16px 0;">
           ${this._renderFilterChips()}
         </div>
         <genetics-tree-view
-          .nodes=${nodes}
+          .nodes=${this._treeNodes}
           .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
         ></genetics-tree-view>
       </div>
@@ -31600,6 +31612,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_libraryFilter", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_treeNodes", void 0);
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);

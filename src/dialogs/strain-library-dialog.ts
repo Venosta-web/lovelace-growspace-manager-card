@@ -100,6 +100,7 @@ export class StrainLibraryDialog extends LitElement {
 
   @state() private _activeMainTab: 'strains' | 'seeds' | 'tree' = 'strains';
   @state() private _libraryFilter: 'library' | 'active' | 'all' = 'library';
+  @state() private _treeNodes: TreeNode[] = [];
 
   // Pagination State
   @state() private _currentPage = 1;
@@ -118,10 +119,13 @@ export class StrainLibraryDialog extends LitElement {
 
   willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
-    // Auto-open editor if editingStrain is provided
     if (changedProps.has('editingStrain') && this.editingStrain) {
       this._editingStrain = this.editingStrain;
       this._view = 'editor';
+    }
+    if (changedProps.has('strains') || changedProps.has('seedBatches') || changedProps.has('_libraryFilter')) {
+      const filteredStrains = this._applyLibraryFilter(this.strains);
+      this._treeNodes = this._buildTreeNodes(filteredStrains);
     }
   }
 
@@ -2108,15 +2112,13 @@ export class StrainLibraryDialog extends LitElement {
   }
 
   private _renderTreeViewTab(): TemplateResult {
-    const filteredStrains = this._applyLibraryFilter(this.strains);
-    const nodes = this._buildTreeNodes(filteredStrains);
     return html`
       <div class="tab-content-tree">
         <div style="padding: 8px 16px 0;">
           ${this._renderFilterChips()}
         </div>
         <genetics-tree-view
-          .nodes=${nodes}
+          .nodes=${this._treeNodes}
           .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
         ></genetics-tree-view>
       </div>
