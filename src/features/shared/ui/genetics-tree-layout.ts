@@ -20,6 +20,16 @@ export interface LayoutNode {
   rank: number;
 }
 
+export interface LayoutBand {
+  kind: 'rank' | 'breeder';
+  label: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  count?: number;
+}
+
 export interface TreeEdge {
   from: string;
   to: string;
@@ -30,19 +40,20 @@ export interface LayoutResult {
   nodes: Record<string, LayoutNode>;
   edges: TreeEdge[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
+  bands?: LayoutBand[];
 }
 
-export const NODE_W = 200;
-export const NODE_H = 76;
+export const NODE_W = 148;
+export const NODE_H = 50;
 
-const COL_GAP = 36;
-const ROW_GAP = 130;
+const COL_GAP = 16;
+const ROW_GAP = 96;
 
 // ---------------------------------------------------------------------------
-// Private helper: build lookup maps
+// buildIndex — exported so callers can build child-lookup maps cheaply
 // ---------------------------------------------------------------------------
 
-function buildIndex(plants: TreeNode[]): {
+export function buildIndex(plants: TreeNode[]): {
   byId: Record<string, TreeNode>;
   childrenOf: Record<string, string[]>;
 } {
@@ -69,27 +80,19 @@ function buildIndex(plants: TreeNode[]): {
 }
 
 // ---------------------------------------------------------------------------
-// layoutTopDown
+// Rank computation — longest path from root with parent-lift pass
 // ---------------------------------------------------------------------------
 
-export function layoutTopDown(plants: TreeNode[]): LayoutResult {
-  if (plants.length === 0) {
-    return {
-      nodes: {},
-      edges: [],
-      bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
-    };
-  }
-
-  const { byId } = buildIndex(plants);
-
-  // Rank = longest path from a root (node with no parents in the set).
+function computeRanks(
+  plants: TreeNode[],
+  byId: Record<string, TreeNode>,
+): Record<string, number> {
   const rankCache: Record<string, number> = {};
   const visiting: Record<string, boolean> = {};
 
   function rankOf(id: string): number {
     if (rankCache[id] !== undefined) return rankCache[id];
-    if (visiting[id]) return 0; // cycle guard
+    if (visiting[id]) return 0;
     visiting[id] = true;
 
     const node = byId[id];
@@ -109,11 +112,8 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
 
   for (const p of plants) rankOf(p.id);
 
-  // Top-down pass: ensure each parent is ranked no more than one level below its
-  // most-derived child. Without this, parents with no (or shallow) ancestry of
-  // their own get rank 0 and land at the very bottom of the canvas even when they
-  // are direct parents of a high-ranked node (e.g. Mimosa with no stored parents
-  // appearing next to ancient leaf-ancestors instead of next to Animal Mints).
+  // Lift parents so they sit at child_rank − 1 (avoids shallow parents
+  // appearing far from their most-derived child in the layout).
   let anyChanged = true;
   while (anyChanged) {
     anyChanged = false;
@@ -132,7 +132,88 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
     }
   }
 
-  // Group by rank
+  return rankCache;
+}
+
+// ---------------------------------------------------------------------------
+// Barycenter ordering — reduces edge crossings vs alphabetical sort alone
+// ---------------------------------------------------------------------------
+
+type Sortable = TreeNode & { __bary?: number };
+
+function orderByBarycenter(
+  byRank: Record<number, Sortable[]>,
+  ranks: number[],
+): void {
+  // Initial pass: family-key sort
+  for (const r of ranks) {
+    byRank[r].sort((a, b) => {
+      const ka = [a.parents.mother, a.parents.father].filter(Boolean).sort().join('|');
+      const kb = [b.parents.mother, b.parents.father].filter(Boolean).sort().join('|');
+      if (ka !== kb) return ka.localeCompare(kb);
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  // 4 alternating sweeps (top→down, bottom→up) using parent/child barycenters
+  for (let pass = 0; pass < 4; pass++) {
+    const posInRank: Record<string, number> = {};
+    for (const r of ranks) {
+      byRank[r].forEach((n, i) => { posInRank[n.id] = i; });
+    }
+
+    const goingDown = pass % 2 === 0;
+    const order = goingDown ? [...ranks] : [...ranks].reverse();
+
+    for (const r of order) {
+      const row = byRank[r];
+      row.forEach((n) => {
+        let neighbors: string[];
+        if (goingDown) {
+          neighbors = [n.parents.mother, n.parents.father].filter(
+            (p): p is string => p != null && posInRank[p] != null,
+          );
+        } else {
+          neighbors = [];
+          for (const list of Object.values(byRank)) {
+            for (const m of list) {
+              if ((m.parents.mother === n.id || m.parents.father === n.id) &&
+                  posInRank[m.id] != null) {
+                neighbors.push(m.id);
+              }
+            }
+          }
+        }
+        n.__bary = neighbors.length
+          ? neighbors.reduce((s, id) => s + posInRank[id], 0) / neighbors.length
+          : (posInRank[n.id] ?? 0);
+      });
+      row.sort((a, b) => {
+        if (a.__bary !== b.__bary) return (a.__bary ?? 0) - (b.__bary ?? 0);
+        return a.name.localeCompare(b.name);
+      });
+    }
+  }
+
+  for (const r of ranks) byRank[r].forEach((n) => { delete n.__bary; });
+}
+
+// ---------------------------------------------------------------------------
+// layoutTopDown
+// ---------------------------------------------------------------------------
+
+export function layoutTopDown(plants: TreeNode[]): LayoutResult {
+  if (plants.length === 0) {
+    return {
+      nodes: {},
+      edges: [],
+      bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
+    };
+  }
+
+  const { byId } = buildIndex(plants);
+  const rankCache = computeRanks(plants, byId);
+
   const byRank: Record<number, TreeNode[]> = {};
   for (const p of plants) {
     const r = rankCache[p.id];
@@ -140,38 +221,19 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
     byRank[r].push(p);
   }
 
-  // Sort each rank: family group key first, then name
-  for (const r of Object.keys(byRank)) {
-    byRank[+r].sort((a, b) => {
-      const keyA = [a.parents.mother, a.parents.father]
-        .filter(Boolean)
-        .sort()
-        .join('|');
-      const keyB = [b.parents.mother, b.parents.father]
-        .filter(Boolean)
-        .sort()
-        .join('|');
-      if (keyA !== keyB) return keyA.localeCompare(keyB);
-      return a.name.localeCompare(b.name);
-    });
-  }
+  const ranks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
+  orderByBarycenter(byRank, ranks);
 
-  const ranks = Object.keys(byRank)
-    .map(Number)
-    .sort((a, b) => a - b);
-
-  // Find max row width for centering
   const maxRowWidth = Math.max(
     ...ranks.map((r) => {
       const count = byRank[r].length;
       return count * NODE_W + (count - 1) * COL_GAP;
-    })
+    }),
   );
 
   const maxRank = Math.max(...ranks);
-
-  // Assign positions — highest rank (most derived) at top (y=0), ancestors at bottom
   const nodes: Record<string, LayoutNode> = {};
+
   for (const r of ranks) {
     const row = byRank[r];
     const rowWidth = row.length * NODE_W + (row.length - 1) * COL_GAP;
@@ -189,7 +251,157 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
     });
   }
 
-  // Build edges
+  const edges = _buildEdges(plants, nodes);
+  const bounds = _computeBounds(nodes, 80);
+
+  const bands: LayoutBand[] = ranks.map((r) => ({
+    kind: 'rank',
+    label: `Gen ${maxRank - r}`,
+    x: bounds.minX,
+    y: (maxRank - r) * (NODE_H + ROW_GAP),
+    w: bounds.maxX - bounds.minX,
+    h: NODE_H,
+  }));
+
+  return { nodes, edges, bounds, bands };
+}
+
+// ---------------------------------------------------------------------------
+// layoutSubgraph — focal node's ancestors + descendants only, re-centered
+// ---------------------------------------------------------------------------
+
+export function layoutSubgraph(plants: TreeNode[], focalId: string): LayoutResult {
+  if (!focalId) return layoutTopDown(plants);
+
+  const { byId, childrenOf } = buildIndex(plants);
+  if (!byId[focalId]) return layoutTopDown(plants);
+
+  const ancestors = new Set<string>();
+  const descendants = new Set<string>();
+
+  (function walkAnc(id: string) {
+    const n = byId[id];
+    if (!n) return;
+    for (const p of [n.parents.mother, n.parents.father]) {
+      if (p && byId[p] && !ancestors.has(p)) {
+        ancestors.add(p);
+        walkAnc(p);
+      }
+    }
+  })(focalId);
+
+  (function walkDesc(id: string) {
+    for (const c of childrenOf[id] ?? []) {
+      if (!descendants.has(c)) {
+        descendants.add(c);
+        walkDesc(c);
+      }
+    }
+  })(focalId);
+
+  const subset = plants.filter(
+    (n) => n.id === focalId || ancestors.has(n.id) || descendants.has(n.id),
+  );
+
+  const result = layoutTopDown(subset);
+
+  // Re-center so the focal node anchors the canvas
+  const focal = result.nodes[focalId];
+  if (focal) {
+    const dx = -(focal.x + focal.w / 2);
+    const dy = -(focal.y + focal.h / 2);
+    for (const id of Object.keys(result.nodes)) {
+      result.nodes[id].x += dx;
+      result.nodes[id].y += dy;
+    }
+    if (result.bands) {
+      result.bands.forEach((b) => { b.y += dy; });
+    }
+    result.bounds = _computeBounds(result.nodes, 100);
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// layoutBreederGrouped — one band per breeder, chip-packed within each band
+// ---------------------------------------------------------------------------
+
+export function layoutBreederGrouped(plants: TreeNode[]): LayoutResult {
+  const PAD_X = 20;
+  const PAD_Y = 48;  // room for band header
+  const COL_G = 12;
+  const ROW_G = 12;
+  const GROUP_GAP = 32;
+  const TARGET_W = 2400;
+
+  const groups: Record<string, TreeNode[]> = {};
+  for (const n of plants) {
+    const k = n.breeder || 'Unknown';
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(n);
+  }
+
+  const keys = Object.keys(groups).sort((a, b) => {
+    if (groups[b].length !== groups[a].length) return groups[b].length - groups[a].length;
+    return a.localeCompare(b);
+  });
+
+  const nodes: Record<string, LayoutNode> = {};
+  const bands: LayoutBand[] = [];
+  let cursorX = 0;
+  let cursorY = 0;
+  let rowH = 0;
+
+  for (const k of keys) {
+    const list = groups[k].slice().sort((a, b) => a.name.localeCompare(b.name));
+    const cols = Math.min(list.length, Math.max(2, Math.ceil(Math.sqrt(list.length * 1.6))));
+    const rows = Math.ceil(list.length / cols);
+    const gW = cols * NODE_W + (cols - 1) * COL_G + PAD_X * 2;
+    const gH = rows * NODE_H + (rows - 1) * ROW_G + PAD_Y + 16;
+
+    if (cursorX + gW > TARGET_W && cursorX > 0) {
+      cursorX = 0;
+      cursorY += rowH + GROUP_GAP;
+      rowH = 0;
+    }
+
+    bands.push({
+      kind: 'breeder',
+      label: k,
+      count: list.length,
+      x: cursorX,
+      y: cursorY,
+      w: gW,
+      h: gH,
+    });
+
+    list.forEach((n, i) => {
+      const row = Math.floor(i / cols);
+      const col = i % cols;
+      nodes[n.id] = {
+        x: cursorX + PAD_X + col * (NODE_W + COL_G),
+        y: cursorY + PAD_Y + row * (NODE_H + ROW_G),
+        w: NODE_W,
+        h: NODE_H,
+        rank: 0,
+      };
+    });
+
+    cursorX += gW + GROUP_GAP;
+    rowH = Math.max(rowH, gH);
+  }
+
+  const edges = _buildEdges(plants, nodes);
+  const bounds = _computeBounds(nodes, 80);
+  return { nodes, edges, bounds, bands };
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+function _buildEdges(plants: TreeNode[], nodes: Record<string, LayoutNode>): TreeEdge[] {
   const edges: TreeEdge[] = [];
   for (const p of plants) {
     const { mother, father } = p.parents;
@@ -200,137 +412,23 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
       edges.push({ from: father, to: p.id, kind: 'father' });
     }
   }
-
-  // Compute bounds with 40px padding
-  const pad = 40;
-  const xs = Object.values(nodes).flatMap((n) => [n.x, n.x + n.w]);
-  const ys = Object.values(nodes).flatMap((n) => [n.y, n.y + n.h]);
-  const bounds = {
-    minX: Math.min(...xs) - pad,
-    maxX: Math.max(...xs) + pad,
-    minY: Math.min(...ys) - pad,
-    maxY: Math.max(...ys) + pad,
-  };
-
-  return { nodes, edges, bounds };
+  return edges;
 }
 
-// ---------------------------------------------------------------------------
-// layoutRadial
-// ---------------------------------------------------------------------------
-
-export function layoutRadial(plants: TreeNode[], focalId: string): LayoutResult {
-  if (plants.length === 0) {
-    return {
-      nodes: {},
-      edges: [],
-      bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
-    };
-  }
-
-  const { byId, childrenOf } = buildIndex(plants);
-
-  // BFS to assign relative ranks from focal node
-  const relRank: Record<string, number> = {};
-  relRank[focalId] = 0;
-
-  const queue: Array<{ id: string; rank: number }> = [{ id: focalId, rank: 0 }];
-  const visited = new Set<string>([focalId]);
-
-  while (queue.length > 0) {
-    const { id, rank } = queue.shift()!;
-    const node = byId[id];
-    if (!node) continue;
-
-    // Walk ancestors (negative ranks)
-    const { mother, father } = node.parents;
-    for (const parentId of [mother, father]) {
-      if (parentId && byId[parentId] && !visited.has(parentId)) {
-        visited.add(parentId);
-        relRank[parentId] = rank - 1;
-        queue.push({ id: parentId, rank: rank - 1 });
-      }
-    }
-
-    // Walk descendants (positive ranks)
-    for (const childId of childrenOf[id] ?? []) {
-      if (byId[childId] && !visited.has(childId)) {
-        visited.add(childId);
-        relRank[childId] = rank + 1;
-        queue.push({ id: childId, rank: rank + 1 });
-      }
-    }
-  }
-
-  // Group by absolute rank (ring distance from focal)
-  const byAbsRank: Record<number, string[]> = {};
-  for (const [id, r] of Object.entries(relRank)) {
-    if (r === 0) continue;
-    const absR = Math.abs(r);
-    if (!byAbsRank[absR]) byAbsRank[absR] = [];
-    byAbsRank[absR].push(id);
-  }
-
-  // Place focal at origin
-  const cx = 0;
-  const cy = 0;
-
-  const nodes: Record<string, LayoutNode> = {};
-
-  // Focal node
-  nodes[focalId] = {
-    x: cx - NODE_W / 2,
-    y: cy - NODE_H / 2,
-    w: NODE_W,
-    h: NODE_H,
-    rank: 0,
-  };
-
-  for (const [absRankStr, ids] of Object.entries(byAbsRank)) {
-    const absRank = Number(absRankStr);
-    const radius = absRank * 280;
-    const count = ids.length;
-
-    ids.forEach((id, i) => {
-      // Distribute evenly in a full 360° circle, starting from top (-90°)
-      const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-
-      nodes[id] = {
-        x: cx + radius * Math.cos(angle) - NODE_W / 2,
-        y: cy + radius * Math.sin(angle) - NODE_H / 2,
-        w: NODE_W,
-        h: NODE_H,
-        rank: relRank[id],
-      };
-    });
-  }
-
-  // Build edges — only between nodes present in the layout
-  const edges: TreeEdge[] = [];
-  for (const id of Object.keys(nodes)) {
-    const node = byId[id];
-    if (!node) continue;
-    const { mother, father } = node.parents;
-    if (mother && nodes[mother]) {
-      edges.push({ from: mother, to: id, kind: 'mother' });
-    }
-    if (father && father !== mother && nodes[father]) {
-      edges.push({ from: father, to: id, kind: 'father' });
-    }
-  }
-
-  // Bounds with 60px padding
-  const pad = 60;
-  const xs = Object.values(nodes).flatMap((n) => [n.x, n.x + n.w]);
-  const ys = Object.values(nodes).flatMap((n) => [n.y, n.y + n.h]);
-  const bounds = {
+function _computeBounds(
+  nodes: Record<string, LayoutNode>,
+  pad: number,
+): { minX: number; maxX: number; minY: number; maxY: number } {
+  const arr = Object.values(nodes);
+  if (arr.length === 0) return { minX: 0, maxX: 800, minY: 0, maxY: 500 };
+  const xs = arr.flatMap((n) => [n.x, n.x + n.w]);
+  const ys = arr.flatMap((n) => [n.y, n.y + n.h]);
+  return {
     minX: Math.min(...xs) - pad,
     maxX: Math.max(...xs) + pad,
     minY: Math.min(...ys) - pad,
     maxY: Math.max(...ys) + pad,
   };
-
-  return { nodes, edges, bounds };
 }
 
 // ---------------------------------------------------------------------------
@@ -397,7 +495,7 @@ export function motherLineOf(plants: TreeNode[], focalId: string): Set<string> {
 // ---------------------------------------------------------------------------
 
 export function edgePath(from: LayoutNode, to: LayoutNode): string {
-  // "from" is parent (lower on screen, larger y), "to" is child (higher on screen, smaller y)
+  // "from" is parent (lower on screen, larger y), "to" is child (higher, smaller y)
   const x1 = from.x + from.w / 2;
   const y1 = from.y;
   const x2 = to.x + to.w / 2;
@@ -406,7 +504,7 @@ export function edgePath(from: LayoutNode, to: LayoutNode): string {
   return `M ${x1} ${y1} C ${x1} ${y1 - dy}, ${x2} ${y2 + dy}, ${x2} ${y2}`;
 }
 
-export function edgePathRadial(from: LayoutNode, to: LayoutNode): string {
+export function edgePathCurve(from: LayoutNode, to: LayoutNode): string {
   const x1 = from.x + from.w / 2;
   const y1 = from.y + from.h / 2;
   const x2 = to.x + to.w / 2;

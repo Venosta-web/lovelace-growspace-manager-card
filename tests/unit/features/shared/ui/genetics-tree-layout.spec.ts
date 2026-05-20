@@ -1,10 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
   layoutTopDown,
-  layoutRadial,
+  layoutSubgraph,
+  layoutBreederGrouped,
   ancestorsOf,
   descendantsOf,
   motherLineOf,
+  NODE_W,
+  NODE_H,
   type TreeNode
 } from '../../../../../src/features/shared/ui/genetics-tree-layout';
 
@@ -62,26 +65,24 @@ describe('genetics-tree-layout', () => {
     it('should calculate ranks and positions correctly', () => {
       const result = layoutTopDown(mockNodes);
 
-      // p1 and p2 should be rank 0 (ancestors)
-      // f1 should be rank 1
-      // f2 should be rank 2
       expect(result.nodes['p1'].rank).toBe(0);
       expect(result.nodes['p2'].rank).toBe(0);
       expect(result.nodes['f1'].rank).toBe(1);
       expect(result.nodes['f2'].rank).toBe(2);
 
-      // Higher rank (most derived) should have smaller Y in top-down layout?
-      // Wait, let's check implementation:
-      // const y = (maxRank - r) * (NODE_H + ROW_GAP);
-      // maxRank is 2. 
-      // f2 (rank 2) => y = (2-2)*gap = 0
-      // f1 (rank 1) => y = (2-1)*gap = 206
-      // p1 (rank 0) => y = (2-0)*gap = 412
+      // Most-derived node (f2, rank 2) sits at y=0 (top of canvas)
+      // y = (maxRank - rank) * (NODE_H + ROW_GAP)
       expect(result.nodes['f2'].y).toBe(0);
       expect(result.nodes['f1'].y).toBeGreaterThan(0);
       expect(result.nodes['p1'].y).toBeGreaterThan(result.nodes['f1'].y);
 
-      expect(result.edges).toHaveLength(3); // p1->f1, p2->f1, f1->f2
+      expect(result.edges).toHaveLength(3); // p1→f1, p2→f1, f1→f2
+      expect(result.bands).toBeDefined();
+      expect(result.bands!.length).toBeGreaterThan(0);
+
+      // Node dimensions should use compact constants
+      expect(result.nodes['f1'].w).toBe(NODE_W);
+      expect(result.nodes['f1'].h).toBe(NODE_H);
     });
 
     it('should handle cycles gracefully', () => {
@@ -100,33 +101,58 @@ describe('genetics-tree-layout', () => {
     });
   });
 
-  describe('layoutRadial', () => {
-    it('should return empty result for empty nodes', () => {
-      const result = layoutRadial([], 'any');
-      expect(result.nodes).toEqual({});
+  describe('layoutSubgraph', () => {
+    it('should return full layout when focalId is unknown', () => {
+      const result = layoutSubgraph(mockNodes, 'non-existent');
+      expect(Object.keys(result.nodes)).toHaveLength(4);
     });
 
-    it('should place focal node at center', () => {
-      const result = layoutRadial(mockNodes, 'f1');
+    it('should include only focal + ancestors + descendants', () => {
+      const result = layoutSubgraph(mockNodes, 'f1');
+      // f1 focal, p1+p2 ancestors, f2 descendant
+      expect(Object.keys(result.nodes)).toHaveLength(4);
+      expect(result.nodes['f1']).toBeDefined();
+      expect(result.nodes['p1']).toBeDefined();
+      expect(result.nodes['f2']).toBeDefined();
+    });
+
+    it('should re-center on the focal node', () => {
+      const result = layoutSubgraph(mockNodes, 'f1');
       const focal = result.nodes['f1'];
-      // cx=0, cy=0, so x = 0 - 100 = -100, y = 0 - 38 = -38
-      expect(focal.x).toBe(-100);
-      expect(focal.y).toBe(-38);
+      // After centering, focal midpoint should be near 0,0
+      expect(focal.x + focal.w / 2).toBeCloseTo(0, 0);
+      expect(focal.y + focal.h / 2).toBeCloseTo(0, 0);
+    });
+  });
+
+  describe('layoutBreederGrouped', () => {
+    it('should group nodes by breeder into bands', () => {
+      const result = layoutBreederGrouped(mockNodes);
+      expect(result.bands).toBeDefined();
+      // All mockNodes share breeder 'Breeder 1'
+      expect(result.bands!.length).toBe(1);
+      expect(result.bands![0].label).toBe('Breeder 1');
+      expect(result.bands![0].count).toBe(4);
     });
 
-    it('should place ancestors and descendants in rings', () => {
-      const result = layoutRadial(mockNodes, 'f1');
-      // f1 is center. p1, p2, f2 are at distance 280
-      const dist = (id: string) => {
-        const n = result.nodes[id];
-        const dx = (n.x + 100);
-        const dy = (n.y + 38);
-        return Math.sqrt(dx * dx + dy * dy);
-      };
+    it('should produce multiple bands for multiple breeders', () => {
+      const multiBreeder: TreeNode[] = [
+        ...mockNodes,
+        {
+          id: 'x1', name: 'X1', strain: 'X', breeder: 'Other', pheno: '',
+          gen: 'F1', type: 'strain', parents: { mother: null, father: null }
+        }
+      ];
+      const result = layoutBreederGrouped(multiBreeder);
+      expect(result.bands!.length).toBe(2);
+    });
 
-      expect(dist('p1')).toBeCloseTo(280, 0);
-      expect(dist('p2')).toBeCloseTo(280, 0);
-      expect(dist('f2')).toBeCloseTo(280, 0);
+    it('should assign positions to all nodes', () => {
+      const result = layoutBreederGrouped(mockNodes);
+      for (const id of ['p1', 'p2', 'f1', 'f2']) {
+        expect(result.nodes[id]).toBeDefined();
+        expect(result.nodes[id].w).toBe(NODE_W);
+      }
     });
   });
 

@@ -85,7 +85,9 @@ var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 1
 var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
 var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
 var mdiAlertCircle = "M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
+var mdiArrowCollapse = "M19.5,3.09L15,7.59V4H13V11H20V9H16.41L20.91,4.5L19.5,3.09M4,13V15H7.59L3.09,19.5L4.5,20.91L9,16.41V20H11V13H4Z";
 var mdiArrowDown = "M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z";
+var mdiArrowExpand = "M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.5,10.91L19,6.41V10H21V3H14V5H17.59L13.09,9.5L14.5,10.91Z";
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
@@ -116,7 +118,6 @@ var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19
 var mdiCloudOutline = "M6.5 20Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20M6.5 18H18.5Q19.55 18 20.27 17.27 21 16.55 21 15.5 21 14.45 20.27 13.73 19.55 13 18.5 13H17V11Q17 8.93 15.54 7.46 14.08 6 12 6 9.93 6 8.46 7.46 7 8.93 7 11H6.5Q5.05 11 4.03 12.03 3 13.05 3 14.5 3 15.95 4.03 17 5.05 18 6.5 18M12 12Z";
 var mdiCloudUpload = "M11 20H6.5Q4.22 20 2.61 18.43 1 16.85 1 14.58 1 12.63 2.17 11.1 3.35 9.57 5.25 9.15 5.88 6.85 7.75 5.43 9.63 4 12 4 14.93 4 16.96 6.04 19 8.07 19 11 20.73 11.2 21.86 12.5 23 13.78 23 15.5 23 17.38 21.69 18.69 20.38 20 18.5 20H13V12.85L14.6 14.4L16 13L12 9L8 13L9.4 14.4L11 12.85Z";
 var mdiCog = "M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z";
-var mdiCompare = "M19,3H14V5H19V18L14,12V21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M10,18H5L10,12M10,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H10V23H12V1H10V3Z";
 var mdiCompassOutline = "M7,17L10.2,10.2L17,7L13.8,13.8L7,17M12,11.1A0.9,0.9 0 0,0 11.1,12A0.9,0.9 0 0,0 12,12.9A0.9,0.9 0 0,0 12.9,12A0.9,0.9 0 0,0 12,11.1M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z";
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
 var mdiContentCut = "M19,3L13,9L15,11L22,4V3M12,12.5A0.5,0.5 0 0,1 11.5,12A0.5,0.5 0 0,1 12,11.5A0.5,0.5 0 0,1 12.5,12A0.5,0.5 0 0,1 12,12.5M6,20A2,2 0 0,1 4,18C4,16.89 4.9,16 6,16A2,2 0 0,1 8,18C8,19.11 7.1,20 6,20M6,8A2,2 0 0,1 4,6C4,4.89 4.9,4 6,4A2,2 0 0,1 8,6C8,7.11 7.1,8 6,8M9.64,7.64C9.87,7.14 10,6.59 10,6A4,4 0 0,0 6,2A4,4 0 0,0 2,6A4,4 0 0,0 6,10C6.59,10 7.14,9.87 7.64,9.64L10,12L7.64,14.36C7.14,14.13 6.59,14 6,14A4,4 0 0,0 2,18A4,4 0 0,0 6,22A4,4 0 0,0 10,18C10,17.41 9.87,16.86 9.64,16.36L12,14L19,21H22V20L9.64,7.64Z";
@@ -27575,12 +27576,12 @@ StrainEditorView = __decorate([
 
 // Pure layout computation for genetics lineage tree views.
 // No DOM, no LitElement — only position math and graph traversal.
-const NODE_W = 200;
-const NODE_H = 76;
-const COL_GAP = 36;
-const ROW_GAP = 130;
+const NODE_W = 148;
+const NODE_H = 50;
+const COL_GAP = 16;
+const ROW_GAP = 96;
 // ---------------------------------------------------------------------------
-// Private helper: build lookup maps
+// buildIndex — exported so callers can build child-lookup maps cheaply
 // ---------------------------------------------------------------------------
 function buildIndex(plants) {
     const byId = {};
@@ -27604,25 +27605,16 @@ function buildIndex(plants) {
     return { byId, childrenOf };
 }
 // ---------------------------------------------------------------------------
-// layoutTopDown
+// Rank computation — longest path from root with parent-lift pass
 // ---------------------------------------------------------------------------
-function layoutTopDown(plants) {
-    if (plants.length === 0) {
-        return {
-            nodes: {},
-            edges: [],
-            bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
-        };
-    }
-    const { byId } = buildIndex(plants);
-    // Rank = longest path from a root (node with no parents in the set).
+function computeRanks(plants, byId) {
     const rankCache = {};
     const visiting = {};
     function rankOf(id) {
         if (rankCache[id] !== undefined)
             return rankCache[id];
         if (visiting[id])
-            return 0; // cycle guard
+            return 0;
         visiting[id] = true;
         const node = byId[id];
         if (!node) {
@@ -27640,11 +27632,8 @@ function layoutTopDown(plants) {
     }
     for (const p of plants)
         rankOf(p.id);
-    // Top-down pass: ensure each parent is ranked no more than one level below its
-    // most-derived child. Without this, parents with no (or shallow) ancestry of
-    // their own get rank 0 and land at the very bottom of the canvas even when they
-    // are direct parents of a high-ranked node (e.g. Mimosa with no stored parents
-    // appearing next to ancient leaf-ancestors instead of next to Animal Mints).
+    // Lift parents so they sit at child_rank − 1 (avoids shallow parents
+    // appearing far from their most-derived child in the layout).
     let anyChanged = true;
     while (anyChanged) {
         anyChanged = false;
@@ -27662,7 +27651,72 @@ function layoutTopDown(plants) {
             }
         }
     }
-    // Group by rank
+    return rankCache;
+}
+function orderByBarycenter(byRank, ranks) {
+    // Initial pass: family-key sort
+    for (const r of ranks) {
+        byRank[r].sort((a, b) => {
+            const ka = [a.parents.mother, a.parents.father].filter(Boolean).sort().join('|');
+            const kb = [b.parents.mother, b.parents.father].filter(Boolean).sort().join('|');
+            if (ka !== kb)
+                return ka.localeCompare(kb);
+            return a.name.localeCompare(b.name);
+        });
+    }
+    // 4 alternating sweeps (top→down, bottom→up) using parent/child barycenters
+    for (let pass = 0; pass < 4; pass++) {
+        const posInRank = {};
+        for (const r of ranks) {
+            byRank[r].forEach((n, i) => { posInRank[n.id] = i; });
+        }
+        const goingDown = pass % 2 === 0;
+        const order = goingDown ? [...ranks] : [...ranks].reverse();
+        for (const r of order) {
+            const row = byRank[r];
+            row.forEach((n) => {
+                let neighbors;
+                if (goingDown) {
+                    neighbors = [n.parents.mother, n.parents.father].filter((p) => p != null && posInRank[p] != null);
+                }
+                else {
+                    neighbors = [];
+                    for (const list of Object.values(byRank)) {
+                        for (const m of list) {
+                            if ((m.parents.mother === n.id || m.parents.father === n.id) &&
+                                posInRank[m.id] != null) {
+                                neighbors.push(m.id);
+                            }
+                        }
+                    }
+                }
+                n.__bary = neighbors.length
+                    ? neighbors.reduce((s, id) => s + posInRank[id], 0) / neighbors.length
+                    : (posInRank[n.id] ?? 0);
+            });
+            row.sort((a, b) => {
+                if (a.__bary !== b.__bary)
+                    return (a.__bary ?? 0) - (b.__bary ?? 0);
+                return a.name.localeCompare(b.name);
+            });
+        }
+    }
+    for (const r of ranks)
+        byRank[r].forEach((n) => { delete n.__bary; });
+}
+// ---------------------------------------------------------------------------
+// layoutTopDown
+// ---------------------------------------------------------------------------
+function layoutTopDown(plants) {
+    if (plants.length === 0) {
+        return {
+            nodes: {},
+            edges: [],
+            bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
+        };
+    }
+    const { byId } = buildIndex(plants);
+    const rankCache = computeRanks(plants, byId);
     const byRank = {};
     for (const p of plants) {
         const r = rankCache[p.id];
@@ -27670,32 +27724,13 @@ function layoutTopDown(plants) {
             byRank[r] = [];
         byRank[r].push(p);
     }
-    // Sort each rank: family group key first, then name
-    for (const r of Object.keys(byRank)) {
-        byRank[+r].sort((a, b) => {
-            const keyA = [a.parents.mother, a.parents.father]
-                .filter(Boolean)
-                .sort()
-                .join('|');
-            const keyB = [b.parents.mother, b.parents.father]
-                .filter(Boolean)
-                .sort()
-                .join('|');
-            if (keyA !== keyB)
-                return keyA.localeCompare(keyB);
-            return a.name.localeCompare(b.name);
-        });
-    }
-    const ranks = Object.keys(byRank)
-        .map(Number)
-        .sort((a, b) => a - b);
-    // Find max row width for centering
+    const ranks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
+    orderByBarycenter(byRank, ranks);
     const maxRowWidth = Math.max(...ranks.map((r) => {
         const count = byRank[r].length;
         return count * NODE_W + (count - 1) * COL_GAP;
     }));
     const maxRank = Math.max(...ranks);
-    // Assign positions — highest rank (most derived) at top (y=0), ancestors at bottom
     const nodes = {};
     for (const r of ranks) {
         const row = byRank[r];
@@ -27712,7 +27747,135 @@ function layoutTopDown(plants) {
             };
         });
     }
-    // Build edges
+    const edges = _buildEdges(plants, nodes);
+    const bounds = _computeBounds(nodes, 80);
+    const bands = ranks.map((r) => ({
+        kind: 'rank',
+        label: `Gen ${maxRank - r}`,
+        x: bounds.minX,
+        y: (maxRank - r) * (NODE_H + ROW_GAP),
+        w: bounds.maxX - bounds.minX,
+        h: NODE_H,
+    }));
+    return { nodes, edges, bounds, bands };
+}
+// ---------------------------------------------------------------------------
+// layoutSubgraph — focal node's ancestors + descendants only, re-centered
+// ---------------------------------------------------------------------------
+function layoutSubgraph(plants, focalId) {
+    if (!focalId)
+        return layoutTopDown(plants);
+    const { byId, childrenOf } = buildIndex(plants);
+    if (!byId[focalId])
+        return layoutTopDown(plants);
+    const ancestors = new Set();
+    const descendants = new Set();
+    (function walkAnc(id) {
+        const n = byId[id];
+        if (!n)
+            return;
+        for (const p of [n.parents.mother, n.parents.father]) {
+            if (p && byId[p] && !ancestors.has(p)) {
+                ancestors.add(p);
+                walkAnc(p);
+            }
+        }
+    })(focalId);
+    (function walkDesc(id) {
+        for (const c of childrenOf[id] ?? []) {
+            if (!descendants.has(c)) {
+                descendants.add(c);
+                walkDesc(c);
+            }
+        }
+    })(focalId);
+    const subset = plants.filter((n) => n.id === focalId || ancestors.has(n.id) || descendants.has(n.id));
+    const result = layoutTopDown(subset);
+    // Re-center so the focal node anchors the canvas
+    const focal = result.nodes[focalId];
+    if (focal) {
+        const dx = -(focal.x + focal.w / 2);
+        const dy = -(focal.y + focal.h / 2);
+        for (const id of Object.keys(result.nodes)) {
+            result.nodes[id].x += dx;
+            result.nodes[id].y += dy;
+        }
+        if (result.bands) {
+            result.bands.forEach((b) => { b.y += dy; });
+        }
+        result.bounds = _computeBounds(result.nodes, 100);
+    }
+    return result;
+}
+// ---------------------------------------------------------------------------
+// layoutBreederGrouped — one band per breeder, chip-packed within each band
+// ---------------------------------------------------------------------------
+function layoutBreederGrouped(plants) {
+    const PAD_X = 20;
+    const PAD_Y = 48; // room for band header
+    const COL_G = 12;
+    const ROW_G = 12;
+    const GROUP_GAP = 32;
+    const TARGET_W = 2400;
+    const groups = {};
+    for (const n of plants) {
+        const k = n.breeder || 'Unknown';
+        if (!groups[k])
+            groups[k] = [];
+        groups[k].push(n);
+    }
+    const keys = Object.keys(groups).sort((a, b) => {
+        if (groups[b].length !== groups[a].length)
+            return groups[b].length - groups[a].length;
+        return a.localeCompare(b);
+    });
+    const nodes = {};
+    const bands = [];
+    let cursorX = 0;
+    let cursorY = 0;
+    let rowH = 0;
+    for (const k of keys) {
+        const list = groups[k].slice().sort((a, b) => a.name.localeCompare(b.name));
+        const cols = Math.min(list.length, Math.max(2, Math.ceil(Math.sqrt(list.length * 1.6))));
+        const rows = Math.ceil(list.length / cols);
+        const gW = cols * NODE_W + (cols - 1) * COL_G + PAD_X * 2;
+        const gH = rows * NODE_H + (rows - 1) * ROW_G + PAD_Y + 16;
+        if (cursorX + gW > TARGET_W && cursorX > 0) {
+            cursorX = 0;
+            cursorY += rowH + GROUP_GAP;
+            rowH = 0;
+        }
+        bands.push({
+            kind: 'breeder',
+            label: k,
+            count: list.length,
+            x: cursorX,
+            y: cursorY,
+            w: gW,
+            h: gH,
+        });
+        list.forEach((n, i) => {
+            const row = Math.floor(i / cols);
+            const col = i % cols;
+            nodes[n.id] = {
+                x: cursorX + PAD_X + col * (NODE_W + COL_G),
+                y: cursorY + PAD_Y + row * (NODE_H + ROW_G),
+                w: NODE_W,
+                h: NODE_H,
+                rank: 0,
+            };
+        });
+        cursorX += gW + GROUP_GAP;
+        rowH = Math.max(rowH, gH);
+    }
+    const edges = _buildEdges(plants, nodes);
+    const bounds = _computeBounds(nodes, 80);
+    return { nodes, edges, bounds, bands };
+}
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+function _buildEdges(plants, nodes) {
     const edges = [];
     for (const p of plants) {
         const { mother, father } = p.parents;
@@ -27723,121 +27886,20 @@ function layoutTopDown(plants) {
             edges.push({ from: father, to: p.id, kind: 'father' });
         }
     }
-    // Compute bounds with 40px padding
-    const pad = 40;
-    const xs = Object.values(nodes).flatMap((n) => [n.x, n.x + n.w]);
-    const ys = Object.values(nodes).flatMap((n) => [n.y, n.y + n.h]);
-    const bounds = {
-        minX: Math.min(...xs) - pad,
-        maxX: Math.max(...xs) + pad,
-        minY: Math.min(...ys) - pad,
-        maxY: Math.max(...ys) + pad,
-    };
-    return { nodes, edges, bounds };
+    return edges;
 }
-// ---------------------------------------------------------------------------
-// layoutRadial
-// ---------------------------------------------------------------------------
-function layoutRadial(plants, focalId) {
-    if (plants.length === 0) {
-        return {
-            nodes: {},
-            edges: [],
-            bounds: { minX: 0, maxX: 400, minY: 0, maxY: 200 },
-        };
-    }
-    const { byId, childrenOf } = buildIndex(plants);
-    // BFS to assign relative ranks from focal node
-    const relRank = {};
-    relRank[focalId] = 0;
-    const queue = [{ id: focalId, rank: 0 }];
-    const visited = new Set([focalId]);
-    while (queue.length > 0) {
-        const { id, rank } = queue.shift();
-        const node = byId[id];
-        if (!node)
-            continue;
-        // Walk ancestors (negative ranks)
-        const { mother, father } = node.parents;
-        for (const parentId of [mother, father]) {
-            if (parentId && byId[parentId] && !visited.has(parentId)) {
-                visited.add(parentId);
-                relRank[parentId] = rank - 1;
-                queue.push({ id: parentId, rank: rank - 1 });
-            }
-        }
-        // Walk descendants (positive ranks)
-        for (const childId of childrenOf[id] ?? []) {
-            if (byId[childId] && !visited.has(childId)) {
-                visited.add(childId);
-                relRank[childId] = rank + 1;
-                queue.push({ id: childId, rank: rank + 1 });
-            }
-        }
-    }
-    // Group by absolute rank (ring distance from focal)
-    const byAbsRank = {};
-    for (const [id, r] of Object.entries(relRank)) {
-        if (r === 0)
-            continue;
-        const absR = Math.abs(r);
-        if (!byAbsRank[absR])
-            byAbsRank[absR] = [];
-        byAbsRank[absR].push(id);
-    }
-    // Place focal at origin
-    const cx = 0;
-    const cy = 0;
-    const nodes = {};
-    // Focal node
-    nodes[focalId] = {
-        x: cx - NODE_W / 2,
-        y: cy - NODE_H / 2,
-        w: NODE_W,
-        h: NODE_H,
-        rank: 0,
-    };
-    for (const [absRankStr, ids] of Object.entries(byAbsRank)) {
-        const absRank = Number(absRankStr);
-        const radius = absRank * 280;
-        const count = ids.length;
-        ids.forEach((id, i) => {
-            // Distribute evenly in a full 360° circle, starting from top (-90°)
-            const angle = (2 * Math.PI * i) / count - Math.PI / 2;
-            nodes[id] = {
-                x: cx + radius * Math.cos(angle) - NODE_W / 2,
-                y: cy + radius * Math.sin(angle) - NODE_H / 2,
-                w: NODE_W,
-                h: NODE_H,
-                rank: relRank[id],
-            };
-        });
-    }
-    // Build edges — only between nodes present in the layout
-    const edges = [];
-    for (const id of Object.keys(nodes)) {
-        const node = byId[id];
-        if (!node)
-            continue;
-        const { mother, father } = node.parents;
-        if (mother && nodes[mother]) {
-            edges.push({ from: mother, to: id, kind: 'mother' });
-        }
-        if (father && father !== mother && nodes[father]) {
-            edges.push({ from: father, to: id, kind: 'father' });
-        }
-    }
-    // Bounds with 60px padding
-    const pad = 60;
-    const xs = Object.values(nodes).flatMap((n) => [n.x, n.x + n.w]);
-    const ys = Object.values(nodes).flatMap((n) => [n.y, n.y + n.h]);
-    const bounds = {
+function _computeBounds(nodes, pad) {
+    const arr = Object.values(nodes);
+    if (arr.length === 0)
+        return { minX: 0, maxX: 800, minY: 0, maxY: 500 };
+    const xs = arr.flatMap((n) => [n.x, n.x + n.w]);
+    const ys = arr.flatMap((n) => [n.y, n.y + n.h]);
+    return {
         minX: Math.min(...xs) - pad,
         maxX: Math.max(...xs) + pad,
         minY: Math.min(...ys) - pad,
         maxY: Math.max(...ys) + pad,
     };
-    return { nodes, edges, bounds };
 }
 // ---------------------------------------------------------------------------
 // Graph traversal utilities
@@ -27875,27 +27937,11 @@ function descendantsOf(plants, focalId) {
     }
     return result;
 }
-function motherLineOf(plants, focalId) {
-    const { byId } = buildIndex(plants);
-    const result = new Set();
-    let current = focalId;
-    while (true) {
-        const node = byId[current];
-        if (!node)
-            break;
-        const { mother } = node.parents;
-        if (!mother || !byId[mother] || result.has(mother))
-            break;
-        result.add(mother);
-        current = mother;
-    }
-    return result;
-}
 // ---------------------------------------------------------------------------
 // Edge path generators
 // ---------------------------------------------------------------------------
 function edgePath(from, to) {
-    // "from" is parent (lower on screen, larger y), "to" is child (higher on screen, smaller y)
+    // "from" is parent (lower on screen, larger y), "to" is child (higher, smaller y)
     const x1 = from.x + from.w / 2;
     const y1 = from.y;
     const x2 = to.x + to.w / 2;
@@ -27903,7 +27949,7 @@ function edgePath(from, to) {
     const dy = (y1 - y2) / 2;
     return `M ${x1} ${y1} C ${x1} ${y1 - dy}, ${x2} ${y2 + dy}, ${x2} ${y2}`;
 }
-function edgePathRadial(from, to) {
+function edgePathCurve(from, to) {
     const x1 = from.x + from.w / 2;
     const y1 = from.y + from.h / 2;
     const x2 = to.x + to.w / 2;
@@ -27929,15 +27975,16 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     constructor() {
         super(...arguments);
         this.nodes = [];
+        /** External focal node — switches to lineage mode when set. */
         this.focalId = null;
-        this._layout = 'topdown';
-        this._focusMode = false;
-        this._highlightMother = false;
+        this._mode = 'tree';
+        this._focalId = null;
         this._search = '';
         this._genFilter = null;
+        this._breederFilter = '';
         this._collapsed = new Set();
         this._selectedId = null;
-        this._compareIds = [];
+        this._hoverId = null;
         this._panX = 0;
         this._panY = 0;
         this._scale = 0.9;
@@ -27946,6 +27993,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         this._dragging = null;
         this._computed = null;
         this._childrenOf = {};
+        this._byId = {};
         this._userHasInteracted = false;
     }
     // ---------------------------------------------------------------------------
@@ -27956,7 +28004,6 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         this._resizeObs = new ResizeObserver((entries) => {
             let changed = false;
             for (const entry of entries) {
-                // Observe host element dimensions
                 if (this._viewW !== entry.contentRect.width || this._viewH !== entry.contentRect.height) {
                     this._viewW = entry.contentRect.width;
                     this._viewH = entry.contentRect.height;
@@ -27968,9 +28015,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
                 this.requestUpdate();
             }
         });
-        // Observe host instead of child to avoid race condition with conditional rendering
         this._resizeObs.observe(this);
-        // Fallback trigger for initial render
         this.updateComplete.then(() => {
             if (this._viewW === 0) {
                 const rect = this.getBoundingClientRect();
@@ -27988,36 +28033,29 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         this._resizeObs?.disconnect();
     }
     willUpdate(changed) {
-        if (changed.has('nodes')) {
-            this._childrenOf = {};
-            for (const n of this.nodes) {
-                const { mother, father } = n.parents;
-                if (mother) {
-                    if (!this._childrenOf[mother])
-                        this._childrenOf[mother] = [];
-                    if (!this._childrenOf[mother].includes(n.id))
-                        this._childrenOf[mother].push(n.id);
-                }
-                if (father && father !== mother) {
-                    if (!this._childrenOf[father])
-                        this._childrenOf[father] = [];
-                    if (!this._childrenOf[father].includes(n.id))
-                        this._childrenOf[father].push(n.id);
-                }
-            }
+        // Sync external focalId property → internal state + switch to lineage mode
+        if (changed.has('focalId') && this.focalId !== this._focalId) {
+            this._focalId = this.focalId;
+            if (this.focalId)
+                this._mode = 'lineage';
         }
-        if (changed.has('nodes') ||
-            changed.has('_layout') ||
+        if (changed.has('nodes')) {
+            const { byId, childrenOf } = buildIndex(this.nodes);
+            this._byId = byId;
+            this._childrenOf = childrenOf;
+        }
+        const needsRecompute = changed.has('nodes') ||
             changed.has('focalId') ||
+            changed.has('_mode') ||
+            changed.has('_focalId') ||
             changed.has('_collapsed') ||
-            changed.has('_focusMode') ||
+            changed.has('_breederFilter') ||
             changed.has('_viewW') ||
-            changed.has('_viewH')) {
+            changed.has('_viewH');
+        if (needsRecompute) {
             this._recompute();
-            // Only auto-fit when the viewport resizes, or before the user has
-            // panned/zoomed (first load).  Explicit "Fit" / "Reset" buttons call
-            // _fitToScreen() directly and are unaffected by this guard.
-            if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH')) {
+            if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH') ||
+                changed.has('_mode') || changed.has('_focalId') || changed.has('_breederFilter')) {
                 this._fitToScreen();
             }
         }
@@ -28031,11 +28069,11 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             this._computed = null;
             return;
         }
-        if (this._layout === 'radial' && this.focalId) {
-            this._computed = layoutRadial(visible, this.focalId);
+        if (this._mode === 'families') {
+            this._computed = layoutBreederGrouped(visible);
         }
-        else if (this._layout === 'radial' && visible.length > 0) {
-            this._computed = layoutRadial(visible, visible[0].id);
+        else if (this._mode === 'lineage' && this._focalId) {
+            this._computed = layoutSubgraph(visible, this._focalId);
         }
         else {
             this._computed = layoutTopDown(visible);
@@ -28043,6 +28081,9 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     }
     _visibleNodes() {
         let nodes = this.nodes;
+        if (this._breederFilter) {
+            nodes = nodes.filter((n) => n.breeder === this._breederFilter);
+        }
         if (this._collapsed.size > 0) {
             const hidden = new Set();
             const queue = [...this._collapsed];
@@ -28057,16 +28098,12 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             }
             nodes = nodes.filter((n) => !hidden.has(n.id));
         }
-        if (this._focusMode && this.focalId) {
-            const keep = new Set([this.focalId, ...this._ancestorSet, ...this._descendantSet]);
-            nodes = nodes.filter((n) => keep.has(n.id));
-        }
         return nodes;
     }
     _fitToScreen() {
         if (!this._computed || this._viewW <= 0 || this._viewH <= 0)
             return;
-        const { nodes, bounds } = this._computed;
+        const { bounds } = this._computed;
         const { minX, maxX, minY, maxY } = bounds;
         const treeW = maxX - minX;
         const treeH = maxY - minY;
@@ -28075,33 +28112,36 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         const scaleY = (this._viewH - pad * 2) / treeH;
         const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
         this._scale = scale;
-        const focalNode = !this._focusMode && this.focalId ? nodes[this.focalId] : null;
-        if (focalNode) {
-            this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
-            this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;
-        }
-        else {
-            this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
-            this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
-        }
+        this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
+        this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
     }
     // ---------------------------------------------------------------------------
-    // Derived sets
+    // Derived sets (computed from full nodes list, not just visible)
     // ---------------------------------------------------------------------------
     get _ancestorSet() {
-        if (!this.focalId)
+        if (!this._focalId)
             return new Set();
-        return ancestorsOf(this.nodes, this.focalId);
+        return ancestorsOf(this.nodes, this._focalId);
     }
     get _descendantSet() {
-        if (!this.focalId)
+        if (!this._focalId)
             return new Set();
-        return descendantsOf(this.nodes, this.focalId);
+        return descendantsOf(this.nodes, this._focalId);
     }
-    get _motherLineSet() {
-        if (!this.focalId)
+    get _highlightId() {
+        return this._hoverId ?? this._selectedId;
+    }
+    get _highlightAncSet() {
+        const hid = this._highlightId;
+        if (!hid)
             return new Set();
-        return motherLineOf(this.nodes, this.focalId);
+        return ancestorsOf(this.nodes, hid);
+    }
+    get _highlightDescSet() {
+        const hid = this._highlightId;
+        if (!hid)
+            return new Set();
+        return descendantsOf(this.nodes, hid);
     }
     // ---------------------------------------------------------------------------
     // Pan / zoom handlers
@@ -28109,14 +28149,19 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     _onWheel(e) {
         e.preventDefault();
         this._userHasInteracted = true;
-        const delta = -e.deltaY * 0.0015;
-        const newScale = Math.min(Math.max(this._scale + delta * this._scale, 0.2), 2.0);
-        const rect = e.currentTarget.getBoundingClientRect();
+        const el = e.currentTarget;
+        const rect = el.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-        this._panX = mx - (mx - this._panX) * (newScale / this._scale);
-        this._panY = my - (my - this._panY) * (newScale / this._scale);
-        this._scale = newScale;
+        const dir = e.deltaY < 0 ? 1 : -1;
+        const factor = dir > 0 ? 1.15 : 1 / 1.15;
+        const newK = Math.max(0.08, Math.min(4, this._scale * factor));
+        // Keep the world-point under the cursor stationary
+        const worldX = (mx - this._panX) / this._scale;
+        const worldY = (my - this._panY) / this._scale;
+        this._panX = mx - worldX * newK;
+        this._panY = my - worldY * newK;
+        this._scale = newK;
     }
     _onMouseDown(e) {
         if (e.button !== 0)
@@ -28124,8 +28169,9 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         const target = e.target;
         if (target.closest('.tree-node') ||
             target.closest('.minimap') ||
-            target.closest('.compare-drawer') ||
-            target.closest('.detail-panel'))
+            target.closest('.detail-panel') ||
+            target.closest('.focus-banner') ||
+            target.closest('.zoom-controls'))
             return;
         this._userHasInteracted = true;
         this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
@@ -28142,20 +28188,41 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     // ---------------------------------------------------------------------------
     // Node interaction
     // ---------------------------------------------------------------------------
-    _onNodeClick(p) {
-        this._selectedId = this._selectedId === p.id ? null : p.id;
-        if (this._focusMode || this._layout === 'radial') {
-            this.focalId = p.id;
+    _onNodeClick(p, e) {
+        e.stopPropagation();
+        if (e.detail >= 2) {
+            // Double-click → enter lineage mode focused on this node
+            this._focalId = p.id;
+            this._mode = 'lineage';
+            this._selectedId = p.id;
+            this._userHasInteracted = false;
+            return;
         }
+        this._selectedId = this._selectedId === p.id ? null : p.id;
+    }
+    _isolateLineage(id) {
+        this._focalId = id;
+        this._mode = 'lineage';
+        this._selectedId = id;
+        this._userHasInteracted = false;
+    }
+    _clearFocus() {
+        this._focalId = null;
+        this._selectedId = null;
+        if (this._mode === 'lineage')
+            this._mode = 'tree';
+        this._userHasInteracted = false;
+    }
+    _jumpTo(id) {
+        this._selectedId = id;
+        this._userHasInteracted = false;
     }
     _toggleCollapse(id) {
         const next = new Set(this._collapsed);
-        if (next.has(id)) {
+        if (next.has(id))
             next.delete(id);
-        }
-        else {
+        else
             next.add(id);
-        }
         this._collapsed = next;
     }
     // ---------------------------------------------------------------------------
@@ -28167,6 +28234,8 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         if (!c) {
             return x `<div class="empty">No lineage data.</div>`;
         }
+        const gens = [...new Set(this.nodes.map((n) => n.gen))].sort();
+        const breeders = this._computeBreeders();
         return x `
       <div
         class="shell"
@@ -28175,179 +28244,181 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         @mousemove=${this._onMouseMove}
         @mouseup=${this._onMouseUp}
         @mouseleave=${this._onMouseUp}
+        @click=${(e) => {
+            if (!e.target.closest('.tree-node'))
+                this._selectedId = null;
+        }}
       >
-        ${this._renderToolbar(visible)}
-        ${this._renderFilterRow()}
+        ${this._renderToolbar(visible, breeders)}
+        ${this._renderFilterRow(gens)}
         <div class="canvas-wrap">
           <div class="bg-grid"></div>
           <div
             class="canvas"
             style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._scale})"
           >
+            ${this._renderBreederBands(c)}
+            ${this._renderGenGutterLabels(c)}
             ${this._renderEdges(c)}
-            ${this._layout === 'topdown' ? this._renderGenLabels(c) : E}
-            ${this._renderNodes(c)}
+            ${this._renderNodes(c, visible)}
           </div>
+          ${this._renderFocusBanner()}
+          ${this._renderDetailPanel()}
           ${this._renderZoomControls()}
           ${this._renderLegend()}
           ${this._renderMinimap(c, visible)}
-          ${this._renderCompareDrawer()}
         </div>
-        ${this._renderDetailPanel()}
       </div>
     `;
     }
     // ---------------------------------------------------------------------------
     // Render: toolbar
     // ---------------------------------------------------------------------------
-    _renderToolbar(visible) {
+    _renderToolbar(visible, breeders) {
         return x `
       <div class="toolbar-row">
         <div class="search-bar">
           <svg class="icon" viewBox="0 0 24 24"><path d="${mdiMagnify}" /></svg>
           <input
             type="text"
-            placeholder="Search…"
+            placeholder="Search strain or breeder…"
             .value=${this._search}
-            @input=${(e) => {
-            this._search = e.target.value;
-        }}
+            @input=${(e) => { this._search = e.target.value; }}
           />
           ${this._search
             ? x `
-                <button
-                  class="icon-btn"
-                  @click=${() => {
-                this._search = '';
-            }}
-                >
+                <button class="icon-btn" @click=${() => { this._search = ''; }}>
                   <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
                 </button>
               `
             : E}
         </div>
 
-        <div class="layout-toggle">
+        <div class="seg" role="tablist" aria-label="View mode">
           <button
-            class=${this._layout === 'topdown' ? 'active' : ''}
-            @click=${() => {
-            this._layout = 'topdown';
-        }}
-          >
-            Top-Down
-          </button>
+            class="${this._mode === 'tree' ? 'active' : ''}"
+            @click=${() => { this._mode = 'tree'; this._focalId = null; this._userHasInteracted = false; }}
+          >Tree</button>
           <button
-            class=${this._layout === 'radial' ? 'active' : ''}
+            class="${this._mode === 'lineage' ? 'active' : ''}"
             @click=${() => {
-            this._layout = 'radial';
-            if (!this.focalId && this.nodes.length > 0) {
-                this.focalId = this.nodes[0].id;
+            this._mode = 'lineage';
+            if (!this._focalId && this._selectedId) {
+                this._focalId = this._selectedId;
             }
+            else if (!this._focalId && this.nodes.length) {
+                this._focalId = this.nodes.find((n) => n.parents.mother)?.id ?? this.nodes[0].id;
+            }
+            this._userHasInteracted = false;
         }}
-          >
-            Radial
-          </button>
+          >Lineage</button>
+          <button
+            class="${this._mode === 'families' ? 'active' : ''}"
+            @click=${() => { this._mode = 'families'; this._userHasInteracted = false; }}
+          >Families</button>
         </div>
 
-        <button
-          class="pill-btn ${this._focusMode ? 'active' : ''}"
-          @click=${() => {
-            this._focusMode = !this._focusMode;
-        }}
-        >
-          <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
-          Focus
-        </button>
+        ${breeders.length > 1
+            ? x `
+              <select
+                class="select-pill"
+                .value=${this._breederFilter}
+                @change=${(e) => { this._breederFilter = e.target.value; }}
+              >
+                <option value="">All breeders</option>
+                ${breeders.map(([b, c]) => x `<option value="${b}">${b} (${c})</option>`)}
+              </select>
+            `
+            : E}
 
-        <button
-          class="pill-btn ${this._highlightMother ? 'active' : ''}"
-          @click=${() => {
-            this._highlightMother = !this._highlightMother;
-        }}
-        >
-          Mother Line
-        </button>
-
-        <button
-          class="pill-btn"
-          @click=${() => {
-            this._fitToScreen();
-        }}
-          title="Fit to Screen"
-        >
+        <button class="pill-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
           <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
           Fit
         </button>
 
-        <button
-          class="pill-btn"
-          @click=${() => {
-            this._scale = 1.0;
-            this._fitToScreen();
-        }}
-          title="Reset Zoom & Center"
-        >
-          Reset
-        </button>
-
-        <span class="count-badge">${visible.length} / ${this.nodes.length}</span>
+        <div class="toolbar-spacer"></div>
+        <div class="count-chip">
+          ${visible.length === this.nodes.length
+            ? `${this.nodes.length}`
+            : `${visible.length} / ${this.nodes.length}`} strains
+        </div>
       </div>
     `;
     }
     // ---------------------------------------------------------------------------
-    // Render: filter row
+    // Render: generation filter chips
     // ---------------------------------------------------------------------------
-    _renderFilterRow() {
-        const gens = [...new Set(this.nodes.map((n) => n.gen))].sort();
-        const showClear = this.focalId || this._focusMode || this._collapsed.size > 0;
+    _renderFilterRow(gens) {
+        const showClear = this._collapsed.size > 0 || !!this._genFilter;
         return x `
       <div class="filter-row">
         <button
           class="gen-chip ${this._genFilter === null ? 'active' : ''}"
-          @click=${() => {
-            this._genFilter = null;
-        }}
-        >
-          All
-        </button>
+          @click=${() => { this._genFilter = null; }}
+        >All</button>
         ${gens.map((g) => x `
-            <button
-              class="gen-chip ${this._genFilter === g ? 'active' : ''}"
-              style="--chip-c: ${genColor(g)}"
-              @click=${() => {
-            this._genFilter = g;
-        }}
-            >
-              ${g}
-            </button>
-          `)}
+          <button
+            class="gen-chip ${this._genFilter === g ? 'active' : ''}"
+            style="--chip-c:${genColor(g)}"
+            @click=${() => { this._genFilter = this._genFilter === g ? null : g; }}
+          >${g}</button>
+        `)}
         ${showClear
             ? x `
               <button
                 class="clear-btn"
-                @click=${() => {
-                this.focalId = null;
-                this._focusMode = false;
-                this._collapsed = new Set();
-            }}
-              >
-                Clear
-              </button>
+                @click=${() => { this._collapsed = new Set(); this._genFilter = null; }}
+              >Clear</button>
             `
             : E}
       </div>
     `;
     }
     // ---------------------------------------------------------------------------
-    // Render: edges
+    // Render: breeder bands (families mode)
+    // ---------------------------------------------------------------------------
+    _renderBreederBands(c) {
+        if (this._mode !== 'families' || !c.bands)
+            return x `${E}`;
+        return x `
+      ${c.bands.map((b) => x `
+        <div class="band" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>
+        <div class="band-header" style="left:${b.x + 18}px;top:${b.y + 12}px">
+          <span class="band-label">${b.label}</span>
+          <span class="band-count">${b.count}</span>
+        </div>
+      `)}
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: generation gutter labels (tree mode)
+    // ---------------------------------------------------------------------------
+    _renderGenGutterLabels(c) {
+        if (this._mode !== 'tree' || !c.bands)
+            return x `${E}`;
+        return x `
+      ${c.bands.map((b) => x `
+        <div
+          class="gen-gutter"
+          style="top:${b.y + b.h / 2 - 6}px;left:${c.bounds.minX + 8}px;transform:translateX(-100%)"
+        >${b.label}</div>
+      `)}
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: edges SVG
     // ---------------------------------------------------------------------------
     _renderEdges(c) {
         const { minX, minY, maxX, maxY } = c.bounds;
         const w = maxX - minX;
         const h = maxY - minY;
+        const highlightId = this._highlightId;
+        const highlightAnc = this._highlightAncSet;
+        const highlightDesc = this._highlightDescSet;
         const anc = this._ancestorSet;
         const desc = this._descendantSet;
-        const ml = this._motherLineSet;
+        const focalId = this._mode === 'lineage' ? this._focalId : null;
+        const pathFn = this._mode === 'families' ? edgePathCurve : edgePath;
         return x `
       <svg
         class="edges-svg"
@@ -28359,106 +28430,71 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             const toNode = c.nodes[e.to];
             if (!fromNode || !toNode)
                 return E;
-            const d = this._layout === 'radial'
-                ? edgePathRadial(fromNode, toNode)
-                : edgePath(fromNode, toNode);
-            const isMotherLine = ml.has(e.from) &&
-                (e.to === this.focalId || ml.has(e.to));
-            const dimmed = this._focusMode &&
-                this.focalId &&
-                !anc.has(e.from) &&
-                !anc.has(e.to) &&
-                !desc.has(e.from) &&
-                !desc.has(e.to) &&
-                e.from !== this.focalId &&
-                e.to !== this.focalId;
-            const classes = [
-                'edge',
-                `edge-${e.kind}`,
-                dimmed ? 'dimmed' : '',
-                isMotherLine && this._highlightMother ? 'mother-line' : '',
-            ]
-                .filter(Boolean)
-                .join(' ');
+            const d = pathFn(fromNode, toNode);
+            // Determine if this edge should be dim
+            const touchesHighlight = highlightId && (e.from === highlightId || e.to === highlightId);
+            const inHighlightGraph = highlightId && ((highlightAnc.has(e.from) && (e.to === highlightId || highlightAnc.has(e.to))) ||
+                (highlightDesc.has(e.to) && (e.from === highlightId || highlightDesc.has(e.from))));
+            const inFocalGraph = focalId && ((e.from === focalId || anc.has(e.from) || desc.has(e.from)) &&
+                (e.to === focalId || anc.has(e.to) || desc.has(e.to)));
+            let dim;
+            if (focalId) {
+                dim = !inFocalGraph;
+            }
+            else if (highlightId) {
+                dim = !touchesHighlight && !inHighlightGraph;
+            }
+            else {
+                // Faint until hover — the core legibility fix
+                dim = true;
+            }
+            const classes = ['edge', `edge-${e.kind}`, dim ? 'dim' : ''].filter(Boolean).join(' ');
             return b `<path class="${classes}" d="${d}" />`;
         })}
       </svg>
     `;
     }
     // ---------------------------------------------------------------------------
-    // Render: gen labels (topdown only)
-    // ---------------------------------------------------------------------------
-    _renderGenLabels(c) {
-        const { minX } = c.bounds;
-        const byRank = {};
-        for (const n of this._visibleNodes()) {
-            const ln = c.nodes[n.id];
-            if (!ln)
-                continue;
-            if (!byRank[ln.rank])
-                byRank[ln.rank] = [];
-            byRank[ln.rank].push(n);
-        }
-        return x `
-      ${Object.entries(byRank).map(([rankStr, rowNodes]) => {
-            const rank = Number(rankStr);
-            const ln = c.nodes[rowNodes[0].id];
-            if (!ln)
-                return E;
-            const gens = [...new Set(rowNodes.map((n) => n.gen))].join(' · ');
-            return x `
-          <div
-            class="gen-label"
-            style="left:${minX - 100}px;top:${ln.y}px"
-          >
-            <div class="gen-eyebrow">Gen ${rank}</div>
-            <div class="gen-tags">${gens}</div>
-          </div>
-        `;
-        })}
-    `;
-    }
-    // ---------------------------------------------------------------------------
     // Render: nodes
     // ---------------------------------------------------------------------------
-    _renderNodes(c) {
-        const visible = this._visibleNodes();
+    _renderNodes(c, visible) {
+        const searchLc = this._search.toLowerCase();
+        const highlightId = this._highlightId;
+        const highlightAnc = this._highlightAncSet;
+        const highlightDesc = this._highlightDescSet;
         const anc = this._ancestorSet;
         const desc = this._descendantSet;
-        const searchLc = this._search.toLowerCase();
+        const focalId = this._focalId;
         return x `
       ${visible.map((p) => {
             const ln = c.nodes[p.id];
             if (!ln)
                 return E;
             const isSelected = this._selectedId === p.id;
-            const isCompare = this._compareIds.includes(p.id);
-            const isFocal = this.focalId === p.id;
-            const inLineage = anc.has(p.id) || desc.has(p.id) || isFocal;
-            const highlighted = isFocal || inLineage;
+            const isFocal = focalId === p.id;
+            const inFocalGraph = focalId && (isFocal || anc.has(p.id) || desc.has(p.id));
+            const inHighlight = highlightId && (p.id === highlightId || highlightAnc.has(p.id) || highlightDesc.has(p.id));
             const searchMatch = !searchLc ||
                 p.name.toLowerCase().includes(searchLc) ||
                 p.strain.toLowerCase().includes(searchLc) ||
                 p.breeder.toLowerCase().includes(searchLc);
             const genMatch = !this._genFilter || p.gen === this._genFilter;
-            const dimmed = (this._focusMode && this.focalId && !highlighted) ||
+            const dim = (focalId && !inFocalGraph) ||
+                (highlightId && !inHighlight) ||
                 !searchMatch ||
                 !genMatch;
             const hasChildren = (this._childrenOf[p.id] ?? []).length > 0;
             const isCollapsed = this._collapsed.has(p.id);
-            const descCount = isCollapsed
-                ? this._countDescendants(p.id)
-                : 0;
+            const descCount = isCollapsed ? this._countDescendants(p.id) : 0;
+            const stageColor = genColor(p.gen);
             const classes = [
                 'tree-node',
-                dimmed ? 'dimmed' : '',
-                highlighted ? 'highlighted' : '',
+                dim ? 'dim' : '',
                 isSelected ? 'selected' : '',
-                isCompare ? 'compare' : '',
-            ]
-                .filter(Boolean)
-                .join(' ');
-            const stageColor = genColor(p.gen);
+                isFocal ? 'focal' : '',
+                p.id === highlightId ? 'hovered' : '',
+                inFocalGraph && !isFocal ? 'in-graph' : '',
+            ].filter(Boolean).join(' ');
             return x `
           <div
             class="${classes}"
@@ -28469,36 +28505,27 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
               height:${NODE_H}px;
               --stage-c:${stageColor}
             "
-            @click=${() => {
-                this._onNodeClick(p);
-            }}
+            @mouseenter=${() => { this._hoverId = p.id; }}
+            @mouseleave=${() => { this._hoverId = null; }}
+            @click=${(e) => this._onNodeClick(p, e)}
           >
             <div class="pn-body">
               <div class="pn-row1">
-                <span class="gen-badge" style="background:${stageColor}">${p.gen}</span>
-                <span class="pn-name">${p.name}</span>
+                <span class="pn-name" title="${p.name}">${p.name}</span>
               </div>
-              <div class="pn-row2">${p.strain}${p.breeder ? ` · ${p.breeder}` : ''}</div>
-              <div class="pn-row3">
-                <span class="type-badge ${p.type}">${p.type}</span>
-                ${p.pheno ? x `<span class="pheno-badge">${p.pheno}</span>` : E}
+              <div class="pn-row2">
+                <span class="gen-badge" style="background:${stageColor}">${p.gen}</span>
+                <span class="pn-breeder">${p.breeder}</span>
               </div>
             </div>
-            ${isCompare
-                ? x `<span class="compare-badge">${this._compareIds.indexOf(p.id) + 1}</span>`
-                : E}
             ${hasChildren
                 ? x `
                   <button
                     class="fold-btn ${isCollapsed ? 'collapsed' : ''}"
-                    @click=${(e) => {
-                    e.stopPropagation();
-                    this._toggleCollapse(p.id);
-                }}
+                    title="${isCollapsed ? 'Expand' : 'Collapse'}"
+                    @click=${(e) => { e.stopPropagation(); this._toggleCollapse(p.id); }}
                   >
-                    <svg viewBox="0 0 24 24">
-                      <path d="${isCollapsed ? mdiChevronDown : mdiChevronUp}" />
-                    </svg>
+                    <svg viewBox="0 0 24 24"><path d="${mdiChevronDown}" /></svg>
                     ${isCollapsed && descCount > 0
                     ? x `<span class="desc-count">${descCount}</span>`
                     : E}
@@ -28525,6 +28552,127 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         return seen.size;
     }
     // ---------------------------------------------------------------------------
+    // Render: focus banner (lineage mode)
+    // ---------------------------------------------------------------------------
+    _renderFocusBanner() {
+        if (this._mode !== 'lineage' || !this._focalId)
+            return x `${E}`;
+        const focal = this._byId[this._focalId];
+        if (!focal)
+            return x `${E}`;
+        const anc = this._ancestorSet;
+        const desc = this._descendantSet;
+        return x `
+      <div class="focus-banner">
+        <svg class="icon" viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
+        <span>
+          Lineage of <strong>${focal.name}</strong>
+          <span class="banner-counts">
+            · ${anc.size} ancestor${anc.size === 1 ? '' : 's'}
+            · ${desc.size} descendant${desc.size === 1 ? '' : 's'}
+          </span>
+        </span>
+        <button @click=${() => this._clearFocus()}>Clear</button>
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
+    // Render: side detail panel
+    // ---------------------------------------------------------------------------
+    _renderDetailPanel() {
+        if (!this._selectedId)
+            return x `${E}`;
+        const n = this._byId[this._selectedId];
+        if (!n)
+            return x `${E}`;
+        const motherNode = n.parents.mother ? this._byId[n.parents.mother] : null;
+        const fatherNode = n.parents.father ? this._byId[n.parents.father] : null;
+        const selectedAnc = ancestorsOf(this.nodes, n.id);
+        const selectedDesc = descendantsOf(this.nodes, n.id);
+        const kidsAll = this._childrenOf[n.id] ?? [];
+        const kidsShown = kidsAll.slice(0, 5).map((id) => this._byId[id]).filter(Boolean);
+        const kidsExtra = Math.max(0, kidsAll.length - kidsShown.length);
+        return x `
+      <div class="detail-panel" @click=${(e) => e.stopPropagation()}>
+        <button
+          class="detail-close"
+          @click=${() => { this._selectedId = null; }}
+          aria-label="Close"
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
+        </button>
+
+        <div class="detail-eyebrow" style="--gen-c:${genColor(n.gen)}">
+          ${n.gen} · ${selectedAnc.size === 0 ? 'Landrace' : 'Cross'}
+        </div>
+        <h3 class="detail-title">${n.name}</h3>
+        <div class="detail-breeder">${n.breeder}</div>
+
+        <div class="detail-stats">
+          <div class="detail-stat">
+            <div class="v">${selectedAnc.size}</div>
+            <div class="l">Ancestors</div>
+          </div>
+          <div class="detail-stat">
+            <div class="v">${selectedDesc.size}</div>
+            <div class="l">Descendants</div>
+          </div>
+          <div class="detail-stat">
+            <div class="v">${kidsAll.length}</div>
+            <div class="l">Direct kids</div>
+          </div>
+        </div>
+
+        ${motherNode || fatherNode
+            ? x `
+              <div class="detail-section">
+                <div class="detail-section-label">Parents</div>
+                ${motherNode
+                ? x `
+                      <div class="detail-parent" @click=${() => this._jumpTo(motherNode.id)}>
+                        <span class="role mother">Mother</span>
+                        <span class="pname" title="${motherNode.name}">${motherNode.name}</span>
+                      </div>
+                    `
+                : E}
+                ${fatherNode
+                ? x `
+                      <div class="detail-parent" @click=${() => this._jumpTo(fatherNode.id)}>
+                        <span class="role father">Father</span>
+                        <span class="pname" title="${fatherNode.name}">${fatherNode.name}</span>
+                      </div>
+                    `
+                : E}
+              </div>
+            `
+            : E}
+
+        ${kidsShown.length > 0
+            ? x `
+              <div class="detail-section">
+                <div class="detail-section-label">
+                  Offspring${kidsExtra ? ` (+${kidsExtra} more)` : ''}
+                </div>
+                ${kidsShown.map((k) => x `
+                  <div class="detail-parent" @click=${() => this._jumpTo(k.id)}>
+                    <span class="role" style="color:${genColor(k.gen)}">${k.gen}</span>
+                    <span class="pname" title="${k.name}">${k.name}</span>
+                  </div>
+                `)}
+              </div>
+            `
+            : E}
+
+        <div class="detail-actions">
+          <button class="pill-btn active" @click=${() => this._isolateLineage(n.id)}>
+            <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
+            Isolate Lineage
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    // ---------------------------------------------------------------------------
     // Render: zoom controls
     // ---------------------------------------------------------------------------
     _renderZoomControls() {
@@ -28534,7 +28682,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
           class="icon-btn"
           @click=${() => {
             this._userHasInteracted = true;
-            this._scale = Math.min(this._scale * 1.2, 2.0);
+            this._scale = Math.min(this._scale * 1.2, 4.0);
         }}
         >
           <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
@@ -28544,10 +28692,13 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
           class="icon-btn"
           @click=${() => {
             this._userHasInteracted = true;
-            this._scale = Math.max(this._scale / 1.2, 0.2);
+            this._scale = Math.max(this._scale / 1.2, 0.08);
         }}
         >
           <svg viewBox="0 0 24 24"><path d="${mdiMinus}" /></svg>
+        </button>
+        <button class="icon-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
+          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
         </button>
       </div>
     `;
@@ -28557,15 +28708,10 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     // ---------------------------------------------------------------------------
     _renderLegend() {
         return x `
-      <div class="legend">
-        <div class="legend-row">
-          <div class="legend-line solid"></div>
-          <span>Mother</span>
-        </div>
-        <div class="legend-row">
-          <div class="legend-line dashed"></div>
-          <span>Father</span>
-        </div>
+      <div class="tree-footer">
+        <span class="legend-item"><span class="legend-line mother"></span> Mother</span>
+        <span class="legend-item"><span class="legend-line father"></span> Father</span>
+        <span class="legend-hint">Double-click a strain to isolate its lineage</span>
       </div>
     `;
     }
@@ -28573,50 +28719,57 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     // Render: minimap
     // ---------------------------------------------------------------------------
     _renderMinimap(c, visible) {
-        const mmW = 180;
-        const mmH = 120;
+        const MM_W = 170;
+        const MM_H = 120;
+        const PAD = 4;
         const { minX, maxX, minY, maxY } = c.bounds;
         const treeW = maxX - minX || 1;
         const treeH = maxY - minY || 1;
-        const scaleX = mmW / treeW;
-        const scaleY = mmH / treeH;
-        const vpX = (-this._panX / this._scale - minX) * scaleX;
-        const vpY = (-this._panY / this._scale - minY) * scaleY;
-        const vpW = (this._viewW / this._scale) * scaleX;
-        const vpH = (this._viewH / this._scale) * scaleY;
+        const k = Math.min((MM_W - PAD * 2) / treeW, (MM_H - PAD * 2) / treeH);
+        const project = (x, y) => ({
+            x: PAD + (x - minX) * k,
+            y: PAD + (y - minY) * k,
+        });
+        const anc = this._ancestorSet;
+        const desc = this._descendantSet;
+        const vpX = (-this._panX / this._scale - minX) * k + PAD;
+        const vpY = (-this._panY / this._scale - minY) * k + PAD;
+        const vpW = (this._viewW / this._scale) * k;
+        const vpH = (this._viewH / this._scale) * k;
         return x `
       <svg
         class="minimap"
-        width="${mmW}"
-        height="${mmH}"
+        width="${MM_W}"
+        height="${MM_H}"
         @click=${(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
-            const wx = (e.clientX - rect.left) / scaleX + minX;
-            const wy = (e.clientY - rect.top) / scaleY + minY;
+            const wx = (e.clientX - rect.left - PAD) / k + minX;
+            const wy = (e.clientY - rect.top - PAD) / k + minY;
             this._panX = this._viewW / 2 - wx * this._scale;
             this._panY = this._viewH / 2 - wy * this._scale;
+            this._userHasInteracted = true;
         }}
       >
         ${visible.map((p) => {
             const ln = c.nodes[p.id];
             if (!ln)
                 return E;
-            const rx = (ln.x - minX) * scaleX;
-            const ry = (ln.y - minY) * scaleY;
-            const rw = ln.w * scaleX;
-            const rh = ln.h * scaleY;
+            const pos = project(ln.x + ln.w / 2, ln.y + ln.h / 2);
+            const isFocal = p.id === this._focalId || p.id === this._selectedId;
+            const isAnc = anc.has(p.id);
+            const isDesc = desc.has(p.id);
+            const fill = isFocal ? '#4caf50' : isAnc ? '#ff9800' : isDesc ? '#2196f3' : genColor(p.gen);
             return b `<rect
-            x="${rx}" y="${ry}" width="${Math.max(rw, 2)}" height="${Math.max(rh, 2)}"
-            rx="1"
-            fill="${genColor(p.gen)}"
-            opacity="0.7"
+            x="${pos.x - 1.5}" y="${pos.y - 0.7}"
+            width="3" height="1.4" rx="0.5"
+            fill="${fill}" opacity="${isFocal || isAnc || isDesc ? 0.9 : 0.5}"
           />`;
         })}
         <rect
-          x="${vpX}"
-          y="${vpY}"
-          width="${vpW}"
-          height="${vpH}"
+          x="${Math.max(0, Math.min(MM_W, vpX))}"
+          y="${Math.max(0, Math.min(MM_H, vpY))}"
+          width="${Math.max(2, Math.min(MM_W, vpX + vpW) - Math.max(0, vpX))}"
+          height="${Math.max(2, Math.min(MM_H, vpY + vpH) - Math.max(0, vpY))}"
           fill="none"
           stroke="#4caf50"
           stroke-width="1.5"
@@ -28626,140 +28779,13 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     `;
     }
     // ---------------------------------------------------------------------------
-    // Render: compare drawer
+    // Helper: breeder frequency list for dropdown
     // ---------------------------------------------------------------------------
-    _renderCompareDrawer() {
-        if (this._compareIds.length === 0)
-            return x `${E}`;
-        const byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
-        const renderCol = (id, slot) => {
-            if (!id) {
-                return x `
-          <div class="cd-col cd-empty">
-            <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
-            <span>Click a node to compare</span>
-          </div>
-        `;
-            }
-            const n = byId[id];
-            if (!n)
-                return x `${E}`;
-            return x `
-        <div class="cd-col">
-          <div class="cd-header">
-            <span class="cd-name">${n.name}</span>
-            <button
-              class="icon-btn"
-              @click=${() => {
-                this._compareIds = this._compareIds.filter((_, i) => i !== slot);
-            }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
-            </button>
-          </div>
-          <div class="cd-row"><span class="cd-k">Gen</span><span class="cd-v">${n.gen}</span></div>
-          <div class="cd-row"><span class="cd-k">Strain</span><span class="cd-v">${n.strain}</span></div>
-          <div class="cd-row"><span class="cd-k">Breeder</span><span class="cd-v">${n.breeder}</span></div>
-          <div class="cd-row"><span class="cd-k">Pheno</span><span class="cd-v">${n.pheno || '—'}</span></div>
-          <div class="cd-row"><span class="cd-k">Type</span><span class="cd-v">${n.type}</span></div>
-        </div>
-      `;
-        };
-        return x `
-      <div class="compare-drawer">
-        <div class="cd-title">
-          <svg viewBox="0 0 24 24"><path d="${mdiCompare}" /></svg>
-          Compare
-          <button
-            class="icon-btn"
-            style="margin-left:auto"
-            @click=${() => {
-            this._compareIds = [];
-        }}
-          >
-            <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
-          </button>
-        </div>
-        <div class="cd-cols">
-          ${renderCol(this._compareIds[0], 0)}
-          ${renderCol(this._compareIds[1], 1)}
-        </div>
-      </div>
-    `;
-    }
-    // ---------------------------------------------------------------------------
-    // Render: detail panel
-    // ---------------------------------------------------------------------------
-    _renderDetailPanel() {
-        if (!this._selectedId)
-            return x `${E}`;
-        const byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
-        const n = byId[this._selectedId];
-        if (!n)
-            return x `${E}`;
-        const motherNode = n.parents.mother ? byId[n.parents.mother] : null;
-        const fatherNode = n.parents.father ? byId[n.parents.father] : null;
-        return x `
-      <div class="detail-panel">
-        <div class="dp-header">
-          <span class="dp-title">${n.name}</span>
-          <button
-            class="icon-btn"
-            @click=${() => {
-            this._selectedId = null;
-        }}
-          >
-            <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
-          </button>
-        </div>
-        <div class="dp-body">
-          <div class="dp-row"><span class="dp-k">Generation</span><span class="dp-v">${n.gen}</span></div>
-          <div class="dp-row"><span class="dp-k">Strain</span><span class="dp-v">${n.strain}</span></div>
-          <div class="dp-row"><span class="dp-k">Breeder</span><span class="dp-v">${n.breeder}</span></div>
-          <div class="dp-row"><span class="dp-k">Phenotype</span><span class="dp-v">${n.pheno || '—'}</span></div>
-          <div class="dp-row">
-            <span class="dp-k">Mother</span>
-            <span
-              class="dp-v ${motherNode ? 'dp-link' : ''}"
-              @click=${() => {
-            if (motherNode) {
-                this.focalId = motherNode.id;
-                this._selectedId = motherNode.id;
-            }
-        }}
-            >
-              ${motherNode ? motherNode.name : '—'}
-            </span>
-          </div>
-          <div class="dp-row">
-            <span class="dp-k">Father</span>
-            <span class="dp-v">${fatherNode ? fatherNode.name : '—'}</span>
-          </div>
-        </div>
-        <div class="dp-footer">
-          <button
-            class="pill-btn active"
-            @click=${() => {
-            this.focalId = n.id;
-            this._focusMode = true;
-        }}
-          >
-            Focus Lineage
-          </button>
-          <button
-            class="pill-btn"
-            @click=${() => {
-            if (!this._compareIds.includes(n.id) && this._compareIds.length < 2) {
-                this._compareIds = [...this._compareIds, n.id];
-            }
-        }}
-          >
-            <svg viewBox="0 0 24 24"><path d="${mdiCompare}" /></svg>
-            Compare
-          </button>
-        </div>
-      </div>
-    `;
+    _computeBreeders() {
+        const m = new Map();
+        for (const n of this.nodes)
+            m.set(n.breeder, (m.get(n.breeder) ?? 0) + 1);
+        return [...m.entries()].sort((a, b) => b[1] - a[1]);
     }
 };
 // ---------------------------------------------------------------------------
@@ -28776,15 +28802,16 @@ GeneticsTreeView.styles = i$6 `
       --bg-card-elev: #252525;
       --bg-input: #2a2a2a;
       --bg-input-border: #3a3a3a;
-      --bg-glass: rgba(20, 20, 24, 0.8);
+      --bg-glass: rgba(20, 20, 24, 0.88);
       --fg-1: #fff;
       --fg-2: rgba(255, 255, 255, 0.7);
       --fg-3: rgba(255, 255, 255, 0.5);
+      --fg-4: rgba(255, 255, 255, 0.3);
       --divider-faint: rgba(255, 255, 255, 0.05);
       --gv-primary: #4caf50;
       --gv-secondary: #2196f3;
       --gv-mother: #e91e63;
-      --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.37);
+      --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     /* ---- Shell ---- */
@@ -28803,13 +28830,14 @@ GeneticsTreeView.styles = i$6 `
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
+      gap: 10px;
+      padding: 8px 14px;
       background: var(--bg-card);
       border-bottom: 1px solid var(--divider-faint);
       flex-shrink: 0;
       flex-wrap: wrap;
     }
+    .toolbar-spacer { flex: 1; }
 
     .search-bar {
       display: flex;
@@ -28820,12 +28848,12 @@ GeneticsTreeView.styles = i$6 `
       border-radius: 999px;
       padding: 4px 10px;
       flex: 1;
-      min-width: 140px;
-      max-width: 260px;
+      min-width: 130px;
+      max-width: 240px;
     }
     .search-bar:focus-within {
       border-color: var(--gv-primary);
-      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
     }
     .search-bar .icon {
       width: 16px;
@@ -28842,35 +28870,45 @@ GeneticsTreeView.styles = i$6 `
       flex: 1;
       min-width: 0;
     }
-    .search-bar input::placeholder {
-      color: var(--fg-3);
-    }
+    .search-bar input::placeholder { color: var(--fg-3); }
 
-    .layout-toggle {
+    /* Mode segmented control */
+    .seg {
       display: flex;
       border-radius: 999px;
       overflow: hidden;
       border: 1px solid var(--bg-input-border);
+      flex-shrink: 0;
     }
-    .layout-toggle button {
+    .seg button {
       background: var(--bg-input);
       color: var(--fg-2);
       border: none;
-      padding: 5px 14px;
+      border-right: 1px solid var(--bg-input-border);
+      padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
     }
-    .layout-toggle button:first-child {
-      border-right: 1px solid var(--bg-input-border);
-    }
-    .layout-toggle button.active {
+    .seg button:last-child { border-right: none; }
+    .seg button.active {
       background: linear-gradient(135deg, #4caf50, #45a049);
       color: #fff;
     }
-    .layout-toggle button:hover:not(.active) {
-      background: var(--bg-card-elev);
+    .seg button:hover:not(.active) { background: var(--bg-card-elev); }
+
+    .select-pill {
+      background: var(--bg-input);
+      color: var(--fg-2);
+      border: 1px solid var(--bg-input-border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
     }
+    .select-pill:hover { border-color: var(--gv-primary); color: var(--fg-1); }
 
     .pill-btn {
       display: inline-flex;
@@ -28880,21 +28918,15 @@ GeneticsTreeView.styles = i$6 `
       color: var(--fg-2);
       border: 1px solid var(--bg-input-border);
       border-radius: 999px;
-      padding: 5px 14px;
+      padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.2s, color 0.2s, border-color 0.2s;
+      flex-shrink: 0;
     }
-    .pill-btn svg {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
-    }
-    .pill-btn:hover {
-      border-color: var(--gv-primary);
-      color: var(--fg-1);
-    }
+    .pill-btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .pill-btn:hover { border-color: var(--gv-primary); color: var(--fg-1); }
     .pill-btn.active {
       background: rgba(76, 175, 80, 0.15);
       border-color: var(--gv-primary);
@@ -28915,21 +28947,13 @@ GeneticsTreeView.styles = i$6 `
       padding: 0;
       flex-shrink: 0;
     }
-    .icon-btn svg {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
-    .icon-btn:hover {
-      background: var(--bg-card-elev);
-      color: var(--fg-1);
-    }
+    .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .icon-btn:hover { background: var(--bg-card-elev); color: var(--fg-1); }
 
-    .count-badge {
+    .count-chip {
       font-size: 11px;
       color: var(--fg-3);
       white-space: nowrap;
-      margin-left: auto;
     }
 
     /* ---- Filter row ---- */
@@ -28938,45 +28962,37 @@ GeneticsTreeView.styles = i$6 `
       flex-direction: row;
       flex-wrap: wrap;
       gap: 6px;
-      padding: 8px 16px;
+      padding: 6px 14px;
       background: var(--bg-card);
       border-bottom: 1px solid var(--divider-faint);
       flex-shrink: 0;
     }
-
     .gen-chip {
       background: var(--bg-input);
       border: 1px solid var(--chip-c, var(--bg-input-border));
       color: var(--fg-2);
       border-radius: 999px;
-      padding: 3px 12px;
+      padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    .gen-chip:hover {
-      background: var(--bg-card-elev);
-      color: var(--fg-1);
-    }
+    .gen-chip:hover { background: var(--bg-card-elev); color: var(--fg-1); }
     .gen-chip.active {
       background: var(--chip-c, var(--gv-primary));
       color: #fff;
       border-color: transparent;
     }
-
     .clear-btn {
       background: rgba(229, 57, 53, 0.1);
       border: 1px solid rgba(229, 57, 53, 0.4);
       color: #ef5350;
       border-radius: 999px;
-      padding: 3px 12px;
+      padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
-      margin-left: 4px;
     }
-    .clear-btn:hover {
-      background: rgba(229, 57, 53, 0.2);
-    }
+    .clear-btn:hover { background: rgba(229, 57, 53, 0.2); }
 
     /* ---- Canvas area ---- */
     .canvas-wrap {
@@ -28985,18 +29001,12 @@ GeneticsTreeView.styles = i$6 `
       overflow: hidden;
       cursor: grab;
     }
-    .canvas-wrap:active {
-      cursor: grabbing;
-    }
+    .canvas-wrap:active { cursor: grabbing; }
 
     .bg-grid {
       position: absolute;
       inset: 0;
-      background-image: radial-gradient(
-        circle,
-        rgba(255, 255, 255, 0.04) 1px,
-        transparent 1px
-      );
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
       background-size: 28px 28px;
       pointer-events: none;
     }
@@ -29009,47 +29019,71 @@ GeneticsTreeView.styles = i$6 `
       will-change: transform;
     }
 
+    /* ---- Breeder bands (families mode) ---- */
+    .band {
+      position: absolute;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      pointer-events: none;
+    }
+    .band-header {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .band-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-2);
+    }
+    .band-count {
+      font-size: 11px;
+      color: var(--fg-4);
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      padding: 1px 6px;
+    }
+
+    /* ---- Gen gutter labels (tree mode) ---- */
+    .gen-gutter {
+      position: absolute;
+      font-size: 10px;
+      color: var(--fg-4);
+      white-space: nowrap;
+      pointer-events: none;
+      padding-right: 12px;
+      letter-spacing: 0.3px;
+    }
+
     /* ---- Edges SVG ---- */
     .edges-svg {
       position: absolute;
       pointer-events: none;
       overflow: visible;
     }
-
     .edge {
       fill: none;
-      stroke-width: 1.6;
+      stroke-width: 1.5;
+      transition: opacity 0.12s;
     }
-    .edge-mother {
-      stroke: rgba(255, 255, 255, 0.55);
-    }
-    .edge-father {
-      stroke: rgba(255, 255, 255, 0.3);
-      stroke-dasharray: 5 3;
-    }
-    .edge-clone {
-      stroke: rgba(233, 30, 99, 0.5);
-      stroke-dasharray: 2 2;
-    }
-    .edge.dimmed {
-      opacity: 0.1;
-    }
-    .edge.mother-line {
-      stroke: var(--gv-mother);
-      stroke-width: 2.2;
-      filter: drop-shadow(0 0 4px var(--gv-mother));
-    }
+    .edge-mother { stroke: rgba(255,255,255,0.85); }
+    .edge-father { stroke: rgba(255,255,255,0.55); stroke-dasharray: 5 3; }
+    .edge-clone { stroke: rgba(233,30,99,0.7); stroke-dasharray: 2 2; }
+    .edge.dim { opacity: 0.06; }
 
     /* ---- Tree nodes ---- */
     .tree-node {
       position: absolute;
       background: var(--bg-card-elev);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
       overflow: hidden;
       cursor: pointer;
       box-sizing: border-box;
-      transition: opacity 0.2s, box-shadow 0.2s, border-color 0.2s;
+      transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s;
     }
     .tree-node::before {
       content: '';
@@ -29059,38 +29093,53 @@ GeneticsTreeView.styles = i$6 `
       width: 3px;
       height: 100%;
       background: var(--stage-c, #555);
-      border-radius: 12px 0 0 12px;
+      border-radius: 8px 0 0 8px;
     }
     .tree-node:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
-    .tree-node.dimmed {
-      opacity: 0.25;
-    }
-    .tree-node.highlighted {
-      border-color: var(--gv-primary);
-      box-shadow: 0 0 0 1px var(--gv-primary), var(--elev-glass);
+    .tree-node.dim { opacity: 0.2; }
+    .tree-node.hovered {
+      border-color: rgba(255,255,255,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .tree-node.selected {
       border-color: var(--gv-secondary);
       box-shadow: 0 0 0 2px var(--gv-secondary), var(--elev-glass);
     }
-    .tree-node.compare {
-      border-color: #9c27b0;
-      box-shadow: 0 0 0 1px #9c27b0;
+    .tree-node.focal {
+      border-color: var(--gv-primary);
+      box-shadow: 0 0 0 2px var(--gv-primary), var(--elev-glass);
+    }
+    .tree-node.in-graph {
+      border-color: rgba(76, 175, 80, 0.4);
     }
 
     /* ---- Node body ---- */
     .pn-body {
-      padding: 6px 8px 6px 14px;
+      padding: 5px 8px 5px 14px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
       height: 100%;
       box-sizing: border-box;
     }
     .pn-row1 {
+      display: flex;
+      align-items: center;
+    }
+    .pn-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+    .pn-row2 {
       display: flex;
       align-items: center;
       gap: 5px;
@@ -29104,69 +29153,14 @@ GeneticsTreeView.styles = i$6 `
       flex-shrink: 0;
       letter-spacing: 0.4px;
     }
-    .pn-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--fg-1);
+    .pn-breeder {
+      font-size: 10px;
+      color: var(--fg-3);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex: 1;
       min-width: 0;
-    }
-    .pn-row2 {
-      font-size: 10px;
-      color: var(--fg-3);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .pn-row3 {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .type-badge {
-      font-size: 9px;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-weight: 500;
-    }
-    .type-badge.strain {
-      background: rgba(156, 39, 176, 0.3);
-      color: #ce93d8;
-    }
-    .type-badge.batch {
-      background: rgba(33, 150, 243, 0.2);
-      color: #90caf9;
-    }
-    .pheno-badge {
-      font-size: 9px;
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--fg-3);
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-style: italic;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 80px;
-    }
-
-    .compare-badge {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #9c27b0;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .fold-btn {
@@ -29176,64 +29170,182 @@ GeneticsTreeView.styles = i$6 `
       display: inline-flex;
       align-items: center;
       gap: 2px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-      padding: 2px 4px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 5px;
+      padding: 1px 3px;
       cursor: pointer;
       color: var(--fg-3);
       font-size: 9px;
     }
-    .fold-btn svg {
-      width: 12px;
-      height: 12px;
-      fill: currentColor;
-    }
-    .fold-btn:hover {
-      color: var(--fg-1);
-      background: rgba(255, 255, 255, 0.12);
-    }
-    .fold-btn.collapsed {
-      color: var(--gv-primary);
-      border-color: var(--gv-primary);
-    }
-    .desc-count {
-      font-size: 9px;
-      font-weight: 600;
-    }
+    .fold-btn svg { width: 11px; height: 11px; fill: currentColor; }
+    .fold-btn:hover { color: var(--fg-1); background: rgba(255,255,255,0.12); }
+    .fold-btn.collapsed { color: var(--gv-primary); border-color: var(--gv-primary); }
+    .desc-count { font-size: 9px; font-weight: 600; }
 
-    /* ---- Gen labels ---- */
-    .gen-label {
+    /* ---- Focus banner ---- */
+    .focus-banner {
       position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(76,175,80,0.3);
+      border-radius: 999px;
+      padding: 6px 14px 6px 10px;
+      font-size: 12px;
+      color: var(--fg-1);
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+      z-index: 10;
+    }
+    .focus-banner .icon { width: 14px; height: 14px; fill: var(--gv-primary); flex-shrink: 0; }
+    .focus-banner strong { color: var(--gv-primary); }
+    .banner-counts { color: var(--fg-3); }
+    .focus-banner button {
+      background: rgba(76,175,80,0.15);
+      border: 1px solid rgba(76,175,80,0.3);
+      border-radius: 999px;
+      color: var(--gv-primary);
+      font-size: 11px;
+      padding: 2px 10px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    .focus-banner button:hover { background: rgba(76,175,80,0.25); }
+
+    /* ---- Side detail panel ---- */
+    .detail-panel {
+      position: absolute;
+      top: 10px;
+      right: 16px;
+      width: 220px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(12px);
       display: flex;
       flex-direction: column;
-      gap: 1px;
-      pointer-events: none;
+      gap: 0;
+      z-index: 10;
+      overflow: hidden;
     }
-    .gen-eyebrow {
-      font-size: 9px;
+    .detail-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: none;
+      cursor: pointer;
+      color: var(--fg-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .detail-close svg { width: 12px; height: 12px; fill: currentColor; }
+    .detail-close:hover { color: var(--fg-1); background: rgba(255,255,255,0.12); }
+    .detail-eyebrow {
+      padding: 12px 14px 0;
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.6px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gen-c, var(--fg-3));
+    }
+    .detail-title {
+      margin: 3px 14px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg-1);
+      line-height: 1.3;
+      padding-right: 20px;
+    }
+    .detail-breeder {
+      margin: 2px 14px 8px;
+      font-size: 11px;
       color: var(--fg-3);
     }
-    .gen-tags {
-      font-size: 10px;
-      color: var(--fg-2);
+    .detail-stats {
+      display: flex;
+      border-top: 1px solid var(--divider-faint);
+      border-bottom: 1px solid var(--divider-faint);
     }
+    .detail-stat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      gap: 2px;
+    }
+    .detail-stat:not(:last-child) { border-right: 1px solid var(--divider-faint); }
+    .detail-stat .v { font-size: 18px; font-weight: 600; color: var(--fg-1); line-height: 1; }
+    .detail-stat .l { font-size: 9px; color: var(--fg-3); text-align: center; }
+    .detail-section {
+      padding: 8px 14px 4px;
+      border-bottom: 1px solid var(--divider-faint);
+    }
+    .detail-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-4);
+      margin-bottom: 6px;
+    }
+    .detail-parent {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 0;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .detail-parent:hover { background: rgba(255,255,255,0.04); margin: 0 -4px; padding: 3px 4px; }
+    .role {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+      min-width: 36px;
+    }
+    .role.mother { color: var(--gv-mother); }
+    .role.father { color: var(--gv-secondary); }
+    .pname {
+      font-size: 11px;
+      color: var(--fg-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .detail-actions {
+      padding: 10px 14px 12px;
+    }
+    .detail-actions .pill-btn { width: 100%; justify-content: center; }
 
     /* ---- Zoom controls ---- */
     .zoom-controls {
       position: absolute;
-      bottom: 16px;
-      left: 16px;
+      bottom: 44px;
+      left: 14px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 999px;
-      padding: 4px 8px;
+      padding: 4px 6px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);
     }
@@ -29244,210 +29356,52 @@ GeneticsTreeView.styles = i$6 `
       text-align: center;
     }
 
-    /* ---- Legend ---- */
-    .legend {
+    /* ---- Legend / footer ---- */
+    .tree-footer {
       position: absolute;
-      bottom: 16px;
-      left: 110px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      padding: 8px 12px;
-      box-shadow: var(--elev-glass);
-      backdrop-filter: blur(8px);
-    }
-    .legend-row {
+      bottom: 12px;
+      left: 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-size: 11px;
-      color: var(--fg-2);
+      color: var(--fg-3);
+      pointer-events: none;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     .legend-line {
-      width: 24px;
+      display: inline-block;
+      width: 20px;
       height: 2px;
       border-radius: 1px;
     }
-    .legend-line.solid {
-      background: rgba(255, 255, 255, 0.55);
-    }
-    .legend-line.dashed {
+    .legend-line.mother { background: rgba(255,255,255,0.8); }
+    .legend-line.father {
       background: repeating-linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0.3) 0,
-        rgba(255, 255, 255, 0.3) 5px,
+        rgba(255,255,255,0.5) 0,
+        rgba(255,255,255,0.5) 5px,
         transparent 5px,
         transparent 8px
       );
     }
+    .legend-hint { color: var(--fg-4); font-style: italic; }
 
     /* ---- Minimap ---- */
     .minimap {
       position: absolute;
-      bottom: 16px;
-      right: 16px;
+      bottom: 12px;
+      right: 14px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);
       cursor: crosshair;
-    }
-
-    /* ---- Compare drawer ---- */
-    .compare-drawer {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 340px;
-      background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      box-shadow: var(--elev-glass);
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .cd-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--fg-1);
-      border-bottom: 1px solid var(--divider-faint);
-    }
-    .cd-title svg {
-      width: 16px;
-      height: 16px;
-      fill: var(--gv-primary);
-      flex-shrink: 0;
-    }
-    .cd-cols {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
-    .cd-col {
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      border-right: 1px solid var(--divider-faint);
-    }
-    .cd-col:last-child {
-      border-right: none;
-    }
-    .cd-col.cd-empty {
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-height: 80px;
-      color: var(--fg-3);
-      font-size: 11px;
-      font-style: italic;
-    }
-    .cd-col.cd-empty svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--fg-3);
-    }
-    .cd-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 4px;
-      margin-bottom: 4px;
-    }
-    .cd-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--fg-1);
-      flex: 1;
-      word-break: break-word;
-    }
-    .cd-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 4px;
-    }
-    .cd-k {
-      font-size: 10px;
-      color: var(--fg-3);
-    }
-    .cd-v {
-      font-size: 11px;
-      color: var(--fg-2);
-      text-align: right;
-      word-break: break-word;
-    }
-
-    /* ---- Detail panel ---- */
-    .detail-panel {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg-glass);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      z-index: 10;
-    }
-    .dp-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px 8px;
-      border-bottom: 1px solid var(--divider-faint);
-    }
-    .dp-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--fg-1);
-      flex: 1;
-    }
-    .dp-body {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0;
-      padding: 8px 16px;
-    }
-    .dp-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 4px 16px 4px 0;
-      min-width: 100px;
-    }
-    .dp-k {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--fg-3);
-    }
-    .dp-v {
-      font-size: 12px;
-      color: var(--fg-2);
-    }
-    .dp-link {
-      color: var(--gv-primary);
-      cursor: pointer;
-      text-decoration: underline dotted;
-    }
-    .dp-footer {
-      display: flex;
-      gap: 8px;
-      padding: 8px 16px 12px;
-      border-top: 1px solid var(--divider-faint);
     }
 
     /* ---- Empty state ---- */
@@ -29468,13 +29422,10 @@ __decorate([
 ], GeneticsTreeView.prototype, "focalId", void 0);
 __decorate([
     r$3()
-], GeneticsTreeView.prototype, "_layout", void 0);
+], GeneticsTreeView.prototype, "_mode", void 0);
 __decorate([
     r$3()
-], GeneticsTreeView.prototype, "_focusMode", void 0);
-__decorate([
-    r$3()
-], GeneticsTreeView.prototype, "_highlightMother", void 0);
+], GeneticsTreeView.prototype, "_focalId", void 0);
 __decorate([
     r$3()
 ], GeneticsTreeView.prototype, "_search", void 0);
@@ -29483,13 +29434,16 @@ __decorate([
 ], GeneticsTreeView.prototype, "_genFilter", void 0);
 __decorate([
     r$3()
+], GeneticsTreeView.prototype, "_breederFilter", void 0);
+__decorate([
+    r$3()
 ], GeneticsTreeView.prototype, "_collapsed", void 0);
 __decorate([
     r$3()
 ], GeneticsTreeView.prototype, "_selectedId", void 0);
 __decorate([
     r$3()
-], GeneticsTreeView.prototype, "_compareIds", void 0);
+], GeneticsTreeView.prototype, "_hoverId", void 0);
 __decorate([
     r$3()
 ], GeneticsTreeView.prototype, "_panX", void 0);
@@ -29527,6 +29481,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._activeMainTab = 'strains';
         this._libraryFilter = 'library';
         this._treeNodes = [];
+        this._treeMaximized = false;
         // Pagination State
         this._currentPage = 1;
         this.ITEMS_PER_PAGE = 15;
@@ -29554,6 +29509,9 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     updated(changedProperties) {
         if (changedProperties.has('initialTab')) {
             this._activeMainTab = this.initialTab;
+        }
+        if (changedProperties.has('_treeMaximized')) {
+            this.classList.toggle('tree-maximized', this._treeMaximized);
         }
     }
     _handleDelete(key) {
@@ -30371,6 +30329,19 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
           class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
           @click=${() => { this._activeMainTab = 'tree'; }}
         >Tree View</button>
+        ${this._activeMainTab === 'tree'
+            ? x `
+              <button
+                class="tab-maximize-btn"
+                title="${this._treeMaximized ? 'Restore' : 'Maximize'}"
+                @click=${() => { this._treeMaximized = !this._treeMaximized; }}
+              >
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${this._treeMaximized ? mdiArrowCollapse : mdiArrowExpand}"></path>
+                </svg>
+              </button>
+            `
+            : E}
       </div>
     `;
     }
@@ -31225,6 +31196,7 @@ StrainLibraryDialog.styles = [
         border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
         background: var(--secondary-background-color, rgba(0,0,0,0.2));
         flex-shrink: 0;
+        align-items: center;
       }
       .tab-btn {
         flex: 1;
@@ -31245,6 +31217,43 @@ StrainLibraryDialog.styles = [
       }
       .tab-btn:hover:not(.active) {
         color: var(--primary-text-color);
+      }
+      .tab-maximize-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-right: 4px;
+        border-radius: 4px;
+      }
+      .tab-maximize-btn:hover {
+        color: var(--primary-text-color);
+        background: rgba(255,255,255,0.06);
+      }
+
+      /* Maximized tree view */
+      :host(.tree-maximized) ha-dialog {
+        --ha-dialog-width-md: 100vw;
+        --ha-dialog-max-width: 100vw;
+        --ha-dialog-width-full: 100vw;
+        --dialog-surface-width: 100vw;
+        --dialog-surface-max-width: 100vw;
+        --dialog-content-width: 100vw;
+        --dialog-surface-margin: 0;
+        --dialog-surface-margin-top: 0;
+      }
+      :host(.tree-maximized) .glass-dialog-container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
       }
 
       /* Seeds section */
@@ -31615,6 +31624,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_treeNodes", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_treeMaximized", void 0);
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_currentPage", void 0);

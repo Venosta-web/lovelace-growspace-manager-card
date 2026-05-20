@@ -21,6 +21,8 @@ import {
   mdiDotsVertical,
   mdiAccountGroup,
   mdiFileUpload,
+  mdiArrowExpand,
+  mdiArrowCollapse,
 } from '@mdi/js';
 import './strain-import-dialog';
 import './seeds-genetics-tab';
@@ -101,6 +103,7 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _activeMainTab: 'strains' | 'seeds' | 'tree' = 'strains';
   @state() private _libraryFilter: 'library' | 'active' | 'all' = 'library';
   @state() private _treeNodes: TreeNode[] = [];
+  @state() private _treeMaximized = false;
 
   // Pagination State
   @state() private _currentPage = 1;
@@ -132,6 +135,9 @@ export class StrainLibraryDialog extends LitElement {
   updated(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('initialTab')) {
       this._activeMainTab = this.initialTab;
+    }
+    if (changedProperties.has('_treeMaximized')) {
+      this.classList.toggle('tree-maximized', this._treeMaximized);
     }
   }
 
@@ -760,6 +766,7 @@ export class StrainLibraryDialog extends LitElement {
         border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
         background: var(--secondary-background-color, rgba(0,0,0,0.2));
         flex-shrink: 0;
+        align-items: center;
       }
       .tab-btn {
         flex: 1;
@@ -780,6 +787,43 @@ export class StrainLibraryDialog extends LitElement {
       }
       .tab-btn:hover:not(.active) {
         color: var(--primary-text-color);
+      }
+      .tab-maximize-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-right: 4px;
+        border-radius: 4px;
+      }
+      .tab-maximize-btn:hover {
+        color: var(--primary-text-color);
+        background: rgba(255,255,255,0.06);
+      }
+
+      /* Maximized tree view */
+      :host(.tree-maximized) ha-dialog {
+        --ha-dialog-width-md: 100vw;
+        --ha-dialog-max-width: 100vw;
+        --ha-dialog-width-full: 100vw;
+        --dialog-surface-width: 100vw;
+        --dialog-surface-max-width: 100vw;
+        --dialog-content-width: 100vw;
+        --dialog-surface-margin: 0;
+        --dialog-surface-margin-top: 0;
+      }
+      :host(.tree-maximized) .glass-dialog-container {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        border-radius: 0 !important;
       }
 
       /* Seeds section */
@@ -1916,6 +1960,19 @@ export class StrainLibraryDialog extends LitElement {
           class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
           @click=${() => { this._activeMainTab = 'tree'; }}
         >Tree View</button>
+        ${this._activeMainTab === 'tree'
+          ? html`
+              <button
+                class="tab-maximize-btn"
+                title="${this._treeMaximized ? 'Restore' : 'Maximize'}"
+                @click=${() => { this._treeMaximized = !this._treeMaximized; }}
+              >
+                <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                  <path d="${this._treeMaximized ? mdiArrowCollapse : mdiArrowExpand}"></path>
+                </svg>
+              </button>
+            `
+          : nothing}
       </div>
     `;
   }

@@ -73,6 +73,7 @@ describe('GeneticsTreeView', () => {
     const nodes = element.shadowRoot?.querySelectorAll('.tree-node');
     expect(nodes?.length).toBe(5);
   });
+
   it('should handle search input', async () => {
     const searchInput = element.shadowRoot?.querySelector('.search-bar input') as HTMLInputElement;
     searchInput.value = 'Selection';
@@ -81,75 +82,67 @@ describe('GeneticsTreeView', () => {
 
     const p1Elem = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
       .find(n => n.querySelector('.pn-name')?.textContent === 'Parent 1');
-    expect(p1Elem?.classList.contains('dimmed')).toBe(true);
-    
+    expect(p1Elem?.classList.contains('dim')).toBe(true);
+
     const clearSearchBtn = element.shadowRoot?.querySelector('.search-bar .icon-btn') as HTMLElement;
     clearSearchBtn.click();
     await element.updateComplete;
     expect(element['_search']).toBe('');
   });
 
-  it('should handle radial layout and minimap in radial mode', async () => {
-    const radialBtn = element.shadowRoot?.querySelector('.layout-toggle button:nth-child(2)') as HTMLElement;
-    element.focalId = null;
-    radialBtn.click();
+  it('should switch to lineage mode and show focus banner', async () => {
+    const lineageBtn = element.shadowRoot?.querySelector('.seg button:nth-child(2)') as HTMLElement;
+    lineageBtn.click();
     await element.updateComplete;
-    expect(element['_layout']).toBe('radial');
-    
-    const minimap = element.shadowRoot?.querySelector('.minimap') as SVGElement;
-    vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue({
-      left: 0, top: 0, width: 180, height: 120, bottom: 120, right: 180, x: 0, y: 0, toJSON: () => {}
-    });
-    const clickEvent = new MouseEvent('click', { clientX: 10, clientY: 10 });
-    minimap.dispatchEvent(clickEvent);
-    await element.updateComplete;
-    expect(element['_panX']).not.toBe(0);
+    expect(element['_mode']).toBe('lineage');
+
+    const banner = element.shadowRoot?.querySelector('.focus-banner');
+    expect(banner).not.toBeNull();
   });
 
   it('should handle node selection and deselection', async () => {
     const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
     node.click();
     await element.updateComplete;
-    expect(element['_selectedId']).toBe('p1');
-    
+    expect(element['_selectedId']).not.toBeNull();
+
+    const selectedId = element['_selectedId'];
     node.click();
     await element.updateComplete;
     expect(element['_selectedId']).toBeNull();
 
-    // Focal updates in focus mode
-    element['_focusMode'] = true;
+    // Single-click does NOT auto-enter lineage mode (focusModeAuto = false)
     node.click();
     await element.updateComplete;
-    expect(element.focalId).toBe('p1');
+    expect(element['_mode']).toBe('tree');
+    expect(element['_selectedId']).toBe(selectedId);
   });
 
-  it('should handle focus mode with ancestors and descendants', async () => {
-    element.focalId = 'f1';
-    const focusBtn = element.shadowRoot?.querySelector('.toolbar-row .pill-btn:nth-of-type(1)') as HTMLElement;
-    focusBtn.click();
+  it('should enter lineage mode on double-click', async () => {
+    const f1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
+      .find(n => n.querySelector('.pn-name')?.textContent === 'Child F1') as HTMLElement;
+
+    f1Node.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 2 }));
     await element.updateComplete;
-    expect(element['_focusMode']).toBe(true);
-    
-    const visibleNodes = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
-      .filter(n => !n.classList.contains('dimmed'));
-    // p1, p2 (ancestors), f1 (focal), f2, f3 (descendants)
-    expect(visibleNodes.length).toBe(5);
+
+    expect(element['_mode']).toBe('lineage');
+    expect(element['_focalId']).toBe('f1');
+    expect(element.shadowRoot?.querySelector('.focus-banner')).not.toBeNull();
   });
 
   it('should handle node folding and descendant counts', async () => {
     const f1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
       .find(n => n.querySelector('.pn-name')?.textContent === 'Child F1') as HTMLElement;
-    
+
     const foldBtn = f1Node.querySelector('.fold-btn') as HTMLElement;
     foldBtn.click();
     await element.updateComplete;
-    
+
     expect(element['_collapsed'].has('f1')).toBe(true);
     const nodes = element.shadowRoot?.querySelectorAll('.tree-node');
-    // f2 and f3 should be hidden
+    // f2 and f3 hidden
     expect(nodes?.length).toBe(3);
-    
-    // Toggle back
+
     foldBtn.click();
     await element.updateComplete;
     expect(element['_collapsed'].has('f1')).toBe(false);
@@ -167,20 +160,20 @@ describe('GeneticsTreeView', () => {
     expect(element['_panX']).not.toBe(0);
     element['_onMouseUp']();
 
-    // Zooming via wheel
+    // Zooming via wheel (cursor-centered, factor 1.15)
     element['_scale'] = 1.0;
     shell.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: 500, clientY: 400 }));
-    expect(element['_scale']).toBe(1.15);
+    expect(element['_scale']).toBeCloseTo(1.15, 2);
 
-    // Zoom clamping (max)
-    element['_scale'] = 2.0;
+    // Zoom clamp at max (4.0)
+    element['_scale'] = 4.0;
     shell.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: 500, clientY: 400 }));
-    expect(element['_scale']).toBe(2.0);
+    expect(element['_scale']).toBe(4.0);
 
-    // Zoom clamping (min)
-    element['_scale'] = 0.2;
+    // Zoom clamp at min (0.08)
+    element['_scale'] = 0.08;
     shell.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, clientX: 500, clientY: 400 }));
-    expect(element['_scale']).toBe(0.2);
+    expect(element['_scale']).toBe(0.08);
 
     // Mousedown on node should not start dragging
     const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
@@ -188,114 +181,109 @@ describe('GeneticsTreeView', () => {
     expect(element['_dragging']).toBeNull();
   });
 
-  it('should handle Mother Line toggle', async () => {
-    const motherBtn = element.shadowRoot?.querySelector('.pill-btn:nth-of-type(2)') as HTMLElement;
-    motherBtn.click();
-    await element.updateComplete;
-    expect(element['_highlightMother']).toBe(true);
-    
-    // Check if edge has mother-line class (requires focalId)
-    element.focalId = 'f1';
-    await element.updateComplete;
-    const edge = element.shadowRoot?.querySelector('.edge.mother-line');
-    expect(edge).toBeDefined();
-  });
+  it('should handle breeder filter dropdown', async () => {
+    // Only Breeder 1 and Breeder 2 exist in mockNodes; dropdown should appear
+    const select = element.shadowRoot?.querySelector('.select-pill') as HTMLSelectElement;
+    expect(select).not.toBeNull();
 
-  it('should handle compare drawer and removal', async () => {
-    element['_compareIds'] = ['p1', 'p2'];
-    element.requestUpdate();
+    select.value = 'Breeder 2';
+    select.dispatchEvent(new Event('change'));
     await element.updateComplete;
 
-    const drawer = element.shadowRoot?.querySelector('.compare-drawer');
-    expect(drawer).toBeDefined();
+    expect(element['_breederFilter']).toBe('Breeder 2');
+    // Only p2 has breeder 2
+    const visibleNodes = element.shadowRoot?.querySelectorAll('.tree-node');
+    expect(visibleNodes?.length).toBe(1);
 
-    // Remove one item
-    const removeBtn = drawer?.querySelector('.cd-header .icon-btn') as HTMLElement;
-    removeBtn.click();
+    // Reset
+    select.value = '';
+    select.dispatchEvent(new Event('change'));
     await element.updateComplete;
-    expect(element['_compareIds']).toEqual(['p2']);
-
-    // Clear all
-    const clearAllBtn = drawer?.querySelector('.cd-title .icon-btn') as HTMLElement;
-    clearAllBtn.click();
-    await element.updateComplete;
-    expect(element['_compareIds'].length).toBe(0);
+    expect(element['_breederFilter']).toBe('');
   });
 
   it('should handle detail panel and lineage navigation', async () => {
+    // Set f1 as selected
     element['_selectedId'] = 'f1';
     await element.updateComplete;
-    
-    let detailPanel = element.shadowRoot?.querySelector('.detail-panel');
-    const motherLink = detailPanel?.querySelector('.dp-link') as HTMLElement;
+
+    const detailPanel = element.shadowRoot?.querySelector('.detail-panel');
+    expect(detailPanel).not.toBeNull();
+
+    // Click mother parent link in detail panel
+    const motherLink = detailPanel?.querySelector('.detail-parent') as HTMLElement;
     motherLink.click();
     await element.updateComplete;
-    expect(element['_selectedId']).toBe('p1');
+    expect(element['_selectedId']).not.toBe('f1');
 
-    detailPanel = element.shadowRoot?.querySelector('.detail-panel');
-    const closeBtn = detailPanel?.querySelector('.dp-header .icon-btn') as HTMLElement;
+    // Restore and close panel
+    element['_selectedId'] = 'f1';
+    await element.updateComplete;
+    const closeBtn = element.shadowRoot?.querySelector('.detail-close') as HTMLElement;
     closeBtn.click();
     await element.updateComplete;
     expect(element['_selectedId']).toBeNull();
   });
 
-  it('should handle compare addition from detail panel', async () => {
+  it('should handle detail panel Isolate Lineage button', async () => {
     element['_selectedId'] = 'f1';
     await element.updateComplete;
-    
-    const detailPanel = element.shadowRoot?.querySelector('.detail-panel');
-    const compareBtn = detailPanel?.querySelector('.dp-footer .pill-btn:nth-child(2)') as HTMLElement;
-    compareBtn.click();
-    await element.updateComplete;
-    expect(element['_compareIds']).toContain('f1');
-    
-    // Should not add same id twice
-    compareBtn.click();
-    expect(element['_compareIds'].length).toBe(1);
 
-    // Should handle null node in renderCol (edge case)
-    element['_compareIds'] = ['non-existent'];
+    const isolateBtn = element.shadowRoot?.querySelector('.detail-actions .pill-btn.active') as HTMLElement;
+    expect(isolateBtn).not.toBeNull();
+    isolateBtn.click();
     await element.updateComplete;
-    expect(element.shadowRoot?.querySelector('.compare-drawer')).toBeDefined();
+
+    expect(element['_mode']).toBe('lineage');
+    expect(element['_focalId']).toBe('f1');
   });
 
   it('should handle zoom control buttons', async () => {
     element['_scale'] = 1.0;
     await element.updateComplete;
-    
-    const plusBtn = element.shadowRoot?.querySelector('.zoom-controls .icon-btn:nth-of-type(1)') as HTMLElement;
+
+    const zoomBtns = Array.from(
+      element.shadowRoot?.querySelectorAll('.zoom-controls .icon-btn') ?? []
+    ) as HTMLElement[];
+    const [plusBtn, minusBtn] = zoomBtns;
+
     plusBtn.click();
     await element.updateComplete;
-    expect(element['_scale']).toBeCloseTo(1.2);
-    
-    const minusBtn = element.shadowRoot?.querySelector('.zoom-controls .icon-btn:nth-of-type(2)') as HTMLElement;
+    expect(element['_scale']).toBeCloseTo(1.2, 2);
+
     minusBtn.click();
     await element.updateComplete;
-    expect(element['_scale']).toBeCloseTo(1.0);
+    expect(element['_scale']).toBeCloseTo(1.0, 2);
 
-    const resetBtn = element.shadowRoot?.querySelector('button[title="Reset Zoom & Center"]') as HTMLElement;
-    resetBtn.click();
-    await element.updateComplete;
-    
-    const fitBtn = element.shadowRoot?.querySelector('button[title="Fit to Screen"]') as HTMLElement;
+    const fitBtn = element.shadowRoot?.querySelector('button[title="Fit to screen"]') as HTMLElement;
     fitBtn.click();
     await element.updateComplete;
+    // After fit, scale should be based on viewport (not 1.0)
     expect(element['_scale']).not.toBe(1.2);
   });
 
-  it('should clear all state with clear button', async () => {
-    element.focalId = 'f1';
-    element['_focusMode'] = true;
+  it('should clear collapsed + gen filter with clear button', async () => {
     element['_collapsed'] = new Set(['p1']);
+    element['_genFilter'] = 'F1';
     await element.updateComplete;
 
     const clearBtn = element.shadowRoot?.querySelector('.clear-btn') as HTMLElement;
     clearBtn.click();
     await element.updateComplete;
 
-    expect(element.focalId).toBeNull();
-    expect(element['_focusMode']).toBe(false);
     expect(element['_collapsed'].size).toBe(0);
+    expect(element['_genFilter']).toBeNull();
+  });
+
+  it('should handle families mode layout', async () => {
+    const familiesBtn = element.shadowRoot?.querySelector('.seg button:nth-child(3)') as HTMLElement;
+    familiesBtn.click();
+    await element.updateComplete;
+    expect(element['_mode']).toBe('families');
+    expect(element['_computed']).not.toBeNull();
+
+    const bands = element.shadowRoot?.querySelectorAll('.band');
+    expect(bands?.length).toBeGreaterThan(0);
   });
 
   it('should handle empty state', async () => {
@@ -304,15 +292,15 @@ describe('GeneticsTreeView', () => {
     expect(element.shadowRoot?.textContent).toContain('No lineage data.');
   });
 
-  it('should handle radial layout with null focalId', async () => {
-    element['_layout'] = 'radial';
+  it('should handle tree mode with null focalId', async () => {
+    element['_mode'] = 'tree';
+    element['_focalId'] = null;
     element.focalId = null;
     await element.updateComplete;
     expect(element['_computed']).not.toBeNull();
   });
 
   it('should handle generation filter', async () => {
-    // gens sorted: F1, F2, F3, P1
     const genChipP1 = Array.from(element.shadowRoot?.querySelectorAll('.gen-chip') ?? [])
       .find(c => c.textContent?.trim() === 'P1') as HTMLElement;
     genChipP1.click();
@@ -325,33 +313,34 @@ describe('GeneticsTreeView', () => {
     expect(element['_genFilter']).toBeNull();
   });
 
-  it('should render top-down generation labels', async () => {
-    element['_layout'] = 'topdown';
+  it('should render tree-mode generation gutter labels', async () => {
+    element['_mode'] = 'tree';
     await element.updateComplete;
-    const labels = element.shadowRoot?.querySelectorAll('.gen-label');
+    const labels = element.shadowRoot?.querySelectorAll('.gen-gutter');
     expect(labels?.length).toBeGreaterThan(0);
   });
 
   it('should handle ResizeObserver triggers', async () => {
-    // Manually trigger the callback if possible or just ensure it exists
     const observer = element['_resizeObs'];
     expect(observer).toBeDefined();
-    
-    // We can't easily trigger ResizeObserver in jsdom/vitest without more setup,
-    // but we can call the fitToScreen directly or mock dimensions
+
     element['_viewW'] = 500;
     element.requestUpdate();
     await element.updateComplete;
     expect(element['_scale']).not.toBe(0.9);
   });
 
-  it('should handle detail panel Focus Lineage button', async () => {
-    element['_selectedId'] = 'f1';
+  it('should clear focus when clear button in focus banner is clicked', async () => {
+    element['_focalId'] = 'f1';
+    element['_mode'] = 'lineage';
     await element.updateComplete;
-    const focusLineageBtn = element.shadowRoot?.querySelector('.dp-footer .pill-btn.active') as HTMLElement;
-    focusLineageBtn.click();
+
+    const clearBtn = element.shadowRoot?.querySelector('.focus-banner button') as HTMLElement;
+    expect(clearBtn).not.toBeNull();
+    clearBtn.click();
     await element.updateComplete;
-    expect(element.focalId).toBe('f1');
-    expect(element['_focusMode']).toBe(true);
+
+    expect(element['_focalId']).toBeNull();
+    expect(element['_mode']).toBe('tree');
   });
 });

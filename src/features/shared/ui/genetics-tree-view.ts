@@ -7,8 +7,6 @@ import {
   mdiMinus,
   mdiEye,
   mdiChevronDown,
-  mdiChevronUp,
-  mdiCompare,
   mdiFitToPageOutline,
 } from '@mdi/js';
 import {
@@ -16,13 +14,14 @@ import {
   type LayoutResult,
   NODE_W,
   NODE_H,
+  buildIndex,
   layoutTopDown,
-  layoutRadial,
+  layoutSubgraph,
+  layoutBreederGrouped,
   ancestorsOf,
   descendantsOf,
-  motherLineOf,
   edgePath,
-  edgePathRadial,
+  edgePathCurve,
 } from './genetics-tree-layout';
 
 const GEN_COLORS: Record<string, string> = {
@@ -39,19 +38,22 @@ function genColor(gen: string): string {
   return GEN_COLORS[gen] ?? '#555';
 }
 
+type ViewMode = 'tree' | 'lineage' | 'families';
+
 @customElement('genetics-tree-view')
 export class GeneticsTreeView extends LitElement {
   @property({ attribute: false }) nodes: TreeNode[] = [];
+  /** External focal node — switches to lineage mode when set. */
   @property({ type: String }) focalId: string | null = null;
 
-  @state() private _layout: 'topdown' | 'radial' = 'topdown';
-  @state() private _focusMode = false;
-  @state() private _highlightMother = false;
+  @state() private _mode: ViewMode = 'tree';
+  @state() private _focalId: string | null = null;
   @state() private _search = '';
   @state() private _genFilter: string | null = null;
+  @state() private _breederFilter = '';
   @state() private _collapsed: Set<string> = new Set();
   @state() private _selectedId: string | null = null;
-  @state() private _compareIds: string[] = [];
+  @state() private _hoverId: string | null = null;
   @state() private _panX = 0;
   @state() private _panY = 0;
   @state() private _scale = 0.9;
@@ -61,6 +63,7 @@ export class GeneticsTreeView extends LitElement {
   private _dragging: { sx: number; sy: number; ox: number; oy: number } | null = null;
   private _computed: LayoutResult | null = null;
   private _childrenOf: Record<string, string[]> = {};
+  private _byId: Record<string, TreeNode> = {};
   private _resizeObs?: ResizeObserver;
   private _userHasInteracted = false;
 
@@ -73,7 +76,6 @@ export class GeneticsTreeView extends LitElement {
     this._resizeObs = new ResizeObserver((entries) => {
       let changed = false;
       for (const entry of entries) {
-        // Observe host element dimensions
         if (this._viewW !== entry.contentRect.width || this._viewH !== entry.contentRect.height) {
           this._viewW = entry.contentRect.width;
           this._viewH = entry.contentRect.height;
@@ -85,11 +87,8 @@ export class GeneticsTreeView extends LitElement {
         this.requestUpdate();
       }
     });
-    
-    // Observe host instead of child to avoid race condition with conditional rendering
     this._resizeObs.observe(this);
-    
-    // Fallback trigger for initial render
+
     this.updateComplete.then(() => {
       if (this._viewW === 0) {
         const rect = this.getBoundingClientRect();
@@ -109,35 +108,32 @@ export class GeneticsTreeView extends LitElement {
   }
 
   override willUpdate(changed: Map<string, unknown>): void {
-    if (changed.has('nodes')) {
-      this._childrenOf = {};
-      for (const n of this.nodes) {
-        const { mother, father } = n.parents;
-        if (mother) {
-          if (!this._childrenOf[mother]) this._childrenOf[mother] = [];
-          if (!this._childrenOf[mother].includes(n.id)) this._childrenOf[mother].push(n.id);
-        }
-        if (father && father !== mother) {
-          if (!this._childrenOf[father]) this._childrenOf[father] = [];
-          if (!this._childrenOf[father].includes(n.id)) this._childrenOf[father].push(n.id);
-        }
-      }
+    // Sync external focalId property → internal state + switch to lineage mode
+    if (changed.has('focalId') && this.focalId !== this._focalId) {
+      this._focalId = this.focalId;
+      if (this.focalId) this._mode = 'lineage';
     }
 
-    if (
+    if (changed.has('nodes')) {
+      const { byId, childrenOf } = buildIndex(this.nodes);
+      this._byId = byId;
+      this._childrenOf = childrenOf;
+    }
+
+    const needsRecompute =
       changed.has('nodes') ||
-      changed.has('_layout') ||
       changed.has('focalId') ||
+      changed.has('_mode') ||
+      changed.has('_focalId') ||
       changed.has('_collapsed') ||
-      changed.has('_focusMode') ||
+      changed.has('_breederFilter') ||
       changed.has('_viewW') ||
-      changed.has('_viewH')
-    ) {
+      changed.has('_viewH');
+
+    if (needsRecompute) {
       this._recompute();
-      // Only auto-fit when the viewport resizes, or before the user has
-      // panned/zoomed (first load).  Explicit "Fit" / "Reset" buttons call
-      // _fitToScreen() directly and are unaffected by this guard.
-      if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH')) {
+      if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH') ||
+          changed.has('_mode') || changed.has('_focalId') || changed.has('_breederFilter')) {
         this._fitToScreen();
       }
     }
@@ -155,10 +151,10 @@ export class GeneticsTreeView extends LitElement {
       return;
     }
 
-    if (this._layout === 'radial' && this.focalId) {
-      this._computed = layoutRadial(visible, this.focalId);
-    } else if (this._layout === 'radial' && visible.length > 0) {
-      this._computed = layoutRadial(visible, visible[0].id);
+    if (this._mode === 'families') {
+      this._computed = layoutBreederGrouped(visible);
+    } else if (this._mode === 'lineage' && this._focalId) {
+      this._computed = layoutSubgraph(visible, this._focalId);
     } else {
       this._computed = layoutTopDown(visible);
     }
@@ -166,6 +162,10 @@ export class GeneticsTreeView extends LitElement {
 
   private _visibleNodes(): TreeNode[] {
     let nodes = this.nodes;
+
+    if (this._breederFilter) {
+      nodes = nodes.filter((n) => n.breeder === this._breederFilter);
+    }
 
     if (this._collapsed.size > 0) {
       const hidden = new Set<string>();
@@ -182,56 +182,54 @@ export class GeneticsTreeView extends LitElement {
       nodes = nodes.filter((n) => !hidden.has(n.id));
     }
 
-    if (this._focusMode && this.focalId) {
-      const keep = new Set([this.focalId, ...this._ancestorSet, ...this._descendantSet]);
-      nodes = nodes.filter((n) => keep.has(n.id));
-    }
-
     return nodes;
   }
 
   private _fitToScreen(): void {
     if (!this._computed || this._viewW <= 0 || this._viewH <= 0) return;
-    
-    const { nodes, bounds } = this._computed;
+
+    const { bounds } = this._computed;
     const { minX, maxX, minY, maxY } = bounds;
     const treeW = maxX - minX;
     const treeH = maxY - minY;
-    
+
     const pad = 60;
     const scaleX = (this._viewW - pad * 2) / treeW;
     const scaleY = (this._viewH - pad * 2) / treeH;
-    
     const scale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.01), 2.0);
     this._scale = scale;
-
-    const focalNode = !this._focusMode && this.focalId ? nodes[this.focalId] : null;
-    if (focalNode) {
-      this._panX = this._viewW / 2 - (focalNode.x + focalNode.w / 2) * scale;
-      this._panY = this._viewH / 2 - (focalNode.y + focalNode.h / 2) * scale;
-    } else {
-      this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
-      this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
-    }
+    this._panX = (this._viewW - treeW * scale) / 2 - minX * scale;
+    this._panY = (this._viewH - treeH * scale) / 2 - minY * scale;
   }
 
   // ---------------------------------------------------------------------------
-  // Derived sets
+  // Derived sets (computed from full nodes list, not just visible)
   // ---------------------------------------------------------------------------
 
   private get _ancestorSet(): Set<string> {
-    if (!this.focalId) return new Set();
-    return ancestorsOf(this.nodes, this.focalId);
+    if (!this._focalId) return new Set();
+    return ancestorsOf(this.nodes, this._focalId);
   }
 
   private get _descendantSet(): Set<string> {
-    if (!this.focalId) return new Set();
-    return descendantsOf(this.nodes, this.focalId);
+    if (!this._focalId) return new Set();
+    return descendantsOf(this.nodes, this._focalId);
   }
 
-  private get _motherLineSet(): Set<string> {
-    if (!this.focalId) return new Set();
-    return motherLineOf(this.nodes, this.focalId);
+  private get _highlightId(): string | null {
+    return this._hoverId ?? this._selectedId;
+  }
+
+  private get _highlightAncSet(): Set<string> {
+    const hid = this._highlightId;
+    if (!hid) return new Set();
+    return ancestorsOf(this.nodes, hid);
+  }
+
+  private get _highlightDescSet(): Set<string> {
+    const hid = this._highlightId;
+    if (!hid) return new Set();
+    return descendantsOf(this.nodes, hid);
   }
 
   // ---------------------------------------------------------------------------
@@ -241,14 +239,19 @@ export class GeneticsTreeView extends LitElement {
   private _onWheel(e: WheelEvent): void {
     e.preventDefault();
     this._userHasInteracted = true;
-    const delta = -e.deltaY * 0.0015;
-    const newScale = Math.min(Math.max(this._scale + delta * this._scale, 0.2), 2.0);
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    this._panX = mx - (mx - this._panX) * (newScale / this._scale);
-    this._panY = my - (my - this._panY) * (newScale / this._scale);
-    this._scale = newScale;
+    const dir = e.deltaY < 0 ? 1 : -1;
+    const factor = dir > 0 ? 1.15 : 1 / 1.15;
+    const newK = Math.max(0.08, Math.min(4, this._scale * factor));
+    // Keep the world-point under the cursor stationary
+    const worldX = (mx - this._panX) / this._scale;
+    const worldY = (my - this._panY) / this._scale;
+    this._panX = mx - worldX * newK;
+    this._panY = my - worldY * newK;
+    this._scale = newK;
   }
 
   private _onMouseDown(e: MouseEvent): void {
@@ -257,8 +260,9 @@ export class GeneticsTreeView extends LitElement {
     if (
       target.closest('.tree-node') ||
       target.closest('.minimap') ||
-      target.closest('.compare-drawer') ||
-      target.closest('.detail-panel')
+      target.closest('.detail-panel') ||
+      target.closest('.focus-banner') ||
+      target.closest('.zoom-controls')
     )
       return;
     this._userHasInteracted = true;
@@ -279,20 +283,44 @@ export class GeneticsTreeView extends LitElement {
   // Node interaction
   // ---------------------------------------------------------------------------
 
-  private _onNodeClick(p: TreeNode): void {
-    this._selectedId = this._selectedId === p.id ? null : p.id;
-    if (this._focusMode || this._layout === 'radial') {
-      this.focalId = p.id;
+  private _onNodeClick(p: TreeNode, e: MouseEvent): void {
+    e.stopPropagation();
+
+    if (e.detail >= 2) {
+      // Double-click → enter lineage mode focused on this node
+      this._focalId = p.id;
+      this._mode = 'lineage';
+      this._selectedId = p.id;
+      this._userHasInteracted = false;
+      return;
     }
+
+    this._selectedId = this._selectedId === p.id ? null : p.id;
+  }
+
+  private _isolateLineage(id: string): void {
+    this._focalId = id;
+    this._mode = 'lineage';
+    this._selectedId = id;
+    this._userHasInteracted = false;
+  }
+
+  private _clearFocus(): void {
+    this._focalId = null;
+    this._selectedId = null;
+    if (this._mode === 'lineage') this._mode = 'tree';
+    this._userHasInteracted = false;
+  }
+
+  private _jumpTo(id: string): void {
+    this._selectedId = id;
+    this._userHasInteracted = false;
   }
 
   private _toggleCollapse(id: string): void {
     const next = new Set(this._collapsed);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     this._collapsed = next;
   }
 
@@ -308,6 +336,9 @@ export class GeneticsTreeView extends LitElement {
       return html`<div class="empty">No lineage data.</div>`;
     }
 
+    const gens = [...new Set(this.nodes.map((n) => n.gen))].sort();
+    const breeders = this._computeBreeders();
+
     return html`
       <div
         class="shell"
@@ -316,25 +347,29 @@ export class GeneticsTreeView extends LitElement {
         @mousemove=${this._onMouseMove}
         @mouseup=${this._onMouseUp}
         @mouseleave=${this._onMouseUp}
+        @click=${(e: MouseEvent) => {
+          if (!(e.target as HTMLElement).closest('.tree-node')) this._selectedId = null;
+        }}
       >
-        ${this._renderToolbar(visible)}
-        ${this._renderFilterRow()}
+        ${this._renderToolbar(visible, breeders)}
+        ${this._renderFilterRow(gens)}
         <div class="canvas-wrap">
           <div class="bg-grid"></div>
           <div
             class="canvas"
             style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._scale})"
           >
+            ${this._renderBreederBands(c)}
+            ${this._renderGenGutterLabels(c)}
             ${this._renderEdges(c)}
-            ${this._layout === 'topdown' ? this._renderGenLabels(c) : nothing}
-            ${this._renderNodes(c)}
+            ${this._renderNodes(c, visible)}
           </div>
+          ${this._renderFocusBanner()}
+          ${this._renderDetailPanel()}
           ${this._renderZoomControls()}
           ${this._renderLegend()}
           ${this._renderMinimap(c, visible)}
-          ${this._renderCompareDrawer()}
         </div>
-        ${this._renderDetailPanel()}
       </div>
     `;
   }
@@ -343,144 +378,102 @@ export class GeneticsTreeView extends LitElement {
   // Render: toolbar
   // ---------------------------------------------------------------------------
 
-  private _renderToolbar(visible: TreeNode[]): TemplateResult {
+  private _renderToolbar(visible: TreeNode[], breeders: Array<[string, number]>): TemplateResult {
     return html`
       <div class="toolbar-row">
         <div class="search-bar">
           <svg class="icon" viewBox="0 0 24 24"><path d="${mdiMagnify}" /></svg>
           <input
             type="text"
-            placeholder="Search…"
+            placeholder="Search strain or breeder…"
             .value=${this._search}
-            @input=${(e: InputEvent) => {
-              this._search = (e.target as HTMLInputElement).value;
-            }}
+            @input=${(e: InputEvent) => { this._search = (e.target as HTMLInputElement).value; }}
           />
           ${this._search
             ? html`
-                <button
-                  class="icon-btn"
-                  @click=${() => {
-                    this._search = '';
-                  }}
-                >
+                <button class="icon-btn" @click=${() => { this._search = ''; }}>
                   <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
                 </button>
               `
             : nothing}
         </div>
 
-        <div class="layout-toggle">
+        <div class="seg" role="tablist" aria-label="View mode">
           <button
-            class=${this._layout === 'topdown' ? 'active' : ''}
-            @click=${() => {
-              this._layout = 'topdown';
-            }}
-          >
-            Top-Down
-          </button>
+            class="${this._mode === 'tree' ? 'active' : ''}"
+            @click=${() => { this._mode = 'tree'; this._focalId = null; this._userHasInteracted = false; }}
+          >Tree</button>
           <button
-            class=${this._layout === 'radial' ? 'active' : ''}
+            class="${this._mode === 'lineage' ? 'active' : ''}"
             @click=${() => {
-              this._layout = 'radial';
-              if (!this.focalId && this.nodes.length > 0) {
-                this.focalId = this.nodes[0].id;
+              this._mode = 'lineage';
+              if (!this._focalId && this._selectedId) {
+                this._focalId = this._selectedId;
+              } else if (!this._focalId && this.nodes.length) {
+                this._focalId = this.nodes.find((n) => n.parents.mother) ?.id ?? this.nodes[0].id;
               }
+              this._userHasInteracted = false;
             }}
-          >
-            Radial
-          </button>
+          >Lineage</button>
+          <button
+            class="${this._mode === 'families' ? 'active' : ''}"
+            @click=${() => { this._mode = 'families'; this._userHasInteracted = false; }}
+          >Families</button>
         </div>
 
-        <button
-          class="pill-btn ${this._focusMode ? 'active' : ''}"
-          @click=${() => {
-            this._focusMode = !this._focusMode;
-          }}
-        >
-          <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
-          Focus
-        </button>
+        ${breeders.length > 1
+          ? html`
+              <select
+                class="select-pill"
+                .value=${this._breederFilter}
+                @change=${(e: Event) => { this._breederFilter = (e.target as HTMLSelectElement).value; }}
+              >
+                <option value="">All breeders</option>
+                ${breeders.map(([b, c]) => html`<option value="${b}">${b} (${c})</option>`)}
+              </select>
+            `
+          : nothing}
 
-        <button
-          class="pill-btn ${this._highlightMother ? 'active' : ''}"
-          @click=${() => {
-            this._highlightMother = !this._highlightMother;
-          }}
-        >
-          Mother Line
-        </button>
-
-        <button
-          class="pill-btn"
-          @click=${() => {
-            this._fitToScreen();
-          }}
-          title="Fit to Screen"
-        >
+        <button class="pill-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
           <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
           Fit
         </button>
 
-        <button
-          class="pill-btn"
-          @click=${() => {
-            this._scale = 1.0;
-            this._fitToScreen();
-          }}
-          title="Reset Zoom & Center"
-        >
-          Reset
-        </button>
-
-        <span class="count-badge">${visible.length} / ${this.nodes.length}</span>
+        <div class="toolbar-spacer"></div>
+        <div class="count-chip">
+          ${visible.length === this.nodes.length
+            ? `${this.nodes.length}`
+            : `${visible.length} / ${this.nodes.length}`} strains
+        </div>
       </div>
     `;
   }
 
   // ---------------------------------------------------------------------------
-  // Render: filter row
+  // Render: generation filter chips
   // ---------------------------------------------------------------------------
 
-  private _renderFilterRow(): TemplateResult {
-    const gens = [...new Set(this.nodes.map((n) => n.gen))].sort();
-    const showClear = this.focalId || this._focusMode || this._collapsed.size > 0;
-
+  private _renderFilterRow(gens: string[]): TemplateResult {
+    const showClear = this._collapsed.size > 0 || !!this._genFilter;
     return html`
       <div class="filter-row">
         <button
           class="gen-chip ${this._genFilter === null ? 'active' : ''}"
-          @click=${() => {
-            this._genFilter = null;
-          }}
-        >
-          All
-        </button>
-        ${gens.map(
-          (g) => html`
-            <button
-              class="gen-chip ${this._genFilter === g ? 'active' : ''}"
-              style="--chip-c: ${genColor(g)}"
-              @click=${() => {
-                this._genFilter = g;
-              }}
-            >
-              ${g}
-            </button>
-          `
-        )}
+          @click=${() => { this._genFilter = null; }}
+        >All</button>
+        ${gens.map((g) => html`
+          <button
+            class="gen-chip ${this._genFilter === g ? 'active' : ''}"
+            style="--chip-c:${genColor(g)}"
+            @click=${() => { this._genFilter = this._genFilter === g ? null : g; }}
+          >${g}</button>
+        `)}
         ${showClear
           ? html`
               <button
                 class="clear-btn"
-                @click=${() => {
-                  this.focalId = null;
-                  this._focusMode = false;
-                  this._collapsed = new Set();
-                }}
-              >
-                Clear
-              </button>
+                @click=${() => { this._collapsed = new Set(); this._genFilter = null; }}
+              >Clear</button>
             `
           : nothing}
       </div>
@@ -488,16 +481,54 @@ export class GeneticsTreeView extends LitElement {
   }
 
   // ---------------------------------------------------------------------------
-  // Render: edges
+  // Render: breeder bands (families mode)
+  // ---------------------------------------------------------------------------
+
+  private _renderBreederBands(c: LayoutResult): TemplateResult {
+    if (this._mode !== 'families' || !c.bands) return html`${nothing}`;
+    return html`
+      ${c.bands.map((b) => html`
+        <div class="band" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>
+        <div class="band-header" style="left:${b.x + 18}px;top:${b.y + 12}px">
+          <span class="band-label">${b.label}</span>
+          <span class="band-count">${b.count}</span>
+        </div>
+      `)}
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render: generation gutter labels (tree mode)
+  // ---------------------------------------------------------------------------
+
+  private _renderGenGutterLabels(c: LayoutResult): TemplateResult {
+    if (this._mode !== 'tree' || !c.bands) return html`${nothing}`;
+    return html`
+      ${c.bands.map((b) => html`
+        <div
+          class="gen-gutter"
+          style="top:${b.y + b.h / 2 - 6}px;left:${c.bounds.minX + 8}px;transform:translateX(-100%)"
+        >${b.label}</div>
+      `)}
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render: edges SVG
   // ---------------------------------------------------------------------------
 
   private _renderEdges(c: LayoutResult): TemplateResult {
     const { minX, minY, maxX, maxY } = c.bounds;
     const w = maxX - minX;
     const h = maxY - minY;
+
+    const highlightId = this._highlightId;
+    const highlightAnc = this._highlightAncSet;
+    const highlightDesc = this._highlightDescSet;
     const anc = this._ancestorSet;
     const desc = this._descendantSet;
-    const ml = this._motherLineSet;
+    const focalId = this._mode === 'lineage' ? this._focalId : null;
+    const pathFn = this._mode === 'families' ? edgePathCurve : edgePath;
 
     return html`
       <svg
@@ -509,34 +540,33 @@ export class GeneticsTreeView extends LitElement {
           const fromNode = c.nodes[e.from];
           const toNode = c.nodes[e.to];
           if (!fromNode || !toNode) return nothing;
-          const d =
-            this._layout === 'radial'
-              ? edgePathRadial(fromNode, toNode)
-              : edgePath(fromNode, toNode);
+          const d = pathFn(fromNode, toNode);
 
-          const isMotherLine =
-            ml.has(e.from) &&
-            (e.to === this.focalId || ml.has(e.to));
+          // Determine if this edge should be dim
+          const touchesHighlight =
+            highlightId && (e.from === highlightId || e.to === highlightId);
+          const inHighlightGraph =
+            highlightId && (
+              (highlightAnc.has(e.from) && (e.to === highlightId || highlightAnc.has(e.to))) ||
+              (highlightDesc.has(e.to) && (e.from === highlightId || highlightDesc.has(e.from)))
+            );
+          const inFocalGraph =
+            focalId && (
+              (e.from === focalId || anc.has(e.from) || desc.has(e.from)) &&
+              (e.to === focalId || anc.has(e.to) || desc.has(e.to))
+            );
 
-          const dimmed =
-            this._focusMode &&
-            this.focalId &&
-            !anc.has(e.from) &&
-            !anc.has(e.to) &&
-            !desc.has(e.from) &&
-            !desc.has(e.to) &&
-            e.from !== this.focalId &&
-            e.to !== this.focalId;
+          let dim: boolean;
+          if (focalId) {
+            dim = !inFocalGraph;
+          } else if (highlightId) {
+            dim = !touchesHighlight && !inHighlightGraph;
+          } else {
+            // Faint until hover — the core legibility fix
+            dim = true;
+          }
 
-          const classes = [
-            'edge',
-            `edge-${e.kind}`,
-            dimmed ? 'dimmed' : '',
-            isMotherLine && this._highlightMother ? 'mother-line' : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
-
+          const classes = ['edge', `edge-${e.kind}`, dim ? 'dim' : ''].filter(Boolean).join(' ');
           return svg`<path class="${classes}" d="${d}" />`;
         })}
       </svg>
@@ -544,47 +574,17 @@ export class GeneticsTreeView extends LitElement {
   }
 
   // ---------------------------------------------------------------------------
-  // Render: gen labels (topdown only)
-  // ---------------------------------------------------------------------------
-
-  private _renderGenLabels(c: LayoutResult): TemplateResult {
-    const { minX } = c.bounds;
-    const byRank: Record<number, TreeNode[]> = {};
-    for (const n of this._visibleNodes()) {
-      const ln = c.nodes[n.id];
-      if (!ln) continue;
-      if (!byRank[ln.rank]) byRank[ln.rank] = [];
-      byRank[ln.rank].push(n);
-    }
-
-    return html`
-      ${Object.entries(byRank).map(([rankStr, rowNodes]) => {
-        const rank = Number(rankStr);
-        const ln = c.nodes[rowNodes[0].id];
-        if (!ln) return nothing;
-        const gens = [...new Set(rowNodes.map((n) => n.gen))].join(' · ');
-        return html`
-          <div
-            class="gen-label"
-            style="left:${minX - 100}px;top:${ln.y}px"
-          >
-            <div class="gen-eyebrow">Gen ${rank}</div>
-            <div class="gen-tags">${gens}</div>
-          </div>
-        `;
-      })}
-    `;
-  }
-
-  // ---------------------------------------------------------------------------
   // Render: nodes
   // ---------------------------------------------------------------------------
 
-  private _renderNodes(c: LayoutResult): TemplateResult {
-    const visible = this._visibleNodes();
+  private _renderNodes(c: LayoutResult, visible: TreeNode[]): TemplateResult {
+    const searchLc = this._search.toLowerCase();
+    const highlightId = this._highlightId;
+    const highlightAnc = this._highlightAncSet;
+    const highlightDesc = this._highlightDescSet;
     const anc = this._ancestorSet;
     const desc = this._descendantSet;
-    const searchLc = this._search.toLowerCase();
+    const focalId = this._focalId;
 
     return html`
       ${visible.map((p) => {
@@ -592,41 +592,40 @@ export class GeneticsTreeView extends LitElement {
         if (!ln) return nothing;
 
         const isSelected = this._selectedId === p.id;
-        const isCompare = this._compareIds.includes(p.id);
-        const isFocal = this.focalId === p.id;
-        const inLineage = anc.has(p.id) || desc.has(p.id) || isFocal;
-        const highlighted = isFocal || inLineage;
+        const isFocal = focalId === p.id;
+
+        const inFocalGraph = focalId && (isFocal || anc.has(p.id) || desc.has(p.id));
+        const inHighlight = highlightId && (
+          p.id === highlightId || highlightAnc.has(p.id) || highlightDesc.has(p.id)
+        );
 
         const searchMatch =
           !searchLc ||
           p.name.toLowerCase().includes(searchLc) ||
           p.strain.toLowerCase().includes(searchLc) ||
           p.breeder.toLowerCase().includes(searchLc);
-
         const genMatch = !this._genFilter || p.gen === this._genFilter;
 
-        const dimmed =
-          (this._focusMode && this.focalId && !highlighted) ||
+        const dim =
+          (focalId && !inFocalGraph) ||
+          (highlightId && !inHighlight) ||
           !searchMatch ||
           !genMatch;
 
         const hasChildren = (this._childrenOf[p.id] ?? []).length > 0;
         const isCollapsed = this._collapsed.has(p.id);
-        const descCount = isCollapsed
-          ? this._countDescendants(p.id)
-          : 0;
+        const descCount = isCollapsed ? this._countDescendants(p.id) : 0;
+
+        const stageColor = genColor(p.gen);
 
         const classes = [
           'tree-node',
-          dimmed ? 'dimmed' : '',
-          highlighted ? 'highlighted' : '',
+          dim ? 'dim' : '',
           isSelected ? 'selected' : '',
-          isCompare ? 'compare' : '',
-        ]
-          .filter(Boolean)
-          .join(' ');
-
-        const stageColor = genColor(p.gen);
+          isFocal ? 'focal' : '',
+          p.id === highlightId ? 'hovered' : '',
+          inFocalGraph && !isFocal ? 'in-graph' : '',
+        ].filter(Boolean).join(' ');
 
         return html`
           <div
@@ -638,36 +637,27 @@ export class GeneticsTreeView extends LitElement {
               height:${NODE_H}px;
               --stage-c:${stageColor}
             "
-            @click=${() => {
-              this._onNodeClick(p);
-            }}
+            @mouseenter=${() => { this._hoverId = p.id; }}
+            @mouseleave=${() => { this._hoverId = null; }}
+            @click=${(e: MouseEvent) => this._onNodeClick(p, e)}
           >
             <div class="pn-body">
               <div class="pn-row1">
-                <span class="gen-badge" style="background:${stageColor}">${p.gen}</span>
-                <span class="pn-name">${p.name}</span>
+                <span class="pn-name" title="${p.name}">${p.name}</span>
               </div>
-              <div class="pn-row2">${p.strain}${p.breeder ? ` · ${p.breeder}` : ''}</div>
-              <div class="pn-row3">
-                <span class="type-badge ${p.type}">${p.type}</span>
-                ${p.pheno ? html`<span class="pheno-badge">${p.pheno}</span>` : nothing}
+              <div class="pn-row2">
+                <span class="gen-badge" style="background:${stageColor}">${p.gen}</span>
+                <span class="pn-breeder">${p.breeder}</span>
               </div>
             </div>
-            ${isCompare
-              ? html`<span class="compare-badge">${this._compareIds.indexOf(p.id) + 1}</span>`
-              : nothing}
             ${hasChildren
               ? html`
                   <button
                     class="fold-btn ${isCollapsed ? 'collapsed' : ''}"
-                    @click=${(e: Event) => {
-                      e.stopPropagation();
-                      this._toggleCollapse(p.id);
-                    }}
+                    title="${isCollapsed ? 'Expand' : 'Collapse'}"
+                    @click=${(e: Event) => { e.stopPropagation(); this._toggleCollapse(p.id); }}
                   >
-                    <svg viewBox="0 0 24 24">
-                      <path d="${isCollapsed ? mdiChevronDown : mdiChevronUp}" />
-                    </svg>
+                    <svg viewBox="0 0 24 24"><path d="${mdiChevronDown}" /></svg>
                     ${isCollapsed && descCount > 0
                       ? html`<span class="desc-count">${descCount}</span>`
                       : nothing}
@@ -696,6 +686,129 @@ export class GeneticsTreeView extends LitElement {
   }
 
   // ---------------------------------------------------------------------------
+  // Render: focus banner (lineage mode)
+  // ---------------------------------------------------------------------------
+
+  private _renderFocusBanner(): TemplateResult {
+    if (this._mode !== 'lineage' || !this._focalId) return html`${nothing}`;
+    const focal = this._byId[this._focalId];
+    if (!focal) return html`${nothing}`;
+    const anc = this._ancestorSet;
+    const desc = this._descendantSet;
+    return html`
+      <div class="focus-banner">
+        <svg class="icon" viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
+        <span>
+          Lineage of <strong>${focal.name}</strong>
+          <span class="banner-counts">
+            · ${anc.size} ancestor${anc.size === 1 ? '' : 's'}
+            · ${desc.size} descendant${desc.size === 1 ? '' : 's'}
+          </span>
+        </span>
+        <button @click=${() => this._clearFocus()}>Clear</button>
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render: side detail panel
+  // ---------------------------------------------------------------------------
+
+  private _renderDetailPanel(): TemplateResult {
+    if (!this._selectedId) return html`${nothing}`;
+    const n = this._byId[this._selectedId];
+    if (!n) return html`${nothing}`;
+
+    const motherNode = n.parents.mother ? this._byId[n.parents.mother] : null;
+    const fatherNode = n.parents.father ? this._byId[n.parents.father] : null;
+    const selectedAnc = ancestorsOf(this.nodes, n.id);
+    const selectedDesc = descendantsOf(this.nodes, n.id);
+    const kidsAll = this._childrenOf[n.id] ?? [];
+    const kidsShown = kidsAll.slice(0, 5).map((id) => this._byId[id]).filter(Boolean);
+    const kidsExtra = Math.max(0, kidsAll.length - kidsShown.length);
+
+    return html`
+      <div class="detail-panel" @click=${(e: Event) => e.stopPropagation()}>
+        <button
+          class="detail-close"
+          @click=${() => { this._selectedId = null; }}
+          aria-label="Close"
+        >
+          <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
+        </button>
+
+        <div class="detail-eyebrow" style="--gen-c:${genColor(n.gen)}">
+          ${n.gen} · ${selectedAnc.size === 0 ? 'Landrace' : 'Cross'}
+        </div>
+        <h3 class="detail-title">${n.name}</h3>
+        <div class="detail-breeder">${n.breeder}</div>
+
+        <div class="detail-stats">
+          <div class="detail-stat">
+            <div class="v">${selectedAnc.size}</div>
+            <div class="l">Ancestors</div>
+          </div>
+          <div class="detail-stat">
+            <div class="v">${selectedDesc.size}</div>
+            <div class="l">Descendants</div>
+          </div>
+          <div class="detail-stat">
+            <div class="v">${kidsAll.length}</div>
+            <div class="l">Direct kids</div>
+          </div>
+        </div>
+
+        ${motherNode || fatherNode
+          ? html`
+              <div class="detail-section">
+                <div class="detail-section-label">Parents</div>
+                ${motherNode
+                  ? html`
+                      <div class="detail-parent" @click=${() => this._jumpTo(motherNode.id)}>
+                        <span class="role mother">Mother</span>
+                        <span class="pname" title="${motherNode.name}">${motherNode.name}</span>
+                      </div>
+                    `
+                  : nothing}
+                ${fatherNode
+                  ? html`
+                      <div class="detail-parent" @click=${() => this._jumpTo(fatherNode.id)}>
+                        <span class="role father">Father</span>
+                        <span class="pname" title="${fatherNode.name}">${fatherNode.name}</span>
+                      </div>
+                    `
+                  : nothing}
+              </div>
+            `
+          : nothing}
+
+        ${kidsShown.length > 0
+          ? html`
+              <div class="detail-section">
+                <div class="detail-section-label">
+                  Offspring${kidsExtra ? ` (+${kidsExtra} more)` : ''}
+                </div>
+                ${kidsShown.map((k) => html`
+                  <div class="detail-parent" @click=${() => this._jumpTo(k.id)}>
+                    <span class="role" style="color:${genColor(k.gen)}">${k.gen}</span>
+                    <span class="pname" title="${k.name}">${k.name}</span>
+                  </div>
+                `)}
+              </div>
+            `
+          : nothing}
+
+        <div class="detail-actions">
+          <button class="pill-btn active" @click=${() => this._isolateLineage(n.id)}>
+            <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
+            Isolate Lineage
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------------
   // Render: zoom controls
   // ---------------------------------------------------------------------------
 
@@ -706,7 +819,7 @@ export class GeneticsTreeView extends LitElement {
           class="icon-btn"
           @click=${() => {
             this._userHasInteracted = true;
-            this._scale = Math.min(this._scale * 1.2, 2.0);
+            this._scale = Math.min(this._scale * 1.2, 4.0);
           }}
         >
           <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
@@ -716,10 +829,13 @@ export class GeneticsTreeView extends LitElement {
           class="icon-btn"
           @click=${() => {
             this._userHasInteracted = true;
-            this._scale = Math.max(this._scale / 1.2, 0.2);
+            this._scale = Math.max(this._scale / 1.2, 0.08);
           }}
         >
           <svg viewBox="0 0 24 24"><path d="${mdiMinus}" /></svg>
+        </button>
+        <button class="icon-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
+          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
         </button>
       </div>
     `;
@@ -731,15 +847,10 @@ export class GeneticsTreeView extends LitElement {
 
   private _renderLegend(): TemplateResult {
     return html`
-      <div class="legend">
-        <div class="legend-row">
-          <div class="legend-line solid"></div>
-          <span>Mother</span>
-        </div>
-        <div class="legend-row">
-          <div class="legend-line dashed"></div>
-          <span>Father</span>
-        </div>
+      <div class="tree-footer">
+        <span class="legend-item"><span class="legend-line mother"></span> Mother</span>
+        <span class="legend-item"><span class="legend-line father"></span> Father</span>
+        <span class="legend-hint">Double-click a strain to isolate its lineage</span>
       </div>
     `;
   }
@@ -749,51 +860,60 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderMinimap(c: LayoutResult, visible: TreeNode[]): TemplateResult {
-    const mmW = 180;
-    const mmH = 120;
+    const MM_W = 170;
+    const MM_H = 120;
+    const PAD = 4;
     const { minX, maxX, minY, maxY } = c.bounds;
     const treeW = maxX - minX || 1;
     const treeH = maxY - minY || 1;
-    const scaleX = mmW / treeW;
-    const scaleY = mmH / treeH;
+    const k = Math.min((MM_W - PAD * 2) / treeW, (MM_H - PAD * 2) / treeH);
 
-    const vpX = (-this._panX / this._scale - minX) * scaleX;
-    const vpY = (-this._panY / this._scale - minY) * scaleY;
-    const vpW = (this._viewW / this._scale) * scaleX;
-    const vpH = (this._viewH / this._scale) * scaleY;
+    const project = (x: number, y: number) => ({
+      x: PAD + (x - minX) * k,
+      y: PAD + (y - minY) * k,
+    });
+
+    const anc = this._ancestorSet;
+    const desc = this._descendantSet;
+
+    const vpX = (-this._panX / this._scale - minX) * k + PAD;
+    const vpY = (-this._panY / this._scale - minY) * k + PAD;
+    const vpW = (this._viewW / this._scale) * k;
+    const vpH = (this._viewH / this._scale) * k;
 
     return html`
       <svg
         class="minimap"
-        width="${mmW}"
-        height="${mmH}"
+        width="${MM_W}"
+        height="${MM_H}"
         @click=${(e: MouseEvent) => {
           const rect = (e.currentTarget as SVGElement).getBoundingClientRect();
-          const wx = (e.clientX - rect.left) / scaleX + minX;
-          const wy = (e.clientY - rect.top) / scaleY + minY;
+          const wx = (e.clientX - rect.left - PAD) / k + minX;
+          const wy = (e.clientY - rect.top - PAD) / k + minY;
           this._panX = this._viewW / 2 - wx * this._scale;
           this._panY = this._viewH / 2 - wy * this._scale;
+          this._userHasInteracted = true;
         }}
       >
         ${visible.map((p) => {
           const ln = c.nodes[p.id];
           if (!ln) return nothing;
-          const rx = (ln.x - minX) * scaleX;
-          const ry = (ln.y - minY) * scaleY;
-          const rw = ln.w * scaleX;
-          const rh = ln.h * scaleY;
+          const pos = project(ln.x + ln.w / 2, ln.y + ln.h / 2);
+          const isFocal = p.id === this._focalId || p.id === this._selectedId;
+          const isAnc = anc.has(p.id);
+          const isDesc = desc.has(p.id);
+          const fill = isFocal ? '#4caf50' : isAnc ? '#ff9800' : isDesc ? '#2196f3' : genColor(p.gen);
           return svg`<rect
-            x="${rx}" y="${ry}" width="${Math.max(rw, 2)}" height="${Math.max(rh, 2)}"
-            rx="1"
-            fill="${genColor(p.gen)}"
-            opacity="0.7"
+            x="${pos.x - 1.5}" y="${pos.y - 0.7}"
+            width="3" height="1.4" rx="0.5"
+            fill="${fill}" opacity="${isFocal || isAnc || isDesc ? 0.9 : 0.5}"
           />`;
         })}
         <rect
-          x="${vpX}"
-          y="${vpY}"
-          width="${vpW}"
-          height="${vpH}"
+          x="${Math.max(0, Math.min(MM_W, vpX))}"
+          y="${Math.max(0, Math.min(MM_H, vpY))}"
+          width="${Math.max(2, Math.min(MM_W, vpX + vpW) - Math.max(0, vpX))}"
+          height="${Math.max(2, Math.min(MM_H, vpY + vpH) - Math.max(0, vpY))}"
           fill="none"
           stroke="#4caf50"
           stroke-width="1.5"
@@ -804,144 +924,13 @@ export class GeneticsTreeView extends LitElement {
   }
 
   // ---------------------------------------------------------------------------
-  // Render: compare drawer
+  // Helper: breeder frequency list for dropdown
   // ---------------------------------------------------------------------------
 
-  private _renderCompareDrawer(): TemplateResult {
-    if (this._compareIds.length === 0) return html`${nothing}`;
-
-    const byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
-
-    const renderCol = (id: string | undefined, slot: number): TemplateResult => {
-      if (!id) {
-        return html`
-          <div class="cd-col cd-empty">
-            <svg viewBox="0 0 24 24"><path d="${mdiPlus}" /></svg>
-            <span>Click a node to compare</span>
-          </div>
-        `;
-      }
-      const n = byId[id];
-      if (!n) return html`${nothing}`;
-      return html`
-        <div class="cd-col">
-          <div class="cd-header">
-            <span class="cd-name">${n.name}</span>
-            <button
-              class="icon-btn"
-              @click=${() => {
-                this._compareIds = this._compareIds.filter((_, i) => i !== slot);
-              }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
-            </button>
-          </div>
-          <div class="cd-row"><span class="cd-k">Gen</span><span class="cd-v">${n.gen}</span></div>
-          <div class="cd-row"><span class="cd-k">Strain</span><span class="cd-v">${n.strain}</span></div>
-          <div class="cd-row"><span class="cd-k">Breeder</span><span class="cd-v">${n.breeder}</span></div>
-          <div class="cd-row"><span class="cd-k">Pheno</span><span class="cd-v">${n.pheno || '—'}</span></div>
-          <div class="cd-row"><span class="cd-k">Type</span><span class="cd-v">${n.type}</span></div>
-        </div>
-      `;
-    };
-
-    return html`
-      <div class="compare-drawer">
-        <div class="cd-title">
-          <svg viewBox="0 0 24 24"><path d="${mdiCompare}" /></svg>
-          Compare
-          <button
-            class="icon-btn"
-            style="margin-left:auto"
-            @click=${() => {
-              this._compareIds = [];
-            }}
-          >
-            <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
-          </button>
-        </div>
-        <div class="cd-cols">
-          ${renderCol(this._compareIds[0], 0)}
-          ${renderCol(this._compareIds[1], 1)}
-        </div>
-      </div>
-    `;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Render: detail panel
-  // ---------------------------------------------------------------------------
-
-  private _renderDetailPanel(): TemplateResult {
-    if (!this._selectedId) return html`${nothing}`;
-    const byId = Object.fromEntries(this.nodes.map((n) => [n.id, n]));
-    const n = byId[this._selectedId];
-    if (!n) return html`${nothing}`;
-
-    const motherNode = n.parents.mother ? byId[n.parents.mother] : null;
-    const fatherNode = n.parents.father ? byId[n.parents.father] : null;
-
-    return html`
-      <div class="detail-panel">
-        <div class="dp-header">
-          <span class="dp-title">${n.name}</span>
-          <button
-            class="icon-btn"
-            @click=${() => {
-              this._selectedId = null;
-            }}
-          >
-            <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
-          </button>
-        </div>
-        <div class="dp-body">
-          <div class="dp-row"><span class="dp-k">Generation</span><span class="dp-v">${n.gen}</span></div>
-          <div class="dp-row"><span class="dp-k">Strain</span><span class="dp-v">${n.strain}</span></div>
-          <div class="dp-row"><span class="dp-k">Breeder</span><span class="dp-v">${n.breeder}</span></div>
-          <div class="dp-row"><span class="dp-k">Phenotype</span><span class="dp-v">${n.pheno || '—'}</span></div>
-          <div class="dp-row">
-            <span class="dp-k">Mother</span>
-            <span
-              class="dp-v ${motherNode ? 'dp-link' : ''}"
-              @click=${() => {
-                if (motherNode) {
-                  this.focalId = motherNode.id;
-                  this._selectedId = motherNode.id;
-                }
-              }}
-            >
-              ${motherNode ? motherNode.name : '—'}
-            </span>
-          </div>
-          <div class="dp-row">
-            <span class="dp-k">Father</span>
-            <span class="dp-v">${fatherNode ? fatherNode.name : '—'}</span>
-          </div>
-        </div>
-        <div class="dp-footer">
-          <button
-            class="pill-btn active"
-            @click=${() => {
-              this.focalId = n.id;
-              this._focusMode = true;
-            }}
-          >
-            Focus Lineage
-          </button>
-          <button
-            class="pill-btn"
-            @click=${() => {
-              if (!this._compareIds.includes(n.id) && this._compareIds.length < 2) {
-                this._compareIds = [...this._compareIds, n.id];
-              }
-            }}
-          >
-            <svg viewBox="0 0 24 24"><path d="${mdiCompare}" /></svg>
-            Compare
-          </button>
-        </div>
-      </div>
-    `;
+  private _computeBreeders(): Array<[string, number]> {
+    const m = new Map<string, number>();
+    for (const n of this.nodes) m.set(n.breeder, (m.get(n.breeder) ?? 0) + 1);
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }
 
   // ---------------------------------------------------------------------------
@@ -959,15 +948,16 @@ export class GeneticsTreeView extends LitElement {
       --bg-card-elev: #252525;
       --bg-input: #2a2a2a;
       --bg-input-border: #3a3a3a;
-      --bg-glass: rgba(20, 20, 24, 0.8);
+      --bg-glass: rgba(20, 20, 24, 0.88);
       --fg-1: #fff;
       --fg-2: rgba(255, 255, 255, 0.7);
       --fg-3: rgba(255, 255, 255, 0.5);
+      --fg-4: rgba(255, 255, 255, 0.3);
       --divider-faint: rgba(255, 255, 255, 0.05);
       --gv-primary: #4caf50;
       --gv-secondary: #2196f3;
       --gv-mother: #e91e63;
-      --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.37);
+      --elev-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
     }
 
     /* ---- Shell ---- */
@@ -986,13 +976,14 @@ export class GeneticsTreeView extends LitElement {
       display: flex;
       flex-direction: row;
       align-items: center;
-      gap: 12px;
-      padding: 10px 16px;
+      gap: 10px;
+      padding: 8px 14px;
       background: var(--bg-card);
       border-bottom: 1px solid var(--divider-faint);
       flex-shrink: 0;
       flex-wrap: wrap;
     }
+    .toolbar-spacer { flex: 1; }
 
     .search-bar {
       display: flex;
@@ -1003,12 +994,12 @@ export class GeneticsTreeView extends LitElement {
       border-radius: 999px;
       padding: 4px 10px;
       flex: 1;
-      min-width: 140px;
-      max-width: 260px;
+      min-width: 130px;
+      max-width: 240px;
     }
     .search-bar:focus-within {
       border-color: var(--gv-primary);
-      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.18);
     }
     .search-bar .icon {
       width: 16px;
@@ -1025,35 +1016,45 @@ export class GeneticsTreeView extends LitElement {
       flex: 1;
       min-width: 0;
     }
-    .search-bar input::placeholder {
-      color: var(--fg-3);
-    }
+    .search-bar input::placeholder { color: var(--fg-3); }
 
-    .layout-toggle {
+    /* Mode segmented control */
+    .seg {
       display: flex;
       border-radius: 999px;
       overflow: hidden;
       border: 1px solid var(--bg-input-border);
+      flex-shrink: 0;
     }
-    .layout-toggle button {
+    .seg button {
       background: var(--bg-input);
       color: var(--fg-2);
       border: none;
-      padding: 5px 14px;
+      border-right: 1px solid var(--bg-input-border);
+      padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
+      white-space: nowrap;
     }
-    .layout-toggle button:first-child {
-      border-right: 1px solid var(--bg-input-border);
-    }
-    .layout-toggle button.active {
+    .seg button:last-child { border-right: none; }
+    .seg button.active {
       background: linear-gradient(135deg, #4caf50, #45a049);
       color: #fff;
     }
-    .layout-toggle button:hover:not(.active) {
-      background: var(--bg-card-elev);
+    .seg button:hover:not(.active) { background: var(--bg-card-elev); }
+
+    .select-pill {
+      background: var(--bg-input);
+      color: var(--fg-2);
+      border: 1px solid var(--bg-input-border);
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      outline: none;
     }
+    .select-pill:hover { border-color: var(--gv-primary); color: var(--fg-1); }
 
     .pill-btn {
       display: inline-flex;
@@ -1063,21 +1064,15 @@ export class GeneticsTreeView extends LitElement {
       color: var(--fg-2);
       border: 1px solid var(--bg-input-border);
       border-radius: 999px;
-      padding: 5px 14px;
+      padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
       white-space: nowrap;
       transition: background 0.2s, color 0.2s, border-color 0.2s;
+      flex-shrink: 0;
     }
-    .pill-btn svg {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
-    }
-    .pill-btn:hover {
-      border-color: var(--gv-primary);
-      color: var(--fg-1);
-    }
+    .pill-btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .pill-btn:hover { border-color: var(--gv-primary); color: var(--fg-1); }
     .pill-btn.active {
       background: rgba(76, 175, 80, 0.15);
       border-color: var(--gv-primary);
@@ -1098,21 +1093,13 @@ export class GeneticsTreeView extends LitElement {
       padding: 0;
       flex-shrink: 0;
     }
-    .icon-btn svg {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
-    .icon-btn:hover {
-      background: var(--bg-card-elev);
-      color: var(--fg-1);
-    }
+    .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
+    .icon-btn:hover { background: var(--bg-card-elev); color: var(--fg-1); }
 
-    .count-badge {
+    .count-chip {
       font-size: 11px;
       color: var(--fg-3);
       white-space: nowrap;
-      margin-left: auto;
     }
 
     /* ---- Filter row ---- */
@@ -1121,45 +1108,37 @@ export class GeneticsTreeView extends LitElement {
       flex-direction: row;
       flex-wrap: wrap;
       gap: 6px;
-      padding: 8px 16px;
+      padding: 6px 14px;
       background: var(--bg-card);
       border-bottom: 1px solid var(--divider-faint);
       flex-shrink: 0;
     }
-
     .gen-chip {
       background: var(--bg-input);
       border: 1px solid var(--chip-c, var(--bg-input-border));
       color: var(--fg-2);
       border-radius: 999px;
-      padding: 3px 12px;
+      padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
       transition: background 0.2s, color 0.2s;
     }
-    .gen-chip:hover {
-      background: var(--bg-card-elev);
-      color: var(--fg-1);
-    }
+    .gen-chip:hover { background: var(--bg-card-elev); color: var(--fg-1); }
     .gen-chip.active {
       background: var(--chip-c, var(--gv-primary));
       color: #fff;
       border-color: transparent;
     }
-
     .clear-btn {
       background: rgba(229, 57, 53, 0.1);
       border: 1px solid rgba(229, 57, 53, 0.4);
       color: #ef5350;
       border-radius: 999px;
-      padding: 3px 12px;
+      padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
-      margin-left: 4px;
     }
-    .clear-btn:hover {
-      background: rgba(229, 57, 53, 0.2);
-    }
+    .clear-btn:hover { background: rgba(229, 57, 53, 0.2); }
 
     /* ---- Canvas area ---- */
     .canvas-wrap {
@@ -1168,18 +1147,12 @@ export class GeneticsTreeView extends LitElement {
       overflow: hidden;
       cursor: grab;
     }
-    .canvas-wrap:active {
-      cursor: grabbing;
-    }
+    .canvas-wrap:active { cursor: grabbing; }
 
     .bg-grid {
       position: absolute;
       inset: 0;
-      background-image: radial-gradient(
-        circle,
-        rgba(255, 255, 255, 0.04) 1px,
-        transparent 1px
-      );
+      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
       background-size: 28px 28px;
       pointer-events: none;
     }
@@ -1192,47 +1165,71 @@ export class GeneticsTreeView extends LitElement {
       will-change: transform;
     }
 
+    /* ---- Breeder bands (families mode) ---- */
+    .band {
+      position: absolute;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      pointer-events: none;
+    }
+    .band-header {
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .band-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-2);
+    }
+    .band-count {
+      font-size: 11px;
+      color: var(--fg-4);
+      background: rgba(255,255,255,0.06);
+      border-radius: 999px;
+      padding: 1px 6px;
+    }
+
+    /* ---- Gen gutter labels (tree mode) ---- */
+    .gen-gutter {
+      position: absolute;
+      font-size: 10px;
+      color: var(--fg-4);
+      white-space: nowrap;
+      pointer-events: none;
+      padding-right: 12px;
+      letter-spacing: 0.3px;
+    }
+
     /* ---- Edges SVG ---- */
     .edges-svg {
       position: absolute;
       pointer-events: none;
       overflow: visible;
     }
-
     .edge {
       fill: none;
-      stroke-width: 1.6;
+      stroke-width: 1.5;
+      transition: opacity 0.12s;
     }
-    .edge-mother {
-      stroke: rgba(255, 255, 255, 0.55);
-    }
-    .edge-father {
-      stroke: rgba(255, 255, 255, 0.3);
-      stroke-dasharray: 5 3;
-    }
-    .edge-clone {
-      stroke: rgba(233, 30, 99, 0.5);
-      stroke-dasharray: 2 2;
-    }
-    .edge.dimmed {
-      opacity: 0.1;
-    }
-    .edge.mother-line {
-      stroke: var(--gv-mother);
-      stroke-width: 2.2;
-      filter: drop-shadow(0 0 4px var(--gv-mother));
-    }
+    .edge-mother { stroke: rgba(255,255,255,0.85); }
+    .edge-father { stroke: rgba(255,255,255,0.55); stroke-dasharray: 5 3; }
+    .edge-clone { stroke: rgba(233,30,99,0.7); stroke-dasharray: 2 2; }
+    .edge.dim { opacity: 0.06; }
 
     /* ---- Tree nodes ---- */
     .tree-node {
       position: absolute;
       background: var(--bg-card-elev);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
       overflow: hidden;
       cursor: pointer;
       box-sizing: border-box;
-      transition: opacity 0.2s, box-shadow 0.2s, border-color 0.2s;
+      transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s;
     }
     .tree-node::before {
       content: '';
@@ -1242,38 +1239,53 @@ export class GeneticsTreeView extends LitElement {
       width: 3px;
       height: 100%;
       background: var(--stage-c, #555);
-      border-radius: 12px 0 0 12px;
+      border-radius: 8px 0 0 8px;
     }
     .tree-node:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      border-color: rgba(255,255,255,0.2);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
-    .tree-node.dimmed {
-      opacity: 0.25;
-    }
-    .tree-node.highlighted {
-      border-color: var(--gv-primary);
-      box-shadow: 0 0 0 1px var(--gv-primary), var(--elev-glass);
+    .tree-node.dim { opacity: 0.2; }
+    .tree-node.hovered {
+      border-color: rgba(255,255,255,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .tree-node.selected {
       border-color: var(--gv-secondary);
       box-shadow: 0 0 0 2px var(--gv-secondary), var(--elev-glass);
     }
-    .tree-node.compare {
-      border-color: #9c27b0;
-      box-shadow: 0 0 0 1px #9c27b0;
+    .tree-node.focal {
+      border-color: var(--gv-primary);
+      box-shadow: 0 0 0 2px var(--gv-primary), var(--elev-glass);
+    }
+    .tree-node.in-graph {
+      border-color: rgba(76, 175, 80, 0.4);
     }
 
     /* ---- Node body ---- */
     .pn-body {
-      padding: 6px 8px 6px 14px;
+      padding: 5px 8px 5px 14px;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
       height: 100%;
       box-sizing: border-box;
     }
     .pn-row1 {
+      display: flex;
+      align-items: center;
+    }
+    .pn-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+    .pn-row2 {
       display: flex;
       align-items: center;
       gap: 5px;
@@ -1287,69 +1299,14 @@ export class GeneticsTreeView extends LitElement {
       flex-shrink: 0;
       letter-spacing: 0.4px;
     }
-    .pn-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--fg-1);
+    .pn-breeder {
+      font-size: 10px;
+      color: var(--fg-3);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       flex: 1;
       min-width: 0;
-    }
-    .pn-row2 {
-      font-size: 10px;
-      color: var(--fg-3);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .pn-row3 {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .type-badge {
-      font-size: 9px;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-weight: 500;
-    }
-    .type-badge.strain {
-      background: rgba(156, 39, 176, 0.3);
-      color: #ce93d8;
-    }
-    .type-badge.batch {
-      background: rgba(33, 150, 243, 0.2);
-      color: #90caf9;
-    }
-    .pheno-badge {
-      font-size: 9px;
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--fg-3);
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-style: italic;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 80px;
-    }
-
-    .compare-badge {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #9c27b0;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .fold-btn {
@@ -1359,64 +1316,182 @@ export class GeneticsTreeView extends LitElement {
       display: inline-flex;
       align-items: center;
       gap: 2px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-      padding: 2px 4px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 5px;
+      padding: 1px 3px;
       cursor: pointer;
       color: var(--fg-3);
       font-size: 9px;
     }
-    .fold-btn svg {
-      width: 12px;
-      height: 12px;
-      fill: currentColor;
-    }
-    .fold-btn:hover {
-      color: var(--fg-1);
-      background: rgba(255, 255, 255, 0.12);
-    }
-    .fold-btn.collapsed {
-      color: var(--gv-primary);
-      border-color: var(--gv-primary);
-    }
-    .desc-count {
-      font-size: 9px;
-      font-weight: 600;
-    }
+    .fold-btn svg { width: 11px; height: 11px; fill: currentColor; }
+    .fold-btn:hover { color: var(--fg-1); background: rgba(255,255,255,0.12); }
+    .fold-btn.collapsed { color: var(--gv-primary); border-color: var(--gv-primary); }
+    .desc-count { font-size: 9px; font-weight: 600; }
 
-    /* ---- Gen labels ---- */
-    .gen-label {
+    /* ---- Focus banner ---- */
+    .focus-banner {
       position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(76,175,80,0.3);
+      border-radius: 999px;
+      padding: 6px 14px 6px 10px;
+      font-size: 12px;
+      color: var(--fg-1);
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+      z-index: 10;
+    }
+    .focus-banner .icon { width: 14px; height: 14px; fill: var(--gv-primary); flex-shrink: 0; }
+    .focus-banner strong { color: var(--gv-primary); }
+    .banner-counts { color: var(--fg-3); }
+    .focus-banner button {
+      background: rgba(76,175,80,0.15);
+      border: 1px solid rgba(76,175,80,0.3);
+      border-radius: 999px;
+      color: var(--gv-primary);
+      font-size: 11px;
+      padding: 2px 10px;
+      cursor: pointer;
+      margin-left: 4px;
+    }
+    .focus-banner button:hover { background: rgba(76,175,80,0.25); }
+
+    /* ---- Side detail panel ---- */
+    .detail-panel {
+      position: absolute;
+      top: 10px;
+      right: 16px;
+      width: 220px;
+      background: var(--bg-glass);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      box-shadow: var(--elev-glass);
+      backdrop-filter: blur(12px);
       display: flex;
       flex-direction: column;
-      gap: 1px;
-      pointer-events: none;
+      gap: 0;
+      z-index: 10;
+      overflow: hidden;
     }
-    .gen-eyebrow {
-      font-size: 9px;
+    .detail-close {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+      border: none;
+      cursor: pointer;
+      color: var(--fg-3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .detail-close svg { width: 12px; height: 12px; fill: currentColor; }
+    .detail-close:hover { color: var(--fg-1); background: rgba(255,255,255,0.12); }
+    .detail-eyebrow {
+      padding: 12px 14px 0;
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 0.6px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gen-c, var(--fg-3));
+    }
+    .detail-title {
+      margin: 3px 14px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg-1);
+      line-height: 1.3;
+      padding-right: 20px;
+    }
+    .detail-breeder {
+      margin: 2px 14px 8px;
+      font-size: 11px;
       color: var(--fg-3);
     }
-    .gen-tags {
-      font-size: 10px;
-      color: var(--fg-2);
+    .detail-stats {
+      display: flex;
+      border-top: 1px solid var(--divider-faint);
+      border-bottom: 1px solid var(--divider-faint);
     }
+    .detail-stat {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 4px;
+      gap: 2px;
+    }
+    .detail-stat:not(:last-child) { border-right: 1px solid var(--divider-faint); }
+    .detail-stat .v { font-size: 18px; font-weight: 600; color: var(--fg-1); line-height: 1; }
+    .detail-stat .l { font-size: 9px; color: var(--fg-3); text-align: center; }
+    .detail-section {
+      padding: 8px 14px 4px;
+      border-bottom: 1px solid var(--divider-faint);
+    }
+    .detail-section-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-4);
+      margin-bottom: 6px;
+    }
+    .detail-parent {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 0;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .detail-parent:hover { background: rgba(255,255,255,0.04); margin: 0 -4px; padding: 3px 4px; }
+    .role {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      flex-shrink: 0;
+      min-width: 36px;
+    }
+    .role.mother { color: var(--gv-mother); }
+    .role.father { color: var(--gv-secondary); }
+    .pname {
+      font-size: 11px;
+      color: var(--fg-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .detail-actions {
+      padding: 10px 14px 12px;
+    }
+    .detail-actions .pill-btn { width: 100%; justify-content: center; }
 
     /* ---- Zoom controls ---- */
     .zoom-controls {
       position: absolute;
-      bottom: 16px;
-      left: 16px;
+      bottom: 44px;
+      left: 14px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 999px;
-      padding: 4px 8px;
+      padding: 4px 6px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);
     }
@@ -1427,210 +1502,52 @@ export class GeneticsTreeView extends LitElement {
       text-align: center;
     }
 
-    /* ---- Legend ---- */
-    .legend {
+    /* ---- Legend / footer ---- */
+    .tree-footer {
       position: absolute;
-      bottom: 16px;
-      left: 110px;
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      padding: 8px 12px;
-      box-shadow: var(--elev-glass);
-      backdrop-filter: blur(8px);
-    }
-    .legend-row {
+      bottom: 12px;
+      left: 14px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-size: 11px;
-      color: var(--fg-2);
+      color: var(--fg-3);
+      pointer-events: none;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
     .legend-line {
-      width: 24px;
+      display: inline-block;
+      width: 20px;
       height: 2px;
       border-radius: 1px;
     }
-    .legend-line.solid {
-      background: rgba(255, 255, 255, 0.55);
-    }
-    .legend-line.dashed {
+    .legend-line.mother { background: rgba(255,255,255,0.8); }
+    .legend-line.father {
       background: repeating-linear-gradient(
         90deg,
-        rgba(255, 255, 255, 0.3) 0,
-        rgba(255, 255, 255, 0.3) 5px,
+        rgba(255,255,255,0.5) 0,
+        rgba(255,255,255,0.5) 5px,
         transparent 5px,
         transparent 8px
       );
     }
+    .legend-hint { color: var(--fg-4); font-style: italic; }
 
     /* ---- Minimap ---- */
     .minimap {
       position: absolute;
-      bottom: 16px;
-      right: 16px;
+      bottom: 12px;
+      right: 14px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255,255,255,0.08);
       border-radius: 8px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);
       cursor: crosshair;
-    }
-
-    /* ---- Compare drawer ---- */
-    .compare-drawer {
-      position: absolute;
-      top: 16px;
-      right: 16px;
-      width: 340px;
-      background: var(--bg-glass);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 12px;
-      box-shadow: var(--elev-glass);
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .cd-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 12px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--fg-1);
-      border-bottom: 1px solid var(--divider-faint);
-    }
-    .cd-title svg {
-      width: 16px;
-      height: 16px;
-      fill: var(--gv-primary);
-      flex-shrink: 0;
-    }
-    .cd-cols {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-    }
-    .cd-col {
-      padding: 10px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      border-right: 1px solid var(--divider-faint);
-    }
-    .cd-col:last-child {
-      border-right: none;
-    }
-    .cd-col.cd-empty {
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      min-height: 80px;
-      color: var(--fg-3);
-      font-size: 11px;
-      font-style: italic;
-    }
-    .cd-col.cd-empty svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--fg-3);
-    }
-    .cd-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 4px;
-      margin-bottom: 4px;
-    }
-    .cd-name {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--fg-1);
-      flex: 1;
-      word-break: break-word;
-    }
-    .cd-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 4px;
-    }
-    .cd-k {
-      font-size: 10px;
-      color: var(--fg-3);
-    }
-    .cd-v {
-      font-size: 11px;
-      color: var(--fg-2);
-      text-align: right;
-      word-break: break-word;
-    }
-
-    /* ---- Detail panel ---- */
-    .detail-panel {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg-glass);
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(12px);
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      z-index: 10;
-    }
-    .dp-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px 8px;
-      border-bottom: 1px solid var(--divider-faint);
-    }
-    .dp-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--fg-1);
-      flex: 1;
-    }
-    .dp-body {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0;
-      padding: 8px 16px;
-    }
-    .dp-row {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 4px 16px 4px 0;
-      min-width: 100px;
-    }
-    .dp-k {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--fg-3);
-    }
-    .dp-v {
-      font-size: 12px;
-      color: var(--fg-2);
-    }
-    .dp-link {
-      color: var(--gv-primary);
-      cursor: pointer;
-      text-decoration: underline dotted;
-    }
-    .dp-footer {
-      display: flex;
-      gap: 8px;
-      padding: 8px 16px 12px;
-      border-top: 1px solid var(--divider-faint);
     }
 
     /* ---- Empty state ---- */
