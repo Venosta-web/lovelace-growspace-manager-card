@@ -164,7 +164,8 @@ export class StrainEditorView extends LitElement {
         });
         result.push({ ...img, path: response.path });
       } catch {
-        result.push(img);
+        // Download failed — skip this image rather than storing a broken remote URL
+        console.warn('[StrainEditorView] Failed to download image, skipping:', img.path);
       }
     }
     return result;
@@ -230,10 +231,11 @@ export class StrainEditorView extends LitElement {
   }
 
   getCropStyle(path: string, meta?: CropMeta): string {
+    const safeUrl = PlantUtils.encodeLocalPath(path);
     if (meta) {
-      return `background-image: url('${path}'); background-size: ${meta.scale * 100}%; background-position: ${meta.x}% ${meta.y}%;`;
+      return `background-image: url('${safeUrl}'); background-size: ${meta.scale * 100}%; background-position: ${meta.x}% ${meta.y}%;`;
     }
-    return `background-image: url('${path}');`;
+    return `background-image: url('${safeUrl}');`;
   }
 
 
@@ -870,7 +872,7 @@ export class StrainEditorView extends LitElement {
         >
           <div
             style="width: 100%; height: 100%;
-              background-image: url('${s.image}');
+              background-image: url('${PlantUtils.encodeLocalPath(s.image)}');
               background-size: ${meta.scale * 100}%;
               background-position: ${meta.x}% ${meta.y}%;
               background-repeat: no-repeat;
@@ -941,7 +943,7 @@ export class StrainEditorView extends LitElement {
         >
           ${gallery.map((img, i) => html`
             <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_thumbnail ? 'var(--accent-green, #4caf50)' : 'rgba(255,255,255,0.1)'};">
-              <img src="${img.path}" style="width:100%; height:100%; object-fit:cover;" />
+              <img src="${PlantUtils.encodeLocalPath(img.path)}" style="width:100%; height:100%; object-fit:cover;" />
               <div style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:4px;">
                 <button
                   title="${img.is_thumbnail ? 'Thumbnail' : 'Set as thumbnail'}"

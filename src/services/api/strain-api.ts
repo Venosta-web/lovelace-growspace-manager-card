@@ -237,10 +237,9 @@ export class StrainAPI extends BaseAPI {
         if (data.image.startsWith('data:')) {
           payload.image_base64 = data.image;
           delete payload.image;
-        } else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-          payload.image_path = data.image;
-          delete payload.image;
         } else {
+          // Both remote (http/https) and local (/local/...) paths go as image_path
+          payload.image_path = data.image;
           delete payload.image;
         }
       }
@@ -398,10 +397,9 @@ export class StrainAPI extends BaseAPI {
         if (data.image.startsWith('data:')) {
           payload.image_base64 = data.image;
           delete payload.image;
-        } else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-          payload.image_path = data.image;
-          delete payload.image;
         } else {
+          // Both remote (http/https) and local (/local/...) paths go as image_path
+          payload.image_path = data.image;
           delete payload.image;
         }
       }

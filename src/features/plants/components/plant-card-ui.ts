@@ -71,9 +71,10 @@ export class PlantCardUI extends LitElement {
 
     // Construct srcset for responsive images
     let srcset = '';
-    if (imageUrl && imageUrl.endsWith('.webp')) {
-      const smallUrl = imageUrl.replace('.webp', '_small.webp');
-      srcset = `${smallUrl} 320w, ${imageUrl} 1024w`;
+    let safeImageUrl = imageUrl ? PlantUtils.encodeLocalPath(imageUrl) : imageUrl;
+    if (safeImageUrl && safeImageUrl.endsWith('.webp')) {
+      const smallUrl = safeImageUrl.replace('.webp', '_small.webp');
+      srcset = `${smallUrl} 320w, ${safeImageUrl} 1024w`;
     }
 
     return html`
@@ -87,7 +88,7 @@ export class PlantCardUI extends LitElement {
         @click=${this._handleClick}
         @keydown=${this._handleKeyDown}
       >
-        ${this._renderBackground(imageUrl, srcset, strainName, imageCropMeta)}
+        ${this._renderBackground(safeImageUrl, srcset, strainName, imageCropMeta)}
         ${this._renderAgePill()}
         ${this._renderCheckbox()}
         ${this._renderStatusIcons()}

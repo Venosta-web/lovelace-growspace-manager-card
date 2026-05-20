@@ -1488,7 +1488,7 @@ export class StrainLibraryDialog extends LitElement {
         <div class="sc-thumb">
           ${strain.image
         ? html`<img
-                src="${strain.image}"
+                src="${PlantUtils.encodeLocalPath(strain.image)}"
                 loading="lazy"
                 alt="${strain.strain}"
                 style="${strain.image_crop_meta

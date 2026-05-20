@@ -478,6 +478,9 @@ class PlantUtils {
         const key = this.normalizeStage(state);
         return this.stageColors[key] ?? '#757575';
     }
+    static encodeLocalPath(path) {
+        return path.replace(/#/g, '%23');
+    }
     static getPlantStageIcon(state) {
         const key = this.normalizeStage(state);
         return this.stageIcons[key] ?? mdiSprout;
@@ -5902,11 +5905,9 @@ class StrainAPI extends BaseAPI {
                     payload.image_base64 = data.image;
                     delete payload.image;
                 }
-                else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-                    payload.image_path = data.image;
-                    delete payload.image;
-                }
                 else {
+                    // Both remote (http/https) and local (/local/...) paths go as image_path
+                    payload.image_path = data.image;
                     delete payload.image;
                 }
             }
@@ -6032,11 +6033,9 @@ class StrainAPI extends BaseAPI {
                     payload.image_base64 = data.image;
                     delete payload.image;
                 }
-                else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-                    payload.image_path = data.image;
-                    delete payload.image;
-                }
                 else {
+                    // Both remote (http/https) and local (/local/...) paths go as image_path
+                    payload.image_path = data.image;
                     delete payload.image;
                 }
             }
@@ -26024,7 +26023,8 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 result.push({ ...img, path: response.path });
             }
             catch {
-                result.push(img);
+                // Download failed — skip this image rather than storing a broken remote URL
+                console.warn('[StrainEditorView] Failed to download image, skipping:', img.path);
             }
         }
         return result;
@@ -26075,10 +26075,11 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this._isCropping = active;
     }
     getCropStyle(path, meta) {
+        const safeUrl = PlantUtils.encodeLocalPath(path);
         if (meta) {
-            return `background-image: url('${path}'); background-size: ${meta.scale * 100}%; background-position: ${meta.x}% ${meta.y}%;`;
+            return `background-image: url('${safeUrl}'); background-size: ${meta.scale * 100}%; background-position: ${meta.x}% ${meta.y}%;`;
         }
-        return `background-image: url('${path}');`;
+        return `background-image: url('${safeUrl}');`;
     }
     _handleImportFile() {
         const input = document.createElement('input');
@@ -26688,7 +26689,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         >
           <div
             style="width: 100%; height: 100%;
-              background-image: url('${s.image}');
+              background-image: url('${PlantUtils.encodeLocalPath(s.image)}');
               background-size: ${meta.scale * 100}%;
               background-position: ${meta.x}% ${meta.y}%;
               background-repeat: no-repeat;
@@ -26756,7 +26757,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         >
           ${gallery.map((img, i) => x `
             <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_thumbnail ? 'var(--accent-green, #4caf50)' : 'rgba(255,255,255,0.1)'};">
-              <img src="${img.path}" style="width:100%; height:100%; object-fit:cover;" />
+              <img src="${PlantUtils.encodeLocalPath(img.path)}" style="width:100%; height:100%; object-fit:cover;" />
               <div style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:4px;">
                 <button
                   title="${img.is_thumbnail ? 'Thumbnail' : 'Set as thumbnail'}"
@@ -29908,7 +29909,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         <div class="sc-thumb">
           ${strain.image
             ? x `<img
-                src="${strain.image}"
+                src="${PlantUtils.encodeLocalPath(strain.image)}"
                 loading="lazy"
                 alt="${strain.strain}"
                 style="${strain.image_crop_meta
@@ -50591,9 +50592,10 @@ let PlantCardUI = class PlantCardUI extends i$3 {
         const { stageColor, strainName, pheno, imageUrl, imageCropMeta, stages } = this.displayData;
         // Construct srcset for responsive images
         let srcset = '';
-        if (imageUrl && imageUrl.endsWith('.webp')) {
-            const smallUrl = imageUrl.replace('.webp', '_small.webp');
-            srcset = `${smallUrl} 320w, ${imageUrl} 1024w`;
+        let safeImageUrl = imageUrl ? PlantUtils.encodeLocalPath(imageUrl) : imageUrl;
+        if (safeImageUrl && safeImageUrl.endsWith('.webp')) {
+            const smallUrl = safeImageUrl.replace('.webp', '_small.webp');
+            srcset = `${smallUrl} 320w, ${safeImageUrl} 1024w`;
         }
         return x `
       <div
@@ -50606,7 +50608,7 @@ let PlantCardUI = class PlantCardUI extends i$3 {
         @click=${this._handleClick}
         @keydown=${this._handleKeyDown}
       >
-        ${this._renderBackground(imageUrl, srcset, strainName, imageCropMeta)}
+        ${this._renderBackground(safeImageUrl, srcset, strainName, imageCropMeta)}
         ${this._renderAgePill()}
         ${this._renderCheckbox()}
         ${this._renderStatusIcons()}
