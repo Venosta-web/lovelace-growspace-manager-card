@@ -114,6 +114,15 @@ export class StrainEditorView extends LitElement {
         const thumb = downloaded.find((img) => img.is_thumbnail);
         if (thumb) {
           this._editorState = { ...this._editorState, image: thumb.path, image_crop_meta: thumb.crop_meta };
+        } else if (downloaded.length > 0) {
+          // Original thumbnail failed to download — promote first surviving image
+          const promoted = downloaded.map((img, i) => ({ ...img, is_thumbnail: i === 0 }));
+          this._editorState = {
+            ...this._editorState,
+            images: promoted,
+            image: promoted[0].path,
+            image_crop_meta: promoted[0].crop_meta,
+          };
         }
       } finally {
         this._uploadingImage = false;

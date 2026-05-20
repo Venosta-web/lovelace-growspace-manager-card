@@ -26,6 +26,7 @@ function _createStrainPayload(strainData: Partial<StrainEntry>) {
     description: strainData.description,
     image: strainData.image,
     image_crop_meta: strainData.image_crop_meta,
+    images: strainData.images,
     sativa_percentage: strainData.sativa_percentage,
     indica_percentage: strainData.indica_percentage,
     breeder_logo: strainData.breeder_logo,
