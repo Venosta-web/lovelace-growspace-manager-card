@@ -61,6 +61,7 @@ export class GeneticsTreeView extends LitElement {
   @state() private _viewH = 0;
 
   private _dragging: { sx: number; sy: number; ox: number; oy: number } | null = null;
+  private _didPan = false;
   private _computed: LayoutResult | null = null;
   private _childrenOf: Record<string, string[]> = {};
   private _byId: Record<string, TreeNode> = {};
@@ -266,13 +267,17 @@ export class GeneticsTreeView extends LitElement {
     )
       return;
     this._userHasInteracted = true;
+    this._didPan = false;
     this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
   }
 
   private _onMouseMove(e: MouseEvent): void {
     if (!this._dragging) return;
-    this._panX = this._dragging.ox + (e.clientX - this._dragging.sx);
-    this._panY = this._dragging.oy + (e.clientY - this._dragging.sy);
+    const dx = e.clientX - this._dragging.sx;
+    const dy = e.clientY - this._dragging.sy;
+    if (!this._didPan && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) this._didPan = true;
+    this._panX = this._dragging.ox + dx;
+    this._panY = this._dragging.oy + dy;
   }
 
   private _onMouseUp(): void {
@@ -348,7 +353,13 @@ export class GeneticsTreeView extends LitElement {
         @mouseup=${this._onMouseUp}
         @mouseleave=${this._onMouseUp}
         @click=${(e: MouseEvent) => {
-          if (!(e.target as HTMLElement).closest('.tree-node')) this._selectedId = null;
+          if ((e.target as HTMLElement).closest('.tree-node')) return;
+          if (this._didPan) return;
+          if (this._focalId) {
+            this._clearFocus();
+          } else {
+            this._selectedId = null;
+          }
         }}
       >
         ${this._renderToolbar(visible, breeders)}
@@ -454,7 +465,7 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderFilterRow(gens: string[]): TemplateResult {
-    const showClear = this._collapsed.size > 0 || !!this._genFilter;
+    const showClear = this._collapsed.size > 0 || !!this._genFilter || !!this._selectedId || !!this._search;
     return html`
       <div class="filter-row">
         <button
@@ -472,7 +483,12 @@ export class GeneticsTreeView extends LitElement {
           ? html`
               <button
                 class="clear-btn"
-                @click=${() => { this._collapsed = new Set(); this._genFilter = null; }}
+                @click=${() => {
+                  this._collapsed = new Set();
+                  this._genFilter = null;
+                  this._selectedId = null;
+                  this._search = '';
+                }}
               >Clear</button>
             `
           : nothing}
@@ -1215,8 +1231,8 @@ export class GeneticsTreeView extends LitElement {
       stroke-width: 1.5;
       transition: opacity 0.12s;
     }
-    .edge-mother { stroke: rgba(255,255,255,0.85); }
-    .edge-father { stroke: rgba(255,255,255,0.55); stroke-dasharray: 5 3; }
+    .edge-mother { stroke: var(--gv-primary); }
+    .edge-father { stroke: var(--gv-secondary); stroke-dasharray: 5 3; }
     .edge-clone { stroke: rgba(233,30,99,0.7); stroke-dasharray: 2 2; }
     .edge.dim { opacity: 0.06; }
 
@@ -1525,12 +1541,12 @@ export class GeneticsTreeView extends LitElement {
       height: 2px;
       border-radius: 1px;
     }
-    .legend-line.mother { background: rgba(255,255,255,0.8); }
+    .legend-line.mother { background: var(--gv-primary); }
     .legend-line.father {
       background: repeating-linear-gradient(
         90deg,
-        rgba(255,255,255,0.5) 0,
-        rgba(255,255,255,0.5) 5px,
+        var(--gv-secondary) 0,
+        var(--gv-secondary) 5px,
         transparent 5px,
         transparent 8px
       );

@@ -27991,6 +27991,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         this._viewW = 0;
         this._viewH = 0;
         this._dragging = null;
+        this._didPan = false;
         this._computed = null;
         this._childrenOf = {};
         this._byId = {};
@@ -28174,13 +28175,18 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             target.closest('.zoom-controls'))
             return;
         this._userHasInteracted = true;
+        this._didPan = false;
         this._dragging = { sx: e.clientX, sy: e.clientY, ox: this._panX, oy: this._panY };
     }
     _onMouseMove(e) {
         if (!this._dragging)
             return;
-        this._panX = this._dragging.ox + (e.clientX - this._dragging.sx);
-        this._panY = this._dragging.oy + (e.clientY - this._dragging.sy);
+        const dx = e.clientX - this._dragging.sx;
+        const dy = e.clientY - this._dragging.sy;
+        if (!this._didPan && (Math.abs(dx) > 4 || Math.abs(dy) > 4))
+            this._didPan = true;
+        this._panX = this._dragging.ox + dx;
+        this._panY = this._dragging.oy + dy;
     }
     _onMouseUp() {
         this._dragging = null;
@@ -28245,8 +28251,16 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         @mouseup=${this._onMouseUp}
         @mouseleave=${this._onMouseUp}
         @click=${(e) => {
-            if (!e.target.closest('.tree-node'))
+            if (e.target.closest('.tree-node'))
+                return;
+            if (this._didPan)
+                return;
+            if (this._focalId) {
+                this._clearFocus();
+            }
+            else {
                 this._selectedId = null;
+            }
         }}
       >
         ${this._renderToolbar(visible, breeders)}
@@ -28349,7 +28363,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
     // Render: generation filter chips
     // ---------------------------------------------------------------------------
     _renderFilterRow(gens) {
-        const showClear = this._collapsed.size > 0 || !!this._genFilter;
+        const showClear = this._collapsed.size > 0 || !!this._genFilter || !!this._selectedId || !!this._search;
         return x `
       <div class="filter-row">
         <button
@@ -28367,7 +28381,12 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             ? x `
               <button
                 class="clear-btn"
-                @click=${() => { this._collapsed = new Set(); this._genFilter = null; }}
+                @click=${() => {
+                this._collapsed = new Set();
+                this._genFilter = null;
+                this._selectedId = null;
+                this._search = '';
+            }}
               >Clear</button>
             `
             : E}
@@ -29069,8 +29088,8 @@ GeneticsTreeView.styles = i$6 `
       stroke-width: 1.5;
       transition: opacity 0.12s;
     }
-    .edge-mother { stroke: rgba(255,255,255,0.85); }
-    .edge-father { stroke: rgba(255,255,255,0.55); stroke-dasharray: 5 3; }
+    .edge-mother { stroke: var(--gv-primary); }
+    .edge-father { stroke: var(--gv-secondary); stroke-dasharray: 5 3; }
     .edge-clone { stroke: rgba(233,30,99,0.7); stroke-dasharray: 2 2; }
     .edge.dim { opacity: 0.06; }
 
@@ -29379,12 +29398,12 @@ GeneticsTreeView.styles = i$6 `
       height: 2px;
       border-radius: 1px;
     }
-    .legend-line.mother { background: rgba(255,255,255,0.8); }
+    .legend-line.mother { background: var(--gv-primary); }
     .legend-line.father {
       background: repeating-linear-gradient(
         90deg,
-        rgba(255,255,255,0.5) 0,
-        rgba(255,255,255,0.5) 5px,
+        var(--gv-secondary) 0,
+        var(--gv-secondary) 5px,
         transparent 5px,
         transparent 8px
       );
