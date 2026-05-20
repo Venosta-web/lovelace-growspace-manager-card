@@ -25909,6 +25909,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this._editorHistory = [];
         this._isCropping = false;
         this._uploadingImage = false;
+        this._saving = false;
         this._lineageEditMode = false;
         this._lineageTree = null;
         this._importDialogOpen = false;
@@ -25979,7 +25980,6 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                     this._editorState = { ...this._editorState, image: thumb.path, image_crop_meta: thumb.crop_meta };
                 }
                 else if (downloaded.length > 0) {
-                    // Original thumbnail failed to download — promote first surviving image
                     const promoted = downloaded.map((img, i) => ({ ...img, is_thumbnail: i === 0 }));
                     this._editorState = {
                         ...this._editorState,
@@ -25993,25 +25993,29 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 this._uploadingImage = false;
             }
         }
-        this.dispatchEvent(new CustomEvent('save-strain', {
-            detail: this._editorState,
-            bubbles: true,
-            composed: true,
-        }));
-        if (this.source) {
-            this.dispatchEvent(new CustomEvent('strain-created-at-source', {
-                detail: {
-                    strain: this._editorState,
-                    source: this.source,
-                    returnPayload: this.returnPayload,
-                },
+        this._saving = true;
+        try {
+            this.dispatchEvent(new CustomEvent('save-strain', {
+                detail: this._editorState,
                 bubbles: true,
                 composed: true,
             }));
-        }
-        else {
+            if (this.source) {
+                this.dispatchEvent(new CustomEvent('strain-created-at-source', {
+                    detail: {
+                        strain: this._editorState,
+                        source: this.source,
+                        returnPayload: this.returnPayload,
+                    },
+                    bubbles: true,
+                    composed: true,
+                }));
+            }
             this._editorHistory = [];
             this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
+        }
+        finally {
+            this._saving = false;
         }
     }
     async _downloadRemoteImages(images) {
@@ -26647,12 +26651,17 @@ let StrainEditorView = class StrainEditorView extends i$3 {
               Print Label
             </button>
           ` : E}
-          <button class="md3-button tonal" @click=${() => this._goBack()}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSave()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiCheck}"></path>
-            </svg>
-            Save Strain
+          <button class="md3-button tonal" ?disabled=${this._saving || this._uploadingImage} @click=${() => this._goBack()}>Cancel</button>
+          <button class="md3-button primary" ?disabled=${this._saving || this._uploadingImage} @click=${() => this._handleSave()}>
+            ${this._saving || this._uploadingImage ? x `
+              <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
+              ${this._uploadingImage ? 'Uploading...' : 'Saving...'}
+            ` : x `
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiCheck}"></path>
+              </svg>
+              Save Strain
+            `}
           </button>
         </div>
       </div>
@@ -27150,6 +27159,10 @@ StrainEditorView.styles = [
         display: contents;
       }
 
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
       .sd-content {
         padding: 24px;
         overflow-y: auto;
@@ -27540,6 +27553,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainEditorView.prototype, "_uploadingImage", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_saving", void 0);
 __decorate([
     r$3()
 ], StrainEditorView.prototype, "_lineageEditMode", void 0);
@@ -37200,7 +37216,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 return;
             try {
                 await this.store.actions.strain.update(e.detail);
-                this.store.ui.closeDialog();
                 await this._handleDataChanged();
             }
             catch (e) {

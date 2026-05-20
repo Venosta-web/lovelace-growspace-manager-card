@@ -44,6 +44,7 @@ export class StrainEditorView extends LitElement {
   @state() private _editorHistory: Partial<StrainEntry>[] = [];
   @state() private _isCropping = false;
   @state() private _uploadingImage = false;
+  @state() private _saving = false;
   @state() private _lineageEditMode = false;
   @state() private _lineageTree: LineageNode | null = null;
   @state() private _importDialogOpen = false;
@@ -115,7 +116,6 @@ export class StrainEditorView extends LitElement {
         if (thumb) {
           this._editorState = { ...this._editorState, image: thumb.path, image_crop_meta: thumb.crop_meta };
         } else if (downloaded.length > 0) {
-          // Original thumbnail failed to download — promote first surviving image
           const promoted = downloaded.map((img, i) => ({ ...img, is_thumbnail: i === 0 }));
           this._editorState = {
             ...this._editorState,
@@ -129,29 +129,34 @@ export class StrainEditorView extends LitElement {
       }
     }
 
-    this.dispatchEvent(
-      new CustomEvent('save-strain', {
-        detail: this._editorState,
-        bubbles: true,
-        composed: true,
-      })
-    );
-
-    if (this.source) {
+    this._saving = true;
+    try {
       this.dispatchEvent(
-        new CustomEvent('strain-created-at-source', {
-          detail: {
-            strain: this._editorState,
-            source: this.source,
-            returnPayload: this.returnPayload,
-          },
+        new CustomEvent('save-strain', {
+          detail: this._editorState,
           bubbles: true,
           composed: true,
         })
       );
-    } else {
+
+      if (this.source) {
+        this.dispatchEvent(
+          new CustomEvent('strain-created-at-source', {
+            detail: {
+              strain: this._editorState,
+              source: this.source,
+              returnPayload: this.returnPayload,
+            },
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
+
       this._editorHistory = [];
       this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
+    } finally {
+      this._saving = false;
     }
   }
 
@@ -822,12 +827,17 @@ export class StrainEditorView extends LitElement {
               Print Label
             </button>
           ` : nothing}
-          <button class="md3-button tonal" @click=${() => this._goBack()}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSave()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiCheck}"></path>
-            </svg>
-            Save Strain
+          <button class="md3-button tonal" ?disabled=${this._saving || this._uploadingImage} @click=${() => this._goBack()}>Cancel</button>
+          <button class="md3-button primary" ?disabled=${this._saving || this._uploadingImage} @click=${() => this._handleSave()}>
+            ${this._saving || this._uploadingImage ? html`
+              <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
+              ${this._uploadingImage ? 'Uploading...' : 'Saving...'}
+            ` : html`
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiCheck}"></path>
+              </svg>
+              Save Strain
+            `}
           </button>
         </div>
       </div>
@@ -1344,6 +1354,10 @@ export class StrainEditorView extends LitElement {
       :host {
         --accent-green: #4caf50;
         display: contents;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
 
       .sd-content {

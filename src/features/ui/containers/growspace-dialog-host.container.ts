@@ -541,7 +541,6 @@ export class GrowspaceDialogHost extends LitElement {
         if (!this.store) return;
         try {
           await this.store.actions.strain.update(e.detail);
-          this.store.ui.closeDialog();
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] Save strain failed:', e);
