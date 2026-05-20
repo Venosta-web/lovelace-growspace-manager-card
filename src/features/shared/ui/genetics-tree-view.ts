@@ -353,7 +353,10 @@ export class GeneticsTreeView extends LitElement {
         @mouseup=${this._onMouseUp}
         @mouseleave=${this._onMouseUp}
         @click=${(e: MouseEvent) => {
-          if ((e.target as HTMLElement).closest('.tree-node')) return;
+          const target = e.target as HTMLElement;
+          if (target.closest('.tree-node')) return;
+          if (target.closest('.toolbar-row')) return;
+          if (target.closest('.filter-row')) return;
           if (this._didPan) return;
           if (this._focalId) {
             this._clearFocus();

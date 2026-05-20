@@ -33,9 +33,11 @@ export class GrowspaceOptionsController implements ReactiveController {
     const entity = hass.states['sensor.growspaces_list'];
     const raw = entity?.attributes?.growspaces;
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-      this.options = Object.entries(raw as Record<string, string>).map(([id, name]) => ({
+      this.options = Object.entries(raw as Record<string, unknown>).map(([id, value]) => ({
         id,
-        name: String(name),
+        name: typeof value === 'object' && value !== null
+          ? String((value as Record<string, unknown>).name ?? id)
+          : String(value),
       }));
     } else {
       this.options = [];

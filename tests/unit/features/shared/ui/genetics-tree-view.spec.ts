@@ -151,7 +151,7 @@ describe('GeneticsTreeView', () => {
   it('should handle complex panning and zooming', async () => {
     const shell = element.shadowRoot?.querySelector('.shell') as HTMLElement;
     vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue({
-      left: 0, top: 0, width: 1000, height: 800, bottom: 800, right: 1000, x: 0, y: 0, toJSON: () => {}
+      left: 0, top: 0, width: 1000, height: 800, bottom: 800, right: 1000, x: 0, y: 0, toJSON: () => { }
     });
 
     // Panning

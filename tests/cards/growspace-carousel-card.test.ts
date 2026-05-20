@@ -185,4 +185,65 @@ describe('GrowspaceCarouselCard', () => {
     const editor = await GrowspaceCarouselCard.getConfigElement();
     expect(editor.tagName.toLowerCase()).toBe('growspace-carousel-card-editor');
   });
+
+  describe('active growspace filtering', () => {
+    const hassWithPlants = {
+      states: {
+        'sensor.growspaces_list': {
+          attributes: {
+            growspaces: {
+              'device1': { name: 'Tent A', total_plants: 2 },
+              'device2': { name: 'Tent B', total_plants: 0 },
+              'device3': { name: 'Tent C', total_plants: 1 },
+            }
+          }
+        }
+      },
+      language: 'en',
+    } as any;
+
+    test('with filter_empty=true, only growspaces with plants are active', () => {
+      element.setConfig({
+        type: 'custom:growspace-carousel-card',
+        growspaces: ['device1', 'device2', 'device3'],
+        filter_empty: true,
+      } as any);
+      element.hass = hassWithPlants;
+      const active = (element as any)._activeGrowspaces;
+      expect(active).toEqual(['device1', 'device3']);
+    });
+
+    test('with filter_empty=true, falls back to full list when all have 0 plants', () => {
+      element.setConfig({
+        type: 'custom:growspace-carousel-card',
+        growspaces: ['device1', 'device2'],
+        filter_empty: true,
+      } as any);
+      element.hass = {
+        states: {
+          'sensor.growspaces_list': {
+            attributes: {
+              growspaces: {
+                'device1': { name: 'Tent A', total_plants: 0 },
+                'device2': { name: 'Tent B', total_plants: 0 },
+              }
+            }
+          }
+        },
+        language: 'en',
+      } as any;
+      const active = (element as any)._activeGrowspaces;
+      expect(active).toEqual(['device1', 'device2']);
+    });
+
+    test('without filter_empty, all configured growspaces are active', () => {
+      element.setConfig({
+        type: 'custom:growspace-carousel-card',
+        growspaces: ['device1', 'device2', 'device3'],
+      } as any);
+      element.hass = hassWithPlants;
+      const active = (element as any)._activeGrowspaces;
+      expect(active).toEqual(['device1', 'device2', 'device3']);
+    });
+  });
 });

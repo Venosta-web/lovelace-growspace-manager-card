@@ -19,4 +19,5 @@ export interface GrowspaceCarouselCardConfig extends LovelaceCardConfig {
   type: string;
   growspaces: string[];
   interval?: number;
+  filter_empty?: boolean;
 }

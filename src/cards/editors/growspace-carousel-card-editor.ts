@@ -45,6 +45,10 @@ export class GrowspaceCarouselCardEditor extends LitElement implements LovelaceC
           },
         },
       },
+      {
+        name: 'filter_empty',
+        selector: { boolean: {} },
+      },
     ];
   }
 
