@@ -100,6 +100,28 @@ describe('GeneticsTreeView', () => {
     expect(banner).not.toBeNull();
   });
 
+  it('should re-focus to selected node when clicking lineage while already in lineage mode', async () => {
+    // Start in lineage mode focused on f1
+    element['_mode'] = 'lineage';
+    element['_focalId'] = 'f1';
+    await element.updateComplete;
+
+    // Select a different node (p1)
+    const p1Node = Array.from(element.shadowRoot?.querySelectorAll('.tree-node') ?? [])
+      .find(n => n.querySelector('.pn-name')?.textContent === 'Parent 1') as HTMLElement;
+    p1Node.click();
+    await element.updateComplete;
+    expect(element['_selectedId']).toBe('p1');
+
+    // Click lineage button — should re-focus to p1, not stay on f1
+    const lineageBtn = element.shadowRoot?.querySelector('.seg button:nth-child(2)') as HTMLElement;
+    lineageBtn.click();
+    await element.updateComplete;
+
+    expect(element['_mode']).toBe('lineage');
+    expect(element['_focalId']).toBe('p1');
+  });
+
   it('should handle node selection and deselection', async () => {
     const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
     node.click();

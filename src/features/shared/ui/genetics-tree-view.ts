@@ -421,7 +421,7 @@ export class GeneticsTreeView extends LitElement {
             class="${this._mode === 'lineage' ? 'active' : ''}"
             @click=${() => {
               this._mode = 'lineage';
-              if (!this._focalId && this._selectedId) {
+              if (this._selectedId) {
                 this._focalId = this._selectedId;
               } else if (!this._focalId && this.nodes.length) {
                 this._focalId = this.nodes.find((n) => n.parents.mother) ?.id ?? this.nodes[0].id;

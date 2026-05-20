@@ -28251,7 +28251,12 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
         @mouseup=${this._onMouseUp}
         @mouseleave=${this._onMouseUp}
         @click=${(e) => {
-            if (e.target.closest('.tree-node'))
+            const target = e.target;
+            if (target.closest('.tree-node'))
+                return;
+            if (target.closest('.toolbar-row'))
+                return;
+            if (target.closest('.filter-row'))
                 return;
             if (this._didPan)
                 return;
@@ -28317,7 +28322,7 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
             class="${this._mode === 'lineage' ? 'active' : ''}"
             @click=${() => {
             this._mode = 'lineage';
-            if (!this._focalId && this._selectedId) {
+            if (this._selectedId) {
                 this._focalId = this._selectedId;
             }
             else if (!this._focalId && this.nodes.length) {
@@ -115869,9 +115874,23 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
         super.disconnectedCallback();
         this._stopTimer();
     }
+    get _activeGrowspaces() {
+        const all = this._config?.growspaces ?? [];
+        if (!this._config?.filter_empty || !this.hass)
+            return all;
+        const raw = this.hass.states['sensor.growspaces_list']?.attributes?.growspaces ?? {};
+        const active = all.filter((id) => {
+            const entry = raw[id];
+            if (!entry)
+                return false;
+            const count = typeof entry === 'object' ? (entry.total_plants ?? 0) : 0;
+            return count > 0;
+        });
+        return active.length > 0 ? active : all;
+    }
     _startTimer() {
         this._stopTimer();
-        if (this._config && this._config.growspaces && this._config.growspaces.length > 1) {
+        if (this._config && this._activeGrowspaces.length > 1) {
             this._timer = window.setInterval(() => this._nextSlide(), (this._config.interval || 15) * 1000);
         }
     }
@@ -115888,7 +115907,8 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
         this._startTimer();
     }
     async _nextSlide() {
-        if (!this._config || !this._config.growspaces || this._config.growspaces.length <= 1 || this._isAnimating)
+        const active = this._activeGrowspaces;
+        if (!this._config || active.length <= 1 || this._isAnimating)
             return;
         this._isAnimating = true;
         // Slide out to the left
@@ -115896,8 +115916,8 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
         // Wait for slide out animation (matches CSS transition duration)
         await new Promise(resolve => setTimeout(resolve, 300));
         // Update active growspace index
-        this._currentIndex = (this._currentIndex + 1) % this._config.growspaces.length;
-        const nextDeviceId = this._config.growspaces[this._currentIndex];
+        this._currentIndex = (this._currentIndex + 1) % active.length;
+        const nextDeviceId = active[this._currentIndex];
         // Instruct the inner manager card to switch context
         if (this._managerCard && this._managerCard.store) {
             this._managerCard.store.handleDeviceChange(nextDeviceId);
@@ -116982,9 +117002,11 @@ class GrowspaceOptionsController {
         const entity = hass.states['sensor.growspaces_list'];
         const raw = entity?.attributes?.growspaces;
         if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-            this.options = Object.entries(raw).map(([id, name]) => ({
+            this.options = Object.entries(raw).map(([id, value]) => ({
                 id,
-                name: String(name),
+                name: typeof value === 'object' && value !== null
+                    ? String(value.name ?? id)
+                    : String(value),
             }));
         }
         else {
@@ -117827,6 +117849,10 @@ let GrowspaceCarouselCardEditor = class GrowspaceCarouselCardEditor extends i$3 
                         unit_of_measurement: 'seconds',
                     },
                 },
+            },
+            {
+                name: 'filter_empty',
+                selector: { boolean: {} },
             },
         ];
     }
