@@ -149,23 +149,23 @@ export class StrainImportDialog extends LitElement {
     if (this._importFields.has('name')) result.name = this._details.name;
     if (this._importFields.has('breeder')) result.breeder = this._details.breeder;
     if (this._importFields.has('type')) result.type = this._details.type;
-    if (this._importFields.has('composition')) {
+    if (this._importFields.has('composition') && this._details.indica_percentage != null && this._details.sativa_percentage != null) {
       result.indica_percentage = this._details.indica_percentage;
       result.sativa_percentage = this._details.sativa_percentage;
     }
-    if (this._importFields.has('flowering')) result.flowering_days = this._details.flowering_days;
-    if (this._importFields.has('description')) result.description = this._details.description;
+    if (this._importFields.has('flowering') && this._details.flowering_days) result.flowering_days = this._details.flowering_days;
+    if (this._importFields.has('description') && this._details.description) result.description = this._details.description;
     if (this._importFields.has('image')) {
       result.images = this._details.images && this._details.images.length > 0
         ? this._details.images
         : undefined;
       result.image = this._details.image ?? this._details.images?.[0];
     }
-    if (this._importFields.has('yield')) result.yield_potential = this._details.yield_potential;
-    if (this._importFields.has('height')) (result as any).height = this._details.height;
-    if (this._importFields.has('thc')) (result as any).thc = this._details.thc;
-    if (this._importFields.has('awards')) (result as any).awards = this._details.awards;
-    if (this._importFields.has('lineage')) result.parents = this._details.parents;
+    if (this._importFields.has('yield') && this._details.yield_potential) result.yield_potential = this._details.yield_potential;
+    if (this._importFields.has('height') && this._details.height) (result as any).height = this._details.height;
+    if (this._importFields.has('thc') && this._details.thc != null) (result as any).thc = this._details.thc;
+    if (this._importFields.has('awards') && this._details.awards?.length) (result as any).awards = this._details.awards;
+    if (this._importFields.has('lineage') && this._details.parents) result.parents = this._details.parents;
 
     if (this._importFields.has('image') && (result.images?.length || result.image)) {
       this._importing = true;
@@ -530,34 +530,34 @@ export class StrainImportDialog extends LitElement {
           ${this._renderFieldRow('name', 'Name', d.name, mdiSeed)}
           ${this._renderFieldRow('breeder', 'Breeder', d.breeder, mdiAccountGroup)}
           ${this._renderFieldRow('type', 'Type', d.type, mdiLeaf)}
-          ${this._renderFieldRow('composition', 'Composition', 
-            d.indica_percentage !== undefined ? `${d.indica_percentage}% Indica / ${d.sativa_percentage}% Sativa` : 'Unknown', 
-            mdiChartDonut)}
-          ${this._renderFieldRow('flowering', 'Flowering', 
-            d.flowering_days ? `${d.flowering_days} days` : 'Unknown', 
-            mdiClockOutline)}
-          ${this._renderFieldRow('thc', 'THC', 
-            d.thc ? `${d.thc}%` : 'Unknown', 
-            mdiChartBar)}
-          ${this._renderFieldRow('yield', 'Yield Potential', 
-            d.yield_potential || 'Unknown', 
-            mdiChartBar)}
-          ${this._renderFieldRow('height', 'Height', 
-            d.height || 'Unknown', 
-            mdiArrowUp)}
-          ${this._renderFieldRow('awards', 'Awards', 
-            d.awards && d.awards.length > 0 ? html`
+          ${d.indica_percentage != null && d.sativa_percentage != null ? this._renderFieldRow('composition', 'Composition',
+            `${d.indica_percentage}% Indica / ${d.sativa_percentage}% Sativa`,
+            mdiChartDonut) : nothing}
+          ${d.flowering_days ? this._renderFieldRow('flowering', 'Flowering',
+            `${d.flowering_days} days`,
+            mdiClockOutline) : nothing}
+          ${d.thc != null ? this._renderFieldRow('thc', 'THC',
+            `${d.thc}%`,
+            mdiChartBar) : nothing}
+          ${d.yield_potential ? this._renderFieldRow('yield', 'Yield Potential',
+            d.yield_potential,
+            mdiChartBar) : nothing}
+          ${d.height ? this._renderFieldRow('height', 'Height',
+            d.height,
+            mdiArrowUp) : nothing}
+          ${d.awards && d.awards.length > 0 ? this._renderFieldRow('awards', 'Awards',
+            html`
               <div class="awards-list">
                 ${d.awards.map(a => html`<div class="award-tag"><svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiTrophy}"></path></svg>${a}</div>`)}
               </div>
-            ` : 'None', 
-            mdiTrophy)}
-          ${this._renderFieldRow('description', 'Description', 
-            d.description ? html`<div class="description-text">${d.description}</div>` : 'None', 
-            mdiText)}
-          ${this._renderFieldRow('lineage', 'Genetic Lineage', 
-            d.parents ? 'Full lineage tree detected' : 'None', 
-            mdiDna)}
+            `,
+            mdiTrophy) : nothing}
+          ${d.description ? this._renderFieldRow('description', 'Description',
+            html`<div class="description-text">${d.description}</div>`,
+            mdiText) : nothing}
+          ${d.parents ? this._renderFieldRow('lineage', 'Genetic Lineage',
+            'Full lineage tree detected',
+            mdiDna) : nothing}
         </div>
       </div>
     `;
