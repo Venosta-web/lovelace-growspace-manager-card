@@ -169,6 +169,7 @@ var mdiSelectionOff = "M0.5,3.77L1.78,2.5L21.5,22.22L20.23,23.5L18.73,22H17V20.2
 var mdiSend = "M2,21L23,12L2,3V10L17,12L2,14V21Z";
 var mdiSprout = "M2,22V20C2,20 7,18 12,18C17,18 22,20 22,20V22H2M11.3,9.1C10.1,5.2 4,6.1 4,6.1C4,6.1 4.2,13.9 9.9,12.7C9.5,9.8 8,9 8,9C10.8,9 11,12.4 11,12.4V17C11.3,17 11.7,17 12,17C12.3,17 12.7,17 13,17V12.8C13,12.8 13,8.9 16,7.9C16,7.9 14,10.9 14,12.9C21,13.6 21,4 21,4C21,4 12.1,3 11.3,9.1Z";
 var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z";
+var mdiStarOutline = "M12,15.39L8.24,17.66L9.23,13.38L5.91,10.5L10.29,10.13L12,6.09L13.71,10.13L18.09,10.5L14.77,13.38L15.76,17.66M22,9.24L14.81,8.63L12,2L9.19,8.63L2,9.24L7.45,13.97L5.82,21L12,17.27L18.18,21L16.54,13.97L22,9.24Z";
 var mdiSwapHorizontal = "M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z";
 var mdiTag = "M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z";
 var mdiText = "M21,6V8H3V6H21M3,18H12V16H3V18M3,13H21V11H3V13Z";
@@ -5779,6 +5780,8 @@ class StrainAPI extends BaseAPI {
                 const phenotypes = strainData.phenotypes ?? {};
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
                     const typedPhenoData = phenoData;
+                    const gallery = typedPhenoData.images;
+                    const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
                     results.push({
                         strain: strainName,
                         phenotype: phenoName,
@@ -5793,8 +5796,9 @@ class StrainAPI extends BaseAPI {
                         indica_percentage: meta.indica_percentage,
                         is_stub: meta.is_stub,
                         description: typedPhenoData.description,
-                        image: typedPhenoData.image_path,
-                        image_crop_meta: typedPhenoData.image_crop_meta,
+                        image: thumbnail?.path ?? typedPhenoData.image_path,
+                        image_crop_meta: thumbnail?.crop_meta ?? typedPhenoData.image_crop_meta,
+                        images: gallery,
                         flowering_days_min: typedPhenoData.flower_days_min,
                         flowering_days_max: typedPhenoData.flower_days_max,
                     });
@@ -5848,6 +5852,8 @@ class StrainAPI extends BaseAPI {
                 }
                 Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
                     const typedPhenoData = phenoData;
+                    const gallery = typedPhenoData.images;
+                    const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
                     currentStrains.push({
                         strain: strainName,
                         phenotype: phenoName,
@@ -5862,8 +5868,9 @@ class StrainAPI extends BaseAPI {
                         indica_percentage: meta.indica_percentage,
                         is_stub: meta.is_stub,
                         description: typedPhenoData.description,
-                        image: typedPhenoData.image_path,
-                        image_crop_meta: typedPhenoData.image_crop_meta,
+                        image: thumbnail?.path ?? typedPhenoData.image_path,
+                        image_crop_meta: thumbnail?.crop_meta ?? typedPhenoData.image_crop_meta,
+                        images: gallery,
                         flowering_days_min: typedPhenoData.flower_days_min,
                         flowering_days_max: typedPhenoData.flower_days_max,
                     });
@@ -5886,18 +5893,20 @@ class StrainAPI extends BaseAPI {
                     delete payload[key];
                 }
             });
-            if (data.image) {
+            if (data.images && data.images.length > 0) {
+                // Gallery is authoritative — send it and skip single-image fields
+                delete payload.image;
+            }
+            else if (data.image) {
                 if (data.image.startsWith('data:')) {
                     payload.image_base64 = data.image;
                     delete payload.image;
                 }
                 else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-                    // External URL (e.g. from Seedfinder) — store as image_path
                     payload.image_path = data.image;
                     delete payload.image;
                 }
                 else {
-                    // Existing local path — omit to preserve stored value
                     delete payload.image;
                 }
             }
@@ -6014,18 +6023,20 @@ class StrainAPI extends BaseAPI {
                     delete payload[key];
                 }
             });
-            if (data.image) {
+            if (data.images && data.images.length > 0) {
+                // Gallery is authoritative — send it and skip single-image fields
+                delete payload.image;
+            }
+            else if (data.image) {
                 if (data.image.startsWith('data:')) {
                     payload.image_base64 = data.image;
                     delete payload.image;
                 }
                 else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-                    // External URL (e.g. from Seedfinder) — store as image_path
                     payload.image_path = data.image;
                     delete payload.image;
                 }
                 else {
-                    // Existing local path — omit to preserve stored value
                     delete payload.image;
                 }
             }
@@ -24202,8 +24213,12 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
             result.flowering_days = this._details.flowering_days;
         if (this._importFields.has('description'))
             result.description = this._details.description;
-        if (this._importFields.has('image'))
-            result.image = this._details.image;
+        if (this._importFields.has('image')) {
+            result.images = this._details.images && this._details.images.length > 0
+                ? this._details.images
+                : undefined;
+            result.image = this._details.image ?? this._details.images?.[0];
+        }
         if (this._importFields.has('yield'))
             result.yield_potential = this._details.yield_potential;
         if (this._importFields.has('height'))
@@ -24330,7 +24345,7 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         </div>
 
         <div class="preview-grid">
-          ${d.image ? x `
+          ${(d.image || (d.images && d.images.length > 0)) ? x `
             <div class="field-row full-width" @click=${() => this._toggleField('image')}>
               <div class="field-checkbox ${this._importFields.has('image') ? 'checked' : ''}">
                 ${this._importFields.has('image') ? x `<svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>` : E}
@@ -24338,9 +24353,9 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
               <div class="field-content">
                 <div class="field-label">
                   <svg viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
-                  Image
+                  Image${d.images && d.images.length > 1 ? ` (${d.images.length} available)` : ''}
                 </div>
-                <img class="preview-image" src="${d.image}" />
+                <img class="preview-image" src="${d.image ?? d.images[0]}" />
               </div>
             </div>
           ` : E}
@@ -25894,7 +25909,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this._editorState = {};
         this._editorHistory = [];
         this._isCropping = false;
-        this._isImageSelectorOpen = false;
+        this._uploadingImage = false;
         this._lineageEditMode = false;
         this._lineageTree = null;
         this._importDialogOpen = false;
@@ -25927,6 +25942,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 sex: 'Feminized',
                 description: '',
                 image: '',
+                images: [],
                 breeder_logo: '',
                 sativa_percentage: 50,
                 indica_percentage: 50,
@@ -25949,9 +25965,25 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
         }
     }
-    _handleSave() {
+    async _handleSave() {
         if (!this._editorState.strain)
             return;
+        const images = this._editorState.images ?? [];
+        const hasRemote = images.some((img) => img.path.startsWith('http'));
+        if (hasRemote) {
+            this._uploadingImage = true;
+            try {
+                const downloaded = await this._downloadRemoteImages(images);
+                this._editorState = { ...this._editorState, images: downloaded };
+                const thumb = downloaded.find((img) => img.is_thumbnail);
+                if (thumb) {
+                    this._editorState = { ...this._editorState, image: thumb.path, image_crop_meta: thumb.crop_meta };
+                }
+            }
+            finally {
+                this._uploadingImage = false;
+            }
+        }
         this.dispatchEvent(new CustomEvent('save-strain', {
             detail: this._editorState,
             bubbles: true,
@@ -25972,6 +26004,30 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             this._editorHistory = [];
             this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
         }
+    }
+    async _downloadRemoteImages(images) {
+        const strain = this._editorState.strain ?? 'unknown';
+        const phenotype = this._editorState.phenotype ?? 'default';
+        const result = [];
+        for (const img of images) {
+            if (!img.path.startsWith('http')) {
+                result.push(img);
+                continue;
+            }
+            try {
+                const response = await this.hass.connection.sendMessagePromise({
+                    type: 'growspace_manager/download_strain_image',
+                    url: img.path,
+                    strain,
+                    phenotype,
+                });
+                result.push({ ...img, path: response.path });
+            }
+            catch {
+                result.push(img);
+            }
+        }
+        return result;
     }
     _handleDelete(key) {
         this.dispatchEvent(new CustomEvent('delete-strain', { detail: { key }, bubbles: true, composed: true }));
@@ -25994,6 +26050,9 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 newState.breeder_logo = existing.breeder_logo;
             }
         }
+        if (field === 'image_crop_meta' && newState.images?.length) {
+            newState.images = newState.images.map((img) => img.is_thumbnail ? { ...img, crop_meta: value } : img);
+        }
         this._editorState = newState;
     }
     _handlePrintLabel() {
@@ -26015,19 +26074,11 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     _toggleCropMode(active) {
         this._isCropping = active;
     }
-    _toggleImageSelector(isOpen) {
-        this._isImageSelectorOpen = isOpen;
-    }
-    _handleSelectLibraryImage(imageUrl) {
-        this._editorState = { ...this._editorState, image: imageUrl };
-        const existing = this.strains.find((s) => s.image === imageUrl && !!s.image_crop_meta);
-        if (existing && existing.image_crop_meta) {
-            this._editorState.image_crop_meta = { ...existing.image_crop_meta };
+    getCropStyle(path, meta) {
+        if (meta) {
+            return `background-image: url('${path}'); background-size: ${meta.scale * 100}%; background-position: ${meta.x}% ${meta.y}%;`;
         }
-        else {
-            delete this._editorState.image_crop_meta;
-        }
-        this._isImageSelectorOpen = false;
+        return `background-image: url('${path}');`;
     }
     _handleImportFile() {
         const input = document.createElement('input');
@@ -26043,15 +26094,6 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             }
         };
         input.click();
-    }
-    getCropStyle(image, meta) {
-        if (!meta)
-            return `background-image: url('${image}')`;
-        return `
-      background-image: url('${image}');
-      background-size: ${meta.scale * 100}%;
-      background-position: ${meta.x}% ${meta.y}%;
-    `;
     }
     _getUniqueBreeders() {
         const breederMap = new Map();
@@ -26122,18 +26164,77 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     }
     _handleSeedfinderImport(e) {
         const data = e.detail;
+        const gallery = data.images?.length
+            ? data.images.map((url, i) => ({
+                path: url,
+                is_thumbnail: i === 0,
+            }))
+            : undefined;
         this._editorState = {
             ...this._editorState,
             ...data,
+            ...(gallery ? { images: gallery, image: gallery[0].path } : {}),
         };
         this._seedfinderDialogOpen = false;
         this.requestUpdate();
+    }
+    _gallery() {
+        return this._editorState.images ?? [];
+    }
+    async _handleGalleryUpload(file) {
+        this._uploadingImage = true;
+        try {
+            const base64 = await PlantUtils.compressImage(file);
+            const strain = this._editorState.strain ?? 'unknown';
+            const phenotype = this._editorState.phenotype ?? 'default';
+            const response = await this.hass.connection.sendMessagePromise({
+                type: 'growspace_manager/upload_strain_image',
+                strain,
+                phenotype,
+                image_base64: base64,
+            });
+            const gallery = [...this._gallery(), { path: response.path, is_thumbnail: this._gallery().length === 0 }];
+            this._editorState = { ...this._editorState, images: gallery };
+            if (gallery.length === 1) {
+                this._editorState = { ...this._editorState, image: response.path };
+            }
+        }
+        catch (err) {
+            console.error('Gallery upload failed:', err);
+        }
+        finally {
+            this._uploadingImage = false;
+        }
+    }
+    _handleSetThumbnail(index) {
+        const gallery = this._gallery().map((img, i) => ({ ...img, is_thumbnail: i === index }));
+        const thumb = gallery[index];
+        this._editorState = {
+            ...this._editorState,
+            images: gallery,
+            image: thumb.path,
+            image_crop_meta: thumb.crop_meta,
+        };
+    }
+    _handleRemoveGalleryImage(index) {
+        const prev = this._gallery();
+        const wasThumb = prev[index].is_thumbnail;
+        const gallery = prev.filter((_, i) => i !== index);
+        if (wasThumb && gallery.length > 0) {
+            gallery[0] = { ...gallery[0], is_thumbnail: true };
+        }
+        const thumb = gallery.find((img) => img.is_thumbnail);
+        this._editorState = {
+            ...this._editorState,
+            images: gallery,
+            image: thumb?.path ?? '',
+            image_crop_meta: thumb?.crop_meta,
+        };
     }
     render() {
         return x `
       ${this.renderEditorView()}
       ${this._isCropping ? this.renderCropOverlay() : E}
-      ${this._isImageSelectorOpen ? this.renderImageSelector() : E}
       ${this._importDialogOpen ? this.renderImportDialog() : E}
       ${this._breederDialogOpen ? this.renderBreederDialog() : E}
       ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : E}
@@ -26148,14 +26249,6 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         const uniqueBreeders = [
             ...new Set(this.strains.map((st) => st.breeder).filter(Boolean)),
         ].sort();
-        const handleFileChange = (e) => {
-            const file = e.target.files?.[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        };
         return x `
       <datalist id="strain-suggestions">
         ${uniqueStrains.map((name) => x `<option value="${name}"></option>`)}
@@ -26196,133 +26289,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         <div class="editor-layout">
           <!-- LEFT COL: IDENTITY -->
           <div class="editor-col">
-            <div
-              class="photo-upload-area"
-              @click=${(e) => {
-            const target = e.target;
-            if (!target.closest('.crop-btn') &&
-                !target.closest('.select-library-btn') &&
-                !target.closest('.md3-button')) {
-                e.currentTarget.querySelector('input')?.click();
-            }
-        }}
-              @dragover=${(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'copy';
-        }}
-              @drop=${(e) => {
-            e.preventDefault();
-            const file = e.dataTransfer?.files[0];
-            if (file) {
-                PlantUtils.compressImage(file)
-                    .then((base64) => this._handleEditorChange('image', base64))
-                    .catch((err) => console.error('Error compressing image:', err));
-            }
-        }}
-            >
-              <button
-                class="select-library-btn"
-                @click=${(e) => {
-            e.stopPropagation();
-            this._toggleImageSelector(true);
-        }}
-              >
-                <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiViewDashboard}"></path>
-                </svg>
-                Select from Library
-              </button>
-
-              ${s.image
-            ? x `
-                    ${s.image_crop_meta
-                ? x `<div
-                          style="width:100%; height:100%; border-radius:10px; ${this.getCropStyle(s.image, s.image_crop_meta)}; background-repeat: no-repeat;"
-                        ></div>`
-                : x `<img
-                          src="${s.image}"
-                          style="width:100%; height:100%; object-fit:cover; border-radius:10px;"
-                        />`}
-
-                    <div style="position:absolute; bottom:8px; right:8px; display:flex; gap:8px;">
-                      <button
-                        class="crop-btn"
-                        style="background:rgba(0,0,0,0.6); border:none; padding:6px; border-radius:50%; cursor:pointer; color:white;"
-                        @click=${(e) => {
-                e.stopPropagation();
-                this._toggleCropMode(true);
-            }}
-                        title="Crop Image"
-                      >
-                        <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                          <path d="${mdiContentCopy}"></path>
-                        </svg>
-                      </button>
-                      <div
-                        style="background:rgba(0,0,0,0.6); padding:6px; border-radius:50%; pointer-events:none;"
-                      >
-                        <svg style="width:18px;height:18px;fill:white;" viewBox="0 0 24 24">
-                          <path d="${mdiPencil}"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  `
-            : x `
-                    <div style="display: flex; gap: 16px; align-items: center;">
-                      <div
-                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
-                      >
-                        <button
-                          class="md3-button tonal"
-                          @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
-                        >
-                          <svg
-                            style="width:24px;height:24px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiCamera}"></path>
-                          </svg>
-                          Camera
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          style="display:none"
-                          @change=${handleFileChange}
-                        />
-                      </div>
-
-                      <div
-                        style="display: flex; flex-direction: column; align-items: center; gap: 8px;"
-                      >
-                        <button
-                          class="md3-button tonal"
-                          @click=${(e) => e.currentTarget
-                .nextElementSibling.click()}
-                        >
-                          <svg
-                            style="width:24px;height:24px;fill:currentColor;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiImage}"></path>
-                          </svg>
-                          Gallery
-                        </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style="display:none"
-                          @change=${handleFileChange}
-                        />
-                      </div>
-                    </div>
-                    <span style="font-size:0.8rem; margin-top:12px; opacity: 0.7;"
-                      >(Or Drag & Drop)</span
-                    >
-                  `}
-            </div>
+            ${this._renderGallery()}
 
             <div class="sd-form-group">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
@@ -26762,72 +26729,86 @@ let StrainEditorView = class StrainEditorView extends i$3 {
       </div>
     `;
     }
-    renderImageSelector() {
-        const imageMap = new Map();
-        this.strains.forEach((s) => {
-            if (s.image) {
-                if (!imageMap.has(s.image)) {
-                    imageMap.set(s.image, []);
-                }
-                imageMap.get(s.image).push({ strain: s.strain, phenotype: s.phenotype || '' });
-            }
-        });
+    _renderGallery() {
+        const gallery = this._gallery();
+        const thumbIndex = gallery.findIndex((img) => img.is_thumbnail);
+        const handleGalleryFileChange = (e) => {
+            const file = e.target.files?.[0];
+            if (file)
+                this._handleGalleryUpload(file);
+            e.target.value = '';
+        };
+        const handleDrop = (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer?.files[0];
+            if (file)
+                this._handleGalleryUpload(file);
+        };
         return x `
-      <div class="crop-overlay">
+      <div class="sd-form-group" style="margin-bottom: 16px;">
+        <label class="sd-label">Photo Gallery</label>
+
         <div
-          class="glass-dialog-container"
-          style="width: 80%; max-width: 800px; height: 80%; max-height: 600px;"
+          class="gallery-drop-area"
+          style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 8px;"
+          @dragover=${(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+          @drop=${handleDrop}
         >
-          <div class="dialog-header">
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Select from Library</h2>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${() => this._toggleImageSelector(false)}
-              style="min-width:auto; padding:8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-          <div class="sd-content" style="overflow-y: auto;">
-            <div
-              style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px;"
-            >
-              ${[...imageMap.entries()].map(([img, infoList]) => x `
-                  <div
-                    style="aspect-ratio: 1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid transparent; position: relative;"
-                    @click=${() => this._handleSelectLibraryImage(img)}
-                  >
-                    <img src="${img}" style="width: 100%; height: 100%; object-fit: cover;" />
-                    <div
-                      style="position: absolute; top: 0; left: 0; right: 0; background: rgba(0,0,0,0.7); padding: 8px; font-size: 0.75rem; color: white;"
-                    >
-                      ${infoList.map((info, index) => x `
-                          <div
-                            style="${index < infoList.length - 1
-            ? 'margin-bottom: 6px; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.2);'
-            : ''}"
-                          >
-                            <div style="font-weight: 700;">Strain: ${info.strain}</div>
-                            <div style="opacity: 0.9;">Pheno: ${info.phenotype || 'N/A'}</div>
-                          </div>
-                        `)}
-                    </div>
-                  </div>
-                `)}
-            </div>
-            ${imageMap.size === 0
-            ? x `<p
-                  style="text-align: center; color: var(--secondary-text-color); margin-top: 40px;"
+          ${gallery.map((img, i) => x `
+            <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_thumbnail ? 'var(--accent-green, #4caf50)' : 'rgba(255,255,255,0.1)'};">
+              <img src="${img.path}" style="width:100%; height:100%; object-fit:cover;" />
+              <div style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:4px;">
+                <button
+                  title="${img.is_thumbnail ? 'Thumbnail' : 'Set as thumbnail'}"
+                  style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:${img.is_thumbnail ? '#ffc107' : 'white'};"
+                  @click=${(e) => { e.stopPropagation(); this._handleSetThumbnail(i); }}
                 >
-                  No images found in library.
-                </p>`
-            : E}
-          </div>
+                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${img.is_thumbnail ? mdiStar : mdiStarOutline}"></path>
+                  </svg>
+                </button>
+                <button
+                  title="Remove"
+                  style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:white;"
+                  @click=${(e) => { e.stopPropagation(); this._handleRemoveGalleryImage(i); }}
+                >
+                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiClose}"></path>
+                  </svg>
+                </button>
+              </div>
+              ${img.is_thumbnail ? x `
+                <button
+                  title="Adjust crop"
+                  style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:white;"
+                  @click=${(e) => { e.stopPropagation(); this._toggleCropMode(true); }}
+                >
+                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiContentCopy}"></path>
+                  </svg>
+                </button>
+              ` : E}
+            </div>
+          `)}
+
+          <label
+            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._uploadingImage ? 'wait' : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem;"
+          >
+            ${this._uploadingImage
+            ? x `<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent-green);border-radius:50%;animation:spin 1s linear infinite;"></div>`
+            : x `
+                <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
+                Add
+              `}
+            <input type="file" accept="image/*" style="display:none" ?disabled=${this._uploadingImage} @change=${handleGalleryFileChange} />
+          </label>
         </div>
+
+        ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta ? x `
+          <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px;">
+            Thumbnail crop applied · click ✂ to adjust
+          </div>
+        ` : E}
       </div>
     `;
     }
@@ -27547,7 +27528,7 @@ __decorate([
 ], StrainEditorView.prototype, "_isCropping", void 0);
 __decorate([
     r$3()
-], StrainEditorView.prototype, "_isImageSelectorOpen", void 0);
+], StrainEditorView.prototype, "_uploadingImage", void 0);
 __decorate([
     r$3()
 ], StrainEditorView.prototype, "_lineageEditMode", void 0);

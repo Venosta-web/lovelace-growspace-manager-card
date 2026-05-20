@@ -182,6 +182,12 @@ export interface CropMeta {
   scale: number;
 }
 
+export interface StrainGalleryImage {
+  path: string;
+  crop_meta?: CropMeta;
+  is_thumbnail: boolean;
+}
+
 export interface StrainEntry {
   strain: string;
   phenotype: string;
@@ -199,6 +205,7 @@ export interface StrainEntry {
   description?: string;
   image?: string;
   image_crop_meta?: CropMeta;
+  images?: StrainGalleryImage[];
   analytics?: StrainAnalytics;
   strain_analytics?: StrainAnalytics;
   sativa_percentage?: number;

@@ -1,5 +1,5 @@
 import { BaseAPI } from '../base-api';
-import { StrainEntry, CropMeta } from '../../types';
+import { StrainEntry, StrainGalleryImage, CropMeta } from '../../types';
 import { DOMAIN, SERVICES } from '../../constants';
 import {
   StrainLibraryWrapperSchema,
@@ -13,6 +13,7 @@ interface RawPhenotypeData {
   description?: string;
   image_path?: string;
   image_crop_meta?: CropMeta;
+  images?: StrainGalleryImage[];
   flower_days_min?: number;
   flower_days_max?: number;
 }
@@ -86,6 +87,8 @@ export class StrainAPI extends BaseAPI {
 
         Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
           const typedPhenoData = phenoData as RawPhenotypeData;
+          const gallery = typedPhenoData.images;
+          const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
           results.push({
             strain: strainName,
             phenotype: phenoName,
@@ -100,8 +103,9 @@ export class StrainAPI extends BaseAPI {
             indica_percentage: meta.indica_percentage,
             is_stub: meta.is_stub,
             description: typedPhenoData.description,
-            image: typedPhenoData.image_path,
-            image_crop_meta: typedPhenoData.image_crop_meta,
+            image: thumbnail?.path ?? typedPhenoData.image_path,
+            image_crop_meta: thumbnail?.crop_meta ?? typedPhenoData.image_crop_meta,
+            images: gallery,
             flowering_days_min: typedPhenoData.flower_days_min,
             flowering_days_max: typedPhenoData.flower_days_max,
           });
@@ -166,6 +170,8 @@ export class StrainAPI extends BaseAPI {
 
         Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
           const typedPhenoData = phenoData as RawPhenotypeData;
+          const gallery = typedPhenoData.images;
+          const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
           currentStrains.push({
             strain: strainName,
             phenotype: phenoName,
@@ -180,8 +186,9 @@ export class StrainAPI extends BaseAPI {
             indica_percentage: meta.indica_percentage,
             is_stub: meta.is_stub,
             description: typedPhenoData.description,
-            image: typedPhenoData.image_path,
-            image_crop_meta: typedPhenoData.image_crop_meta,
+            image: thumbnail?.path ?? typedPhenoData.image_path,
+            image_crop_meta: thumbnail?.crop_meta ?? typedPhenoData.image_crop_meta,
+            images: gallery,
             flowering_days_min: typedPhenoData.flower_days_min,
             flowering_days_max: typedPhenoData.flower_days_max,
           });
@@ -207,6 +214,7 @@ export class StrainAPI extends BaseAPI {
     description?: string;
     image?: string;
     image_crop_meta?: CropMeta;
+    images?: StrainGalleryImage[];
     sativa_percentage?: number;
     indica_percentage?: number;
     breeder_logo?: string;
@@ -222,16 +230,17 @@ export class StrainAPI extends BaseAPI {
         }
       });
 
-      if (data.image) {
+      if (data.images && data.images.length > 0) {
+        // Gallery is authoritative — send it and skip single-image fields
+        delete payload.image;
+      } else if (data.image) {
         if (data.image.startsWith('data:')) {
           payload.image_base64 = data.image;
           delete payload.image;
         } else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-          // External URL (e.g. from Seedfinder) — store as image_path
           payload.image_path = data.image;
           delete payload.image;
         } else {
-          // Existing local path — omit to preserve stored value
           delete payload.image;
         }
       }
@@ -361,6 +370,7 @@ export class StrainAPI extends BaseAPI {
     description?: string;
     image?: string;
     image_crop_meta?: CropMeta;
+    images?: StrainGalleryImage[];
     sativa_percentage?: number;
     indica_percentage?: number;
     breeder_logo?: string;
@@ -381,16 +391,17 @@ export class StrainAPI extends BaseAPI {
         }
       });
 
-      if (data.image) {
+      if (data.images && data.images.length > 0) {
+        // Gallery is authoritative — send it and skip single-image fields
+        delete payload.image;
+      } else if (data.image) {
         if (data.image.startsWith('data:')) {
           payload.image_base64 = data.image;
           delete payload.image;
         } else if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-          // External URL (e.g. from Seedfinder) — store as image_path
           payload.image_path = data.image;
           delete payload.image;
         } else {
-          // Existing local path — omit to preserve stored value
           delete payload.image;
         }
       }

@@ -79,7 +79,7 @@ describe('StrainEditorView', () => {
         });
 
         it('should handle image drop', async () => {
-            const dropArea = editorEl.shadowRoot?.querySelector('.photo-upload-area');
+            const dropArea = editorEl.shadowRoot?.querySelector('.gallery-drop-area');
             const file = new File([''], 'test.png', { type: 'image/png' });
 
             class MockDragEvent extends Event {
@@ -110,8 +110,7 @@ describe('StrainEditorView', () => {
         });
 
         it('should toggle crop mode', async () => {
-            const cropBtn = editorEl.shadowRoot?.querySelector('.crop-btn');
-            (cropBtn as HTMLElement)?.click();
+            (editorEl as any)._toggleCropMode(true);
             await editorEl.updateComplete;
 
             const overlay = editorEl.shadowRoot?.querySelector('.crop-overlay');
@@ -140,30 +139,8 @@ describe('StrainEditorView', () => {
             await editorEl.updateComplete;
         });
 
-        it('should trigger camera input click', async () => {
-            const cameraBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.textContent?.includes('Camera'));
-
-            const nextInput = (cameraBtn as HTMLElement)?.nextElementSibling as HTMLInputElement;
-            const clickSpy = vi.spyOn(nextInput, 'click');
-
-            (cameraBtn as HTMLElement)?.click();
-            expect(clickSpy).toHaveBeenCalled();
-        });
-
-        it('should trigger gallery input click', async () => {
-            const galleryBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('button') || [])
-                .find(b => b.textContent?.includes('Gallery'));
-
-            const nextInput = (galleryBtn as HTMLElement)?.nextElementSibling as HTMLInputElement;
-            const clickSpy = vi.spyOn(nextInput, 'click');
-
-            (galleryBtn as HTMLElement)?.click();
-            expect(clickSpy).toHaveBeenCalled();
-        });
-
         it('should handle file selection via input change', async () => {
-            const input = editorEl.shadowRoot?.querySelector('input[type="file"][capture="environment"]');
+            const input = editorEl.shadowRoot?.querySelector('input[type="file"]');
             expect(input).toBeTruthy();
 
             const file = new File([''], 'photo.jpg', { type: 'image/jpeg' });
@@ -180,52 +157,6 @@ describe('StrainEditorView', () => {
         });
     });
 
-    // --- Image Library Selector ---
-
-    describe('Image Library Selector', () => {
-        it('should open library selector and select image', async () => {
-            await editorEl.updateComplete;
-
-            const libBtn = editorEl.shadowRoot?.querySelector('.select-library-btn');
-            (libBtn as HTMLElement)?.click();
-            await editorEl.updateComplete;
-
-            expect((editorEl as any)._isImageSelectorOpen).toBe(true);
-
-            await editorEl.updateComplete;
-
-            const overlays = editorEl.shadowRoot?.querySelectorAll('.crop-overlay');
-            const selectorOverlay = Array.from(overlays || []).find(o => o.querySelector('.dialog-title')?.textContent?.includes('Select from Library'));
-            expect(selectorOverlay).toBeTruthy();
-
-            const img = selectorOverlay?.querySelector('.sd-content img');
-            expect(img).toBeTruthy();
-            (img?.parentElement as HTMLElement)?.click();
-            await editorEl.updateComplete;
-
-            expect((editorEl as any)._editorState.image).toBeTruthy();
-            expect((editorEl as any)._isImageSelectorOpen).toBe(false);
-        });
-
-        it('should render multiple images correctly', async () => {
-            const strainsWithSameImg = [
-                { ...mockStrains[0], image: 'duplicate.jpg' },
-                { ...mockStrains[1], image: 'duplicate.jpg' }
-            ];
-            editorEl.strains = strainsWithSameImg;
-            await editorEl.updateComplete;
-
-            (editorEl as any)._toggleImageSelector(true);
-            await editorEl.updateComplete;
-
-            const overlays = editorEl.shadowRoot?.querySelectorAll('.crop-overlay');
-            const selectorOverlay = Array.from(overlays || []).find(o => o.querySelector('.dialog-title')?.textContent?.includes('Select from Library'));
-
-            expect(selectorOverlay?.querySelectorAll('.sd-content > div > div').length).toBe(1);
-            expect(selectorOverlay?.textContent).toContain('Strain: Blue Dream');
-            expect(selectorOverlay?.textContent).toContain('Strain: OG Kush');
-        });
-    });
 
     // --- Validation ---
 
@@ -313,7 +244,7 @@ describe('StrainEditorView', () => {
         it('should handle image compression error', async () => {
             await editorEl.updateComplete;
 
-            const dropArea = editorEl.shadowRoot?.querySelector('.photo-upload-area');
+            const dropArea = editorEl.shadowRoot?.querySelector('.gallery-drop-area');
             expect(dropArea).toBeTruthy();
 
             const file = new File([''], 'test.png', { type: 'image/png' });
@@ -328,7 +259,7 @@ describe('StrainEditorView', () => {
 
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(consoleSpy).toHaveBeenCalledWith('Error compressing image:', 'Compression Failed');
+            expect(consoleSpy).toHaveBeenCalledWith('Gallery upload failed:', 'Compression Failed');
             consoleSpy.mockRestore();
         });
 
@@ -357,19 +288,6 @@ describe('StrainEditorView', () => {
             expect((editorEl as any)._editorState.breeder).toBe('New Breeder');
         });
 
-        it('should persist existing crop meta when selecting same image', () => {
-            const existingStrain = mockStrains[2]; // Gorilla Glue has meta
-            (editorEl as any)._handleSelectLibraryImage(existingStrain.image);
-
-            expect((editorEl as any)._editorState.image_crop_meta).toEqual(existingStrain.image_crop_meta);
-        });
-
-        it('should clear crop meta when selecting new image', () => {
-            (editorEl as any)._editorState.image_crop_meta = { x: 1, y: 1, scale: 1 };
-
-            (editorEl as any)._handleSelectLibraryImage('new_image.jpg');
-            expect((editorEl as any)._editorState.image_crop_meta).toBeUndefined();
-        });
     });
 
     // --- Render Helpers ---
@@ -426,17 +344,6 @@ describe('StrainEditorView', () => {
             expect((editorEl as any)._editorState.sex).toBe('Regular');
         });
 
-        it('should close image selector via X button', async () => {
-            (editorEl as any)._isImageSelectorOpen = true;
-            await editorEl.updateComplete;
-
-            const overlay = editorEl.shadowRoot?.querySelector('.crop-overlay');
-            const btn = overlay?.querySelector('button');
-
-            (btn as HTMLElement)?.click();
-            await editorEl.updateComplete;
-            expect((editorEl as any)._isImageSelectorOpen).toBe(false);
-        });
     });
 
     // --- Editor Fields ---
@@ -601,7 +508,7 @@ describe('StrainEditorView', () => {
         it('should handle dragover event', async () => {
             await editorEl.updateComplete;
 
-            const dropArea = editorEl.shadowRoot?.querySelector('.photo-upload-area');
+            const dropArea = editorEl.shadowRoot?.querySelector('.gallery-drop-area');
 
             class MockDragEvent extends Event {
                 dataTransfer: any;
@@ -705,47 +612,8 @@ describe('StrainEditorView', () => {
 
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(consoleSpy).toHaveBeenCalledWith('Error compressing image:', 'Compression Failed inside Input');
+            expect(consoleSpy).toHaveBeenCalledWith('Gallery upload failed:', 'Compression Failed inside Input');
             consoleSpy.mockRestore();
-        });
-
-        it('should handle multiple strains sharing same image in library selector', async () => {
-            const sharedImg = 'data:image/png;base64,shared';
-            const s1: StrainEntry = { ...mockStrains[0], key: 's1', image: sharedImg, phenotype: '' };
-            const s2: StrainEntry = { ...mockStrains[0], key: 's2', image: sharedImg, phenotype: 'Pheno2' };
-
-            editorEl.strains = [s1, s2];
-            await editorEl.updateComplete;
-
-            (editorEl as any)._toggleImageSelector(true);
-            await editorEl.updateComplete;
-
-            const overlays = editorEl.shadowRoot?.querySelectorAll('.crop-overlay');
-            const selectorOverlay = Array.from(overlays || []).find(o => o.querySelector('.dialog-title')?.textContent?.includes('Select from Library'));
-
-            expect(selectorOverlay).toBeTruthy();
-
-            const items = selectorOverlay?.querySelectorAll('.sd-content div[style*="aspect-ratio"]');
-            expect(items?.length).toBe(1);
-
-            const item = items?.[0];
-            expect(item?.textContent).toContain('Pheno: N/A');
-            expect(item?.textContent).toContain('Pheno: Pheno2');
-        });
-
-        it('should show empty state in image selector when no images exist', async () => {
-            editorEl.strains = [{ ...mockStrains[0], image: undefined }];
-            await editorEl.updateComplete;
-
-            (editorEl as any)._toggleImageSelector(true);
-            await editorEl.updateComplete;
-
-            const overlays = editorEl.shadowRoot?.querySelectorAll('.crop-overlay');
-            const selectorOverlay = Array.from(overlays || []).find(o => o.querySelector('.dialog-title')?.textContent?.includes('Select from Library'));
-
-            expect(selectorOverlay).toBeTruthy();
-            const msg = selectorOverlay?.querySelector('p');
-            expect(msg?.textContent).toContain('No images found');
         });
     });
 
@@ -795,34 +663,9 @@ describe('StrainEditorView', () => {
         });
     });
 
-    // --- UI Interactions (image selection) ---
+    // --- UI Interactions ---
 
     describe('UI Interactions', () => {
-        it('handles image selection from library', async () => {
-            (editorEl as any)._isImageSelectorOpen = true;
-            (editorEl as any)._editorState = { strain: '', type: 'Hybrid' };
-            await editorEl.updateComplete;
-
-            (editorEl as any)._handleSelectLibraryImage('hso-logo');
-            expect((editorEl as any)._editorState.image).toBe('hso-logo');
-            expect((editorEl as any)._editorState.image_crop_meta).toBeUndefined();
-        });
-
-        it('handles image selection with existing crop meta', async () => {
-            (editorEl as any)._editorState = { strain: '', type: 'Hybrid' };
-            editorEl.strains[0].image = 'hso-logo';
-            editorEl.strains[0].image_crop_meta = { x: 10, y: 20, scale: 2 };
-
-            (editorEl as any)._handleSelectLibraryImage('hso-logo');
-            expect((editorEl as any)._editorState.image_crop_meta).toEqual({ x: 10, y: 20, scale: 2 });
-        });
-
-        it('deletes image_crop_meta when selecting new image without meta', async () => {
-            (editorEl as any)._editorState = { strain: '', type: 'Hybrid', image_crop_meta: { x: 0, y: 0, scale: 1 } };
-            (editorEl as any)._handleSelectLibraryImage('new-image-path');
-            expect((editorEl as any)._editorState.image_crop_meta).toBeUndefined();
-        });
-
         it('dispatches open-print-label', async () => {
             (editorEl as any)._editorState = { strain: 'Quick Strain', breeder: 'HSO' };
             const printHandler = vi.fn();
@@ -935,7 +778,7 @@ describe('StrainEditorView', () => {
     it('should handle missing file in drop and change events', async () => {
         await editorEl.updateComplete;
 
-        const dropArea = editorEl.shadowRoot?.querySelector('.photo-upload-area');
+        const dropArea = editorEl.shadowRoot?.querySelector('.gallery-drop-area');
 
         const emptyDrop = new CustomEvent('drop', { bubbles: true, cancelable: true });
         Object.defineProperty(emptyDrop, 'dataTransfer', { value: { files: [], dropEffect: 'copy' } });
@@ -943,8 +786,10 @@ describe('StrainEditorView', () => {
         dropArea?.dispatchEvent(emptyDrop);
 
         const input = dropArea?.querySelector('input');
-        Object.defineProperty(input, 'files', { get: () => [] });
-        input?.dispatchEvent(new Event('change'));
+        if (input) {
+            Object.defineProperty(input, 'files', { get: () => [] });
+            input.dispatchEvent(new Event('change'));
+        }
 
         await editorEl.updateComplete;
     });

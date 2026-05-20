@@ -38,6 +38,7 @@ interface ExternalStrainDetails {
   flowering_days?: number;
   description?: string;
   image?: string;
+  images?: string[];
   yield_potential?: string;
   height?: string;
   thc?: number;
@@ -153,7 +154,12 @@ export class StrainImportDialog extends LitElement {
     }
     if (this._importFields.has('flowering')) result.flowering_days = this._details.flowering_days;
     if (this._importFields.has('description')) result.description = this._details.description;
-    if (this._importFields.has('image')) result.image = this._details.image;
+    if (this._importFields.has('image')) {
+      result.images = this._details.images && this._details.images.length > 0
+        ? this._details.images
+        : undefined;
+      result.image = this._details.image ?? this._details.images?.[0];
+    }
     if (this._importFields.has('yield')) result.yield_potential = this._details.yield_potential;
     if (this._importFields.has('height')) (result as any).height = this._details.height;
     if (this._importFields.has('thc')) (result as any).thc = this._details.thc;
@@ -470,7 +476,7 @@ export class StrainImportDialog extends LitElement {
         </div>
 
         <div class="preview-grid">
-          ${d.image ? html`
+          ${(d.image || (d.images && d.images.length > 0)) ? html`
             <div class="field-row full-width" @click=${() => this._toggleField('image')}>
               <div class="field-checkbox ${this._importFields.has('image') ? 'checked' : ''}">
                 ${this._importFields.has('image') ? html`<svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>` : nothing}
@@ -478,9 +484,9 @@ export class StrainImportDialog extends LitElement {
               <div class="field-content">
                 <div class="field-label">
                   <svg viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
-                  Image
+                  Image${d.images && d.images.length > 1 ? ` (${d.images.length} available)` : ''}
                 </div>
-                <img class="preview-image" src="${d.image}" />
+                <img class="preview-image" src="${d.image ?? d.images![0]}" />
               </div>
             </div>
           ` : nothing}
