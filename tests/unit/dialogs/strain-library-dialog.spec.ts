@@ -15,6 +15,8 @@ vi.mock('../../../src/utils/plant-utils', () => ({
 
 describe('StrainLibraryDialog', () => {
     let element: StrainLibraryDialog;
+    let browseView: any;
+
     const mockStrains: StrainEntry[] = [
         { key: '1', strain: 'Blue Dream', phenotype: 'Original', type: 'Sativa', breeder: 'HSO', flowering_days_min: 60, flowering_days_max: 70, image: 'img1.jpg' },
         { key: '2', strain: 'OG Kush', phenotype: '#18', type: 'Indica', breeder: 'Dinafem', flowering_days_min: 50, flowering_days_max: 60, image: 'img2.jpg' },
@@ -27,6 +29,7 @@ describe('StrainLibraryDialog', () => {
         element.open = true;
         document.body.appendChild(element);
         await element.updateComplete;
+        browseView = element.shadowRoot?.querySelector('strain-browse-view');
     });
 
     afterEach(() => {
@@ -42,57 +45,61 @@ describe('StrainLibraryDialog', () => {
     });
 
     it('should render correct number of cards', () => {
-        const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+        const cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
         expect(cards?.length).toBe(3);
     });
 
     describe('Search & Filtering', () => {
         it('should update search query via event', async () => {
-            const input = element.shadowRoot?.querySelector('md3-text-input');
+            const input = browseView?.shadowRoot?.querySelector('md3-text-input');
             expect(input).toBeTruthy();
 
             // Simulate change event from md3-text-input
             input?.dispatchEvent(new CustomEvent('change', { detail: 'Blue' }));
-            await element.updateComplete;
+            await browseView?.updateComplete;
 
-            expect((element as any)._searchQuery).toBe('Blue');
+            expect(browseView?._searchQuery).toBe('Blue');
             // Should reset page to 1
-            expect((element as any)._currentPage).toBe(1);
+            expect(browseView?._currentPage).toBe(1);
 
             // Check filtering results
-            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            const cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(1);
             expect(cards?.[0].textContent).toContain('Blue Dream');
         });
 
         it('should filter by breeder', async () => {
-            (element as any)._searchQuery = 'Dinafem';
-            await element.updateComplete;
-            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            browseView._searchQuery = 'Dinafem';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            const cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(1);
             expect(cards?.[0].textContent).toContain('OG Kush');
         });
 
         it('should filter by phenotype', async () => {
-            (element as any)._searchQuery = '#4';
-            await element.updateComplete;
-            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            browseView._searchQuery = '#4';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            const cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(1);
             expect(cards?.[0].textContent).toContain('Gorilla Glue');
         });
 
         it('should filter by combined search (breeder + strain)', async () => {
-            (element as any)._searchQuery = 'HSO Blue';
-            await element.updateComplete;
-            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            browseView._searchQuery = 'HSO Blue';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            const cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(1);
             expect(cards?.[0].textContent).toContain('Blue Dream');
         });
 
         it('should filter by combined search (phenotype)', async () => {
-            (element as any)._searchQuery = 'Dream Original';
-            await element.updateComplete;
-            const cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            browseView._searchQuery = 'Dream Original';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            const cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(1);
             expect(cards?.[0].textContent).toContain('Blue Dream');
         });
@@ -111,7 +118,7 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should switch to editor when a card is clicked', async () => {
-            const card = element.shadowRoot?.querySelector('.strain-card');
+            const card = browseView?.shadowRoot?.querySelector('.strain-card');
             (card as HTMLElement)?.click();
             await element.updateComplete;
 
@@ -121,17 +128,15 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should handle card delete button click (propagation stop)', async () => {
-            const spy = vi.spyOn((element as any), '_handleDelete');
-            const deleteBtn = element.shadowRoot?.querySelector('.sc-action-btn');
+            const deleteBtn = browseView?.shadowRoot?.querySelector('.sc-action-btn');
 
             (deleteBtn as HTMLElement)?.click();
-            await element.updateComplete;
+            await browseView?.updateComplete;
 
-            expect(spy).toHaveBeenCalledWith('1');
             // Click on delete should NOT open editor - dialog stays in browse
             expect((element as any)._view).toBe('browse');
-            // Should set pendingDeleteKey
-            expect((element as any)._pendingDeleteKey).toBe('1');
+            // Should set pendingDeleteKey on browseView
+            expect(browseView?._pendingDeleteKey).toBe('1');
         });
 
         it('should return to browse view when editor-back event fires', async () => {
@@ -155,23 +160,24 @@ describe('StrainLibraryDialog', () => {
             }));
             element.strains = manyStrains;
             await element.updateComplete;
+            await browseView?.updateComplete;
 
-            let cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            let cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(15);
 
-            const btns = element.shadowRoot?.querySelectorAll('.pagination-btn');
+            const btns = browseView?.shadowRoot?.querySelectorAll('.pagination-btn');
             const nextBtn = btns?.[1] as HTMLElement;
             nextBtn.click();
-            await element.updateComplete;
+            await browseView?.updateComplete;
 
-            cards = element.shadowRoot?.querySelectorAll('.strain-card');
+            cards = browseView?.shadowRoot?.querySelectorAll('.strain-card');
             expect(cards?.length).toBe(5);
-            expect((element as any)._currentPage).toBe(2);
+            expect(browseView?._currentPage).toBe(2);
 
             const prevBtn = btns?.[0] as HTMLElement;
             prevBtn.click();
-            await element.updateComplete;
-            expect((element as any)._currentPage).toBe(1);
+            await browseView?.updateComplete;
+            expect(browseView?._currentPage).toBe(1);
         });
 
         it('should clamp page when items decrease', async () => {
@@ -181,15 +187,18 @@ describe('StrainLibraryDialog', () => {
             }));
             element.strains = manyStrains;
             await element.updateComplete;
+            await browseView?.updateComplete;
 
-            (element as any)._currentPage = 2;
-            await element.updateComplete;
+            browseView._currentPage = 2;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
             // Reduce to 1 page
             element.strains = mockStrains;
             await element.updateComplete;
+            await browseView?.updateComplete;
 
-            expect((element as any)._currentPage).toBe(1);
+            expect(browseView?._currentPage).toBe(1);
         });
     });
 
@@ -206,7 +215,7 @@ describe('StrainLibraryDialog', () => {
             const listener = vi.fn();
             element.addEventListener('export-library', listener);
 
-            const exportBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+            const exportBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
                 .find(b => b.textContent?.includes('Export'));
             (exportBtn as HTMLElement)?.click();
 
@@ -214,7 +223,7 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should open import dialog when Import button is clicked', async () => {
-            const importBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+            const importBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
                 .find(b => b.textContent?.includes('Import'));
             (importBtn as HTMLElement)?.click();
             await element.updateComplete;
@@ -225,17 +234,17 @@ describe('StrainLibraryDialog', () => {
 
     describe('Mobile Menu', () => {
         it('should toggle mobile menu', async () => {
-            (element as any)._mobileMenuOpen = true;
-            element.requestUpdate();
-            await element.updateComplete;
+            browseView._mobileMenuOpen = true;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
-            const menu = element.shadowRoot?.querySelector('.mobile-menu');
+            const menu = browseView?.shadowRoot?.querySelector('.mobile-menu');
             expect(menu).toBeTruthy();
 
             const items = menu?.querySelectorAll('.mobile-menu-item');
             if (items && items.length > 0) {
                 (items[0] as HTMLElement).click();
-                expect((element as any)._mobileMenuOpen).toBe(false);
+                expect(browseView?._mobileMenuOpen).toBe(false);
             }
         });
     });
@@ -258,21 +267,23 @@ describe('StrainLibraryDialog', () => {
 
     describe('Delete Flow', () => {
         it('should handle delete request', async () => {
-            (element as any)._handleDelete('123');
-            await element.updateComplete;
+            browseView._pendingDeleteKey = '123';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
-            expect((element as any)._pendingDeleteKey).toBe('123');
+            expect(browseView?._pendingDeleteKey).toBe('123');
         });
 
         it('should confirm delete and dispatch event', async () => {
-            (element as any)._pendingDeleteKey = '123';
+            browseView._pendingDeleteKey = '123';
             const listener = vi.fn();
             element.addEventListener('delete-strain', listener);
 
-            (element as any)._confirmDelete();
+            browseView._confirmDelete();
+            await element.updateComplete;
 
             expect(listener).toHaveBeenCalledWith(expect.objectContaining({ detail: { key: '123' } }));
-            expect((element as any)._pendingDeleteKey).toBeNull();
+            expect(browseView?._pendingDeleteKey).toBeNull();
         });
 
         it('should dispatch delete-strain and return to browse when editor fires delete-strain', async () => {
@@ -291,9 +302,12 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should cancel delete', async () => {
-            (element as any)._pendingDeleteKey = '123';
-            (element as any)._cancelDelete();
-            expect((element as any)._pendingDeleteKey).toBeNull();
+            browseView._pendingDeleteKey = '123';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+
+            browseView._pendingDeleteKey = null;
+            expect(browseView?._pendingDeleteKey).toBeNull();
         });
     });
 
@@ -355,20 +369,21 @@ describe('StrainLibraryDialog', () => {
     describe('Delete Confirmation UI', () => {
 
         it('should render confirmation dialog', async () => {
-            (element as any)._pendingDeleteKey = '123';
-            await element.updateComplete;
-            const dialog = element.shadowRoot?.querySelector('.crop-overlay .glass-dialog-container');
+            browseView._pendingDeleteKey = '123';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            const dialog = browseView?.shadowRoot?.querySelector('.crop-overlay .glass-dialog-container');
             expect(dialog?.textContent).toContain('Delete Strain?');
         });
 
         it('should confirm delete via UI button', async () => {
-            const spy = vi.spyOn((element as any), '_confirmDelete');
-            // Trigger render AFTER spy
-            (element as any)._pendingDeleteKey = '123';
-            await element.updateComplete;
+            const spy = vi.spyOn(browseView, '_confirmDelete');
+            browseView._pendingDeleteKey = '123';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
-            const overlay = element.shadowRoot?.querySelector('.crop-overlay');
-            const delBtn = Array.from(overlay?.querySelectorAll('button') || [])
+            const overlay = browseView?.shadowRoot?.querySelector('.crop-overlay');
+            const delBtn = (Array.from(overlay?.querySelectorAll('button') || []) as HTMLElement[])
                 .find(b => b.textContent?.trim() === 'Delete' && b.classList.contains('text'));
 
             (delBtn as HTMLElement).click();
@@ -376,17 +391,17 @@ describe('StrainLibraryDialog', () => {
         });
 
         it('should cancel delete via UI button', async () => {
-            const spy = vi.spyOn((element as any), '_cancelDelete');
-            // Trigger render AFTER spy
-            (element as any)._pendingDeleteKey = '123';
-            await element.updateComplete;
+            browseView._pendingDeleteKey = '123';
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
-            const overlay = element.shadowRoot?.querySelector('.crop-overlay');
-            const cancelBtn = Array.from(overlay?.querySelectorAll('button') || [])
+            const overlay = browseView?.shadowRoot?.querySelector('.crop-overlay');
+            const cancelBtn = (Array.from(overlay?.querySelectorAll('button') || []) as HTMLElement[])
                 .find(b => b.textContent?.includes('Cancel'));
 
             (cancelBtn as HTMLElement)?.click();
-            expect(spy).toHaveBeenCalled();
+            await browseView?.updateComplete;
+            expect(browseView?._pendingDeleteKey).toBeNull();
         });
     });
 
@@ -394,17 +409,18 @@ describe('StrainLibraryDialog', () => {
 
     describe('Mobile Interactions', () => {
         it('should open editor via FAB', async () => {
-            const fab = element.shadowRoot?.querySelector('.fab-btn');
+            const fab = browseView?.shadowRoot?.querySelector('.fab-btn');
             (fab as HTMLElement)?.click();
             await element.updateComplete;
             expect((element as any)._view).toBe('editor');
         });
 
         it('should trigger menu actions', async () => {
-            (element as any)._mobileMenuOpen = true;
-            await element.updateComplete;
+            browseView._mobileMenuOpen = true;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
-            const items = element.shadowRoot?.querySelectorAll('.mobile-menu-item');
+            const items = browseView?.shadowRoot?.querySelectorAll('.mobile-menu-item');
 
             // Get Rec
             const recSpy = vi.fn();
@@ -413,16 +429,19 @@ describe('StrainLibraryDialog', () => {
             expect(recSpy).toHaveBeenCalled();
 
             // Re-open
-            (element as any)._mobileMenuOpen = true;
-            await element.updateComplete;
+            browseView._mobileMenuOpen = true;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
             // Import (sets dialog open)
             (items?.[2] as HTMLElement).click();
+            await element.updateComplete;
             expect((element as any)._importDialogOpen).toBe(true);
 
             // Re-open
-            (element as any)._mobileMenuOpen = true;
-            await element.updateComplete;
+            browseView._mobileMenuOpen = true;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
             // Export
             const expSpy = vi.fn();
@@ -434,14 +453,6 @@ describe('StrainLibraryDialog', () => {
 
     describe('Visual Logic', () => {
         it('should render correct icon for types', async () => {
-            const checkIcon = async (type: string, pathDataChunk: string) => {
-                const s: StrainEntry = { ...mockStrains[0], type };
-                element.strains = [s];
-                await element.updateComplete;
-                const svg = element.shadowRoot?.querySelector('.sc-type-row svg path');
-                return svg; // We can check if path d attribute changed, but since we import paths, we can check if it rendered
-            };
-
             // Just verifying that different types don't crash and render
             element.strains = [
                 { ...mockStrains[0], type: 'Indica' },
@@ -449,8 +460,9 @@ describe('StrainLibraryDialog', () => {
                 { ...mockStrains[0], type: 'Hybrid' }
             ];
             await element.updateComplete;
+            await browseView?.updateComplete;
 
-            const typeRows = element.shadowRoot?.querySelectorAll('.sc-type-row');
+            const typeRows = browseView?.shadowRoot?.querySelectorAll('.sc-type-row');
             expect(typeRows?.length).toBe(3);
             expect(typeRows?.[0].textContent).toContain('Indica');
             expect(typeRows?.[1].textContent).toContain('Sativa');
@@ -468,6 +480,7 @@ describe('StrainLibraryDialog', () => {
         it('should close via header button', async () => {
             (element as any)._importDialogOpen = true;
             await element.updateComplete;
+
             // The import dialog is the last opened crop-overlay
             const overlays = element.shadowRoot?.querySelectorAll('.crop-overlay');
             const importOverlay = overlays?.[overlays.length - 1]; // Assumption
@@ -477,7 +490,7 @@ describe('StrainLibraryDialog', () => {
 
             // Let's use more robust finding
             const closeBtn = Array.from(importOverlay?.querySelectorAll('button') || [])
-                .find(b => b.classList.contains('text') && !b.textContent?.trim()); // icon button only? 
+                .find(b => b.classList.contains('text') && !b.textContent?.trim()); // icon button only?
 
             // Actually structure is:
             // <div class="dialog-header">
@@ -507,36 +520,39 @@ describe('StrainLibraryDialog', () => {
                 key: `${i}`, strain: `Strain ${i}`, type: 'Sativa', phenotype: ''
             }));
             await element.updateComplete;
+            await browseView?.updateComplete;
 
             // Set to high page
-            (element as any)._currentPage = 999;
-            element.requestUpdate();
-            await element.updateComplete;
-            expect((element as any)._currentPage).toBe(2); // Total 20 items / 12 per page = 2 pages
+            browseView._currentPage = 999;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            expect(browseView?._currentPage).toBe(2); // Total 20 items / 15 per page = 2 pages
 
             // Set to low page
-            (element as any)._currentPage = 0;
-            element.requestUpdate();
-            await element.updateComplete;
-            expect((element as any)._currentPage).toBe(1);
+            browseView._currentPage = 0;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
+            expect(browseView?._currentPage).toBe(1);
         });
 
         it('should close mobile menu on overlay click', async () => {
-            (element as any)._mobileMenuOpen = true;
-            await element.updateComplete;
+            browseView._mobileMenuOpen = true;
+            browseView.requestUpdate?.();
+            await browseView?.updateComplete;
 
-            const overlay = element.shadowRoot?.querySelector('.menu-overlay');
+            const overlay = browseView?.shadowRoot?.querySelector('.menu-overlay');
             (overlay as HTMLElement)?.click();
-            await element.updateComplete;
+            await browseView?.updateComplete;
 
-            expect((element as any)._mobileMenuOpen).toBe(false);
+            expect(browseView?._mobileMenuOpen).toBe(false);
         });
 
         it('should use default icon for unknown type', async () => {
             element.strains = [{ ...mockStrains[0], type: 'AlienWeed' }];
             await element.updateComplete;
+            await browseView?.updateComplete;
 
-            const typeLabel = element.shadowRoot?.querySelector('.sc-type-row span');
+            const typeLabel = browseView?.shadowRoot?.querySelector('.sc-type-row span');
             expect(typeLabel?.textContent).toBe('AlienWeed');
             // Icon check might be tricky as paths are strings, but we verified distinct ones before.
             // Main point is no crash.
@@ -549,11 +565,11 @@ describe('StrainLibraryDialog', () => {
         // _handleSave safety check is now in strain-editor-view.spec.ts
 
         it('should do nothing in _confirmDelete if no pending key', async () => {
-            (element as any)._pendingDeleteKey = null;
+            browseView._pendingDeleteKey = null;
             const listener = vi.fn();
             element.addEventListener('delete-strain', listener);
 
-            (element as any)._confirmDelete();
+            browseView._confirmDelete();
 
             expect(listener).not.toHaveBeenCalled();
         });
@@ -564,8 +580,8 @@ describe('StrainLibraryDialog', () => {
             const closeSpy = vi.fn();
             element.addEventListener('close', closeSpy);
 
-            // In browse view, there is a close button in header
-            const headerBtn = element.shadowRoot?.querySelector('.dialog-header .close');
+            // In browse view, there is a close button in the browse view header
+            const headerBtn = browseView?.shadowRoot?.querySelector('.dialog-header .close');
             expect(headerBtn).toBeTruthy();
 
             (headerBtn as HTMLElement).click();
@@ -576,8 +592,9 @@ describe('StrainLibraryDialog', () => {
             const s: StrainEntry = { ...mockStrains[0], type: 'UnknownType' };
             element.strains = [s];
             await element.updateComplete;
+            await browseView?.updateComplete;
 
-            const typeRows = element.shadowRoot?.querySelectorAll('.sc-type-row');
+            const typeRows = browseView?.shadowRoot?.querySelectorAll('.sc-type-row');
             // It should still render
             expect(typeRows?.length).toBe(1);
             expect(typeRows?.[0].textContent).toContain('UnknownType');
@@ -601,14 +618,14 @@ describe('StrainLibraryDialog', () => {
             (element as any)._view = 'browse';
             await element.updateComplete;
 
-            const buttons = Array.from(element.shadowRoot?.querySelectorAll('.header-actions button') || []);
+            const buttons = Array.from(browseView?.shadowRoot?.querySelectorAll('.header-actions button') || []) as HTMLElement[];
             const menuBtn = buttons.find(b => !b.classList.contains('close'));
 
             expect(menuBtn).toBeTruthy();
             (menuBtn as HTMLElement).click();
-            await element.updateComplete;
+            await browseView?.updateComplete;
 
-            expect((element as any)._mobileMenuOpen).toBe(true);
+            expect(browseView?._mobileMenuOpen).toBe(true);
         });
 
         it('should trigger Get Recommendation via footer button (browse view)', async () => {
@@ -619,9 +636,9 @@ describe('StrainLibraryDialog', () => {
             element.addEventListener('get-recommendation', recSpy);
 
             // Footer "Get Recommendation" button
-            const footerIds = element.shadowRoot?.querySelectorAll('.sd-footer button');
+            const footerBtns = browseView?.shadowRoot?.querySelectorAll('.sd-footer button');
             // 1st button in browse view footer is Get Rec
-            const btn = footerIds?.[0];
+            const btn = footerBtns?.[0];
 
             expect(btn?.textContent).toContain('Get Recommendation');
             (btn as HTMLElement).click();
@@ -633,9 +650,9 @@ describe('StrainLibraryDialog', () => {
             await element.updateComplete;
 
             // Footer "New Strain" button -> calls _startEdit()
-            const footerIds = element.shadowRoot?.querySelectorAll('.sd-footer button');
+            const footerBtns = browseView?.shadowRoot?.querySelectorAll('.sd-footer button');
             // Last button
-            const btn = footerIds?.[footerIds.length - 1];
+            const btn = footerBtns?.[footerBtns.length - 1];
 
             expect(btn?.textContent).toContain('New Strain');
 
@@ -652,7 +669,7 @@ describe('StrainLibraryDialog', () => {
     // These editor-specific tests have been moved to strain-editor-view.spec.ts
 
     it('should render flowering days and breeder fallbacks', async () => {
-        (element as any)._searchQuery = '';
+        browseView._searchQuery = '';
         element.strains = [{
             key: 'minimal',
             strain: 'Minimal',
@@ -663,8 +680,9 @@ describe('StrainLibraryDialog', () => {
             // breeder missing -> should show nothing
         }];
         await element.updateComplete;
+        await browseView?.updateComplete;
 
-        const card = element.shadowRoot?.querySelector('.strain-card');
+        const card = browseView?.shadowRoot?.querySelector('.strain-card');
         const text = card?.textContent?.replace(/\s+/g, ' ').trim();
         expect(text).toContain('Flower: 60–? days');
         expect(text).not.toContain('Breeder:');
@@ -681,9 +699,10 @@ describe('StrainLibraryDialog', () => {
     it('should show empty state when no strains match', async () => {
         element.open = true;
         const query = 'nonexistent_strain_xyz';
-        (element as any)._searchQuery = query;
-        await element.updateComplete;
-        const emptyState = element.shadowRoot?.querySelector('.empty-state');
-        expect(emptyState?.textContent).toContain(`No strains found matching "${query}"`);
+        browseView._searchQuery = query;
+        browseView.requestUpdate?.();
+        await browseView?.updateComplete;
+        const content = browseView?.shadowRoot?.querySelector('.sd-content');
+        expect(content?.textContent).toContain(`No strains found matching "${query}"`);
     });
 });

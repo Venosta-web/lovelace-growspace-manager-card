@@ -1,38 +1,23 @@
 import { LitElement, html, css, PropertyValues, TemplateResult, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
-  mdiPlus,
   mdiClose,
-  mdiMagnify,
-  mdiDelete,
-  mdiCheck,
-  mdiWeatherNight,
-  mdiWeatherSunny,
-  mdiTuneVariant,
-  mdiLeaf,
-  mdiArrowLeft,
   mdiCloudUpload,
-  mdiPencil,
-  mdiDownload,
-  mdiBrain,
-  mdiImage,
-  mdiChevronLeft,
-  mdiChevronRight,
-  mdiDotsVertical,
-  mdiAccountGroup,
   mdiFileUpload,
   mdiArrowExpand,
   mdiArrowCollapse,
 } from '@mdi/js';
+import './gs-breeder-manager';
+import './gs-filter-chips';
+import './strain-browse-view';
 import './strain-import-dialog';
 import './seeds-genetics-tab';
 import './strain-editor-view';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceDevice, StrainEntry, SeedBatch, PollinationEvent } from '../types';
 import type { GrowspaceStore } from '../store/core/growspace-store';
-import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../features/shared/ui/md3-text-input';
+import { buildStrainTreeNodes } from '../utils/strain-tree-utils';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/gs-help-tooltip';
 import '../features/shared/ui/lineage-tree';
@@ -52,8 +37,6 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Object }) returnPayload?: unknown;
 
   @state() private _view: 'browse' | 'editor' = 'browse';
-  @state() private _searchQuery = '';
-  @state() private _pendingDeleteKey: string | null = null;
 
   // Seeds & Genetics tab state
   @property({ type: Array }) seedBatches: SeedBatch[] = [];
@@ -105,17 +88,9 @@ export class StrainLibraryDialog extends LitElement {
   @state() private _treeNodes: TreeNode[] = [];
   @state() private _treeMaximized = false;
 
-  // Pagination State
-  @state() private _currentPage = 1;
-  private readonly ITEMS_PER_PAGE = 15;
-
-  // Browse-view overlay state
-  @state() private _mobileMenuOpen = false;
   @state() private _importDialogOpen = false;
   @state() private _importReplace = false;
   @state() private _breederDialogOpen = false;
-  @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
-  @state() private _pendingDeleteBreeder: string | null = null;
 
   // Editor navigation state
   @state() private _editingStrain: StrainEntry | undefined = undefined;
@@ -128,7 +103,7 @@ export class StrainLibraryDialog extends LitElement {
     }
     if (changedProps.has('strains') || changedProps.has('seedBatches') || changedProps.has('_libraryFilter')) {
       const filteredStrains = this._applyLibraryFilter(this.strains);
-      this._treeNodes = this._buildTreeNodes(filteredStrains);
+      this._treeNodes = buildStrainTreeNodes(this.strains, this.seedBatches, filteredStrains);
     }
   }
 
@@ -1113,46 +1088,6 @@ export class StrainLibraryDialog extends LitElement {
     `,
   ];
 
-  private _handleDelete(key: string) {
-    this._pendingDeleteKey = key;
-  }
-
-  private _confirmDelete() {
-    if (this._pendingDeleteKey) {
-      this.dispatchEvent(
-        new CustomEvent('delete-strain', { detail: { key: this._pendingDeleteKey } })
-      );
-      this._pendingDeleteKey = null;
-    }
-  }
-
-  private _cancelDelete() {
-    this._pendingDeleteKey = null;
-  }
-
-  private _getUniqueBreeders(): Array<{ name: string; logo: string; strainCount: number }> {
-    const breederMap = new Map<string, { logo: string; strainCount: number }>();
-    this.strains.forEach((s) => {
-      if (s.breeder && s.breeder.trim()) {
-        const existing = breederMap.get(s.breeder);
-        if (existing) {
-          existing.strainCount++;
-          if (!existing.logo && s.breeder_logo) {
-            existing.logo = s.breeder_logo;
-          }
-        } else {
-          breederMap.set(s.breeder, {
-            logo: s.breeder_logo || '',
-            strainCount: 1,
-          });
-        }
-      }
-    });
-    return [...breederMap.entries()]
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }
-
   render() {
     if (!this.open) return nothing;
 
@@ -1188,7 +1123,23 @@ export class StrainLibraryDialog extends LitElement {
                     @close=${() => this.dispatchEvent(new CustomEvent('close'))}
                   ></seeds-genetics-tab>
                 `
-          : (this._view === 'browse' ? this.renderBrowseView() : html`
+          : (this._view === 'browse' ? html`
+              <strain-browse-view
+                .hass=${this.hass}
+                .strains=${this.strains}
+                .activePlantCounts=${this.activePlantCounts}
+                .libraryFilter=${this._libraryFilter}
+                @strain-selected=${(e: CustomEvent) => { this._editingStrain = e.detail.strain; this._view = 'editor'; }}
+                @new-strain=${() => { this._editingStrain = undefined; this._view = 'editor'; }}
+                @filter-changed=${(e: CustomEvent) => { this._libraryFilter = e.detail.filter; }}
+                @manage-breeders-requested=${() => { this._breederDialogOpen = true; }}
+                @import-requested=${() => { this._importDialogOpen = true; }}
+                @get-recommendation=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}
+                @export-library=${() => this.dispatchEvent(new CustomEvent('export-library'))}
+                @strain-delete-confirmed=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }))}
+                @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+              ></strain-browse-view>
+            ` : html`
               <strain-editor-view
                 .editingStrain=${this._editingStrain}
                 .strains=${this.strains}
@@ -1233,335 +1184,15 @@ export class StrainLibraryDialog extends LitElement {
         </div>
       </ha-dialog>
 
-      ${this._pendingDeleteKey ? this.renderDeleteConfirmation() : nothing}
       ${this._importDialogOpen ? this.renderImportDialog() : nothing}
-      ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
-      ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : nothing}
-    `;
-  }
-
-  private renderBrowseView(): TemplateResult {
-    const query = (this._searchQuery || '').toLowerCase();
-    const terms = query.split(/\s+/).filter((t) => t.length > 0);
-    const filteredStrains = this._applyLibraryFilter(this.strains)
-      .filter((s) => {
-        if (terms.length === 0) return true;
-        const searchText = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
-        return terms.every((term) => searchText.includes(term));
-      })
-      .sort((a, b) => a.strain.localeCompare(b.strain));
-
-    // Pagination Logic
-    const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-
-    if (this._currentPage > totalPages && totalPages > 0) {
-      this._currentPage = totalPages;
-    }
-    if (this._currentPage < 1) this._currentPage = 1;
-
-    const startIndex = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-    const paginatedStrains = filteredStrains.slice(startIndex, startIndex + this.ITEMS_PER_PAGE);
-
-    return html`
-      <div class="dialog-header">
-        <div class="dialog-icon">
-          <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiLeaf}"></path>
-          </svg>
-        </div>
-        <div class="dialog-title-group">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h2 class="dialog-title">Strain Library</h2>
-            <gs-help-tooltip
-              content="Browse and manage your strain database. Assign genetics to plants for tracking lineage and expected traits."
-              placement="bottom"
-              label="Strain Library"
-            ></gs-help-tooltip>
-          </div>
-        </div>
-
-        <div class="header-actions" style="display:flex; gap:8px;">
-          <button
-            class="md3-button text"
-            @click=${() => (this._mobileMenuOpen = !this._mobileMenuOpen)}
-            style="min-width:auto; padding:8px; margin-left: auto;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiDotsVertical}"></path>
-            </svg>
-          </button>
-          <style>
-            @media (max-width: 600px) {
-              button[style*='mdiDotsVertical'] {
-                display: flex !important;
-              }
-            }
-          </style>
-
-          <button
-            class="md3-button text close"
-            @click=${() => this.dispatchEvent(new CustomEvent('close'))}
-            style="min-width:auto; padding:8px; margin-left: auto;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="sd-content">
-        ${this._renderFilterChips()}
-        <div class="search-bar-container">
-          <div class="search-input-wrapper">
-            <md3-text-input
-              placeholder="Search Strains by Name, Breeder..."
-              .value=${this._searchQuery}
-              @change=${(e: CustomEvent) => {
-        this._searchQuery = e.detail;
-        this._currentPage = 1;
-      }}
-            ></md3-text-input>
-          </div>
-        </div>
-
-        <div class="sd-grid">
-          ${paginatedStrains.map((strain) => this.renderStrainCard(strain))}
-        </div>
-
-        ${filteredStrains.length === 0
-        ? html`
-              <div
-                class="empty-state"
-                style="text-align:center; padding: 40px; color: var(--secondary-text-color);"
-              >
-                <svg
-                  style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="${mdiMagnify}"></path>
-                </svg>
-                <p>No strains found matching "${query}"</p>
-              </div>
-            `
-        : nothing}
-        ${totalPages > 1
-        ? html`
-              <div class="pagination-container">
-                <button
-                  class="pagination-btn"
-                  ?disabled=${this._currentPage === 1}
-                  @click=${() => this._currentPage--}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiChevronLeft}"></path>
-                  </svg>
-                </button>
-                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
-                <button
-                  class="pagination-btn"
-                  ?disabled=${this._currentPage === totalPages}
-                  @click=${() => this._currentPage++}
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiChevronRight}"></path>
-                  </svg>
-                </button>
-              </div>
-            `
-        : nothing}
-      </div>
-
-      <!-- Mobile Menu Dropdown -->
-      ${this._mobileMenuOpen
-        ? html`
-            <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
-            <div class="mobile-menu">
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-            this._editingStrain = undefined;
-            this._view = 'editor';
-            this._mobileMenuOpen = false;
-          }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg> New Strain
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-            this.dispatchEvent(new CustomEvent('get-recommendation'));
-            this._mobileMenuOpen = false;
-          }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-            this._importDialogOpen = true;
-            this._mobileMenuOpen = false;
-          }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-            this.dispatchEvent(new CustomEvent('export-library'));
-            this._mobileMenuOpen = false;
-          }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
-              </div>
-              <div
-                class="mobile-menu-item"
-                @click=${() => {
-            this._breederDialogOpen = true;
-            this._mobileMenuOpen = false;
-          }}
-              >
-                <svg viewBox="0 0 24 24"><path d="${mdiAccountGroup}"></path></svg> Manage Breeders
-              </div>
-            </div>
-          `
-        : nothing}
-
-      <!-- Mobile FAB -->
-      <button class="fab-btn" @click=${() => { this._editingStrain = undefined; this._view = 'editor'; }}>
-        <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
-          <path d="${mdiPlus}"></path>
-        </svg>
-      </button>
-
-      <div class="sd-footer">
-        <button
-          class="md3-button tonal"
-          @click=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}
-        >
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiBrain}"></path>
-          </svg>
-          Get Recommendation
-        </button>
-        <button class="md3-button tonal" @click=${() => (this._breederDialogOpen = true)}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiAccountGroup}"></path>
-          </svg>
-          Manage Breeders
-        </button>
-        <button class="md3-button tonal" @click=${() => (this._importDialogOpen = true)}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiCloudUpload}"></path>
-          </svg>
-          Import Strains
-        </button>
-        <button
-          class="md3-button tonal"
-          @click=${() => this.dispatchEvent(new CustomEvent('export-library'))}
-        >
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiDownload}"></path>
-          </svg>
-          Export Strains
-        </button>
-        <button class="md3-button primary" @click=${() => { this._editingStrain = undefined; this._view = 'editor'; }}>
-          <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiPlus}"></path>
-          </svg>
-          New Strain
-        </button>
-      </div>
-    `;
-  }
-
-  private renderStrainCard(strain: StrainEntry): TemplateResult {
-    let typeIcon = mdiLeaf;
-    const typeLabel = strain.type || 'Unknown';
-    const lowerType = (strain.type || '').toLowerCase();
-
-    if (lowerType.includes('indica')) typeIcon = mdiWeatherNight;
-    else if (lowerType.includes('sativa')) typeIcon = mdiWeatherSunny;
-    else if (lowerType.includes('hybrid')) typeIcon = mdiTuneVariant;
-
-    const activePlants = this.activePlantCounts[strain.strain] ?? 0;
-    const analytics = strain.strain_analytics || strain.analytics;
-    const totalHarvests = analytics?.total_harvests ?? 0;
-    const avgFlowerDays = analytics?.avg_flower_days;
-
-    return html`
-      <div class="strain-card" @click=${() => { this._editingStrain = strain; this._view = 'editor'; }}>
-        <div class="sc-thumb">
-          ${strain.image
-        ? html`<img
-                src="${PlantUtils.encodeLocalPath(strain.image)}"
-                loading="lazy"
-                alt="${strain.strain}"
-                style="${strain.image_crop_meta
-            ? `width: 100%; height: 100%; object-fit: cover; object-position: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%; transform: scale(${strain.image_crop_meta.scale}); transform-origin: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%;`
-            : 'width: 100%; height: 100%; object-fit: cover;'}"
-              />`
-        : html`<svg
-                style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiLeaf}"></path>
-              </svg>`}
-          ${activePlants > 0 ? html`
-            <div style="
-              position: absolute; top: 8px; right: 8px;
-              background: rgba(76,175,80,0.85); color: #fff;
-              border-radius: 999px; padding: 2px 8px;
-              font-size: 0.65rem; font-weight: 600;
-              backdrop-filter: blur(4px);
-            ">${activePlants} active</div>
-          ` : nothing}
-          <div class="sc-actions">
-            <button
-              class="sc-action-btn"
-              @click=${(e: Event) => {
-        e.stopPropagation();
-        this._handleDelete(strain.key);
-      }}
-            >
-              <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiDelete}"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div class="sc-content">
-          <h3 class="sc-title">
-            ${strain.strain} ${strain.phenotype ? `(${strain.phenotype})` : ''}
-          </h3>
-          <div class="sc-type-row">
-            <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${typeIcon}"></path>
-            </svg>
-            <span>${typeLabel}</span>
-          </div>
-          <div class="sc-meta">
-            ${strain.flowering_days_min
-        ? html`<span>Flower: ${strain.flowering_days_min}–${strain.flowering_days_max || '?'} days</span>`
-        : nothing}
-            ${avgFlowerDays ? html`<span>Avg: ${Math.round(avgFlowerDays)}d</span>` : nothing}
-            ${strain.breeder
-        ? html`
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    ${strain.breeder_logo
-            ? html`<img
-                          src="${strain.breeder_logo}"
-                          style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;"
-                        />`
-            : nothing}
-                    <span>${strain.breeder}</span>
-                  </div>
-                `
-        : nothing}
-            ${totalHarvests > 0 ? html`<span style="color: var(--secondary-text-color);">${totalHarvests} harvest${totalHarvests !== 1 ? 's' : ''}</span>` : nothing}
-          </div>
-        </div>
-      </div>
+      <gs-breeder-manager
+        .strains=${this.strains}
+        .open=${this._breederDialogOpen}
+        @save-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }))}
+        @update-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }))}
+        @delete-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }))}
+        @closed=${() => { this._breederDialogOpen = false; }}
+      ></gs-breeder-manager>
     `;
   }
 
@@ -1670,287 +1301,6 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
-  private renderDeleteConfirmation(): TemplateResult {
-    return html`
-      <div class="crop-overlay">
-        <div
-          class="glass-dialog-container"
-          style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;"
-        >
-          <h2 class="dialog-title">Delete Strain?</h2>
-          <p
-            style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;"
-          >
-            Are you sure you want to delete this strain? This action cannot be undone.
-          </p>
-          <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-            <button class="md3-button tonal" @click=${this._cancelDelete}>Cancel</button>
-            <button class="md3-button text" style="color: #f44336;" @click=${this._confirmDelete}>
-              <svg
-                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
-                viewBox="0 0 24 24"
-              >
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Delete
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  private renderBreederDialog(): TemplateResult {
-    const breeders = this._getUniqueBreeders();
-    const close = () => { this._breederDialogOpen = false; this._breederEditorState = null; };
-
-    return html`
-      <ha-dialog
-        open
-        @closed=${close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-      >
-        <div class="glass-dialog-container" style="width: 600px; max-width: 98vw; height: auto; max-height: 90vh;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiAccountGroup}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <h2 class="dialog-title">Breeder Manager</h2>
-                  <gs-help-tooltip
-                    content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
-                    placement="bottom"
-                    label="Breeders"
-                  ></gs-help-tooltip>
-                </div>
-            </div>
-            <button
-              class="md3-button text close"
-              @click=${close}
-              style="min-width:auto; padding:8px; margin-left: auto;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="sd-content">
-            ${this._breederEditorState
-        ? this.renderBreederEditor()
-        : this.renderBreederList(breeders)}
-          </div>
-
-          ${!this._breederEditorState ? html`
-            <div class="sd-footer">
-              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
-                Breeders appear automatically when strains with breeder info are saved.
-              </span>
-            </div>
-          ` : nothing}
-        </div>
-      </ha-dialog>
-    `;
-  }
-
-  private renderBreederList(breeders: Array<{ name: string; logo: string; strainCount: number }>): TemplateResult {
-    if (breeders.length === 0) {
-      return html`
-        <div style="text-align:center; padding:40px; color:var(--secondary-text-color);">
-          <svg style="width:48px;height:48px;fill:currentColor;opacity:0.5;" viewBox="0 0 24 24">
-            <path d="${mdiAccountGroup}"></path>
-          </svg>
-          <p>No breeders found. Add strains with breeder info or create a new breeder.</p>
-        </div>
-      `;
-    }
-
-    return html`
-      <div class="breeder-list">
-        ${breeders.map((b) => html`
-          <div class="breeder-card" @click=${() => this._startBreederEdit(b.name, b.logo)}>
-            ${b.logo
-        ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
-        : html`<div class="breeder-logo-placeholder">
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiImage}"></path>
-                  </svg>
-                </div>`}
-            <div class="breeder-info">
-              <div class="breeder-name">${b.name}</div>
-              <div class="breeder-strain-count">${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}</div>
-            </div>
-            <div class="breeder-actions">
-              <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._startBreederEdit(b.name, b.logo); }}>
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiPencil}"></path>
-                </svg>
-              </button>
-              <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._handleDeleteBreeder(b.name); }} style="color:var(--error-color, #f44336);">
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiDelete}"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-        `)}
-      </div>
-    `;
-  }
-
-  private renderBreederEditor(): TemplateResult {
-    const state = this._breederEditorState!;
-    const isEdit = !!state.originalName;
-    const affectedStrains = isEdit
-      ? this.strains.filter((s) => s.breeder === state.originalName)
-      : [];
-
-    const handleLogoUpload = (e: Event) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        PlantUtils.compressImage(file)
-          .then((base64) => {
-            this._breederEditorState = { ...this._breederEditorState!, logo: base64 };
-          })
-          .catch((err) => console.error('Error compressing logo:', err));
-      }
-    };
-
-    return html`
-      <div style="display:flex; flex-direction:column; gap:20px;">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-          <button class="md3-button tonal" style="padding:0 12px; height:32px;" @click=${() => (this._breederEditorState = null)}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-              <path d="${mdiArrowLeft}"></path>
-            </svg>
-            Back
-          </button>
-          <h3 style="margin:0; color:var(--primary-text-color);">${isEdit ? 'Edit Breeder' : 'New Breeder'}</h3>
-        </div>
-
-        <div class="sd-form-group">
-          <label class="sd-label">Breeder Name *</label>
-          <input
-            type="text"
-            class="sd-input"
-            placeholder="e.g. Royal Queen Seeds"
-            .value=${state.name}
-            @input=${(e: InputEvent) => {
-        this._breederEditorState = { ...this._breederEditorState!, name: (e.target as HTMLInputElement).value };
-      }}
-          />
-        </div>
-
-        <div class="sd-form-group">
-          <label class="sd-label">Breeder Logo</label>
-          <div style="display:flex; align-items:center; gap:16px;">
-            ${state.logo
-        ? html`<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
-        : html`<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
-                </div>`}
-            <div style="display:flex; gap:8px;">
-              <button class="md3-button tonal" style="height:36px; padding:0 16px; font-size:0.85rem;" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
-                <svg style="width:16px;height:16px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
-                ${state.logo ? 'Change Logo' : 'Upload Logo'}
-              </button>
-              <input type="file" accept="image/*" style="display:none" @change=${handleLogoUpload} />
-              ${state.logo ? html`
-                <button class="md3-button text" style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);" @click=${() => { this._breederEditorState = { ...this._breederEditorState!, logo: '' }; }}>
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-                </button>
-              ` : nothing}
-            </div>
-          </div>
-        </div>
-
-        ${isEdit && affectedStrains.length > 0 ? html`
-          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;">
-            <label class="sd-label" style="margin-bottom:8px;">Strains using this breeder (${affectedStrains.length})</label>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              ${affectedStrains.map((s) => html`
-                <span style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;">
-                  ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
-                </span>
-              `)}
-            </div>
-          </div>
-        ` : nothing}
-
-        <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSaveBreeder()} ?disabled=${!state.name.trim()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
-            ${isEdit ? 'Save Changes' : 'Create Breeder'}
-          </button>
-        </div>
-      </div>
-    `;
-  }
-
-  private _startBreederEdit(name?: string, logo?: string) {
-    this._breederEditorState = {
-      name: name || '',
-      logo: logo || '',
-      originalName: name || '',
-    };
-  }
-
-  private _handleSaveBreeder() {
-    const state = this._breederEditorState;
-    if (!state || !state.name.trim()) return;
-
-    const newName = state.name.trim();
-    const isEdit = !!state.originalName;
-
-    if (isEdit) {
-      // Dispatch update-breeder event
-      this.dispatchEvent(
-        new CustomEvent('update-breeder', {
-          detail: {
-            oldName: state.originalName,
-            newName: newName,
-            logo: state.logo,
-          },
-        })
-      );
-    } else {
-      // Dispatch save-breeder event for new breeder
-      this.dispatchEvent(
-        new CustomEvent('save-breeder', {
-          detail: { name: newName, logo: state.logo },
-        })
-      );
-    }
-
-    this._breederEditorState = null;
-  }
-
-  private _handleDeleteBreeder(breederName: string) {
-    this._pendingDeleteBreeder = breederName;
-  }
-
-  private _confirmDeleteBreeder() {
-    if (this._pendingDeleteBreeder) {
-      this.dispatchEvent(
-        new CustomEvent('delete-breeder', {
-          detail: { name: this._pendingDeleteBreeder },
-        })
-      );
-      this._pendingDeleteBreeder = null;
-    }
-  }
-
-  private _cancelDeleteBreeder() {
-    this._pendingDeleteBreeder = null;
-  }
-
-  // ── Seeds & Genetics tab ──────────────────────────────────────────────────
 
   private _renderTabBar(): TemplateResult {
     return html`
@@ -1994,192 +1344,14 @@ export class StrainLibraryDialog extends LitElement {
     return strains;
   }
 
-  private _renderFilterChips(): TemplateResult {
-    const opts: Array<{ key: 'library' | 'active' | 'all'; label: string }> = [
-      { key: 'library', label: 'Library' },
-      { key: 'active', label: 'Active' },
-      { key: 'all', label: 'All' },
-    ];
-    return html`
-      <div class="library-filter-chips">
-        ${opts.map(
-      (o) => html`
-            <button
-              class="filter-chip ${this._libraryFilter === o.key ? 'active' : ''}"
-              @click=${() => {
-          this._libraryFilter = o.key;
-          this._currentPage = 1;
-        }}
-            >
-              ${o.label}
-            </button>
-          `
-    )}
-      </div>
-    `;
-  }
-
-  private _buildTreeNodes(primaryStrains: StrainEntry[] = this.strains): TreeNode[] {
-    const nodes: TreeNode[] = [];
-    const nodeIds = new Set<string>();
-    const strainNameToKey = new Map<string, string>();
-
-    // Build name→key lookup from ALL strains so parent references always resolve,
-    // even when the primary set is filtered to a subset.
-    this.strains.forEach((s) => {
-      const strainLc = s.strain.toLowerCase();
-      strainNameToKey.set(strainLc, s.key);
-      if (s.phenotype) {
-        strainNameToKey.set(`${strainLc} ${s.phenotype.toLowerCase()}`, s.key);
-        strainNameToKey.set(`${strainLc}${s.phenotype.toLowerCase()}`.replace(/\s+/g, ''), s.key);
-      }
-    });
-
-    // Helper to resolve a strain name to its key, or return the name if not found
-    const resolve = (name: string | undefined | null): string | null => {
-      if (!name) return null;
-      const clean = name.replace(/^["'\[\(]|["'\]\)]$/g, '').trim();
-      const lower = clean.toLowerCase();
-      return strainNameToKey.get(lower) || clean;
-    };
-
-    // Collect parent IDs referenced but with no library node, for stub creation
-    const referencedParents = new Map<string, string>(); // id -> display name
-
-    // 1. Add filtered primary strains. Referenced ancestors from the full library
-    //    are added in steps below so lineage edges always resolve.
-    primaryStrains.forEach((strain) => {
-      let mother: string | null = null;
-      let father: string | null = null;
-
-      // Prefer structured parents (lineage_tree) over text parsing
-      const structuredParents = Array.isArray(strain.parents) ? strain.parents as Array<{ name: string }> : null;
-      if (structuredParents && structuredParents.length > 0) {
-        mother = resolve(structuredParents[0]?.name);
-        father = resolve(structuredParents[1]?.name) ?? null;
-      } else {
-        // Fall back to parsing legacy lineage text
-        const lineage = strain.lineage?.trim();
-        if (lineage) {
-          const parts = lineage.split(/\s*[xX×*]\s*/);
-          if (parts.length >= 2) {
-            mother = resolve(parts[0]);
-            father = resolve(parts[1]);
-          }
-        }
-      }
-
-      if (mother) referencedParents.set(mother, structuredParents?.[0]?.name ?? mother);
-      if (father) referencedParents.set(father, structuredParents?.[1]?.name ?? father);
-
-      nodes.push({
-        id: strain.key,
-        name: strain.strain,
-        strain: strain.strain,
-        breeder: strain.breeder || '',
-        pheno: strain.phenotype || '',
-        gen: 'P1',
-        type: 'strain',
-        parents: { mother, father },
-      });
-      nodeIds.add(strain.key);
-    });
-
-    // 2. Add seed batches
-    this.seedBatches.forEach((batch) => {
-      const mother = resolve(batch.parent_1_strain);
-      const father = resolve(batch.parent_2_strain);
-      if (mother) referencedParents.set(mother, batch.parent_1_strain ?? mother);
-      if (father) referencedParents.set(father, batch.parent_2_strain ?? father);
-      nodes.push({
-        id: batch.batch_id,
-        name: `${batch.strain_name} (${batch.batch_id})`,
-        strain: batch.strain_name,
-        breeder: batch.breeder || '',
-        pheno: '',
-        gen: batch.generation || 'F1',
-        type: 'batch',
-        parents: { mother, father },
-      });
-      nodeIds.add(batch.batch_id);
-    });
-
-    // 3. Add ancestor nodes for all referenced parents not yet in the node set.
-    //    First pull from the full library (they may be stubs or filtered-out strains);
-    //    fall back to a bare stub if genuinely unknown.
-    const allStrainsByKey = new Map(this.strains.map((s) => [s.key, s]));
-    const allStrainsByName = new Map(this.strains.map((s) => [s.strain.toLowerCase(), s]));
-
-    const addAncestorById = (id: string, displayName: string) => {
-      if (nodeIds.has(id)) return;
-      nodeIds.add(id);
-
-      // Find the full library entry (may be a stub or a filtered-out real strain)
-      const entry = allStrainsByKey.get(id) ?? allStrainsByName.get(id.toLowerCase());
-      if (entry) {
-        let mother: string | null = null;
-        let father: string | null = null;
-        const sp = Array.isArray(entry.parents) ? entry.parents as Array<{ name: string }> : null;
-        if (sp && sp.length > 0) {
-          mother = resolve(sp[0]?.name);
-          father = resolve(sp[1]?.name) ?? null;
-        } else if (entry.lineage) {
-          const parts = entry.lineage.trim().split(/\s*[xX×*]\s*/);
-          if (parts.length >= 2) {
-            mother = resolve(parts[0]);
-            father = resolve(parts[1]);
-          }
-        }
-        if (mother) referencedParents.set(mother, sp?.[0]?.name ?? mother);
-        if (father) referencedParents.set(father, sp?.[1]?.name ?? father);
-        nodes.push({
-          id: entry.key,
-          name: entry.strain,
-          strain: entry.strain,
-          breeder: entry.breeder || '',
-          pheno: entry.phenotype || '',
-          gen: 'P1',
-          type: 'strain',
-          parents: { mother, father },
-        });
-      } else {
-        nodes.push({
-          id,
-          name: displayName,
-          strain: displayName,
-          breeder: '',
-          pheno: '',
-          gen: 'P1',
-          type: 'strain',
-          parents: { mother: null, father: null },
-        });
-      }
-    };
-
-    // Iteratively resolve all referenced parents (ancestors may themselves have parents)
-    const pendingParents = new Map(referencedParents);
-    while (pendingParents.size > 0) {
-      const [[id, displayName]] = pendingParents;
-      pendingParents.delete(id);
-      const sizeBefore = referencedParents.size;
-      addAncestorById(id, displayName);
-      // Pick up any new parents added by addAncestorById
-      for (const [newId, newName] of referencedParents) {
-        if (!nodeIds.has(newId) && !pendingParents.has(newId)) {
-          pendingParents.set(newId, newName);
-        }
-      }
-      void sizeBefore;
-    }
-
-    return nodes;
-  }
-
   private _renderTreeViewTab(): TemplateResult {
     return html`
       <div class="tab-content-tree">
         <div style="padding: 8px 16px 0;">
-          ${this._renderFilterChips()}
+          <gs-filter-chips
+            .filter=${this._libraryFilter}
+            @filter-changed=${(e: CustomEvent) => { this._libraryFilter = e.detail.filter; }}
+          ></gs-filter-chips>
         </div>
         <genetics-tree-view
           .nodes=${this._treeNodes}
@@ -2195,38 +1367,6 @@ export class StrainLibraryDialog extends LitElement {
           }}
         ></genetics-tree-view>
       </div>
-    `;
-  }
-
-
-  private renderBreederDeleteConfirmation(): TemplateResult {
-    const breederName = this._pendingDeleteBreeder!;
-    const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
-
-    return html`
-      <ha-dialog
-        open
-        @closed=${this._cancelDeleteBreeder}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-      >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
-          <h2 class="dialog-title">Remove Breeder?</h2>
-          <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
-            This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
-          </p>
-          <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-            <button class="md3-button tonal" @click=${this._cancelDeleteBreeder}>Cancel</button>
-            <button class="md3-button text" style="color:#f44336;" @click=${this._confirmDeleteBreeder}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
-                <path d="${mdiDelete}"></path>
-              </svg>
-              Remove
-            </button>
-          </div>
-        </div>
-      </ha-dialog>
     `;
   }
 

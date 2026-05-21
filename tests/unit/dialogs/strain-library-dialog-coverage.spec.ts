@@ -161,7 +161,8 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     // auto-fill breeder logo and no-logo tests are now in strain-editor-view.spec.ts
 
     it('correctly aggregates breeders in _getUniqueBreeders', () => {
-      const breeders = (element as any)._getUniqueBreeders();
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      const breeders = gsBreederManager?._getUniqueBreeders();
       // Sorted alphabetically: Dinafem, HSO
       expect(breeders.length).toBe(2);
       expect(breeders[0].name).toBe('Dinafem');
@@ -177,114 +178,131 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
     });
 
     it('renders breeder list in manager', () => {
-      const cards = element.shadowRoot?.querySelectorAll('.breeder-card');
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager');
+      const cards = gsBreederManager?.shadowRoot?.querySelectorAll('.breeder-card');
       expect(cards?.length).toBe(2);
     });
 
     it('starts breeder edit on card click', async () => {
-      const cards = element.shadowRoot?.querySelectorAll('.breeder-card');
-      const hsoCard = Array.from(cards || []).find(c => c.textContent?.includes('HSO')) as HTMLElement;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      const cards = gsBreederManager?.shadowRoot?.querySelectorAll('.breeder-card');
+      const hsoCard = (Array.from(cards || []) as HTMLElement[]).find(c => c.textContent?.includes('HSO'))!;
       hsoCard.click();
-      await element.updateComplete;
+      await gsBreederManager?.updateComplete;
 
-      expect((element as any)._breederEditorState).toBeTruthy();
-      expect((element as any)._breederEditorState.name).toBe('HSO');
-      expect((element as any)._breederEditorState.originalName).toBe('HSO');
+      expect(gsBreederManager?._editorState).toBeTruthy();
+      expect(gsBreederManager?._editorState.name).toBe('HSO');
+      expect(gsBreederManager?._editorState.originalName).toBe('HSO');
     });
 
     it('saves new breeder', async () => {
-      (element as any)._breederEditorState = { name: 'New Breeder', logo: 'new-logo', originalName: '' };
-      await element.updateComplete;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._editorState = { name: 'New Breeder', logo: 'new-logo', originalName: '' };
+      gsBreederManager.requestUpdate?.();
+      await gsBreederManager?.updateComplete;
 
       const saveHandler = vi.fn();
       element.addEventListener('save-breeder', saveHandler);
 
-      (element as any)._handleSaveBreeder();
+      gsBreederManager?._handleSave();
+      await element.updateComplete;
 
       expect(saveHandler).toHaveBeenCalled();
       const detail = saveHandler.mock.calls[0][0].detail;
       expect(detail.name).toBe('New Breeder');
       expect(detail.logo).toBe('new-logo');
-      expect((element as any)._breederEditorState).toBeNull();
+      expect(gsBreederManager?._editorState).toBeNull();
     });
 
     it('updates existing breeder', async () => {
-      (element as any)._breederEditorState = { name: 'HSO Updated', logo: 'new-logo', originalName: 'HSO' };
-      await element.updateComplete;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._editorState = { name: 'HSO Updated', logo: 'new-logo', originalName: 'HSO' };
+      gsBreederManager.requestUpdate?.();
+      await gsBreederManager?.updateComplete;
 
       const updateHandler = vi.fn();
       element.addEventListener('update-breeder', updateHandler);
 
-      (element as any)._handleSaveBreeder();
+      gsBreederManager?._handleSave();
+      await element.updateComplete;
 
       expect(updateHandler).toHaveBeenCalled();
       const detail = updateHandler.mock.calls[0][0].detail;
       expect(detail.oldName).toBe('HSO');
       expect(detail.newName).toBe('HSO Updated');
-      expect((element as any)._breederEditorState).toBeNull();
+      expect(gsBreederManager?._editorState).toBeNull();
     });
 
     it('deletes a breeder', async () => {
-      (element as any)._handleDeleteBreeder('HSO');
-      expect((element as any)._pendingDeleteBreeder).toBe('HSO');
-      await element.updateComplete;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._pendingDelete = 'HSO';
+      gsBreederManager.requestUpdate?.();
+      await gsBreederManager?.updateComplete;
 
       const deleteHandler = vi.fn();
       element.addEventListener('delete-breeder', deleteHandler);
 
-      (element as any)._confirmDeleteBreeder();
+      gsBreederManager?._confirmDelete();
+      await element.updateComplete;
 
       expect(deleteHandler).toHaveBeenCalledWith(expect.objectContaining({
         detail: { name: 'HSO' }
       }));
-      expect((element as any)._pendingDeleteBreeder).toBeNull();
+      expect(gsBreederManager?._pendingDelete).toBeNull();
     });
 
     it('cancels breeder deletion', async () => {
-      (element as any)._handleDeleteBreeder('HSO');
-      (element as any)._cancelDeleteBreeder();
-      expect((element as any)._pendingDeleteBreeder).toBeNull();
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._pendingDelete = 'HSO';
+      gsBreederManager._pendingDelete = null;
+      expect(gsBreederManager?._pendingDelete).toBeNull();
     });
 
     it('toggles logo in breeder editor', async () => {
-      (element as any)._breederEditorState = { name: 'Test', logo: 'some-logo', originalName: '' };
-      await element.updateComplete;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._editorState = { name: 'Test', logo: 'some-logo', originalName: '' };
+      gsBreederManager.requestUpdate?.();
+      await gsBreederManager?.updateComplete;
 
-      const deleteLogoBtn = element.shadowRoot?.querySelector('button[style*="color:var(--error-color"]') as HTMLElement;
+      const deleteLogoBtn = gsBreederManager?.shadowRoot?.querySelector('button[style*="color:var(--error-color"]') as HTMLElement;
       deleteLogoBtn?.click();
-      await element.updateComplete;
+      await gsBreederManager?.updateComplete;
 
-      expect((element as any)._breederEditorState.logo).toBe('');
+      expect(gsBreederManager?._editorState.logo).toBe('');
     });
 
     it('closes breeder editor on clicking cancel button', async () => {
-      (element as any)._breederEditorState = { name: 'Test', logo: 'logo', originalName: '' };
-      await element.updateComplete;
-      
-      const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('.md3-button.tonal') || [])
-        .find(b => b.textContent?.trim() === 'Cancel') as HTMLElement;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._editorState = { name: 'Test', logo: 'logo', originalName: '' };
+      gsBreederManager.requestUpdate?.();
+      await gsBreederManager?.updateComplete;
+
+      const cancelBtn = (Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('.md3-button.tonal') || []) as HTMLElement[])
+        .find(b => b.textContent?.trim() === 'Cancel');
       cancelBtn?.click();
-      await element.updateComplete;
-      
-      expect((element as any)._breederEditorState).toBeNull();
+      await gsBreederManager?.updateComplete;
+
+      expect(gsBreederManager?._editorState).toBeNull();
     });
   });
 
   describe('UI Interactions', () => {
     it('toggles mobile menu', async () => {
-      const menuBtn = element.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
+      const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
+      const menuBtn = browseView?.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
       menuBtn?.click();
-      expect((element as any)._mobileMenuOpen).toBe(true);
+      expect(browseView?._mobileMenuOpen).toBe(true);
 
       menuBtn?.click();
-      expect((element as any)._mobileMenuOpen).toBe(false);
+      expect(browseView?._mobileMenuOpen).toBe(false);
     });
 
     it('renders dots menu in browse view', async () => {
       (element as any)._view = 'browse';
       await element.updateComplete;
 
-      const menuBtn = element.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
+      const browseView = element.shadowRoot?.querySelector('strain-browse-view');
+      const menuBtn = browseView?.shadowRoot?.querySelector('.header-actions button') as HTMLElement;
       expect(menuBtn).toBeTruthy();
       expect(menuBtn.innerHTML).toContain('svg');
     });
@@ -354,11 +372,13 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       (element as any)._activeMainTab = 'strains';
       await element.updateComplete;
 
-      const manageBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-        .find(b => b.textContent?.includes('Manage Breeders')) as HTMLElement | undefined;
+      const browseView = element.shadowRoot?.querySelector('strain-browse-view');
+      const manageBtn = (Array.from(browseView?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
+        .find(b => b.textContent?.includes('Manage Breeders'));
       expect(manageBtn).toBeTruthy();
 
       manageBtn?.click();
+      await element.updateComplete;
       expect((element as any)._breederDialogOpen).toBe(true);
     });
 
@@ -414,16 +434,19 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
 
     it('triggers click on breeder editor logo file input when change/upload button clicked', async () => {
       (element as any)._breederDialogOpen = true;
-      (element as any)._breederEditorState = { name: 'Test Breeder', logo: '', originalName: '' };
       await element.updateComplete;
 
-      const fileInput = element.shadowRoot?.querySelector('input[type="file"]') as HTMLInputElement;
+      const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+      gsBreederManager._startEdit('Test Breeder', '');
+      await gsBreederManager?.updateComplete;
+
+      const fileInput = gsBreederManager?.shadowRoot?.querySelector('input[type="file"]') as HTMLInputElement;
       expect(fileInput).toBeTruthy();
 
       const clickSpy = vi.spyOn(fileInput, 'click');
 
-      const uploadBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-        .find(b => b.textContent?.includes('Upload Logo')) as HTMLElement | undefined;
+      const uploadBtn = (Array.from(gsBreederManager?.shadowRoot?.querySelectorAll('button') || []) as HTMLElement[])
+        .find(b => b.textContent?.includes('Upload Logo'));
       expect(uploadBtn).toBeTruthy();
 
       uploadBtn?.click();

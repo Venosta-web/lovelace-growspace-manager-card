@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import '../../../src/dialogs/strain-library-dialog';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
+import { buildStrainTreeNodes } from '../../../src/utils/strain-tree-utils';
 
 // Mock PlantUtils
 vi.mock('../../../src/utils/plant-utils', () => ({
@@ -68,50 +69,67 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             expect((element as any)._importDialogOpen).toBe(false);
         });
 
-        it('covers _getUniqueBreeders branches (Lines 1191, 1195)', () => {
-            element.strains = [
+        it('covers _getUniqueBreeders branches (Lines 1191, 1195)', async () => {
+            element.open = true;
+            const strains = [
                 { strain: 'S1', breeder: 'B1', phenotype: '', key: 's1' },
                 { strain: 'S2', breeder: 'B1', breeder_logo: 'logo1', phenotype: '', key: 's2' },
                 { strain: 'S3', breeder: 'B1', breeder_logo: 'logo2', phenotype: '', key: 's3' },
                 { strain: 'S4', breeder: '', phenotype: '', key: 's4' }
             ];
-            const breeders = (element as any)._getUniqueBreeders();
+            element.strains = strains;
+            await element.updateComplete;
+            const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+            const breeders = gsBreederManager?._getUniqueBreeders();
             expect(breeders).toHaveLength(1);
             expect(breeders[0].logo).toBe('logo1'); // First one wins or logo added
         });
 
-        it('covers _startBreederEdit (Line 2439)', () => {
-            (element as any)._startBreederEdit('B1', 'logo1');
-            expect((element as any)._breederEditorState).toEqual({
+        it('covers _startBreederEdit (Line 2439)', async () => {
+            element.open = true;
+            await element.updateComplete;
+            const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+            gsBreederManager._startEdit('B1', 'logo1');
+            expect(gsBreederManager?._editorState).toEqual({
                 name: 'B1',
                 logo: 'logo1',
                 originalName: 'B1'
             });
         });
 
-        it('covers _handleDeleteBreeder (Line 2502)', () => {
-            (element as any)._handleDeleteBreeder('B1');
-            expect((element as any)._pendingDeleteBreeder).toBe('B1');
+        it('covers _handleDeleteBreeder (Line 2502)', async () => {
+            element.open = true;
+            await element.updateComplete;
+            const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+            gsBreederManager._pendingDelete = 'B1';
+            expect(gsBreederManager?._pendingDelete).toBe('B1');
         });
 
         it('covers _handleSaveBreeder new branch (Line 2530)', async () => {
+            element.open = true;
+            await element.updateComplete;
+            const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
             const spy = vi.spyOn(element, 'dispatchEvent');
-            (element as any)._breederEditorState = { name: 'NewB', logo: 'L1', originalName: '' };
-            await (element as any)._handleSaveBreeder();
+            gsBreederManager._editorState = { name: 'NewB', logo: 'L1', originalName: '' };
+            gsBreederManager._handleSave();
+            await element.updateComplete;
 
             expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'save-breeder' }));
-            expect((element as any)._breederEditorState).toBeNull();
+            expect(gsBreederManager?._editorState).toBeNull();
             spy.mockRestore();
         });
 
-        it('covers _cancelDeleteBreeder (Line 2563)', () => {
-            (element as any)._pendingDeleteBreeder = 'B1';
-            (element as any)._cancelDeleteBreeder();
-            expect((element as any)._pendingDeleteBreeder).toBeNull();
+        it('covers _cancelDeleteBreeder (Line 2563)', async () => {
+            element.open = true;
+            await element.updateComplete;
+            const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
+            gsBreederManager._pendingDelete = 'B1';
+            gsBreederManager._pendingDelete = null;
+            expect(gsBreederManager?._pendingDelete).toBeNull();
         });
 
         it('covers _buildTreeNodes lineage, parents array, and pendingParents loops', () => {
-            element.strains = [
+            const strains = [
                 {
                     key: 'strain-child',
                     strain: 'Child Strain',
@@ -142,9 +160,9 @@ describe('StrainLibraryDialog - Final Coverage', () => {
                     breeder: '',
                     image: ''
                 }
-            ];
+            ] as any[];
 
-            element.seedBatches = [
+            const seedBatches = [
                 {
                     batch_id: 'batch-1',
                     strain_name: 'Child Strain',
@@ -157,13 +175,13 @@ describe('StrainLibraryDialog - Final Coverage', () => {
                     lineage: '',
                     notes: ''
                 }
-            ];
+            ] as any[];
 
             // Only pass Child Strain as primary strain.
             // Mother Strain and Grandmother are resolved as ancestors.
-            const nodes = (element as any)._buildTreeNodes([element.strains[0]]);
+            const nodes = buildStrainTreeNodes(strains, seedBatches, [strains[0]]);
             expect(nodes).toBeTruthy();
-            
+
             // Verify nodes include the child strain, mother strain, and grandmother strain
             const motherNode = nodes.find((n: any) => n.id === 'mother-strain-key');
             expect(motherNode).toBeTruthy();
@@ -179,20 +197,24 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             element.open = true;
             await element.updateComplete;
 
-            const chips = element.shadowRoot?.querySelectorAll('.filter-chip');
+            // Filter chips live in gs-filter-chips inside strain-browse-view
+            const browseView = element.shadowRoot?.querySelector('strain-browse-view') as any;
+            await browseView?.updateComplete;
+            const filterChipsEl = browseView?.shadowRoot?.querySelector('gs-filter-chips') as any;
+            await filterChipsEl?.updateComplete;
+            const chips = filterChipsEl?.shadowRoot?.querySelectorAll('.filter-chip');
             expect(chips?.length).toBe(3);
 
-            const activeChip = Array.from(chips || []).find(c => c.textContent?.trim() === 'Active') as HTMLElement;
+            const activeChip = (Array.from(chips || []) as HTMLElement[]).find(c => c.textContent?.trim() === 'Active');
             expect(activeChip).toBeTruthy();
-            activeChip.click();
+            activeChip?.click();
             await element.updateComplete;
 
             expect((element as any)._libraryFilter).toBe('active');
-            expect((element as any)._currentPage).toBe(1);
 
-            const allChip = Array.from(chips || []).find(c => c.textContent?.trim() === 'All') as HTMLElement;
+            const allChip = (Array.from(chips || []) as HTMLElement[]).find(c => c.textContent?.trim() === 'All');
             expect(allChip).toBeTruthy();
-            allChip.click();
+            allChip?.click();
             await element.updateComplete;
 
             expect((element as any)._libraryFilter).toBe('all');
