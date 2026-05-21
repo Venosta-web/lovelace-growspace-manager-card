@@ -167,7 +167,7 @@ const mockDataServiceInstance: any = {
     hass: { connection: {} } // Default to avoid early returns
 };
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {
@@ -934,7 +934,7 @@ describe('GrowspaceStore', () => {
             const plant = { entity_id: 's.p1', attributes: { plant_id: 'p1' } } as any;
 
             await store.actions.plant.takeClone(plant, 5);
-            expect(spy).toHaveBeenCalledWith('Failed to take clone: Clone Fail');
+            expect(spy).toHaveBeenCalledWith('Failed to take clone', expect.any(Error));
         });
 
         it('should move clone using moveClone service', async () => {
@@ -1189,7 +1189,7 @@ describe('GrowspaceStore', () => {
             selectedPlantIds: ['p1'],
         });
 
-        expect(spy).toHaveBeenCalledWith('Error updating plant(s):', expect.any(Error));
+        expect(spy).toHaveBeenCalledWith('Failed to update plant(s)', expect.any(Error));
     });
 
     it('should close PLANT_OVERVIEW dialog on delete if open', async () => {
@@ -2467,7 +2467,7 @@ describe('GrowspaceStore', () => {
 
             await store.actions.plant.addBatch({});
 
-            expect(uiStore.showToast).toHaveBeenCalledWith('Error: Batch Fail', 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith('Failed to add plants: Batch Fail', 'error');
         });
 
         it('should handle confirmAddPlants success', async () => {

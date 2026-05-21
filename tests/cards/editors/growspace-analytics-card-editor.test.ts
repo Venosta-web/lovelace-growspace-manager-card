@@ -55,7 +55,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
     });
 
     test('loads growspaces from object format via controller', () => {
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         const controller = (element as any)._gsController;
         expect(controller.options.length).toBe(3);
         expect(controller.options[0]).toEqual({ id: 'all', name: 'All Growspaces' });
@@ -101,7 +101,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
             states: {},
             connection: { subscribeEvents: vi.fn().mockResolvedValue(vi.fn()) },
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect((element as any)._gsController.options).toEqual([]);
     });
 
@@ -112,26 +112,26 @@ describe('GrowspaceAnalyticsCardEditor', () => {
             },
             connection: { subscribeEvents: vi.fn().mockResolvedValue(vi.fn()) },
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect((element as any)._gsController.options).toEqual([]);
     });
 
-    test('updated() calls controller.update when hass key is present', () => {
+    test('willUpdate() calls controller.update when hass key is present', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).toHaveBeenCalledWith(element.hass);
     });
 
-    test('updated() does not call controller.update when hass not in changedProps', () => {
+    test('willUpdate() does not call controller.update when hass not in changedProps', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['config', null]]));
+        (element as any).willUpdate(new Map([['config', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('updated() does not call controller.update when hass is falsy', () => {
+    test('willUpdate() does not call controller.update when hass is falsy', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
         element.hass = undefined as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
@@ -176,7 +176,7 @@ describe('GrowspaceAnalyticsCardEditor', () => {
     });
 
     test('_computeSchema returns correct schema structure', () => {
-        (element as any).updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         const schema = (element as any)._computeSchema();
         expect(schema).toBeDefined();
         expect(Array.isArray(schema)).toBe(true);

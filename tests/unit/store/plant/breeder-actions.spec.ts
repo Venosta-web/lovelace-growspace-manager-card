@@ -23,7 +23,7 @@ describe('updateBreeder', () => {
     (ctx.dataService.updateBreeder as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('update-err'));
 
     await expect(updateBreeder(ctx, 'OldName', 'NewName')).rejects.toThrow('update-err');
-    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update breeder', 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update breeder: update-err', 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });
@@ -48,6 +48,6 @@ describe('deleteBreeder', () => {
     (ctx.dataService.deleteBreeder as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('delete-err'));
 
     await expect(deleteBreeder(ctx, 'BreederX')).rejects.toThrow('delete-err');
-    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to delete breeder', 'error');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to delete breeder: delete-err', 'error');
   });
 });

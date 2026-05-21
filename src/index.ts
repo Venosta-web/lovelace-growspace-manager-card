@@ -10,7 +10,7 @@ export * from './types';
 
 // Export utility classes
 export { PlantUtils } from './utils/plant-utils';
-export { DataService } from './data-service';
+export { DataService } from './services/data-service';
 
 // Export main component
 export { GrowspaceManagerCard } from './growspace-manager-card';

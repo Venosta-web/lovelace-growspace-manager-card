@@ -107,7 +107,7 @@ describe('plant-actions-custom-coverage', () => {
             const result = await movePlantToNextStage(ctx, flowerPlant);
 
             expect(result).toBe(false);
-            expect(consoleSpy).toHaveBeenCalledWith('Error moving plant to next stage:', expect.any(Error));
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to move plant', expect.any(Error));
             consoleSpy.mockRestore();
         });
     });

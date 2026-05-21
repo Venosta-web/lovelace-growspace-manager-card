@@ -180,7 +180,7 @@ describe('strain-actions', () => {
                 const result = await updateStrain(ctx, { strain: 'Test' });
 
                 expect(result).toBe(false);
-                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to update strain', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to update strain: Update failed', 'error');
             });
         });
     });
@@ -251,7 +251,7 @@ describe('strain-actions', () => {
                 const result = await addGrowspace(ctx, 'Test Room');
 
                 expect(result).toBe(false);
-                expect(ctx.ui.showToast).toHaveBeenCalledWith('Error: Add failed', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to add growspace: Add failed', 'error');
             });
         });
 
@@ -325,7 +325,7 @@ describe('strain-actions', () => {
                 const result = await addGrowspace(ctx, 'Test Room');
 
                 expect(result).toBe(false);
-                expect(ctx.ui.showToast).toHaveBeenCalledWith('Error: Unknown error', 'error');
+                expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to add growspace: Unknown error', 'error');
             });
 
             it('should handle unknown error in updateGrowspace', async () => {

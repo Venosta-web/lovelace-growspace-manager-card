@@ -64,7 +64,7 @@ describe('GrowspaceCarouselCardEditor', () => {
             growspaces: ['gs1'],
         };
         element.setConfig(config);
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         const controller = (element as any)._gsController;
         expect(controller.options.length).toBe(2);
@@ -73,7 +73,7 @@ describe('GrowspaceCarouselCardEditor', () => {
     });
 
     test('computeSchema returns correct form structure', () => {
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         const schema = (element as any)._computeSchema();
 
         expect(schema).toHaveLength(3);
@@ -118,22 +118,22 @@ describe('GrowspaceCarouselCardEditor', () => {
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('updated() calls controller.update when hass key is present', () => {
+    test('willUpdate() calls controller.update when hass key is present', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).toHaveBeenCalledWith(element.hass);
     });
 
-    test('updated() does not call controller.update when hass not in changedProps', () => {
+    test('willUpdate() does not call controller.update when hass not in changedProps', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['config', null]]));
+        (element as any).willUpdate(new Map([['config', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('updated() does not call controller.update when hass is falsy', () => {
+    test('willUpdate() does not call controller.update when hass is falsy', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
         element.hass = undefined as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
@@ -165,7 +165,7 @@ describe('GrowspaceCarouselCardEditor', () => {
             },
             connection: { subscribeEvents: vi.fn().mockResolvedValue(vi.fn()) }
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         const controller = (element as any)._gsController;
         expect(controller.options).toHaveLength(2);
@@ -178,7 +178,7 @@ describe('GrowspaceCarouselCardEditor', () => {
             states: {},
             connection: { subscribeEvents: vi.fn().mockResolvedValue(vi.fn()) }
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         
         const schema = (element as any)._computeSchema();
         expect(schema[0].selector.select.options).toHaveLength(0);

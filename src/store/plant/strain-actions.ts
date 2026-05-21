@@ -4,6 +4,7 @@
 
 import { StrainEntry } from '../../types';
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 import { fetchStrainLibrary } from './library-actions';
 
 /**
@@ -42,23 +43,21 @@ export async function addStrain(
 ): Promise<boolean> {
   if (!strainData.strain) return false;
 
-  try {
-    const payload = _createStrainPayload(strainData);
-    await ctx.dataService.addStrain(payload);
-
-    const tree = (strainData as any).parents;
-    if (tree?.parents?.length) {
-      await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
-    }
-
-    ctx.ui.showToast('Strain added successfully!', 'success');
-    await fetchStrainLibrary(ctx, true);
-    return true;
-  } catch (err) {
-    console.error('Error adding strain:', err);
-    ctx.ui.showToast('Failed to add strain', 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      const payload = _createStrainPayload(strainData);
+      await ctx.dataService.addStrain(payload);
+      const tree = (strainData as any).parents;
+      if (tree?.parents?.length) {
+        await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
+      }
+      await fetchStrainLibrary(ctx, true);
+      return true as const;
+    },
+    { success: 'Strain added successfully!', errorPrefix: 'Failed to add strain' }
+  );
+  return ok !== undefined;
 }
 
 /**
@@ -70,23 +69,21 @@ export async function updateStrain(
 ): Promise<boolean> {
   if (!strainData.strain) return false;
 
-  try {
-    const payload = _createStrainPayload(strainData);
-    await ctx.dataService.updateStrainMeta(payload);
-
-    const tree = (strainData as any).parents;
-    if (tree?.parents?.length) {
-      await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
-    }
-
-    ctx.ui.showToast('Strain updated successfully!', 'success');
-    await fetchStrainLibrary(ctx, true);
-    return true;
-  } catch (err) {
-    console.error('Error updating strain:', err);
-    ctx.ui.showToast('Failed to update strain', 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      const payload = _createStrainPayload(strainData);
+      await ctx.dataService.updateStrainMeta(payload);
+      const tree = (strainData as any).parents;
+      if (tree?.parents?.length) {
+        await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
+      }
+      await fetchStrainLibrary(ctx, true);
+      return true as const;
+    },
+    { success: 'Strain updated successfully!', errorPrefix: 'Failed to update strain' }
+  );
+  return ok !== undefined;
 }
 
 /**

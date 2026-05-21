@@ -9,6 +9,7 @@
  */
 
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
 
 /**
@@ -22,14 +23,9 @@ export async function getSnapshots(ctx: ActionContext, growspaceId: string) {
  * Capture a new snapshot for a growspace.
  */
 export async function captureSnapshot(ctx: ActionContext, growspaceId: string): Promise<void> {
-  try {
-    await ctx.dataService.captureSnapshot(growspaceId);
-    ctx.ui.showToast('Snapshot captured', 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to capture snapshot: ${error}`, 'error');
-    throw e;
-  }
+  await withAction(ctx, () => ctx.dataService.captureSnapshot(growspaceId), {
+    success: 'Snapshot captured', errorPrefix: 'Failed to capture snapshot', rethrow: true,
+  });
 }
 
 /**
@@ -43,32 +39,16 @@ export async function getVisionHistory(ctx: ActionContext, growspaceId: string) 
  * Trigger a vision checkup for a growspace.
  */
 export async function triggerVisionCheckup(ctx: ActionContext, growspaceId: string): Promise<void> {
-  try {
-    await ctx.dataService.triggerVisionCheckup(growspaceId);
-    ctx.ui.showToast('Vision checkup triggered', 'success');
-    await ctx.refreshData();
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to trigger checkup: ${error}`, 'error');
-    throw e;
-  }
+  await withAction(ctx, async () => { await ctx.dataService.triggerVisionCheckup(growspaceId); await ctx.refreshData(); }, {
+    success: 'Vision checkup triggered', errorPrefix: 'Failed to trigger checkup', rethrow: true,
+  });
 }
 
 /**
  * Update the vision checkup configuration for a growspace.
  */
-export async function updateVisionCheckupConfig(
-  ctx: ActionContext,
-  growspaceId: string,
-  config: VisionCheckupConfig
-): Promise<void> {
-  try {
-    await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
-    ctx.ui.showToast('Vision config saved', 'success');
-    await ctx.refreshData();
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to save vision config: ${error}`, 'error');
-    throw e;
-  }
+export async function updateVisionCheckupConfig(ctx: ActionContext, growspaceId: string, config: VisionCheckupConfig): Promise<void> {
+  await withAction(ctx, async () => { await ctx.dataService.updateVisionCheckupConfig(growspaceId, config); await ctx.refreshData(); }, {
+    success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true,
+  });
 }

@@ -10,7 +10,7 @@ const mockDataServiceInstance = {
     updateHass: vi.fn(),
 };
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {

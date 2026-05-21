@@ -5,6 +5,7 @@
 import { PlantEntity, PlantOverviewDialogState, PlantAttributes, AddPlantsDialogState } from '../../types';
 import { PlantUtils } from '../../utils/plant-utils';
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 import * as libraryActions from './library-actions';
 
 /**
@@ -15,14 +16,10 @@ export async function updatePlant(
   plantId: string,
   updates: Partial<PlantEntity['attributes']>
 ): Promise<void> {
-  try {
-    await ctx.dataService.updatePlant({ plant_id: plantId, ...updates });
-    ctx.ui.showToast('Plant updated', 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    console.error('Failed to update plant:', e);
-    ctx.ui.showToast(`Failed to update plant: ${error}`, 'error');
-  }
+  await withAction(ctx, () => ctx.dataService.updatePlant({ plant_id: plantId, ...updates }), {
+    success: 'Plant updated',
+    errorPrefix: 'Failed to update plant',
+  });
 }
 
 /**
@@ -40,24 +37,21 @@ export async function updatePlantFromDialog(
 
   const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
 
-  try {
-    const updatePromises = targetIds.map((id: string) => {
-      const payload = { ...payloadTemplate, plant_id: id };
-      return ctx.dataService.updatePlant(payload);
-    });
-
-    await Promise.all(updatePromises);
-
-    ctx.closeDialog();
-    await ctx.refreshData();
-
-    if (ctx.ui.$isEditMode.get()) {
-      ctx.ui.clearPlantSelection();
-      ctx.ui.setEditMode(false);
-    }
-  } catch (err) {
-    console.error('Error updating plant(s):', err);
-  }
+  await withAction(
+    ctx,
+    async () => {
+      await Promise.all(
+        targetIds.map((id: string) => ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id }))
+      );
+      ctx.closeDialog();
+      await ctx.refreshData();
+      if (ctx.ui.$isEditMode.get()) {
+        ctx.ui.clearPlantSelection();
+        ctx.ui.setEditMode(false);
+      }
+    },
+    { errorPrefix: 'Failed to update plant(s)' }
+  );
 }
 
 /**
@@ -180,21 +174,20 @@ export async function movePlantToNextStage(
     return false;
   }
 
-  try {
-    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
-    ctx.ui.showToast(`Plant moved to ${targetGrowspace}`, 'success');
-    // Small delay to allow backend commit to complete before fetching updated data
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.refreshData();
-    ctx.closeDialog();
-    return true;
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Error moving plant to next stage:', err);
-    ctx.ui.showToast(`Failed to move plant: ${error}`, 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+      await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
+      // Small delay to allow backend commit to complete before fetching updated data
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await ctx.refreshData();
+      ctx.closeDialog();
+      return true as const;
+    },
+    { success: `Plant moved to ${targetGrowspace}`, errorPrefix: 'Failed to move plant' }
+  );
+  return ok !== undefined;
 }
 
 /**
@@ -221,33 +214,29 @@ export async function movePlantToGrowspace(
 ): Promise<boolean> {
   const originalGrowspace = plant.attributes.growspace_id || 'unknown';
 
-  try {
-    await _movePlantApi(ctx, plant, targetGrowspace);
-
-    // Small delay to allow backend commit to complete before fetching updated data
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    await ctx.refreshData();
-    ctx.closeDialog();
-
-    // Push Undo
-    ctx.undoRedoManager.pushAction({
-      type: 'move',
-      description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
-      reverse: async () => {
-        await movePlantToGrowspace(ctx, plant, originalGrowspace);
-      },
-      redo: async () => {
-        await movePlantToGrowspace(ctx, plant, targetGrowspace);
-      },
-    });
-
-    return true;
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Error moving plant:', err);
-    ctx.ui.showToast(`Failed to move plant: ${error}`, 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      await _movePlantApi(ctx, plant, targetGrowspace);
+      // Small delay to allow backend commit to complete before fetching updated data
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      await ctx.refreshData();
+      ctx.closeDialog();
+      ctx.undoRedoManager.pushAction({
+        type: 'move',
+        description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
+        reverse: async () => {
+          await movePlantToGrowspace(ctx, plant, originalGrowspace);
+        },
+        redo: async () => {
+          await movePlantToGrowspace(ctx, plant, targetGrowspace);
+        },
+      });
+      return true as const;
+    },
+    { errorPrefix: 'Failed to move plant' }
+  );
+  return ok !== undefined;
 }
 
 /**
@@ -261,27 +250,23 @@ export async function takeClone(
 ): Promise<boolean> {
   const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
 
-  try {
-    await ctx.dataService.takeClone({
-      mother_plant_id: plantId,
-      num_clones: numClones,
-      target_growspace_id: targetGrowspaceId,
-    });
-    console.log(
-      `Clone taken from ${motherPlant.attributes?.strain || 'plant'}`,
-      targetGrowspaceId ? `to ${targetGrowspaceId}` : ''
-    );
-    ctx.ui.showToast(
-      `Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`,
-      'success'
-    );
-    return true;
-  } catch (error: unknown) {
-    const e = error instanceof Error ? error.message : 'Unknown error';
-    console.error(`Failed to take clone: ${e}`);
-    ctx.ui.showToast(`Failed to take clone: ${e}`, 'error');
-    return false;
-  }
+  const cloneCount = numClones || 1;
+  const ok = await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.takeClone({
+        mother_plant_id: plantId,
+        num_clones: numClones,
+        target_growspace_id: targetGrowspaceId,
+      });
+      return true as const;
+    },
+    {
+      success: `Taking ${cloneCount} clone${cloneCount > 1 ? 's' : ''}...`,
+      errorPrefix: 'Failed to take clone',
+    }
+  );
+  return ok !== undefined;
 }
 
 /**
@@ -485,45 +470,40 @@ export async function confirmAddPlant(
     return false;
   }
 
-  try {
-    if (detail.addToLibrary) {
-      try {
-        await ctx.dataService.addStrain({
-          strain: detail.strain,
-          phenotype: detail.phenotype,
-        });
-        await libraryActions.fetchStrainLibrary(ctx, true);
-        ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
-      } catch (e) {
-        console.error('Failed to add strain to library:', e);
-        ctx.ui.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
+  const ok = await withAction(
+    ctx,
+    async () => {
+      if (detail.addToLibrary) {
+        try {
+          await ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
+          await libraryActions.fetchStrainLibrary(ctx, true);
+          ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+        } catch (e) {
+          console.error('Failed to add strain to library:', e);
+          ctx.ui.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
+        }
       }
-    }
-
-    await ctx.dataService.addPlant({
-      growspace_id: selectedDevice,
-      row: detail.row,
-      col: detail.col,
-      strain: detail.strain,
-      phenotype: detail.phenotype,
-      veg_start: detail.veg_start,
-      flower_start: detail.flower_start,
-      seedling_start: detail.seedling_start,
-      mother_start: detail.mother_start,
-      clone_start: detail.clone_start,
-      dry_start: detail.dry_start,
-      cure_start: detail.cure_start,
-    });
-    ctx.closeDialog();
-    await ctx.refreshData();
-    ctx.ui.showToast('Plant added successfully', 'success');
-    return true;
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    console.error('Failed to add plant:', e);
-    ctx.ui.showToast(`Failed to add plant: ${error}`, 'error');
-    return false;
-  }
+      await ctx.dataService.addPlant({
+        growspace_id: selectedDevice,
+        row: detail.row,
+        col: detail.col,
+        strain: detail.strain,
+        phenotype: detail.phenotype,
+        veg_start: detail.veg_start,
+        flower_start: detail.flower_start,
+        seedling_start: detail.seedling_start,
+        mother_start: detail.mother_start,
+        clone_start: detail.clone_start,
+        dry_start: detail.dry_start,
+        cure_start: detail.cure_start,
+      });
+      ctx.closeDialog();
+      await ctx.refreshData();
+      return true as const;
+    },
+    { success: 'Plant added successfully', errorPrefix: 'Failed to add plant' }
+  );
+  return ok !== undefined;
 }
 
 /**
@@ -540,87 +520,67 @@ export async function confirmAddPlants(ctx: ActionContext, detail: AddPlantsDial
   const beforeIds = new Set<string>();
   devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
 
-  try {
-    if (detail.addToLibrary) {
-      try {
-        const amount = detail.amount || 1; // Dialog uses 'amount'
-        const startNumber = detail.start_number || 1;
-        const promises: Promise<any>[] = [];
-
-        for (let i = 0; i < amount; i++) {
-          const currentNumber = startNumber + i;
-          // Format: "Phenotype #1"
-          // If phenotype is provided, rely on it. If not, backend defaults to Strain name,
-          // but typically we only add to library if phenotype is explicit or we want "Strain #1".
-          // User request specific to "phenotype + #Number".
-          const phenoName = detail.phenotype
-            ? `${detail.phenotype} #${currentNumber}`
-            : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
-
-          if (detail.strain) {
-            promises.push(
-              ctx.dataService.addStrain({
-                strain: detail.strain,
-                phenotype: phenoName,
-              })
-            );
+  await withAction(
+    ctx,
+    async () => {
+      if (detail.addToLibrary) {
+        try {
+          const amount = detail.amount || 1;
+          const startNumber = detail.start_number || 1;
+          const promises: Promise<any>[] = [];
+          for (let i = 0; i < amount; i++) {
+            const currentNumber = startNumber + i;
+            const phenoName = detail.phenotype
+              ? `${detail.phenotype} #${currentNumber}`
+              : `Strain #${currentNumber}`;
+            if (detail.strain) {
+              promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
+            }
           }
+          await Promise.all(promises);
+          await libraryActions.fetchStrainLibrary(ctx, true);
+          ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
+        } catch (e) {
+          console.error('Failed to add strains to library:', e);
+          ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
         }
-
-        await Promise.all(promises);
-        await libraryActions.fetchStrainLibrary(ctx, true);
-        ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
-      } catch (e) {
-        console.error('Failed to add strains to library:', e);
-        ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
       }
-    }
 
-    // Exclude addToLibrary from payload sent to backend
-    const { addToLibrary: _, ...apiPayload } = detail;
+      const { addToLibrary: _, ...apiPayload } = detail;
+      await ctx.dataService.addPlants({
+        ...apiPayload,
+        growspace_id: selectedDevice,
+      } as Parameters<typeof ctx.dataService.addPlants>[0]);
 
-    // detail is guaranteed to have strain and amount as required fields from caller
-    await ctx.dataService.addPlants({
-      ...apiPayload,
-      growspace_id: selectedDevice,
-    } as Parameters<typeof ctx.dataService.addPlants>[0]);
+      await ctx.refreshData();
 
-    await ctx.refreshData();
+      const afterDevices = ctx.data.$devices.get();
+      const addedIds: string[] = [];
+      afterDevices.forEach((d) =>
+        d.plants?.forEach((p) => {
+          const id = p.attributes.plant_id || '';
+          if (id && !beforeIds.has(id)) addedIds.push(id);
+        })
+      );
 
-    const afterDevices = ctx.data.$devices.get();
-    const addedIds: string[] = [];
-    afterDevices.forEach((d) =>
-      d.plants?.forEach((p) => {
-        const id = p.attributes.plant_id || '';
-        if (id && !beforeIds.has(id)) {
-          addedIds.push(id);
-        }
-      })
-    );
+      if (addedIds.length > 0) {
+        ctx.undoRedoManager.pushAction({
+          type: 'batch-delete',
+          description: `Added ${addedIds.length} plants`,
+          reverse: async () => {
+            await _deletePlantsApi(ctx, addedIds);
+            await ctx.refreshData();
+          },
+          redo: async () => {
+            await confirmAddPlants(ctx, detail);
+          },
+        });
+      }
 
-    if (addedIds.length > 0) {
-      ctx.undoRedoManager.pushAction({
-        type: 'batch-delete',
-        description: `Added ${addedIds.length} plants`,
-        reverse: async () => {
-          await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete.
-          // handleDeletePlant pushes undo action. We probably don't want nested undo actions here.
-          // So we use _deletePlantsApi.
-          await _deletePlantsApi(ctx, addedIds);
-          await ctx.refreshData();
-        },
-        redo: async () => {
-          await confirmAddPlants(ctx, detail);
-        },
-      });
-    }
-
-    ctx.ui.showToast('Batch plants added successfully', 'success');
-    ctx.closeDialog();
-  } catch (err: unknown) {
-    const error = err instanceof Error ? err.message : 'Unknown error';
-    ctx.ui.showToast(`Error: ${error}`, 'error');
-  }
+      ctx.closeDialog();
+    },
+    { success: 'Batch plants added successfully', errorPrefix: 'Failed to add plants' }
+  );
 }
 
 /**

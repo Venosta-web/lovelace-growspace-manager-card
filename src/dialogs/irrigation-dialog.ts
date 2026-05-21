@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
 import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading, TankWaterEvent } from '../types';
-import { DataService } from '../data-service';
+import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import {

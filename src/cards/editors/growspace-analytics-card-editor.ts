@@ -17,7 +17,7 @@ export class GrowspaceAnalyticsCardEditor extends LitElement implements Lovelace
     this._config = config;
   }
 
-  protected updated(changedProps: Map<string, unknown>): void {
+  protected willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('hass') && this.hass) {
       this._gsController.update(this.hass);
     }

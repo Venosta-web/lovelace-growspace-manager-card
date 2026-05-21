@@ -14,7 +14,6 @@ export class AIAPI extends BaseAPI {
    * @returns AI-generated advice response
    */
   async askGrowAdvice(growspaceId: string, userQuery: string): Promise<GrowAdviceResponse> {
-    console.log('[AIAPI:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
     try {
       // Use sendMessagePromise with return_response=true
       return await this.hass.connection.sendMessagePromise({
@@ -39,7 +38,6 @@ export class AIAPI extends BaseAPI {
    * @returns Comprehensive analysis from AI
    */
   async analyzeAllGrowspaces(): Promise<GrowAdviceResponse> {
-    console.log('[AIAPI:analyzeAllGrowspaces] Analyzing all growspaces');
     try {
       return await this.hass.connection.sendMessagePromise({
         type: 'call_service',
@@ -60,7 +58,6 @@ export class AIAPI extends BaseAPI {
    * @returns AI-generated strain recommendation
    */
   async getStrainRecommendation(userQuery: string): Promise<GrowAdviceResponse> {
-    console.log('[AIAPI:getStrainRecommendation] Getting strain recommendation for:', userQuery);
     try {
       return await this.hass.connection.sendMessagePromise({
         type: 'call_service',

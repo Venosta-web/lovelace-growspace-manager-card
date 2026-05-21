@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService - NutrientAPI', () => {

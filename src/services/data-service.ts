@@ -106,6 +106,16 @@ export class DataService {
   resetWaterTracking = (growspaceId: string) =>
     this._growspaceAPI.resetWaterTracking(growspaceId);
 
+  updateSensorCoordinates = (
+    growspaceId: string,
+    entityId: string,
+    x: number,
+    y: number,
+    z: number,
+    rotation?: number
+  ) =>
+    this._growspaceAPI.updateSensorCoordinates(growspaceId, entityId, x, y, z, rotation);
+
   // ── Strain ───────────────────────────────────────────────────────────────
 
   getStrainLibrary = () => this._strainAPI.getStrainLibrary();
@@ -362,7 +372,6 @@ export class DataService {
       console.error('[DataService:callService] Hass instance is missing');
       return;
     }
-    console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
     await this.hass.callService(domain, service, serviceData);
   }
 }

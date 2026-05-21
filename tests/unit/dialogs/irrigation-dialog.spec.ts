@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
     setIrrigationStrategy: vi.fn().mockResolvedValue(undefined)
 }));
 
-vi.mock('../../../src/data-service', () => {
+vi.mock('../../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {

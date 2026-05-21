@@ -31,11 +31,7 @@ export class GrowspaceTankCardEditor extends LitElement implements LovelaceCardE
         }
     }
 
-    protected firstUpdated(): void {
-        this._loadGrowspaces();
-    }
-
-    protected updated(changedProps: Map<string, unknown>): void {
+    protected willUpdate(changedProps: Map<string, unknown>): void {
         if (changedProps.has('hass')) {
             this._loadGrowspaces();
         }

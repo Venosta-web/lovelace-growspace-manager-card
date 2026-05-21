@@ -53,7 +53,7 @@ describe('GrowspaceLogbookCardEditor', () => {
   });
 
   test('loads growspaces from sensor via controller', () => {
-    (element as any).updated(new Map([['hass', null]]));
+    (element as any).willUpdate(new Map([['hass', null]]));
     const controller = (element as any)._gsController;
     expect(controller.options.length).toBe(2);
     expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Test Tent' });
@@ -98,7 +98,7 @@ describe('GrowspaceLogbookCardEditor', () => {
       states: {},
       connection: { subscribeEvents: vi.fn().mockResolvedValue(vi.fn()) },
     } as any;
-    (element as any).updated(new Map([['hass', null]]));
+    (element as any).willUpdate(new Map([['hass', null]]));
     expect((element as any)._gsController.options).toEqual([]);
   });
 
@@ -110,21 +110,21 @@ describe('GrowspaceLogbookCardEditor', () => {
     expect(defaultViewField.selector.select.options).toContainEqual({ label: 'Timeline', value: 'timeline' });
   });
 
-  test('updated() calls controller.update when hass key is present', () => {
+  test('willUpdate() calls controller.update when hass key is present', () => {
     const spy = vi.spyOn((element as any)._gsController, 'update');
-    (element as any).updated(new Map([['hass', null]]));
+    (element as any).willUpdate(new Map([['hass', null]]));
     expect(spy).toHaveBeenCalledWith(element.hass);
   });
 
-  test('updated() does not call controller.update when hass is falsy', () => {
+  test('willUpdate() does not call controller.update when hass is falsy', () => {
     const spy = vi.spyOn((element as any)._gsController, 'update');
     element.hass = undefined as any;
-    (element as any).updated(new Map([['hass', null]]));
+    (element as any).willUpdate(new Map([['hass', null]]));
     expect(spy).not.toHaveBeenCalled();
   });
 
   test('_computeSchema returns options from controller', () => {
-    (element as any).updated(new Map([['hass', null]]));
+    (element as any).willUpdate(new Map([['hass', null]]));
     const schema = (element as any)._computeSchema();
     const growspaceField = schema.find((f: any) => f.name === 'default_growspace');
     expect(growspaceField.selector.select.options).toContainEqual({ label: 'Test Tent', value: 'gs1' });

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { atom } from 'nanostores';
 import { GrowspaceHistoryStore } from '../../src/store/history/history-store';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { HistorySensorState, HistoryTimeRange } from '../../src/types';
 
 describe('history-store', () => {

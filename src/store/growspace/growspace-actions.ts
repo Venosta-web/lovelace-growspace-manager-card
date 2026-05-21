@@ -3,6 +3,7 @@
  */
 
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 
 export async function addGrowspace(
   ctx: ActionContext,
@@ -16,22 +17,17 @@ export async function addGrowspace(
     return false;
   }
 
-  try {
-    await ctx.dataService.addGrowspace({
-      name,
-      rows,
-      plantsPerRow,
-      notificationService,
-    });
-    ctx.ui.showToast('Growspace added successfully!', 'success');
-    await ctx.refreshData();
-    ctx.closeDialog();
-    return true;
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Error: ${error}`, 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.addGrowspace({ name, rows, plantsPerRow, notificationService });
+      await ctx.refreshData();
+      ctx.closeDialog();
+      return true as const;
+    },
+    { success: 'Growspace added successfully!', errorPrefix: 'Failed to add growspace' }
+  );
+  return ok !== undefined;
 }
 
 export async function updateGrowspace(
@@ -41,38 +37,36 @@ export async function updateGrowspace(
   rows: number,
   plantsPerRow: number
 ): Promise<boolean> {
-  try {
-    const devices = ctx.data.$devices.get();
-    const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
-
-    if (deviceIdx >= 0) {
-      const newDevices = [...devices];
-      newDevices[deviceIdx] = { ...newDevices[deviceIdx], name, rows, plantsPerRow };
-      ctx.data.$devices.set(newDevices);
-    }
-
-    await ctx.dataService.updateGrowspace({ growspaceId, name, rows, plantsPerRow });
-    await ctx.refreshData();
-    ctx.ui.showToast('Growspace updated successfully', 'success');
-    ctx.closeDialog();
-    return true;
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to update growspace: ${error}`, 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      const devices = ctx.data.$devices.get();
+      const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
+      if (deviceIdx >= 0) {
+        const newDevices = [...devices];
+        newDevices[deviceIdx] = { ...newDevices[deviceIdx], name, rows, plantsPerRow };
+        ctx.data.$devices.set(newDevices);
+      }
+      await ctx.dataService.updateGrowspace({ growspaceId, name, rows, plantsPerRow });
+      await ctx.refreshData();
+      ctx.closeDialog();
+      return true as const;
+    },
+    { success: 'Growspace updated successfully', errorPrefix: 'Failed to update growspace' }
+  );
+  return ok !== undefined;
 }
 
 export async function removeGrowspace(ctx: ActionContext, growspaceId: string): Promise<boolean> {
-  try {
-    await ctx.dataService.removeGrowspace(growspaceId);
-    ctx.ui.showToast('Growspace removed successfully', 'success');
-    await ctx.refreshData();
-    ctx.closeDialog();
-    return true;
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to remove growspace: ${error}`, 'error');
-    return false;
-  }
+  const ok = await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.removeGrowspace(growspaceId);
+      await ctx.refreshData();
+      ctx.closeDialog();
+      return true as const;
+    },
+    { success: 'Growspace removed successfully', errorPrefix: 'Failed to remove growspace' }
+  );
+  return ok !== undefined;
 }

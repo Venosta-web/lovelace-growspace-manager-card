@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SyncService } from '../../src/services/sync-service';
 import { MetricsUtils } from '../../src/utils/metrics-utils';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { GrowspaceDevice, PlantEntity } from '../../src/types';
@@ -10,7 +10,7 @@ import { DateTime } from 'luxon';
 import { MetricKey, EntityState, StatusLevel } from '../../src/constants';
 
 // Mocks
-vi.mock('../../src/data-service');
+vi.mock('../../src/services/data-service');
 vi.mock('../../src/store/core/data-store');
 vi.mock('../../src/store/ui/ui-store');
 

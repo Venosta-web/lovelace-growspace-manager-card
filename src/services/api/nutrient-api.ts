@@ -78,7 +78,6 @@ export class NutrientAPI extends BaseAPI {
         current_ml: currentMl,
         initial_ml: initialMl,
       });
-      console.log(`[NutrientAPI] Updated stock: ${name}`);
     } catch (err) {
       console.error('[NutrientAPI:updateNutrientStock] Error:', err);
       throw err;
@@ -92,7 +91,6 @@ export class NutrientAPI extends BaseAPI {
         type: WS_TYPE_REMOVE_NUTRIENT_STOCK,
         nutrient_id: nutrientId,
       });
-      console.log(`[NutrientAPI] Removed stock: ${nutrientId}`);
     } catch (err) {
       console.error('[NutrientAPI:removeNutrientStock] Error:', err);
       throw err;
@@ -125,10 +123,8 @@ export class NutrientAPI extends BaseAPI {
     stage?: string;
     min_days_in_stage?: number;
   }): Promise<void> {
-    console.log('[NutrientAPI:saveNutrientPreset] Saving nutrient preset:', data);
     try {
       await this.callService(DOMAIN, SERVICES.SAVE_NUTRIENT_PRESET, data);
-      console.log('[NutrientAPI:saveNutrientPreset] Service Called');
     } catch (err) {
       console.error('[NutrientAPI:saveNutrientPreset] Error:', err);
       throw err;
@@ -136,10 +132,8 @@ export class NutrientAPI extends BaseAPI {
   }
 
   async removeNutrientPreset(presetId: string): Promise<void> {
-    console.log('[NutrientAPI:removeNutrientPreset] Removing nutrient preset:', presetId);
     try {
       await this.callService(DOMAIN, SERVICES.REMOVE_NUTRIENT_PRESET, { preset_id: presetId });
-      console.log('[NutrientAPI:removeNutrientPreset] Service Called');
     } catch (err) {
       console.error('[NutrientAPI:removeNutrientPreset] Error:', err);
       throw err;
@@ -154,10 +148,8 @@ export class NutrientAPI extends BaseAPI {
     stage?: string;
     min_days_in_stage?: number;
   }): Promise<void> {
-    console.log('[NutrientAPI:saveIPMPreset] Saving IPM preset:', data);
     try {
       await this.callService(DOMAIN, SERVICES.SAVE_IPM_PRESET, data);
-      console.log('[NutrientAPI:saveIPMPreset] Service Called');
     } catch (err) {
       console.error('[NutrientAPI:saveIPMPreset] Error:', err);
       throw err;
@@ -165,10 +157,8 @@ export class NutrientAPI extends BaseAPI {
   }
 
   async removeIPMPreset(presetId: string): Promise<void> {
-    console.log('[NutrientAPI:removeIPMPreset] Removing IPM preset:', presetId);
     try {
       await this.callService(DOMAIN, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
-      console.log('[NutrientAPI:removeIPMPreset] Service Called');
     } catch (err) {
       console.error('[NutrientAPI:removeIPMPreset] Error:', err);
       throw err;
@@ -181,10 +171,8 @@ export class NutrientAPI extends BaseAPI {
     plant_ids?: string[];
     notes?: string;
   }): Promise<void> {
-    console.log('[NutrientAPI:applyIPM] Applying IPM:', data);
     try {
       await this.callService(DOMAIN, SERVICES.APPLY_IPM, data);
-      console.log('[NutrientAPI:applyIPM] Service Called');
     } catch (err) {
       console.error('[NutrientAPI:applyIPM] Error:', err);
       throw err;
@@ -216,7 +204,6 @@ export class NutrientAPI extends BaseAPI {
     stage?: string;
     points: { day: number; target_ec: number }[];
   }): Promise<void> {
-    console.log('[NutrientAPI:saveECRampCurve] Saving curve:', data);
 
     // Transform points to backend format
     const backendData = {
@@ -239,7 +226,6 @@ export class NutrientAPI extends BaseAPI {
   }
 
   async removeECRampCurve(curveId: string): Promise<void> {
-    console.log('[NutrientAPI:removeECRampCurve] Removing curve:', curveId);
     try {
       await this.callService(DOMAIN, 'remove_ec_ramp_curve', { curve_id: curveId });
     } catch (err) {

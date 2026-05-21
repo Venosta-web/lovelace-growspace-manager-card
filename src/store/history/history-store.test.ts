@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GrowspaceHistoryStore } from './history-store';
-import type { DataService } from '../../data-service';
+import type { DataService } from '../../services/data-service';
 import type { GrowspaceDataStore } from '../core/data-store';
 import { atom } from 'nanostores';
 

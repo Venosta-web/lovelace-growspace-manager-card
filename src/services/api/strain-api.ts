@@ -123,14 +123,12 @@ export class StrainAPI extends BaseAPI {
   }
 
   async fetchStrainLibrary(): Promise<StrainEntry[]> {
-    console.log('[StrainAPI:fetchStrainLibrary] Fetching strain library via WebSocket API');
     try {
       // Use WebSocket API to bypass the 16KB attribute limit of state machine
       const rawResponse = await this.hass.connection.sendMessagePromise<unknown>({
         type: 'growspace_manager/get_strain_library',
       });
 
-      console.log('[StrainAPI:fetchStrainLibrary] WS Response:', rawResponse);
 
       // Remove legacy or wrapper 'response' key if present
       if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
@@ -219,7 +217,6 @@ export class StrainAPI extends BaseAPI {
     indica_percentage?: number;
     breeder_logo?: string;
   }): Promise<void> {
-    console.log('[StrainAPI:addStrain] Adding strain:', data);
     try {
       const payload: Record<string, unknown> = { ...data };
 
@@ -245,7 +242,6 @@ export class StrainAPI extends BaseAPI {
       }
 
       await this.callService(DOMAIN, SERVICES.ADD_STRAIN, payload);
-      console.log('[StrainAPI:addStrain] Service Called');
     } catch (err) {
       console.error('[StrainAPI:addStrain] Error:', err);
       throw err;
@@ -253,13 +249,11 @@ export class StrainAPI extends BaseAPI {
   }
 
   async removeStrain(strain: string, phenotype?: string): Promise<void> {
-    console.log('[StrainAPI:removeStrain] Removing strain:', strain, phenotype);
     try {
       await this.callService(DOMAIN, SERVICES.REMOVE_STRAIN, {
         strain,
         phenotype,
       });
-      console.log('[StrainAPI:removeStrain] Service Called');
     } catch (err) {
       console.error('[StrainAPI:removeStrain] Error:', err);
       throw err;
@@ -267,10 +261,8 @@ export class StrainAPI extends BaseAPI {
   }
 
   async exportStrainLibrary(): Promise<void> {
-    console.log('[StrainAPI:exportStrainLibrary] Exporting strain library');
     try {
       await this.callService(DOMAIN, SERVICES.EXPORT_STRAIN_LIBRARY, {});
-      console.log('[StrainAPI:exportStrainLibrary] Service Called');
     } catch (err) {
       console.error('[StrainAPI:exportStrainLibrary] Error:', err);
       throw err;
@@ -281,11 +273,6 @@ export class StrainAPI extends BaseAPI {
     file: File,
     replace: boolean
   ): Promise<{ success: boolean; error?: string }> {
-    console.log(
-      '[StrainAPI:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:',
-      replace
-    );
-
     const formData = new FormData();
     formData.append('file', file);
     formData.append('replace', replace.toString());
@@ -302,7 +289,6 @@ export class StrainAPI extends BaseAPI {
       }
 
       const result = await response.json();
-      console.log('[StrainAPI:importStrainLibrary] Response:', result);
 
       if (result.success) {
         return result as { success: boolean; error?: string };
@@ -317,10 +303,8 @@ export class StrainAPI extends BaseAPI {
   }
 
   async clearStrainLibrary(): Promise<void> {
-    console.log('[StrainAPI:clearStrainLibrary] Clearing library');
     try {
       await this.callService(DOMAIN, SERVICES.CLEAR_STRAIN_LIBRARY, {});
-      console.log('[StrainAPI:clearStrainLibrary] Service Called');
     } catch (err) {
       console.error('[StrainAPI:clearStrainLibrary] Error:', err);
       throw err;
@@ -328,7 +312,6 @@ export class StrainAPI extends BaseAPI {
   }
 
   async updateBreeder(oldName: string, newName: string, logo?: string): Promise<void> {
-    console.log('[StrainAPI:updateBreeder] Updating breeder:', oldName, '->', newName);
     try {
       await this.hass.connection.sendMessagePromise({
         type: 'growspace_manager/update_breeder',
@@ -336,7 +319,6 @@ export class StrainAPI extends BaseAPI {
         new_name: newName,
         logo: logo !== undefined ? logo : undefined,
       });
-      console.log('[StrainAPI:updateBreeder] WebSocket call completed');
     } catch (err) {
       console.error('[StrainAPI:updateBreeder] Error:', err);
       throw err;
@@ -344,13 +326,11 @@ export class StrainAPI extends BaseAPI {
   }
 
   async deleteBreeder(name: string): Promise<void> {
-    console.log('[StrainAPI:deleteBreeder] Deleting breeder:', name);
     try {
       await this.hass.connection.sendMessagePromise({
         type: 'growspace_manager/delete_breeder',
         breeder_name: name,
       });
-      console.log('[StrainAPI:deleteBreeder] WebSocket call completed');
     } catch (err) {
       console.error('[StrainAPI:deleteBreeder] Error:', err);
       throw err;
@@ -379,7 +359,6 @@ export class StrainAPI extends BaseAPI {
     awards?: string[];
     lineage_tree?: any;
   }): Promise<void> {
-    console.log('[StrainAPI:updateStrainMeta] Updating strain:', data);
     try {
       const payload: Record<string, unknown> = { ...data };
 
@@ -405,7 +384,6 @@ export class StrainAPI extends BaseAPI {
       }
 
       await this.callService(DOMAIN, SERVICES.UPDATE_STRAIN_META, payload);
-      console.log('[StrainAPI:updateStrainMeta] Service Called');
     } catch (err) {
       console.error('[StrainAPI:updateStrainMeta] Error:', err);
       throw err;

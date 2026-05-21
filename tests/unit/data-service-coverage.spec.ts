@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 import { WS_TYPE_GET_DATA, WS_TYPE_GET_NUTRIENT_INVENTORY } from '../../src/constants';
 

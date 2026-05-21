@@ -129,7 +129,7 @@ export class SubareaConfigDialog extends LitElement {
     `,
   ];
 
-  protected updated(changedProperties: Map<string, unknown>) {
+  protected willUpdate(changedProperties: Map<string, unknown>) {
     if (changedProperties.has('hass') && this.hass) {
       this._dataService = new DataService(this.hass);
     }

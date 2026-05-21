@@ -10,7 +10,7 @@ import { strainLibraryContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { SceneManager } from '../../../utils/three/scene-manager';
 import { InteractionManager } from '../../../utils/three/interaction-manager';
-import { DataService } from '../../../utils/data-service';
+import { DataService } from '../../../services/data-service';
 import { SensorTypeUtils } from '../../../utils/sensor-type-utils';
 
 @customElement('heatmap-3d')
@@ -749,7 +749,7 @@ export class Heatmap3D extends LitElement {
 
         try {
             const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
+            this.historyData = await this.dataService.getHistoryStats(Array.from(entityIds), start);
         } catch (e) {
             console.error('Failed to fetch history:', e);
         }

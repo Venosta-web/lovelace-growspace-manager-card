@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService', () => {
@@ -56,17 +56,14 @@ describe('DataService', () => {
     });
 
     describe('Utility Wrappers', () => {
-        it('callService should call hass.callService and log', async () => {
-            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
+        it('callService should call hass.callService', async () => {
             const domain = 'test_domain';
             const srv = 'test_service';
             const data = { foo: 'bar' };
 
             await service.callService(domain, srv, data);
 
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[DataService:callService]'), data);
             expect(mockHass.callService).toHaveBeenCalledWith(domain, srv, data);
-            consoleSpy.mockRestore();
         });
 
         it('should handle missing HASS in callService', async () => {

@@ -102,9 +102,9 @@ describe('GrowspaceTankCardEditor', () => {
         document.body.removeChild(div);
     });
 
-    test('updated() calls _loadGrowspaces when hass changes', () => {
+    test('willUpdate() calls _loadGrowspaces when hass changes', () => {
         const spy = vi.spyOn(element as any, '_loadGrowspaces');
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).toHaveBeenCalled();
     });
 

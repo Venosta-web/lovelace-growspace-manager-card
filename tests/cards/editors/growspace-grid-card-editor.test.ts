@@ -55,7 +55,7 @@ describe('GrowspaceGridCardEditor', () => {
             default_growspace: 'gs1',
         };
         element.setConfig(config);
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         const controller = (element as any)._gsController;
         expect(controller.options.length).toBe(2);
@@ -95,7 +95,7 @@ describe('GrowspaceGridCardEditor', () => {
             default_growspace: 'gs1',
         };
         element.setConfig(config);
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         expect(capturedCallback).toBeDefined();
 
@@ -117,7 +117,7 @@ describe('GrowspaceGridCardEditor', () => {
 
     test('handles sensor update events with missing growspaces', async () => {
         element.setConfig({ type: 'custom:growspace-grid-card' });
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         capturedCallback({
             data: {
@@ -134,7 +134,7 @@ describe('GrowspaceGridCardEditor', () => {
 
     test('ignores events for other entities', async () => {
         element.setConfig({ type: 'custom:growspace-grid-card' });
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         const controller = (element as any)._gsController;
         const initialOptions = [...controller.options];
@@ -158,22 +158,22 @@ describe('GrowspaceGridCardEditor', () => {
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('updated() calls controller.update when hass key is present', () => {
+    test('willUpdate() calls controller.update when hass key is present', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).toHaveBeenCalledWith(element.hass);
     });
 
-    test('updated() does not call controller.update when hass not in changedProps', () => {
+    test('willUpdate() does not call controller.update when hass not in changedProps', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['config', null]]));
+        (element as any).willUpdate(new Map([['config', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('updated() does not call controller.update when hass is falsy', () => {
+    test('willUpdate() does not call controller.update when hass is falsy', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
         element.hass = undefined as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
@@ -190,7 +190,7 @@ describe('GrowspaceGridCardEditor', () => {
                 subscribeEvents: vi.fn().mockResolvedValue(vi.fn()),
             },
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect((element as any)._gsController.options).toEqual([]);
     });
 
@@ -201,12 +201,12 @@ describe('GrowspaceGridCardEditor', () => {
                 subscribeEvents: vi.fn().mockResolvedValue(vi.fn()),
             },
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect((element as any)._gsController.options).toEqual([]);
     });
 
     test('_computeSchema returns options from controller', () => {
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         const schema = (element as any)._computeSchema();
         const growspaceField = schema.find((f: any) => f.name === 'default_growspace');
         expect(growspaceField.selector.select.options).toContainEqual({ label: 'Select a growspace...', value: '' });

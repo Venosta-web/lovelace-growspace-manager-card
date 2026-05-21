@@ -16,7 +16,7 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
     this._config = config;
   }
 
-  updated(changedProps: Map<string, unknown>) {
+  willUpdate(changedProps: Map<string, unknown>) {
     if (changedProps.has('hass') && this.hass) {
       this._gsController.update(this.hass);
     }

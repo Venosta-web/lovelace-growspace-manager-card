@@ -19,6 +19,7 @@ export const WS_TYPE_GET_SUBAREAS = 'growspace_manager/get_subareas';
 export const WS_TYPE_ADD_SUBAREA = 'growspace_manager/add_subarea';
 export const WS_TYPE_UPDATE_SUBAREA = 'growspace_manager/update_subarea';
 export const WS_TYPE_REMOVE_SUBAREA = 'growspace_manager/remove_subarea';
+export const WS_TYPE_UPDATE_SENSOR_COORDINATES = 'growspace_manager/update_sensor_coordinates';
 
 // Home Assistant events
 export const EVENTS = {

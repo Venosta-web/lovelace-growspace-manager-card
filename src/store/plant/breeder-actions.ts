@@ -1,30 +1,16 @@
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 
 /** Update an existing breeder's name and optional logo */
-export async function updateBreeder(
-  ctx: ActionContext,
-  oldName: string,
-  newName: string,
-  logo?: string
-): Promise<void> {
-  try {
-    await ctx.dataService.updateBreeder(oldName, newName, logo);
-    ctx.ui.showToast('Breeder updated successfully!', 'success');
-    await ctx.refreshData();
-  } catch (e: unknown) {
-    ctx.ui.showToast('Failed to update breeder', 'error');
-    throw e;
-  }
+export async function updateBreeder(ctx: ActionContext, oldName: string, newName: string, logo?: string): Promise<void> {
+  await withAction(ctx, async () => { await ctx.dataService.updateBreeder(oldName, newName, logo); await ctx.refreshData(); }, {
+    success: 'Breeder updated successfully!', errorPrefix: 'Failed to update breeder', rethrow: true,
+  });
 }
 
 /** Delete a breeder by name */
 export async function deleteBreeder(ctx: ActionContext, name: string): Promise<void> {
-  try {
-    await ctx.dataService.deleteBreeder(name);
-    ctx.ui.showToast('Breeder deleted successfully!', 'success');
-    await ctx.refreshData();
-  } catch (e: unknown) {
-    ctx.ui.showToast('Failed to delete breeder', 'error');
-    throw e;
-  }
+  await withAction(ctx, async () => { await ctx.dataService.deleteBreeder(name); await ctx.refreshData(); }, {
+    success: 'Breeder deleted successfully!', errorPrefix: 'Failed to delete breeder', rethrow: true,
+  });
 }

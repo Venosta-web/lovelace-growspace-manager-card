@@ -1,7 +1,7 @@
 import { atom, map, computed, WritableAtom, MapStore, ReadableAtom } from 'nanostores';
 import { HistorySensorState, SensorHistories, HistoryTimeRange, GrowspaceDevice } from '../../types';
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
-import { DataService } from '../../data-service';
+import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from '../core/data-store';
 
 export class GrowspaceHistoryStore {

@@ -66,7 +66,7 @@ vi.mock('../../src/store/core/data-store', () => {
     }
 });
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             callService = vi.fn().mockResolvedValue({});

@@ -55,7 +55,7 @@ describe('GrowspaceManagerCardEditor', () => {
 
         element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         const controller = (element as any)._gsController;
         expect(controller.options.length).toBe(2);
@@ -70,7 +70,7 @@ describe('GrowspaceManagerCardEditor', () => {
         };
         element.hass = mockHass as any;
         element.setConfig({ type: 'custom:growspace-manager-card' });
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         const controller = (element as any)._gsController;
         expect(controller.options).toEqual([]);
@@ -122,7 +122,7 @@ describe('GrowspaceManagerCardEditor', () => {
 
         element.hass = mockHass as any;
         element.setConfig({ type: 'test' });
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         await element.updateComplete;
 
         const controller = (element as any)._gsController;
@@ -153,7 +153,7 @@ describe('GrowspaceManagerCardEditor', () => {
         expect(listener).not.toHaveBeenCalled();
     });
 
-    it('controller subscribes only once across multiple updated() calls', async () => {
+    it('controller subscribes only once across multiple willUpdate() calls', async () => {
         const subscribeMock = vi.fn().mockResolvedValue(() => { });
         const mockHass = {
             states: {},
@@ -161,9 +161,9 @@ describe('GrowspaceManagerCardEditor', () => {
         };
 
         element.hass = mockHass as any;
-        element.updated(new Map([['hass', null]]));
-        element.updated(new Map([['hass', null]]));
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         expect(subscribeMock).toHaveBeenCalledTimes(1);
     });
@@ -176,37 +176,37 @@ describe('GrowspaceManagerCardEditor', () => {
         };
 
         element.hass = mockHass as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         element.disconnectedCallback();
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         expect(subscribeMock).toHaveBeenCalledTimes(2);
     });
 
-    it('updated() does not call controller.update when hass key is absent from changedProps', () => {
+    it('willUpdate() does not call controller.update when hass key is absent from changedProps', () => {
         element.hass = {
             states: {},
             connection: { subscribeEvents: vi.fn().mockResolvedValue(() => {}) }
         } as any;
         const spy = vi.spyOn((element as any)._gsController, 'update');
-        element.updated(new Map([['config', null]]));
+        (element as any).willUpdate(new Map([['config', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
-    it('updated() does not call controller.update when hass is falsy even if key is present', () => {
+    it('willUpdate() does not call controller.update when hass is falsy even if key is present', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
         element.hass = undefined as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).not.toHaveBeenCalled();
     });
 
-    it('updated() calls controller.update when hass is present and key is in changedProps', () => {
+    it('willUpdate() calls controller.update when hass is present and key is in changedProps', () => {
         const spy = vi.spyOn((element as any)._gsController, 'update');
         element.hass = {
             states: { 'sensor.growspaces_list': { state: 'OK', attributes: { growspaces: {} } } },
             connection: { subscribeEvents: vi.fn().mockResolvedValue(() => {}) }
         } as any;
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect(spy).toHaveBeenCalled();
     });
 });

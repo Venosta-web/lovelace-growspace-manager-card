@@ -70,8 +70,8 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
     });
 
-    test('loads growspaces via controller after updated(hass)', () => {
-        element.updated(new Map([['hass', null]]));
+    test('loads growspaces via controller after willUpdate(hass)', () => {
+        (element as any).willUpdate(new Map([['hass', null]]));
         const controller = (element as any)._gsController;
         expect(controller.options.length).toBe(2);
         expect(controller.options[0]).toEqual({ id: 'gs1', name: 'Tent 1' });
@@ -129,7 +129,7 @@ describe('GrowspaceSubareaCardEditor', () => {
 
     test('handles missing growspaces list entity - controller options empty', () => {
         element.hass = { ...mockHass, states: {} };
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
         expect((element as any)._gsController.options).toEqual([]);
     });
 
@@ -180,7 +180,7 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect(spy).not.toHaveBeenCalled();
     });
 
-    test('updated: loads subareas when hass changes and growspace_id is set', async () => {
+    test('willUpdate: loads subareas when hass changes and growspace_id is set', async () => {
         element.setConfig({
             type: 'custom:growspace-subarea-card',
             growspace_id: 'gs1',
@@ -189,7 +189,7 @@ describe('GrowspaceSubareaCardEditor', () => {
 
         const loadSubareasSpy = vi.spyOn(element as any, '_loadSubareas');
         element.hass = { ...mockHass };
-        element.updated(new Map([['hass', null]]));
+        (element as any).willUpdate(new Map([['hass', null]]));
 
         expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
     });

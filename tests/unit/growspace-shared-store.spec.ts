@@ -8,7 +8,7 @@ const mockHistoryDestroy = vi.fn();
 const mockRemovePlantFromWsCache = vi.fn();
 const mockUpdateWsDataCacheGrid = vi.fn();
 
-vi.mock('../../src/data-service', () => ({
+vi.mock('../../src/services/data-service', () => ({
     DataService: class {
         updateHass = mockUpdateHass;
         invalidateCache = mockInvalidateCache;

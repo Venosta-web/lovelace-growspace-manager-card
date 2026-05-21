@@ -14,11 +14,9 @@ export class IrrigationAPI extends BaseAPI {
     irrigationDuration: number;
     drainDuration: number;
   }): Promise<void> {
-    console.log('[IrrigationAPI:setIrrigationSettings] Setting irrigation settings:', params);
     try {
       const payload = this._serializeSettings(params);
       await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, payload);
-      console.log('[IrrigationAPI:setIrrigationSettings] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:setIrrigationSettings] Error:', err);
       throw err;
@@ -30,7 +28,6 @@ export class IrrigationAPI extends BaseAPI {
     time: string;
     duration?: number;
   }): Promise<void> {
-    console.log('[IrrigationAPI:addIrrigationTime] Adding irrigation time:', params);
     try {
       const payload = {
         growspace_id: params.growspaceId,
@@ -38,7 +35,6 @@ export class IrrigationAPI extends BaseAPI {
         duration: params.duration,
       };
       await this.callService(DOMAIN, SERVICES.ADD_IRRIGATION_TIME, payload);
-      console.log('[IrrigationAPI:addIrrigationTime] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:addIrrigationTime] Error:', err);
       throw err;
@@ -46,14 +42,12 @@ export class IrrigationAPI extends BaseAPI {
   }
 
   async removeIrrigationTime(params: { growspaceId: string; time: string }): Promise<void> {
-    console.log('[IrrigationAPI:removeIrrigationTime] Removing irrigation time:', params);
     try {
       const payload = {
         growspace_id: params.growspaceId,
         time: params.time,
       };
       await this.callService(DOMAIN, SERVICES.REMOVE_IRRIGATION_TIME, payload);
-      console.log('[IrrigationAPI:removeIrrigationTime] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:removeIrrigationTime] Error:', err);
       throw err;
@@ -65,7 +59,6 @@ export class IrrigationAPI extends BaseAPI {
     time: string;
     duration?: number;
   }): Promise<void> {
-    console.log('[IrrigationAPI:addDrainTime] Adding drain time:', params);
     try {
       const payload = {
         growspace_id: params.growspaceId,
@@ -73,7 +66,6 @@ export class IrrigationAPI extends BaseAPI {
         duration: params.duration,
       };
       await this.callService(DOMAIN, SERVICES.ADD_DRAIN_TIME, payload);
-      console.log('[IrrigationAPI:addDrainTime] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:addDrainTime] Error:', err);
       throw err;
@@ -81,14 +73,12 @@ export class IrrigationAPI extends BaseAPI {
   }
 
   async removeDrainTime(params: { growspaceId: string; time: string }): Promise<void> {
-    console.log('[IrrigationAPI:removeDrainTime] Removing drain time:', params);
     try {
       const payload = {
         growspace_id: params.growspaceId,
         time: params.time,
       };
       await this.callService(DOMAIN, SERVICES.REMOVE_DRAIN_TIME, payload);
-      console.log('[IrrigationAPI:removeDrainTime] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:removeDrainTime] Error:', err);
       throw err;
@@ -99,14 +89,12 @@ export class IrrigationAPI extends BaseAPI {
     growspaceId: string,
     strategy: Partial<IrrigationStrategy>
   ): Promise<void> {
-    console.log('[IrrigationAPI:setIrrigationStrategy] Setting strategy:', strategy);
     try {
       const payload = {
         growspace_id: growspaceId,
         ...this._serializeStrategy(strategy),
       };
       await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_STRATEGY, payload);
-      console.log('[IrrigationAPI:setIrrigationStrategy] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:setIrrigationStrategy] Error:', err);
       throw err;
@@ -154,14 +142,6 @@ export class IrrigationAPI extends BaseAPI {
     nutrients?: Record<string, number>,
     presetId?: string
   ): Promise<void> {
-    console.log(
-      '[IrrigationAPI:waterGrowspace] Watering growspace:',
-      growspaceId,
-      'total amount:',
-      amount,
-      'preset:',
-      presetId
-    );
     try {
       const payload: Record<string, unknown> = {
         growspace_id: growspaceId,
@@ -174,7 +154,6 @@ export class IrrigationAPI extends BaseAPI {
         payload.preset_id = presetId;
       }
       await this.callService(DOMAIN, SERVICES.WATER_GROWSPACE, payload);
-      console.log('[IrrigationAPI:waterGrowspace] Service Called');
     } catch (err) {
       console.error('[IrrigationAPI:waterGrowspace] Error:', err);
       throw err;

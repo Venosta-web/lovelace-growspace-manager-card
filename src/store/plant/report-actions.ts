@@ -6,6 +6,7 @@
  */
 
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 
 /**
  * Fetch the grow report data for a growspace (read-only, no toast).
@@ -17,17 +18,8 @@ export async function fetchGrowReport(ctx: ActionContext, growspaceId: string) {
 /**
  * Export the grow report in a given format.
  */
-export async function exportGrowReport(
-  ctx: ActionContext,
-  growspaceId: string,
-  format: string
-): Promise<void> {
-  try {
-    await ctx.dataService.exportGrowReport(growspaceId, format);
-    ctx.ui.showToast('Grow report exported', 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to export report: ${error}`, 'error');
-    throw e;
-  }
+export async function exportGrowReport(ctx: ActionContext, growspaceId: string, format: string): Promise<void> {
+  await withAction(ctx, () => ctx.dataService.exportGrowReport(growspaceId, format), {
+    success: 'Grow report exported', errorPrefix: 'Failed to export report', rethrow: true,
+  });
 }

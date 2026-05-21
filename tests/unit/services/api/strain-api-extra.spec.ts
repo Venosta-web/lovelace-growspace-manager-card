@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DOMAIN, SERVICES } from '../../../../src/constants';
 
@@ -101,13 +101,11 @@ describe('StrainAPI Extra Coverage', () => {
 
     describe('removeStrain gaps', () => {
         it('should call remove_strain service on success', async () => {
-            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
             await service.removeStrain('S1', 'P1');
             expect(mockHass.callService).toHaveBeenCalledWith(DOMAIN, SERVICES.REMOVE_STRAIN, {
                 strain: 'S1',
                 phenotype: 'P1'
             });
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Service Called'));
         });
 
         it('should handle service error', async () => {

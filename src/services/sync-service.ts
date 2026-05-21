@@ -1,5 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { DataService } from '../data-service';
+import { DataService } from './data-service';
 import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { GrowspaceGridStore } from '../store/grid/grid-store';

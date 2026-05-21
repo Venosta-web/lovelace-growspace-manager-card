@@ -25,7 +25,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
     }
   }
 
-  protected updated(changedProps: Map<string, unknown>): void {
+  protected willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('hass') && this.hass) {
       this._gsController.update(this.hass);
       if (this._config?.growspace_id) {

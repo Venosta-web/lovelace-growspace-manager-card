@@ -5381,6 +5381,7 @@ const WS_TYPE_GET_SUBAREAS = 'growspace_manager/get_subareas';
 const WS_TYPE_ADD_SUBAREA = 'growspace_manager/add_subarea';
 const WS_TYPE_UPDATE_SUBAREA = 'growspace_manager/update_subarea';
 const WS_TYPE_REMOVE_SUBAREA = 'growspace_manager/remove_subarea';
+const WS_TYPE_UPDATE_SENSOR_COORDINATES = 'growspace_manager/update_sensor_coordinates';
 // Home Assistant services
 const SERVICES = {
     GET_STRAIN_LIBRARY: 'get_strain_library',
@@ -5469,7 +5470,6 @@ class GrowspaceAPI extends BaseAPI {
         else {
             this._cache.clear();
         }
-        console.debug('[GrowspaceAPI] Cache invalidated:', growspaceId || 'all');
     }
     /**
      * Check if cached data is still valid (within TTL).
@@ -5487,7 +5487,6 @@ class GrowspaceAPI extends BaseAPI {
         const cacheKey = growspaceId || '__all__';
         if (this._isCacheValid(cacheKey)) {
             const cached = this._cache.get(cacheKey);
-            console.debug(`[GrowspaceAPI] Returning cached data for ${cacheKey}`);
             return cached.data;
         }
         try {
@@ -5549,7 +5548,6 @@ class GrowspaceAPI extends BaseAPI {
             .filter((d) => d !== null);
     }
     async addGrowspace(data) {
-        console.log('[GrowspaceAPI:addGrowspace] Adding growspace:', data);
         try {
             const payload = {
                 name: data.name,
@@ -5558,7 +5556,6 @@ class GrowspaceAPI extends BaseAPI {
                 notification_target: data.notificationService, // Map to backend field
             };
             await this.callService(DOMAIN$1, SERVICES.ADD_GROWSPACE, payload);
-            console.log('[GrowspaceAPI:addGrowspace] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:addGrowspace] Error:', err);
@@ -5566,7 +5563,6 @@ class GrowspaceAPI extends BaseAPI {
         }
     }
     async updateGrowspace(data) {
-        console.log('[GrowspaceAPI:updateGrowspace] Updating growspace:', data);
         try {
             const payload = {
                 growspace_id: data.growspaceId,
@@ -5580,7 +5576,6 @@ class GrowspaceAPI extends BaseAPI {
             if (data.notificationService)
                 payload.notification_target = data.notificationService;
             await this.callService(DOMAIN$1, SERVICES.UPDATE_GROWSPACE, payload);
-            console.log('[GrowspaceAPI:updateGrowspace] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:updateGrowspace] Error:', err);
@@ -5588,12 +5583,10 @@ class GrowspaceAPI extends BaseAPI {
         }
     }
     async removeGrowspace(growspaceId) {
-        console.log('[GrowspaceAPI:removeGrowspace] Removing growspace:', growspaceId);
         try {
             await this.callService(DOMAIN$1, SERVICES.REMOVE_GROWSPACE, {
                 growspace_id: growspaceId,
             });
-            console.log('[GrowspaceAPI:removeGrowspace] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:removeGrowspace] Error:', err);
@@ -5601,7 +5594,6 @@ class GrowspaceAPI extends BaseAPI {
         }
     }
     async configureEnvironment(data) {
-        console.log('[GrowspaceAPI:configureEnvironment] Configuring sensors:', data);
         try {
             // Map camelCase to snake_case for API
             const payload = {
@@ -5692,7 +5684,6 @@ class GrowspaceAPI extends BaseAPI {
             if (data.energySensors?.length)
                 payload.energy_sensors = data.energySensors;
             await this.callService(DOMAIN$1, SERVICES.CONFIGURE_ENVIRONMENT, payload);
-            console.log('[GrowspaceAPI:configureEnvironment] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:configureEnvironment] Error:', err);
@@ -5700,13 +5691,11 @@ class GrowspaceAPI extends BaseAPI {
         }
     }
     async setDehumidifierControl(growspaceId, enabled) {
-        console.log(`[GrowspaceAPI:setDehumidifierControl] Setting dehumidifier control for ${growspaceId} to ${enabled}`);
         try {
             await this.callService(DOMAIN$1, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
                 growspace_id: growspaceId,
                 enabled,
             });
-            console.log('[GrowspaceAPI:setDehumidifierControl] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:setDehumidifierControl] Error:', err);
@@ -5714,12 +5703,10 @@ class GrowspaceAPI extends BaseAPI {
         }
     }
     async removeEnvironment(growspaceId) {
-        console.log(`[GrowspaceAPI:removeEnvironment] Removing environment for ${growspaceId}`);
         try {
             await this.callService(DOMAIN$1, SERVICES.REMOVE_ENVIRONMENT, {
                 growspace_id: growspaceId,
             });
-            console.log('[GrowspaceAPI:removeEnvironment] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:removeEnvironment] Error:', err);
@@ -5727,17 +5714,29 @@ class GrowspaceAPI extends BaseAPI {
         }
     }
     async resetWaterTracking(growspaceId) {
-        console.log(`[GrowspaceAPI:resetWaterTracking] Resetting water tracking for ${growspaceId}`);
         try {
             await this.callService(DOMAIN$1, SERVICES.RESET_WATER_TRACKING, {
                 growspace_id: growspaceId,
             });
-            console.log('[GrowspaceAPI:resetWaterTracking] Service Called');
         }
         catch (err) {
             console.error('[GrowspaceAPI:resetWaterTracking] Error:', err);
             throw err;
         }
+    }
+    /**
+     * Update the 3D coordinates of a sensor in a growspace.
+     * Write-only WS call — no caching needed.
+     */
+    async updateSensorCoordinates(growspaceId, entityId, x, y, z, rotation) {
+        await this.sendWebSocket(WS_TYPE_UPDATE_SENSOR_COORDINATES, {
+            growspace_id: growspaceId,
+            entity_id: entityId,
+            x: Math.round(x),
+            y: Math.round(y),
+            z: Math.round(z),
+            rotation: rotation !== undefined ? Math.round(rotation) : undefined,
+        });
     }
 }
 GrowspaceAPI.CACHE_TTL_MS = 30_000; // 30 seconds
@@ -5817,13 +5816,11 @@ class StrainAPI extends BaseAPI {
         return [];
     }
     async fetchStrainLibrary() {
-        console.log('[StrainAPI:fetchStrainLibrary] Fetching strain library via WebSocket API');
         try {
             // Use WebSocket API to bypass the 16KB attribute limit of state machine
             const rawResponse = await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/get_strain_library',
             });
-            console.log('[StrainAPI:fetchStrainLibrary] WS Response:', rawResponse);
             // Remove legacy or wrapper 'response' key if present
             if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
                 delete rawResponse.response;
@@ -5887,7 +5884,6 @@ class StrainAPI extends BaseAPI {
         }
     }
     async addStrain(data) {
-        console.log('[StrainAPI:addStrain] Adding strain:', data);
         try {
             const payload = { ...data };
             // Clean undefined keys
@@ -5912,7 +5908,6 @@ class StrainAPI extends BaseAPI {
                 }
             }
             await this.callService(DOMAIN$1, SERVICES.ADD_STRAIN, payload);
-            console.log('[StrainAPI:addStrain] Service Called');
         }
         catch (err) {
             console.error('[StrainAPI:addStrain] Error:', err);
@@ -5920,13 +5915,11 @@ class StrainAPI extends BaseAPI {
         }
     }
     async removeStrain(strain, phenotype) {
-        console.log('[StrainAPI:removeStrain] Removing strain:', strain, phenotype);
         try {
             await this.callService(DOMAIN$1, SERVICES.REMOVE_STRAIN, {
                 strain,
                 phenotype,
             });
-            console.log('[StrainAPI:removeStrain] Service Called');
         }
         catch (err) {
             console.error('[StrainAPI:removeStrain] Error:', err);
@@ -5934,10 +5927,8 @@ class StrainAPI extends BaseAPI {
         }
     }
     async exportStrainLibrary() {
-        console.log('[StrainAPI:exportStrainLibrary] Exporting strain library');
         try {
             await this.callService(DOMAIN$1, SERVICES.EXPORT_STRAIN_LIBRARY, {});
-            console.log('[StrainAPI:exportStrainLibrary] Service Called');
         }
         catch (err) {
             console.error('[StrainAPI:exportStrainLibrary] Error:', err);
@@ -5945,7 +5936,6 @@ class StrainAPI extends BaseAPI {
         }
     }
     async importStrainLibrary(file, replace) {
-        console.log('[StrainAPI:importStrainLibrary] Importing strain library ZIP via HTTP. Replace:', replace);
         const formData = new FormData();
         formData.append('file', file);
         formData.append('replace', replace.toString());
@@ -5959,7 +5949,6 @@ class StrainAPI extends BaseAPI {
                 throw new Error(errorText || response.statusText);
             }
             const result = await response.json();
-            console.log('[StrainAPI:importStrainLibrary] Response:', result);
             if (result.success) {
                 return result;
             }
@@ -5974,10 +5963,8 @@ class StrainAPI extends BaseAPI {
         }
     }
     async clearStrainLibrary() {
-        console.log('[StrainAPI:clearStrainLibrary] Clearing library');
         try {
             await this.callService(DOMAIN$1, SERVICES.CLEAR_STRAIN_LIBRARY, {});
-            console.log('[StrainAPI:clearStrainLibrary] Service Called');
         }
         catch (err) {
             console.error('[StrainAPI:clearStrainLibrary] Error:', err);
@@ -5985,7 +5972,6 @@ class StrainAPI extends BaseAPI {
         }
     }
     async updateBreeder(oldName, newName, logo) {
-        console.log('[StrainAPI:updateBreeder] Updating breeder:', oldName, '->', newName);
         try {
             await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/update_breeder',
@@ -5993,7 +5979,6 @@ class StrainAPI extends BaseAPI {
                 new_name: newName,
                 logo: logo !== undefined ? logo : undefined,
             });
-            console.log('[StrainAPI:updateBreeder] WebSocket call completed');
         }
         catch (err) {
             console.error('[StrainAPI:updateBreeder] Error:', err);
@@ -6001,13 +5986,11 @@ class StrainAPI extends BaseAPI {
         }
     }
     async deleteBreeder(name) {
-        console.log('[StrainAPI:deleteBreeder] Deleting breeder:', name);
         try {
             await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/delete_breeder',
                 breeder_name: name,
             });
-            console.log('[StrainAPI:deleteBreeder] WebSocket call completed');
         }
         catch (err) {
             console.error('[StrainAPI:deleteBreeder] Error:', err);
@@ -6015,7 +5998,6 @@ class StrainAPI extends BaseAPI {
         }
     }
     async updateStrainMeta(data) {
-        console.log('[StrainAPI:updateStrainMeta] Updating strain:', data);
         try {
             const payload = { ...data };
             // Clean undefined keys
@@ -6040,7 +6022,6 @@ class StrainAPI extends BaseAPI {
                 }
             }
             await this.callService(DOMAIN$1, SERVICES.UPDATE_STRAIN_META, payload);
-            console.log('[StrainAPI:updateStrainMeta] Service Called');
         }
         catch (err) {
             console.error('[StrainAPI:updateStrainMeta] Error:', err);
@@ -6103,7 +6084,6 @@ class NutrientAPI extends BaseAPI {
                 current_ml: currentMl,
                 initial_ml: initialMl,
             });
-            console.log(`[NutrientAPI] Updated stock: ${name}`);
         }
         catch (err) {
             console.error('[NutrientAPI:updateNutrientStock] Error:', err);
@@ -6118,7 +6098,6 @@ class NutrientAPI extends BaseAPI {
                 type: WS_TYPE_REMOVE_NUTRIENT_STOCK,
                 nutrient_id: nutrientId,
             });
-            console.log(`[NutrientAPI] Removed stock: ${nutrientId}`);
         }
         catch (err) {
             console.error('[NutrientAPI:removeNutrientStock] Error:', err);
@@ -6145,10 +6124,8 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async saveNutrientPreset(data) {
-        console.log('[NutrientAPI:saveNutrientPreset] Saving nutrient preset:', data);
         try {
             await this.callService(DOMAIN$1, SERVICES.SAVE_NUTRIENT_PRESET, data);
-            console.log('[NutrientAPI:saveNutrientPreset] Service Called');
         }
         catch (err) {
             console.error('[NutrientAPI:saveNutrientPreset] Error:', err);
@@ -6156,10 +6133,8 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async removeNutrientPreset(presetId) {
-        console.log('[NutrientAPI:removeNutrientPreset] Removing nutrient preset:', presetId);
         try {
             await this.callService(DOMAIN$1, SERVICES.REMOVE_NUTRIENT_PRESET, { preset_id: presetId });
-            console.log('[NutrientAPI:removeNutrientPreset] Service Called');
         }
         catch (err) {
             console.error('[NutrientAPI:removeNutrientPreset] Error:', err);
@@ -6167,10 +6142,8 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async saveIPMPreset(data) {
-        console.log('[NutrientAPI:saveIPMPreset] Saving IPM preset:', data);
         try {
             await this.callService(DOMAIN$1, SERVICES.SAVE_IPM_PRESET, data);
-            console.log('[NutrientAPI:saveIPMPreset] Service Called');
         }
         catch (err) {
             console.error('[NutrientAPI:saveIPMPreset] Error:', err);
@@ -6178,10 +6151,8 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async removeIPMPreset(presetId) {
-        console.log('[NutrientAPI:removeIPMPreset] Removing IPM preset:', presetId);
         try {
             await this.callService(DOMAIN$1, SERVICES.REMOVE_IPM_PRESET, { preset_id: presetId });
-            console.log('[NutrientAPI:removeIPMPreset] Service Called');
         }
         catch (err) {
             console.error('[NutrientAPI:removeIPMPreset] Error:', err);
@@ -6189,10 +6160,8 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async applyIPM(data) {
-        console.log('[NutrientAPI:applyIPM] Applying IPM:', data);
         try {
             await this.callService(DOMAIN$1, SERVICES.APPLY_IPM, data);
-            console.log('[NutrientAPI:applyIPM] Service Called');
         }
         catch (err) {
             console.error('[NutrientAPI:applyIPM] Error:', err);
@@ -6219,7 +6188,6 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async saveECRampCurve(data) {
-        console.log('[NutrientAPI:saveECRampCurve] Saving curve:', data);
         // Transform points to backend format
         const backendData = {
             curve_id: data.curve_id,
@@ -6240,7 +6208,6 @@ class NutrientAPI extends BaseAPI {
         }
     }
     async removeECRampCurve(curveId) {
-        console.log('[NutrientAPI:removeECRampCurve] Removing curve:', curveId);
         try {
             await this.callService(DOMAIN$1, 'remove_ec_ramp_curve', { curve_id: curveId });
         }
@@ -6297,9 +6264,6 @@ class HistoryAPI extends BaseAPI {
         if (endTime) {
             url += `&end_time=${endTime.toISOString()}`;
         }
-        const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
-        console.log(`[HistoryAPI.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`);
-        console.log(`[HistoryAPI.getBatchHistory] About to call API with URL: ${url}`);
         try {
             // HA returns an array of arrays (one array per entity)
             const res = await this.hass.callApi('GET', url);
@@ -6363,7 +6327,6 @@ class HistoryAPI extends BaseAPI {
         }
         catch (err) {
             console.warn('[HistoryAPI] getHistoryStats WS failed, falling back to REST batch. Error:', err);
-            console.log(`[HistoryAPI] Fallback params: start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}`);
             return this.getBatchHistory(entityIds, startTime, endTime);
         }
     }
@@ -6628,11 +6591,9 @@ class PlantAPI extends BaseAPI {
  */
 class IrrigationAPI extends BaseAPI {
     async setIrrigationSettings(params) {
-        console.log('[IrrigationAPI:setIrrigationSettings] Setting irrigation settings:', params);
         try {
             const payload = this._serializeSettings(params);
             await this.callService(DOMAIN$1, SERVICES.SET_IRRIGATION_SETTINGS, payload);
-            console.log('[IrrigationAPI:setIrrigationSettings] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:setIrrigationSettings] Error:', err);
@@ -6640,7 +6601,6 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     async addIrrigationTime(params) {
-        console.log('[IrrigationAPI:addIrrigationTime] Adding irrigation time:', params);
         try {
             const payload = {
                 growspace_id: params.growspaceId,
@@ -6648,7 +6608,6 @@ class IrrigationAPI extends BaseAPI {
                 duration: params.duration,
             };
             await this.callService(DOMAIN$1, SERVICES.ADD_IRRIGATION_TIME, payload);
-            console.log('[IrrigationAPI:addIrrigationTime] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:addIrrigationTime] Error:', err);
@@ -6656,14 +6615,12 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     async removeIrrigationTime(params) {
-        console.log('[IrrigationAPI:removeIrrigationTime] Removing irrigation time:', params);
         try {
             const payload = {
                 growspace_id: params.growspaceId,
                 time: params.time,
             };
             await this.callService(DOMAIN$1, SERVICES.REMOVE_IRRIGATION_TIME, payload);
-            console.log('[IrrigationAPI:removeIrrigationTime] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:removeIrrigationTime] Error:', err);
@@ -6671,7 +6628,6 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     async addDrainTime(params) {
-        console.log('[IrrigationAPI:addDrainTime] Adding drain time:', params);
         try {
             const payload = {
                 growspace_id: params.growspaceId,
@@ -6679,7 +6635,6 @@ class IrrigationAPI extends BaseAPI {
                 duration: params.duration,
             };
             await this.callService(DOMAIN$1, SERVICES.ADD_DRAIN_TIME, payload);
-            console.log('[IrrigationAPI:addDrainTime] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:addDrainTime] Error:', err);
@@ -6687,14 +6642,12 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     async removeDrainTime(params) {
-        console.log('[IrrigationAPI:removeDrainTime] Removing drain time:', params);
         try {
             const payload = {
                 growspace_id: params.growspaceId,
                 time: params.time,
             };
             await this.callService(DOMAIN$1, SERVICES.REMOVE_DRAIN_TIME, payload);
-            console.log('[IrrigationAPI:removeDrainTime] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:removeDrainTime] Error:', err);
@@ -6702,14 +6655,12 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     async setIrrigationStrategy(growspaceId, strategy) {
-        console.log('[IrrigationAPI:setIrrigationStrategy] Setting strategy:', strategy);
         try {
             const payload = {
                 growspace_id: growspaceId,
                 ...this._serializeStrategy(strategy),
             };
             await this.callService(DOMAIN$1, SERVICES.SET_IRRIGATION_STRATEGY, payload);
-            console.log('[IrrigationAPI:setIrrigationStrategy] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:setIrrigationStrategy] Error:', err);
@@ -6746,7 +6697,6 @@ class IrrigationAPI extends BaseAPI {
         return result;
     }
     async waterGrowspace(growspaceId, amount, nutrients, presetId) {
-        console.log('[IrrigationAPI:waterGrowspace] Watering growspace:', growspaceId, 'total amount:', amount, 'preset:', presetId);
         try {
             const payload = {
                 growspace_id: growspaceId,
@@ -6759,7 +6709,6 @@ class IrrigationAPI extends BaseAPI {
                 payload.preset_id = presetId;
             }
             await this.callService(DOMAIN$1, SERVICES.WATER_GROWSPACE, payload);
-            console.log('[IrrigationAPI:waterGrowspace] Service Called');
         }
         catch (err) {
             console.error('[IrrigationAPI:waterGrowspace] Error:', err);
@@ -6802,7 +6751,6 @@ class AIAPI extends BaseAPI {
      * @returns AI-generated advice response
      */
     async askGrowAdvice(growspaceId, userQuery) {
-        console.log('[AIAPI:askGrowAdvice] Asking advice for:', growspaceId, userQuery);
         try {
             // Use sendMessagePromise with return_response=true
             return await this.hass.connection.sendMessagePromise({
@@ -6827,7 +6775,6 @@ class AIAPI extends BaseAPI {
      * @returns Comprehensive analysis from AI
      */
     async analyzeAllGrowspaces() {
-        console.log('[AIAPI:analyzeAllGrowspaces] Analyzing all growspaces');
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -6848,7 +6795,6 @@ class AIAPI extends BaseAPI {
      * @returns AI-generated strain recommendation
      */
     async getStrainRecommendation(userQuery) {
-        console.log('[AIAPI:getStrainRecommendation] Getting strain recommendation for:', userQuery);
         try {
             return await this.hass.connection.sendMessagePromise({
                 type: 'call_service',
@@ -6985,13 +6931,11 @@ class ReportAPI extends BaseAPI {
      * Fetches JSON grow report data over WebSocket if supported.
      */
     async fetchGrowReport(growspaceId) {
-        console.log(`[ReportAPI:fetchGrowReport] Fetching report for ${growspaceId}`);
         try {
             const response = await this.hass.connection.sendMessagePromise({
                 type: 'growspace_manager/get_grow_report',
                 growspace_id: growspaceId,
             });
-            console.log('[ReportAPI:fetchGrowReport] WS call completed', response);
             return response;
         }
         catch (err) {
@@ -7138,7 +7082,7 @@ class SubareaAPI extends BaseAPI {
  * Owns updateHass() so callers update one object instead of twelve.
  * All other methods delegate directly to the appropriate API client.
  */
-let DataService$1 = class DataService {
+class DataService {
     constructor(hass) {
         // ── Growspace ────────────────────────────────────────────────────────────
         this.fetchGrowspaceData = (growspaceId) => this._growspaceAPI.fetchGrowspaceData(growspaceId);
@@ -7151,6 +7095,7 @@ let DataService$1 = class DataService {
         this.setDehumidifierControl = (growspaceId, enabled) => this._growspaceAPI.setDehumidifierControl(growspaceId, enabled);
         this.removeEnvironment = (growspaceId) => this._growspaceAPI.removeEnvironment(growspaceId);
         this.resetWaterTracking = (growspaceId) => this._growspaceAPI.resetWaterTracking(growspaceId);
+        this.updateSensorCoordinates = (growspaceId, entityId, x, y, z, rotation) => this._growspaceAPI.updateSensorCoordinates(growspaceId, entityId, x, y, z, rotation);
         // ── Strain ───────────────────────────────────────────────────────────────
         this.getStrainLibrary = () => this._strainAPI.getStrainLibrary();
         this.fetchStrainLibrary = () => this._strainAPI.fetchStrainLibrary();
@@ -7281,10 +7226,9 @@ let DataService$1 = class DataService {
             console.error('[DataService:callService] Hass instance is missing');
             return;
         }
-        console.log(`[DataService:callService] ${domain}.${service}`, serviceData);
         await this.hass.callService(domain, service, serviceData);
     }
-};
+}
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -14560,9 +14504,9 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
         this._saving = false;
         this._error = '';
     }
-    updated(changedProperties) {
+    willUpdate(changedProperties) {
         if (changedProperties.has('hass') && this.hass) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         if (changedProperties.has('subarea') && this.subarea) {
             this._populateFromSubarea(this.subarea);
@@ -14591,7 +14535,7 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
         if (!this.subarea || !this.growspaceId)
             return;
         if (!this._dataService) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         this._saving = true;
         this._error = '';
@@ -15006,7 +14950,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     updated(changedProperties) {
         super.updated(changedProperties);
         if (changedProperties.has('hass') && this.hass) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         // Apply initial tab state only once when dialog opens
         if (changedProperties.has('open')) {
@@ -15682,7 +15626,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // --- Subareas ---
     _getDataService() {
         if (!this._dataService) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         return this._dataService;
     }
@@ -19052,7 +18996,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
             this._initializeState();
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         // Tab fallback: if the active tab is no longer visible, reset to 'schedules'
         if (!this._visibleTabs.includes(this._activeTab)) {
@@ -108451,59 +108395,6 @@ class InteractionManager {
     }
 }
 
-class DataService {
-    constructor(hass) {
-        this.hass = hass;
-    }
-    async fetchHistory(entityIds, startTime, intervalMinutes = 15) {
-        if (!this.hass || entityIds.length === 0)
-            return {};
-        let startStr;
-        if (startTime instanceof Date) {
-            startStr = startTime.toISOString();
-        }
-        else {
-            startStr = startTime;
-        }
-        try {
-            return await this.hass.callWS({
-                type: 'growspace_manager/get_history_stats',
-                entity_ids: entityIds,
-                start_time: startStr,
-                interval_minutes: intervalMinutes
-            });
-        }
-        catch (err) {
-            console.error('DataService: Failed to fetch history', err);
-            return {};
-        }
-    }
-    async callService(domain, service, serviceData = {}) {
-        if (!this.hass)
-            return;
-        return this.hass.callService(domain, service, serviceData);
-    }
-    async updateSensorCoordinates(deviceId, entityId, x, y, z, rotation) {
-        if (!this.hass)
-            return;
-        try {
-            await this.hass.callWS({
-                type: 'growspace_manager/update_sensor_coordinates',
-                growspace_id: deviceId,
-                entity_id: entityId,
-                x: Math.round(x),
-                y: Math.round(y),
-                z: Math.round(z),
-                rotation: rotation !== undefined ? Math.round(rotation) : undefined,
-            });
-        }
-        catch (err) {
-            console.error('DataService: Failed to update sensor coordinates', err);
-            throw err;
-        }
-    }
-}
-
 let Heatmap3D = class Heatmap3D extends i$3 {
     constructor() {
         super(...arguments);
@@ -108752,7 +108643,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
             return;
         try {
             const start = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            this.historyData = await this.dataService.fetchHistory(Array.from(entityIds), start);
+            this.historyData = await this.dataService.getHistoryStats(Array.from(entityIds), start);
         }
         catch (e) {
             console.error('Failed to fetch history:', e);
@@ -110588,6 +110479,23 @@ class GrowspaceGridStore {
     }
 }
 
+async function withAction(ctx, fn, opts) {
+    try {
+        const result = await fn();
+        if (opts.success)
+            ctx.ui.showToast(opts.success, 'success');
+        return result;
+    }
+    catch (e) {
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        console.error(opts.errorPrefix, e);
+        ctx.ui.showToast(`${opts.errorPrefix}: ${message}`, 'error');
+        if (opts.rethrow)
+            throw e;
+        return undefined;
+    }
+}
+
 async function fetchStrainLibrary(ctx, force = false) {
     // Requires hass to be present in store (usually via dataService or just check store)
     // The original code checks this.hass.
@@ -110730,26 +110638,16 @@ async function fetchNutrientInventory(ctx, force = false) {
     }
 }
 async function updateNutrientStock(ctx, nutrientId, name, currentMl, initialMl) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
         await fetchNutrientInventory(ctx, true);
-        ctx.ui.showToast(`Updated stock: ${name}`, 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to update stock: ${error}`, 'error');
-    }
+    }, { success: `Updated stock: ${name}`, errorPrefix: 'Failed to update stock' });
 }
 async function removeNutrientStock(ctx, nutrientId) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.removeNutrientStock(nutrientId);
         await fetchNutrientInventory(ctx, true);
-        ctx.ui.showToast('Removed nutrient stock', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to remove stock: ${error}`, 'error');
-    }
+    }, { success: 'Removed nutrient stock', errorPrefix: 'Failed to remove stock' });
 }
 async function fetchECRampCurves(ctx, force = false) {
     const CACHE_KEY = 'growspace_ec_ramp_curves';
@@ -110786,26 +110684,16 @@ async function fetchECRampCurves(ctx, force = false) {
     }
 }
 async function saveECRampCurve(ctx, data) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.saveECRampCurve(data);
         await fetchECRampCurves(ctx, true);
-        ctx.ui.showToast(`Saved EC ramp: ${data.name}`, 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to save EC ramp: ${error}`, 'error');
-    }
+    }, { success: `Saved EC ramp: ${data.name}`, errorPrefix: 'Failed to save EC ramp' });
 }
 async function removeECRampCurve(ctx, curveId) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.removeECRampCurve(curveId);
         await fetchECRampCurves(ctx, true);
-        ctx.ui.showToast('Removed EC ramp curve', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to remove EC ramp: ${error}`, 'error');
-    }
+    }, { success: 'Removed EC ramp curve', errorPrefix: 'Failed to remove EC ramp' });
 }
 async function saveNutrientPreset(ctx, preset) {
     try {
@@ -110839,15 +110727,10 @@ async function removeNutrientPreset(ctx, presetId) {
  * Update a single plant with new attributes.
  */
 async function updatePlant(ctx, plantId, updates) {
-    try {
-        await ctx.dataService.updatePlant({ plant_id: plantId, ...updates });
-        ctx.ui.showToast('Plant updated', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to update plant:', e);
-        ctx.ui.showToast(`Failed to update plant: ${error}`, 'error');
-    }
+    await withAction(ctx, () => ctx.dataService.updatePlant({ plant_id: plantId, ...updates }), {
+        success: 'Plant updated',
+        errorPrefix: 'Failed to update plant',
+    });
 }
 /**
  * Bulk update plants from dialog state.
@@ -110858,22 +110741,15 @@ async function updatePlantFromDialog(ctx, dialogState) {
     const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
     const isBulkEdit = targetIds.length > 1;
     const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
-    try {
-        const updatePromises = targetIds.map((id) => {
-            const payload = { ...payloadTemplate, plant_id: id };
-            return ctx.dataService.updatePlant(payload);
-        });
-        await Promise.all(updatePromises);
+    await withAction(ctx, async () => {
+        await Promise.all(targetIds.map((id) => ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id })));
         ctx.closeDialog();
         await ctx.refreshData();
         if (ctx.ui.$isEditMode.get()) {
             ctx.ui.clearPlantSelection();
             ctx.ui.setEditMode(false);
         }
-    }
-    catch (err) {
-        console.error('Error updating plant(s):', err);
-    }
+    }, { errorPrefix: 'Failed to update plant(s)' });
 }
 /**
  * Internal helper for API deletion with optimistic updates
@@ -110977,22 +110853,16 @@ async function movePlantToNextStage(ctx, plant, metrics) {
         console.error('Unknown stage, cannot move plant', targetGrowspace);
         return false;
     }
-    try {
+    const ok = await withAction(ctx, async () => {
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
-        ctx.ui.showToast(`Plant moved to ${targetGrowspace}`, 'success');
         // Small delay to allow backend commit to complete before fetching updated data
         await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
-    }
-    catch (err) {
-        const error = err instanceof Error ? err.message : 'Unknown error';
-        console.error('Error moving plant to next stage:', err);
-        ctx.ui.showToast(`Failed to move plant: ${error}`, 'error');
-        return false;
-    }
+    }, { success: `Plant moved to ${targetGrowspace}`, errorPrefix: 'Failed to move plant' });
+    return ok !== undefined;
 }
 /**
  * Internal API move clone wrapper
@@ -111012,13 +110882,12 @@ async function _movePlantApi(ctx, plant, targetGrowspaceId) {
  */
 async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
     const originalGrowspace = plant.attributes.growspace_id || 'unknown';
-    try {
+    const ok = await withAction(ctx, async () => {
         await _movePlantApi(ctx, plant, targetGrowspace);
         // Small delay to allow backend commit to complete before fetching updated data
         await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
-        // Push Undo
         ctx.undoRedoManager.pushAction({
             type: 'move',
             description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
@@ -111030,35 +110899,27 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
             },
         });
         return true;
-    }
-    catch (err) {
-        const error = err instanceof Error ? err.message : 'Unknown error';
-        console.error('Error moving plant:', err);
-        ctx.ui.showToast(`Failed to move plant: ${error}`, 'error');
-        return false;
-    }
+    }, { errorPrefix: 'Failed to move plant' });
+    return ok !== undefined;
 }
 /**
  * Take clones from a mother plant.
  */
 async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
     const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-    try {
+    const cloneCount = numClones || 1;
+    const ok = await withAction(ctx, async () => {
         await ctx.dataService.takeClone({
             mother_plant_id: plantId,
             num_clones: numClones,
             target_growspace_id: targetGrowspaceId,
         });
-        console.log(`Clone taken from ${motherPlant.attributes?.strain || 'plant'}`, targetGrowspaceId ? `to ${targetGrowspaceId}` : '');
-        ctx.ui.showToast(`Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`, 'success');
         return true;
-    }
-    catch (error) {
-        const e = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`Failed to take clone: ${e}`);
-        ctx.ui.showToast(`Failed to take clone: ${e}`, 'error');
-        return false;
-    }
+    }, {
+        success: `Taking ${cloneCount} clone${cloneCount > 1 ? 's' : ''}...`,
+        errorPrefix: 'Failed to take clone',
+    });
+    return ok !== undefined;
 }
 /**
  * Move plant to new grid position (Internal)
@@ -111202,13 +111063,10 @@ async function confirmAddPlant(ctx, detail) {
         ctx.ui.showToast('No growspace selected', 'error');
         return false;
     }
-    try {
+    const ok = await withAction(ctx, async () => {
         if (detail.addToLibrary) {
             try {
-                await ctx.dataService.addStrain({
-                    strain: detail.strain,
-                    phenotype: detail.phenotype,
-                });
+                await ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
                 await fetchStrainLibrary(ctx, true);
                 ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
             }
@@ -111233,15 +111091,9 @@ async function confirmAddPlant(ctx, detail) {
         });
         ctx.closeDialog();
         await ctx.refreshData();
-        ctx.ui.showToast('Plant added successfully', 'success');
         return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to add plant:', e);
-        ctx.ui.showToast(`Failed to add plant: ${error}`, 'error');
-        return false;
-    }
+    }, { success: 'Plant added successfully', errorPrefix: 'Failed to add plant' });
+    return ok !== undefined;
 }
 /**
  * Batch add plants with Undo/Redo
@@ -111255,26 +111107,19 @@ async function confirmAddPlants(ctx, detail) {
     const devices = ctx.data.$devices.get();
     const beforeIds = new Set();
     devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
-    try {
+    await withAction(ctx, async () => {
         if (detail.addToLibrary) {
             try {
-                const amount = detail.amount || 1; // Dialog uses 'amount'
+                const amount = detail.amount || 1;
                 const startNumber = detail.start_number || 1;
                 const promises = [];
                 for (let i = 0; i < amount; i++) {
                     const currentNumber = startNumber + i;
-                    // Format: "Phenotype #1"
-                    // If phenotype is provided, rely on it. If not, backend defaults to Strain name,
-                    // but typically we only add to library if phenotype is explicit or we want "Strain #1".
-                    // User request specific to "phenotype + #Number".
                     const phenoName = detail.phenotype
                         ? `${detail.phenotype} #${currentNumber}`
-                        : `Strain #${currentNumber}`; // Fallback if no phenotype, similar to plant naming
+                        : `Strain #${currentNumber}`;
                     if (detail.strain) {
-                        promises.push(ctx.dataService.addStrain({
-                            strain: detail.strain,
-                            phenotype: phenoName,
-                        }));
+                        promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
                     }
                 }
                 await Promise.all(promises);
@@ -111286,9 +111131,7 @@ async function confirmAddPlants(ctx, detail) {
                 ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
             }
         }
-        // Exclude addToLibrary from payload sent to backend
         const { addToLibrary: _, ...apiPayload } = detail;
-        // detail is guaranteed to have strain and amount as required fields from caller
         await ctx.dataService.addPlants({
             ...apiPayload,
             growspace_id: selectedDevice,
@@ -111298,18 +111141,14 @@ async function confirmAddPlants(ctx, detail) {
         const addedIds = [];
         afterDevices.forEach((d) => d.plants?.forEach((p) => {
             const id = p.attributes.plant_id || '';
-            if (id && !beforeIds.has(id)) {
+            if (id && !beforeIds.has(id))
                 addedIds.push(id);
-            }
         }));
         if (addedIds.length > 0) {
             ctx.undoRedoManager.pushAction({
                 type: 'batch-delete',
                 description: `Added ${addedIds.length} plants`,
                 reverse: async () => {
-                    await handleDeletePlant(ctx, addedIds); // Re-use delete logic? Or simple delete.
-                    // handleDeletePlant pushes undo action. We probably don't want nested undo actions here.
-                    // So we use _deletePlantsApi.
                     await _deletePlantsApi(ctx, addedIds);
                     await ctx.refreshData();
                 },
@@ -111318,13 +111157,8 @@ async function confirmAddPlants(ctx, detail) {
                 },
             });
         }
-        ctx.ui.showToast('Batch plants added successfully', 'success');
         ctx.closeDialog();
-    }
-    catch (err) {
-        const error = err instanceof Error ? err.message : 'Unknown error';
-        ctx.ui.showToast(`Error: ${error}`, 'error');
-    }
+    }, { success: 'Batch plants added successfully', errorPrefix: 'Failed to add plants' });
 }
 /**
  * Print a label for a plant or strain.
@@ -111427,22 +111261,17 @@ function _createStrainPayload(strainData) {
 async function addStrain(ctx, strainData) {
     if (!strainData.strain)
         return false;
-    try {
+    const ok = await withAction(ctx, async () => {
         const payload = _createStrainPayload(strainData);
         await ctx.dataService.addStrain(payload);
         const tree = strainData.parents;
         if (tree?.parents?.length) {
             await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
         }
-        ctx.ui.showToast('Strain added successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
-    }
-    catch (err) {
-        console.error('Error adding strain:', err);
-        ctx.ui.showToast('Failed to add strain', 'error');
-        return false;
-    }
+    }, { success: 'Strain added successfully!', errorPrefix: 'Failed to add strain' });
+    return ok !== undefined;
 }
 /**
  * Update an existing strain in the library.
@@ -111450,22 +111279,17 @@ async function addStrain(ctx, strainData) {
 async function updateStrain(ctx, strainData) {
     if (!strainData.strain)
         return false;
-    try {
+    const ok = await withAction(ctx, async () => {
         const payload = _createStrainPayload(strainData);
         await ctx.dataService.updateStrainMeta(payload);
         const tree = strainData.parents;
         if (tree?.parents?.length) {
             await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
         }
-        ctx.ui.showToast('Strain updated successfully!', 'success');
         await fetchStrainLibrary(ctx, true);
         return true;
-    }
-    catch (err) {
-        console.error('Error updating strain:', err);
-        ctx.ui.showToast('Failed to update strain', 'error');
-        return false;
-    }
+    }, { success: 'Strain updated successfully!', errorPrefix: 'Failed to update strain' });
+    return ok !== undefined;
 }
 /**
  * Remove a strain from the library.
@@ -111914,15 +111738,9 @@ async function getSnapshots(ctx, growspaceId) {
  * Capture a new snapshot for a growspace.
  */
 async function captureSnapshot(ctx, growspaceId) {
-    try {
-        await ctx.dataService.captureSnapshot(growspaceId);
-        ctx.ui.showToast('Snapshot captured', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to capture snapshot: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, () => ctx.dataService.captureSnapshot(growspaceId), {
+        success: 'Snapshot captured', errorPrefix: 'Failed to capture snapshot', rethrow: true,
+    });
 }
 /**
  * Fetch the vision AI history for a growspace (read-only, no toast).
@@ -111934,31 +111752,17 @@ async function getVisionHistory(ctx, growspaceId) {
  * Trigger a vision checkup for a growspace.
  */
 async function triggerVisionCheckup(ctx, growspaceId) {
-    try {
-        await ctx.dataService.triggerVisionCheckup(growspaceId);
-        ctx.ui.showToast('Vision checkup triggered', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to trigger checkup: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.triggerVisionCheckup(growspaceId); await ctx.refreshData(); }, {
+        success: 'Vision checkup triggered', errorPrefix: 'Failed to trigger checkup', rethrow: true,
+    });
 }
 /**
  * Update the vision checkup configuration for a growspace.
  */
 async function updateVisionCheckupConfig(ctx, growspaceId, config) {
-    try {
-        await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
-        ctx.ui.showToast('Vision config saved', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to save vision config: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.updateVisionCheckupConfig(growspaceId, config); await ctx.refreshData(); }, {
+        success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true,
+    });
 }
 
 /**
@@ -111977,15 +111781,9 @@ async function fetchGrowReport(ctx, growspaceId) {
  * Export the grow report in a given format.
  */
 async function exportGrowReport(ctx, growspaceId, format) {
-    try {
-        await ctx.dataService.exportGrowReport(growspaceId, format);
-        ctx.ui.showToast('Grow report exported', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to export report: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, () => ctx.dataService.exportGrowReport(growspaceId, format), {
+        success: 'Grow report exported', errorPrefix: 'Failed to export report', rethrow: true,
+    });
 }
 
 async function analyzeGrowspace(ctx, query, all) {
@@ -112081,70 +111879,37 @@ async function getStrainRecommendation(ctx, userQuery) {
  */
 /** Configure the sensor layout for a growspace */
 async function configureEnvironment(ctx, data) {
-    try {
-        await ctx.dataService.configureEnvironment(data);
-        ctx.ui.showToast('Environment configured successfully!', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Error: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.configureEnvironment(data); await ctx.refreshData(); }, {
+        success: 'Environment configured successfully!', errorPrefix: 'Failed to configure environment', rethrow: true,
+    });
 }
 /** Remove a growspace environment configuration */
 async function removeEnvironment(ctx, growspaceId) {
-    try {
-        await ctx.dataService.removeEnvironment(growspaceId);
-        ctx.ui.showToast('Environment configuration removed', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to remove environment: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.removeEnvironment(growspaceId); await ctx.refreshData(); }, {
+        success: 'Environment configuration removed', errorPrefix: 'Failed to remove environment', rethrow: true,
+    });
 }
 /** Reset watering-tracking data for a growspace */
 async function resetWaterTracking(ctx, growspaceId) {
-    try {
-        await ctx.dataService.resetWaterTracking(growspaceId);
-        ctx.ui.showToast('Water tracking reset', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to reset water tracking: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.resetWaterTracking(growspaceId); await ctx.refreshData(); }, {
+        success: 'Water tracking reset', errorPrefix: 'Failed to reset water tracking', rethrow: true,
+    });
 }
 /** Water a single plant and refresh nutrient inventory if nutrients were applied */
 async function waterPlant(ctx, plantId, amount, nutrients, presetId) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.waterPlant(plantId, amount, nutrients, presetId);
-        if (nutrients && Object.keys(nutrients).length > 0) {
+        if (nutrients && Object.keys(nutrients).length > 0)
             await fetchNutrientInventory(ctx, true);
-        }
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to water plant: ${error}`, 'error');
-        throw e;
-    }
+    }, { errorPrefix: 'Failed to water plant', rethrow: true });
 }
 /** Water an entire growspace and refresh nutrient inventory if nutrients were applied */
 async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.waterGrowspace(growspaceId, amount, nutrients, presetId);
-        if (nutrients && Object.keys(nutrients).length > 0) {
+        if (nutrients && Object.keys(nutrients).length > 0)
             await fetchNutrientInventory(ctx, true);
-        }
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to water growspace: ${error}`, 'error');
-        throw e;
-    }
+    }, { errorPrefix: 'Failed to water growspace', rethrow: true });
 }
 
 /**
@@ -112155,26 +111920,16 @@ async function addGrowspace(ctx, name, rows = 4, plantsPerRow = 4, notificationS
         ctx.ui.showToast('Name is required', 'error');
         return false;
     }
-    try {
-        await ctx.dataService.addGrowspace({
-            name,
-            rows,
-            plantsPerRow,
-            notificationService,
-        });
-        ctx.ui.showToast('Growspace added successfully!', 'success');
+    const ok = await withAction(ctx, async () => {
+        await ctx.dataService.addGrowspace({ name, rows, plantsPerRow, notificationService });
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Error: ${error}`, 'error');
-        return false;
-    }
+    }, { success: 'Growspace added successfully!', errorPrefix: 'Failed to add growspace' });
+    return ok !== undefined;
 }
 async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
-    try {
+    const ok = await withAction(ctx, async () => {
         const devices = ctx.data.$devices.get();
         const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
         if (deviceIdx >= 0) {
@@ -112184,54 +111939,32 @@ async function updateGrowspace(ctx, growspaceId, name, rows, plantsPerRow) {
         }
         await ctx.dataService.updateGrowspace({ growspaceId, name, rows, plantsPerRow });
         await ctx.refreshData();
-        ctx.ui.showToast('Growspace updated successfully', 'success');
         ctx.closeDialog();
         return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to update growspace: ${error}`, 'error');
-        return false;
-    }
+    }, { success: 'Growspace updated successfully', errorPrefix: 'Failed to update growspace' });
+    return ok !== undefined;
 }
 async function removeGrowspace(ctx, growspaceId) {
-    try {
+    const ok = await withAction(ctx, async () => {
         await ctx.dataService.removeGrowspace(growspaceId);
-        ctx.ui.showToast('Growspace removed successfully', 'success');
         await ctx.refreshData();
         ctx.closeDialog();
         return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to remove growspace: ${error}`, 'error');
-        return false;
-    }
+    }, { success: 'Growspace removed successfully', errorPrefix: 'Failed to remove growspace' });
+    return ok !== undefined;
 }
 
 /** Update an existing breeder's name and optional logo */
 async function updateBreeder(ctx, oldName, newName, logo) {
-    try {
-        await ctx.dataService.updateBreeder(oldName, newName, logo);
-        ctx.ui.showToast('Breeder updated successfully!', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        ctx.ui.showToast('Failed to update breeder', 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.updateBreeder(oldName, newName, logo); await ctx.refreshData(); }, {
+        success: 'Breeder updated successfully!', errorPrefix: 'Failed to update breeder', rethrow: true,
+    });
 }
 /** Delete a breeder by name */
 async function deleteBreeder(ctx, name) {
-    try {
-        await ctx.dataService.deleteBreeder(name);
-        ctx.ui.showToast('Breeder deleted successfully!', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        ctx.ui.showToast('Failed to delete breeder', 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.deleteBreeder(name); await ctx.refreshData(); }, {
+        success: 'Breeder deleted successfully!', errorPrefix: 'Failed to delete breeder', rethrow: true,
+    });
 }
 
 /**
@@ -112242,165 +111975,81 @@ async function deleteBreeder(ctx, name) {
  */
 /** Add a new seed batch to the genetics library */
 async function addSeedBatch(ctx, data) {
-    try {
-        await ctx.dataService.addSeedBatch(data);
-        ctx.ui.showToast('Seed batch added', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to add seed batch: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.addSeedBatch(data); await ctx.refreshData(); }, {
+        success: 'Seed batch added', errorPrefix: 'Failed to add seed batch', rethrow: true,
+    });
 }
 /** Update an existing seed batch */
 async function updateSeedBatch(ctx, data) {
-    try {
-        await ctx.dataService.updateSeedBatch(data);
-        ctx.ui.showToast('Seed batch updated', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to update seed batch: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.updateSeedBatch(data); await ctx.refreshData(); }, {
+        success: 'Seed batch updated', errorPrefix: 'Failed to update seed batch', rethrow: true,
+    });
 }
 /** Log a new pollination event */
 async function logPollination(ctx, data) {
-    try {
-        await ctx.dataService.logPollination(data);
-        ctx.ui.showToast('Pollination event logged', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to log pollination: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.logPollination(data); await ctx.refreshData(); }, {
+        success: 'Pollination event logged', errorPrefix: 'Failed to log pollination', rethrow: true,
+    });
 }
 /** Update an existing pollination event */
 async function updatePollination(ctx, data) {
-    try {
-        await ctx.dataService.updatePollination(data);
-        ctx.ui.showToast('Pollination event updated', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to update pollination: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.updatePollination(data); await ctx.refreshData(); }, {
+        success: 'Pollination event updated', errorPrefix: 'Failed to update pollination', rethrow: true,
+    });
 }
 /** Delete a pollination event by ID */
 async function deletePollination(ctx, eventId) {
-    try {
-        await ctx.dataService.deletePollination(eventId);
-        ctx.ui.showToast('Pollination event deleted', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to delete pollination: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.deletePollination(eventId); await ctx.refreshData(); }, {
+        success: 'Pollination event deleted', errorPrefix: 'Failed to delete pollination', rethrow: true,
+    });
 }
 /** Harvest seeds from a pollination event */
 async function harvestSeeds(ctx, data) {
-    try {
-        await ctx.dataService.harvestSeeds(data);
-        ctx.ui.showToast('Seeds harvested', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to harvest seeds: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.harvestSeeds(data); await ctx.refreshData(); }, {
+        success: 'Seeds harvested', errorPrefix: 'Failed to harvest seeds', rethrow: true,
+    });
 }
 /** Fetch genetics data (seed batches and pollination events) */
 async function fetchGeneticsData(ctx) {
-    try {
-        return await ctx.dataService.fetchGeneticsData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to fetch genetics data: ${error}`, 'error');
-        throw e;
-    }
+    return withAction(ctx, () => ctx.dataService.fetchGeneticsData(), {
+        errorPrefix: 'Failed to fetch genetics data', rethrow: true,
+    });
 }
 /** Delete a seed batch by ID */
 async function deleteSeedBatch(ctx, batchId) {
-    try {
-        await ctx.dataService.deleteSeedBatch(batchId);
-        ctx.ui.showToast('Seed batch deleted', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to delete seed batch: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.deleteSeedBatch(batchId); await ctx.refreshData(); }, {
+        success: 'Seed batch deleted', errorPrefix: 'Failed to delete seed batch', rethrow: true,
+    });
 }
 /** Set the sex of a plant */
 async function setPlantSex(ctx, plantId, sex) {
-    try {
-        await ctx.dataService.setPlantSex(plantId, sex);
-        ctx.ui.showToast('Plant sex updated', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to set plant sex: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.setPlantSex(plantId, sex); await ctx.refreshData(); }, {
+        success: 'Plant sex updated', errorPrefix: 'Failed to set plant sex', rethrow: true,
+    });
 }
 /** Link a plant to its origin seed batch (decrements batch quantity) */
 async function sowSeed(ctx, batchId, plantId) {
-    try {
-        await ctx.dataService.sowSeed(batchId, plantId);
-        ctx.ui.showToast('Seed sown — plant linked to batch', 'success');
-        await ctx.refreshData();
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to sow seed: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, async () => { await ctx.dataService.sowSeed(batchId, plantId); await ctx.refreshData(); }, {
+        success: 'Seed sown — plant linked to batch', errorPrefix: 'Failed to sow seed', rethrow: true,
+    });
 }
 /** Fetch the lineage tree for a plant */
 async function getLineageTree(ctx, plantId) {
-    try {
-        return await ctx.dataService.getLineageTree(plantId);
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to fetch lineage tree: ${error}`, 'error');
-        throw e;
-    }
+    return withAction(ctx, () => ctx.dataService.getLineageTree(plantId), {
+        errorPrefix: 'Failed to fetch lineage tree', rethrow: true,
+    });
 }
 /** Fetch the lineage tree for a strain */
 async function getStrainLineageTree(ctx, strainName) {
-    try {
-        return await ctx.dataService.getStrainLineageTree(strainName);
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to fetch strain lineage tree: ${error}`, 'error');
-        throw e;
-    }
+    return withAction(ctx, () => ctx.dataService.getStrainLineageTree(strainName), {
+        errorPrefix: 'Failed to fetch strain lineage tree', rethrow: true,
+    });
 }
 /** Update the lineage tree for a strain */
 async function updateStrainLineageTree(ctx, strainName, parents) {
-    try {
-        const result = await ctx.dataService.updateStrainLineageTree(strainName, parents);
-        return result;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to update strain lineage tree: ${error}`, 'error');
-        throw e;
-    }
+    return withAction(ctx, () => ctx.dataService.updateStrainLineageTree(strainName, parents), {
+        errorPrefix: 'Failed to update strain lineage tree', rethrow: true,
+    });
 }
 
 /**
@@ -112410,52 +112059,27 @@ async function updateStrainLineageTree(ctx, strainName, parents) {
  * Apply IPM treatment and refresh inventory if needed.
  */
 async function applyIPM(ctx, detail) {
-    try {
+    await withAction(ctx, async () => {
         await ctx.dataService.applyIPM(detail);
         // Refresh nutrient inventory as IPM products often deduct from stock
         await fetchNutrientInventory(ctx, true);
-        ctx.ui.showToast('IPM treatment applied successfully', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to apply IPM:', e);
-        ctx.ui.showToast(`Failed to apply IPM: ${error}`, 'error');
-        throw e;
-    }
+    }, { success: 'IPM treatment applied successfully', errorPrefix: 'Failed to apply IPM', rethrow: true });
 }
 
 async function logDryingWeight(ctx, plantId, weightGrams, date) {
-    try {
-        await ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date });
-        ctx.ui.showToast('Weight logged', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to log weight: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, () => ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date }), {
+        success: 'Weight logged', errorPrefix: 'Failed to log weight', rethrow: true,
+    });
 }
 async function logMoistureReading(ctx, plantId, moisturePercent, date) {
-    try {
-        await ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date });
-        ctx.ui.showToast('Moisture logged', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to log moisture: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, () => ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date }), {
+        success: 'Moisture logged', errorPrefix: 'Failed to log moisture', rethrow: true,
+    });
 }
 async function setVisualTag(ctx, plantId, visualTag) {
-    try {
-        await ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag });
-        ctx.ui.showToast('Visual tag saved', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to save visual tag: ${error}`, 'error');
-        throw e;
-    }
+    await withAction(ctx, () => ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag }), {
+        success: 'Visual tag saved', errorPrefix: 'Failed to save visual tag', rethrow: true,
+    });
 }
 
 /**
@@ -113600,7 +113224,7 @@ class GrowspaceDataStore {
 
 class GrowspaceSharedStore {
     constructor() {
-        this.dataService = new DataService$1();
+        this.dataService = new DataService();
         this.data = new GrowspaceDataStore();
     }
     updateHass(hass) {
@@ -115217,7 +114841,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     firstUpdated() {
         if (this.hass) {
             this.store.updateHass(this.hass);
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         if (this._config?.growspace_id) {
             const syntheticConfig = {
@@ -115246,7 +114870,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         if (changedProps.has('hass') && this.hass) {
             this.store.updateHass(this.hass);
             if (!this._dataService) {
-                this._dataService = new DataService$1(this.hass);
+                this._dataService = new DataService(this.hass);
             }
             else {
                 this._dataService.updateHass(this.hass);
@@ -115274,7 +114898,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         if (!this.hass)
             return;
         if (!this._dataService) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         this._loading = true;
         this._error = null;
@@ -117233,7 +116857,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
     setConfig(config) {
         this._config = config;
     }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass') && this.hass) {
             this._gsController.update(this.hass);
         }
@@ -117316,7 +116940,7 @@ let GrowspaceGridCardEditor = class GrowspaceGridCardEditor extends i$3 {
     setConfig(config) {
         this._config = config;
     }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass') && this.hass) {
             this._gsController.update(this.hass);
         }
@@ -117400,7 +117024,7 @@ let GrowspaceAnalyticsCardEditor = class GrowspaceAnalyticsCardEditor extends i$
     setConfig(config) {
         this._config = config;
     }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass') && this.hass) {
             this._gsController.update(this.hass);
         }
@@ -117606,10 +117230,7 @@ let GrowspaceTankCardEditor = class GrowspaceTankCardEditor extends i$3 {
             this._sensorGrowspaces = [];
         }
     }
-    firstUpdated() {
-        this._loadGrowspaces();
-    }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass')) {
             this._loadGrowspaces();
         }
@@ -117711,7 +117332,7 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
             this._loadSubareas(config.growspace_id);
         }
     }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass') && this.hass) {
             this._gsController.update(this.hass);
             if (this._config?.growspace_id) {
@@ -117723,7 +117344,7 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
         if (!growspaceId || !this.hass)
             return;
         if (!this._dataService) {
-            this._dataService = new DataService$1(this.hass);
+            this._dataService = new DataService(this.hass);
         }
         else {
             this._dataService.updateHass(this.hass);
@@ -117838,7 +117459,7 @@ let GrowspaceLogbookCardEditor = class GrowspaceLogbookCardEditor extends i$3 {
     setConfig(config) {
         this._config = config;
     }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass') && this.hass) {
             this._gsController.update(this.hass);
         }
@@ -117928,7 +117549,7 @@ let GrowspaceCarouselCardEditor = class GrowspaceCarouselCardEditor extends i$3 
     setConfig(config) {
         this._config = config;
     }
-    updated(changedProps) {
+    willUpdate(changedProps) {
         if (changedProps.has('hass') && this.hass) {
             this._gsController.update(this.hass);
         }
@@ -118007,5 +117628,5 @@ var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService$1 as DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

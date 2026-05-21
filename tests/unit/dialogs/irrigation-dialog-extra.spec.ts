@@ -37,7 +37,7 @@ const mocks = vi.hoisted(() => ({
     addIrrigationTime: vi.fn().mockResolvedValue(true),
 }));
 
-vi.mock('../../../src/data-service', () => {
+vi.mock('../../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {

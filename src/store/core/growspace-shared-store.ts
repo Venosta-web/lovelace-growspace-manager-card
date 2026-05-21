@@ -1,6 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 
-import { DataService } from '../../data-service';
+import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from './data-store';
 
 export class GrowspaceSharedStore {

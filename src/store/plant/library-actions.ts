@@ -1,4 +1,5 @@
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 
 export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = false) {
   // Requires hass to be present in store (usually via dataService or just check store)
@@ -172,25 +173,25 @@ export async function updateNutrientStock(
   currentMl: number,
   initialMl: number
 ) {
-  try {
-    await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
-    await fetchNutrientInventory(ctx, true);
-    ctx.ui.showToast(`Updated stock: ${name}`, 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to update stock: ${error}`, 'error');
-  }
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+      await fetchNutrientInventory(ctx, true);
+    },
+    { success: `Updated stock: ${name}`, errorPrefix: 'Failed to update stock' }
+  );
 }
 
 export async function removeNutrientStock(ctx: ActionContext, nutrientId: string) {
-  try {
-    await ctx.dataService.removeNutrientStock(nutrientId);
-    await fetchNutrientInventory(ctx, true);
-    ctx.ui.showToast('Removed nutrient stock', 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to remove stock: ${error}`, 'error');
-  }
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.removeNutrientStock(nutrientId);
+      await fetchNutrientInventory(ctx, true);
+    },
+    { success: 'Removed nutrient stock', errorPrefix: 'Failed to remove stock' }
+  );
 }
 
 export async function fetchECRampCurves(ctx: ActionContext, force: boolean = false) {
@@ -237,25 +238,25 @@ export async function saveECRampCurve(
   ctx: ActionContext,
   data: { curve_id?: string; name: string; stage?: string; points: { day: number; target_ec: number }[] }
 ) {
-  try {
-    await ctx.dataService.saveECRampCurve(data);
-    await fetchECRampCurves(ctx, true);
-    ctx.ui.showToast(`Saved EC ramp: ${data.name}`, 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to save EC ramp: ${error}`, 'error');
-  }
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.saveECRampCurve(data);
+      await fetchECRampCurves(ctx, true);
+    },
+    { success: `Saved EC ramp: ${data.name}`, errorPrefix: 'Failed to save EC ramp' }
+  );
 }
 
 export async function removeECRampCurve(ctx: ActionContext, curveId: string) {
-  try {
-    await ctx.dataService.removeECRampCurve(curveId);
-    await fetchECRampCurves(ctx, true);
-    ctx.ui.showToast('Removed EC ramp curve', 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    ctx.ui.showToast(`Failed to remove EC ramp: ${error}`, 'error');
-  }
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.removeECRampCurve(curveId);
+      await fetchECRampCurves(ctx, true);
+    },
+    { success: 'Removed EC ramp curve', errorPrefix: 'Failed to remove EC ramp' }
+  );
 }
 
 export async function saveNutrientPreset(

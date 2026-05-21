@@ -157,7 +157,7 @@ const mockDataServiceInstance: any = {
     hass: { connection: {} } // Default to avoid early returns
 };
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {
@@ -672,7 +672,7 @@ describe('GrowspaceStore Branch Coverage', () => {
 
             await store.actions.plant.addBatch({ count: 5 });
 
-            expect(uiStore.showToast).toHaveBeenCalledWith('Error: Batch Fail', 'error');
+            expect(uiStore.showToast).toHaveBeenCalledWith('Failed to add plants: Batch Fail', 'error');
         });
 
         it('should handle addBatch with no device selected', async () => {

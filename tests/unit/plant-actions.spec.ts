@@ -491,19 +491,14 @@ describe('plant-actions', () => {
             });
         });
 
-        it('should log with strain name when available', async () => {
-            const consoleSpy = vi.spyOn(console, 'log');
-            await takeClone(ctx, mockPlant);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test Strain'), expect.anything());
-            consoleSpy.mockRestore();
+        it('should show success toast with clone count', async () => {
+            await takeClone(ctx, mockPlant, 2);
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Taking 2 clones...', 'success');
         });
 
-        it('should log with plant when strain is missing', async () => {
-            const consoleSpy = vi.spyOn(console, 'log');
-            const plantNoStrain = { ...mockPlant, attributes: { ...mockPlant.attributes, strain: undefined } };
-            await takeClone(ctx, plantNoStrain as any);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('plant'), expect.anything());
-            consoleSpy.mockRestore();
+        it('should show singular toast for single clone', async () => {
+            await takeClone(ctx, mockPlant, 1);
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Taking 1 clone...', 'success');
         });
     });
 
@@ -986,7 +981,7 @@ describe('plant-actions', () => {
 
             await confirmAddPlants(ctx, { count: 5 });
 
-            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Error: Batch failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to add plants: Batch failed', 'error');
         });
 
         it('should add strain to library during batch add if requested', async () => {
