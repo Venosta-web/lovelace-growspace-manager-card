@@ -38,7 +38,7 @@ vi.mock('../../src/store/system/optimistic-manager', () => {
                 }
             });
             rollbackUpdate = vi.fn();
-            checkPending = vi.fn().mockReturnValue(false);
+            isEntityPending = vi.fn().mockReturnValue(false);
         }
     };
 });
@@ -1187,6 +1187,7 @@ describe('GrowspaceStore', () => {
             plant: { attributes: { plant_id: 'p1' } } as any,
             editedAttributes: {},
             selectedPlantIds: ['p1'],
+            activeTab: 'dashboard',
         });
 
         expect(spy).toHaveBeenCalledWith('Failed to update plant(s)', expect.any(Error));
@@ -2049,7 +2050,8 @@ describe('GrowspaceStore', () => {
             const dialogState = {
                 plant,
                 editedAttributes: {},
-                selectedPlantIds: ['p1', 'p2']
+                selectedPlantIds: ['p1', 'p2'],
+                activeTab: 'dashboard' as const
             };
             mockDataServiceInstance.updatePlant.mockResolvedValue({});
             await store.actions.plant.updateFromDialog(dialogState);
@@ -2060,7 +2062,7 @@ describe('GrowspaceStore', () => {
 
         it('updatePlantFromDialog should fallback to entity_id if plant_id missing', async () => {
             const plant = { entity_id: 'sensor.p1', attributes: { plant_id: '' } } as any;
-            const dialogState = { plant, editedAttributes: {} };
+            const dialogState = { plant, editedAttributes: {}, activeTab: 'dashboard' as const, selectedPlantIds: [] };
             mockDataServiceInstance.updatePlant.mockResolvedValue({});
             await store.actions.plant.updateFromDialog(dialogState);
             expect(mockDataServiceInstance.updatePlant).toHaveBeenCalledWith(expect.objectContaining({ plant_id: 'p1' }));
@@ -2068,7 +2070,7 @@ describe('GrowspaceStore', () => {
 
         it('updatePlantFromDialog should clear selection in edit mode', async () => {
             const plant = { entity_id: 'p1', attributes: { plant_id: 'p1' } } as any;
-            const dialogState = { plant, editedAttributes: {} };
+            const dialogState = { plant, editedAttributes: {}, activeTab: 'dashboard' as const, selectedPlantIds: [] };
             (uiStore.$isEditMode.get as any).mockReturnValue(true);
             mockDataServiceInstance.updatePlant.mockResolvedValue({});
             await store.actions.plant.updateFromDialog(dialogState);
@@ -2474,7 +2476,7 @@ describe('GrowspaceStore', () => {
             store.grid.$selectedDevice.set('d1');
             mockDataServiceInstance.addPlants = vi.fn().mockResolvedValue(true);
 
-            await store.actions.plant.addBatch({ some: 'detail' });
+            await store.actions.plant.addBatch({ some: 'detail' } as any);
 
             expect(mockDataServiceInstance.addPlants).toHaveBeenCalledWith(expect.objectContaining({
                 growspace_id: 'd1', some: 'detail'
@@ -2523,7 +2525,7 @@ describe('GrowspaceStore', () => {
             vi.spyOn(store.undoRedoManager, 'pushAction');
 
             // 1. Execute confirmAddPlants
-            await store.actions.plant.addBatch({ count: 1 });
+            await store.actions.plant.addBatch({ amount: 1 });
 
             expect(mockDataServiceInstance.addPlants).toHaveBeenCalled();
             expect(uiStore.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success');

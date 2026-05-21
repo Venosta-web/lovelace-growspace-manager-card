@@ -62,7 +62,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $nutrientPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $nutrientInventory: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
-        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
@@ -173,24 +173,22 @@ vi.mock('../../src/store/system/optimistic-manager', () => {
             private _undoRedoManager: any;
             constructor(_data: any, undoRedoManager: any) {
                 this._undoRedoManager = undoRedoManager;
-                return {
-                    applyOptimisticUpdate: vi.fn(async (_type, _payload, apply) => {
-                        await apply();
-                        return 'mock-action-id';
-                    }),
-                    confirmUpdate: vi.fn((_id, options) => {
-                        if (options && this._undoRedoManager) {
-                            this._undoRedoManager.pushAction({
-                                redo: options.redo,
-                                undo: vi.fn(),
-                                description: options.description
-                            });
-                        }
-                    }),
-                    rollbackUpdate: vi.fn(),
-                    checkPending: vi.fn().mockReturnValue(false)
-                };
             }
+            applyOptimisticUpdate = vi.fn(async (_type, _payload, apply) => {
+                await apply();
+                return 'mock-action-id';
+            });
+            confirmUpdate = vi.fn((_id, options) => {
+                if (options && this._undoRedoManager) {
+                    this._undoRedoManager.pushAction({
+                        redo: options.redo,
+                        undo: vi.fn(),
+                        description: options.description
+                    });
+                }
+            });
+            rollbackUpdate = vi.fn();
+            isEntityPending = vi.fn().mockReturnValue(false);
         }
     };
 });
@@ -659,9 +657,9 @@ describe('GrowspaceStore Branch Coverage', () => {
             store.grid.$selectedDevice.set('d1');
             mockDataServiceInstance.addPlants = vi.fn().mockResolvedValue({});
 
-            await store.actions.plant.addBatch({ count: 5 });
+            await store.actions.plant.addBatch({ amount: 5 });
 
-            expect(mockDataServiceInstance.addPlants).toHaveBeenCalledWith({ growspace_id: 'd1', count: 5 });
+            expect(mockDataServiceInstance.addPlants).toHaveBeenCalledWith({ growspace_id: 'd1', amount: 5 });
             expect(uiStore.closeDialog).toHaveBeenCalled();
         });
 
@@ -670,7 +668,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             // showToast is mocked
             mockDataServiceInstance.addPlants = vi.fn().mockRejectedValue(new Error('Batch Fail'));
 
-            await store.actions.plant.addBatch({ count: 5 });
+            await store.actions.plant.addBatch({ amount: 5 });
 
             expect(uiStore.showToast).toHaveBeenCalledWith('Failed to add plants: Batch Fail', 'error');
         });
@@ -827,7 +825,7 @@ describe('GrowspaceStore Branch Coverage', () => {
 
         it('should cover printLabel', async () => {
             mockDataServiceInstance.printLabel = vi.fn().mockResolvedValue({});
-            await store.actions.plant.printLabel({ plant_id: 'p1' });
+            await store.actions.plant.printLabel({ plantId: 'p1' });
             // Should not throw
         });
 
