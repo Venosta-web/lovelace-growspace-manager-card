@@ -1,6 +1,5 @@
 import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, beforeEach, vi } from 'vitest';
-import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceAiInsightCard } from '../../src/cards/growspace-ai-insight-card';
 import type { GrowAdviceResponse } from '../../src/types';
@@ -279,7 +278,4 @@ describe('GrowspaceAiInsightCard', () => {
         });
     });
 
-    test('matches visual snapshot', async () => {
-        await expect(page.elementLocator(element)).toMatchScreenshot();
-    });
 });

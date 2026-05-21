@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { fetchGrowReport, exportGrowReport } from '../../../../src/store/plant/report-actions';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+// @ts-expect-error - bypass vitest hoisted mock cache
+import { fetchGrowReport, exportGrowReport } from '../../../../src/store/plant/report-actions?real';
 import { makeFakeCtx } from '../../helpers/fake-ctx';
 
 describe('fetchGrowReport (read-only)', () => {

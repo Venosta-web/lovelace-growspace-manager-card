@@ -1,19 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  addSeedBatch,
-  updateSeedBatch,
-  logPollination,
-  updatePollination,
-  deletePollination,
-  harvestSeeds,
-  fetchGeneticsData,
-  deleteSeedBatch,
-  setPlantSex,
-  sowSeed,
-  getLineageTree,
-  getStrainLineageTree,
-  updateStrainLineageTree,
-} from '../../../../src/store/plant/genetics-actions';
+// @ts-expect-error - bypass vitest hoisted mock cache
+import { addSeedBatch, updateSeedBatch, logPollination, updatePollination, deletePollination, harvestSeeds, fetchGeneticsData, deleteSeedBatch, setPlantSex, sowSeed, getLineageTree, getStrainLineageTree, updateStrainLineageTree } from '../../../../src/store/plant/genetics-actions?real';
 import { makeFakeCtx } from '../../helpers/fake-ctx';
 
 const seedBatchData = {
@@ -228,6 +215,12 @@ describe('deleteSeedBatch', () => {
     await expect(deleteSeedBatch(ctx, 'batch-1')).rejects.toThrow('del-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('del-err'), 'error');
   });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.deleteSeedBatch.mockRejectedValue('del-err-raw');
+    await expect(deleteSeedBatch(ctx, 'batch-1')).rejects.toBe('del-err-raw');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('setPlantSex', () => {
@@ -247,6 +240,12 @@ describe('setPlantSex', () => {
     await expect(setPlantSex(ctx, 'plant-1', 'female')).rejects.toThrow('sex-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('sex-err'), 'error');
   });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.setPlantSex.mockRejectedValue('sex-err-raw');
+    await expect(setPlantSex(ctx, 'plant-1', 'female')).rejects.toBe('sex-err-raw');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('sowSeed', () => {
@@ -265,6 +264,12 @@ describe('sowSeed', () => {
     ctx.dataService.sowSeed.mockRejectedValue(new Error('sow-err'));
     await expect(sowSeed(ctx, 'batch-1', 'plant-1')).rejects.toThrow('sow-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('sow-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.sowSeed.mockRejectedValue('sow-err-raw');
+    await expect(sowSeed(ctx, 'batch-1', 'plant-1')).rejects.toBe('sow-err-raw');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -287,6 +292,12 @@ describe('getLineageTree', () => {
     await expect(getLineageTree(ctx, 'plant-1')).rejects.toThrow('tree-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('tree-err'), 'error');
   });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.getLineageTree.mockRejectedValue('tree-err-raw');
+    await expect(getLineageTree(ctx, 'plant-1')).rejects.toBe('tree-err-raw');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('getStrainLineageTree', () => {
@@ -307,6 +318,12 @@ describe('getStrainLineageTree', () => {
     ctx.dataService.getStrainLineageTree.mockRejectedValue(new Error('strain-tree-err'));
     await expect(getStrainLineageTree(ctx, 'OG Kush')).rejects.toThrow('strain-tree-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('strain-tree-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.getStrainLineageTree.mockRejectedValue('strain-tree-err-raw');
+    await expect(getStrainLineageTree(ctx, 'OG Kush')).rejects.toBe('strain-tree-err-raw');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });
 
@@ -329,5 +346,11 @@ describe('updateStrainLineageTree', () => {
     ctx.dataService.updateStrainLineageTree.mockRejectedValue(new Error('upd-tree-err'));
     await expect(updateStrainLineageTree(ctx, 'OG Kush', [])).rejects.toThrow('upd-tree-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('upd-tree-err'), 'error');
+  });
+
+  it('uses "Unknown error" when thrown value is not an Error', async () => {
+    ctx.dataService.updateStrainLineageTree.mockRejectedValue('upd-tree-err-raw');
+    await expect(updateStrainLineageTree(ctx, 'OG Kush', [])).rejects.toBe('upd-tree-err-raw');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
   });
 });

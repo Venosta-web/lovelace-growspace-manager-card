@@ -1,6 +1,5 @@
 import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceCarouselCard } from '../../src/cards/growspace-carousel-card';
 import { createMockHass } from '../mocks/hass';
@@ -244,9 +243,4 @@ describe('GrowspaceCarouselCard', () => {
     });
   });
 
-  test('matches visual snapshot', async () => {
-    element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: ['device1'] } as any);
-    await element.updateComplete;
-    await expect(page.elementLocator(element)).toMatchScreenshot();
-  });
 });

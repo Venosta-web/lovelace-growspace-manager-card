@@ -50,8 +50,9 @@ playwright-report/.auth/*
 
 # Verification scratchpad
 verification/
-# Ignore test images
+# Ignore test images (but keep visual snapshot baselines)
 tests/**/*.png
+!tests/cards/visual/__screenshots__/**/*.png
 
 
 # Git worktrees

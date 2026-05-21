@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateBreeder, deleteBreeder } from '../../../../src/store/plant/breeder-actions';
+// @ts-expect-error - bypass vitest hoisted mock cache
+import { updateBreeder, deleteBreeder } from '../../../../src/store/plant/breeder-actions?real';
 import { makeFakeCtx } from '../../helpers/fake-ctx';
 
 describe('updateBreeder', () => {

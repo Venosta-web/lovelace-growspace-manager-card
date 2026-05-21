@@ -1,6 +1,5 @@
 import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../src/cards/growspace-logbook-card';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
@@ -178,14 +177,4 @@ describe('GrowspaceLogbookCard', () => {
     expect(editor.tagName.toLowerCase()).toBe('growspace-logbook-card-editor');
   });
 
-  test('matches visual snapshot', async () => {
-    element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
-    (element as any)._store.ui.$isLoading.set(false);
-    (element as any)._store.data.$devices.set([
-      { deviceId: 'test_tent', name: 'Test Tent', plantsPerRow: 4, rows: 2, plants: [], environmentAttributes: {} } as any
-    ]);
-    (element as any)._store.grid.$selectedDevice.set('test_tent');
-    await element.updateComplete;
-    await expect(page.elementLocator(element)).toMatchScreenshot();
-  });
 });
