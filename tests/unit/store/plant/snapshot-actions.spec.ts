@@ -50,6 +50,13 @@ describe('captureSnapshot', () => {
     await expect(captureSnapshot(ctx, 'gs-1')).rejects.toThrow('camera-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('camera-err'), 'error');
   });
+
+  it('shows generic toast and rethrows on non-Error failure', async () => {
+    ctx.dataService.captureSnapshot.mockRejectedValue('unknown-camera-err');
+
+    await expect(captureSnapshot(ctx, 'gs-1')).rejects.toBe('unknown-camera-err');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });
 
 describe('getVisionHistory (read-only)', () => {
@@ -87,6 +94,14 @@ describe('triggerVisionCheckup', () => {
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('vision-err'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
+
+  it('shows generic toast and rethrows on non-Error failure', async () => {
+    ctx.dataService.triggerVisionCheckup.mockRejectedValue('unknown-vision-err');
+
+    await expect(triggerVisionCheckup(ctx, 'gs-1')).rejects.toBe('unknown-vision-err');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+    expect(ctx.refreshData).not.toHaveBeenCalled();
+  });
 });
 
 describe('updateVisionCheckupConfig', () => {
@@ -111,6 +126,15 @@ describe('updateVisionCheckupConfig', () => {
 
     await expect(updateVisionCheckupConfig(ctx, 'gs-1', config)).rejects.toThrow('config-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('config-err'), 'error');
+    expect(ctx.refreshData).not.toHaveBeenCalled();
+  });
+
+  it('shows generic toast and rethrows on non-Error failure', async () => {
+    ctx.dataService.updateVisionCheckupConfig.mockRejectedValue('unknown-config-err');
+    const config = { enabled: false } as any;
+
+    await expect(updateVisionCheckupConfig(ctx, 'gs-1', config)).rejects.toBe('unknown-config-err');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });

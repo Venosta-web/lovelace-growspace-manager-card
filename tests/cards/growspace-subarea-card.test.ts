@@ -1,8 +1,10 @@
 import { fixture, html } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { GrowspaceSubareaCard } from '../../src/cards/growspace-subarea-card';
 import { DataService } from '../../src/services/data-service';
 import { ChartUtils } from '../../src/utils/chart-utils';
+import { createMockHass } from '../mocks/hass';
 
 const { mockDataService } = vi.hoisted(() => ({
     mockDataService: {
@@ -47,7 +49,7 @@ describe('GrowspaceSubareaCard', () => {
         }
     };
 
-    beforeEach(async () => {
+    aroundEach(async (runTest) => {
         mockDataService.getSubareas.mockResolvedValue([mockSubarea as any]);
         mockDataService.getBatchHistory.mockResolvedValue({
             'sensor.veg_temp': [
@@ -65,27 +67,22 @@ describe('GrowspaceSubareaCard', () => {
         vi.mocked(ChartUtils.generateSparklinePath).mockReturnValue('M 0,0 L 100,100');
         vi.mocked(ChartUtils.getSparklineColor).mockReturnValue('#ff0000');
 
-        mockHass = {
-            states: {
-                'sensor.veg_temp': {
-                    state: '23.0',
-                    attributes: { friendly_name: 'Veg Temp', unit_of_measurement: '°C' }
-                },
-                'sensor.veg_humidity': {
-                    state: '52',
-                    attributes: { friendly_name: 'Veg Humidity', unit_of_measurement: '%' }
-                },
-                'light.veg_light': { state: 'on' },
-                'fan.exhaust': { state: 'off' },
-                'fan.circ': { state: 'on' },
-                'switch.hum': { state: 'off' },
-                'switch.dehum': { state: 'off' }
+        mockHass = createMockHass();
+        mockHass.states = {
+            ...mockHass.states,
+            'sensor.veg_temp': {
+                state: '23.0',
+                attributes: { friendly_name: 'Veg Temp', unit_of_measurement: '°C' }
             },
-            connection: {
-                sendMessagePromise: vi.fn(),
-                subscribeEvents: vi.fn().mockResolvedValue(() => { }),
+            'sensor.veg_humidity': {
+                state: '52',
+                attributes: { friendly_name: 'Veg Humidity', unit_of_measurement: '%' }
             },
-            language: 'en',
+            'light.veg_light': { state: 'on' },
+            'fan.exhaust': { state: 'off' },
+            'fan.circ': { state: 'on' },
+            'switch.hum': { state: 'off' },
+            'switch.dehum': { state: 'off' }
         };
 
         element = await fixture<GrowspaceSubareaCard>(html`
@@ -102,9 +99,8 @@ describe('GrowspaceSubareaCard', () => {
         // Wait for asynchronous data loading
         await new Promise(resolve => setTimeout(resolve, 0));
         await element.updateComplete;
-    });
 
-    afterEach(() => {
+        await runTest();
         vi.clearAllMocks();
     });
 
@@ -566,5 +562,9 @@ describe('GrowspaceSubareaCard', () => {
 
         const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
         expect(heroUI?.chips?.length).toBe(3); // Temp, Humidity, VPD
+    });
+
+    test('matches visual snapshot', async () => {
+        await expect(page.elementLocator(element)).toMatchScreenshot();
     });
 });

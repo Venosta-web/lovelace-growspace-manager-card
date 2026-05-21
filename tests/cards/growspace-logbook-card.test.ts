@@ -1,8 +1,10 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../src/cards/growspace-logbook-card';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
+import { createMockHass } from '../mocks/hass';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-logbook-card')) {
@@ -23,20 +25,10 @@ vi.mock('../../src/cards/editors/growspace-logbook-card-editor', () => ({
 describe('GrowspaceLogbookCard', () => {
   let element: GrowspaceLogbookCard;
 
-  beforeEach(async () => {
-    const mockHass = {
-      states: {},
-      callService: vi.fn(),
-      language: 'en',
-      connection: {
-        sendMessagePromise: vi.fn(),
-        subscribeEvents: vi.fn(),
-      }
-    } as any;
-    element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card .hass=${mockHass}></growspace-logbook-card>`);
-  });
-
-  afterEach(() => {
+  aroundEach(async (runTest) => {
+    element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card></growspace-logbook-card>`);
+    element.hass = createMockHass() as any;
+    await runTest();
     vi.restoreAllMocks();
   });
 
@@ -171,7 +163,10 @@ describe('GrowspaceLogbookCard', () => {
     await element.updateComplete;
     
     const tabs = element.shadowRoot?.querySelectorAll('.tab');
-    (tabs[1] as HTMLElement).click();
+    expect(tabs).toBeTruthy();
+    if (tabs && tabs[1]) {
+      (tabs[1] as HTMLElement).click();
+    }
     await element.updateComplete;
     
     expect((element as any)._activeTab).toBe('timeline');
@@ -181,5 +176,16 @@ describe('GrowspaceLogbookCard', () => {
   test('gets config element correctly', async () => {
     const editor = await GrowspaceLogbookCard.getConfigElement();
     expect(editor.tagName.toLowerCase()).toBe('growspace-logbook-card-editor');
+  });
+
+  test('matches visual snapshot', async () => {
+    element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
+    (element as any)._store.ui.$isLoading.set(false);
+    (element as any)._store.data.$devices.set([
+      { deviceId: 'test_tent', name: 'Test Tent', plantsPerRow: 4, rows: 2, plants: [], environmentAttributes: {} } as any
+    ]);
+    (element as any)._store.grid.$selectedDevice.set('test_tent');
+    await element.updateComplete;
+    await expect(page.elementLocator(element)).toMatchScreenshot();
   });
 });

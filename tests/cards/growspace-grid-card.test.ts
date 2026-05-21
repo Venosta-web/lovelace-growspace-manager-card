@@ -1,9 +1,11 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceGridCard } from '../../src/cards/growspace-grid-card';
 import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
+import { createMockHass } from '../mocks/hass';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-grid-card')) {
@@ -26,16 +28,10 @@ vi.mock('../../src/cards/editors/growspace-grid-card-editor', () => ({
 describe('GrowspaceGridCard', () => {
     let element: GrowspaceGridCard;
 
-    beforeEach(async () => {
+    aroundEach(async (runTest) => {
         element = await fixture<GrowspaceGridCard>(html`<growspace-grid-card></growspace-grid-card>`);
-        element.hass = {
-            states: {},
-            callService: vi.fn(),
-            language: 'en',
-        } as any;
-    });
-
-    afterEach(() => {
+        element.hass = createMockHass() as any;
+        await runTest();
         vi.restoreAllMocks();
     });
 
@@ -273,5 +269,15 @@ describe('GrowspaceGridCard', () => {
     test('gets config element correctly', async () => {
         const editor = await GrowspaceGridCard.getConfigElement();
         expect(editor.tagName.toLowerCase()).toBe('growspace-grid-card-editor');
+    });
+
+    test('matches visual snapshot', async () => {
+        element.store.ui.$isLoading.set(false);
+        element.store.data.$devices.set([
+            { deviceId: 'test_tent', name: 'Test Tent', plantsPerRow: 4, rows: 2, plants: [], environmentAttributes: {} } as any
+        ]);
+        element.store.grid.$selectedDevice.set('test_tent');
+        await element.updateComplete;
+        await expect(page.elementLocator(element)).toMatchScreenshot();
     });
 });

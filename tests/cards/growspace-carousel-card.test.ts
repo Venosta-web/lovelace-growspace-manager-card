@@ -1,7 +1,9 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceCarouselCard } from '../../src/cards/growspace-carousel-card';
+import { createMockHass } from '../mocks/hass';
 
 // Define the element if not already defined
 if (!customElements.get('growspace-carousel-card')) {
@@ -18,7 +20,7 @@ vi.mock('../../src/growspace-manager-card', () => {
     };
     constructor() {
       super();
-      this.attachShadow({ mode: 'open' }).innerHTML = '<slot></slot>';
+      this.attachShadow({ mode: 'open' }).innerHTML = '<div style="padding:16px;color:#ccc;font-family:sans-serif">Test Tent</div>';
     }
   }
 
@@ -33,18 +35,13 @@ vi.mock('../../src/growspace-manager-card', () => {
 
 describe('GrowspaceCarouselCard', () => {
   let element: GrowspaceCarouselCard;
-  const mockHass = {
-    states: {},
-    language: 'en',
-  } as any;
 
-  beforeEach(async () => {
+  aroundEach(async (runTest) => {
     element = await fixture<GrowspaceCarouselCard>(html`
-      <growspace-carousel-card .hass=${mockHass}></growspace-carousel-card>
+      <growspace-carousel-card></growspace-carousel-card>
     `);
-  });
-
-  afterEach(() => {
+    element.hass = createMockHass() as any;
+    await runTest();
     vi.restoreAllMocks();
     vi.useRealTimers();
   });
@@ -245,5 +242,11 @@ describe('GrowspaceCarouselCard', () => {
       const active = (element as any)._activeGrowspaces;
       expect(active).toEqual(['device1', 'device2', 'device3']);
     });
+  });
+
+  test('matches visual snapshot', async () => {
+    element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: ['device1'] } as any);
+    await element.updateComplete;
+    await expect(page.elementLocator(element)).toMatchScreenshot();
   });
 });

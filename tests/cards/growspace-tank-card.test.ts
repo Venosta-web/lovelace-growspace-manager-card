@@ -1,9 +1,11 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceTankCard } from '../../src/cards/growspace-tank-card';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import type { IrrigationTank } from '../../src/services/types';
+import { createMockHass } from '../mocks/hass';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-tank-card')) {
@@ -27,24 +29,12 @@ vi.mock('../../src/cards/editors/growspace-tank-card-editor', () => ({
 describe('GrowspaceTankCard', () => {
     let element: GrowspaceTankCard;
 
-    beforeEach(async () => {
-        // Create element with hass already set to avoid the "Home Assistant not available" flash
-        const mockHass = {
-            states: {},
-            callService: vi.fn(),
-            connection: {
-                sendMessagePromise: vi.fn().mockResolvedValue({}),
-                subscribeEvents: vi.fn().mockResolvedValue(() => {}),
-            },
-            language: 'en',
-            themes: { theme: 'default' },
-        };
+    aroundEach(async (runTest) => {
         element = await fixture<GrowspaceTankCard>(html`
-            <growspace-tank-card .hass=${mockHass}></growspace-tank-card>
+            <growspace-tank-card></growspace-tank-card>
         `);
-    });
-
-    afterEach(() => {
+        element.hass = createMockHass() as any;
+        await runTest();
         vi.restoreAllMocks();
     });
 
@@ -308,8 +298,18 @@ describe('GrowspaceTankCard', () => {
         const errorInfo = { componentStack: 'stack' };
         
         (element as any)._handleError(error, errorInfo);
-        
+
         expect(consoleSpy).toHaveBeenCalledWith('Growspace Tank Card caught error:', error, errorInfo);
         consoleSpy.mockRestore();
+    });
+
+    test('matches visual snapshot', async () => {
+        element.store.ui.$isLoading.set(false);
+        element.store.data.$devices.set([
+            { deviceId: 'test_tent', name: 'Test Tent', plantsPerRow: 4, rows: 2, plants: [], environmentAttributes: { irrigationTanks: [] } } as any
+        ]);
+        element.store.grid.$selectedDevice.set('test_tent');
+        await element.updateComplete;
+        await expect(page.elementLocator(element)).toMatchScreenshot();
     });
 });

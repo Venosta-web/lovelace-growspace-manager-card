@@ -1,9 +1,11 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, beforeEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceAnalyticsCard } from '../../src/cards/growspace-analytics-card';
 import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
+import { createMockHass } from '../mocks/hass';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-analytics-card')) {
@@ -22,20 +24,10 @@ vi.mock('../../src/cards/editors/growspace-analytics-card-editor', () => ({
 describe('GrowspaceAnalyticsCard', () => {
     let element: GrowspaceAnalyticsCard;
 
-    beforeEach(async () => {
-        const mockHass = {
-            states: {},
-            callService: vi.fn(),
-            language: 'en',
-            connection: {
-                sendMessagePromise: vi.fn(),
-                subscribeEvents: vi.fn(),
-            }
-        } as any;
-        element = await fixture<GrowspaceAnalyticsCard>(html`<growspace-analytics-card .hass=${mockHass}></growspace-analytics-card>`);
-    });
-
-    afterEach(() => {
+    aroundEach(async (runTest) => {
+        element = await fixture<GrowspaceAnalyticsCard>(html`<growspace-analytics-card></growspace-analytics-card>`);
+        element.hass = createMockHass() as any;
+        await runTest();
         vi.restoreAllMocks();
     });
 
@@ -159,5 +151,15 @@ describe('GrowspaceAnalyticsCard', () => {
     test('gets config element correctly', async () => {
         const editor = await GrowspaceAnalyticsCard.getConfigElement();
         expect(editor.tagName.toLowerCase()).toBe('growspace-analytics-card-editor');
+    });
+
+    test('matches visual snapshot', async () => {
+        element.store.ui.$isLoading.set(false);
+        element.store.data.$devices.set([
+            { deviceId: 'test_tent', name: 'Test Tent', plantsPerRow: 4, rows: 2, plants: [], environmentAttributes: {} } as any
+        ]);
+        element.store.grid.$selectedDevice.set('test_tent');
+        await element.updateComplete;
+        await expect(page.elementLocator(element)).toMatchScreenshot();
     });
 });

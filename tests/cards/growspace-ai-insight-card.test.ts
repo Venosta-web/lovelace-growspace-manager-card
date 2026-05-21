@@ -1,9 +1,11 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, beforeEach, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceAiInsightCard } from '../../src/cards/growspace-ai-insight-card';
 import type { GrowAdviceResponse } from '../../src/types';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
+import { createMockHass } from '../mocks/hass';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-ai-insight-card')) {
@@ -21,20 +23,10 @@ vi.mock('../../src/cards/editors/growspace-ai-insight-card-editor', () => ({
 describe('GrowspaceAiInsightCard', () => {
     let element: GrowspaceAiInsightCard;
 
-    beforeEach(async () => {
+    aroundEach(async (runTest) => {
         element = await fixture<GrowspaceAiInsightCard>(html`<growspace-ai-insight-card></growspace-ai-insight-card>`);
-        element.hass = {
-            states: {},
-            callService: vi.fn(),
-            language: 'en',
-            connection: {
-                sendMessagePromise: vi.fn(),
-                subscribeEvents: vi.fn(),
-            },
-        } as any;
-    });
-
-    afterEach(() => {
+        element.hass = createMockHass() as any;
+        await runTest();
         vi.restoreAllMocks();
     });
 
@@ -285,5 +277,9 @@ describe('GrowspaceAiInsightCard', () => {
             specificBtn.click();
             expect(spy).toHaveBeenCalledWith(false);
         });
+    });
+
+    test('matches visual snapshot', async () => {
+        await expect(page.elementLocator(element)).toMatchScreenshot();
     });
 });

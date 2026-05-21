@@ -44,4 +44,11 @@ describe('exportGrowReport', () => {
     await expect(exportGrowReport(ctx, 'gs-1', 'csv')).rejects.toThrow('export-err');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('export-err'), 'error');
   });
+
+  it('shows generic toast and rethrows on non-Error failure', async () => {
+    ctx.dataService.exportGrowReport.mockRejectedValue('unknown-failure-string');
+
+    await expect(exportGrowReport(ctx, 'gs-1', 'csv')).rejects.toBe('unknown-failure-string');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
 });

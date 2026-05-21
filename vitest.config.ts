@@ -11,6 +11,14 @@ export default defineConfig({
             ],
             headless: true,
             viewport: { width: 1280, height: 720 },
+            expect: {
+                toMatchScreenshot: {
+                    comparatorName: 'pixelmatch',
+                    comparatorOptions: {
+                        allowedMismatchedPixelRatio: 0.002,
+                    },
+                },
+            },
         },
         setupFiles: ['./tests/setup.ts'],
         include: [
