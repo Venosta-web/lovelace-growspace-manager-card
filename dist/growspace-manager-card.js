@@ -25205,10 +25205,18 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
 SeedsGeneticsTab.styles = [
     ...dialogStyles,
     i$6 `
+      :host {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
       .sd-content {
         padding: 20px 24px;
         overflow-y: auto;
         flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         gap: 16px;

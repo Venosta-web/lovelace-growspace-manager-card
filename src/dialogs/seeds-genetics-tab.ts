@@ -88,10 +88,18 @@ export class SeedsGeneticsTab extends LitElement {
   static styles = [
     ...dialogStyles,
     css`
+      :host {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
       .sd-content {
         padding: 20px 24px;
         overflow-y: auto;
         flex: 1;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         gap: 16px;
