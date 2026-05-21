@@ -51,10 +51,10 @@ describe('SubareaConfigDialog', () => {
     });
 
     it('should render correctly when open', () => {
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
-        expect(dialog).toBeDefined();
-        expect(element.shadowRoot?.textContent).toContain('Configure Subarea');
-        expect(element.shadowRoot?.textContent).toContain('Flower Room');
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+        expect(gsDialog).toBeDefined();
+        expect(gsDialog?.heading).toBe('Configure Subarea');
+        expect(gsDialog?.subtitle).toBe('Flower Room');
     });
 
     it('should populate state from subarea on update', async () => {
@@ -383,7 +383,7 @@ describe('SubareaConfigDialog', () => {
     it('should not render anything when open is false', async () => {
         element.open = false;
         await element.updateComplete;
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
+        const dialog = element.shadowRoot?.querySelector('gs-dialog');
         expect(dialog).toBeNull();
     });
 

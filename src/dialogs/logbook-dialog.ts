@@ -1,8 +1,9 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiFormatListBulleted, mdiChartTimelineVariant } from '@mdi/js';
+import { mdiFormatListBulleted, mdiChartTimelineVariant } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
+import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/growspace-logbook';
 import '../features/shared/ui/growspace-timeline';
 import '../features/environment/components/vpd-heatmap';
@@ -151,35 +152,19 @@ export class LogbookDialog extends LitElement {
     if (!this.open) return html``;
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        scrimClickAction=""
-        escapeKeyAction="close"
-        width="large"
+      <gs-dialog
+        .open=${this.open}
+        heading="Events Logbook"
+        subtitle="Recent events and history"
+        .iconPath=${mdiFormatListBulleted}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiFormatListBulleted}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Events Logbook</h2>
-                <gs-help-tooltip
-                  content="Free-form grow log — add notes, observations, or reminders tied to today's date."
-                  placement="bottom"
-                  label="Events Logbook"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">Recent events and history</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+          placement="bottom"
+          label="Events Logbook"
+        ></gs-help-tooltip>
 
           <div class="content-wrapper">
           <!-- Tab Switcher -->
@@ -249,8 +234,7 @@ export class LogbookDialog extends LitElement {
                   </div>
                 `}
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
   }
 }

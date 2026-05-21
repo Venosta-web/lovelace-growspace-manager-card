@@ -3,7 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiPrinter, mdiClose, mdiCheck, mdiInformation, mdiRefresh, mdiAlertCircle } from '@mdi/js';
+import { mdiPrinter, mdiCheck, mdiInformation, mdiRefresh, mdiAlertCircle } from '@mdi/js';
+import '../features/shared/ui/gs-dialog';
 import { PrintLabelDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -221,98 +222,78 @@ export class PrintLabelDialog extends LitElement {
         const printers = this._getPrinters();
 
         return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Print Label'}
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Label"
+        .subtitle=${subtitle}
+        .iconPath=${mdiPrinter}
+        stageColor="#2196F3"
+        .submitting=${this._isSubmitting}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="--stage-color: #2196F3;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiPrinter}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Print Label</h2>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid" style="display: block;">
-            <div class="form-section">
-               <h3>
-                 Label Preview
-                 <button class="md3-button text icon refresh-btn" @click=${this._fetchPreview} ?disabled=${this._previewLoading}>
-                   <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
-                 </button>
-               </h3>
-               <div class="preview-container">
-                 ${this._previewLoading ? html`
-                   <div class="preview-loading">
-                     <ha-circular-progress active size="small"></ha-circular-progress>
-                     <span>Generating preview...</span>
-                   </div>
-                 ` : this._previewError ? html`
-                   <div class="preview-error">
-                     <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-                     <span>${this._previewError}</span>
-                     <button class="md3-button tonal small" @click=${this._fetchPreview}>Try Again</button>
-                   </div>
-                 ` : this._previewImage ? html`
-                   <img src=${this._previewImage} class="preview-image" alt="Label Preview" />
-                 ` : html`
-                   <div class="preview-loading">
-                     <span>No preview available</span>
-                   </div>
-                 `}
-               </div>
-            </div>
-
-            <div class="form-section">
-              <h3>Printer Settings</h3>
-              <md3-select
-                label="Niimbot Printer"
-                .value=${this._selectedDeviceId || ''}
-                .options=${[
-                { label: 'Default / Auto', value: '' },
-                ...printers
-            ]}
-                @change=${(e: CustomEvent) => {
-                this._selectedDeviceId = e.detail;
-            }}
-              ></md3-select>
-              
-              ${printers.length === 0 ? html`
-                <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
-                  <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
-                  No Niimbot printers discovered. You can still try printing if you have a default printer configured in the integration.
+        <div class="dialog-content-grid" style="display: block;">
+          <div class="form-section">
+            <h3>
+              Label Preview
+              <button class="md3-button text icon refresh-btn" @click=${this._fetchPreview} ?disabled=${this._previewLoading}>
+                <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+              </button>
+            </h3>
+            <div class="preview-container">
+              ${this._previewLoading ? html`
+                <div class="preview-loading">
+                  <ha-circular-progress active size="small"></ha-circular-progress>
+                  <span>Generating preview...</span>
                 </div>
-              ` : nothing}
+              ` : this._previewError ? html`
+                <div class="preview-error">
+                  <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                  <span>${this._previewError}</span>
+                  <button class="md3-button tonal small" @click=${this._fetchPreview}>Try Again</button>
+                </div>
+              ` : this._previewImage ? html`
+                <img src=${this._previewImage} class="preview-image" alt="Label Preview" />
+              ` : html`
+                <div class="preview-loading">
+                  <span>No preview available</span>
+                </div>
+              `}
             </div>
           </div>
 
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting || this._previewLoading}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting ? 'Printing...' : this._previewLoading ? 'Warming up...' : 'Print Now'}
-            </button>
+          <div class="form-section">
+            <h3>Printer Settings</h3>
+            <md3-select
+              label="Niimbot Printer"
+              .value=${this._selectedDeviceId || ''}
+              .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
+              @change=${(e: CustomEvent) => { this._selectedDeviceId = e.detail; }}
+            ></md3-select>
+
+            ${printers.length === 0 ? html`
+              <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
+                <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+                No Niimbot printers discovered. You can still try printing if you have a default printer configured in the integration.
+              </div>
+            ` : nothing}
           </div>
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+            @click=${this._submit}
+            ?disabled=${this._isSubmitting || this._previewLoading}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this._isSubmitting ? 'Printing...' : this._previewLoading ? 'Warming up...' : 'Print Now'}
+          </button>
+        </div>
+      </gs-dialog>
     `;
     }
 

@@ -2,7 +2,8 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { storeContext } from '../context';
-import { mdiContentCopy, mdiClose, mdiCheck } from '@mdi/js';
+import { mdiContentCopy, mdiCheck } from '@mdi/js';
+import '../features/shared/ui/gs-dialog';
 import type { BatchCloneDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -136,87 +137,70 @@ export class BatchCloneDialog extends LitElement {
   }
 
   protected render() {
-    if (!this.open) return nothing;
-
     const plantIds = this.dialogState?.plantIds ?? [];
     const growspaceEntries = Object.entries(this.growspaceOptions);
     const totalClones = plantIds.length * this._numClones;
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Clone Selected Plants'}
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Clone Selected Plants"
+        .subtitle=${`${plantIds.length} plant(s) selected`}
+        .iconPath=${mdiContentCopy}
+        stageColor="#8bc34a"
+        .submitting=${this._isSubmitting}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="--stage-color: #8bc34a;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
+        <div class="dialog-content-grid" style="display: block;">
+          <div class="form-section">
+            <h3>Target Growspace</h3>
+            <md3-select
+              label="Destination"
+              .value=${this._targetGrowspaceId}
+              .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
+              @change=${(e: CustomEvent) => { this._targetGrowspaceId = e.detail; }}
+            ></md3-select>
+
+            <div class="clones-row">
+              <label>Clones per plant</label>
+              <input
+                class="clones-input"
+                type="number"
+                min="1"
+                max="20"
+                .value=${String(this._numClones)}
+                @input=${(e: InputEvent) => {
+                  const v = parseInt((e.target as HTMLInputElement).value, 10);
+                  if (!isNaN(v) && v >= 1 && v <= 20) this._numClones = v;
+                }}
+              />
             </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Clone Selected Plants</h2>
-              <div class="dialog-subtitle">${plantIds.length} plant(s) selected</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
           </div>
 
-          <div class="dialog-content-grid" style="display: block;">
-            <div class="form-section">
-              <h3>Target Growspace</h3>
-              <md3-select
-                label="Destination"
-                .value=${this._targetGrowspaceId}
-                .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
-                @change=${(e: CustomEvent) => { this._targetGrowspaceId = e.detail; }}
-              ></md3-select>
-
-              <div class="clones-row">
-                <label>Clones per plant</label>
-                <input
-                  class="clones-input"
-                  type="number"
-                  min="1"
-                  max="20"
-                  .value=${String(this._numClones)}
-                  @input=${(e: InputEvent) => {
-                    const v = parseInt((e.target as HTMLInputElement).value, 10);
-                    if (!isNaN(v) && v >= 1 && v <= 20) this._numClones = v;
-                  }}
-                />
-              </div>
+          ${this._isSubmitting ? html`
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width: ${this._progress}%"></div>
             </div>
-
-            ${this._isSubmitting ? html`
-              <div class="progress-bar-wrap">
-                <div class="progress-bar" style="width: ${this._progress}%"></div>
-              </div>
-            ` : nothing}
-          </div>
-
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting
-                ? `Cloning... ${this._progress}%`
-                : `Create ${totalClones} Clone${totalClones !== 1 ? 's' : ''}`}
-            </button>
-          </div>
+          ` : nothing}
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
+            @click=${this._submit}
+            ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this._isSubmitting
+              ? `Cloning... ${this._progress}%`
+              : `Create ${totalClones} Clone${totalClones !== 1 ? 's' : ''}`}
+          </button>
+        </div>
+      </gs-dialog>
     `;
   }
 }

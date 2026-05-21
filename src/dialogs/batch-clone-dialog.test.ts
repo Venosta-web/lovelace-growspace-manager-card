@@ -407,7 +407,7 @@ describe('BatchCloneDialog – render', () => {
     const el = await fixture<BatchCloneDialog>(html`
       <batch-clone-dialog .open=${true}></batch-clone-dialog>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).not.toBeNull();
   });
 
   it('renders submit state properly', async () => {
@@ -454,7 +454,10 @@ describe('BatchCloneDialog – render', () => {
     const el = await fixture<BatchCloneDialog>(html`
       <batch-clone-dialog .open=${true} .dialogState=${undefined}></batch-clone-dialog>
     `);
-    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('0 plant(s) selected');
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
+    await gsDialog?.updateComplete;
+    const subtitle = gsDialog?.shadowRoot?.querySelector('.dialog-subtitle');
+    expect(subtitle?.textContent).toContain('0 plant(s) selected');
   });
 
   it('renders with empty growspaceOptions', async () => {

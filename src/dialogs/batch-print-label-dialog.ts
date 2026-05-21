@@ -3,7 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiPrinter, mdiClose, mdiCheck, mdiInformation } from '@mdi/js';
+import { mdiPrinter, mdiCheck, mdiInformation } from '@mdi/js';
+import '../features/shared/ui/gs-dialog';
 import type { BatchPrintLabelsDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -151,91 +152,74 @@ export class BatchPrintLabelDialog extends LitElement {
   }
 
   protected render() {
-    if (!this.open) return nothing;
-
     const plantIds = this.dialogState?.plantIds ?? [];
     const printers = this._getPrinters();
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Print Labels'}
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Labels"
+        .subtitle=${`${plantIds.length} plant(s) selected`}
+        .iconPath=${mdiPrinter}
+        stageColor="#2196F3"
+        .submitting=${this._isSubmitting}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="--stage-color: #2196F3;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiPrinter}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Print Labels</h2>
-              <div class="dialog-subtitle">${plantIds.length} plant(s) selected</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <div class="dialog-content-grid" style="display: block;">
+          <div class="form-section">
+            <h3>Printer Settings</h3>
+            <md3-select
+              label="Niimbot Printer"
+              .value=${this._selectedDeviceId || ''}
+              .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
+              @change=${(e: CustomEvent) => { this._selectedDeviceId = e.detail; }}
+            ></md3-select>
 
-          <div class="dialog-content-grid" style="display: block;">
-            <div class="form-section">
-              <h3>Printer Settings</h3>
-              <md3-select
-                label="Niimbot Printer"
-                .value=${this._selectedDeviceId || ''}
-                .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
-                @change=${(e: CustomEvent) => { this._selectedDeviceId = e.detail; }}
-              ></md3-select>
-
-              ${printers.length === 0 ? html`
-                <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
-                  <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
-                  No Niimbot printers discovered. You can still try printing if you have a default printer configured.
-                </div>
-              ` : nothing}
-
-              <div class="copies-row">
-                <label>Copies per plant</label>
-                <input
-                  class="copies-input"
-                  type="number"
-                  min="1"
-                  max="99"
-                  .value=${String(this._copies)}
-                  @input=${(e: InputEvent) => {
-                    const v = parseInt((e.target as HTMLInputElement).value, 10);
-                    if (!isNaN(v) && v >= 1) this._copies = v;
-                  }}
-                />
-              </div>
-            </div>
-
-            ${this._isSubmitting ? html`
-              <div class="progress-bar-wrap">
-                <div class="progress-bar" style="width: ${this._progress}%"></div>
+            ${printers.length === 0 ? html`
+              <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
+                <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+                No Niimbot printers discovered. You can still try printing if you have a default printer configured.
               </div>
             ` : nothing}
+
+            <div class="copies-row">
+              <label>Copies per plant</label>
+              <input
+                class="copies-input"
+                type="number"
+                min="1"
+                max="99"
+                .value=${String(this._copies)}
+                @input=${(e: InputEvent) => {
+                  const v = parseInt((e.target as HTMLInputElement).value, 10);
+                  if (!isNaN(v) && v >= 1) this._copies = v;
+                }}
+              />
+            </div>
           </div>
 
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting ? `Printing... ${this._progress}%` : `Print ${plantIds.length * this._copies} Label(s)`}
-            </button>
-          </div>
+          ${this._isSubmitting ? html`
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width: ${this._progress}%"></div>
+            </div>
+          ` : nothing}
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+            @click=${this._submit}
+            ?disabled=${this._isSubmitting}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this._isSubmitting ? `Printing... ${this._progress}%` : `Print ${plantIds.length * this._copies} Label(s)`}
+          </button>
+        </div>
+      </gs-dialog>
     `;
   }
 }

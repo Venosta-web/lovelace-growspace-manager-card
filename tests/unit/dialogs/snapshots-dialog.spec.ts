@@ -211,23 +211,24 @@ describe('SnapshotsDialog', () => {
         element.open = true;
         await element.updateComplete;
 
-        const closeBtn = element.shadowRoot?.querySelector('button[title="Close"]') as HTMLButtonElement;
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        const closeBtn = (gsDialog as any)?.shadowRoot?.querySelector('button.dialog-close-btn') as HTMLButtonElement;
         closeBtn.click();
         expect(closeSpy).toHaveBeenCalled();
     });
 
-    it('should close dialog when ha-dialog fires closed event', async () => {
+    it('should close dialog when gs-dialog emits close event', async () => {
         element.open = true;
         await element.updateComplete;
 
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
-        dialog?.dispatchEvent(new CustomEvent('closed'));
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
 
         expect(closeSpy).toHaveBeenCalled();
     });

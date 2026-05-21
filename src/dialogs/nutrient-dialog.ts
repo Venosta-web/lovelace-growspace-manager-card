@@ -4,11 +4,12 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../context';
-import { mdiBottleTonicPlus, mdiClose, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
+import { mdiBottleTonicPlus, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import '../features/ui/components/growspace-nutrient-inventory-dialog-ui';
 import '../features/ui/containers/growspace-nutrient-presets-editor.container';
+import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
 
 type Tab = 'inventory' | 'presets';
@@ -125,32 +126,13 @@ export class NutrientDialog extends LitElement {
     if (!this.open) return nothing;
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${this.open}
+        heading="Nutrients"
+        subtitle="Manage inventory and recipes"
+        .iconPath=${mdiBottleTonicPlus}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBottleTonicPlus}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Nutrients</h2>
-              <div class="dialog-subtitle">Manage inventory and recipes</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
           <div class="tab-bar">
             <div
               class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
@@ -196,8 +178,7 @@ export class NutrientDialog extends LitElement {
                   .embedded=${true}
                 ></growspace-nutrient-presets-editor>`}
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
   }
 }

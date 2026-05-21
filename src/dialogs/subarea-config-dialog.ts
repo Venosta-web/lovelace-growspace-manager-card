@@ -1,10 +1,11 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiViewGrid } from '@mdi/js';
+import { mdiViewGrid } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import type { Subarea, EnvironmentConfig } from '../services/types';
 import { DataService } from '../services/data-service';
+import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('subarea-config-dialog')
@@ -268,43 +269,20 @@ export class SubareaConfigDialog extends LitElement {
     if (!this.open) return nothing;
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Configure Subarea"
+        .subtitle=${this.subarea?.name ?? ''}
+        .iconPath=${mdiViewGrid}
+        containerStyle="max-width: 680px; height: auto; max-height: 90vh;"
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="max-width: 680px; height: auto; max-height: 90vh;">
-          <!-- Header -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiViewGrid}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Configure Subarea</h2>
-                <gs-help-tooltip
-                  content="Assign sensors and actuators to this subarea for independent environment monitoring."
-                  placement="bottom"
-                  label="Subarea Config"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.subarea?.name ?? ''}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Assign sensors and actuators to this subarea for independent environment monitoring."
+          placement="bottom"
+          label="Subarea Config"
+        ></gs-help-tooltip>
 
           <!-- Content -->
           <div class="config-content" style="padding: 20px; overflow-y: auto; max-height: calc(90vh - 140px);">
@@ -406,8 +384,7 @@ export class SubareaConfigDialog extends LitElement {
               ${this._saving ? 'Saving...' : 'Save Configuration'}
             </button>
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
   }
 }

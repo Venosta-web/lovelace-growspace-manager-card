@@ -10122,6 +10122,209 @@ NutrientStockChip = __decorate([
     t$2('nutrient-stock-chip')
 ], NutrientStockChip);
 
+/**
+ * Shell component that owns the ha-dialog wrapper, glass container, and standard header.
+ * Dialogs supply title/subtitle/icon as properties and place their body in the default slot.
+ *
+ * Dispatches a composed "close" event on close-button click or ha-dialog's native closed event.
+ */
+let GsDialog = class GsDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.heading = '';
+        this.subtitle = '';
+        this.iconPath = '';
+        this.stageColor = '';
+        this.submitting = false;
+        this.containerStyle = '';
+    }
+    _dispatchClose() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const containerStyle = [
+            this.stageColor ? `--stage-color: ${this.stageColor}` : '',
+            this.containerStyle,
+        ].filter(Boolean).join('; ');
+        return x `
+      <ha-dialog
+        open
+        hideActions
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="large"
+        @closed=${this._dispatchClose}
+      >
+        <div class="glass-dialog-container" style=${containerStyle}>
+          <div class="dialog-header">
+            ${this.iconPath
+            ? x `<div class="dialog-icon">
+                  <ha-svg-icon .path=${this.iconPath}></ha-svg-icon>
+                </div>`
+            : E}
+            <div class="dialog-title-group">
+              <h2 class="dialog-title">${this.heading}</h2>
+              ${this.subtitle
+            ? x `<div class="dialog-subtitle">${this.subtitle}</div>`
+            : E}
+            </div>
+            <slot name="header-extra"></slot>
+            <button
+              class="dialog-close-btn"
+              @click=${this._dispatchClose}
+              ?disabled=${this.submitting}
+              aria-label="Close"
+            >
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>
+          </div>
+          <slot></slot>
+        </div>
+      </ha-dialog>
+    `;
+    }
+};
+GsDialog.styles = i$6 `
+    :host {
+      display: contents;
+    }
+
+    ha-dialog {
+      --dialog-surface-margin-top: 40px;
+      --ha-dialog-min-height: 85vh;
+      --dialog-content-padding: 0;
+    }
+
+    .glass-dialog-container {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      max-height: 85vh;
+      overflow: hidden;
+      position: relative;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif;
+    }
+
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      flex-shrink: 0;
+    }
+
+    .dialog-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 16px;
+      flex-shrink: 0;
+      color: var(--stage-color, #4caf50);
+    }
+
+    .dialog-icon ha-svg-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    .dialog-title-group {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .dialog-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--primary-text-color, #fff);
+    }
+
+    .dialog-subtitle {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+      color: var(--secondary-text-color);
+    }
+
+    .dialog-close-btn {
+      min-width: auto;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-text-color, #fff);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .dialog-close-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .dialog-close-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .dialog-close-btn ha-svg-icon {
+      width: 24px;
+      height: 24px;
+    }
+
+    @media (max-width: 450px) {
+      .glass-dialog-container {
+        width: 100vw;
+        max-width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .dialog-header {
+        padding: 12px 16px;
+      }
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], GsDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String })
+], GsDialog.prototype, "heading", void 0);
+__decorate([
+    n$5({ type: String })
+], GsDialog.prototype, "subtitle", void 0);
+__decorate([
+    n$5({ type: String })
+], GsDialog.prototype, "iconPath", void 0);
+__decorate([
+    n$5({ type: String })
+], GsDialog.prototype, "stageColor", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GsDialog.prototype, "submitting", void 0);
+__decorate([
+    n$5({ type: String })
+], GsDialog.prototype, "containerStyle", void 0);
+GsDialog = __decorate([
+    t$2('gs-dialog')
+], GsDialog);
+
 let Md3TextInput = class Md3TextInput extends i$3 {
     constructor() {
         super(...arguments);
@@ -14624,43 +14827,20 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
         if (!this.open)
             return E;
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Configure Subarea"
+        .subtitle=${this.subarea?.name ?? ''}
+        .iconPath=${mdiViewGrid}
+        containerStyle="max-width: 680px; height: auto; max-height: 90vh;"
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="max-width: 680px; height: auto; max-height: 90vh;">
-          <!-- Header -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiViewGrid}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Configure Subarea</h2>
-                <gs-help-tooltip
-                  content="Assign sensors and actuators to this subarea for independent environment monitoring."
-                  placement="bottom"
-                  label="Subarea Config"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.subarea?.name ?? ''}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Assign sensors and actuators to this subarea for independent environment monitoring."
+          placement="bottom"
+          label="Subarea Config"
+        ></gs-help-tooltip>
 
           <!-- Content -->
           <div class="config-content" style="padding: 20px; overflow-y: auto; max-height: calc(90vh - 140px);">
@@ -14702,8 +14882,7 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
               ${this._saving ? 'Saving...' : 'Save Configuration'}
             </button>
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 };
@@ -17117,35 +17296,19 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
             trendColor = 'var(--success-color, #4CAF50)';
         }
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${this.open}
+        heading="Crop Steering Diagnostics"
+        .subtitle=${this.growspaceName}
+        .iconPath=${mdiCompassOutline}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiCompassOutline}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Crop Steering Diagnostics</h2>
-                <gs-help-tooltip
-                  content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
-                  placement="bottom"
-                  label="Crop Steering"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
+          placement="bottom"
+          label="Crop Steering"
+        ></gs-help-tooltip>
 
         <div class="dialog-content">
           ${stateObj === undefined || isNaN(score)
@@ -17193,7 +17356,7 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
                 </p>
               `}
         </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 };
@@ -17387,37 +17550,21 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
         const title = this._view === 'LIST' ? 'EC Ramp Curves' : (this._editingCurve?.id ? 'Edit EC Ramp' : 'New EC Ramp');
         const subtitle = this._view === 'LIST' ? 'Manage EC targets over time' : 'Define daily EC targets';
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${this.open}
         .heading=${title}
+        .subtitle=${subtitle}
+        .iconPath=${mdiChartLine}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
-              <ha-svg-icon .path=${mdiChartLine}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">${title}</h2>
-                <gs-help-tooltip
-                  content=${this._view === 'LIST'
+        <gs-help-tooltip
+          slot="header-extra"
+          content=${this._view === 'LIST'
             ? "Manage your library of EC Ramp Curves. These curves define the target nutrient concentration for each day of a growth stage."
             : "Define target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Use points to create a progressive ramp."}
-                  placement="bottom"
-                  label=${title}
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+          placement="bottom"
+          label=${title}
+        ></gs-help-tooltip>
 
           <div class="dialog-content-grid">
             ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
@@ -17425,8 +17572,7 @@ let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
           </div>
 
           <div class="button-group">${this._renderFooterButtons()}</div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
     _renderFooterButtons() {
@@ -22108,35 +22254,19 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         if (!this.open)
             return x ``;
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        scrimClickAction=""
-        escapeKeyAction="close"
-        width="large"
+      <gs-dialog
+        .open=${this.open}
+        heading="Events Logbook"
+        subtitle="Recent events and history"
+        .iconPath=${mdiFormatListBulleted}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiFormatListBulleted}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Events Logbook</h2>
-                <gs-help-tooltip
-                  content="Free-form grow log — add notes, observations, or reminders tied to today's date."
-                  placement="bottom"
-                  label="Events Logbook"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">Recent events and history</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+          placement="bottom"
+          label="Events Logbook"
+        ></gs-help-tooltip>
 
           <div class="content-wrapper">
           <!-- Tab Switcher -->
@@ -22206,8 +22336,7 @@ let LogbookDialog = class LogbookDialog extends i$3 {
                   </div>
                 `}
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 };
@@ -22677,32 +22806,13 @@ let NutrientDialog = class NutrientDialog extends i$3 {
         if (!this.open)
             return E;
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${this.open}
+        heading="Nutrients"
+        subtitle="Manage inventory and recipes"
+        .iconPath=${mdiBottleTonicPlus}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBottleTonicPlus}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Nutrients</h2>
-              <div class="dialog-subtitle">Manage inventory and recipes</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
           <div class="tab-bar">
             <div
               class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
@@ -22748,8 +22858,7 @@ let NutrientDialog = class NutrientDialog extends i$3 {
                   .embedded=${true}
                 ></growspace-nutrient-presets-editor>`}
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 };
@@ -22968,98 +23077,78 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         const subtitle = plantId ? `${strainName} (${plantId})` : strainName;
         const printers = this._getPrinters();
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Print Label'}
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Label"
+        .subtitle=${subtitle}
+        .iconPath=${mdiPrinter}
+        stageColor="#2196F3"
+        .submitting=${this._isSubmitting}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="--stage-color: #2196F3;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiPrinter}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Print Label</h2>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid" style="display: block;">
-            <div class="form-section">
-               <h3>
-                 Label Preview
-                 <button class="md3-button text icon refresh-btn" @click=${this._fetchPreview} ?disabled=${this._previewLoading}>
-                   <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
-                 </button>
-               </h3>
-               <div class="preview-container">
-                 ${this._previewLoading ? x `
-                   <div class="preview-loading">
-                     <ha-circular-progress active size="small"></ha-circular-progress>
-                     <span>Generating preview...</span>
-                   </div>
-                 ` : this._previewError ? x `
-                   <div class="preview-error">
-                     <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-                     <span>${this._previewError}</span>
-                     <button class="md3-button tonal small" @click=${this._fetchPreview}>Try Again</button>
-                   </div>
-                 ` : this._previewImage ? x `
-                   <img src=${this._previewImage} class="preview-image" alt="Label Preview" />
-                 ` : x `
-                   <div class="preview-loading">
-                     <span>No preview available</span>
-                   </div>
-                 `}
-               </div>
-            </div>
-
-            <div class="form-section">
-              <h3>Printer Settings</h3>
-              <md3-select
-                label="Niimbot Printer"
-                .value=${this._selectedDeviceId || ''}
-                .options=${[
-            { label: 'Default / Auto', value: '' },
-            ...printers
-        ]}
-                @change=${(e) => {
-            this._selectedDeviceId = e.detail;
-        }}
-              ></md3-select>
-              
-              ${printers.length === 0 ? x `
-                <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
-                  <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
-                  No Niimbot printers discovered. You can still try printing if you have a default printer configured in the integration.
+        <div class="dialog-content-grid" style="display: block;">
+          <div class="form-section">
+            <h3>
+              Label Preview
+              <button class="md3-button text icon refresh-btn" @click=${this._fetchPreview} ?disabled=${this._previewLoading}>
+                <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
+              </button>
+            </h3>
+            <div class="preview-container">
+              ${this._previewLoading ? x `
+                <div class="preview-loading">
+                  <ha-circular-progress active size="small"></ha-circular-progress>
+                  <span>Generating preview...</span>
                 </div>
-              ` : E}
+              ` : this._previewError ? x `
+                <div class="preview-error">
+                  <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+                  <span>${this._previewError}</span>
+                  <button class="md3-button tonal small" @click=${this._fetchPreview}>Try Again</button>
+                </div>
+              ` : this._previewImage ? x `
+                <img src=${this._previewImage} class="preview-image" alt="Label Preview" />
+              ` : x `
+                <div class="preview-loading">
+                  <span>No preview available</span>
+                </div>
+              `}
             </div>
           </div>
 
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting || this._previewLoading}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting ? 'Printing...' : this._previewLoading ? 'Warming up...' : 'Print Now'}
-            </button>
+          <div class="form-section">
+            <h3>Printer Settings</h3>
+            <md3-select
+              label="Niimbot Printer"
+              .value=${this._selectedDeviceId || ''}
+              .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
+              @change=${(e) => { this._selectedDeviceId = e.detail; }}
+            ></md3-select>
+
+            ${printers.length === 0 ? x `
+              <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
+                <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+                No Niimbot printers discovered. You can still try printing if you have a default printer configured in the integration.
+              </div>
+            ` : E}
           </div>
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+            @click=${this._submit}
+            ?disabled=${this._isSubmitting || this._previewLoading}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this._isSubmitting ? 'Printing...' : this._previewLoading ? 'Warming up...' : 'Print Now'}
+          </button>
+        </div>
+      </gs-dialog>
     `;
     }
     _getPlant(plantId) {
@@ -23273,91 +23362,74 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('close'));
     }
     render() {
-        if (!this.open)
-            return E;
         const plantIds = this.dialogState?.plantIds ?? [];
         const printers = this._getPrinters();
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Print Labels'}
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Labels"
+        .subtitle=${`${plantIds.length} plant(s) selected`}
+        .iconPath=${mdiPrinter}
+        stageColor="#2196F3"
+        .submitting=${this._isSubmitting}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="--stage-color: #2196F3;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiPrinter}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Print Labels</h2>
-              <div class="dialog-subtitle">${plantIds.length} plant(s) selected</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <div class="dialog-content-grid" style="display: block;">
+          <div class="form-section">
+            <h3>Printer Settings</h3>
+            <md3-select
+              label="Niimbot Printer"
+              .value=${this._selectedDeviceId || ''}
+              .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
+              @change=${(e) => { this._selectedDeviceId = e.detail; }}
+            ></md3-select>
 
-          <div class="dialog-content-grid" style="display: block;">
-            <div class="form-section">
-              <h3>Printer Settings</h3>
-              <md3-select
-                label="Niimbot Printer"
-                .value=${this._selectedDeviceId || ''}
-                .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
-                @change=${(e) => { this._selectedDeviceId = e.detail; }}
-              ></md3-select>
+            ${printers.length === 0 ? x `
+              <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
+                <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+                No Niimbot printers discovered. You can still try printing if you have a default printer configured.
+              </div>
+            ` : E}
 
-              ${printers.length === 0 ? x `
-                <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
-                  <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
-                  No Niimbot printers discovered. You can still try printing if you have a default printer configured.
-                </div>
-              ` : E}
-
-              <div class="copies-row">
-                <label>Copies per plant</label>
-                <input
-                  class="copies-input"
-                  type="number"
-                  min="1"
-                  max="99"
-                  .value=${String(this._copies)}
-                  @input=${(e) => {
+            <div class="copies-row">
+              <label>Copies per plant</label>
+              <input
+                class="copies-input"
+                type="number"
+                min="1"
+                max="99"
+                .value=${String(this._copies)}
+                @input=${(e) => {
             const v = parseInt(e.target.value, 10);
             if (!isNaN(v) && v >= 1)
                 this._copies = v;
         }}
-                />
-              </div>
+              />
             </div>
-
-            ${this._isSubmitting ? x `
-              <div class="progress-bar-wrap">
-                <div class="progress-bar" style="width: ${this._progress}%"></div>
-              </div>
-            ` : E}
           </div>
 
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting ? `Printing... ${this._progress}%` : `Print ${plantIds.length * this._copies} Label(s)`}
-            </button>
-          </div>
+          ${this._isSubmitting ? x `
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width: ${this._progress}%"></div>
+            </div>
+          ` : E}
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
+            @click=${this._submit}
+            ?disabled=${this._isSubmitting}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this._isSubmitting ? `Printing... ${this._progress}%` : `Print ${plantIds.length * this._copies} Label(s)`}
+          </button>
+        </div>
+      </gs-dialog>
     `;
     }
 };
@@ -23505,87 +23577,70 @@ let BatchCloneDialog = class BatchCloneDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('close'));
     }
     render() {
-        if (!this.open)
-            return E;
         const plantIds = this.dialogState?.plantIds ?? [];
         const growspaceEntries = Object.entries(this.growspaceOptions);
         const totalClones = plantIds.length * this._numClones;
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .heading=${'Clone Selected Plants'}
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${this.open}
+        heading="Clone Selected Plants"
+        .subtitle=${`${plantIds.length} plant(s) selected`}
+        .iconPath=${mdiContentCopy}
+        stageColor="#8bc34a"
+        .submitting=${this._isSubmitting}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container" style="--stage-color: #8bc34a;">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiContentCopy}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Clone Selected Plants</h2>
-              <div class="dialog-subtitle">${plantIds.length} plant(s) selected</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <div class="dialog-content-grid" style="display: block;">
+          <div class="form-section">
+            <h3>Target Growspace</h3>
+            <md3-select
+              label="Destination"
+              .value=${this._targetGrowspaceId}
+              .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
+              @change=${(e) => { this._targetGrowspaceId = e.detail; }}
+            ></md3-select>
 
-          <div class="dialog-content-grid" style="display: block;">
-            <div class="form-section">
-              <h3>Target Growspace</h3>
-              <md3-select
-                label="Destination"
-                .value=${this._targetGrowspaceId}
-                .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
-                @change=${(e) => { this._targetGrowspaceId = e.detail; }}
-              ></md3-select>
-
-              <div class="clones-row">
-                <label>Clones per plant</label>
-                <input
-                  class="clones-input"
-                  type="number"
-                  min="1"
-                  max="20"
-                  .value=${String(this._numClones)}
-                  @input=${(e) => {
+            <div class="clones-row">
+              <label>Clones per plant</label>
+              <input
+                class="clones-input"
+                type="number"
+                min="1"
+                max="20"
+                .value=${String(this._numClones)}
+                @input=${(e) => {
             const v = parseInt(e.target.value, 10);
             if (!isNaN(v) && v >= 1 && v <= 20)
                 this._numClones = v;
         }}
-                />
-              </div>
+              />
             </div>
-
-            ${this._isSubmitting ? x `
-              <div class="progress-bar-wrap">
-                <div class="progress-bar" style="width: ${this._progress}%"></div>
-              </div>
-            ` : E}
           </div>
 
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
-              @click=${this._submit}
-              ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this._isSubmitting
+          ${this._isSubmitting ? x `
+            <div class="progress-bar-wrap">
+              <div class="progress-bar" style="width: ${this._progress}%"></div>
+            </div>
+          ` : E}
+        </div>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: #8bc34a; --mdc-theme-primary: #8bc34a;"
+            @click=${this._submit}
+            ?disabled=${this._isSubmitting || !this._targetGrowspaceId}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this._isSubmitting
             ? `Cloning... ${this._progress}%`
             : `Create ${totalClones} Clone${totalClones !== 1 ? 's' : ''}`}
-            </button>
-          </div>
+          </button>
         </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 };
@@ -23842,43 +23897,23 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
     }
     render() {
         return x `
-            <ha-dialog
+            <gs-dialog
                 .open=${this.open}
-                @closed=${this._close}
                 heading="Camera Snapshots"
-                hideActions
-                width="large"
-                .scrimClickAction=${''}
-                .escapeKeyAction=${'close'}
+                .subtitle=${this.growspaceName}
+                .iconPath=${mdiCamera}
+                @close=${this._close}
             >
-        <div class="glass-dialog-container">
-            <!-- HEADER -->
-            <div class="dialog-header">
-                <div class="dialog-icon">
-                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiCamera}"></path>
-                    </svg>
-                </div>
-                <div class="dialog-title-group">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <h2 class="dialog-title">Camera Snapshots</h2>
-                        <gs-help-tooltip
-                            content="View and compare time-lapse camera snapshots from your grow space."
-                            placement="bottom"
-                            label="Camera Snapshots"
-                        ></gs-help-tooltip>
-                    </div>
-                    <div class="dialog-subtitle">${this.growspaceName}</div>
-                </div>
-                <div class="header-actions" style="display:flex; gap:8px; margin-left: auto;">
+                <div slot="header-extra" style="display:flex; gap:8px; align-items:center;">
+                    <gs-help-tooltip
+                        content="View and compare time-lapse camera snapshots from your grow space."
+                        placement="bottom"
+                        label="Camera Snapshots"
+                    ></gs-help-tooltip>
                     <button class="md3-button text" @click=${this._fetchSnapshots} ?disabled=${this._isLoading} title="Refresh">
                         <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
                     </button>
-                    <button class="md3-button text" @click=${this._close} title="Close">
-                        <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-                    </button>
                 </div>
-            </div>
 
             <div class="dialog-content">
                     ${this._renderTabBar()}
@@ -23933,7 +23968,7 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
                         </div>
                     ` : this._renderVisionTab()}
                 </div>
-            </ha-dialog>
+            </gs-dialog>
         `;
     }
 };

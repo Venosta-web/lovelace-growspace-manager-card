@@ -451,8 +451,8 @@ describe('PrintLabelDialog', () => {
             element.dialogState = { plantId: 'P1' };
 
             await element.updateComplete;
-            const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-            expect(subtitle?.textContent).toBe('StrainA (P1)');
+            const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+            expect(gsDialog?.subtitle).toBe('StrainA (P1)');
         });
 
         it('should render strain-only subtitle if plant not found', async () => {
@@ -460,15 +460,15 @@ describe('PrintLabelDialog', () => {
             element.dialogState = { strainName: 'StrainB' };
 
             await element.updateComplete;
-            const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-            expect(subtitle?.textContent).toBe('StrainB');
+            const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+            expect(gsDialog?.subtitle).toBe('StrainB');
         });
 
         it('should render "Unknown" if no data available', async () => {
             element.dialogState = {};
             await element.updateComplete;
-            const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-            expect(subtitle?.textContent).toBe('Unknown');
+            const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+            expect(gsDialog?.subtitle).toBe('Unknown');
         });
 
         it('should render loading state', async () => {

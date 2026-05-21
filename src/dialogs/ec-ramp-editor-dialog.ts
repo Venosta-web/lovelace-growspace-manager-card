@@ -2,7 +2,6 @@ import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import {
-    mdiClose,
     mdiChartLine,
     mdiPlus,
     mdiPencil,
@@ -254,37 +253,21 @@ export class ECRampEditorDialog extends LitElement {
         const subtitle = this._view === 'LIST' ? 'Manage EC targets over time' : 'Define daily EC targets';
 
         return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${this.open}
         .heading=${title}
+        .subtitle=${subtitle}
+        .iconPath=${mdiChartLine}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
-              <ha-svg-icon .path=${mdiChartLine}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">${title}</h2>
-                <gs-help-tooltip
-                  content=${this._view === 'LIST' 
-                    ? "Manage your library of EC Ramp Curves. These curves define the target nutrient concentration for each day of a growth stage." 
-                    : "Define target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Use points to create a progressive ramp."}
-                  placement="bottom"
-                  label=${title}
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content=${this._view === 'LIST'
+            ? "Manage your library of EC Ramp Curves. These curves define the target nutrient concentration for each day of a growth stage."
+            : "Define target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Use points to create a progressive ramp."}
+          placement="bottom"
+          label=${title}
+        ></gs-help-tooltip>
 
           <div class="dialog-content-grid">
             ${this._error ? html`<div class="error-bar">${this._error}</div>` : nothing}
@@ -292,8 +275,7 @@ export class ECRampEditorDialog extends LitElement {
           </div>
 
           <div class="button-group">${this._renderFooterButtons()}</div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 

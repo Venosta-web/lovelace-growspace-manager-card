@@ -59,14 +59,14 @@ describe('LogbookDialog', () => {
     it('should render nothing when closed', async () => {
         element.open = false;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeNull();
+        expect(element.shadowRoot?.querySelector('gs-dialog')).toBeNull();
     });
 
     it('should render dialog content when open', async () => {
         element.open = true;
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
+        const dialog = element.shadowRoot?.querySelector('gs-dialog');
         expect(dialog).toBeTruthy();
         expect(dialog?.hasAttribute('open')).toBe(true);
 
@@ -93,22 +93,23 @@ describe('LogbookDialog', () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const closeBtn = element.shadowRoot?.querySelector('button.md3-button') as HTMLButtonElement;
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        const closeBtn = (gsDialog as any)?.shadowRoot?.querySelector('button.dialog-close-btn') as HTMLButtonElement;
         expect(closeBtn).toBeTruthy();
         closeBtn.click();
 
         expect(closeSpy).toHaveBeenCalled();
     });
 
-    it('should dispatch close event when ha-dialog fires closed event', async () => {
+    it('should dispatch close event when gs-dialog emits close event', async () => {
         element.open = true;
         await element.updateComplete;
 
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
-        dialog?.dispatchEvent(new CustomEvent('closed'));
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
 
         expect(closeSpy).toHaveBeenCalled();
     });

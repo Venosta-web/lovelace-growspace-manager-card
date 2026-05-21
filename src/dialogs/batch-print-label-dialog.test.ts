@@ -423,8 +423,10 @@ describe('BatchPrintLabelDialog – render', () => {
     const el = await fixture<BatchPrintLabelDialog>(html`
       <batch-print-label-dialog .open=${true} .dialogState=${{ plantIds: ['p1'] }}></batch-print-label-dialog>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
-    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('1 plant(s) selected');
+    expect(el.shadowRoot!.querySelector('gs-dialog')).not.toBeNull();
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
+    await gsDialog?.updateComplete;
+    expect(gsDialog?.shadowRoot?.querySelector('.dialog-subtitle')?.textContent).toContain('1 plant(s) selected');
   });
 
   it('renders submission progress bar', async () => {
@@ -487,7 +489,9 @@ describe('BatchPrintLabelDialog – render', () => {
     const el = await fixture<BatchPrintLabelDialog>(html`
       <batch-print-label-dialog .open=${true} .dialogState=${undefined}></batch-print-label-dialog>
     `);
-    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('0 plant(s) selected');
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
+    await gsDialog?.updateComplete;
+    expect(gsDialog?.shadowRoot?.querySelector('.dialog-subtitle')?.textContent).toContain('0 plant(s) selected');
   });
 
   it('renders printing label text during submission', async () => {

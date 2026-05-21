@@ -86,11 +86,9 @@ describe('CropSteeringDialog', () => {
     });
 
     it('should render the dialog with correct title and growspace name', () => {
-        const title = element.shadowRoot?.querySelector('.dialog-title');
-        const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-
-        expect(title?.textContent).toBe('Crop Steering Diagnostics');
-        expect(subtitle?.textContent).toBe('Flower Tent 1');
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+        expect(gsDialog?.heading).toBe('Crop Steering Diagnostics');
+        expect(gsDialog?.subtitle).toBe('Flower Tent 1');
     });
 
     it('should display correct steering score and mode badge', () => {
@@ -163,17 +161,21 @@ describe('CropSteeringDialog', () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const closeBtn = element.shadowRoot?.querySelector('button.md3-button') as HTMLButtonElement;
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+        await gsDialog?.updateComplete;
+        const closeBtn = gsDialog?.shadowRoot?.querySelector('button.dialog-close-btn') as HTMLButtonElement;
         closeBtn.click();
 
         expect(closeSpy).toHaveBeenCalled();
     });
 
-    it('should call close when ha-dialog emits closed event', () => {
+    it('should propagate close when gs-dialog emits close event', () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
-        dialog?.dispatchEvent(new CustomEvent('closed'));
+
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+
         expect(closeSpy).toHaveBeenCalled();
     });
 

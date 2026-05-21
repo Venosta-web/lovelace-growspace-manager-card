@@ -85,7 +85,7 @@ describe('ECRampEditorDialog', () => {
     it('should show list view when opened', async () => {
         element.open = true;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector('gs-dialog')).toBeTruthy();
         expect((element as any)._view).toBe('LIST');
         expect(mockStore.actions.library.fetchECRampCurves).toHaveBeenCalled();
     });

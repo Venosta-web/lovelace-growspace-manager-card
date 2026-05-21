@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { CropSteeringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
-import { mdiChartTimelineVariantShimmer, mdiClose, mdiWaterPercent, mdiSprout, mdiArrowUp, mdiArrowDown, mdiMinus, mdiCompassOutline } from '@mdi/js';
+import { mdiChartTimelineVariantShimmer, mdiWaterPercent, mdiArrowUp, mdiArrowDown, mdiMinus, mdiCompassOutline } from '@mdi/js';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 
@@ -133,35 +133,19 @@ export class CropSteeringDialog extends LitElement {
         }
 
         return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${this.open}
+        heading="Crop Steering Diagnostics"
+        .subtitle=${this.growspaceName}
+        .iconPath=${mdiCompassOutline}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiCompassOutline}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Crop Steering Diagnostics</h2>
-                <gs-help-tooltip
-                  content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
-                  placement="bottom"
-                  label="Crop Steering"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
+          placement="bottom"
+          label="Crop Steering"
+        ></gs-help-tooltip>
 
         <div class="dialog-content">
           ${stateObj === undefined || isNaN(score)
@@ -209,7 +193,7 @@ export class CropSteeringDialog extends LitElement {
                 </p>
               `}
         </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 }

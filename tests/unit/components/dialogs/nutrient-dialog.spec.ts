@@ -39,14 +39,14 @@ describe('NutrientDialog', () => {
     it('should not render content when closed', async () => {
         element.open = false;
         await element.updateComplete;
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
+        const dialog = element.shadowRoot?.querySelector('gs-dialog');
         expect(dialog).toBeNull();
     });
 
     it('should render content when open', async () => {
         element.open = true;
         await element.updateComplete;
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
+        const dialog = element.shadowRoot?.querySelector('gs-dialog');
         expect(dialog).not.toBeNull();
     });
 
@@ -86,21 +86,22 @@ describe('NutrientDialog', () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const closeButton = element.shadowRoot?.querySelector('.md3-button.text') as HTMLElement;
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        const closeButton = (gsDialog as any)?.shadowRoot?.querySelector('button.dialog-close-btn') as HTMLElement;
         closeButton.click();
 
         expect(closeSpy).toHaveBeenCalled();
     });
 
-    it('should dispatch close event on ha-dialog close', async () => {
+    it('should dispatch close event on gs-dialog close', async () => {
         element.open = true;
         await element.updateComplete;
 
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
 
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
-        dialog?.dispatchEvent(new CustomEvent('closed'));
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+        gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
 
         expect(closeSpy).toHaveBeenCalled();
     });

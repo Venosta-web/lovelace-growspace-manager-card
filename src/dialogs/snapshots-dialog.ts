@@ -5,7 +5,7 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { SnapshotsDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import { mdiCamera, mdiClose, mdiRefresh } from '@mdi/js';
+import { mdiCamera, mdiRefresh } from '@mdi/js';
 import { Snapshot } from '../services/api/camera-api';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -270,43 +270,23 @@ export class SnapshotsDialog extends LitElement {
 
     render() {
         return html`
-            <ha-dialog
+            <gs-dialog
                 .open=${this.open}
-                @closed=${this._close}
                 heading="Camera Snapshots"
-                hideActions
-                width="large"
-                .scrimClickAction=${''}
-                .escapeKeyAction=${'close'}
+                .subtitle=${this.growspaceName}
+                .iconPath=${mdiCamera}
+                @close=${this._close}
             >
-        <div class="glass-dialog-container">
-            <!-- HEADER -->
-            <div class="dialog-header">
-                <div class="dialog-icon">
-                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                        <path d="${mdiCamera}"></path>
-                    </svg>
-                </div>
-                <div class="dialog-title-group">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                        <h2 class="dialog-title">Camera Snapshots</h2>
-                        <gs-help-tooltip
-                            content="View and compare time-lapse camera snapshots from your grow space."
-                            placement="bottom"
-                            label="Camera Snapshots"
-                        ></gs-help-tooltip>
-                    </div>
-                    <div class="dialog-subtitle">${this.growspaceName}</div>
-                </div>
-                <div class="header-actions" style="display:flex; gap:8px; margin-left: auto;">
+                <div slot="header-extra" style="display:flex; gap:8px; align-items:center;">
+                    <gs-help-tooltip
+                        content="View and compare time-lapse camera snapshots from your grow space."
+                        placement="bottom"
+                        label="Camera Snapshots"
+                    ></gs-help-tooltip>
                     <button class="md3-button text" @click=${this._fetchSnapshots} ?disabled=${this._isLoading} title="Refresh">
                         <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
                     </button>
-                    <button class="md3-button text" @click=${this._close} title="Close">
-                        <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-                    </button>
                 </div>
-            </div>
 
             <div class="dialog-content">
                     ${this._renderTabBar()}
@@ -364,7 +344,7 @@ export class SnapshotsDialog extends LitElement {
                         </div>
                     ` : this._renderVisionTab()}
                 </div>
-            </ha-dialog>
+            </gs-dialog>
         `;
     }
 }
