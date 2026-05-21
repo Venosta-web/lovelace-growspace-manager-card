@@ -26038,11 +26038,16 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         }
         this._saving = true;
         try {
-            this.dispatchEvent(new CustomEvent('save-strain', {
-                detail: this._editorState,
-                bubbles: true,
-                composed: true,
-            }));
+            if (this.onSave) {
+                await this.onSave(this._editorState);
+            }
+            else {
+                this.dispatchEvent(new CustomEvent('save-strain', {
+                    detail: this._editorState,
+                    bubbles: true,
+                    composed: true,
+                }));
+            }
             if (this.source) {
                 this.dispatchEvent(new CustomEvent('strain-created-at-source', {
                     detail: {
@@ -27584,6 +27589,9 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], StrainEditorView.prototype, "returnPayload", void 0);
+__decorate([
+    n$5({ attribute: false })
+], StrainEditorView.prototype, "onSave", void 0);
 __decorate([
     r$3()
 ], StrainEditorView.prototype, "_editorState", void 0);
@@ -29690,8 +29698,13 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                 .hass=${this.hass}
                 .source=${this.source}
                 .returnPayload=${this.returnPayload}
+                .onSave=${async (strain) => {
+                    await this.store?.actions.strain.update(strain);
+                    this._view = 'browse';
+                    this._editingStrain = undefined;
+                    this.dispatchEvent(new CustomEvent('data-changed'));
+                }}
                 @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
-                @save-strain=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
                 @delete-strain=${(e) => {
                     this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
                     this._view = 'browse';
@@ -30762,6 +30775,7 @@ StrainLibraryDialog.styles = [
         justify-content: center;
         color: var(--secondary-text-color, #444);
         position: relative;
+        overflow: hidden;
       }
       .sc-thumb img {
         width: 100%;

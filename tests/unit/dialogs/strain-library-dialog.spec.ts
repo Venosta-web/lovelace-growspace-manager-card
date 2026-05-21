@@ -7,7 +7,8 @@ import { PlantUtils } from '../../../src/utils/plant-utils';
 // Mock PlantUtils for logic isolation in browser testing
 vi.mock('../../../src/utils/plant-utils', () => ({
     PlantUtils: {
-        compressImage: vi.fn().mockResolvedValue('base64string')
+        compressImage: vi.fn().mockResolvedValue('base64string'),
+        encodeLocalPath: vi.fn().mockImplementation((p: string) => p),
     }
 }));
 
@@ -243,12 +244,12 @@ describe('StrainLibraryDialog', () => {
     // Validation tests (editor save logic) are now in strain-editor-view.spec.ts
     // Dialog-level: verify save-strain event causes view to return to browse
     describe('Validation (dialog-level)', () => {
-        it('should return to browse view when strain-editor-view fires save-strain', async () => {
+        it('should return to browse view when onSave callback is invoked by strain-editor-view', async () => {
             (element as any)._view = 'editor';
             await element.updateComplete;
 
-            const editorView = element.shadowRoot?.querySelector('strain-editor-view');
-            editorView?.dispatchEvent(new CustomEvent('save-strain', { bubbles: true, composed: true, detail: { strain: 'New Strain' } }));
+            const editorView = element.shadowRoot?.querySelector('strain-editor-view') as any;
+            await editorView?.onSave?.({ strain: 'New Strain' });
             await element.updateComplete;
 
             expect((element as any)._view).toBe('browse');

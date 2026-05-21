@@ -225,6 +225,7 @@ export class StrainLibraryDialog extends LitElement {
         justify-content: center;
         color: var(--secondary-text-color, #444);
         position: relative;
+        overflow: hidden;
       }
       .sc-thumb img {
         width: 100%;
@@ -1195,8 +1196,13 @@ export class StrainLibraryDialog extends LitElement {
                 .hass=${this.hass}
                 .source=${this.source}
                 .returnPayload=${this.returnPayload}
+                .onSave=${async (strain: import('../types').StrainEntry) => {
+                  await this.store?.actions.strain.update(strain);
+                  this._view = 'browse';
+                  this._editingStrain = undefined;
+                  this.dispatchEvent(new CustomEvent('data-changed'));
+                }}
                 @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
-                @save-strain=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
                 @delete-strain=${(e: CustomEvent) => {
               this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
               this._view = 'browse';

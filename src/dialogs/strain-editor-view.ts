@@ -39,6 +39,7 @@ export class StrainEditorView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: String }) source?: string;
   @property({ attribute: false }) returnPayload?: unknown;
+  @property({ attribute: false }) onSave?: (strain: Partial<StrainEntry>) => Promise<void>;
 
   @state() private _editorState: Partial<StrainEntry> = {};
   @state() private _editorHistory: Partial<StrainEntry>[] = [];
@@ -131,13 +132,17 @@ export class StrainEditorView extends LitElement {
 
     this._saving = true;
     try {
-      this.dispatchEvent(
-        new CustomEvent('save-strain', {
-          detail: this._editorState,
-          bubbles: true,
-          composed: true,
-        })
-      );
+      if (this.onSave) {
+        await this.onSave(this._editorState);
+      } else {
+        this.dispatchEvent(
+          new CustomEvent('save-strain', {
+            detail: this._editorState,
+            bubbles: true,
+            composed: true,
+          })
+        );
+      }
 
       if (this.source) {
         this.dispatchEvent(

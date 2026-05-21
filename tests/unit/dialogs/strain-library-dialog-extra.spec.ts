@@ -8,7 +8,8 @@ import { mdiCheck, mdiClose, mdiDelete } from '@mdi/js';
 // Mock PlantUtils
 vi.mock('../../../src/utils/plant-utils', () => ({
     PlantUtils: {
-        compressImage: vi.fn().mockResolvedValue('base64string')
+        compressImage: vi.fn().mockResolvedValue('base64string'),
+        encodeLocalPath: vi.fn().mockImplementation((p: string) => p),
     }
 }));
 

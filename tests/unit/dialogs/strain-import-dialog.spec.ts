@@ -336,8 +336,10 @@ describe('StrainImportDialog', () => {
     await element.updateComplete;
 
     const text = element.shadowRoot?.textContent;
-    expect(text).toContain('Unknown'); // Composition, Flowering, THC, Yield, Height
-    expect(text).toContain('None'); // Description, Awards, Lineage
+    // Present fields render their values
+    expect(text).toContain('Strain');
+    expect(text).toContain('Breeder');
+    // Optional fields with no data are not rendered at all (no Unknown/None placeholders)
     expect(element.shadowRoot?.querySelector('img.preview-image')).toBeNull();
 
     // Now with all fields

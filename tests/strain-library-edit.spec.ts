@@ -3,6 +3,94 @@ import { createMockHass } from './mocks/hass';
 
 test.describe('Strain Library Edit', () => {
 
+    test('save shows loading state and navigates only after save completes', async ({ coveragePage: page }) => {
+        page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
+
+        const card = page.locator('growspace-manager-card');
+
+        // Expose a notifier so the test runner knows the save WS call is in-flight
+        let resolveSave!: () => void;
+        const saveGate = new Promise<void>(res => { resolveSave = res; });
+        await page.exposeFunction('notifySaveCalled', () => { resolveSave(); });
+
+        const mockStrains = {
+            "Blue Dream": {
+                meta: { breeder: "Humboldt", type: "Sativa" },
+                phenotypes: { "": { description: "Sweet berry", image_path: "" } },
+            },
+        };
+
+        const mockHass = createMockHass({ growspaceName: '4x4 Tent', rows: 4, cols: 4 });
+        const hassData = JSON.parse(JSON.stringify(mockHass));
+
+        await page.goto('/');
+
+        // Set up card + hass; callService for add_strain/update_strain_meta hangs so we can
+        // inspect the loading state before it resolves.
+        await card.evaluate((node: any, { config, hassData, strains }) => {
+            node.setConfig(config);
+            node.hass = {
+                ...hassData,
+                callService: async (d: string, s: string, _data: any) => {
+                    if (d === 'growspace_manager' && (s === 'add_strain' || s === 'update_strain_meta')) {
+                        (window as any).notifySaveCalled();
+                        await new Promise(() => {}); // hang until test ends
+                    }
+                    return Promise.resolve();
+                },
+                connection: {
+                    subscribeEvents: () => () => {},
+                    sendMessagePromise: (msg: any) => {
+                        if (msg.type === 'growspace_manager/get_strain_library') {
+                            return Promise.resolve(strains);
+                        }
+                        return Promise.resolve({});
+                    },
+                },
+                callWS: async () => Promise.resolve({}),
+                localize: (key: string) => `[${key}]`,
+                callApi: async () => Promise.resolve(),
+            };
+            // Propagate hass to store immediately (normally happens in updated() async lifecycle)
+            node.store.updateHass(node.hass);
+            node.store.handleDeviceChange('4x4_tent');
+            node.store.actions.library.fetchStrains(true);
+
+            // Open strain library directly via the store to avoid relying on menu UI selectors
+            node.store.actions.ui.openStrainLibraryDialog();
+        }, {
+            config: { type: 'custom:growspace-manager-card', entity: 'sensor.4x4_tent' },
+            hassData,
+            strains: mockStrains,
+        });
+
+        const dialog = page.locator('strain-library-dialog ha-dialog');
+        await expect(dialog).toBeVisible();
+
+        // Click the "Blue Dream" strain card to open the editor
+        await dialog.locator('.strain-card', { hasText: 'Blue Dream' }).first().click();
+
+        const strainNameInput = dialog.locator('.sd-form-group', { hasText: 'Strain Name' }).locator('input');
+        await expect(strainNameInput).toBeVisible();
+
+        // Trigger save
+        const saveBtn = dialog.locator('.md3-button.primary', { hasText: 'Save Strain' });
+        await expect(saveBtn).toBeVisible();
+        await saveBtn.click();
+
+        // Wait until callService is called (save is in-flight)
+        await saveGate;
+
+        // Give LitElement time to flush any pending re-renders before asserting
+        await page.waitForTimeout(300);
+
+        // ASSERT: editor must still be visible — navigation must NOT happen before save completes
+        await expect(strainNameInput).toBeVisible({ timeout: 100 });
+
+        // ASSERT: save button must show loading state while save is pending
+        await expect(dialog.locator('.md3-button.primary', { hasText: 'Saving' })).toBeVisible({ timeout: 100 });
+    });
+
     test('can edit an existing strain', async ({ coveragePage: page }) => {
         // Enable console logging
         page.on('console', msg => console.log(`BROWSER: ${msg.text()}`));
@@ -58,7 +146,7 @@ test.describe('Strain Library Edit', () => {
         });
 
         // Open Menu -> Strains
-        const menuButton = card.locator('.menu-button');
+        const menuButton = card.locator('#menu-trigger');
         await expect(menuButton).toBeVisible();
         await menuButton.click();
         const item = card.locator('.menu-item', { hasText: 'Strains' });

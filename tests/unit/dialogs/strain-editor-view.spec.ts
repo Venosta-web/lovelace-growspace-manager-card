@@ -6,7 +6,8 @@ import { PlantUtils } from '../../../src/utils/plant-utils';
 
 vi.mock('../../../src/utils/plant-utils', () => ({
     PlantUtils: {
-        compressImage: vi.fn().mockResolvedValue('base64string')
+        compressImage: vi.fn().mockResolvedValue('base64string'),
+        encodeLocalPath: vi.fn().mockImplementation((p: string) => p),
     }
 }));
 

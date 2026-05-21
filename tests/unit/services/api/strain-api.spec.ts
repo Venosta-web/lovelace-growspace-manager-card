@@ -65,13 +65,11 @@ describe('DataService - StrainAPI', () => {
             }));
         });
 
-        it('should add strain omitting image path if not base64', async () => {
+        it('should add strain sending image_path for non-base64 local paths', async () => {
             await service.addStrain({ strain: 'X', image: '/local/img.jpg' });
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', expect.objectContaining({
-                strain: 'X'
-            }));
-            expect(callServiceMock).not.toHaveBeenCalledWith('growspace_manager', 'add_strain', expect.objectContaining({
-                image_path: expect.any(String)
+                strain: 'X',
+                image_path: '/local/img.jpg',
             }));
         });
     });
@@ -478,11 +476,12 @@ describe('DataService - StrainAPI', () => {
                     await expect(service.updateBreeder('Old', 'New')).rejects.toThrow('Update Fail');
                 });
 
-                it('updateStrainMeta should clean undefined keys and handle non-base64 image', async () => {
+                it('updateStrainMeta should clean undefined keys and send image_path for non-base64 paths', async () => {
                     const data = { strain: 'OG Kush', description: undefined, image: '/local/test.jpg' };
                     await service.updateStrainMeta(data);
                     expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_strain_meta', {
-                        strain: 'OG Kush'
+                        strain: 'OG Kush',
+                        image_path: '/local/test.jpg',
                     });
                 });
 
