@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { mdiFormatListBulleted, mdiChartTimelineVariant } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -6,7 +6,6 @@ import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/growspace-logbook';
 import '../features/shared/ui/growspace-timeline';
-import '../features/environment/components/vpd-heatmap';
 import '../features/shared/ui/gs-help-tooltip';
 import '../features/shared/ui/quick-note-input';
 
@@ -14,7 +13,7 @@ import { consume } from '@lit/context';
 import { hassContext } from '../context';
 import { getTimelineService } from '../services/timeline-service';
 
-type LogbookTab = 'list' | 'timeline' | 'vpd';
+type LogbookTab = 'list' | 'timeline';
 
 @customElement('logbook-dialog')
 export class LogbookDialog extends LitElement {
@@ -184,13 +183,6 @@ export class LogbookDialog extends LitElement {
               <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
               <span>Timeline</span>
             </button>
-            <button
-              class="tab ${this._activeTab === 'vpd' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'vpd')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
-              <span>VPD</span>
-            </button>
           </div>
 
           <!-- Content -->
@@ -214,26 +206,7 @@ export class LogbookDialog extends LitElement {
                     .growspaceId=${this.growspaceId}
                   ></growspace-timeline>
                 `
-          : html`
-                  <div
-                    style="padding: 20px; display: flex; flex-direction: column; align-items: center;"
-                  >
-                    <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
-                    <vpd-heatmap
-                      .hass=${this.hass}
-                      .temperature=${24}
-                      .humidity=${60}
-                      .stage=${'vegetative'}
-                    ></vpd-heatmap>
-                    <p
-                      style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;"
-                    >
-                      Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current
-                      stage.<br />
-                      Targeting 0.8 - 1.2 kPa.
-                    </p>
-                  </div>
-                `}
+          : nothing}
           </div>
       </gs-dialog>
     `;
