@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiWaterPlus, mdiClose, mdiPlus, mdiDelete, mdiCheck, mdiInformation } from '@mdi/js';
+import { mdiWaterPlus, mdiPlus, mdiDelete, mdiCheck, mdiInformation } from '@mdi/js';
 import { NutrientEntry } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui'; // Ensure MD3 components are registered
@@ -105,7 +105,7 @@ export class GrowspaceWateringDialogUI extends LitElement {
   }
 
   private _close() {
-    this.dispatchEvent(new CustomEvent('close'));
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
   private _handlePresetChange(e: CustomEvent) {
@@ -159,29 +159,15 @@ export class GrowspaceWateringDialogUI extends LitElement {
     const dialogColor = '#2196F3';
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Record Watering</h2>
-                <gs-help-tooltip
-                  content=\"Log a watering event — record volume, EC, pH, and runoff data for one or more plants. Select one or more target plants below.\"
-                  placement=\"bottom\"
-                  label=\"Record Watering\"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid">
+      <gs-dialog
+        .open=${true}
+        .heading=${'Record Watering'}
+        .subtitle=${this.growspaceName}
+        .iconPath=${mdiWaterPlus}
+        stageColor="${dialogColor}"
+        .submitting=${this.isSubmitting}
+      >
+        <div class="dialog-content-grid">
             ${this.hasPhiWarning
               ? html`
                   <div class=\"error-bar\">
@@ -315,8 +301,7 @@ export class GrowspaceWateringDialogUI extends LitElement {
               ${this.isSubmitting ? 'Recording...' : 'Record Watering'}
             </button>
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
   }
 }

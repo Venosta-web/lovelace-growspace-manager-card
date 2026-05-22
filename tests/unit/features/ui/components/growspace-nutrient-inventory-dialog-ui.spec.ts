@@ -77,16 +77,16 @@ describe('GrowspaceNutrientInventoryDialogUI', () => {
         expect(element.shadowRoot?.innerHTML).toContain('<!--');
     });
 
-    it('renders ha-dialog when open=true', async () => {
+    it('renders gs-dialog when open=true', async () => {
         element.open = true;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector('gs-dialog')).toBeTruthy();
     });
 
-    it('renders content directly when embedded=true (no ha-dialog)', async () => {
+    it('renders content directly when embedded=true (no gs-dialog)', async () => {
         element.embedded = true;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeFalsy();
+        expect(element.shadowRoot?.querySelector('gs-dialog')).toBeFalsy();
         expect(element.shadowRoot?.querySelector('.glass-dialog-container')).toBeTruthy();
     });
 
@@ -94,12 +94,6 @@ describe('GrowspaceNutrientInventoryDialogUI', () => {
         element.embedded = true;
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('.dialog-header')).toBeFalsy();
-    });
-
-    it('shows dialog header when not embedded', async () => {
-        element.open = true;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('.dialog-header')).toBeTruthy();
     });
 
     it('shows loading spinner when isLoading=true', async () => {
@@ -127,21 +121,25 @@ describe('GrowspaceNutrientInventoryDialogUI', () => {
 
     // ── _close() ──────────────────────────────────────────────────────────────
 
-    it('dispatches close event when close button is clicked', async () => {
+    it('relays gs-dialog close event as a composed, bubbling close event', async () => {
         element.open = true;
         await element.updateComplete;
-        const spy = vi.fn();
-        element.addEventListener('close', spy);
-        const closeBtn = element.shadowRoot?.querySelector('button.md3-button.text') as HTMLElement;
-        closeBtn?.click();
-        expect(spy).toHaveBeenCalled();
+        const events: Event[] = [];
+        element.addEventListener('close', (e) => events.push(e));
+        const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as HTMLElement;
+        gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        expect(events).toHaveLength(1);
+        expect((events[0] as CustomEvent).composed).toBe(true);
+        expect((events[0] as CustomEvent).bubbles).toBe(true);
     });
 
-    it('_close() dispatches close event', () => {
-        const spy = vi.fn();
-        element.addEventListener('close', spy);
+    it('_close() dispatches close event composed and bubbling', () => {
+        const events: Event[] = [];
+        element.addEventListener('close', (e) => events.push(e));
         (element as any)._close();
-        expect(spy).toHaveBeenCalled();
+        expect(events).toHaveLength(1);
+        expect((events[0] as CustomEvent).composed).toBe(true);
+        expect((events[0] as CustomEvent).bubbles).toBe(true);
     });
 
     // ── _renderContent() - empty state ────────────────────────────────────────

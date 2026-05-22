@@ -34,32 +34,31 @@ describe('GrowspaceIPMDialogUI', () => {
     const el = await fixture<GrowspaceIPMDialogUI>(html`
       <growspace-ipm-dialog-ui .open=${false} .presets=${{}}></growspace-ipm-dialog-ui>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).toBeNull();
   });
 
   it('renders dialog when open', async () => {
     const el = await fixture<GrowspaceIPMDialogUI>(html`
       <growspace-ipm-dialog-ui .open=${true} .presets=${{}}></growspace-ipm-dialog-ui>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).not.toBeNull();
   });
 
   it('is defined as a custom element', () => {
     expect(customElements.get('growspace-ipm-dialog-ui')).toBeDefined();
   });
 
-  it('dispatches close event when close button is clicked', async () => {
-    const handler = vi.fn();
+  it('relays gs-dialog close event as a composed, bubbling close event', async () => {
+    const events: Event[] = [];
     const el = await fixture<GrowspaceIPMDialogUI>(html`
-      <growspace-ipm-dialog-ui
-        .open=${true}
-        .presets=${{}}
-        @close=${handler}
-      ></growspace-ipm-dialog-ui>
+      <growspace-ipm-dialog-ui .open=${true} .presets=${{}}></growspace-ipm-dialog-ui>
     `);
-    const closeBtn = el.shadowRoot!.querySelector('.dialog-header button.md3-button') as HTMLElement;
-    closeBtn?.click();
-    expect(handler).toHaveBeenCalledOnce();
+    el.addEventListener('close', (e) => events.push(e));
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as HTMLElement;
+    gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    expect(events).toHaveLength(1);
+    expect((events[0] as CustomEvent).composed).toBe(true);
+    expect((events[0] as CustomEvent).bubbles).toBe(true);
   });
 
   it('shows APPLY view by default with a preset selector', async () => {
@@ -175,19 +174,6 @@ describe('GrowspaceIPMDialogUI', () => {
       expect((el as any)._view).toBe('LIST');
     });
 
-    it('dispatches close event when ha-dialog closed event is triggered', async () => {
-      const handler = vi.fn();
-      const el = await fixture<GrowspaceIPMDialogUI>(html`
-        <growspace-ipm-dialog-ui
-          .open=${true}
-          .presets=${{}}
-          @close=${handler}
-        ></growspace-ipm-dialog-ui>
-      `);
-      const dialog = el.shadowRoot!.querySelector('ha-dialog');
-      dialog?.dispatchEvent(new CustomEvent('closed'));
-      expect(handler).toHaveBeenCalledOnce();
-    });
 
   describe('LIST view', () => {
     let el: GrowspaceIPMDialogUI;

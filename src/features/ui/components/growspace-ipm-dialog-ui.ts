@@ -1,7 +1,6 @@
 import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
-  mdiClose,
   mdiBug,
   mdiPlus,
   mdiPencil,
@@ -117,10 +116,6 @@ export class GrowspaceIPMDialogUI extends LitElement {
     }
   }
 
-  private _close() {
-    this.dispatchEvent(new CustomEvent('close'));
-  }
-
   private _handleApply() {
     this.dispatchEvent(
       new CustomEvent('apply-ipm', {
@@ -204,40 +199,25 @@ export class GrowspaceIPMDialogUI extends LitElement {
     }
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
-              <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">${title}</h2>
-                <gs-help-tooltip
-                  content=\"Integrated Pest Management — log pest/disease treatments, track application dates and products used.\"
-                  placement=\"bottom\"
-                  label=\"IPM\"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid">
-            ${this.error ? html`<div class=\"error-bar\">${this.error}</div>` : nothing}
-            ${this._view === 'APPLY'
-              ? this._renderApply()
-              : this._view === 'LIST'
-              ? this._renderList()
-              : this._renderEdit()}
-          </div>
-
-          <div class="button-group">${this._renderFooterButtons()}</div>
+      <gs-dialog
+        .open=${true}
+        .heading=${title}
+        .subtitle=${subtitle}
+        .iconPath=${mdiBug}
+        stageColor="var(--warning-color, #ff9800)"
+        .submitting=${this.isSubmitting}
+      >
+        <div class="dialog-content-grid">
+          ${this.error ? html`<div class="error-bar">${this.error}</div>` : nothing}
+          ${this._view === 'APPLY'
+            ? this._renderApply()
+            : this._view === 'LIST'
+            ? this._renderList()
+            : this._renderEdit()}
         </div>
-      </ha-dialog>
+
+        <div class="button-group">${this._renderFooterButtons()}</div>
+      </gs-dialog>
     `;
   }
 

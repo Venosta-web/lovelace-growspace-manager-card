@@ -15,48 +15,56 @@ describe('GrowspaceWateringDialogUI', () => {
     const el = await fixture<GrowspaceWateringDialogUI>(html`
       <growspace-watering-dialog-ui .open=${false}></growspace-watering-dialog-ui>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).toBeNull();
   });
 
   it('renders dialog when open', async () => {
     const el = await fixture<GrowspaceWateringDialogUI>(html`
       <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).not.toBeNull();
   });
 
   it('renders Record Watering title', async () => {
     const el = await fixture<GrowspaceWateringDialogUI>(html`
       <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
     `);
-    expect(el.shadowRoot!.querySelector('.dialog-title')?.textContent).toContain('Record Watering');
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
+    expect(gsDialog.heading).toBe('Record Watering');
   });
 
   it('shows growspace name in subtitle', async () => {
     const el = await fixture<GrowspaceWateringDialogUI>(html`
       <growspace-watering-dialog-ui .open=${true} .growspaceName=${'Tent A'}></growspace-watering-dialog-ui>
     `);
-    expect(el.shadowRoot!.querySelector('.dialog-subtitle')?.textContent).toContain('Tent A');
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
+    expect(gsDialog.subtitle).toBe('Tent A');
   });
 
-  it('dispatches close event when close button is clicked', async () => {
-    const handler = vi.fn();
+  it('relays gs-dialog close event as a composed, bubbling close event', async () => {
+    const events: Event[] = [];
     const el = await fixture<GrowspaceWateringDialogUI>(html`
-      <growspace-watering-dialog-ui .open=${true} @close=${handler}></growspace-watering-dialog-ui>
+      <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
     `);
-    const closeBtn = el.shadowRoot!.querySelector('.dialog-header button.md3-button') as HTMLElement;
-    closeBtn?.click();
-    expect(handler).toHaveBeenCalledOnce();
+    el.addEventListener('close', (e) => events.push(e));
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as HTMLElement;
+    gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    expect(events).toHaveLength(1);
+    expect((events[0] as CustomEvent).composed).toBe(true);
+    expect((events[0] as CustomEvent).bubbles).toBe(true);
   });
 
-  it('dispatches close event when Cancel button is clicked', async () => {
-    const handler = vi.fn();
+  it('dispatches composed close event when Cancel button is clicked', async () => {
+    const events: Event[] = [];
     const el = await fixture<GrowspaceWateringDialogUI>(html`
-      <growspace-watering-dialog-ui .open=${true} @close=${handler}></growspace-watering-dialog-ui>
+      <growspace-watering-dialog-ui .open=${true}></growspace-watering-dialog-ui>
     `);
+    el.addEventListener('close', (e) => events.push(e));
     const cancelBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.tonal') as HTMLElement;
     cancelBtn?.click();
-    expect(handler).toHaveBeenCalledOnce();
+    expect(events).toHaveLength(1);
+    expect((events[0] as CustomEvent).composed).toBe(true);
+    expect((events[0] as CustomEvent).bubbles).toBe(true);
   });
 
   it('dispatches submit-watering event when Record Watering clicked', async () => {

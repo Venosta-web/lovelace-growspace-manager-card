@@ -2,7 +2,6 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
   mdiBottleTonicPlus,
-  mdiClose,
   mdiPlus,
   mdiDelete,
   mdiCheck,
@@ -117,7 +116,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
   ];
 
   private _close() {
-    this.dispatchEvent(new CustomEvent('close'));
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
   private _startEdit(stock: NutrientStock) {
@@ -164,54 +163,40 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
   render() {
     if (!this.open && !this.embedded) return nothing;
 
-    const content = html`
-      <div
-        class="glass-dialog-container"
-        style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}"
-      >
-        ${!this.embedded
-          ? html`
-              <div class="dialog-header">
-                <div class="dialog-icon">
-                  <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
-                </div>
-                <div class="dialog-title-group">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <h2 class="dialog-title">Nutrient Inventory</h2>
-                    <gs-help-tooltip
-                      content=\"Track your nutrient bottles — name, brand, and current stock levels. Used to calculate feeds and trigger low-stock alerts.\"
-                      placement=\"bottom\"
-                      label=\"Nutrient Inventory\"
-                    ></gs-help-tooltip>
-                  </div>
-                  <div class="dialog-subtitle">Manage stock levels</div>
-                </div>
-                <button class="md3-button text" @click=${this._close}>
-                  <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-                </button>
-              </div>
-            `
-          : nothing}
-
-        <div class="dialog-content-grid" style="${this.embedded ? 'padding: 0;' : ''}">
-          ${this.isLoading
-            ? html`<ha-circular-progress active></ha-circular-progress>`
-            : this.error
-            ? html`<div class=\"error-banner\">
-                <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-                ${this.error}
-              </div>`
-            : this._renderContent()}
-        </div>
-      </div>
+    const innerContent = html`
+      ${this.isLoading
+        ? html`<ha-circular-progress active></ha-circular-progress>`
+        : this.error
+        ? html`<div class="error-banner">
+            <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+            ${this.error}
+          </div>`
+        : this._renderContent()}
     `;
 
     if (this.embedded) {
-      return content;
+      return html`
+        <div class="glass-dialog-container" style="background: none; border: none; padding: 0;">
+          <div class="dialog-content-grid" style="padding: 0;">
+            ${innerContent}
+          </div>
+        </div>
+      `;
     }
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions without-header width="full"> ${content} </ha-dialog>
+      <gs-dialog
+        .open=${true}
+        .heading=${'Nutrient Inventory'}
+        .subtitle=${'Manage stock levels'}
+        .iconPath=${mdiBottleTonicPlus}
+        stageColor="var(--primary-color, #4caf50)"
+        .submitting=${this.isSaving}
+      >
+        <div class="dialog-content-grid">
+          ${innerContent}
+        </div>
+      </gs-dialog>
     `;
   }
 
