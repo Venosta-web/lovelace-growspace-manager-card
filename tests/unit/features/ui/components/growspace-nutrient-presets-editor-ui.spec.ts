@@ -32,28 +32,27 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
       <growspace-nutrient-presets-editor-ui .open=${false} .presets=${{}}></growspace-nutrient-presets-editor-ui>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).toBeNull();
   });
 
   it('renders dialog when open', async () => {
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
       <growspace-nutrient-presets-editor-ui .open=${true} .presets=${{}}></growspace-nutrient-presets-editor-ui>
     `);
-    expect(el.shadowRoot!.querySelector('ha-dialog')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('gs-dialog')).not.toBeNull();
   });
 
-  it('dispatches close event when close button is clicked', async () => {
-    const handler = vi.fn();
+  it('relays gs-dialog close event as a composed, bubbling close event', async () => {
+    const events: CustomEvent[] = [];
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
-      <growspace-nutrient-presets-editor-ui
-        .open=${true}
-        .presets=${{}}
-        @close=${handler}
-      ></growspace-nutrient-presets-editor-ui>
+      <growspace-nutrient-presets-editor-ui .open=${true} .presets=${{}}></growspace-nutrient-presets-editor-ui>
     `);
-    const closeBtn = el.shadowRoot!.querySelector('.dialog-header button.md3-button') as HTMLElement;
-    closeBtn?.click();
-    expect(handler).toHaveBeenCalledOnce();
+    el.addEventListener('close', (e: Event) => events.push(e as CustomEvent));
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as HTMLElement;
+    gsDialog?.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    expect(events).toHaveLength(1);
+    expect(events[0].composed).toBe(true);
+    expect(events[0].bubbles).toBe(true);
   });
 
   it('shows error bar when error prop is set', async () => {
@@ -91,18 +90,17 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
       expect(names).toContain('Bloom Week 4');
     });
 
-    it('dispatches close event when Close button clicked', async () => {
-      const handler = vi.fn();
+    it('dispatches a composed, bubbling close event when Close button clicked', async () => {
+      const events: CustomEvent[] = [];
       const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
-        <growspace-nutrient-presets-editor-ui
-          .open=${true}
-          .presets=${{}}
-          @close=${handler}
-        ></growspace-nutrient-presets-editor-ui>
+        <growspace-nutrient-presets-editor-ui .open=${true} .presets=${{}}></growspace-nutrient-presets-editor-ui>
       `);
+      el.addEventListener('close', (e: Event) => events.push(e as CustomEvent));
       const closeBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.tonal') as HTMLElement;
       closeBtn?.click();
-      expect(handler).toHaveBeenCalledOnce();
+      expect(events).toHaveLength(1);
+      expect(events[0].composed).toBe(true);
+      expect(events[0].bubbles).toBe(true);
     });
 
     it('switches to EDIT view when Add Preset clicked', async () => {

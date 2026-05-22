@@ -1206,10 +1206,11 @@ export class StrainLibraryDialog extends LitElement {
         @closed=${close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto;">
+        <div class="glass-dialog-container" style="height: auto;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>

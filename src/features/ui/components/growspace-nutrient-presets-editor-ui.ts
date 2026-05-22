@@ -1,18 +1,16 @@
 import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
-  mdiClose,
   mdiPlus,
   mdiDelete,
   mdiPencil,
   mdiBottleTonicPlus,
   mdiContentSave,
   mdiInformation,
-  mdiCheck,
 } from '@mdi/js';
 import { NutrientPreset, NutrientItem } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
-import '../../shared/ui'; // Ensure MD3 components are registered
+import '../../shared/ui'; // Registers gs-dialog and MD3 components
 
 @customElement('growspace-nutrient-presets-editor-ui')
 export class GrowspaceNutrientPresetsEditorUI extends LitElement {
@@ -100,7 +98,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
   }
 
   private _close() {
-    this.dispatchEvent(new CustomEvent('close'));
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
   private _handleSave() {
@@ -159,36 +157,28 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
   render() {
     if (!this.open) return nothing;
 
-    const title = this._view === 'LIST' ? 'Nutrient Presets' : 
-                  (this._editingPreset?.id ? 'Edit Preset' : 'New Preset');
+    const title = this._view === 'LIST' ? 'Nutrient Presets' :
+      (this._editingPreset?.id ? 'Edit Preset' : 'New Preset');
     const subtitle = this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions without-header>
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
-              <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid">
-            ${this.error ? html`<div class="error-bar">${this.error}</div>` : nothing}
-            ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
-          </div>
-
-          <div class="button-group">
-            ${this._renderFooterButtons()}
-          </div>
+      <gs-dialog
+        .open=${true}
+        .heading=${title}
+        .subtitle=${subtitle}
+        .iconPath=${mdiBottleTonicPlus}
+        stageColor="var(--primary-color, #4caf50)"
+        .submitting=${this.isSubmitting}
+      >
+        <div class="dialog-content-grid">
+          ${this.error ? html`<div class="error-bar">${this.error}</div>` : nothing}
+          ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          ${this._renderFooterButtons()}
+        </div>
+      </gs-dialog>
     `;
   }
 
@@ -256,8 +246,8 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
             label="Preset Name"
             .value=${this._editingPreset.name || ''}
             @change=${(e: CustomEvent) => {
-              this._editingPreset = { ...this._editingPreset!, name: e.detail };
-            }}
+        this._editingPreset = { ...this._editingPreset!, name: e.detail };
+      }}
             placeholder="e.g. Veg Week 1"
           ></md3-text-input>
         </div>

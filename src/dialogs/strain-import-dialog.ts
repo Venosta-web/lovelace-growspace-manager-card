@@ -407,9 +407,10 @@ export class StrainImportDialog extends LitElement {
         @closed=${this._close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
       >
-        <div class="glass-dialog-container" style="width: 600px; max-width: 95vw;">
+        <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">

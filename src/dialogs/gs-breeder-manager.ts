@@ -31,7 +31,6 @@ export class GsBreederManager extends LitElement {
       }
 
       .glass-dialog-container {
-        width: 600px;
         max-width: 98vw;
         height: auto;
         max-height: 90vh;
@@ -184,6 +183,7 @@ export class GsBreederManager extends LitElement {
         @closed=${close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -271,8 +271,8 @@ export class GsBreederManager extends LitElement {
         ${breeders.map((b) => html`
           <div class="breeder-card" @click=${() => this._startEdit(b.name, b.logo)}>
             ${b.logo
-              ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
-              : html`<div class="breeder-logo-placeholder">
+        ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
+        : html`<div class="breeder-logo-placeholder">
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                     <path d="${mdiImage}"></path>
                   </svg>
@@ -337,8 +337,8 @@ export class GsBreederManager extends LitElement {
             placeholder="e.g. Royal Queen Seeds"
             .value=${state.name}
             @input=${(e: InputEvent) => {
-              this._editorState = { ...this._editorState!, name: (e.target as HTMLInputElement).value };
-            }}
+        this._editorState = { ...this._editorState!, name: (e.target as HTMLInputElement).value };
+      }}
           />
         </div>
 
@@ -346,8 +346,8 @@ export class GsBreederManager extends LitElement {
           <label class="sd-label">Breeder Logo</label>
           <div style="display:flex; align-items:center; gap:16px;">
             ${state.logo
-              ? html`<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
-              : html`<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
+        ? html`<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
+        : html`<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
                   <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
                 </div>`}
             <div style="display:flex; gap:8px;">
@@ -399,10 +399,11 @@ export class GsBreederManager extends LitElement {
         @closed=${() => { this._pendingDelete = null; }}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div class="glass-dialog-container" style="height: auto; padding: 24px; display: flex; flex-direction: column;">
           <h2 class="dialog-title">Remove Breeder?</h2>
           <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
             This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.

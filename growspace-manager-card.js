@@ -12463,7 +12463,7 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
         }
     }
     _close() {
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _handleSave() {
         if (!this._editingPreset)
@@ -12518,31 +12518,23 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
             (this._editingPreset?.id ? 'Edit Preset' : 'New Preset');
         const subtitle = this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
         return x `
-      <ha-dialog open @closed=${this._close} hideActions without-header>
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
-              <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid">
-            ${this.error ? x `<div class="error-bar">${this.error}</div>` : E}
-            ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
-          </div>
-
-          <div class="button-group">
-            ${this._renderFooterButtons()}
-          </div>
+      <gs-dialog
+        .open=${true}
+        .heading=${title}
+        .subtitle=${subtitle}
+        .iconPath=${mdiBottleTonicPlus}
+        stageColor="var(--primary-color, #4caf50)"
+        .submitting=${this.isSubmitting}
+      >
+        <div class="dialog-content-grid">
+          ${this.error ? x `<div class="error-bar">${this.error}</div>` : E}
+          ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
         </div>
-      </ha-dialog>
+
+        <div class="button-group">
+          ${this._renderFooterButtons()}
+        </div>
+      </gs-dialog>
     `;
     }
     _renderFooterButtons() {
@@ -24113,6 +24105,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         @closed=${close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -24321,10 +24314,11 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         @closed=${() => { this._pendingDelete = null; }}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div class="glass-dialog-container" style="height: auto; padding: 24px; display: flex; flex-direction: column;">
           <h2 class="dialog-title">Remove Breeder?</h2>
           <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
             This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
@@ -24380,7 +24374,6 @@ GsBreederManager.styles = [
       }
 
       .glass-dialog-container {
-        width: 600px;
         max-width: 98vw;
         height: auto;
         max-height: 90vh;
@@ -25367,9 +25360,10 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         @closed=${this._close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
       >
-        <div class="glass-dialog-container" style="width: 600px; max-width: 95vw;">
+        <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -27983,10 +27977,11 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         @closed=${close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto;">
+        <div class="glass-dialog-container" style="height: auto;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>
@@ -28076,10 +28071,11 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         @closed=${close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 600px; max-width: 98vw; height: auto; max-height: 90vh;">
+        <div class="glass-dialog-container" style="height: auto; max-height: 90vh;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -28263,10 +28259,11 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         @closed=${this._cancelDeleteBreeder}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div class="glass-dialog-container" style="height: auto; padding: 24px; display: flex; flex-direction: column;">
           <h2 class="dialog-title">Remove Breeder?</h2>
           <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
             This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
@@ -30964,10 +30961,11 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         @closed=${close}
         hideActions
         without-header
+        width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="width: 480px; max-width: 98vw; height: auto;">
+        <div class="glass-dialog-container" style="height: auto;">
           <div class="dialog-header">
             <div class="dialog-icon">
               <ha-svg-icon .path=${mdiFileUpload}></ha-svg-icon>
