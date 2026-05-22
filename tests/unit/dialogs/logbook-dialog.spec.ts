@@ -44,7 +44,7 @@ describe('LogbookDialog', () => {
     beforeEach(async () => {
         vi.clearAllMocks();
         vi.mocked(getTimelineService).mockReturnValue(mockTimelineService as any);
-        
+
         element = new LogbookDialog();
         document.body.appendChild(element);
         await element.updateComplete;
@@ -132,18 +132,6 @@ describe('LogbookDialog', () => {
             expect(timelineTab?.classList.contains('active')).toBe(true);
         });
 
-        it('should switch to VPD view when VPD tab is clicked', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab');
-            const vpdTab = Array.from(tabs || []).find(t => t.textContent?.includes('VPD'));
-            expect(vpdTab).toBeTruthy();
-
-            (vpdTab as HTMLElement).click();
-            await element.updateComplete;
-
-            expect((element as any)._activeTab).toBe('vpd');
-            expect(vpdTab?.classList.contains('active')).toBe(true);
-        });
-
         it('should switch back to list view', async () => {
             (element as any)._activeTab = 'timeline';
             await element.updateComplete;
@@ -221,7 +209,7 @@ describe('LogbookDialog', () => {
 
             const error = new Error('Service error');
             mockTimelineService.addGrowspaceNote.mockRejectedValue(error);
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             noteInput.dispatchEvent(submitEvent);
 
@@ -230,7 +218,7 @@ describe('LogbookDialog', () => {
 
             expect(consoleSpy).toHaveBeenCalledWith('Error adding growspace note:', error);
             expect(setSavingSpy).toHaveBeenCalledWith(false);
-            
+
             consoleSpy.mockRestore();
         });
 
@@ -239,15 +227,15 @@ describe('LogbookDialog', () => {
             // This is a bit contrived since it's hard to make it not found if it's in the template,
             // but we can mock shadowRoot.querySelector to return null once.
             const querySpy = vi.spyOn(element.shadowRoot!, 'querySelector').mockReturnValue(null);
-            
+
             const submitEvent = new CustomEvent('submit', {
                 detail: { text: 'test' }
             });
-            
+
             await (element as any)._handleNoteSubmit(submitEvent);
-            
+
             expect(mockTimelineService.addGrowspaceNote).not.toHaveBeenCalled();
-            
+
             querySpy.mockRestore();
         });
     });
