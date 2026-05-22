@@ -19897,7 +19897,10 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         // Falling back to raw events (last 20 only) would cause today's total to drop
         // when a refill event pushes old consumption events out of the window.
         const allDaily7d = tanksWithHistory.flatMap(t => t.waterHistory.daily_7d ?? []);
-        const todayKey = now.toISOString().slice(0, 10);
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayKey = `${year}-${month}-${day}`;
         const tankLitersToday = allDaily7d
             .filter(d => d.date === todayKey)
             .reduce((s, d) => s + d.consumed, 0);
