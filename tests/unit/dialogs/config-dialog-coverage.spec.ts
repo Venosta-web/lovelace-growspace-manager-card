@@ -76,14 +76,14 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
     it('should cover Vision Checkup configuration branches', async () => {
         // Set camera entities to enable the vision section
         (element as any).envVisionCameraEntities = ['camera.growspace'];
-        element.currentTab = ConfigTab.ENVIRONMENT;
+        element.currentTab = ConfigTab.VISION;
         await element.updateComplete;
 
-        const visionSection = element.shadowRoot?.querySelector('.vision-checkup-section');
-        expect(visionSection).to.exist;
+        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        expect(saveBtn).to.exist;
 
         // Toggle vision enabled
-        const toggle = visionSection?.querySelector('.vision-enabled-toggle') as HTMLInputElement;
+        const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]') as HTMLInputElement;
         if (toggle) {
             toggle.checked = true;
             toggle.dispatchEvent(new Event('change'));
@@ -91,7 +91,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         }
 
         // Change offsets
-        const inputs = visionSection?.querySelectorAll('md3-number-input');
+        const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
         if (inputs && inputs.length >= 3) {
             inputs[0].dispatchEvent(new CustomEvent('change', { detail: '10' }));
             inputs[1].dispatchEvent(new CustomEvent('change', { detail: '5' }));
@@ -103,16 +103,16 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         }
 
         // Submit vision config
-        const submitBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
-        expect(submitBtn).to.exist;
-        if (submitBtn) {
+        const visionSaveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        expect(visionSaveBtn).to.exist;
+        if (visionSaveBtn) {
             // Call directly to ensure coverage of the method itself and its branches
             (element as any)._submitVisionCheckupConfig();
         }
     });
 
     it('should cover Edit Growspace additional branches', async () => {
-        element.currentTab = ConfigTab.EDIT_GROWSPACE;
+        element.currentTab = ConfigTab.GROWSPACES;
         (element as any).editSelectedId = 'gs1';
         (element as any).envSelectedId = 'gs1';
         await element.updateComplete;
@@ -185,7 +185,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
 
     it('should cover Humidifier logic branches', async () => {
         element.growspaceOptions = { 'gs1': 'GS 1', 'gs2': 'GS 2' };
-        element.currentTab = 'humidifier' as any;
+        element.currentTab = ConfigTab.HUMIDITY;
         (element as any).envSelectedId = 'gs1';
         (element as any).envHumidifierThresholds = {
             seedling: { day: { on: 0.6, off: 0.4 }, night: { on: 0.7, off: 0.5 } }
@@ -194,7 +194,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
 
         // Verify it's rendering
         const humidifierHeader = Array.from(element.shadowRoot?.querySelectorAll('h3') || [])
-            .find(h => h.textContent?.includes('Humidifier'));
+            .find(h => h.textContent?.includes('Humidity'));
         expect(humidifierHeader).to.exist;
 
         // Exercise inline handlers
@@ -204,9 +204,9 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
             checkbox.dispatchEvent(new Event('change'));
         }
 
-        const subTab = element.shadowRoot?.querySelector('.sub-tabs .config-tab');
-        if (subTab) {
-            (subTab as HTMLElement).click();
+        const accHead = element.shadowRoot?.querySelector('.acc-head');
+        if (accHead) {
+            (accHead as HTMLElement).click();
         }
 
         const numberInput = element.shadowRoot?.querySelector('md3-number-input');
@@ -225,10 +225,10 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._updateHumidifierThreshold('seedling', 'day', 'on', NaN);
         expect((element as any).envHumidifierThresholds.seedling.day.on).to.equal(65);
         
-        // Set stage directly since it's an inline handler
-        (element as any)._activeHumidifierStage = 'seedling';
+        // Open the seedling accordion to verify stage tracking
+        (element as any)._openHumidityStageId = 'seedling';
         await element.updateComplete;
-        expect((element as any)._activeHumidifierStage).to.equal('seedling');
+        expect((element as any)._openHumidityStageId).to.equal('seedling');
     });
 
 
@@ -313,7 +313,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._showSubareaConfigDialog = false;
 
         // Toggle some UI states to trigger different render branches
-        element.currentTab = 'edit_growspace' as any;
+        element.currentTab = ConfigTab.GROWSPACES;
         (element as any).editSelectedId = 'gs1';
         (element as any)._showDeleteConfirm = true;
         await element.updateComplete;
@@ -333,16 +333,13 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
 
     it('should cover tab visibility and switching branches', async () => {
         // Test allowedTabs filtering
-        element.allowedTabs = [ConfigTab.ENVIRONMENT, ConfigTab.HUMIDIFIER];
+        element.allowedTabs = [ConfigTab.SENSORS, ConfigTab.HUMIDITY];
         await element.updateComplete;
-        
-        // Verify some tabs are hidden
-        const dehumTab = element.shadowRoot?.querySelector('.config-tab[class*="dehumidifier"]');
-        // Wait, the class might not be there if it's "nothing".
-        // Let's check how many tabs are rendered.
-        const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
-        // ENVIRONMENT, HUMIDIFIER, maybe ADD_GROWSPACE if it's default.
-        
+
+        // Verify only allowed tabs are shown
+        const tabs = element.shadowRoot?.querySelectorAll('.cfg-nav-item');
+        expect(tabs?.length).toBe(2);
+
         // Switch through all tabs to cover 'active' class branches
         const allTabs = Object.values(ConfigTab);
         for (const tab of allTabs) {
@@ -350,7 +347,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
             await element.updateComplete;
             expect(element.currentTab).to.equal(tab);
         }
-        
+
         // Reset
         element.allowedTabs = undefined;
         await element.updateComplete;

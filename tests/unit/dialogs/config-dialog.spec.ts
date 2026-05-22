@@ -113,17 +113,18 @@ describe('ConfigDialog', () => {
 
     describe('Tabs Navigation', () => {
         it('should switch tabs', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
-            const editTab = Array.from(tabs || []).find(t => t.textContent?.includes('Edit Growspace'));
-            (editTab as HTMLElement)?.click();
+            const tabs = element.shadowRoot?.querySelectorAll('.cfg-nav-item');
+            const growspacesTab = Array.from(tabs || []).find(t => t.textContent?.includes('Growspaces'));
+            (growspacesTab as HTMLElement)?.click();
             await element.updateComplete;
-            expect(element.currentTab).toBe(ConfigTab.EDIT_GROWSPACE);
+            expect(element.currentTab).toBe(ConfigTab.GROWSPACES);
         });
     });
 
     describe('Add Growspace Tab', () => {
         beforeEach(async () => {
-            element.currentTab = ConfigTab.ADD_GROWSPACE;
+            element.currentTab = ConfigTab.GROWSPACES;
+            (element as any)._isAddingGrowspace = true;
             await element.updateComplete;
         });
 
@@ -161,14 +162,13 @@ describe('ConfigDialog', () => {
 
     describe('Edit Growspace Tab', () => {
         beforeEach(async () => {
-            element.currentTab = ConfigTab.EDIT_GROWSPACE;
+            element.currentTab = ConfigTab.GROWSPACES;
             await element.updateComplete;
         });
 
         it('should populate fields when growspace selected', async () => {
-            const select = element.shadowRoot?.querySelector('select.md3-input') as HTMLSelectElement;
-            select.value = 'gs1';
-            select.dispatchEvent(new Event('change'));
+            const gsRow = element.shadowRoot?.querySelector('.cfg-gs-row') as HTMLElement;
+            gsRow?.click();
             await element.updateComplete;
 
             expect((element as any).editName).toBe('Growspace 1');
@@ -229,12 +229,12 @@ describe('ConfigDialog', () => {
 
     describe('Environment Tab', () => {
         beforeEach(async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
         });
 
         it('should load initial state', async () => {
-            element.setInitialState(ConfigTab.ENVIRONMENT, {
+            element.setInitialState(ConfigTab.SENSORS, {
                 selectedGrowspaceId: 'gs1',
                 temperatureSensor: 'sensor.temp',
                 temperatureSensors: ['sensor.temp'],
@@ -250,7 +250,7 @@ describe('ConfigDialog', () => {
             await element.updateComplete;
 
             // Check selected growspace
-            const gsSelect = element.shadowRoot?.querySelector('select.md3-input');
+            const gsSelect = element.shadowRoot?.querySelector('select.cfg-context-select');
             expect((gsSelect as HTMLSelectElement)?.value).toBe('gs1');
 
             // Check temp sensor chip is visible in multi-select
@@ -291,7 +291,7 @@ describe('ConfigDialog', () => {
 
     describe('Full Environment Input Coverage', () => {
         beforeEach(async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
         });
 
@@ -332,18 +332,26 @@ describe('ConfigDialog', () => {
             await updateSinglePicker('Soil Moisture Sensor', 'sensor.soil');
             expect((element as any).envSoilMoistureSensor).toBe('sensor.soil');
 
-            await updateSinglePicker('CO2 Sensor', 'sensor.co2');
+            await updateSinglePicker('CO₂ Sensor', 'sensor.co2');
             expect((element as any).envCo2Sensor).toBe('sensor.co2');
 
-            // Multi
+            // Multi (still in SENSORS tab)
             await updateMultiPicker('Light Source / Sensor', 'sensor.light');
             expect((element as any).envLightSensors).toEqual(['sensor.light']);
+
+            // Exhaust / Circulation moved to CLIMATE tab
+            element.currentTab = ConfigTab.CLIMATE;
+            await element.updateComplete;
 
             await updateMultiPicker('Exhaust Fan / Switch', 'switch.exhaust');
             expect((element as any).envExhaustFanEntities).toEqual(['switch.exhaust']);
 
             await updateMultiPicker('Circulation Fan / Switch', 'switch.circulation');
             expect((element as any).envCirculationFanEntities).toEqual(['switch.circulation']);
+
+            // Humidifier / Dehumidifier moved to HUMIDITY tab
+            element.currentTab = ConfigTab.HUMIDITY;
+            await element.updateComplete;
 
             await updateMultiPicker('Humidifier', 'switch.humidifier');
             expect((element as any).envHumidifierEntities).toEqual(['switch.humidifier']);
@@ -371,7 +379,8 @@ describe('ConfigDialog', () => {
 
     describe('Dehumidifier Tab Complex Logic', () => {
         beforeEach(async () => {
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
+            element.currentTab = ConfigTab.HUMIDITY;
+            (element as any)._openHumidityStageId = 'seedling';
             (element as any).envDehumidifierThresholds = {
                 seedling: { day: { on: 0.8, off: 1.0 }, night: { on: 0.9, off: 1.1 } }
             };
@@ -379,20 +388,26 @@ describe('ConfigDialog', () => {
         });
 
         it('should update control dehumidifier checkbox', async () => {
-            const check = element.shadowRoot?.querySelector('input[type="checkbox"]') as HTMLInputElement;
-            check.checked = true;
-            check.dispatchEvent(new Event('change'));
-            await element.updateComplete;
+            const checks = element.shadowRoot?.querySelectorAll('input[type="checkbox"]');
+            const dehumCheck = Array.from(checks || []).find(c => {
+                const label = c.closest('label');
+                return label?.textContent?.includes('Dehumidifier Control');
+            }) as HTMLInputElement;
+            if (dehumCheck) {
+                dehumCheck.checked = true;
+                dehumCheck.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+            }
             expect((element as any).envDehumidifierControlEnabled).toBe(true);
         });
 
-        it('should switch stages via sub-tabs', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.sub-tabs .config-tab');
-            const vegTab = Array.from(tabs || []).find(t => t.textContent?.includes('Vegetative'));
-            (vegTab as HTMLElement)?.click();
+        it('should switch stages via accordion', async () => {
+            const accHeads = element.shadowRoot?.querySelectorAll('.acc-head');
+            const vegHead = Array.from(accHeads || []).find(h => h.textContent?.includes('Vegetative'));
+            (vegHead as HTMLElement)?.click();
             await element.updateComplete;
 
-            expect((element as any)._activeDehumidifierStage).toBe('veg');
+            expect((element as any)._openHumidityStageId).toBe('veg');
         });
 
         it('should update specific threshold points', async () => {
@@ -433,11 +448,11 @@ describe('ConfigDialog', () => {
         });
 
         it('should initialize stage if missing during write', async () => {
-            (element as any)._activeDehumidifierStage = 'drying'; // Empty in our mock
+            (element as any)._openHumidityStageId = 'drying';
             await element.updateComplete;
 
             const inputs = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || []);
-            // Write to Day On
+            // Write to Day On (first input in drying accordion)
             inputs[0]?.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
             await element.updateComplete;
 
@@ -456,7 +471,8 @@ describe('ConfigDialog', () => {
         });
 
         it('should update Add Growspace inputs', async () => {
-            element.currentTab = ConfigTab.ADD_GROWSPACE;
+            element.currentTab = ConfigTab.GROWSPACES;
+            (element as any)._isAddingGrowspace = true;
             await element.updateComplete;
 
             // Name
@@ -487,7 +503,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should update Edit Growspace inputs', async () => {
-            element.currentTab = ConfigTab.EDIT_GROWSPACE;
+            element.currentTab = ConfigTab.GROWSPACES;
             (element as any).editSelectedId = 'gs1'; // Select one to show fields
             await element.updateComplete;
 
@@ -504,9 +520,9 @@ describe('ConfigDialog', () => {
             pprInput?.dispatchEvent(new CustomEvent('change', { detail: '6' }));
 
             // Notification Service (Select)
-            // Layout in edit tab: 1. Growspace Select, 2. Notification Service Select
+            // In new GROWSPACES tab there is no separate growspace dropdown, only notification service select
             const selects = element.shadowRoot?.querySelectorAll('select');
-            const notifySelect = selects?.[1];
+            const notifySelect = selects?.[0];
 
             if (notifySelect) {
                 notifySelect.value = 'mobile_app_test';
@@ -561,33 +577,33 @@ describe('ConfigDialog', () => {
         });
 
         it('should render correct tab content based on property', async () => {
-            element.currentTab = ConfigTab.EDIT_GROWSPACE;
+            element.currentTab = ConfigTab.GROWSPACES;
             await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.config-content select')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('.cfg-master-list')).toBeTruthy();
 
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
+            element.currentTab = ConfigTab.HUMIDITY;
             await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.config-content .sub-tabs')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('.acc-card')).toBeTruthy();
         });
     });
 
     describe('Coverage Gap Fillers', () => {
-        it('should switch to environment tab', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
-            const envTab = Array.from(tabs || []).find(t => t.textContent?.includes('Environment'));
-            (envTab as HTMLElement)?.click();
+        it('should switch to sensors tab', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.cfg-nav-item');
+            const sensorsTab = Array.from(tabs || []).find(t => t.textContent?.includes('Sensors'));
+            (sensorsTab as HTMLElement)?.click();
             await element.updateComplete;
 
-            expect((element as any).currentTab).toBe(ConfigTab.ENVIRONMENT);
+            expect((element as any).currentTab).toBe(ConfigTab.SENSORS);
         });
 
-        it('should switch to dehumidifier tab', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
-            const dehumTab = Array.from(tabs || []).find(t => t.textContent?.includes('Dehumidifier'));
-            (dehumTab as HTMLElement)?.click();
+        it('should switch to humidity tab', async () => {
+            const tabs = element.shadowRoot?.querySelectorAll('.cfg-nav-item');
+            const humidityTab = Array.from(tabs || []).find(t => t.textContent?.includes('Humidity'));
+            (humidityTab as HTMLElement)?.click();
             await element.updateComplete;
 
-            expect((element as any).currentTab).toBe(ConfigTab.DEHUMIDIFIER);
+            expect((element as any).currentTab).toBe(ConfigTab.HUMIDITY);
         });
 
         it('should return 0 for missing threshold value', async () => {
@@ -609,15 +625,19 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle notification service change event', async () => {
-            element.currentTab = ConfigTab.ADD_GROWSPACE;
+            element.currentTab = ConfigTab.GROWSPACES;
+            (element as any)._isAddingGrowspace = true;
             await element.updateComplete;
 
-            // Find and trigger the hidden md3-text-input for notification service
-            const notifInput = element.shadowRoot?.querySelector('md3-text-input[label*="Notification"]');
-            notifInput?.dispatchEvent(new CustomEvent('change', { detail: 'new_service' }));
+            // Notification service is a select in the new add form - use a valid option
+            const notifSelect = element.shadowRoot?.querySelector('select') as HTMLSelectElement;
+            if (notifSelect) {
+                notifSelect.value = 'mobile_app_phone';
+                notifSelect.dispatchEvent(new Event('change'));
+            }
             await element.updateComplete;
 
-            expect((element as any).addNotificationService).toBe('new_service');
+            expect((element as any).addNotificationService).toBe('mobile_app_phone');
         });
 
         it('should update threshold via _updateThreshold', async () => {
@@ -647,11 +667,13 @@ describe('ConfigDialog', () => {
         });
 
         it('should trigger all dehumidifier threshold updates', async () => {
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
+            element.currentTab = ConfigTab.HUMIDITY;
+            (element as any)._openHumidityStageId = 'seedling';
             await element.updateComplete;
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            const offInputs = Array.from(inputs || []).filter(i => i.getAttribute('label') === 'Off');
-            const onInputs = Array.from(inputs || []).filter(i => i.getAttribute('label') === 'On');
+            // Labels are "On Above %" and "Off Below %" in the new accordion
+            const offInputs = Array.from(inputs || []).filter(i => i.getAttribute('label')?.includes('Below'));
+            const onInputs = Array.from(inputs || []).filter(i => i.getAttribute('label')?.includes('Above'));
 
             onInputs.forEach(input => input.dispatchEvent(new CustomEvent('change', { detail: '1.2' })));
             offInputs.forEach(input => input.dispatchEvent(new CustomEvent('change', { detail: '1.5' })));
@@ -660,22 +682,21 @@ describe('ConfigDialog', () => {
             expect((element as any).envDehumidifierThresholds.seedling.night.off).toBe(1.5);
         });
 
-        it('should trigger add_growspace tab click handler', async () => {
-            element.currentTab = ConfigTab.EDIT_GROWSPACE;
+        it('should trigger add growspace button click handler', async () => {
+            element.currentTab = ConfigTab.GROWSPACES;
             await element.updateComplete;
-            const tabs = element.shadowRoot?.querySelectorAll('.config-tab');
-            const addTab = Array.from(tabs || []).find(t => t.textContent?.includes('Add Growspace'));
-            (addTab as HTMLElement)?.click();
+            const addBtn = element.shadowRoot?.querySelector('.cfg-master-add-btn') as HTMLElement;
+            addBtn?.click();
             await element.updateComplete;
-            expect(element.currentTab).toBe(ConfigTab.ADD_GROWSPACE);
+            expect((element as any)._isAddingGrowspace).toBe(true);
         });
 
-        it('should trigger dehumidifier stage switch', async () => {
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
+        it('should trigger dehumidifier stage switch via accordion', async () => {
+            element.currentTab = ConfigTab.HUMIDITY;
             await element.updateComplete;
-            const allTabs = element.shadowRoot?.querySelectorAll('.config-tab');
-            const vegTab = Array.from(allTabs || []).find(t => t.textContent?.includes('Vegetative'));
-            (vegTab as HTMLElement)?.click();
+            const accHeads = element.shadowRoot?.querySelectorAll('.acc-head');
+            const vegHead = Array.from(accHeads || []).find(h => h.textContent?.includes('Vegetative'));
+            (vegHead as HTMLElement)?.click();
             await element.updateComplete;
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
             inputs?.[0]?.dispatchEvent(new CustomEvent('change', { detail: '2.0' }));
@@ -691,21 +712,18 @@ describe('ConfigDialog', () => {
             } as any;
             element.devices = [partialDevice];
             (element as any)._handleEnvGrowspaceChange({ target: { value: 'partial' } } as any);
-            // Singular field still set for backward compat
-            expect((element as any).envTemperatureSensor).toBe('s.t');
-            // Multi sensor derived from singular
+            // Multi sensor derived from singular temperatureSensor attribute
             expect((element as any).envTemperatureSensors).toEqual(['s.t']);
             expect((element as any).envHumiditySensors).toEqual([]);
             expect((element as any).envDehumidifierControlEnabled).toBe(false);
         });
 
-        it('should handle unknown dehumidifier stage fallback', async () => {
-            (element as any)._activeDehumidifierStage = 'unknown_stage';
-            element.currentTab = ConfigTab.DEHUMIDIFIER;
+        it('should render humidity accordion with all stages', async () => {
+            element.currentTab = ConfigTab.HUMIDITY;
             await element.updateComplete;
-            // Should render seedling as fallback stages[0]
-            const title = element.shadowRoot?.querySelector('h3');
-            expect(title?.textContent).toContain('Select Target');
+            const accCards = element.shadowRoot?.querySelectorAll('.acc-card');
+            // All 8 stages rendered as accordion items
+            expect(accCards?.length).toBe(8);
         });
 
         it('should handle null thresholds during _updateThreshold', () => {
@@ -739,7 +757,7 @@ describe('ConfigDialog', () => {
                     }
                 }
             } as any;
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
             // Force re-render/update to ensure _renderEntitySelect uses the entity
             // But we need to make sure _getEntities returns it.
@@ -834,7 +852,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle missing environmentAttributes in _handleEnvGrowspaceChange', async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             element.devices = [
                 {
                     deviceId: 'no_env',
@@ -855,7 +873,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should fallback to defaults for environment attributes in _handleEnvGrowspaceChange', async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             element.devices = [
                 {
                     deviceId: 'partial_env',
@@ -913,7 +931,7 @@ describe('ConfigDialog', () => {
 
         it('should handle empty value in _handleEditSelection', () => {
             (element as any).editSelectedId = 'old';
-            (element as any)._handleEditSelection({ target: { value: '' } } as any);
+            (element as any)._handleEditSelection('');
             expect((element as any).editSelectedId).toBe('');
             // Should also populate (reset) fields
             expect((element as any).editName).toBe('');
@@ -939,7 +957,7 @@ describe('ConfigDialog', () => {
             // But actually we can render it to a temporary div or just assume the logic works if we see it in the code.
             // Let's try to find it in shadowRoot if possible by rendering the component with some multi-values.
 
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             (element as any).envLightSensors = ['sensor.1', 'sensor.2'];
             await element.updateComplete;
 
@@ -951,7 +969,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle multi-select input change with empty value', async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             (element as any).envLightSensors = ['sensor.1'];
             await element.updateComplete;
 
@@ -965,7 +983,7 @@ describe('ConfigDialog', () => {
 
         it('should handle initialTab pre-selection in updated', async () => {
             element.open = false;
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
 
             element.open = true;
@@ -974,7 +992,7 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle legacy singular entity fallbacks in _handleEnvGrowspaceChange', async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             element.devices = [
                 {
                     deviceId: 'legacy',
@@ -1000,7 +1018,7 @@ describe('ConfigDialog', () => {
             expect((element as any).envCirculationFanEntities).toEqual(['switch.circulation']);
         });
         it('should handle empty multi-entity lists with legacy fallback in _handleEnvGrowspaceChange', async () => {
-            element.currentTab = ConfigTab.ENVIRONMENT;
+            element.currentTab = ConfigTab.SENSORS;
             element.devices = [
                 {
                     deviceId: 'empty_lists',
@@ -1034,7 +1052,7 @@ describe('ConfigDialog', () => {
 
     describe('Sensor Groups (3D Heatmap) Tab', () => {
         beforeEach(async () => {
-            element.currentTab = ConfigTab.SENSOR_GROUPS;
+            element.currentTab = ConfigTab.HEATMAP;
             (element as any).envSensorGroups = [
                 { id: 'g1', name: 'Group 1', x: 1, y: 1, z: 1, temperature_sensors: ['sensor.temp'], humidity_sensors: [], vpd_sensors: [] }
             ];
@@ -1057,8 +1075,8 @@ describe('ConfigDialog', () => {
         });
 
         it('should open edit group dialog', async () => {
-            const editBtn = element.shadowRoot?.querySelector('button[style*="padding:8px"]:first-of-type');
-            (editBtn as HTMLElement)?.click();
+            const group = (element as any).envSensorGroups[0];
+            (element as any)._editGroup(group);
             await element.updateComplete;
 
             expect((element as any)._showGroupDialog).toBe(true);
@@ -1105,15 +1123,16 @@ describe('ConfigDialog', () => {
             expect((element as any)._showGroupDialog).toBe(false);
         });
 
-        it('should switch to sensor groups tab via click', async () => {
-            element.currentTab = ConfigTab.ADD_GROWSPACE;
+        it('should switch to heatmap tab via nav item', async () => {
+            element.currentTab = ConfigTab.SENSORS;
             await element.updateComplete;
-            
-            const tab = element.shadowRoot?.querySelector('.sensor-groups-tab');
-            (tab as HTMLElement)?.click();
+
+            const tabs = element.shadowRoot?.querySelectorAll('.cfg-nav-item');
+            const heatmapTab = Array.from(tabs || []).find(t => t.textContent?.includes('Heatmap'));
+            (heatmapTab as HTMLElement)?.click();
             await element.updateComplete;
-            
-            expect(element.currentTab).toBe(ConfigTab.SENSOR_GROUPS);
+
+            expect(element.currentTab).toBe(ConfigTab.HEATMAP);
         });
     });
 
@@ -1211,35 +1230,35 @@ describe('ConfigDialog', () => {
     });
 
     describe('Vision Checkup config section', () => {
-      it('renders vision checkup section in environment tab', async () => {
-        (element as any).currentTab = 'environment';
+      it('renders vision section in vision tab', async () => {
+        (element as any).currentTab = 'vision';
         (element as any).envSelectedId = 'tent1';
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const section = element.shadowRoot?.querySelector('.vision-checkup-section');
-        expect(section).toBeTruthy();
+        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        expect(saveBtn).toBeTruthy();
       });
 
       it('shows no-cameras info when camera entities empty', async () => {
-        (element as any).currentTab = 'environment';
+        (element as any).currentTab = 'vision';
         (element as any).envSelectedId = 'tent1';
         (element as any).envVisionCameraEntities = [];
         await element.updateComplete;
 
-        const info = element.shadowRoot?.querySelector('.vision-no-cameras-info');
-        expect(info).toBeTruthy();
-        const toggle = element.shadowRoot?.querySelector('.vision-enabled-toggle');
+        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        expect(saveBtn).toBeFalsy();
+        const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
         expect(toggle).toBeFalsy();
       });
 
       it('shows controls when camera entities are configured', async () => {
-        (element as any).currentTab = 'environment';
+        (element as any).currentTab = 'vision';
         (element as any).envSelectedId = 'tent1';
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const toggle = element.shadowRoot?.querySelector('.vision-enabled-toggle');
+        const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
         expect(toggle).toBeTruthy();
         const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
         expect(saveBtn).toBeTruthy();
@@ -1249,7 +1268,7 @@ describe('ConfigDialog', () => {
         const submitSpy = vi.fn();
         element.addEventListener('vision-checkup-config-submit', submitSpy);
 
-        (element as any).currentTab = 'environment';
+        (element as any).currentTab = 'vision';
         (element as any).envSelectedId = 'tent1';
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         (element as any).envVisionEnabled = true;
@@ -1274,7 +1293,7 @@ describe('ConfigDialog', () => {
         const submitSpy = vi.fn();
         element.addEventListener('vision-checkup-config-submit', submitSpy);
 
-        (element as any).currentTab = 'environment';
+        (element as any).currentTab = 'vision';
         (element as any).envSelectedId = '';
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;

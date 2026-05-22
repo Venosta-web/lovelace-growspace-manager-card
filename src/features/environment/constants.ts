@@ -200,13 +200,15 @@ export enum GridOverlayMode {
 }
 
 export enum ConfigTab {
-  ADD_GROWSPACE = 'add_growspace',
-  EDIT_GROWSPACE = 'edit_growspace',
-  ENVIRONMENT = 'environment',
-  DEHUMIDIFIER = 'dehumidifier',
-  HUMIDIFIER = 'humidifier',
-  SENSOR_GROUPS = 'sensor_groups',
-  SUBAREAS = 'subareas',
+  GROWSPACES  = 'growspaces',
+  SENSORS     = 'sensors',
+  CLIMATE     = 'climate',
+  HUMIDITY    = 'humidity',
+  IRRIGATION  = 'irrigation',
+  TANKS       = 'tanks',
+  VISION      = 'vision',
+  HEATMAP     = 'heatmap',
+  SUBAREAS    = 'subareas',
 }
 
 export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {

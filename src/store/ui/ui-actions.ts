@@ -343,7 +343,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
   ctx.ui.setActiveDialog({
     type: 'CONFIG',
     payload: {
-      currentTab: ConfigTab.ENVIRONMENT,
+      currentTab: ConfigTab.SENSORS,
       environmentData: {
         selectedGrowspaceId: device?.deviceId || '',
         // Multi sensors (preferred)

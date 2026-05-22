@@ -181,7 +181,7 @@ export interface EnvironmentConfigEventDetail {
 }
 
 export interface ConfigDialogState {
-  currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' | 'sensor_groups';
+  currentTab: 'growspaces' | 'sensors' | 'climate' | 'humidity' | 'irrigation' | 'tanks' | 'vision' | 'heatmap' | 'subareas';
   environmentData: EnvironmentConfigData;
 }
 

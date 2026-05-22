@@ -22,21 +22,23 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should switch tabs when header buttons are clicked', async () => {
-        const buttons = element.shadowRoot?.querySelectorAll('.config-tab');
+        const buttons = element.shadowRoot?.querySelectorAll('.cfg-nav-item');
         expect(buttons?.length).toBeGreaterThan(0);
 
         const tabs = [
-            ConfigTab.ADD_GROWSPACE,
-            ConfigTab.EDIT_GROWSPACE,
-            ConfigTab.ENVIRONMENT,
-            ConfigTab.DEHUMIDIFIER,
-            ConfigTab.HUMIDIFIER,
-            ConfigTab.SENSOR_GROUPS,
-            ConfigTab.SUBAREAS
+            ConfigTab.GROWSPACES,
+            ConfigTab.SENSORS,
+            ConfigTab.CLIMATE,
+            ConfigTab.HUMIDITY,
+            ConfigTab.IRRIGATION,
+            ConfigTab.TANKS,
+            ConfigTab.VISION,
+            ConfigTab.HEATMAP,
+            ConfigTab.SUBAREAS,
         ];
 
         if (buttons) {
-            for (let i = 0; i < buttons.length; i++) {
+            for (let i = 0; i < Math.min(buttons.length, tabs.length); i++) {
                 (buttons[i] as HTMLElement).click();
                 await element.updateComplete;
                 expect(element.currentTab).toBe(tabs[i]);
@@ -45,7 +47,7 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger sensor changes via DOM select', async () => {
-        element.setInitialState(ConfigTab.ENVIRONMENT, {
+        element.setInitialState(ConfigTab.SENSORS, {
             selectedGrowspaceId: 'gs1'
         } as any);
         element.hass = {
@@ -66,12 +68,12 @@ describe('ConfigDialog Interactions', () => {
     });
 
     it('should trigger updateThreshold via night/off selection', async () => {
-        element.setInitialState(ConfigTab.DEHUMIDIFIER, {
-            dehumidifier_thresholds: {
+        element.setInitialState(ConfigTab.HUMIDITY, {
+            dehumidifierThresholds: {
                 'gs1': { 'day': { on: 60, off: 55 }, 'night': { on: 65, off: 60 } }
             }
         } as any);
-        (element as any)._activeDehumidifierStage = 'gs1';
+        (element as any)._openHumidityStageId = 'gs1';
         await element.updateComplete;
 
         const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');

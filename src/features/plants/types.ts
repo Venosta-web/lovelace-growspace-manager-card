@@ -21,6 +21,7 @@ export enum PlantSex {
 
 export enum DehumidifierStage {
   SEEDLING = 'seedling',
+  MOTHER = 'mother',
   VEG = 'veg',
   EARLY_FLOWER = 'early_flower',
   MID_FLOWER = 'mid_flower',

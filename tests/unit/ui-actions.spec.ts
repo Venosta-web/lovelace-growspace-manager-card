@@ -317,7 +317,7 @@ describe('ui-actions', () => {
             expect(setActiveDialogSpy).toHaveBeenCalledWith({
                 type: 'CONFIG',
                 payload: expect.objectContaining({
-                    currentTab: ConfigTab.ENVIRONMENT,
+                    currentTab: ConfigTab.SENSORS,
                     environmentData: expect.objectContaining({
                         selectedGrowspaceId: '',
                         temperatureSensor: '',
