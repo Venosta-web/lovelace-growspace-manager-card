@@ -12503,6 +12503,8 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
         this.dispatchEvent(new CustomEvent('save-preset', {
             detail: this._editingPreset,
         }));
+        this._view = 'LIST';
+        this._editingPreset = null;
     }
     _handleDelete(presetId) {
         this.dispatchEvent(new CustomEvent('delete-preset', {
@@ -32358,6 +32360,8 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
         this.dispatchEvent(new CustomEvent('save-preset', {
             detail: this._editingPreset,
         }));
+        this._view = 'LIST';
+        this._editingPreset = null;
     }
     _handleDeletePreset(presetId) {
         this.dispatchEvent(new CustomEvent('delete-preset', {
@@ -38092,6 +38096,24 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             }
             catch (e) {
                 console.error('[DialogHost] IPM failed:', e);
+            }
+        }}
+        @save-preset=${async (e) => {
+            try {
+                await this.store?.actions.ipm.savePreset(e.detail);
+                await this._handleDataChanged();
+            }
+            catch (e) {
+                console.error('[DialogHost] IPM preset save failed:', e);
+            }
+        }}
+        @delete-preset=${async (e) => {
+            try {
+                await this.store?.actions.ipm.removePreset(e.detail.presetId);
+                await this._handleDataChanged();
+            }
+            catch (e) {
+                console.error('[DialogHost] IPM preset delete failed:', e);
             }
         }}
       ></growspace-ipm-dialog-ui>
@@ -111277,6 +111299,26 @@ async function saveNutrientPreset(ctx, preset) {
         throw e;
     }
 }
+async function saveIPMPreset(ctx, preset) {
+    const payload = {
+        preset_id: preset.preset_id ?? preset.id,
+        name: preset.name,
+        type: preset.type,
+        items: preset.items,
+        stage: preset.stage,
+        min_days_in_stage: preset.min_days_in_stage,
+    };
+    try {
+        await ctx.dataService.saveIPMPreset(payload);
+        await fetchIPMPresets(ctx, true);
+        ctx.ui.showToast(`Saved IPM preset: ${preset.name}`, 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Failed to save IPM preset: ${error}`, 'error');
+        throw e;
+    }
+}
 async function removeNutrientPreset(ctx, presetId) {
     try {
         await ctx.dataService.removeNutrientPreset(presetId);
@@ -111286,6 +111328,18 @@ async function removeNutrientPreset(ctx, presetId) {
     catch (e) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         ctx.ui.showToast(`Failed to remove preset: ${error}`, 'error');
+        throw e;
+    }
+}
+async function removeIPMPreset(ctx, presetId) {
+    try {
+        await ctx.dataService.removeIPMPreset(presetId);
+        await fetchIPMPresets(ctx, true);
+        ctx.ui.showToast('Removed IPM preset', 'success');
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        ctx.ui.showToast(`Failed to remove IPM preset: ${error}`, 'error');
         throw e;
     }
 }
@@ -112943,6 +112997,8 @@ class ActionDispatcher {
         };
         this.ipm = {
             apply: (detail) => applyIPM(this.ctx, detail),
+            savePreset: (preset) => saveIPMPreset(this.ctx, preset),
+            removePreset: (presetId) => removeIPMPreset(this.ctx, presetId),
         };
     }
     get ctx() {

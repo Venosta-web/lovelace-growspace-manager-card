@@ -108,6 +108,8 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         detail: this._editingPreset,
       })
     );
+    this._view = 'LIST';
+    this._editingPreset = null;
   }
 
   private _handleDelete(presetId: string) {

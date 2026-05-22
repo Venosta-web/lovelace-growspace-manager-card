@@ -280,6 +280,37 @@ export async function saveNutrientPreset(
   }
 }
 
+export async function saveIPMPreset(
+  ctx: ActionContext,
+  preset: {
+    id?: string;
+    preset_id?: string;
+    name: string;
+    type: string;
+    items: { name: string; dose_amount: number; dose_unit: string; phi_days?: number }[];
+    stage?: string;
+    min_days_in_stage?: number;
+  }
+) {
+  const payload = {
+    preset_id: preset.preset_id ?? preset.id,
+    name: preset.name,
+    type: preset.type,
+    items: preset.items,
+    stage: preset.stage,
+    min_days_in_stage: preset.min_days_in_stage,
+  };
+  try {
+    await ctx.dataService.saveIPMPreset(payload);
+    await fetchIPMPresets(ctx, true);
+    ctx.ui.showToast(`Saved IPM preset: ${preset.name}`, 'success');
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.ui.showToast(`Failed to save IPM preset: ${error}`, 'error');
+    throw e;
+  }
+}
+
 export async function removeNutrientPreset(ctx: ActionContext, presetId: string) {
   try {
     await ctx.dataService.removeNutrientPreset(presetId);
@@ -288,6 +319,18 @@ export async function removeNutrientPreset(ctx: ActionContext, presetId: string)
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     ctx.ui.showToast(`Failed to remove preset: ${error}`, 'error');
+    throw e;
+  }
+}
+
+export async function removeIPMPreset(ctx: ActionContext, presetId: string) {
+  try {
+    await ctx.dataService.removeIPMPreset(presetId);
+    await fetchIPMPresets(ctx, true);
+    ctx.ui.showToast('Removed IPM preset', 'success');
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : 'Unknown error';
+    ctx.ui.showToast(`Failed to remove IPM preset: ${error}`, 'error');
     throw e;
   }
 }

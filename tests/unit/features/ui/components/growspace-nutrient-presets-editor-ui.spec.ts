@@ -194,10 +194,11 @@ describe('GrowspaceNutrientPresetsEditorUI', () => {
     it('dispatches save-preset event when Save Preset clicked', async () => {
       const handler = vi.fn();
       el.addEventListener('save-preset', handler);
+      const expectedPreset = { ...(el as any)._editingPreset };
       const saveBtn = el.shadowRoot!.querySelector('.button-group button.md3-button.primary') as HTMLElement;
       saveBtn?.click();
       expect(handler).toHaveBeenCalledOnce();
-      expect(handler.mock.calls[0][0].detail).toEqual((el as any)._editingPreset);
+      expect(handler.mock.calls[0][0].detail).toEqual(expectedPreset);
     });
 
     it('disables save button when isSubmitting is true', async () => {

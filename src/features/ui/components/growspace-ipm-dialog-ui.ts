@@ -139,6 +139,8 @@ export class GrowspaceIPMDialogUI extends LitElement {
         detail: this._editingPreset,
       })
     );
+    this._view = 'LIST';
+    this._editingPreset = null;
   }
 
   private _handleDeletePreset(presetId: string) {

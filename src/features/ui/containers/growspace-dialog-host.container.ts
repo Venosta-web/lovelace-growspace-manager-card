@@ -962,6 +962,22 @@ export class GrowspaceDialogHost extends LitElement {
           console.error('[DialogHost] IPM failed:', e);
         }
       }}
+        @save-preset=${async (e: CustomEvent) => {
+        try {
+          await this.store?.actions.ipm.savePreset(e.detail);
+          await this._handleDataChanged();
+        } catch (e: any) {
+          console.error('[DialogHost] IPM preset save failed:', e);
+        }
+      }}
+        @delete-preset=${async (e: CustomEvent) => {
+        try {
+          await this.store?.actions.ipm.removePreset(e.detail.presetId);
+          await this._handleDataChanged();
+        } catch (e: any) {
+          console.error('[DialogHost] IPM preset delete failed:', e);
+        }
+      }}
       ></growspace-ipm-dialog-ui>
     `;
   }

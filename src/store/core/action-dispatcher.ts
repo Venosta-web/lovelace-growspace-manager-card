@@ -373,5 +373,9 @@ export class ActionDispatcher {
   public readonly ipm = {
     apply: (detail: Parameters<typeof ipmActions.applyIPM>[1]) =>
       ipmActions.applyIPM(this.ctx, detail),
+    savePreset: (preset: Parameters<typeof libraryActions.saveIPMPreset>[1]) =>
+      libraryActions.saveIPMPreset(this.ctx, preset),
+    removePreset: (presetId: string) =>
+      libraryActions.removeIPMPreset(this.ctx, presetId),
   };
 }
