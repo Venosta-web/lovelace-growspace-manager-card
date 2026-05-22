@@ -26703,11 +26703,22 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this._breederEditorState = null;
         this._pendingDeleteBreeder = null;
     }
+    _dispatchStateChange() {
+        this.dispatchEvent(new CustomEvent('editing-strain-changed', {
+            detail: { strain: this._editorState },
+            bubbles: true,
+            composed: true,
+        }));
+    }
     willUpdate(changedProps) {
         super.willUpdate(changedProps);
         if (changedProps.has('editingStrain')) {
-            this._openEditorFor(this.editingStrain);
-            this._editorHistory = [];
+            const currentKey = this._editorState?.key || this._editorState?.strain;
+            const newKey = this.editingStrain?.key || this.editingStrain?.strain;
+            if (currentKey !== newKey) {
+                this._openEditorFor(this.editingStrain);
+                this._editorHistory = [];
+            }
         }
     }
     _openEditorFor(strain) {
@@ -26734,6 +26745,14 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         }
         this._lineageEditMode = false;
         this._lineageTree = null;
+        this._dispatchStateChange();
+    }
+    _viewLineageInTree() {
+        this.dispatchEvent(new CustomEvent('view-lineage', {
+            detail: { strain: this._editorState },
+            bubbles: true,
+            composed: true,
+        }));
     }
     _navigateToAncestor(match) {
         this._editorHistory = [...this._editorHistory, { ...this._editorState }];
@@ -26857,6 +26876,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             newState.images = newState.images.map((img) => img.is_thumbnail ? { ...img, crop_meta: value } : img);
         }
         this._editorState = newState;
+        this._dispatchStateChange();
     }
     _handlePrintLabel() {
         const s = this._editorState;
@@ -26980,6 +27000,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             ...(gallery ? { images: gallery, image: gallery[0].path } : {}),
         };
         this._seedfinderDialogOpen = false;
+        this._dispatchStateChange();
         this.requestUpdate();
     }
     _gallery() {
@@ -27002,6 +27023,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             if (gallery.length === 1) {
                 this._editorState = { ...this._editorState, image: response.path };
             }
+            this._dispatchStateChange();
         }
         catch (err) {
             console.error('Gallery upload failed:', err);
@@ -27019,6 +27041,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             image: thumb.path,
             image_crop_meta: thumb.crop_meta,
         };
+        this._dispatchStateChange();
     }
     _handleRemoveGalleryImage(index) {
         const prev = this._gallery();
@@ -27034,6 +27057,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             image: thumb?.path ?? '',
             image_crop_meta: thumb?.crop_meta,
         };
+        this._dispatchStateChange();
     }
     render() {
         return x `
@@ -27343,14 +27367,19 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             <div class="sd-form-group">
               <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
                 Lineage
-                <button class="sd-btn-text" @click=${async () => {
+                <div style="display:flex; gap:8px;">
+                  <button class="sd-btn-text" type="button" @click=${() => this._viewLineageInTree()}>
+                    View lineage
+                  </button>
+                  <button class="sd-btn-text" type="button" @click=${async () => {
             this._lineageEditMode = !this._lineageEditMode;
             if (this._lineageEditMode && s.strain) {
                 await this._loadStrainLineageTree(s.strain);
             }
         }}>
-                  ${this._lineageEditMode ? 'View' : 'Edit tree'}
-                </button>
+                    ${this._lineageEditMode ? 'View' : 'Edit tree'}
+                  </button>
+                </div>
               </label>
               ${this._lineageEditMode
             ? x `<lineage-tree-editor
@@ -30478,6 +30507,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         this._breederDialogOpen = false;
         // Editor navigation state
         this._editingStrain = undefined;
+        this._cameFromEditor = false;
     }
     willUpdate(changedProps) {
         super.willUpdate(changedProps);
@@ -30563,6 +30593,14 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                     this._view = 'browse';
                     this._editingStrain = undefined;
                     this.dispatchEvent(new CustomEvent('data-changed'));
+                }}
+                @view-lineage=${(e) => {
+                    this.focusLineage = true;
+                    this._cameFromEditor = true;
+                    this._activeMainTab = 'tree';
+                }}
+                @editing-strain-changed=${(e) => {
+                    this._editingStrain = e.detail.strain;
                 }}
                 @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
                 @delete-strain=${(e) => {
@@ -30715,15 +30753,27 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
       <div class="main-tab-bar">
         <button
           class="tab-btn ${this._activeMainTab === 'strains' ? 'active' : ''}"
-          @click=${() => { this._activeMainTab = 'strains'; }}
+          @click=${() => {
+            this._activeMainTab = 'strains';
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+        }}
         >Strains</button>
         <button
           class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
-          @click=${() => { this._activeMainTab = 'seeds'; }}
+          @click=${() => {
+            this._activeMainTab = 'seeds';
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+        }}
         >Seeds &amp; Genetics</button>
         <button
           class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
-          @click=${() => { this._activeMainTab = 'tree'; }}
+          @click=${() => {
+            this._activeMainTab = 'tree';
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+        }}
         >Tree View</button>
         ${this._activeMainTab === 'tree'
             ? x `
@@ -30753,15 +30803,45 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
     _renderTreeViewTab() {
         return x `
       <div class="tab-content-tree">
-        <div style="padding: 8px 16px 0;">
+        <div style="padding: 8px 16px 0; display: flex; justify-content: space-between; align-items: center;">
           <gs-filter-chips
             .filter=${this._libraryFilter}
             @filter-changed=${(e) => { this._libraryFilter = e.detail.filter; }}
           ></gs-filter-chips>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${this._cameFromEditor
+            ? x `
+                  <button
+                    class="btn-back-editor"
+                    @click=${() => {
+                this.focusLineage = false;
+                this._cameFromEditor = false;
+                this._activeMainTab = 'strains';
+            }}
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: 20px; color: var(--accent-green, #4caf50); font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
+                    onmouseover="this.style.background='rgba(76, 175, 80, 0.25)'"
+                    onmouseout="this.style.background='rgba(76, 175, 80, 0.15)'"
+                  >
+                    <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiArrowLeft}"></path>
+                    </svg>
+                    <span>Back to Editor</span>
+                  </button>
+                `
+            : E}
+            <button
+              class="btn-close-tree"
+              @click=${() => { this.dispatchEvent(new CustomEvent('close')); }}
+            >
+              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         <genetics-tree-view
           .nodes=${this._treeNodes}
-          .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
+          .focalId=${this.focusLineage && (this._editingStrain || this.editingStrain) ? (this._editingStrain?.key || this.editingStrain?.key) : null}
           .libraryKeys=${new Set(this.strains.map((s) => s.key))}
           @open-strain-editor=${(e) => {
             const strain = this.strains.find((s) => s.key === e.detail.id);
@@ -30781,6 +30861,31 @@ StrainLibraryDialog.styles = [
     i$6 `
       :host {
         --accent-green: #4caf50;
+      }
+
+      .btn-close-tree {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        padding: 0;
+        outline: none;
+      }
+      .btn-close-tree:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--accent-green, #4caf50);
+        color: var(--accent-green, #4caf50);
+      }
+      .btn-close-tree:focus-visible {
+        border-color: var(--accent-green, #4caf50);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
       }
 
 
@@ -31840,6 +31945,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainLibraryDialog.prototype, "_editingStrain", void 0);
+__decorate([
+    r$3()
+], StrainLibraryDialog.prototype, "_cameFromEditor", void 0);
 StrainLibraryDialog = __decorate([
     t$2('strain-library-dialog')
 ], StrainLibraryDialog);

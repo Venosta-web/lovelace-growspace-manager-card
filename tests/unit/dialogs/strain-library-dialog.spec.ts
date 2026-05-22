@@ -688,7 +688,160 @@ describe('StrainLibraryDialog', () => {
         expect(text).not.toContain('Breeder:');
     });
 
-    // Sativa input NaN/fallback test has been moved to strain-editor-view.spec.ts
+    describe('Lineage Navigation Flow', () => {
+        it('should switch to tree view and set focalId when view-lineage event is fired from editor', async () => {
+            // First enter editor mode
+            (element as any)._editingStrain = mockStrains[0];
+            (element as any)._view = 'editor';
+            await element.updateComplete;
+
+            const editorView = element.shadowRoot?.querySelector('strain-editor-view');
+            expect(editorView).toBeTruthy();
+
+            // Simulate firing 'view-lineage' event from editor
+            editorView?.dispatchEvent(new CustomEvent('view-lineage', {
+                detail: { strain: mockStrains[0] },
+                bubbles: true,
+                composed: true
+            }));
+            await element.updateComplete;
+
+            expect((element as any)._activeMainTab).toBe('tree');
+            expect((element as any).focusLineage).toBe(true);
+            expect((element as any)._cameFromEditor).toBe(true);
+
+            // Now check that the genetics-tree-view has the correct focalId set
+            const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
+            expect(treeView).toBeTruthy();
+            expect((treeView as any).focalId).toBe(mockStrains[0].key);
+        });
+
+        it('should display the "Back to Editor" button on the Tree View tab if navigated from editor, and clicking it returns the user to the editor', async () => {
+            // Setup cameFromEditor and tree view tab
+            (element as any)._editingStrain = mockStrains[0];
+            (element as any)._activeMainTab = 'tree';
+            (element as any)._cameFromEditor = true;
+            (element as any).focusLineage = true;
+            await element.updateComplete;
+
+            // Check that Back to Editor button is rendered
+            const backBtn = element.shadowRoot?.querySelector('.btn-back-editor');
+            expect(backBtn).toBeTruthy();
+            expect(backBtn?.textContent).toContain('Back to Editor');
+
+            // Click it
+            (backBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            // Should return to strains tab, editor view, and clear cameFromEditor/focusLineage
+            expect((element as any)._activeMainTab).toBe('strains');
+            expect((element as any)._cameFromEditor).toBe(false);
+            expect((element as any).focusLineage).toBe(false);
+        });
+
+        it('should preserve in-progress editor state (editingStrain) when navigating back and forth', async () => {
+            (element as any)._editingStrain = mockStrains[0];
+            (element as any)._view = 'editor';
+            await element.updateComplete;
+
+            const editorView = element.shadowRoot?.querySelector('strain-editor-view');
+            expect(editorView).toBeTruthy();
+
+            // Simulate custom fields updating (editing-strain-changed event)
+            const modifiedStrain = { ...mockStrains[0], strain: 'Blue Dream Modified' };
+            editorView?.dispatchEvent(new CustomEvent('editing-strain-changed', {
+                detail: { strain: modifiedStrain },
+                bubbles: true,
+                composed: true
+            }));
+            await element.updateComplete;
+
+            // Parent state should be updated
+            expect((element as any)._editingStrain.strain).toBe('Blue Dream Modified');
+
+            // Firing view-lineage
+            editorView?.dispatchEvent(new CustomEvent('view-lineage', {
+                bubbles: true,
+                composed: true
+            }));
+            await element.updateComplete;
+
+            // Active tab should be tree
+            expect((element as any)._activeMainTab).toBe('tree');
+
+            // Genetics tree view focalId should resolve to the modified strain's key
+            const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
+            expect((treeView as any).focalId).toBe(modifiedStrain.key);
+
+            // Go back
+            const backBtn = element.shadowRoot?.querySelector('.btn-back-editor');
+            (backBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            // Should return to strains editor with state preserved
+            expect((element as any)._view).toBe('editor');
+            expect((element as any)._editingStrain.strain).toBe('Blue Dream Modified');
+        });
+
+        it('should clear the _cameFromEditor and focusLineage state if user manually switches tabs in the tab bar', async () => {
+            // Setup cameFromEditor and tree view tab
+            (element as any)._editingStrain = mockStrains[0];
+            (element as any)._activeMainTab = 'tree';
+            (element as any)._cameFromEditor = true;
+            (element as any).focusLineage = true;
+            await element.updateComplete;
+
+            // Renders tree tab with back button
+            let backBtn = element.shadowRoot?.querySelector('.btn-back-editor');
+            expect(backBtn).toBeTruthy();
+
+            // Click the Strains tab manually
+            const tabButtons = Array.from(element.shadowRoot?.querySelectorAll('.main-tab-bar .tab-btn') || []) as HTMLElement[];
+            const strainsTabBtn = tabButtons.find(b => b.textContent?.includes('Strains'));
+            expect(strainsTabBtn).toBeTruthy();
+
+            strainsTabBtn?.click();
+            await element.updateComplete;
+
+            // Strains tab is active, cameFromEditor & focusLineage are reset
+            expect((element as any)._activeMainTab).toBe('strains');
+            expect((element as any)._cameFromEditor).toBe(false);
+            expect((element as any).focusLineage).toBe(false);
+
+            // Switching back to Tree tab manually should not show back button
+            const treeTabBtn = tabButtons.find(b => b.textContent?.includes('Tree View'));
+            treeTabBtn?.click();
+            await element.updateComplete;
+
+            backBtn = element.shadowRoot?.querySelector('.btn-back-editor');
+            expect(backBtn).toBeNull();
+        });
+    });
+
+    describe('Tree View Close Button', () => {
+        beforeEach(async () => {
+            element.open = true;
+            (element as any)._activeMainTab = 'tree';
+            await element.updateComplete;
+        });
+
+        it('should render the close button in the Tree View tab', async () => {
+            const closeBtn = element.shadowRoot?.querySelector('.btn-close-tree');
+            expect(closeBtn).toBeTruthy();
+        });
+
+        it('should dispatch close event when the close button is clicked', async () => {
+            const closeBtn = element.shadowRoot?.querySelector('.btn-close-tree');
+            expect(closeBtn).toBeTruthy();
+
+            const closePromise = new Promise<void>((resolve) => {
+                element.addEventListener('close', () => resolve(), { once: true });
+            });
+
+            (closeBtn as HTMLElement).click();
+            await closePromise;
+        });
+    });
 
     it('should render nothing when open is false', async () => {
         element.open = false;

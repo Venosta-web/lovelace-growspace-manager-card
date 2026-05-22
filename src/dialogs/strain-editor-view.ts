@@ -55,11 +55,25 @@ export class StrainEditorView extends LitElement {
   @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
   @state() private _pendingDeleteBreeder: string | null = null;
 
+  private _dispatchStateChange() {
+    this.dispatchEvent(
+      new CustomEvent('editing-strain-changed', {
+        detail: { strain: this._editorState },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
     if (changedProps.has('editingStrain')) {
-      this._openEditorFor(this.editingStrain);
-      this._editorHistory = [];
+      const currentKey = this._editorState?.key || this._editorState?.strain;
+      const newKey = this.editingStrain?.key || this.editingStrain?.strain;
+      if (currentKey !== newKey) {
+        this._openEditorFor(this.editingStrain);
+        this._editorHistory = [];
+      }
     }
   }
 
@@ -86,6 +100,17 @@ export class StrainEditorView extends LitElement {
     }
     this._lineageEditMode = false;
     this._lineageTree = null;
+    this._dispatchStateChange();
+  }
+
+  private _viewLineageInTree() {
+    this.dispatchEvent(
+      new CustomEvent('view-lineage', {
+        detail: { strain: this._editorState },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _navigateToAncestor(match: StrainEntry) {
@@ -224,6 +249,7 @@ export class StrainEditorView extends LitElement {
     }
 
     this._editorState = newState;
+    this._dispatchStateChange();
   }
 
   private _handlePrintLabel() {
@@ -369,6 +395,7 @@ export class StrainEditorView extends LitElement {
       ...(gallery ? { images: gallery, image: gallery[0].path } : {}),
     };
     this._seedfinderDialogOpen = false;
+    this._dispatchStateChange();
     this.requestUpdate();
   }
 
@@ -393,6 +420,7 @@ export class StrainEditorView extends LitElement {
       if (gallery.length === 1) {
         this._editorState = { ...this._editorState, image: response.path };
       }
+      this._dispatchStateChange();
     } catch (err) {
       console.error('Gallery upload failed:', err);
     } finally {
@@ -409,6 +437,7 @@ export class StrainEditorView extends LitElement {
       image: thumb.path,
       image_crop_meta: thumb.crop_meta,
     };
+    this._dispatchStateChange();
   }
 
   private _handleRemoveGalleryImage(index: number): void {
@@ -425,6 +454,7 @@ export class StrainEditorView extends LitElement {
       image: thumb?.path ?? '',
       image_crop_meta: thumb?.crop_meta,
     };
+    this._dispatchStateChange();
   }
 
   render() {
@@ -735,14 +765,19 @@ export class StrainEditorView extends LitElement {
             <div class="sd-form-group">
               <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
                 Lineage
-                <button class="sd-btn-text" @click=${async () => {
+                <div style="display:flex; gap:8px;">
+                  <button class="sd-btn-text" type="button" @click=${() => this._viewLineageInTree()}>
+                    View lineage
+                  </button>
+                  <button class="sd-btn-text" type="button" @click=${async () => {
         this._lineageEditMode = !this._lineageEditMode;
         if (this._lineageEditMode && s.strain) {
           await this._loadStrainLineageTree(s.strain);
         }
       }}>
-                  ${this._lineageEditMode ? 'View' : 'Edit tree'}
-                </button>
+                    ${this._lineageEditMode ? 'View' : 'Edit tree'}
+                  </button>
+                </div>
               </label>
               ${this._lineageEditMode
         ? html`<lineage-tree-editor

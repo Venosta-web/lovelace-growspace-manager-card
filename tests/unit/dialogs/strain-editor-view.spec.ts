@@ -1026,7 +1026,7 @@ describe('StrainEditorView', () => {
 
             // Toggle View mode ON (Edit tree OFF)
             const viewBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('.sd-btn-text') || [])
-                .find(b => b.textContent?.includes('View'));
+                .find(b => b.textContent?.trim() === 'View');
             expect(viewBtn).toBeTruthy();
             await (viewBtn as HTMLElement).click();
             await editorEl.updateComplete;

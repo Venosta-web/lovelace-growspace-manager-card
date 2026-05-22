@@ -6,6 +6,7 @@ import {
   mdiFileUpload,
   mdiArrowExpand,
   mdiArrowCollapse,
+  mdiArrowLeft,
 } from '@mdi/js';
 import './gs-breeder-manager';
 import './gs-filter-chips';
@@ -94,6 +95,7 @@ export class StrainLibraryDialog extends LitElement {
 
   // Editor navigation state
   @state() private _editingStrain: StrainEntry | undefined = undefined;
+  @state() private _cameFromEditor = false;
 
   willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
@@ -121,6 +123,31 @@ export class StrainLibraryDialog extends LitElement {
     css`
       :host {
         --accent-green: #4caf50;
+      }
+
+      .btn-close-tree {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--primary-text-color, #fff);
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        padding: 0;
+        outline: none;
+      }
+      .btn-close-tree:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: var(--accent-green, #4caf50);
+        color: var(--accent-green, #4caf50);
+      }
+      .btn-close-tree:focus-visible {
+        border-color: var(--accent-green, #4caf50);
+        box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
       }
 
 
@@ -1154,6 +1181,14 @@ export class StrainLibraryDialog extends LitElement {
                   this._editingStrain = undefined;
                   this.dispatchEvent(new CustomEvent('data-changed'));
                 }}
+                @view-lineage=${(e: CustomEvent) => {
+                  this.focusLineage = true;
+                  this._cameFromEditor = true;
+                  this._activeMainTab = 'tree';
+                }}
+                @editing-strain-changed=${(e: CustomEvent) => {
+                  this._editingStrain = e.detail.strain;
+                }}
                 @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
                 @delete-strain=${(e: CustomEvent) => {
               this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
@@ -1310,15 +1345,27 @@ export class StrainLibraryDialog extends LitElement {
       <div class="main-tab-bar">
         <button
           class="tab-btn ${this._activeMainTab === 'strains' ? 'active' : ''}"
-          @click=${() => { this._activeMainTab = 'strains'; }}
+          @click=${() => {
+            this._activeMainTab = 'strains';
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+          }}
         >Strains</button>
         <button
           class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
-          @click=${() => { this._activeMainTab = 'seeds'; }}
+          @click=${() => {
+            this._activeMainTab = 'seeds';
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+          }}
         >Seeds &amp; Genetics</button>
         <button
           class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
-          @click=${() => { this._activeMainTab = 'tree'; }}
+          @click=${() => {
+            this._activeMainTab = 'tree';
+            this.focusLineage = false;
+            this._cameFromEditor = false;
+          }}
         >Tree View</button>
         ${this._activeMainTab === 'tree'
         ? html`
@@ -1350,15 +1397,45 @@ export class StrainLibraryDialog extends LitElement {
   private _renderTreeViewTab(): TemplateResult {
     return html`
       <div class="tab-content-tree">
-        <div style="padding: 8px 16px 0;">
+        <div style="padding: 8px 16px 0; display: flex; justify-content: space-between; align-items: center;">
           <gs-filter-chips
             .filter=${this._libraryFilter}
             @filter-changed=${(e: CustomEvent) => { this._libraryFilter = e.detail.filter; }}
           ></gs-filter-chips>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            ${this._cameFromEditor
+              ? html`
+                  <button
+                    class="btn-back-editor"
+                    @click=${() => {
+                      this.focusLineage = false;
+                      this._cameFromEditor = false;
+                      this._activeMainTab = 'strains';
+                    }}
+                    style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: rgba(76, 175, 80, 0.15); border: 1px solid var(--accent-green, #4caf50); border-radius: 20px; color: var(--accent-green, #4caf50); font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s ease-in-out; outline: none; margin-right: 0;"
+                    onmouseover="this.style.background='rgba(76, 175, 80, 0.25)'"
+                    onmouseout="this.style.background='rgba(76, 175, 80, 0.15)'"
+                  >
+                    <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiArrowLeft}"></path>
+                    </svg>
+                    <span>Back to Editor</span>
+                  </button>
+                `
+              : nothing}
+            <button
+              class="btn-close-tree"
+              @click=${() => { this.dispatchEvent(new CustomEvent('close')); }}
+            >
+              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         <genetics-tree-view
           .nodes=${this._treeNodes}
-          .focalId=${this.focusLineage && this.editingStrain ? this.editingStrain.key : null}
+          .focalId=${this.focusLineage && (this._editingStrain || this.editingStrain) ? (this._editingStrain?.key || this.editingStrain?.key) : null}
           .libraryKeys=${new Set(this.strains.map((s) => s.key))}
           @open-strain-editor=${(e: CustomEvent<{ id: string }>) => {
             const strain = this.strains.find((s) => s.key === e.detail.id);
