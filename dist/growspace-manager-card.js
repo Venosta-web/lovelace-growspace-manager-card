@@ -19496,11 +19496,122 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
     `;
     }
     _renderSchedulesTab(color) {
+        const isCropSteering = !!this._strategy.enabled;
         const irrigationTimes = this.device?.irrigationConfig?.irrigationTimes || [];
         const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
         return x `
-      ${this._renderScheduleSection('Irrigation Schedule', irrigationTimes, this._irrigationDuration, 'irrigation', color)}
+      <div
+        style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px 16px;border-radius:8px;"
+      >
+        <div>
+          <span style="font-weight:500;">Irrigation Mode</span>
+          <div style="font-size:0.8rem;opacity:0.6;margin-top:2px;">
+            ${isCropSteering
+            ? 'VWC Crop Steering — automated by soil moisture logic'
+            : 'Manual — you define the schedule'}
+          </div>
+        </div>
+        <md3-switch
+          .checked=${isCropSteering}
+          @change=${async (e) => {
+            this._updateStrategyField('enabled', e.target.checked);
+            await this._saveStrategy();
+        }}
+        ></md3-switch>
+      </div>
+
+      ${isCropSteering
+            ? this._renderCropSteeringPhaseBar(color)
+            : this._renderScheduleSection('Irrigation Schedule', irrigationTimes, this._irrigationDuration, 'irrigation', color)}
+
       ${this._renderScheduleSection('Drain Schedule', drainTimes, this._drainDuration, 'drain', '#FF9800')}
+    `;
+    }
+    _renderCropSteeringPhaseBar(color) {
+        const s = this._strategy;
+        const lightsOnStr = s.lightsOnTime || '06:00:00';
+        const [lh, lm] = lightsOnStr.split(':').map(Number);
+        const lightsOnMin = lh * 60 + (lm || 0);
+        const p0Duration = s.p0DurationMinutes ?? 60;
+        const dayHours = this.device?.irrigationConfig?.vegDayHours ?? 12;
+        const lightsOffMin = lightsOnMin + dayHours * 60;
+        const p2StopMin = lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120);
+        const p0Start = lightsOnMin;
+        const p0End = lightsOnMin + p0Duration;
+        const activeStart = p0End;
+        const activeEnd = p2StopMin;
+        const toPercent = (min) => ((min % 1440) / 1440) * 100;
+        const phases = [
+            { label: 'P0', start: p0Start, end: p0End, phaseColor: '#4CAF50' },
+            { label: 'P1 / P2', start: activeStart, end: activeEnd, phaseColor: color },
+        ];
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:6px;">
+            <h3 style="margin:0;">Crop Steering Phase Windows</h3>
+            <gs-help-tooltip
+              content="Shows the expected daily irrigation windows from your strategy settings. P0 = activation shot at lights-on. P1/P2 = active watering window (ramp-up then maintenance). P3 = dry-back, no irrigation."
+              placement="top"
+              label="Crop Steering Phases"
+            ></gs-help-tooltip>
+          </div>
+          <span
+            style="font-size:0.75rem;opacity:0.5;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.25);border-radius:20px;padding:2px 10px;"
+          >read-only</span>
+        </div>
+
+        <div class="time-bar-container" style="border:2px solid ${color}40;cursor:default;">
+          ${Array.from({ length: 25 }, (_, i) => i).map((hour) => x `
+              <div
+                class="time-tick ${hour % 6 === 0 ? 'major' : ''}"
+                style="left:${(hour / 24) * 100}%;"
+              >
+                ${hour % 3 === 0
+            ? x `<span class="time-label">${hour.toString().padStart(2, '0')}:00</span>`
+            : E}
+              </div>
+            `)}
+
+          ${phases.map(({ label, start, end, phaseColor }) => {
+            const startPct = toPercent(start);
+            const widthPct = toPercent(end) - toPercent(start);
+            if (widthPct <= 0)
+                return E;
+            return x `
+              <div
+                style="
+                  position:absolute;top:10%;bottom:10%;
+                  left:${startPct}%;width:${widthPct}%;
+                  background:${phaseColor}30;
+                  border:1px solid ${phaseColor};
+                  border-radius:4px;
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:0.7rem;color:${phaseColor};font-weight:600;
+                  overflow:hidden;white-space:nowrap;
+                "
+              >
+                ${widthPct > 4 ? label : E}
+              </div>
+            `;
+        })}
+        </div>
+
+        <div style="display:flex;gap:16px;margin-top:36px;flex-wrap:wrap;">
+          <span style="display:flex;align-items:center;gap:6px;font-size:0.75rem;opacity:0.7;">
+            <span style="width:12px;height:12px;border-radius:2px;background:#4CAF50;display:inline-block;"></span>
+            P0 — Activation
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:0.75rem;opacity:0.7;">
+            <span style="width:12px;height:12px;border-radius:2px;background:${color};display:inline-block;"></span>
+            P1/P2 — Active Window
+          </span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:0.75rem;opacity:0.7;">
+            <span style="width:12px;height:12px;border-radius:2px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);display:inline-block;"></span>
+            P3 — Dry-back
+          </span>
+        </div>
+      </div>
     `;
     }
     _getEntities(domains) {

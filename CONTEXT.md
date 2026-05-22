@@ -73,6 +73,27 @@ A dot-separated string in the format `section.key`, resolved by the `localize()`
 **GrowspaceDataStore**
 Nanostores-based reactive store holding plant data, nutrient inventory, and irrigation config for a growspace. Uses lazy initialization — only activates when it has subscribers.
 
+## Irrigation
+
+**Irrigation Mode**
+The two mutually exclusive ways a growspace can receive water. Switched via a toggle in the Schedules tab of the Irrigation Dialog, saved immediately on toggle.
+
+**Manual Schedule**
+User-defined list of timed irrigation and drain events (`irrigationTimes`, `drainTimes`). Each entry has a time-of-day and a duration in seconds. Editable in the Schedules tab when Irrigation Mode is Manual.
+
+**Crop Steering (VWC)**
+Automated irrigation mode driven by volumetric water content (VWC) targets rather than a fixed schedule. When active, the backend fires shots dynamically based on soil moisture readings and phase logic; the frontend shows a read-only Phase Window bar instead of the editable schedule.
+
+**Phase Windows** (P0 / P1 / P2 / P3)
+The four daily phases that structure a Crop Steering day, all derived from the growspace's `IrrigationStrategy` settings:
+- P0 — Activation: first shot(s) at lights-on, lasting `p0DurationMinutes`
+- P1 — Ramp-up: shots fire until substrate reaches `targetVwcPercent`
+- P2 — Maintenance: shots fire when VWC drops below `targetVwcPercent − maintenanceDrybackPercent`
+- P3 — Dry-back: no irrigation; runs from `p2StopBeforeLightsOffMinutes` before lights-off until next lights-on
+
+**Drain Schedule**
+Time-based drain events that run regardless of Irrigation Mode. Always editable in the Schedules tab.
+
 ## Build
 
 **`__VERSION__`**

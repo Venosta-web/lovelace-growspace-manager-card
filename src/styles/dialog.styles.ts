@@ -8,7 +8,7 @@ export const dialogStyles = [
   css`
     ha-dialog {
       --dialog-surface-margin-top: 40px;
-      --ha-dialog-min-height: 85vh;
+      --ha-dialog-min-height: auto;
       --dialog-content-padding: 0;
     }
 
@@ -19,7 +19,8 @@ export const dialogStyles = [
       width: 100%;
       min-width: 0;
       min-height: 0;
-      max-height: 85vh;
+      height: auto;
+      max-height: 90vh;
       overflow: hidden;
       position: relative;
       color: var(--primary-text-color, #fff);
@@ -32,6 +33,7 @@ export const dialogStyles = [
       padding: 16px 24px;
       border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      flex-shrink: 0;
     }
 
     .dialog-icon {
@@ -82,6 +84,7 @@ export const dialogStyles = [
       justify-content: flex-end;
       gap: 12px;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
 
     .dialog-content,
