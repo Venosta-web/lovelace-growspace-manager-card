@@ -138,10 +138,10 @@ export class SensorGroupDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
         width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
       >
         <div class="glass-dialog-container" style="max-width: 600px; height: auto; max-height: 90vh;">
           <div class="dialog-header">

@@ -1096,6 +1096,7 @@ export class StrainLibraryDialog extends LitElement {
         open
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="${this._treeMaximized ? 'full' : 'large'}"
@@ -1204,6 +1205,7 @@ export class StrainLibraryDialog extends LitElement {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

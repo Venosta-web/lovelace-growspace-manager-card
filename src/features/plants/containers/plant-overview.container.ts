@@ -367,6 +367,7 @@ export class PlantOverviewContainer extends LitElement {
         open
         @closed=${this._handleClose}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

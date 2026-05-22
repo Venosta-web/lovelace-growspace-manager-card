@@ -211,7 +211,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
     }
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions width="full"> ${content} </ha-dialog>
+      <ha-dialog open @closed=${this._close} hideActions without-header width="full"> ${content} </ha-dialog>
     `;
   }
 

@@ -164,7 +164,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
     const subtitle = this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
+      <ha-dialog open @closed=${this._close} hideActions without-header>
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">

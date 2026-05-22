@@ -116,7 +116,7 @@ export class CloneDialog extends LitElement {
         open
         @closed=${this._handleClose}
         hideActions
-        .heading=${title}
+        without-header
         .escapeKeyAction=${'close'}
         width="large"
       >

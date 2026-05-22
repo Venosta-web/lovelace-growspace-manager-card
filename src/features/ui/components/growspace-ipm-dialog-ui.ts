@@ -202,7 +202,7 @@ export class GrowspaceIPMDialogUI extends LitElement {
     }
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions width="large" .heading=${title}>
+      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">

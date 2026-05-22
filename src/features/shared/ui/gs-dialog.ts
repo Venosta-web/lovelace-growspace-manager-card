@@ -148,6 +148,7 @@ export class GsDialog extends LitElement {
       <ha-dialog
         open
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"

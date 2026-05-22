@@ -406,7 +406,7 @@ export class StrainImportDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
-        heading="Import from Seedfinder"
+        without-header
         .scrimClickAction=${''}
       >
         <div class="glass-dialog-container" style="width: 600px; max-width: 95vw;">

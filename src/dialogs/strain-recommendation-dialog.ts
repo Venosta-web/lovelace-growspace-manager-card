@@ -96,6 +96,7 @@ export class StrainRecommendationDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
         width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}

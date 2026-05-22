@@ -564,4 +564,88 @@ describe('GrowspaceSubareaCard', () => {
         expect(heroUI?.chips?.length).toBe(3); // Temp, Humidity, VPD
     });
 
+    test('resolves Name-based calculated VPD fallback sensor when explicit VPD is missing', async () => {
+        const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
+        (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensor: 'sensor.veg_temp',
+                humidity_sensor: 'sensor.veg_humidity',
+            }
+        }]);
+
+        mockHass.states['sensor.tent_1_veg_area_calculated_vpd'] = {
+            state: '1.2',
+            attributes: { unit_of_measurement: 'kPa' }
+        };
+        element.hass = mockHass;
+        await (element as any)._loadSubarea();
+        await element.updateComplete;
+
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBe(3); // Temperature, Humidity, VPD
+        expect(heroUI?.chips[2].value).toBe('1.2 kPa');
+    });
+
+    test('resolves UUID-based calculated VPD fallback sensor when explicit VPD is missing', async () => {
+        const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
+        (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensor: 'sensor.veg_temp',
+                humidity_sensor: 'sensor.veg_humidity',
+            }
+        }]);
+
+        mockHass.states['sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd'] = {
+            state: '1.0',
+            attributes: { unit_of_measurement: 'kPa' }
+        };
+        element.hass = mockHass;
+        await (element as any)._loadSubarea();
+        await element.updateComplete;
+
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBe(3); // Temperature, Humidity, VPD
+        expect(heroUI?.chips[2].value).toBe('1.0 kPa');
+    });
+
+    test('resolves multiple calculated VPD fallback sensors when multiple T/H pairs are configured', async () => {
+        const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
+        (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensors: ['sensor.veg_temp_1', 'sensor.veg_temp_2'],
+                humidity_sensors: ['sensor.veg_humidity_1', 'sensor.veg_humidity_2'],
+            }
+        }]);
+
+        mockHass.states['sensor.veg_temp_1'] = { state: '22.0', attributes: { unit_of_measurement: '°C' } };
+        mockHass.states['sensor.veg_temp_2'] = { state: '24.0', attributes: { unit_of_measurement: '°C' } };
+        mockHass.states['sensor.veg_humidity_1'] = { state: '50', attributes: { unit_of_measurement: '%' } };
+        mockHass.states['sensor.veg_humidity_2'] = { state: '60', attributes: { unit_of_measurement: '%' } };
+        mockHass.states['sensor.tent_1_veg_area_calculated_vpd_1'] = {
+            state: '1.3',
+            attributes: { unit_of_measurement: 'kPa' }
+        };
+        mockHass.states['sensor.tent_1_veg_area_calculated_vpd_2'] = {
+            state: '1.5',
+            attributes: { unit_of_measurement: 'kPa' }
+        };
+        element.hass = mockHass;
+        await (element as any)._loadSubarea();
+        await element.updateComplete;
+
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        expect(heroUI?.chips?.length).toBe(3); // Temperature, Humidity, VPD
+        expect(heroUI?.chips[2].value).toBe('Multiple');
+        expect(heroUI?.chips[2].multiValues).toEqual(['1.3 kPa', '1.5 kPa']);
+    });
+
 });

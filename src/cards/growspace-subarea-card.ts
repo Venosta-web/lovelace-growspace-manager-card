@@ -529,7 +529,11 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         const metrics = MetricsUtils.computeSubareaMetrics(
             this.hass,
             ec,
-            this._analyticsStateController?.value?.activeEnvGraphs ?? new Set()
+            this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(),
+            parentDevice?.deviceId,
+            parentDevice?.name || this._parentGrowspaceName,
+            this._subarea?.id,
+            this._subarea?.name
         );
 
         const hasAny = metrics.heroChips.length > 0 || metrics.secondaryChips.length > 0 || metrics.deviceChips.length > 0;

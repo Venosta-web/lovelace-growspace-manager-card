@@ -10153,6 +10153,7 @@ let GsDialog = class GsDialog extends i$3 {
       <ha-dialog
         open
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
@@ -12517,7 +12518,7 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
             (this._editingPreset?.id ? 'Edit Preset' : 'New Preset');
         const subtitle = this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
         return x `
-      <ha-dialog open @closed=${this._close} hideActions .heading=${title}>
+      <ha-dialog open @closed=${this._close} hideActions without-header>
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--primary-color, #4caf50);">
@@ -13033,6 +13034,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
@@ -13955,6 +13957,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
@@ -14281,7 +14284,7 @@ let CloneDialog = class CloneDialog extends i$3 {
         open
         @closed=${this._handleClose}
         hideActions
-        .heading=${title}
+        without-header
         .escapeKeyAction=${'close'}
         width="large"
       >
@@ -14493,10 +14496,10 @@ let SensorGroupDialog = class SensorGroupDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
       >
         <div class="glass-dialog-container" style="max-width: 600px; height: auto; max-height: 90vh;">
           <div class="dialog-header">
@@ -15425,6 +15428,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       <ha-dialog
         open
         @closed=${this._close}
+        without-header
         scrimClickAction=""
         escapeKeyAction="close"
         width="large"
@@ -16256,14 +16260,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               >
                 Remove Environment
               </button>
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  .checked=${this.envDehumidifierControlEnabled}
-                  @change=${(e) => (this.envDehumidifierControlEnabled = e.target.checked)}
-                />
-                Control Dehumidifier
-              </label>
             </div>
           </div>
         </div>
@@ -16536,7 +16532,17 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
 
         <div class="detail-card">
-          <h3>Dehumidifier Thresholds(VPD / kPa)</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Dehumidifier Thresholds (VPD / kPa)</h3>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${this.envDehumidifierControlEnabled}
+                @change=${(e) => (this.envDehumidifierControlEnabled = e.target.checked)}
+              />
+              Enable Control
+            </label>
+          </div>
 
           <!--Sub-navigation for Stages-->
           <div
@@ -17923,6 +17929,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
@@ -18141,11 +18148,12 @@ let GrowReportDialog = class GrowReportDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
       >
-        <div slot="heading" class="dialog-header">
+        <div class="dialog-header">
           <div style="display: flex; flex-direction: column;">
             <div style="display:flex;align-items:center;gap:6px;">
               <h2 class="dialog-title">Grow Report</h2>
@@ -18533,6 +18541,7 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
         open
         @closed=${this._dispatchClose}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
@@ -19418,6 +19427,7 @@ let IrrigationDialog = IrrigationDialog_1 = class IrrigationDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"
@@ -22555,7 +22565,7 @@ let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogU
             return content;
         }
         return x `
-      <ha-dialog open @closed=${this._close} hideActions width="full"> ${content} </ha-dialog>
+      <ha-dialog open @closed=${this._close} hideActions without-header width="full"> ${content} </ha-dialog>
     `;
     }
     _renderContent() {
@@ -24102,6 +24112,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -24309,6 +24320,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         open
         @closed=${() => { this._pendingDelete = null; }}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -25354,7 +25366,7 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
-        heading="Import from Seedfinder"
+        without-header
         .scrimClickAction=${''}
       >
         <div class="glass-dialog-container" style="width: 600px; max-width: 95vw;">
@@ -27970,6 +27982,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -28062,6 +28075,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -28248,6 +28262,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         open
         @closed=${this._cancelDeleteBreeder}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -30842,6 +30857,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         open
         @closed=${() => this.dispatchEvent(new CustomEvent('close'))}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="${this._treeMaximized ? 'full' : 'large'}"
@@ -30947,6 +30963,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -32203,6 +32220,7 @@ let StrainRecommendationDialog = class StrainRecommendationDialog extends i$3 {
         open
         @closed=${this._close}
         hideActions
+        without-header
         width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
@@ -32412,7 +32430,7 @@ let TrainingDialog = class TrainingDialog extends i$3 {
         .open=${this.open}
         @closed=${this._handleClose}
         hideActions
-        .heading=${title}
+        without-header
         width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
@@ -32639,7 +32657,7 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
             subtitle = 'Define treatment details';
         }
         return x `
-      <ha-dialog open @closed=${this._close} hideActions width="large" .heading=${title}>
+      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
@@ -33099,7 +33117,7 @@ let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
             return E;
         const dialogColor = '#2196F3';
         return x `
-      <ha-dialog open @closed=${this._close} hideActions width="large">
+      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon">
@@ -36406,6 +36424,7 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         open
         @closed=${this._handleClose}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -47219,7 +47238,7 @@ class MetricsUtils {
         ].filter((c) => c !== null);
         return { mainChips, deviceChips, dominant, envAttrs };
     }
-    static computeSubareaMetrics(hass, ec, activeEnvGraphs) {
+    static computeSubareaMetrics(hass, ec, activeEnvGraphs, growspaceId, growspaceName, subareaId, subareaName) {
         const createChipData = (key, icon, value, multiValues, entityIds, label, status, tooltip) => {
             if (value === undefined && (!multiValues || multiValues.length === 0))
                 return null;
@@ -47272,9 +47291,81 @@ class MetricsUtils {
             }
             return { value: states[0] !== '-' ? states[0] : undefined, entityIds };
         };
+        const slugify = (text) => text
+            .toString()
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/[_-]+/g, '_')
+            .replace(/^[_-]+/, '')
+            .replace(/[_-]+$/, '');
+        const resolveCalculatedVpdSensor = (index) => {
+            const nameSuffix = index !== null ? ` ${index + 1}` : '';
+            const uuidSuffix = index !== null ? `_${index}` : '';
+            const calculatedId = growspaceName && subareaName
+                ? `sensor.${slugify(`${growspaceName} ${subareaName} Calculated VPD${nameSuffix}`)}`
+                : '';
+            const uuidId = growspaceId && subareaId
+                ? `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`
+                : '';
+            if (calculatedId && hass.states[calculatedId]) {
+                const s = hass.states[calculatedId];
+                if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
+                    return calculatedId;
+                }
+            }
+            if (uuidId && hass.states[uuidId]) {
+                const s = hass.states[uuidId];
+                if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
+                    return uuidId;
+                }
+            }
+            return calculatedId || uuidId || '';
+        };
+        const tempSensors = [];
+        if (ec.temperature_sensors && ec.temperature_sensors.length > 0) {
+            tempSensors.push(...ec.temperature_sensors);
+        }
+        else if (ec.temperature_sensor) {
+            tempSensors.push(ec.temperature_sensor);
+        }
+        const humSensors = [];
+        if (ec.humidity_sensors && ec.humidity_sensors.length > 0) {
+            humSensors.push(...ec.humidity_sensors);
+        }
+        else if (ec.humidity_sensor) {
+            humSensors.push(ec.humidity_sensor);
+        }
+        const vpdSensors = [];
+        if (ec.vpd_sensors && ec.vpd_sensors.length > 0) {
+            vpdSensors.push(...ec.vpd_sensors);
+        }
+        else if (ec.vpd_sensor) {
+            vpdSensors.push(ec.vpd_sensor);
+        }
+        const resolvedVpdSensors = [];
+        const numPairs = Math.min(tempSensors.length, humSensors.length);
+        if (numPairs > 0) {
+            for (let i = 0; i < numPairs; i++) {
+                const existingVpd = vpdSensors[i];
+                if (existingVpd && !existingVpd.includes('calculated_vpd')) {
+                    resolvedVpdSensors.push(existingVpd);
+                }
+                else {
+                    const index = numPairs > 1 ? i : null;
+                    const fallbackId = resolveCalculatedVpdSensor(index);
+                    if (fallbackId) {
+                        resolvedVpdSensors.push(fallbackId);
+                    }
+                }
+            }
+        }
+        else {
+            resolvedVpdSensors.push(...vpdSensors);
+        }
         const tempAgg = getAggregateState(ec.temperature_sensor, ec.temperature_sensors, '°C');
         const humAgg = getAggregateState(ec.humidity_sensor, ec.humidity_sensors, '%');
-        const vpdAgg = getAggregateState(ec.vpd_sensor, ec.vpd_sensors, 'kPa');
+        const vpdAgg = getAggregateState(resolvedVpdSensors.length === 1 ? resolvedVpdSensors[0] : undefined, resolvedVpdSensors.length > 1 ? resolvedVpdSensors : undefined, 'kPa');
         const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
         const heroChips = [
             createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, 'Temperature'),
@@ -115579,7 +115670,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         `;
     }
     _renderHeaderMetrics(ec, parentDevice) {
-        const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set());
+        const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(), parentDevice?.deviceId, parentDevice?.name || this._parentGrowspaceName, this._subarea?.id, this._subarea?.name);
         const hasAny = metrics.heroChips.length > 0 || metrics.secondaryChips.length > 0 || metrics.deviceChips.length > 0;
         const isMobile = this._resizeController.isMobile;
         const timeRange = this._analyticsStateController?.value?.timeRange || '24h';

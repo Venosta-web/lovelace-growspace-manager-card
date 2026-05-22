@@ -1031,6 +1031,7 @@ export class StrainEditorView extends LitElement {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -1125,6 +1126,7 @@ export class StrainEditorView extends LitElement {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -1318,6 +1320,7 @@ export class StrainEditorView extends LitElement {
         open
         @closed=${this._cancelDeleteBreeder}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

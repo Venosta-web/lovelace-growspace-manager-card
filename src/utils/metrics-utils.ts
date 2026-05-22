@@ -737,7 +737,11 @@ export class MetricsUtils {
   static computeSubareaMetrics(
     hass: HomeAssistant,
     ec: import('../services/types').EnvironmentConfig,
-    activeEnvGraphs: Set<string>
+    activeEnvGraphs: Set<string>,
+    growspaceId?: string,
+    growspaceName?: string,
+    subareaId?: string,
+    subareaName?: string
   ): {
     heroChips: HeaderChip[];
     secondaryChips: HeaderChip[];
@@ -811,9 +815,90 @@ export class MetricsUtils {
       return { value: states[0] !== '-' ? states[0] : undefined, entityIds };
     };
 
+    const slugify = (text: string) =>
+      text
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^\w-]+/g, '')
+        .replace(/[_-]+/g, '_')
+        .replace(/^[_-]+/, '')
+        .replace(/[_-]+$/, '');
+
+    const resolveCalculatedVpdSensor = (index: number | null): string => {
+      const nameSuffix = index !== null ? ` ${index + 1}` : '';
+      const uuidSuffix = index !== null ? `_${index}` : '';
+
+      const calculatedId = growspaceName && subareaName
+        ? `sensor.${slugify(`${growspaceName} ${subareaName} Calculated VPD${nameSuffix}`)}`
+        : '';
+      const uuidId = growspaceId && subareaId
+        ? `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`
+        : '';
+
+      if (calculatedId && hass.states[calculatedId]) {
+        const s = hass.states[calculatedId];
+        if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
+          return calculatedId;
+        }
+      }
+      if (uuidId && hass.states[uuidId]) {
+        const s = hass.states[uuidId];
+        if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
+          return uuidId;
+        }
+      }
+
+      return calculatedId || uuidId || '';
+    };
+
+    const tempSensors: string[] = [];
+    if (ec.temperature_sensors && ec.temperature_sensors.length > 0) {
+      tempSensors.push(...ec.temperature_sensors);
+    } else if (ec.temperature_sensor) {
+      tempSensors.push(ec.temperature_sensor);
+    }
+
+    const humSensors: string[] = [];
+    if (ec.humidity_sensors && ec.humidity_sensors.length > 0) {
+      humSensors.push(...ec.humidity_sensors);
+    } else if (ec.humidity_sensor) {
+      humSensors.push(ec.humidity_sensor);
+    }
+
+    const vpdSensors: string[] = [];
+    if (ec.vpd_sensors && ec.vpd_sensors.length > 0) {
+      vpdSensors.push(...ec.vpd_sensors);
+    } else if (ec.vpd_sensor) {
+      vpdSensors.push(ec.vpd_sensor);
+    }
+
+    const resolvedVpdSensors: string[] = [];
+    const numPairs = Math.min(tempSensors.length, humSensors.length);
+    if (numPairs > 0) {
+      for (let i = 0; i < numPairs; i++) {
+        const existingVpd = vpdSensors[i];
+        if (existingVpd && !existingVpd.includes('calculated_vpd')) {
+          resolvedVpdSensors.push(existingVpd);
+        } else {
+          const index = numPairs > 1 ? i : null;
+          const fallbackId = resolveCalculatedVpdSensor(index);
+          if (fallbackId) {
+            resolvedVpdSensors.push(fallbackId);
+          }
+        }
+      }
+    } else {
+      resolvedVpdSensors.push(...vpdSensors);
+    }
+
     const tempAgg = getAggregateState(ec.temperature_sensor, ec.temperature_sensors, '°C');
     const humAgg = getAggregateState(ec.humidity_sensor, ec.humidity_sensors, '%');
-    const vpdAgg = getAggregateState(ec.vpd_sensor, ec.vpd_sensors, 'kPa');
+    const vpdAgg = getAggregateState(
+      resolvedVpdSensors.length === 1 ? resolvedVpdSensors[0] : undefined,
+      resolvedVpdSensors.length > 1 ? resolvedVpdSensors : undefined,
+      'kPa'
+    );
     const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
 
     const heroChips = [

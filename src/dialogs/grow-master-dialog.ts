@@ -109,6 +109,7 @@ export class GrowMasterDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
         width="large"

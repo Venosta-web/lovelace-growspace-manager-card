@@ -183,6 +183,7 @@ export class GsBreederManager extends LitElement {
         open
         @closed=${close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
@@ -397,6 +398,7 @@ export class GsBreederManager extends LitElement {
         open
         @closed=${() => { this._pendingDelete = null; }}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >

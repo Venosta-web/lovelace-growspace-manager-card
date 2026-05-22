@@ -159,7 +159,7 @@ export class GrowspaceWateringDialogUI extends LitElement {
     const dialogColor = '#2196F3';
 
     return html`
-      <ha-dialog open @closed=${this._close} hideActions width="large">
+      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
         <div class="glass-dialog-container">
           <div class="dialog-header">
             <div class="dialog-icon">

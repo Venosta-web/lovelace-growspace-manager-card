@@ -367,14 +367,6 @@ describe('ConfigDialog', () => {
                 expect((element as any).envMoldThreshold).toBe(2.5);
             }
         });
-
-        it('should update control dehumidifier checkbox', async () => {
-            const check = element.shadowRoot?.querySelector('input[type="checkbox"]') as HTMLInputElement;
-            check.checked = true;
-            check.dispatchEvent(new Event('change'));
-            await element.updateComplete;
-            expect((element as any).envDehumidifierControlEnabled).toBe(true);
-        });
     });
 
     describe('Dehumidifier Tab Complex Logic', () => {
@@ -384,6 +376,14 @@ describe('ConfigDialog', () => {
                 seedling: { day: { on: 0.8, off: 1.0 }, night: { on: 0.9, off: 1.1 } }
             };
             await element.updateComplete;
+        });
+
+        it('should update control dehumidifier checkbox', async () => {
+            const check = element.shadowRoot?.querySelector('input[type="checkbox"]') as HTMLInputElement;
+            check.checked = true;
+            check.dispatchEvent(new Event('change'));
+            await element.updateComplete;
+            expect((element as any).envDehumidifierControlEnabled).toBe(true);
         });
 
         it('should switch stages via sub-tabs', async () => {

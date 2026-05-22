@@ -701,6 +701,7 @@ export class ConfigDialog extends LitElement {
       <ha-dialog
         open
         @closed=${this._close}
+        without-header
         scrimClickAction=""
         escapeKeyAction="close"
         width="large"
@@ -1649,15 +1650,6 @@ export class ConfigDialog extends LitElement {
               >
                 Remove Environment
               </button>
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  .checked=${this.envDehumidifierControlEnabled}
-                  @change=${(e: Event) =>
-        (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
-                />
-                Control Dehumidifier
-              </label>
             </div>
           </div>
         </div>
@@ -1994,7 +1986,18 @@ export class ConfigDialog extends LitElement {
         </div>
 
         <div class="detail-card">
-          <h3>Dehumidifier Thresholds(VPD / kPa)</h3>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="margin:0;">Dehumidifier Thresholds (VPD / kPa)</h3>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${this.envDehumidifierControlEnabled}
+                @change=${(e: Event) =>
+                  (this.envDehumidifierControlEnabled = (e.target as HTMLInputElement).checked)}
+              />
+              Enable Control
+            </label>
+          </div>
 
           <!--Sub-navigation for Stages-->
           <div
