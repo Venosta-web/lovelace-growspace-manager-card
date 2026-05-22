@@ -152,12 +152,12 @@ describe('IrrigationDialog', () => {
         vi.restoreAllMocks();
     });
 
-    it('should render content when open', async () => {
+    it('should render gs-dialog when open', async () => {
         element.open = true;
         document.body.appendChild(element);
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('ha-dialog');
+        const dialog = element.shadowRoot?.querySelector('gs-dialog');
         expect(dialog).toBeTruthy();
     });
 
@@ -647,14 +647,16 @@ describe('IrrigationDialog', () => {
             expect(element.shadowRoot?.querySelector('.timeline-track')).toBeTruthy();
         });
 
-        it('should dispatch close event', async () => {
-            const spy = vi.fn();
-            element.addEventListener('close', spy);
+        it('should dispatch close event with composed: true', async () => {
+            let capturedEvent: Event | undefined;
+            element.addEventListener('close', (e) => { capturedEvent = e; });
 
-            const closeBtn = element.shadowRoot?.querySelector('.dialog-header button');
+            const closeBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
+                .find((b) => b.textContent?.trim() === 'Close');
             (closeBtn as HTMLElement).click();
 
-            expect(spy).toHaveBeenCalled();
+            expect(capturedEvent).toBeDefined();
+            expect((capturedEvent as CustomEvent).composed).toBe(true);
         });
 
         it('should update all strategy fields', async () => {

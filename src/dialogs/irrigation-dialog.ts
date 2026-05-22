@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiWater, mdiClose, mdiPlus } from '@mdi/js';
+import { mdiWater, mdiPlus } from '@mdi/js';
 import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading, TankWaterEvent } from '../types';
 import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -15,6 +15,7 @@ import {
   removeDrainTime,
   setIrrigationSettings,
 } from '../store/growspace/irrigation-actions';
+import '../features/shared/ui';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/md3-switch';
@@ -1094,7 +1095,7 @@ export class IrrigationDialog extends LitElement {
     this._editingIrrigationTime = undefined;
     this._editingDrainTime = undefined;
     this._errorToast = undefined;
-    this.dispatchEvent(new CustomEvent('close'));
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
   private _showErrorToast(message: string) {
@@ -1198,41 +1199,14 @@ export class IrrigationDialog extends LitElement {
     const currentLabel = visibleNav.find((n) => n.id === this._activeTab)?.label ?? '';
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${true}
+        .heading=${'Irrigation Management'}
+        .subtitle=${this.growspaceName}
+        .iconPath=${mdiWater}
+        stageColor="${dialogColor}"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-
-          <!-- Header -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWater}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Irrigation Management</h2>
-                <gs-help-tooltip
-                  content="Schedule and manage irrigation events, soil moisture targets, and drain run-off cycles for this growspace."
-                  placement="bottom"
-                  label="Irrigation Management"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width:auto;padding:8px;">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
 
           <!-- Body: sidebar rail + content -->
           <div class="dlg-body">
@@ -1291,7 +1265,7 @@ export class IrrigationDialog extends LitElement {
             </div>
           ` : ''}
         </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
   }
 
