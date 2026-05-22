@@ -19530,11 +19530,103 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
         return shots;
     }
+    _fmtMin(minutes) {
+        const h = Math.floor((minutes / 60) % 24);
+        const m = minutes % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    _computePhases() {
+        const s = this._strategy;
+        if (!s.lightsOnTime)
+            return null;
+        const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+        const lightHours = isFlower ? 12 : 18;
+        const [hh, mm] = s.lightsOnTime.split(':').map(Number);
+        const lightsOnMin = hh * 60 + (mm || 0);
+        const lightsOffMin = lightsOnMin + lightHours * 60;
+        const p1End = lightsOnMin + (s.p0DurationMinutes ?? 60);
+        const p3Start = Math.max(p1End, lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120));
+        return {
+            lightsOnMin,
+            lightsOffMin,
+            lightHours,
+            phases: [
+                { id: 'p1', label: 'P1', name: 'Saturation', start: lightsOnMin, end: p1End, color: '#4CAF50', target: 'Reach FC' },
+                { id: 'p2', label: 'P2', name: 'Maintenance', start: p1End, end: p3Start, color: '#2196F3', target: 'Runoff target' },
+                { id: 'p3', label: 'P3', name: 'Dryback', start: p3Start, end: lightsOffMin, color: '#FF9800', target: `−${s.maintenanceDrybackPercent ?? 3}% VWC` },
+            ],
+        };
+    }
     _renderCropSteeringSchedule(color) {
         const shots = this._computeCropSteeringCycle();
+        const phases = this._computePhases();
         const nowMinutes = this._getNowMinutes();
+        const day = 1440;
+        if (!phases) {
+            return x `
+        <div class="detail-card crop-steering-schedule">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="margin:0;">Crop Steering Schedule</h3>
+          </div>
+          <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:12px;">
+            No strategy configured — set Lights On Time in the Steering tab.
+          </p>
+        </div>
+      `;
+        }
+        const { lightsOnMin, lightsOffMin, lightHours } = phases;
+        const p2ShotCount = shots.length;
+        // VWC sparkline computation
+        const target = this._strategy.targetVwcPercent ?? 45;
+        const dryback = this._strategy.maintenanceDrybackPercent ?? 3;
+        const fc = target + 7;
+        const base = fc - dryback - 5;
+        const p1End = phases.phases[0].end;
+        const p3Start = phases.phases[2].start;
+        const vwcPts = [];
+        for (let m = 0; m <= day; m += 8) {
+            let v;
+            if (m < lightsOnMin) {
+                v = base + Math.sin(m / 300) * 0.8;
+            }
+            else if (m < p1End) {
+                const pct = (m - lightsOnMin) / Math.max(1, p1End - lightsOnMin);
+                v = base + pct * (fc - base);
+            }
+            else if (m < p3Start) {
+                const pct = (m - p1End) / Math.max(1, p3Start - p1End);
+                v = fc - pct * (dryback * 0.25) + Math.sin((m - p1End) * 0.25) * (dryback * 0.35);
+            }
+            else if (m < lightsOffMin) {
+                const pct = (m - p3Start) / Math.max(1, lightsOffMin - p3Start);
+                v = (fc - dryback * 0.25) - pct * (dryback * 0.9);
+            }
+            else {
+                const pct = (m - lightsOffMin) / Math.max(1, day - lightsOffMin);
+                v = (fc - dryback) - pct * 3;
+            }
+            vwcPts.push({ m, v: Math.max(0, Math.min(100, v)) });
+        }
+        const svgW = 1000;
+        const svgH = 52;
+        const padL = 6;
+        const padR = 6;
+        const padT = 8;
+        const padB = 10;
+        const iW = svgW - padL - padR;
+        const iH = svgH - padT - padB;
+        const vMin = target - 10;
+        const vMax = target + 14;
+        const xAt = (t) => padL + (t / day) * iW;
+        const yAt = (v) => padT + iH - Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin))) * iH;
+        const fcY = yAt(fc);
+        const linePath = vwcPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.m).toFixed(1)},${yAt(p.v).toFixed(1)}`).join(' ');
+        const areaPath = `${linePath} L${xAt(day).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z`;
+        const nowX = xAt(nowMinutes).toFixed(1);
         return x `
       <div class="detail-card crop-steering-schedule">
+
+        <!-- Header -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <div style="display:flex;align-items:center;gap:6px;">
             <h3 style="margin:0;">Crop Steering Schedule</h3>
@@ -19544,48 +19636,118 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               label="Crop Steering Schedule"
             ></gs-help-tooltip>
           </div>
-          <span style="font-size:0.75rem;opacity:0.6;font-style:italic;">Auto · read-only</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:0.75rem;opacity:0.55;">${p2ShotCount} shots · ${lightHours}h photoperiod</span>
+            <span class="auto-pill"><span class="pulse-dot"></span>Auto</span>
+          </div>
         </div>
 
-        <div class="irrigation-time-bar timeline-track" style="border-color:${color}40;">
-          ${Array.from({ length: 25 }, (_, i) => i).map((h) => x `
-            <div class="grid-v ${h % 6 === 0 ? 'major' : ''}" style="left:${(h / 24) * 100}%;"></div>
-            ${h % 3 === 0 ? x `
-              <span class="x-label" style="left:${(h / 24) * 100}%;">
-                ${h.toString().padStart(2, '0')}:00
-              </span>
-            ` : E}
-          `)}
+        <div class="cs-timeline">
 
-          ${shots.map((shot) => {
+          <!-- Phase strip -->
+          <div class="cs-phase-strip">
+            ${lightsOnMin > 0 ? x `
+              <div class="cs-phase-block dark" style="left:0;width:${(lightsOnMin / day) * 100}%;">
+                <div class="cs-phase-num">Dark</div>
+                <div class="cs-phase-meta">00:00–${this._fmtMin(lightsOnMin)} · no irrigation</div>
+              </div>
+            ` : E}
+            ${phases.phases.map((p) => x `
+              <div
+                class="cs-phase-block"
+                style="left:${(p.start / day) * 100}%;width:${((p.end - p.start) / day) * 100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
+              >
+                <div class="cs-phase-num" style="color:${p.color};">
+                  ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
+                </div>
+                <div class="cs-phase-meta">${this._fmtMin(p.start)}–${this._fmtMin(p.end)} · ${p.target}</div>
+              </div>
+            `)}
+            ${lightsOffMin < day ? x `
+              <div class="cs-phase-block dark" style="left:${(lightsOffMin / day) * 100}%;width:${((day - lightsOffMin) / day) * 100}%;">
+                <div class="cs-phase-num">Dark</div>
+                <div class="cs-phase-meta">${this._fmtMin(lightsOffMin)}–24:00</div>
+              </div>
+            ` : E}
+          </div>
+
+          <!-- Main track: phase bands + shots + now line -->
+          <div class="cs-track">
+            <div class="cs-photoperiod" style="left:${(lightsOnMin / day) * 100}%;width:${((lightsOffMin - lightsOnMin) / day) * 100}%;"></div>
+
+            ${phases.phases.map((p) => x `
+              <div
+                class="cs-phase-bg"
+                style="left:${(p.start / day) * 100}%;width:${((p.end - p.start) / day) * 100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
+              >
+                <span class="cs-phase-bg-lbl" style="color:${p.color}cc;">${p.label}</span>
+              </div>
+            `)}
+
+            ${Array.from({ length: 25 }, (_, i) => i).map((h) => x `
+              <div class="grid-v ${h % 6 === 0 ? 'major' : ''}" style="left:${(h / 24) * 100}%;"></div>
+              ${h % 3 === 0 ? x `
+                <span class="x-label" style="left:${(h / 24) * 100}%;">${h.toString().padStart(2, '0')}:00</span>
+              ` : E}
+            `)}
+
+            ${shots.map((shot) => {
             const [shh, smm] = shot.time.split(':').map(Number);
             const startMin = shh * 60 + smm;
-            const leftPct = (startMin / 1440) * 100;
+            const leftPct = (startMin / day) * 100;
             const widthPct = (shot.duration / 86400) * 100;
             const isPast = startMin < nowMinutes;
             return x `
-              <div
-                class="timeline-event ${isPast ? 'completed' : ''}"
-                style="
-                  left: ${leftPct}%;
-                  width: max(${widthPct}%, 18px);
-                  background: ${color};
-                  box-shadow: 0 0 0 1px ${color}99, 0 2px 6px ${color}55;
-                  cursor: default;
-                "
-                title="${shot.time.substring(0, 5)} · ${shot.duration}s"
-              >
-                <span class="event-lbl">${shot.time.substring(0, 5)}</span>
-              </div>
-            `;
+                <div
+                  class="cs-event ${isPast ? 'completed' : ''}"
+                  style="left:${leftPct}%;width:max(${widthPct}%,4px);background:${color};box-shadow:0 0 0 1px ${color}99,0 2px 4px ${color}55;"
+                  title="${shot.time.substring(0, 5)} · ${shot.duration}s"
+                ></div>
+              `;
         })}
-        </div>
 
-        ${shots.length === 0 ? x `
-          <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:12px;">
-            No shots computed — check lights-on time and interval in the Steering tab.
-          </p>
-        ` : E}
+            <div class="cs-now-line" style="left:${(nowMinutes / day) * 100}%;"></div>
+          </div>
+
+          <!-- VWC sparkline -->
+          <div class="cs-vwc">
+            <span class="cs-vwc-label">Substrate VWC · modeled</span>
+            <svg viewBox="0 0 ${svgW} ${svgH}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;">
+              <defs>
+                <linearGradient id="vwcGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(76,175,80,0.3)" />
+                  <stop offset="100%" stop-color="rgba(76,175,80,0)" />
+                </linearGradient>
+              </defs>
+              <line x1="${xAt(0)}" x2="${xAt(day)}" y1="${fcY}" y2="${fcY}" stroke="rgba(255,255,255,0.18)" stroke-dasharray="3 3" />
+              <text x="${(xAt(day) - 4).toFixed(0)}" y="${(fcY - 3).toFixed(0)}" text-anchor="end" font-size="8" fill="rgba(255,255,255,0.4)">FC ${fc.toFixed(0)}%</text>
+              <path d="${areaPath}" fill="url(#vwcGrad)" />
+              <path d="${linePath}" fill="none" stroke="#4CAF50" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+              <line x1="${nowX}" x2="${nowX}" y1="${padT}" y2="${padT + iH}" stroke="#FF9800" stroke-dasharray="2 2" />
+            </svg>
+          </div>
+
+          <!-- Phase legend -->
+          <div class="cs-legend">
+            ${phases.phases.map((p) => x `
+              <span class="cs-leg-chip">
+                <span class="cs-leg-dot" style="background:${p.color};"></span>
+                <strong>${p.label}</strong> ${p.name}${p.id === 'p2' ? x ` · ${p2ShotCount} shots` : E} · ${p.target}
+              </span>
+            `)}
+            <span class="cs-leg-chip">
+              <span style="width:8px;height:8px;border-radius:50%;background:rgba(255,235,59,0.85);flex-shrink:0;"></span>
+              ${this._fmtMin(lightsOnMin)}–${this._fmtMin(lightsOffMin)} · ${lightHours}h photoperiod
+            </span>
+          </div>
+
+          ${shots.length === 0 ? x `
+            <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:4px;">
+              No shots computed — check lights-on time and interval in the Steering tab.
+            </p>
+          ` : E}
+
+        </div>
       </div>
     `;
     }
@@ -19594,15 +19756,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const isCropSteering = !!this._strategy.enabled;
         return x `
       ${isCropSteering ? x `
-        <div class="info-banner">
-          <svg style="width:14px;height:14px;flex-shrink:0;fill:currentColor;" viewBox="0 0 24 24">
+        <div class="info-banner banner-cs">
+          <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24">
             <path d="${MDI_INFO}"></path>
           </svg>
           <div>
-            Crop Steering is active — irrigation is managed by VWC logic.
+            <strong>Crop Steering is active</strong> — irrigation cycles are computed automatically from VWC targets.
             <a
               href="#"
-              style="color:var(--stage-color,#2196f3);margin-left:4px;"
+              style="color:#4CAF50;margin-left:4px;"
               @click=${(e) => { e.preventDefault(); this._activeTab = 'steering'; }}
             >Open Crop Steering →</a>
           </div>
@@ -19613,6 +19775,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
       `}
 
       ${this._renderScheduleSection('Drain Schedule', drainTimes, this._drainDuration, 'drain', '#FF9800')}
+
+      ${!isCropSteering ? x `
+        <div class="info-banner">
+          <svg style="width:14px;height:14px;flex-shrink:0;fill:currentColor;" viewBox="0 0 24 24">
+            <path d="${MDI_INFO}"></path>
+          </svg>
+          <div>
+            Enable <strong>Crop Steering</strong> in the Steering tab to switch from a fixed daily plan to a phase-driven schedule that adapts to VWC targets.
+            <a
+              href="#"
+              style="color:var(--stage-color,${color});margin-left:4px;"
+              @click=${(e) => { e.preventDefault(); this._activeTab = 'steering'; }}
+            >Open Crop Steering →</a>
+          </div>
+        </div>
+      ` : E}
     `;
     }
     _renderScheduleSection(title, times, defaultDuration, type, color) {
@@ -21094,6 +21272,191 @@ IrrigationDialog.styles = [
       }
       .stub-row-label { font-size: 13px; }
       .stub-row-desc  { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+
+      /* ── Crop Steering Schedule ── */
+      .auto-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 22px;
+        padding: 0 8px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        background: linear-gradient(135deg, rgba(76,175,80,0.18), rgba(33,150,243,0.18));
+        border: 1px solid rgba(76,175,80,0.4);
+        color: #4CAF50;
+        border-radius: 6px;
+      }
+      .auto-pill .pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #4CAF50;
+        box-shadow: 0 0 6px rgba(76,175,80,0.9);
+        flex-shrink: 0;
+      }
+      .cs-timeline { display: flex; flex-direction: column; gap: 10px; }
+      .cs-phase-strip {
+        position: relative;
+        height: 52px;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        background: rgba(0,0,0,0.2);
+        overflow: hidden;
+      }
+      .cs-phase-block {
+        position: absolute;
+        top: 0; bottom: 0;
+        padding: 7px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .cs-phase-block.dark {
+        background: rgba(0,0,0,0.35);
+        border-left: 1px solid rgba(255,255,255,0.06);
+      }
+      .cs-phase-num {
+        font-size: 9.5px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .cs-phase-nm {
+        font-size: 11px;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        color: rgba(255,255,255,0.85);
+      }
+      .cs-phase-meta {
+        font-size: 10px;
+        color: rgba(255,255,255,0.4);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cs-track {
+        position: relative;
+        height: 108px;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        background: rgba(0,0,0,0.2);
+        overflow: hidden;
+      }
+      .cs-track .grid-v { top: 8px; bottom: 22px; }
+      .cs-photoperiod {
+        position: absolute;
+        top: 0;
+        height: 8px;
+        background: linear-gradient(to bottom, rgba(255,235,59,0.22), rgba(255,235,59,0.04));
+        border-bottom: 1px solid rgba(255,235,59,0.4);
+      }
+      .cs-phase-bg {
+        position: absolute;
+        top: 8px;
+        bottom: 22px;
+        overflow: hidden;
+      }
+      .cs-phase-bg-lbl {
+        position: absolute;
+        top: 5px;
+        left: 7px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.7;
+        pointer-events: none;
+      }
+      .cs-event {
+        position: absolute;
+        top: 22px;
+        height: 56px;
+        border-radius: 3px;
+        opacity: 0.9;
+        cursor: default;
+        transition: transform 0.15s;
+      }
+      .cs-event:hover { transform: translateY(-2px); }
+      .cs-event.completed { opacity: 0.35; }
+      .cs-event.completed::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,0.18) 3px 5px);
+        border-radius: inherit;
+      }
+      .cs-now-line {
+        position: absolute;
+        top: 12px;
+        bottom: 22px;
+        width: 1px;
+        background: #FF9800;
+        box-shadow: 0 0 8px rgba(255,152,0,0.5);
+        pointer-events: none;
+        z-index: 8;
+      }
+      .cs-now-line::before {
+        content: '';
+        position: absolute;
+        left: -3px; top: -3px;
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: #FF9800;
+      }
+      .cs-vwc {
+        position: relative;
+        height: 64px;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        background: rgba(0,0,0,0.2);
+        padding: 4px 8px;
+        overflow: hidden;
+      }
+      .cs-vwc-label {
+        position: absolute;
+        top: 4px; left: 10px;
+        font-size: 9.5px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(255,255,255,0.35);
+        pointer-events: none;
+      }
+      .cs-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding-top: 2px;
+      }
+      .cs-leg-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 24px;
+        padding: 0 10px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        font-size: 11.5px;
+        color: rgba(255,255,255,0.6);
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-leg-chip strong { color: rgba(255,255,255,0.9); font-weight: 500; }
+      .cs-leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+      .info-banner.banner-cs {
+        background: linear-gradient(90deg, rgba(76,175,80,0.10), rgba(33,150,243,0.06));
+        border: 1px solid rgba(76,175,80,0.3);
+        border-left: 3px solid #4CAF50;
+      }
+      .info-banner.banner-cs svg { fill: #4CAF50; }
     `,
 ];
 __decorate([
