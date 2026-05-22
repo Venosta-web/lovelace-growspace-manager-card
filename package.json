@@ -14,6 +14,7 @@
     "test:ha": "npm --prefix tests/e2e run test",
     "test:ha:headed": "npm --prefix tests/e2e run test:headed",
     "test:ha:debug": "npm --prefix tests/e2e run test:debug",
+    "test:mock": "playwright test --config=playwright-mock.config.ts",
     "test:e2e:coverage": "playwright test --reporter=html,line && node scripts/coverage-report.cjs",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
@@ -24,7 +25,7 @@
   },
   "keywords": [],
   "author": "Venosta-web",
-  "license": "ISC",
+  "license": "MIT",
   "type": "module",
   "devDependencies": {
     "@lit-labs/rollup-plugin-minify-html-literals": "^0.1.1",

@@ -145,7 +145,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Analytics Tab', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             const analyticsTab = Array.from(tabs || []).find(t => t.textContent?.includes('Water Analytics'));
             (analyticsTab as HTMLElement)?.click();
             await element.updateComplete;
@@ -203,7 +203,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Drain EC Tab', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[5] as HTMLElement).click(); // Drain EC
             await element.updateComplete;
         });
@@ -303,14 +303,14 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Schedule Editing - Irrigation Times', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[0] as HTMLElement).click(); // Schedules
             await element.updateComplete;
         });
 
         it('should edit irrigation time', async () => {
             // Open edit dialog for first irrigation time
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             expect(irrigationTimes?.length).toBeGreaterThan(0);
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
@@ -339,7 +339,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should delete irrigation time via edit dialog', async () => {
             // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -353,7 +353,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should cancel irrigation time editing', async () => {
             // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -367,7 +367,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should cancel irrigation time editing by clicking backdrop', async () => {
             // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -382,7 +382,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Schedule Adding', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[0] as HTMLElement).click(); // Schedules
             await element.updateComplete;
         });
@@ -418,14 +418,14 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Schedule Editing - Drain Times', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[0] as HTMLElement).click(); // Schedules
             await element.updateComplete;
         });
 
         it('should edit drain time', async () => {
             // Open edit dialog for first drain time
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             expect(drainTimes?.length).toBeGreaterThan(0);
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
@@ -454,7 +454,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should delete drain time via edit dialog', async () => {
             // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -468,7 +468,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should cancel drain time editing', async () => {
             // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -482,7 +482,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should cancel drain time editing by clicking backdrop', async () => {
             // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -497,8 +497,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Tank Rendering Edge Cases', () => {
         it('should render tank status labels', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Analytics
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            (tabs?.[3] as HTMLElement).click(); // Tanks
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
@@ -519,8 +519,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Analytics
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            (tabs?.[3] as HTMLElement).click(); // Tanks
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
@@ -531,7 +531,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Drain Config Tab (Save)', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             // When all features enabled: Schedules[0], Steering[1], Config[2], Tanks[3], Analytics[4], Drain EC[5]
             (tabs?.[5] as HTMLElement).click(); 
             await element.updateComplete;
@@ -1119,7 +1119,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = Array.from(element.shadowRoot?.querySelectorAll('.tab-item') || []);
+            const tabs = Array.from(element.shadowRoot?.querySelectorAll('.v1-nav-item') || []);
             const tabTexts = tabs.map(t => t.textContent?.trim());
             expect(tabTexts).not.toContain('Crop Steering');
         });

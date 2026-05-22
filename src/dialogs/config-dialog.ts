@@ -167,14 +167,6 @@ export class ConfigDialog extends LitElement {
         display: block;
       }
 
-      .glass-dialog-container {
-        width: 100%;
-        max-width: 100%;
-        min-height: 0;
-        height: auto;
-        max-height: 90vh;
-      }
-
       /* ── Rail layout ─────────────────────────────────────── */
       .cfg-body {
         display: flex;

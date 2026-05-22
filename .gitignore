@@ -52,7 +52,13 @@ playwright-report/.auth/*
 verification/
 # Ignore test images (but keep visual snapshot baselines)
 tests/**/*.png
-!tests/cards/visual/__screenshots__/**/*.png
+!tests/**/__screenshots__/**/*.png
+
+# Vitest runtime attachments (failure diffs, not baselines)
+.vitest-attachments/
+
+# E2E test reports
+tests/e2e/test-reports/
 
 
 # Git worktrees

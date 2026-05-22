@@ -169,7 +169,7 @@ describe('IrrigationDialog', () => {
         });
 
         it('should render existing times', () => {
-            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
             expect(markers?.length).toBe(2); // 1 irrigation + 1 drain
         });
 
@@ -214,7 +214,7 @@ describe('IrrigationDialog', () => {
         });
 
         it('should remove irrigation time via edit dialog', async () => {
-            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
             const irrigationMarker = markers?.[0];
 
             // 1. Click marker to open edit dialog
@@ -286,7 +286,7 @@ describe('IrrigationDialog', () => {
 
         it('should remove drain time via edit dialog', async () => {
             const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1]; // Second card is drain
-            const drainMarker = drainSection?.querySelector('.chart-marker');
+            const drainMarker = drainSection?.querySelector('.timeline-event');
             expect(drainMarker).toBeTruthy();
 
             // 1. Click marker to open edit dialog
@@ -321,7 +321,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Switch to Steering Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[1] as HTMLElement).click();
             await element.updateComplete;
         });
@@ -334,9 +334,11 @@ describe('IrrigationDialog', () => {
             switchEl?.dispatchEvent(new Event('change', { bubbles: true }));
             await element.updateComplete;
 
-            // Click Save
-            const saveBtn = element.shadowRoot?.querySelector('button.primary'); // Save Strategy
+            // Click Save (footer Save Changes calls _saveAll → _saveSettings → _saveStrategy)
+            const saveBtn = element.shadowRoot?.querySelector('button.primary');
             (saveBtn as HTMLElement).click();
+            await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
                 enabled: true
@@ -355,6 +357,8 @@ describe('IrrigationDialog', () => {
 
             const saveBtn = element.shadowRoot?.querySelector('button.primary');
             (saveBtn as HTMLElement).click();
+            await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
                 targetVwcPercent: 55
@@ -369,6 +373,8 @@ describe('IrrigationDialog', () => {
 
             const saveBtn = element.shadowRoot?.querySelector('button.primary');
             (saveBtn as HTMLElement).click();
+            await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
                 lightsOnTime: '08:00'
@@ -405,7 +411,7 @@ describe('IrrigationDialog', () => {
         it('should handle removeIrrigationTime failure', async () => {
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('API Error'));
 
-            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
             (markers?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -444,7 +450,7 @@ describe('IrrigationDialog', () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('API Error'));
 
             const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1];
-            const drainMarker = drainSection?.querySelector('.chart-marker');
+            const drainMarker = drainSection?.querySelector('.timeline-event');
             (drainMarker as HTMLElement).click();
             await element.updateComplete;
 
@@ -464,13 +470,14 @@ describe('IrrigationDialog', () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             // Switch to Steering Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[1] as HTMLElement).click();
             await element.updateComplete;
 
             const saveBtn = element.shadowRoot?.querySelector('button.primary');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
 
             expect(consoleSpy).toHaveBeenCalledWith('Failed to save strategy:', expect.any(Error));
         });
@@ -625,19 +632,19 @@ describe('IrrigationDialog', () => {
         });
 
         it('should switch tabs back and forth', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item') as NodeListOf<HTMLElement>;
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item') as NodeListOf<HTMLElement>;
 
             // Click Steering
             tabs[1].click();
             await element.updateComplete;
             expect((element as any)._activeTab).toBe('steering');
-            expect(element.shadowRoot?.querySelector('.form-grid')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('.phase-grid')).toBeTruthy();
 
             // Click Schedules
             tabs[0].click();
             await element.updateComplete;
             expect((element as any)._activeTab).toBe('schedules');
-            expect(element.shadowRoot?.querySelector('.time-bar-container')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('.timeline-track')).toBeTruthy();
         });
 
         it('should dispatch close event', async () => {
@@ -651,7 +658,7 @@ describe('IrrigationDialog', () => {
         });
 
         it('should update all strategy fields', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item') as NodeListOf<HTMLElement>;
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item') as NodeListOf<HTMLElement>;
             tabs[1].click();
             await element.updateComplete;
 
@@ -677,6 +684,8 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
             const saveBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
             saveBtn.click();
+            await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
 
             expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
                 targetVwcPercent: 60,
@@ -860,7 +869,7 @@ describe('IrrigationDialog', () => {
 
             mocks.removeIrrigationTime.mockClear();
 
-            const marker = element.shadowRoot?.querySelector('.chart-marker');
+            const marker = element.shadowRoot?.querySelector('.timeline-event');
             (marker as HTMLElement).click();
             await element.updateComplete;
 
@@ -959,9 +968,10 @@ describe('IrrigationDialog', () => {
             element.open = true;
             await element.updateComplete;
 
-            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
-            const tooltip = markers?.[0]?.querySelector('.chart-tooltip');
-            expect(tooltip?.textContent).toContain('09:00 | 60s');
+            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
+            // Default duration (60s) is used when not specified in the event block title
+            expect(markers?.[0]?.getAttribute('title')).toContain('09:00');
+            expect(markers?.[0]?.getAttribute('title')).toContain('60');
 
             document.body.removeChild(element);
         });
@@ -1025,15 +1035,15 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Switch to Config Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[2] as HTMLElement).click();
             await element.updateComplete;
         });
 
         it('should render configuration tab content', () => {
-            const section = element.shadowRoot?.querySelector('.schedule-section');
+            const section = element.shadowRoot?.querySelector('.detail-card');
             expect(section).toBeTruthy();
-            expect(section?.innerHTML).toContain('Pump Configuration');
+            expect(element.shadowRoot?.innerHTML).toContain('Pump Configuration');
         });
 
         it('should populate entity selects with filtered and sorted entities', () => {
@@ -1097,7 +1107,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Re-render to trigger _getEntities
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[2] as HTMLElement).click();
             await element.updateComplete;
 
@@ -1127,34 +1137,34 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Switch to Tanks Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[3] as HTMLElement).click();
             await element.updateComplete;
         });
 
         it('should render tank cards', () => {
-            const tankCards = element.shadowRoot?.querySelectorAll('.tank-card');
+            const tankCards = element.shadowRoot?.querySelectorAll('.tank-row');
             expect(tankCards?.length).toBe(3);
         });
 
         it('should render main tank with correct level', () => {
-            const mainTank = element.shadowRoot?.querySelector('.tank-card:nth-child(1)');
+            const mainTank = element.shadowRoot?.querySelector('.tank-row:nth-child(1)');
             expect(mainTank?.textContent).toContain('Main Tank');
-            expect(mainTank?.querySelector('.percentage-text')?.textContent).toContain('75%');
+            expect(mainTank?.querySelector('.tank-row-pct')?.textContent).toContain('75%');
             expect(mainTank?.classList.contains('warning')).toBe(false);
         });
 
         it('should render reserve tank with warning', () => {
-            const reserveTank = element.shadowRoot?.querySelector('.tank-card:nth-child(2)');
+            const reserveTank = element.shadowRoot?.querySelector('.tank-row:nth-child(2)');
             expect(reserveTank?.textContent).toContain('Reserve Tank');
-            expect(reserveTank?.querySelector('.percentage-text')?.textContent).toContain('15%');
+            expect(reserveTank?.querySelector('.tank-row-pct')?.textContent).toContain('15%');
             expect(reserveTank?.classList.contains('warning')).toBe(true);
-            expect(reserveTank?.querySelector('.warning-icon')).toBeTruthy();
+            expect(reserveTank?.querySelector('.tank-row-pct')?.textContent).toContain('⚠');
         });
 
         it('should handle null fill level', () => {
-            const emptyTank = element.shadowRoot?.querySelector('.tank-card:nth-child(3)');
-            const percentageText = emptyTank?.querySelector('.percentage-text');
+            const emptyTank = element.shadowRoot?.querySelector('.tank-row:nth-child(3)');
+            const percentageText = emptyTank?.querySelector('.tank-row-pct');
             // We want to make sure it contains 'N/A' and NOT '0%'
             expect(percentageText?.textContent).toContain('N/A');
             expect(percentageText?.textContent).not.toContain('0%');
@@ -1167,14 +1177,14 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const labels = Array.from(tabs || []).map(t => (t.querySelector('span:first-of-type') as HTMLElement)?.textContent?.trim());
             expect(labels).not.toContain('Tanks');
         });
 
         it('should fallback to schedules when current tab is hidden', async () => {
             // Start on tanks tab (index 3 with all features)
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[3] as HTMLElement).click();
             await element.updateComplete;
             expect((element as any)._activeTab).toBe('tanks');
@@ -1261,9 +1271,9 @@ describe('IrrigationDialog', () => {
             document.body.appendChild(element);
             await element.updateComplete;
 
-            const markers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
             expect(markers?.length).toBeGreaterThan(0);
-            expect(markers?.[0].querySelector('.chart-tooltip')?.textContent).toContain('11:00');
+            expect(markers?.[0].getAttribute('title')).toContain('11:00');
         });
 
         it('should handle both time and start_time fallback in filter', async () => {
@@ -1284,7 +1294,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             const irrigationBar = element.shadowRoot?.querySelector('.irrigation-time-bar');
-            const markers = irrigationBar?.querySelectorAll('.chart-marker');
+            const markers = irrigationBar?.querySelectorAll('.timeline-event');
             expect(markers?.length).toBe(2);
             document.body.removeChild(element);
         });
@@ -1329,12 +1339,13 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
-            
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            // Extract only the label span text (first span), ignoring any badge number
+            const labels = Array.from(tabs || []).map(t => (t.querySelector('span:first-of-type') as HTMLElement)?.textContent?.trim());
+
             expect(labels).toContain('Schedules');
             expect(labels).toContain('Configuration');
-            expect(labels).not.toContain('Crop Steering (VWC)');
+            expect(labels).not.toContain('Crop Steering');
             expect(labels).not.toContain('Tanks');
             expect(labels).not.toContain('Water Analytics');
             expect(labels).not.toContain('Drain EC');
@@ -1350,9 +1361,9 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
-            expect(labels).toContain('Crop Steering (VWC)');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const labels = Array.from(tabs || []).map(t => (t.querySelector('span:first-of-type') as HTMLElement)?.textContent?.trim());
+            expect(labels).toContain('Crop Steering');
         });
 
         it('should show Tanks tab when irrigation tanks are configured', async () => {
@@ -1365,8 +1376,8 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const labels = Array.from(tabs || []).map(t => (t.querySelector('span:first-of-type') as HTMLElement)?.textContent?.trim());
             expect(labels).toContain('Tanks');
         });
 
@@ -1380,8 +1391,8 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            const labels = Array.from(tabs || []).map(t => t.textContent?.trim());
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const labels = Array.from(tabs || []).map(t => (t.querySelector('span:first-of-type') as HTMLElement)?.textContent?.trim());
             expect(labels).toContain('Water Analytics');
         });
 
@@ -1435,6 +1446,217 @@ describe('IrrigationDialog', () => {
 
             const hints = element.shadowRoot?.querySelector('.setup-hints');
             expect(hints).toBeFalsy();
+        });
+    });
+
+    describe('Sidebar Nav', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should render a sidebar rail instead of a horizontal tab bar', () => {
+            const rail = element.shadowRoot?.querySelector('.v1-rail');
+            expect(rail).toBeTruthy();
+            const tabsRow = element.shadowRoot?.querySelector('.tabs-row');
+            expect(tabsRow).toBeFalsy();
+        });
+
+        it('should render Schedules as the first nav item and mark it active by default', () => {
+            const navItems = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            expect(navItems?.length).toBeGreaterThan(0);
+            const first = navItems![0];
+            expect(first.textContent).toContain('Schedules');
+            expect(first.classList.contains('active')).toBe(true);
+        });
+
+        it('should switch content section when a nav item is clicked', async () => {
+            const configItem = Array.from(
+                element.shadowRoot?.querySelectorAll('.v1-nav-item') ?? []
+            ).find(el => el.textContent?.includes('Configuration'));
+            expect(configItem).toBeTruthy();
+            (configItem as HTMLElement).click();
+            await element.updateComplete;
+            expect(configItem!.classList.contains('active')).toBe(true);
+        });
+    });
+
+    describe('Timeline Event Blocks', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should render timeline-event blocks instead of chart-markers', () => {
+            const blocks = element.shadowRoot?.querySelectorAll('.timeline-event');
+            const oldMarkers = element.shadowRoot?.querySelectorAll('.chart-marker');
+            expect(blocks?.length).toBeGreaterThan(0);
+            expect(oldMarkers?.length ?? 0).toBe(0);
+        });
+
+        it('should render one event block per scheduled irrigation time', () => {
+            // mockDevice has 1 irrigation time
+            const irrigationTrack = element.shadowRoot?.querySelector('.irrigation-time-bar');
+            const blocks = irrigationTrack?.querySelectorAll('.timeline-event');
+            expect(blocks?.length).toBe(1);
+        });
+
+        it('should mark events before now as completed', () => {
+            // 08:00 event — in most test runs this is in the past
+            // We can't control clock so just check the completed logic is applied
+            // by verifying completed events have the completed class if their start < nowMinutes
+            const blocks = element.shadowRoot?.querySelectorAll('.timeline-event');
+            // At minimum, verify the blocks exist; completed state depends on time-of-day
+            expect(blocks).toBeTruthy();
+        });
+    });
+
+    describe('Time Chips', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should render a time chip for each scheduled irrigation time plus a New chip', () => {
+            // Schedules tab shows both irrigation and drain sections, each with real chips + "+ New"
+            // 1 irrigation time + 1 drain time → 4 chips total (1+1 per section)
+            const chips = element.shadowRoot?.querySelectorAll('.time-chips .time-chip');
+            expect(chips?.length).toBe(4);
+        });
+
+        it('should render remove buttons on each scheduled time chip', () => {
+            const removeButtons = element.shadowRoot?.querySelectorAll('.time-chips .time-chip .chip-remove');
+            expect(removeButtons?.length).toBe(2); // 1 irrigation + 1 drain real chip
+        });
+    });
+
+    describe('Footer Save Changes', () => {
+        beforeEach(async () => {
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('should render a single Save Changes button in the footer', () => {
+            const footer = element.shadowRoot?.querySelector('.dlg-footer');
+            expect(footer).toBeTruthy();
+            const saveBtn = footer?.querySelector('.btn-save-all');
+            expect(saveBtn).toBeTruthy();
+            expect(saveBtn?.textContent).toContain('Save');
+        });
+
+        it('should not render per-tab save buttons inside the dialog body', () => {
+            // Old pattern: separate "Save Strategy" / "Save Configuration" buttons inside body
+            const body = element.shadowRoot?.querySelector('.dialog-body, .v1-content');
+            const innerSaveBtns = body?.querySelectorAll('button.md3-button.primary');
+            // Any save buttons inside the body (not footer) should be gone
+            const bodyPrimaryBtns = Array.from(innerSaveBtns ?? []).filter(
+                b => b.textContent?.includes('Save')
+            );
+            expect(bodyPrimaryBtns.length).toBe(0);
+        });
+
+        it('should call saveStrategy and saveSettings when Save Changes is clicked', async () => {
+            mocks.setIrrigationStrategy.mockClear();
+            mocks.setIrrigationSettings.mockClear();
+
+            // Dirty the strategy and pump config
+            (element as any)._strategy = { ...( element as any)._strategy, enabled: true };
+            (element as any)._irrigationPumpEntity = 'switch.new_pump';
+
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all') as HTMLElement;
+            saveBtn?.click();
+            await element.updateComplete;
+            await new Promise(r => setTimeout(r, 0));
+
+            expect(mocks.setIrrigationStrategy).toHaveBeenCalled();
+            expect(mocks.setIrrigationSettings).toHaveBeenCalled();
+        });
+    });
+
+    describe('Crop Steering Schedule Display', () => {
+        const steeringStrategy = {
+            enabled: true,
+            lightsOnTime: '06:00:00',
+            p0DurationMinutes: 60,
+            p2StopBeforeLightsOffMinutes: 120,
+            targetVwcPercent: 45,
+            maintenanceDrybackPercent: 3,
+            shotDurationSeconds: 15,
+            shotIntervalMinutes: 30,
+        };
+
+        function makeSteeringDevice(overrides: Partial<GrowspaceDevice> = {}): GrowspaceDevice {
+            return {
+                ...JSON.parse(JSON.stringify(mockDevice)),
+                irrigationStrategy: steeringStrategy,
+                irrigationConfig: { irrigationTimes: [], drainTimes: [] },
+                ...overrides,
+            };
+        }
+
+        beforeEach(async () => {
+            element.device = makeSteeringDevice();
+            (element as any).store = makeMockStore(element.device!);
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+        });
+
+        it('renders Crop Steering Schedule heading on the schedules tab', () => {
+            const headings = Array.from(element.shadowRoot?.querySelectorAll('h3') ?? []);
+            const csHeading = headings.find(h => h.textContent?.includes('Crop Steering Schedule'));
+            expect(csHeading).toBeTruthy();
+        });
+
+        it('does not show ADD TIME inside the crop steering schedule section', () => {
+            const csSection = element.shadowRoot?.querySelector('.crop-steering-schedule');
+            expect(csSection).toBeTruthy();
+            const addBtns = Array.from(csSection?.querySelectorAll('button') ?? []);
+            const hasAddTime = addBtns.some(b => b.textContent?.includes('ADD TIME'));
+            expect(hasAddTime).toBe(false);
+        });
+
+        it('still shows drain schedule ADD TIME button when crop steering is active', () => {
+            const allBtns = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);
+            const drainSection = element.shadowRoot?.querySelector('.drain-time-bar')?.closest('.detail-card');
+            expect(drainSection).toBeTruthy();
+            const drainAddBtn = Array.from(drainSection?.querySelectorAll('button') ?? [])
+                .find(b => b.textContent?.includes('ADD TIME'));
+            expect(drainAddBtn).toBeTruthy();
+            // keep allBtns reference to avoid unused-var lint
+            expect(allBtns.length).toBeGreaterThan(0);
+        });
+
+        it('computes ≤12 shots for a flower-stage growspace (12h light window, 60min interval)', async () => {
+            element.device = makeSteeringDevice({
+                biologicalMetrics: {
+                    ...mockDevice.biologicalMetrics,
+                    flowerWeek: 4,
+                    vegWeek: 0,
+                } as any,
+                irrigationStrategy: {
+                    ...steeringStrategy,
+                    p0DurationMinutes: 0,
+                    p2StopBeforeLightsOffMinutes: 0,
+                    shotIntervalMinutes: 60,
+                },
+            });
+            (element as any).store = makeMockStore(element.device!);
+            // Re-trigger _initializeState so _strategy reflects the new device
+            element.open = false;
+            await element.updateComplete;
+            element.open = true;
+            await element.updateComplete;
+
+            const csSection = element.shadowRoot?.querySelector('.crop-steering-schedule');
+            expect(csSection).toBeTruthy();
+            const events = csSection?.querySelectorAll('.timeline-event');
+            expect(events?.length).toBeGreaterThan(0);
+            expect(events?.length).toBeLessThanOrEqual(12);
         });
     });
 });

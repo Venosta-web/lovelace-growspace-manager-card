@@ -16,7 +16,7 @@ async function cleanupNonAnchorPlants(page: Page, growspaceId: string): Promise<
     const states = (window as any).hass?.states ?? {};
     return Object.values(states)
       .filter((s: any) =>
-        s.entity_id.startsWith('sensor.plant_') &&
+        s.attributes.plant_id &&
         s.attributes.growspace_id === gId &&
         !(s.attributes.row === 1 && s.attributes.col === 1)
       )
