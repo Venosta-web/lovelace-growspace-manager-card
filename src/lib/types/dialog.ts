@@ -101,6 +101,7 @@ export interface EnvironmentConfigData {
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
   cameraEntities?: string[];
+  lungroomTempSensors?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
 
   // Advanced / irrigation monitoring sensors
@@ -168,6 +169,7 @@ export interface EnvironmentConfigEventDetail {
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
   cameraEntities?: string[];
+  lungroomTempSensors?: string[];
   // Advanced / irrigation monitoring
   substrateTemperatureSensors?: string[];
   phSensors?: string[];

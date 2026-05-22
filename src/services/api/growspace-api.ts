@@ -216,6 +216,7 @@ export class GrowspaceAPI extends BaseAPI {
     sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
     irrigationTanks?: any[];
     cameraEntities?: string[];
+    lungroomTempSensors?: string[];
     substrateTemperatureSensors?: string[];
     phSensors?: string[];
     feedEcSensors?: string[];
@@ -274,6 +275,7 @@ export class GrowspaceAPI extends BaseAPI {
         }));
       }
       if (data.cameraEntities) payload.camera_entities = data.cameraEntities;
+      if (data.lungroomTempSensors) payload.lung_room_temp_sensors = data.lungroomTempSensors;
       if (data.substrateTemperatureSensors?.length)
         payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
       if (data.phSensors?.length) payload.ph_sensors = data.phSensors;

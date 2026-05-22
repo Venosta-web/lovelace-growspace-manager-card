@@ -5233,6 +5233,7 @@ class GrowspaceAdapter {
             electricityCostPerKwh: wsData.electricity_cost_per_kwh,
             substrateTemperatureSensors: wsData.substrate_temperature_sensors,
             cameraEntities: wsData.camera_entities,
+            lungroomTempSensors: wsData.lung_room_temp_sensors,
             powerSensors: wsData.power_sensors,
             energySensors: wsData.energy_sensors,
             // EC / pH / flow sensors (for capability detection)
@@ -5667,6 +5668,8 @@ class GrowspaceAPI extends BaseAPI {
             }
             if (data.cameraEntities)
                 payload.camera_entities = data.cameraEntities;
+            if (data.lungroomTempSensors)
+                payload.lung_room_temp_sensors = data.lungroomTempSensors;
             if (data.substrateTemperatureSensors?.length)
                 payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
             if (data.phSensors?.length)
@@ -11845,6 +11848,9 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         this._activeFilter = 'all';
         this._highlightedTimestamp = null;
         this._containerRef = e$1();
+        this._filterBarRef = e$1();
+        this._hostRO = null;
+        this._containerHeight = 0;
     }
     /**
      * Normalize string for filtering (moved to class method for performance)
@@ -11888,6 +11894,27 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         if (severity >= 0.75)
             return 'var(--warning-color)';
         return 'var(--primary-text-color)';
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._hostRO = new ResizeObserver(() => this._updateContainerHeight());
+        this._hostRO.observe(this);
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._hostRO?.disconnect();
+        this._hostRO = null;
+    }
+    _updateContainerHeight() {
+        const filterBar = this._filterBarRef.value;
+        const filterBarHeight = filterBar ? filterBar.getBoundingClientRect().height : 0;
+        const hostHeight = this.getBoundingClientRect().height;
+        if (hostHeight > 0) {
+            this._containerHeight = hostHeight - filterBarHeight;
+        }
+    }
+    firstUpdated() {
+        requestAnimationFrame(() => this._updateContainerHeight());
     }
     willUpdate(changedProps) {
         if (changedProps.has('hass') && !this.hass) {
@@ -12020,7 +12047,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
             { id: 'training', label: 'Training' },
         ];
         return x `
-      <div class="filter-bar">
+      <div class="filter-bar" ${n$2(this._filterBarRef)}>
         ${filters.map((filter) => x `
             <div
               class="filter-chip ${this._activeFilter === filter.id ? 'active' : ''}"
@@ -12031,7 +12058,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
           `)}
       </div>
 
-      <div class="log-container" ${n$2(this._containerRef)}>
+      <div class="log-container" ${n$2(this._containerRef)} style=${this._containerHeight > 0 ? `height: ${this._containerHeight}px` : ''}>
         ${sortedEvents.length > 0
             ? x `
               ${virtualize({
@@ -12302,6 +12329,9 @@ __decorate([
 __decorate([
     r$3()
 ], GrowspaceLogbook.prototype, "_highlightedTimestamp", void 0);
+__decorate([
+    r$3()
+], GrowspaceLogbook.prototype, "_containerHeight", void 0);
 __decorate([
     r$3()
 ], GrowspaceLogbook.prototype, "_error", void 0);
@@ -15104,6 +15134,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.envVisionMidHours = 6;
         this.envVisionLateOffset = 60;
         this.envVisionCameraEntities = [];
+        this.envLungroomTempSensors = [];
         // Humidifier Control
         this.envHumidifierControlEnabled = false;
         this.envHumidifierThresholds = {};
@@ -15172,6 +15203,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envSensorCoordinates = environmentData.sensorCoordinates || {};
             this.envIrrigationTanks = environmentData.irrigationTanks || [];
             this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+            this.envLungroomTempSensors = environmentData.lungroomTempSensors || [];
             this.envSubstrateTemperatureSensors = environmentData.substrateTemperatureSensors || [];
             this.envPhSensors = environmentData.phSensors || [];
             this.envFeedEcSensors = environmentData.feedEcSensors || [];
@@ -15243,6 +15275,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 sensorCoordinates: this.envSensorCoordinates,
                 irrigationTanks: this.envIrrigationTanks,
                 cameraEntities: this.envVisionCameraEntities,
+                lungroomTempSensors: this.envLungroomTempSensors,
                 substrateTemperatureSensors: this.envSubstrateTemperatureSensors,
                 phSensors: this.envPhSensors,
                 feedEcSensors: this.envFeedEcSensors,
@@ -15288,6 +15321,12 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             bubbles: true,
             composed: true,
         }));
+    }
+    _submitGrowspaceAndEnv() {
+        this._submitEditGrowspace();
+        if (this.envTemperatureSensors.length > 0 && this.envHumiditySensors.length > 0) {
+            this._submitEnvironment();
+        }
     }
     _submitDeleteGrowspace() {
         if (!this.editSelectedId)
@@ -15359,6 +15398,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._isAddingGrowspace = false;
         this._showDeleteConfirm = false;
         this._populateEditFields(growspaceId);
+        this._handleEnvGrowspaceChange({ target: { value: growspaceId } });
     }
     _startAddGrowspace() {
         this._isAddingGrowspace = true;
@@ -15626,6 +15666,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envStressThreshold = 0.8;
             this.envMoldThreshold = 0.8;
             this.envVisionCameraEntities = attrs.cameraEntities ?? [];
+            this.envLungroomTempSensors = attrs.lungroomTempSensors || [];
             if (attrs.visionCheckupConfig) {
                 this.envVisionEnabled = attrs.visionCheckupConfig.enabled;
                 this.envVisionEarlyOffset = attrs.visionCheckupConfig.early_check_offset_minutes;
@@ -15676,6 +15717,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             this.envVisionMidHours = 6;
             this.envVisionLateOffset = 60;
             this.envVisionCameraEntities = [];
+            this.envLungroomTempSensors = [];
             this.envSubstrateTemperatureSensors = [];
             this.envPhSensors = [];
             this.envFeedEcSensors = [];
@@ -15813,6 +15855,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             `)}
           </select>
         </div>
+        ${this._renderMultiEntitySelect('Lung Room Temp Sensors', this.envLungroomTempSensors, ['sensor', 'input_number'], 'temperature', (v) => (this.envLungroomTempSensors = v))}
+        ${this._renderMultiEntitySelect('Area Camera', this.envVisionCameraEntities, ['camera'], null, (v) => (this.envVisionCameraEntities = v))}
       </div>
     `;
     }
@@ -16422,7 +16466,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               <button class="md3-button tonal" @click=${this._generateGrowReport} ?disabled=${!this.editSelectedId}>
                 Grow Report
               </button>
-              <button class="md3-button primary" @click=${this._submitEditGrowspace} ?disabled=${!this.editSelectedId}>
+              <button class="md3-button primary" @click=${this._submitGrowspaceAndEnv} ?disabled=${!this.editSelectedId}>
                 Save Changes
               </button>
             ` : E}
@@ -16915,6 +16959,25 @@ ConfigDialog.styles = [
         }
       }
     `,
+    i$6 `
+      .md3-input-group {
+        border-radius: 8px 8px 2px 2px;
+      }
+      .md3-label {
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-size: 0.7rem;
+      }
+      .cfg-context-select {
+        border-radius: 8px 8px 2px 2px;
+      }
+      .cfg-context-select option,
+      .md3-input option,
+      select option {
+        background: var(--card-background-color, #1e2127);
+        color: var(--primary-text-color, #fff);
+      }
+    `,
 ];
 __decorate([
     n$5({ type: Boolean, reflect: true })
@@ -17075,6 +17138,9 @@ __decorate([
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "envVisionCameraEntities", void 0);
+__decorate([
+    r$3()
+], ConfigDialog.prototype, "envLungroomTempSensors", void 0);
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "envHumidifierControlEnabled", void 0);
@@ -22144,6 +22210,7 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         heading="Events Logbook"
         subtitle="Recent events and history"
         .iconPath=${mdiFormatListBulleted}
+        .containerStyle=${'height: 85vh'}
         @close=${this._close}
       >
         <gs-help-tooltip
@@ -37733,6 +37800,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 sensorCoordinates: detail.sensorCoordinates,
                 irrigationTanks: detail.irrigationTanks,
                 cameraEntities: detail.cameraEntities,
+                lungroomTempSensors: detail.lungroomTempSensors,
                 substrateTemperatureSensors: detail.substrateTemperatureSensors,
                 phSensors: detail.phSensors,
                 feedEcSensors: detail.feedEcSensors,

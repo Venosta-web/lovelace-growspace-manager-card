@@ -135,6 +135,7 @@ export class ConfigDialog extends LitElement {
   @state() private envVisionMidHours = 6;
   @state() private envVisionLateOffset = 60;
   @state() private envVisionCameraEntities: string[] = [];
+  @state() private envLungroomTempSensors: string[] = [];
 
   // Humidifier Control
   @state() private envHumidifierControlEnabled = false;
@@ -638,6 +639,25 @@ export class ConfigDialog extends LitElement {
         }
       }
     `,
+    css`
+      .md3-input-group {
+        border-radius: 8px 8px 2px 2px;
+      }
+      .md3-label {
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-size: 0.7rem;
+      }
+      .cfg-context-select {
+        border-radius: 8px 8px 2px 2px;
+      }
+      .cfg-context-select option,
+      .md3-input option,
+      select option {
+        background: var(--card-background-color, #1e2127);
+        color: var(--primary-text-color, #fff);
+      }
+    `,
   ];
 
   protected willUpdate(changedProperties: Map<string, unknown>) {
@@ -697,6 +717,7 @@ export class ConfigDialog extends LitElement {
       this.envSensorCoordinates = environmentData.sensorCoordinates || {};
       this.envIrrigationTanks = environmentData.irrigationTanks || [];
       this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
+      this.envLungroomTempSensors = environmentData.lungroomTempSensors || [];
       this.envSubstrateTemperatureSensors = environmentData.substrateTemperatureSensors || [];
       this.envPhSensors = environmentData.phSensors || [];
       this.envFeedEcSensors = environmentData.feedEcSensors || [];
@@ -773,6 +794,7 @@ export class ConfigDialog extends LitElement {
         sensorCoordinates: this.envSensorCoordinates,
         irrigationTanks: this.envIrrigationTanks,
         cameraEntities: this.envVisionCameraEntities,
+        lungroomTempSensors: this.envLungroomTempSensors,
         substrateTemperatureSensors: this.envSubstrateTemperatureSensors,
         phSensors: this.envPhSensors,
         feedEcSensors: this.envFeedEcSensors,
@@ -818,6 +840,13 @@ export class ConfigDialog extends LitElement {
       bubbles: true,
       composed: true,
     }));
+  }
+
+  private _submitGrowspaceAndEnv() {
+    this._submitEditGrowspace();
+    if (this.envTemperatureSensors.length > 0 && this.envHumiditySensors.length > 0) {
+      this._submitEnvironment();
+    }
   }
 
   private _submitDeleteGrowspace() {
@@ -894,6 +923,7 @@ export class ConfigDialog extends LitElement {
     this._isAddingGrowspace = false;
     this._showDeleteConfirm = false;
     this._populateEditFields(growspaceId);
+    this._handleEnvGrowspaceChange({ target: { value: growspaceId } } as any);
   }
 
   private _startAddGrowspace() {
@@ -1182,6 +1212,7 @@ export class ConfigDialog extends LitElement {
       this.envStressThreshold = 0.8;
       this.envMoldThreshold = 0.8;
       this.envVisionCameraEntities = attrs.cameraEntities ?? [];
+      this.envLungroomTempSensors = attrs.lungroomTempSensors || [];
       if (attrs.visionCheckupConfig) {
         this.envVisionEnabled = attrs.visionCheckupConfig.enabled;
         this.envVisionEarlyOffset = attrs.visionCheckupConfig.early_check_offset_minutes;
@@ -1230,6 +1261,7 @@ export class ConfigDialog extends LitElement {
       this.envVisionMidHours = 6;
       this.envVisionLateOffset = 60;
       this.envVisionCameraEntities = [];
+      this.envLungroomTempSensors = [];
       this.envSubstrateTemperatureSensors = [];
       this.envPhSensors = [];
       this.envFeedEcSensors = [];
@@ -1372,6 +1404,8 @@ export class ConfigDialog extends LitElement {
             `)}
           </select>
         </div>
+        ${this._renderMultiEntitySelect('Lung Room Temp Sensors', this.envLungroomTempSensors, ['sensor','input_number'], 'temperature', (v) => (this.envLungroomTempSensors = v))}
+        ${this._renderMultiEntitySelect('Area Camera', this.envVisionCameraEntities, ['camera'], null, (v) => (this.envVisionCameraEntities = v))}
       </div>
     `;
   }
@@ -1995,7 +2029,7 @@ export class ConfigDialog extends LitElement {
               <button class="md3-button tonal" @click=${this._generateGrowReport} ?disabled=${!this.editSelectedId}>
                 Grow Report
               </button>
-              <button class="md3-button primary" @click=${this._submitEditGrowspace} ?disabled=${!this.editSelectedId}>
+              <button class="md3-button primary" @click=${this._submitGrowspaceAndEnv} ?disabled=${!this.editSelectedId}>
                 Save Changes
               </button>
             ` : nothing}

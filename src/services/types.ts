@@ -237,6 +237,7 @@ export interface SerializedEnvironmentAttributes {
   electricity_cost_per_kwh?: number | null;
   substrate_temperature_sensors?: string[];
   camera_entities?: string[];
+  lung_room_temp_sensors?: string[];
   power_sensors?: string[];
   energy_sensors?: string[];
 
@@ -339,6 +340,7 @@ export interface EnvironmentAttributes {
   electricityCostPerKwh?: number | null;
   substrateTemperatureSensors?: string[];
   cameraEntities?: string[];
+  lungroomTempSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
@@ -381,6 +383,7 @@ export interface EnvironmentConfig {
   sensor_groups?: SensorGroup[];
   substrate_temperature_sensors?: string[];
   camera_entities?: string[];
+  lung_room_temp_sensors?: string[];
   ph_sensors?: string[];
   feed_ec_sensors?: string[];
   substrate_ec_sensors?: string[];

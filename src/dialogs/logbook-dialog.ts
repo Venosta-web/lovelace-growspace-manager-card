@@ -157,6 +157,7 @@ export class LogbookDialog extends LitElement {
         heading="Events Logbook"
         subtitle="Recent events and history"
         .iconPath=${mdiFormatListBulleted}
+        .containerStyle=${'height: 85vh'}
         @close=${this._close}
       >
         <gs-help-tooltip

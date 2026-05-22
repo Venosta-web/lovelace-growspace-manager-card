@@ -29,6 +29,10 @@ export class GrowspaceLogbook extends LitElement {
   @state() private _highlightedTimestamp: number | null = null;
 
   private _containerRef: Ref<HTMLDivElement> = createRef();
+  private _filterBarRef: Ref<HTMLDivElement> = createRef();
+  private _hostRO: ResizeObserver | null = null;
+
+  @state() private _containerHeight = 0;
 
   /**
    * Normalize string for filtering (moved to class method for performance)
@@ -219,6 +223,31 @@ export class GrowspaceLogbook extends LitElement {
     return 'var(--primary-text-color)';
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this._hostRO = new ResizeObserver(() => this._updateContainerHeight());
+    this._hostRO.observe(this);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._hostRO?.disconnect();
+    this._hostRO = null;
+  }
+
+  private _updateContainerHeight() {
+    const filterBar = this._filterBarRef.value;
+    const filterBarHeight = filterBar ? filterBar.getBoundingClientRect().height : 0;
+    const hostHeight = this.getBoundingClientRect().height;
+    if (hostHeight > 0) {
+      this._containerHeight = hostHeight - filterBarHeight;
+    }
+  }
+
+  protected firstUpdated() {
+    requestAnimationFrame(() => this._updateContainerHeight());
+  }
+
   protected willUpdate(changedProps: Map<PropertyKey, unknown>) {
     if (changedProps.has('hass') && !this.hass) {
       console.warn('GrowspaceLogbook: No HASS context available');
@@ -367,7 +396,7 @@ export class GrowspaceLogbook extends LitElement {
     ];
 
     return html`
-      <div class="filter-bar">
+      <div class="filter-bar" ${ref(this._filterBarRef)}>
         ${filters.map(
       (filter) => html`
             <div
@@ -380,7 +409,7 @@ export class GrowspaceLogbook extends LitElement {
     )}
       </div>
 
-      <div class="log-container" ${ref(this._containerRef)}>
+      <div class="log-container" ${ref(this._containerRef)} style=${this._containerHeight > 0 ? `height: ${this._containerHeight}px` : ''}>
         ${sortedEvents.length > 0
         ? html`
               ${virtualize({

@@ -707,6 +707,7 @@ export class GrowspaceDialogHost extends LitElement {
         sensorCoordinates: detail.sensorCoordinates,
         irrigationTanks: detail.irrigationTanks,
         cameraEntities: detail.cameraEntities,
+        lungroomTempSensors: detail.lungroomTempSensors,
         substrateTemperatureSensors: detail.substrateTemperatureSensors,
         phSensors: detail.phSensors,
         feedEcSensors: detail.feedEcSensors,
