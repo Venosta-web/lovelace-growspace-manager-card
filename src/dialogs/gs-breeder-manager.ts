@@ -1,10 +1,9 @@
-import { LitElement, html, css, nothing, TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, PropertyValues, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
   mdiAccountGroup,
   mdiArrowLeft,
   mdiCheck,
-  mdiClose,
   mdiCloudUpload,
   mdiDelete,
   mdiImage,
@@ -13,6 +12,7 @@ import {
 import { StrainEntry } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
+import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('gs-breeder-manager')
@@ -28,12 +28,6 @@ export class GsBreederManager extends LitElement {
     css`
       :host {
         --accent-green: #4caf50;
-      }
-
-      .glass-dialog-container {
-        max-width: 98vw;
-        height: auto;
-        max-height: 90vh;
       }
 
       .sd-content {
@@ -169,65 +163,46 @@ export class GsBreederManager extends LitElement {
     `,
   ];
 
+  protected willUpdate(changed: PropertyValues<this>): void {
+    if (changed.has('open') && !this.open) {
+      this._editorState = null;
+    }
+  }
+
+  private _close(): void {
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
+
   render() {
     if (!this.open) return nothing;
 
-    const close = () => {
-      this._editorState = null;
-      this.dispatchEvent(new CustomEvent('closed'));
-    };
-
     return html`
-      <ha-dialog
-        open
-        @closed=${close}
-        hideActions
-        without-header
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${true}
+        .heading=${'Breeder Manager'}
+        .iconPath=${mdiAccountGroup}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiAccountGroup}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Breeder Manager</h2>
-                <gs-help-tooltip
-                  content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
-                  placement="bottom"
-                  label="Breeders"
-                ></gs-help-tooltip>
-              </div>
-            </div>
-            <button
-              class="md3-button text close"
-              @click=${close}
-              style="min-width:auto; padding:8px; margin-left: auto;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
+        <slot name="header-extra" slot="header-extra">
+          <gs-help-tooltip
+            content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
+            placement="bottom"
+            label="Breeders"
+          ></gs-help-tooltip>
+        </slot>
 
-          <div class="sd-content">
-            ${this._editorState ? this._renderEditor() : this._renderList()}
-          </div>
-
-          ${!this._editorState ? html`
-            <div class="sd-footer">
-              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
-                Breeders appear automatically when strains with breeder info are saved.
-              </span>
-            </div>
-          ` : nothing}
+        <div class="sd-content">
+          ${this._editorState ? this._renderEditor() : this._renderList()}
         </div>
-      </ha-dialog>
+
+        ${!this._editorState ? html`
+          <div class="sd-footer">
+            <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px; flex:1;">
+              Breeders appear automatically when strains with breeder info are saved.
+            </span>
+            <button class="md3-button tonal" @click=${this._close}>Close</button>
+          </div>
+        ` : nothing}
+      </gs-dialog>
 
       ${this._pendingDelete ? this._renderDeleteConfirmation() : nothing}
     `;

@@ -1227,7 +1227,7 @@ export class StrainLibraryDialog extends LitElement {
         @save-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }))}
         @update-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }))}
         @delete-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }))}
-        @closed=${() => { this._breederDialogOpen = false; }}
+        @close=${() => { this._breederDialogOpen = false; }}
       ></gs-breeder-manager>
     `;
   }

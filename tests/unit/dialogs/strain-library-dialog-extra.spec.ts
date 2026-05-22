@@ -53,12 +53,11 @@ describe('StrainLibraryDialog Extra Coverage', () => {
 
             expect((element as any)._breederDialogOpen).toBe(true);
 
-            const dialog = getBreederManagerSR()?.querySelector('ha-dialog');
+            const dialog = getBreederManagerSR()?.querySelector('gs-dialog');
             expect(dialog).toBeTruthy();
-            expect(dialog?.textContent).toContain('Breeder Manager');
 
-            // Close it via gs-breeder-manager close button
-            const closeBtn = getBreederManagerSR()?.querySelector('.dialog-header button.close');
+            // Close it via the footer Close button
+            const closeBtn = getBreederManagerSR()?.querySelector('button.md3-button.tonal');
             (closeBtn as HTMLElement)?.click();
             await element.updateComplete;
             expect((element as any)._breederDialogOpen).toBe(false);
