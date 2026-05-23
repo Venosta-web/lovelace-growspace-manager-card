@@ -5285,6 +5285,12 @@ class GrowspaceAdapter {
             irrigationTimes: irrigationConfigRaw.irrigation_times,
             drainTimes: irrigationConfigRaw.drain_times,
             vegDayHours: irrigationConfigRaw.veg_day_hours,
+            soilTriggerPercent: irrigationConfigRaw.soil_trigger_percent,
+            dailyVolumeCapLiters: irrigationConfigRaw.daily_volume_cap_liters,
+            maxCyclesPerDay: irrigationConfigRaw.max_cycles_per_day,
+            skipDuringDark: irrigationConfigRaw.skip_during_dark,
+            pauseOnLowTank: irrigationConfigRaw.pause_on_low_tank,
+            logToLogbook: irrigationConfigRaw.log_to_logbook,
         };
         const irrigationStrategy = wsData.irrigation_strategy
             ? {
@@ -5356,6 +5362,11 @@ class GrowspaceAdapter {
             drainConfig,
             energyTracking,
             waterUsage,
+            // Irrigation cycle telemetry
+            lastCycleTimestamp: wsData.last_cycle_timestamp ?? null,
+            nextScheduledCycle: wsData.next_scheduled_cycle ?? null,
+            cyclesToday: wsData.cycles_today ?? 0,
+            volumeDispensedToday: wsData.volume_dispensed_today ?? 0,
         });
     }
     /** @deprecated */
@@ -5426,6 +5437,7 @@ const SERVICES = {
     UPDATE_HARVEST_METRICS: 'update_harvest_metrics',
     CONFIGURE_DRAIN_MONITORING: 'configure_drain_monitoring',
     LOG_DRAIN_READING: 'log_drain_reading',
+    RUN_IRRIGATION_CYCLE: 'run_irrigation_cycle',
     BATCH_ACTION: 'batch_action',
     LOG_TRAINING_EVENT: 'log_training_event',
     EXPORT_GROW_REPORT: 'export_grow_report',
@@ -6605,6 +6617,19 @@ class IrrigationAPI extends BaseAPI {
             throw err;
         }
     }
+    async runIrrigationCycle(params) {
+        try {
+            const payload = { growspace_id: params.growspaceId };
+            if (params.duration !== undefined) {
+                payload.duration = params.duration;
+            }
+            await this.callService(DOMAIN$1, SERVICES.RUN_IRRIGATION_CYCLE, payload);
+        }
+        catch (err) {
+            console.error('[IrrigationAPI:runIrrigationCycle] Error:', err);
+            throw err;
+        }
+    }
     async addIrrigationTime(params) {
         try {
             const payload = {
@@ -6673,13 +6698,26 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     _serializeSettings(params) {
-        return {
+        const result = {
             growspace_id: params.growspaceId,
             irrigation_pump_entity: params.irrigationPumpEntity,
             drain_pump_entity: params.drainPumpEntity,
             irrigation_duration: params.irrigationDuration,
             drain_duration: params.drainDuration,
         };
+        if (params.soilTriggerPercent !== undefined)
+            result.soil_trigger_percent = params.soilTriggerPercent;
+        if (params.dailyVolumeCapLiters !== undefined)
+            result.daily_volume_cap_liters = params.dailyVolumeCapLiters;
+        if (params.maxCyclesPerDay !== undefined)
+            result.max_cycles_per_day = params.maxCyclesPerDay;
+        if (params.skipDuringDark !== undefined)
+            result.skip_during_dark = params.skipDuringDark;
+        if (params.pauseOnLowTank !== undefined)
+            result.pause_on_low_tank = params.pauseOnLowTank;
+        if (params.logToLogbook !== undefined)
+            result.log_to_logbook = params.logToLogbook;
+        return result;
     }
     _serializeStrategy(strategy) {
         const result = {};
@@ -6741,6 +6779,9 @@ class IrrigationAPI extends BaseAPI {
         if (params.drainVolumeMl !== undefined)
             payload.drain_volume_ml = params.drainVolumeMl;
         await this.callService(DOMAIN$1, SERVICES.LOG_DRAIN_READING, payload);
+    }
+    async getIrrigationAnalytics(growspaceId) {
+        return this.sendWebSocket(`${DOMAIN$1}/irrigation_analytics`, { growspace_id: growspaceId });
     }
 }
 
@@ -7158,6 +7199,8 @@ class DataService {
         this.configureDrainMonitoring = (...args) => this._irrigationAPI.configureDrainMonitoring(...args);
         this.logDrainReading = (...args) => this._irrigationAPI.logDrainReading(...args);
         this.waterGrowspace = (growspaceId, amount, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
+        this.runIrrigationCycle = (params) => this._irrigationAPI.runIrrigationCycle(params);
+        this.getIrrigationAnalytics = (growspaceId) => this._irrigationAPI.getIrrigationAnalytics(growspaceId);
         // ── AI ───────────────────────────────────────────────────────────────────
         this.askGrowAdvice = (growspaceId, userQuery) => this._aiAPI.askGrowAdvice(growspaceId, userQuery);
         this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
@@ -9383,17 +9426,17 @@ var hasRequiredLib;
 function requireLib () {
 	if (hasRequiredLib) return lib;
 	hasRequiredLib = 1;
-	(function (exports$1) {
-		Object.defineProperty(exports$1, "__esModule", { value: true });
-		exports$1.withStores = exports$1.useStores = exports$1.MultiStoreController = exports$1.StoreController = void 0;
+	(function (exports) {
+		Object.defineProperty(exports, "__esModule", { value: true });
+		exports.withStores = exports.useStores = exports.MultiStoreController = exports.StoreController = void 0;
 		var StoreController_1 = requireStoreController();
-		Object.defineProperty(exports$1, "StoreController", { enumerable: true, get: function () { return StoreController_1.StoreController; } });
+		Object.defineProperty(exports, "StoreController", { enumerable: true, get: function () { return StoreController_1.StoreController; } });
 		var MultiStoreController_1 = requireMultiStoreController();
-		Object.defineProperty(exports$1, "MultiStoreController", { enumerable: true, get: function () { return MultiStoreController_1.MultiStoreController; } });
+		Object.defineProperty(exports, "MultiStoreController", { enumerable: true, get: function () { return MultiStoreController_1.MultiStoreController; } });
 		var useStores_1 = requireUseStores();
-		Object.defineProperty(exports$1, "useStores", { enumerable: true, get: function () { return useStores_1.useStores; } });
+		Object.defineProperty(exports, "useStores", { enumerable: true, get: function () { return useStores_1.useStores; } });
 		var withStores_1 = requireWithStores();
-		Object.defineProperty(exports$1, "withStores", { enumerable: true, get: function () { return withStores_1.withStores; } }); 
+		Object.defineProperty(exports, "withStores", { enumerable: true, get: function () { return withStores_1.withStores; } }); 
 	} (lib));
 	return lib;
 }
@@ -18959,14 +19002,31 @@ async function removeDrainTime(ctx, params) {
     }
 }
 async function setIrrigationSettings(ctx, params) {
-    const { growspaceId, irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration } = params;
+    const { growspaceId, irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration, soilTriggerPercent, dailyVolumeCapLiters, maxCyclesPerDay, skipDuringDark, pauseOnLowTank, logToLogbook, } = params;
     const prev = getIrrigationConfig(ctx, growspaceId);
-    const patch = { irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration };
+    const patch = {
+        irrigationPumpEntity,
+        drainPumpEntity,
+        irrigationDuration,
+        drainDuration,
+        soilTriggerPercent,
+        dailyVolumeCapLiters,
+        maxCyclesPerDay,
+        skipDuringDark,
+        pauseOnLowTank,
+        logToLogbook,
+    };
     const actionId = await ctx.optimisticManager.applyOptimisticUpdate('update', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, patch), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, {
         irrigationPumpEntity: prev.irrigationPumpEntity,
         drainPumpEntity: prev.drainPumpEntity,
         irrigationDuration: prev.irrigationDuration,
         drainDuration: prev.drainDuration,
+        soilTriggerPercent: prev.soilTriggerPercent,
+        dailyVolumeCapLiters: prev.dailyVolumeCapLiters,
+        maxCyclesPerDay: prev.maxCyclesPerDay,
+        skipDuringDark: prev.skipDuringDark,
+        pauseOnLowTank: prev.pauseOnLowTank,
+        logToLogbook: prev.logToLogbook,
     }));
     try {
         await ctx.dataService.setIrrigationSettings(params);
@@ -18978,6 +19038,15 @@ async function setIrrigationSettings(ctx, params) {
     catch (e) {
         ctx.optimisticManager.rollbackUpdate(actionId);
         ctx.ui.showToast('Failed to save irrigation settings', 'error');
+        throw e;
+    }
+}
+async function runIrrigationCycle(ctx, params) {
+    try {
+        await ctx.dataService.runIrrigationCycle(params);
+    }
+    catch (e) {
+        ctx.ui.showToast('Failed to start irrigation cycle', 'error');
         throw e;
     }
 }
@@ -19007,6 +19076,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainSaving = false;
         this._drainLogging = false;
         this._strategy = {};
+        // Cycle parameters & behaviour toggles
+        this._soilTriggerPercent = null;
+        this._dailyVolumeCapLiters = null;
+        this._maxCyclesPerDay = null;
+        this._skipDuringDark = false;
+        this._pauseOnLowTank = true;
+        this._logToLogbook = true;
+        this._runNowSaving = false;
+        this._stageAggregates = null;
     }
     // ─── Visibility ───────────────────────────────────────────────────────────
     get _visibleTabs() {
@@ -19063,6 +19141,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
             this._initializeState();
+            this._fetchStageAnalytics();
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
@@ -19079,6 +19158,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainPumpEntity = config.drainPumpEntity || '';
         this._irrigationDuration = config.irrigationDuration || 60;
         this._drainDuration = config.drainDuration || 60;
+        this._soilTriggerPercent = config.soilTriggerPercent ?? null;
+        this._dailyVolumeCapLiters = config.dailyVolumeCapLiters ?? null;
+        this._maxCyclesPerDay = config.maxCyclesPerDay ?? null;
+        this._skipDuringDark = config.skipDuringDark ?? false;
+        this._pauseOnLowTank = config.pauseOnLowTank ?? true;
+        this._logToLogbook = config.logToLogbook ?? true;
         const strat = this.device.irrigationStrategy;
         this._strategy = {
             enabled: strat?.enabled || false,
@@ -19113,7 +19198,30 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             drainPumpEntity: this._drainPumpEntity,
             irrigationDuration: this._irrigationDuration,
             drainDuration: this._drainDuration,
+            soilTriggerPercent: this._soilTriggerPercent,
+            dailyVolumeCapLiters: this._dailyVolumeCapLiters,
+            maxCyclesPerDay: this._maxCyclesPerDay,
+            skipDuringDark: this._skipDuringDark,
+            pauseOnLowTank: this._pauseOnLowTank,
+            logToLogbook: this._logToLogbook,
         });
+    }
+    async _fetchStageAnalytics() {
+        if (!this.device?.deviceId || !this._dataService)
+            return;
+        const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
+        this._stageAggregates = result?.stage_aggregates ?? null;
+    }
+    async _handleRunNow() {
+        if (!this.device?.deviceId || !this.store)
+            return;
+        this._runNowSaving = true;
+        try {
+            await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
+        }
+        finally {
+            this._runNowSaving = false;
+        }
     }
     async _saveStrategy() {
         if (!this.device?.deviceId || !this._dataService)
@@ -20168,49 +20276,106 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       </div>
 
-      <!-- Cycle Parameters (stub) -->
-      <!-- TODO: implement Cycle Parameters when backend adds soilTriggerPercent, dailyVolumeCap, maxCyclesPerDay -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <h3 style="margin:0;">Cycle Parameters</h3>
-          <span class="stub-badge">Coming soon</span>
+          <gs-help-tooltip message="Optional safety limits. Leave blank to disable."></gs-help-tooltip>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
           <div class="md3-input-group">
             <label class="md3-label">Soil Trigger (%)</label>
-            <input class="md3-input" type="number" value="38" disabled />
+            <input
+              class="md3-input"
+              type="number"
+              min="0" max="100" step="1"
+              .value=${this._soilTriggerPercent != null ? String(this._soilTriggerPercent) : ''}
+              placeholder="Off"
+              @change=${(e) => {
+            const v = e.target.value;
+            this._soilTriggerPercent = v ? parseFloat(v) : null;
+        }}
+            />
           </div>
           <div class="md3-input-group">
             <label class="md3-label">Daily Volume Cap (L)</label>
-            <input class="md3-input" type="number" value="6.0" disabled />
+            <input
+              class="md3-input"
+              type="number"
+              min="0" step="0.1"
+              .value=${this._dailyVolumeCapLiters != null ? String(this._dailyVolumeCapLiters) : ''}
+              placeholder="Off"
+              @change=${(e) => {
+            const v = e.target.value;
+            this._dailyVolumeCapLiters = v ? parseFloat(v) : null;
+        }}
+            />
           </div>
           <div class="md3-input-group">
             <label class="md3-label">Max Cycles / Day</label>
-            <input class="md3-input" type="number" value="8" disabled />
+            <input
+              class="md3-input"
+              type="number"
+              min="0" step="1"
+              .value=${this._maxCyclesPerDay != null ? String(this._maxCyclesPerDay) : ''}
+              placeholder="Off"
+              @change=${(e) => {
+            const v = e.target.value;
+            this._maxCyclesPerDay = v ? parseInt(v, 10) : null;
+        }}
+            />
           </div>
         </div>
       </div>
 
-      <!-- Behaviour toggles (stub) -->
-      <!-- TODO: implement Behaviour toggles when backend supports skipDarkPeriod, pauseOnTankLow, logToLogbook -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <h3 style="margin:0;">Behaviour</h3>
-          <span class="stub-badge">Coming soon</span>
-        </div>
+      <div class="detail-card">
+        <h3 style="margin:0 0 14px;">Behaviour</h3>
         ${([
-            { label: 'Skip During Dark Period', desc: 'No cycles between lights-off and lights-on' },
-            { label: 'Pause on Tank Low', desc: 'Halt cycles when any tank is below warning level' },
-            { label: 'Log to Logbook', desc: 'Record start, duration, and moisture delta per cycle' },
+            {
+                label: 'Skip During Dark Period',
+                desc: 'No cycles between lights-off and lights-on',
+                get: () => this._skipDuringDark,
+                set: (v) => { this._skipDuringDark = v; },
+            },
+            {
+                label: 'Pause on Tank Low',
+                desc: 'Halt cycles when any tank is below warning level',
+                get: () => this._pauseOnLowTank,
+                set: (v) => { this._pauseOnLowTank = v; },
+            },
+            {
+                label: 'Log to Logbook',
+                desc: 'Record start, duration, and moisture delta per cycle',
+                get: () => this._logToLogbook,
+                set: (v) => { this._logToLogbook = v; },
+            },
         ]).map((row) => x `
           <div class="stub-row" style="margin-bottom:8px;">
             <div>
               <div class="stub-row-label">${row.label}</div>
               <div class="stub-row-desc">${row.desc}</div>
             </div>
-            <md3-switch .checked=${false} disabled></md3-switch>
+            <md3-switch
+              .checked=${row.get()}
+              @change=${(e) => { row.set(e.target.checked); }}
+            ></md3-switch>
           </div>
         `)}
+      </div>
+
+      <div class="detail-card">
+        <h3 style="margin:0 0 14px;">Manual Override</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button
+            class="action-btn${this._runNowSaving ? ' saving' : ''}"
+            ?disabled=${this._runNowSaving}
+            @click=${this._handleRunNow}
+          >
+            ${this._runNowSaving ? 'Starting…' : '▶ Run Now'}
+          </button>
+          <span style="font-size:12px;opacity:0.55;">
+            Triggers one irrigation cycle immediately, bypassing the schedule.
+          </span>
+        </div>
       </div>
     `;
     }
@@ -20336,7 +20501,27 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         ${sub ? x `<div style="font-size:0.75rem;opacity:0.5;">${sub}</div>` : E}
       </div>
     `;
+        const lastCycle = this.device?.lastCycleTimestamp
+            ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+            : null;
+        const nextCycle = this.device?.nextScheduledCycle
+            ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+            : null;
+        const cyclesToday = this.device?.cyclesToday ?? 0;
+        const volToday = this.device?.volumeDispensedToday ?? 0;
         return x `
+      ${hasPump ? x `
+        <div class="detail-card">
+          <h3 style="margin-top:0;margin-bottom:16px;">Cycle Telemetry</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0;">
+            ${kpiCard('Cycles today', String(cyclesToday), '', '#4fc3f7')}
+            ${kpiCard('Dispensed today', volToday > 0 ? volToday.toFixed(2) : '—', volToday > 0 ? 'L' : '', '#81c784')}
+            ${lastCycle ? kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)') : kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
+            ${nextCycle ? kpiCard('Next cycle', nextCycle, '', '#ce93d8') : kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
+          </div>
+        </div>
+      ` : E}
+
       ${hasPump ? x `
         <div class="detail-card">
           <h3 style="margin-top:0;margin-bottom:16px;">Today's Usage</h3>
@@ -20478,18 +20663,21 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       ` : E}
 
-      <!-- Per-Stage Summary (stub) -->
-      <!-- TODO: implement per-stage summary when backend exposes per-stage irrigation telemetry -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <h3 style="margin:0;">Per-Stage Summary</h3>
-          <span class="stub-badge">Coming soon</span>
+      ${this._stageAggregates && Object.keys(this._stageAggregates).length > 0 ? x `
+        <div class="detail-card">
+          <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${Object.entries(this._stageAggregates)
+            .sort(([, a], [, b]) => b - a)
+            .map(([stage, liters]) => x `
+                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;">
+                  <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
+                  <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
+                </div>
+              `)}
+          </div>
         </div>
-        <p style="font-size:0.85rem;opacity:0.6;margin:0;">
-          Average cycles/day, L/day, and dryback per growth stage will appear here
-          once per-stage telemetry is available from the backend.
-        </p>
-      </div>
+      ` : E}
 
       ${this._drainPumpEntity ? x `
         <div class="detail-card">
@@ -21101,6 +21289,23 @@ IrrigationDialog.styles = [
         margin-left: 8px;
       }
 
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(79,195,247,0.4);
+        background: rgba(79,195,247,0.1);
+        color: #4fc3f7;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .action-btn:hover:not([disabled]) { background: rgba(79,195,247,0.2); }
+      .action-btn[disabled], .action-btn.saving { opacity: 0.5; cursor: default; }
+
       /* ── Tank row (bar-style) ── */
       .tank-row {
         display: flex;
@@ -21513,6 +21718,30 @@ __decorate([
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_strategy", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_soilTriggerPercent", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_dailyVolumeCapLiters", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_maxCyclesPerDay", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_skipDuringDark", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_pauseOnLowTank", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_logToLogbook", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_runNowSaving", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_stageAggregates", void 0);
 IrrigationDialog = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);

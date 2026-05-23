@@ -6,7 +6,7 @@ dotenv.config({ path: path.join(__dirname, '.env.test') });
 
 export default defineConfig({
   testDir: './specs',
-  timeout: 30000,
+  timeout: 7500,
   retries: 2,
   workers: 1, // Sequential execution for config entry isolation
 

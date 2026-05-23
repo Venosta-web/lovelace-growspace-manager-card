@@ -70,3 +70,4 @@ playwright-report-mock/index.html
 test-results-mock/.last-run.json
 coverage.txt
 test_run.log
+.sandcastle/*

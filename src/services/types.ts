@@ -292,6 +292,10 @@ export interface GrowspaceAPIResponse
   drain_config?: SerializedDrainConfig | null;
   energy_tracking?: SerializedEnergyTracking | null;
   water_usage?: SerializedWaterUsage | null;
+  cycles_today?: number | null;
+  volume_dispensed_today?: number | null;
+  next_scheduled_cycle?: string | null;
+  last_cycle_timestamp?: string | null;
 
   _ts?: number; // Backend serialization timestamp for efficient equality checks
 }

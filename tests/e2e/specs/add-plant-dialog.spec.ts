@@ -79,14 +79,14 @@ test.describe('Add Plant Dialog', () => {
     await dialog.waitForClosed();
 
     // Anchor + new plant = 2 cards with TEST_STRAIN
-    const plantCards = growspaceCard.card.locator('growspace-plant-card').filter({ hasText: TEST_STRAIN });
+    const plantCards = growspaceCard.card.locator('plant-card-container').filter({ hasText: TEST_STRAIN });
     await expect(plantCards).toHaveCount(2, { timeout: 8000 });
 
     // Reload — verify the backend persisted the plant
     await page.reload({ waitUntil: 'domcontentloaded' });
     await growspaceCard.waitForCardReady();
     await expect(
-      growspaceCard.card.locator('growspace-plant-card').filter({ hasText: TEST_STRAIN })
+      growspaceCard.card.locator('plant-card-container').filter({ hasText: TEST_STRAIN })
     ).toHaveCount(2);
   });
 
@@ -108,7 +108,7 @@ test.describe('Add Plant Dialog', () => {
 
   // ── 3. Cancel — dialog closes, no plant added ─────────────────────────────────
   test('Cancel on step 1 closes the dialog without adding a plant', async ({ page }) => {
-    const allCards = growspaceCard.card.locator('growspace-plant-card');
+    const allCards = growspaceCard.card.locator('plant-card-container');
     const plantCountBefore = await allCards.count();
 
     const dialog = await openDialog(page);
@@ -144,14 +144,14 @@ test.describe('Add Plant Dialog', () => {
 
     // Anchor + new plant = 2 cards with TEST_STRAIN
     await expect(
-      growspaceCard.card.locator('growspace-plant-card').filter({ hasText: TEST_STRAIN })
+      growspaceCard.card.locator('plant-card-container').filter({ hasText: TEST_STRAIN })
     ).toHaveCount(2, { timeout: 8000 });
 
     // Reload — verify persistence
     await page.reload({ waitUntil: 'domcontentloaded' });
     await growspaceCard.waitForCardReady();
     await expect(
-      growspaceCard.card.locator('growspace-plant-card').filter({ hasText: TEST_STRAIN })
+      growspaceCard.card.locator('plant-card-container').filter({ hasText: TEST_STRAIN })
     ).toHaveCount(2);
   });
 });
