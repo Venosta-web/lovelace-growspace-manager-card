@@ -237,6 +237,40 @@ export class IrrigationDialog {
       .locator('.irrigation-time-bar')
       .locator(`.timeline-event[title^="${time}"]`);
   }
+
+  // ── VWC / Steering tab ───────────────────────────────────────────────────────
+
+  async clickTab(tabId: string) {
+    await this.dialog.locator(`.v1-nav-item[data-tab="${tabId}"]`).click();
+  }
+
+  async toggleVwcSwitch() {
+    await this.dialog.locator('md3-switch').click();
+  }
+
+  async isVwcEnabled(): Promise<boolean> {
+    return this.dialog.locator('md3-switch').isChecked();
+  }
+
+  async fillNumberField(label: string, value: number) {
+    await this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input').fill(String(value));
+  }
+
+  async fillTimeField(label: string, value: string) {
+    await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
+  }
+
+  async saveAll() {
+    await this.dialog.locator('button.md3-button.primary.btn-save-all').click();
+  }
+
+  schedulesTabHasSteeringSchedule(): Locator {
+    return this.dialog.locator('.detail-card.crop-steering-schedule');
+  }
+
+  schedulesTabHasSteeringNudge(): Locator {
+    return this.dialog.locator('.nudge-card', { hasText: /Enable Crop Steering/i });
+  }
 }
 
 export class NutrientDialog {
