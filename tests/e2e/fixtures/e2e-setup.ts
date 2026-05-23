@@ -61,6 +61,13 @@ async function getStateAttributes(entityId: string): Promise<Record<string, unkn
   return data.attributes;
 }
 
+async function getStateValue(entityId: string): Promise<string | null> {
+  const res = await fetch(`${BASE_URL}/api/states/${entityId}`, { headers });
+  if (!res.ok) return null;
+  const data = await res.json() as { state: string };
+  return data.state;
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
 }
@@ -198,22 +205,22 @@ async function ensureGrowspace(spec: GrowspaceSpec): Promise<string> {
 }
 
 async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promise<void> {
-  console.log(`  placing anchor plant (${spec.plantStageField})…`);
-  try {
-    await callService('growspace_manager', 'add_plant', {
-      growspace_id: growspaceId,
-      strain: 'E2E Anchor',
-      row: 1,
-      col: 1,
-      [spec.plantStageField]: stageDate(spec.stageDaysAgo),
-    });
-  } catch (err: any) {
-    if (err.message.includes('400')) {
-      console.log(`    position occupied — anchor plant already present`);
-    } else {
-      throw err;
-    }
+  // add_plant silently relocates to the next free position when row/col is occupied,
+  // so a 400-based guard never fires. Check the plant count instead.
+  const plantCount = await getStateValue(`sensor.e2e_${spec.slug}_overview`);
+  if (plantCount !== null && parseInt(plantCount, 10) > 0) {
+    console.log(`    anchor plant already present — skipping`);
+    return;
   }
+
+  console.log(`  placing anchor plant (${spec.plantStageField})…`);
+  await callService('growspace_manager', 'add_plant', {
+    growspace_id: growspaceId,
+    strain: 'E2E Anchor',
+    row: 1,
+    col: 1,
+    [spec.plantStageField]: stageDate(spec.stageDaysAgo),
+  });
 }
 
 async function configureEnvironment(growspaceId: string, slug: string): Promise<void> {
