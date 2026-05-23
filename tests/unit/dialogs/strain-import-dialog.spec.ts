@@ -211,6 +211,23 @@ describe('StrainImportDialog', () => {
     expect(event.composed).toBe(true);
   });
 
+  it('dispatches close event when Cancel button is clicked', async () => {
+    element.open = true;
+    await element.updateComplete;
+
+    const closeSpy = vi.fn();
+    element.addEventListener('close', closeSpy);
+
+    const cancelBtn = element.shadowRoot?.querySelector('.sd-footer button.tonal');
+    expect(cancelBtn).toBeTruthy();
+    (cancelBtn as HTMLElement).click();
+
+    expect(closeSpy).toHaveBeenCalled();
+    const event = closeSpy.mock.calls[0][0];
+    expect(event.bubbles).toBe(true);
+    expect(event.composed).toBe(true);
+  });
+
   it('updates search query on input change', async () => {
     element.open = true;
     await element.updateComplete;
