@@ -59,6 +59,8 @@ const IrrigationStrategySchema = z.object({
   maintenance_dryback_percent: z.number(),
   shot_duration_seconds: z.number(),
   shot_interval_minutes: z.number(),
+  auto_light_tracking: z.boolean().default(false),
+  detected_lights_on_time: z.string().nullable().default(null),
 });
 
 export const GrowspaceAPIResponseSchema = z

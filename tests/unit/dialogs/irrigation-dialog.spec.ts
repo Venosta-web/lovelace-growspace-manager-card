@@ -1664,5 +1664,386 @@ describe('IrrigationDialog', () => {
             expect(events?.length).toBeLessThanOrEqual(12);
         });
     });
+
+    describe('Uncovered Lines Coverage', () => {
+        describe('_renderActiveTab default branch (line 1401)', () => {
+            it('should return nothing when _activeTab is set to an unknown value', () => {
+                // willUpdate resets an unknown _activeTab, so we call the method directly
+                // to exercise the default: return nothing branch
+                (element as any)._activeTab = 'nonexistent_tab_xyz';
+                const result = (element as any)._renderActiveTab('#2196F3');
+                // Lit's `nothing` is returned — just verify it's the sentinel (not a TemplateResult)
+                expect(result).not.toHaveProperty('strings');
+            });
+        });
+
+        describe('Crop steering schedule with no lightsOnTime (line 1467)', () => {
+            it('should show "No strategy configured" when lightsOnTime is cleared', async () => {
+                element.device = {
+                    ...mockDevice,
+                    irrigationStrategy: { enabled: true, lightsOnTime: '06:00:00', shotDurationSeconds: 15, shotIntervalMinutes: 30 } as any,
+                };
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                // Clear lightsOnTime after initialization to trigger the null-phases branch
+                (element as any)._strategy = { ...(element as any)._strategy, lightsOnTime: '' };
+                await element.updateComplete;
+
+                const csSection = element.shadowRoot?.querySelector('.crop-steering-schedule');
+                expect(csSection?.textContent).toContain('No strategy configured');
+
+                document.body.removeChild(element);
+            });
+        });
+
+        describe('Crop Steering link clicks (lines 1675, 1696)', () => {
+            it('should switch to steering tab when clicking the crop-steering banner link (strategy enabled)', async () => {
+                element.device = {
+                    ...mockDevice,
+                    irrigationStrategy: {
+                        enabled: true,
+                        lightsOnTime: '06:00:00',
+                        p0DurationMinutes: 60,
+                        p2StopBeforeLightsOffMinutes: 120,
+                        shotDurationSeconds: 15,
+                        shotIntervalMinutes: 30,
+                    } as any,
+                };
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const links = Array.from(element.shadowRoot?.querySelectorAll('a') ?? []);
+                const csLink = links.find((a) => a.textContent?.includes('Open Crop Steering'));
+                expect(csLink).toBeTruthy();
+                csLink?.click();
+                await element.updateComplete;
+
+                expect((element as any)._activeTab).toBe('steering');
+
+                document.body.removeChild(element);
+            });
+
+            it('should switch to steering tab when clicking the nudge banner link (strategy disabled)', async () => {
+                // mockDevice has strategy disabled — nudge banner renders on the schedules tab
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const links = Array.from(element.shadowRoot?.querySelectorAll('a') ?? []);
+                const nudgeLink = links.find((a) => a.textContent?.includes('Open Crop Steering'));
+                expect(nudgeLink).toBeTruthy();
+                nudgeLink?.click();
+                await element.updateComplete;
+
+                expect((element as any)._activeTab).toBe('steering');
+
+                document.body.removeChild(element);
+            });
+        });
+
+        describe('Time chip remove button and new-chip (lines 1816-1825)', () => {
+            beforeEach(async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+            });
+
+            it('should call _removeIrrigationTime when clicking chip-remove on an irrigation chip', async () => {
+                const irrigChips = element.shadowRoot?.querySelectorAll('.time-chip.irrig-chip');
+                const removeBtn = irrigChips?.[0]?.querySelector('button.chip-remove') as HTMLElement;
+                expect(removeBtn).toBeTruthy();
+
+                removeBtn.click();
+                await element.updateComplete;
+                await new Promise((r) => setTimeout(r, 0));
+
+                expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({ time: '08:00' }));
+            });
+
+            it('should call _removeDrainTime when clicking chip-remove on a drain chip', async () => {
+                const drainChips = element.shadowRoot?.querySelectorAll('.time-chip.drain-chip');
+                const removeBtn = drainChips?.[0]?.querySelector('button.chip-remove') as HTMLElement;
+                expect(removeBtn).toBeTruthy();
+
+                removeBtn.click();
+                await element.updateComplete;
+                await new Promise((r) => setTimeout(r, 0));
+
+                expect(mocks.removeDrainTime).toHaveBeenCalledWith(expect.objectContaining({ time: '08:30' }));
+            });
+
+            it('should open add-time dialog when clicking the new-chip button', async () => {
+                const newChipBtns = element.shadowRoot?.querySelectorAll('button.time-chip.new-chip');
+                expect(newChipBtns?.length).toBeGreaterThan(0);
+                (newChipBtns![0] as HTMLElement).click();
+                await element.updateComplete;
+
+                expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeTruthy();
+            });
+        });
+
+        describe('Halt on Runoff EC input (lines 2148-2149)', () => {
+            beforeEach(async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
+                (steeringTab as HTMLElement)?.click();
+                await element.updateComplete;
+            });
+
+            it('should update _haltOnRunoffEcThreshold when number input changes', async () => {
+                (element as any)._haltOnRunoffEcThreshold = 4.0;
+                await element.updateComplete;
+
+                const haltInput = element.shadowRoot?.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
+                expect(haltInput).toBeTruthy();
+
+                haltInput.dispatchEvent(new CustomEvent('change', { detail: '5.5' }));
+                await element.updateComplete;
+
+                expect((element as any)._haltOnRunoffEcThreshold).toBe(5.5);
+            });
+
+            it('should not update _haltOnRunoffEcThreshold when NaN value is provided', async () => {
+                (element as any)._haltOnRunoffEcThreshold = 4.0;
+                await element.updateComplete;
+
+                const haltInput = element.shadowRoot?.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
+                haltInput.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number' }));
+                await element.updateComplete;
+
+                expect((element as any)._haltOnRunoffEcThreshold).toBe(4.0);
+            });
+        });
+
+        describe('Config tab cycle parameter inputs (lines 2218-2247)', () => {
+            beforeEach(async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const configTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Configuration'));
+                (configTab as HTMLElement)?.click();
+                await element.updateComplete;
+            });
+
+            it('should update _soilTriggerPercent from the Soil Trigger input', async () => {
+                const soilInput = element.shadowRoot?.querySelector('input[min="0"][max="100"]') as HTMLInputElement;
+                expect(soilInput).toBeTruthy();
+
+                soilInput.value = '65';
+                soilInput.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._soilTriggerPercent).toBe(65);
+            });
+
+            it('should set _soilTriggerPercent to null when input is cleared', async () => {
+                (element as any)._soilTriggerPercent = 50;
+                await element.updateComplete;
+
+                const soilInput = element.shadowRoot?.querySelector('input[min="0"][max="100"]') as HTMLInputElement;
+                soilInput.value = '';
+                soilInput.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._soilTriggerPercent).toBeNull();
+            });
+
+            it('should update _dailyVolumeCapLiters from the Daily Volume Cap input', async () => {
+                const volInput = element.shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
+                expect(volInput).toBeTruthy();
+
+                volInput.value = '20.5';
+                volInput.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._dailyVolumeCapLiters).toBeCloseTo(20.5);
+            });
+
+            it('should set _dailyVolumeCapLiters to null when input is cleared', async () => {
+                (element as any)._dailyVolumeCapLiters = 10;
+                await element.updateComplete;
+
+                const volInput = element.shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
+                volInput.value = '';
+                volInput.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._dailyVolumeCapLiters).toBeNull();
+            });
+
+            it('should update _maxCyclesPerDay from the Max Cycles input', async () => {
+                // Max Cycles input: min="0" step="1" without max attribute
+                const allNumberInputs = Array.from(element.shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
+                const maxCyclesInput = allNumberInputs.find((i) => i.getAttribute('step') === '1' && !i.getAttribute('max'));
+                expect(maxCyclesInput).toBeTruthy();
+
+                maxCyclesInput!.value = '8';
+                maxCyclesInput!.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._maxCyclesPerDay).toBe(8);
+            });
+
+            it('should set _maxCyclesPerDay to null when input is cleared', async () => {
+                (element as any)._maxCyclesPerDay = 5;
+                await element.updateComplete;
+
+                const allNumberInputs = Array.from(element.shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
+                const maxCyclesInput = allNumberInputs.find((i) => i.getAttribute('step') === '1' && !i.getAttribute('max'));
+                maxCyclesInput!.value = '';
+                maxCyclesInput!.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._maxCyclesPerDay).toBeNull();
+            });
+        });
+
+        describe('Config tab behaviour toggles (lines 2261-2283)', () => {
+            beforeEach(async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const configTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Configuration'));
+                (configTab as HTMLElement)?.click();
+                await element.updateComplete;
+            });
+
+            it('should update _skipDuringDark when first behaviour switch fires change', async () => {
+                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+                const sw = switches?.[0] as any;
+                expect(sw).toBeTruthy();
+
+                sw.checked = true;
+                sw.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._skipDuringDark).toBe(true);
+            });
+
+            it('should update _pauseOnLowTank when second behaviour switch fires change', async () => {
+                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+                const sw = switches?.[1] as any;
+                expect(sw).toBeTruthy();
+
+                sw.checked = false;
+                sw.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._pauseOnLowTank).toBe(false);
+            });
+
+            it('should update _logToLogbook when third behaviour switch fires change', async () => {
+                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+                const sw = switches?.[2] as any;
+                expect(sw).toBeTruthy();
+
+                sw.checked = false;
+                sw.dispatchEvent(new Event('change'));
+                await element.updateComplete;
+
+                expect((element as any)._logToLogbook).toBe(false);
+            });
+        });
+
+        describe('Empty tanks state in _renderTanksTab (line 2313)', () => {
+            it('should return an empty-state template when no tanks are configured', () => {
+                element.device = {
+                    ...mockDevice,
+                    environmentAttributes: { ...mockDevice.environmentAttributes, irrigationTanks: [] },
+                } as any;
+
+                // Call the private method directly to exercise the empty-tanks branch
+                const result = (element as any)._renderTanksTab();
+                expect(result).toBeDefined();
+            });
+        });
+
+        describe('Water analytics with tank history (lines 2420-2424, 2527-2545)', () => {
+            const recentTimestamp = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+            const oldTimestamp = '2000-01-01T00:00:00Z';
+            const todayKey = new Date().toISOString().slice(0, 10);
+
+            const tankWithHistory = {
+                name: 'Main Tank',
+                sensorEntity: 'sensor.tank_level',
+                volumeLiters: 100,
+                fillLevel: 80,
+                isWarning: false,
+                warningLevel: 20,
+                waterHistory: {
+                    events: [
+                        { event_type: 'consumption', timestamp: recentTimestamp, liters: 2.5 },
+                        { event_type: 'refill', timestamp: recentTimestamp, liters: 10 },
+                        { event_type: 'consumption', timestamp: oldTimestamp, liters: 1 },
+                    ],
+                    daily_7d: [{ date: todayKey, consumed: 5 }],
+                },
+            };
+
+            beforeEach(async () => {
+                element.device = {
+                    ...mockDevice,
+                    environmentAttributes: {
+                        ...mockDevice.environmentAttributes,
+                        irrigationTanks: [tankWithHistory as any],
+                    },
+                } as any;
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const analyticsTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Water Analytics'));
+                (analyticsTab as HTMLElement)?.click();
+                await element.updateComplete;
+            });
+
+            it('should render the Tank-Derived Water Usage section with consumption chart', () => {
+                const content = element.shadowRoot?.querySelector('.v1-content-scroll');
+                expect(content?.textContent).toContain('Tank-Derived Water Usage');
+            });
+
+            it('should render consumption buckets chart bars for the last 24 hours', () => {
+                // The chart bars are flex-child divs inside the consumption chart container
+                const allDivs = element.shadowRoot?.querySelectorAll('div[title]');
+                const chartBars = Array.from(allDivs ?? []).filter((d) => d.getAttribute('title')?.includes('—'));
+                expect(chartBars.length).toBeGreaterThan(0);
+            });
+        });
+
+        describe('Stage aggregates sort (lines 2610-2611)', () => {
+            it('should sort and render stage aggregates in descending order', async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const analyticsTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Water Analytics'));
+                (analyticsTab as HTMLElement)?.click();
+                await element.updateComplete;
+
+                (element as any)._stageAggregates = { seedling: 3, veg: 15, flower: 25 };
+                await element.updateComplete;
+
+                const content = element.shadowRoot?.querySelector('.v1-content-scroll');
+                expect(content?.textContent).toContain('Water Usage by Growth Stage');
+                expect(content?.textContent).toContain('25.0 L');
+                expect(content?.textContent).toContain('flower');
+
+                document.body.removeChild(element);
+            });
+        });
+    });
 });
 

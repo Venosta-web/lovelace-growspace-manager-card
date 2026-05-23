@@ -4905,6 +4905,8 @@ const IrrigationStrategySchema = objectType({
     maintenance_dryback_percent: numberType(),
     shot_duration_seconds: numberType(),
     shot_interval_minutes: numberType(),
+    auto_light_tracking: booleanType().default(false),
+    detected_lights_on_time: stringType().nullable().default(null),
 });
 const GrowspaceAPIResponseSchema = objectType({
     // Root Identity
