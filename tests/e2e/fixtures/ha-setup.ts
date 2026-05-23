@@ -44,12 +44,19 @@ export async function callHAService(
   service: string,
   serviceData: Record<string, any>
 ): Promise<any> {
-  return await page.evaluate(
-    ({ domain, service, data }) => {
-      return (window as any).hass.callService(domain, service, data);
-    },
-    { domain, service, data: serviceData }
+  const baseURL = process.env.HA_BASE_URL || 'http://localhost:8123';
+  const token = process.env.HA_ACCESS_TOKEN;
+  const response = await page.request.post(
+    `${baseURL}/api/services/${domain}/${service}`,
+    {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      data: serviceData,
+    }
   );
+  if (!response.ok()) {
+    throw new Error(`callHAService failed: ${response.status()} ${await response.text()}`);
+  }
+  return response.json().catch(() => null);
 }
 
 /**

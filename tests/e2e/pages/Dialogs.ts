@@ -245,11 +245,11 @@ export class IrrigationDialog {
   }
 
   async toggleVwcSwitch() {
-    await this.dialog.locator('md3-switch').click();
+    await this.dialog.locator('md3-switch[data-field="enabled"]').click();
   }
 
   async isVwcEnabled(): Promise<boolean> {
-    return this.dialog.locator('md3-switch').isChecked();
+    return this.dialog.locator('md3-switch[data-field="enabled"]').evaluate((el: any) => el.checked);
   }
 
   async fillNumberField(label: string, value: number) {

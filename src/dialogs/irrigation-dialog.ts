@@ -1378,6 +1378,7 @@ export class IrrigationDialog extends LitElement {
           ${showCap ? html`<div class="v1-rail-caps">${item.group}</div>` : nothing}
           <div
             class="v1-nav-item ${this._activeTab === item.id ? 'active' : ''}"
+            data-tab="${item.id}"
             @click=${() => { this._activeTab = item.id; }}
           >
             <span style="flex:1;">${item.label}</span>
@@ -1478,33 +1479,39 @@ export class IrrigationDialog extends LitElement {
     const { lightsOnMin, lightsOffMin, lightHours } = phases;
     const p2ShotCount = shots.length;
 
-    // VWC sparkline computation
+    // Axis anchored 2 hours before lights-on so the active cycle is always visible
+    const viewStart = (lightsOnMin - 120 + 1440) % 1440;
+    const pctAt = (m: number) => ((m % 1440 - viewStart + 1440) % 1440) / day * 100;
+
+    // VWC sparkline — computed in view-offset space to avoid midnight wrap artifacts
     const target = this._strategy.targetVwcPercent ?? 45;
     const dryback = this._strategy.maintenanceDrybackPercent ?? 3;
     const fc = target + 7;
     const base = fc - dryback - 5;
-    const p1End = phases.phases[0].end;
-    const p3Start = phases.phases[2].start;
+    const lightsOnOffset = 120;
+    const lightsOffOffset = lightsOnOffset + lightHours * 60;
+    const p1EndOffset = lightsOnOffset + (this._strategy.p0DurationMinutes ?? 60);
+    const p3StartOffset = Math.max(p1EndOffset, lightsOffOffset - (this._strategy.p2StopBeforeLightsOffMinutes ?? 120));
 
-    const vwcPts: Array<{ m: number; v: number }> = [];
-    for (let m = 0; m <= day; m += 8) {
+    const vwcPts: Array<{ offset: number; v: number }> = [];
+    for (let offset = 0; offset <= day; offset += 8) {
       let v: number;
-      if (m < lightsOnMin) {
-        v = base + Math.sin(m / 300) * 0.8;
-      } else if (m < p1End) {
-        const pct = (m - lightsOnMin) / Math.max(1, p1End - lightsOnMin);
+      if (offset < lightsOnOffset) {
+        v = base + Math.sin(offset / 300) * 0.8;
+      } else if (offset < p1EndOffset) {
+        const pct = (offset - lightsOnOffset) / Math.max(1, p1EndOffset - lightsOnOffset);
         v = base + pct * (fc - base);
-      } else if (m < p3Start) {
-        const pct = (m - p1End) / Math.max(1, p3Start - p1End);
-        v = fc - pct * (dryback * 0.25) + Math.sin((m - p1End) * 0.25) * (dryback * 0.35);
-      } else if (m < lightsOffMin) {
-        const pct = (m - p3Start) / Math.max(1, lightsOffMin - p3Start);
+      } else if (offset < p3StartOffset) {
+        const pct = (offset - p1EndOffset) / Math.max(1, p3StartOffset - p1EndOffset);
+        v = fc - pct * (dryback * 0.25) + Math.sin((offset - p1EndOffset) * 0.25) * (dryback * 0.35);
+      } else if (offset < lightsOffOffset) {
+        const pct = (offset - p3StartOffset) / Math.max(1, lightsOffOffset - p3StartOffset);
         v = (fc - dryback * 0.25) - pct * (dryback * 0.9);
       } else {
-        const pct = (m - lightsOffMin) / Math.max(1, day - lightsOffMin);
+        const pct = (offset - lightsOffOffset) / Math.max(1, day - lightsOffOffset);
         v = (fc - dryback) - pct * 3;
       }
-      vwcPts.push({ m, v: Math.max(0, Math.min(100, v)) });
+      vwcPts.push({ offset, v: Math.max(0, Math.min(100, v)) });
     }
 
     const svgW = 1000;
@@ -1517,12 +1524,13 @@ export class IrrigationDialog extends LitElement {
     const iH = svgH - padT - padB;
     const vMin = target - 10;
     const vMax = target + 14;
-    const xAt = (t: number) => padL + (t / day) * iW;
+    const xAt = (offset: number) => padL + (offset / day) * iW;
     const yAt = (v: number) => padT + iH - Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin))) * iH;
     const fcY = yAt(fc);
-    const linePath = vwcPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.m).toFixed(1)},${yAt(p.v).toFixed(1)}`).join(' ');
+    const linePath = vwcPts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAt(p.v).toFixed(1)}`).join(' ');
     const areaPath = `${linePath} L${xAt(day).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z`;
-    const nowX = xAt(nowMinutes).toFixed(1);
+    const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
+    const nowX = xAt(nowOffset).toFixed(1);
 
     return html`
       <div class="detail-card crop-steering-schedule">
@@ -1547,16 +1555,14 @@ export class IrrigationDialog extends LitElement {
 
           <!-- Phase strip -->
           <div class="cs-phase-strip">
-            ${lightsOnMin > 0 ? html`
-              <div class="cs-phase-block dark" style="left:0;width:${(lightsOnMin / day) * 100}%;">
-                <div class="cs-phase-num">Dark</div>
-                <div class="cs-phase-meta">00:00–${this._fmtMin(lightsOnMin)} · no irrigation</div>
-              </div>
-            ` : nothing}
+            <div class="cs-phase-block dark" style="left:0%;width:${pctAt(lightsOnMin)}%;">
+              <div class="cs-phase-num">Dark</div>
+              <div class="cs-phase-meta">${this._fmtMin(viewStart)}–${this._fmtMin(lightsOnMin)} · no irrigation</div>
+            </div>
             ${phases.phases.map((p) => html`
               <div
                 class="cs-phase-block"
-                style="left:${(p.start / day) * 100}%;width:${((p.end - p.start) / day) * 100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
+                style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) * 100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
               >
                 <div class="cs-phase-num" style="color:${p.color};">
                   ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
@@ -1564,38 +1570,36 @@ export class IrrigationDialog extends LitElement {
                 <div class="cs-phase-meta">${this._fmtMin(p.start)}–${this._fmtMin(p.end)} · ${p.target}</div>
               </div>
             `)}
-            ${lightsOffMin < day ? html`
-              <div class="cs-phase-block dark" style="left:${(lightsOffMin / day) * 100}%;width:${((day - lightsOffMin) / day) * 100}%;">
-                <div class="cs-phase-num">Dark</div>
-                <div class="cs-phase-meta">${this._fmtMin(lightsOffMin)}–24:00</div>
-              </div>
-            ` : nothing}
+            <div class="cs-phase-block dark" style="left:${pctAt(lightsOffMin)}%;width:${100 - pctAt(lightsOffMin)}%;">
+              <div class="cs-phase-num">Dark</div>
+              <div class="cs-phase-meta">${this._fmtMin(lightsOffMin)}–${this._fmtMin(viewStart)}</div>
+            </div>
           </div>
 
           <!-- Main track: phase bands + shots + now line -->
           <div class="cs-track">
-            <div class="cs-photoperiod" style="left:${(lightsOnMin / day) * 100}%;width:${((lightsOffMin - lightsOnMin) / day) * 100}%;"></div>
+            <div class="cs-photoperiod" style="left:${pctAt(lightsOnMin)}%;width:${((lightsOffMin - lightsOnMin) / day) * 100}%;"></div>
 
             ${phases.phases.map((p) => html`
               <div
                 class="cs-phase-bg"
-                style="left:${(p.start / day) * 100}%;width:${((p.end - p.start) / day) * 100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
+                style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) * 100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
               >
                 <span class="cs-phase-bg-lbl" style="color:${p.color}cc;">${p.label}</span>
               </div>
             `)}
 
-            ${Array.from({ length: 25 }, (_, i) => i).map((h) => html`
-              <div class="grid-v ${h % 6 === 0 ? 'major' : ''}" style="left:${(h / 24) * 100}%;"></div>
+            ${Array.from({ length: 24 }, (_, h) => h).map((h) => html`
+              <div class="grid-v ${h % 6 === 0 ? 'major' : ''}" style="left:${pctAt(h * 60)}%;"></div>
               ${h % 3 === 0 ? html`
-                <span class="x-label" style="left:${(h / 24) * 100}%;">${h.toString().padStart(2, '0')}:00</span>
+                <span class="x-label" style="left:${pctAt(h * 60)}%;">${h.toString().padStart(2, '0')}:00</span>
               ` : nothing}
             `)}
 
             ${shots.map((shot) => {
               const [shh, smm] = shot.time.split(':').map(Number);
               const startMin = shh * 60 + smm;
-              const leftPct = (startMin / day) * 100;
+              const leftPct = pctAt(startMin);
               const widthPct = (shot.duration / 86400) * 100;
               const isPast = startMin < nowMinutes;
               return html`
@@ -1607,7 +1611,7 @@ export class IrrigationDialog extends LitElement {
               `;
             })}
 
-            <div class="cs-now-line" style="left:${(nowMinutes / day) * 100}%;"></div>
+            <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
           </div>
 
           <!-- VWC sparkline -->
@@ -1680,7 +1684,7 @@ export class IrrigationDialog extends LitElement {
       ${this._renderScheduleSection('Drain Schedule', drainTimes, this._drainDuration, 'drain', '#FF9800')}
 
       ${!isCropSteering ? html`
-        <div class="info-banner">
+        <div class="info-banner nudge-card">
           <svg style="width:14px;height:14px;flex-shrink:0;fill:currentColor;" viewBox="0 0 24 24">
             <path d="${MDI_INFO}"></path>
           </svg>
@@ -2032,6 +2036,7 @@ export class IrrigationDialog extends LitElement {
         <div style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;">
           <span>Enable VWC Steering</span>
           <md3-switch
+            data-field="enabled"
             .checked=${this._strategy.enabled}
             @change=${(e: Event) => this._updateStrategyField('enabled', (e.target as HTMLInputElement).checked)}
           ></md3-switch>
