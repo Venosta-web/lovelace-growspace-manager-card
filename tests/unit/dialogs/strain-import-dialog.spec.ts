@@ -200,10 +200,15 @@ describe('StrainImportDialog', () => {
     const closeSpy = vi.fn();
     element.addEventListener('close', closeSpy);
 
-    const closeBtn = element.shadowRoot?.querySelector('.dialog-header button');
+    const gsDialog = element.shadowRoot?.querySelector('gs-dialog');
+    const closeBtn = gsDialog?.shadowRoot?.querySelector('button.dialog-close-btn');
+    expect(closeBtn).toBeTruthy();
     (closeBtn as HTMLElement).click();
 
     expect(closeSpy).toHaveBeenCalled();
+    const event = closeSpy.mock.calls[0][0];
+    expect(event.bubbles).toBe(true);
+    expect(event.composed).toBe(true);
   });
 
   it('updates search query on input change', async () => {

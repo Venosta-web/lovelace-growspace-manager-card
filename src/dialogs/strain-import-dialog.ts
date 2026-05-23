@@ -1,9 +1,8 @@
-import { LitElement, html, css, TemplateResult, nothing } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { 
   mdiMagnify, 
-  mdiClose, 
   mdiSeed, 
   mdiCheck, 
   mdiWeb, 
@@ -22,6 +21,7 @@ import {
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/gs-dialog';
 
 interface ExternalStrainResult {
   name: string;
@@ -64,6 +64,7 @@ export class StrainImportDialog extends LitElement {
   @state() private _importFields = new Set<string>([
     'name', 'breeder', 'type', 'composition', 'flowering', 'description', 'lineage', 'image', 'yield', 'height', 'thc', 'awards'
   ]);
+
   @state() private _importing = false;
 
   protected willUpdate(changedProps: Map<string, any>) {
@@ -205,7 +206,7 @@ export class StrainImportDialog extends LitElement {
   }
 
   private _close() {
-    this.dispatchEvent(new CustomEvent('close'));
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
   static styles = [
@@ -402,101 +403,82 @@ export class StrainImportDialog extends LitElement {
     if (!this.open) return nothing;
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        without-header
-        width="large"
-        .scrimClickAction=${''}
+      <gs-dialog
+        .open=${this.open}
+        heading="Seedfinder Import"
+        subtitle="Fetch detailed strain data and lineage"
+        .iconPath=${mdiWeb}
+        .stageColor=${'var(--accent-green, #4caf50)'}
+        .submitting=${this._importing}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWeb}"></path>
+        <div class="content">
+          <div class="search-box">
+            <md3-text-input
+              style="flex: 1;"
+              placeholder="Strain Name..."
+              .value=${this._searchQuery}
+              @change=${(e: CustomEvent) => { this._searchQuery = e.detail; }}
+              @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this._search()}
+            ></md3-text-input>
+            <button class="md3-button filled" @click=${this._search} ?disabled=${this._searching}>
+              <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                <path d="${mdiMagnify}"></path>
               </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Seedfinder Import</h2>
-              <div class="dialog-subtitle">Fetch detailed strain data and lineage</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
+              Search
             </button>
           </div>
 
-          <div class="content">
-            <div class="search-box">
-              <md3-text-input
-                style="flex: 1;"
-                placeholder="Strain Name..."
-                .value=${this._searchQuery}
-                @change=${(e: CustomEvent) => this._searchQuery = e.detail}
-                @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this._search()}
-              ></md3-text-input>
-              <button class="md3-button filled" @click=${this._search} ?disabled=${this._searching}>
-                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                  <path d="${mdiMagnify}"></path>
-                </svg>
-                Search
-              </button>
-            </div>
+          ${this._error ? html`<div class="error-box">${this._error}</div>` : nothing}
 
-            ${this._error ? html`<div class="error-box">${this._error}</div>` : nothing}
-
-            ${this._searching 
-              ? html`
-                  <div class="loading-spinner">
-                    <div class="spinner"></div>
-                    <span>Searching Seedfinder...</span>
-                  </div>
-                `
-              : this._details 
-                ? this._renderDetails()
-                : this._results.length > 0
-                  ? html`
-                      <div class="results-list">
-                        <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;">Select a match:</div>
-                        ${this._results.map(r => html`
-                          <div class="result-item" @click=${() => this._selectResult(r)}>
-                            <div class="result-info">
-                              <div class="result-name">${r.name}</div>
-                              <div class="result-breeder">${r.breeder}</div>
-                            </div>
-                            <svg style="width:20px;height:20px;fill:var(--secondary-text-color);" viewBox="0 0 24 24">
-                              <path d="${mdiChevronRight}"></path>
-                            </svg>
+          ${this._searching 
+            ? html`
+                <div class="loading-spinner">
+                  <div class="spinner"></div>
+                  <span>Searching Seedfinder...</span>
+                </div>
+              `
+            : this._details 
+              ? this._renderDetails()
+              : this._results.length > 0
+                ? html`
+                    <div class="results-list">
+                      <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;">Select a match:</div>
+                      ${this._results.map(r => html`
+                        <div class="result-item" @click=${() => this._selectResult(r)}>
+                          <div class="result-info">
+                            <div class="result-name">${r.name}</div>
+                            <div class="result-breeder">${r.breeder}</div>
                           </div>
-                        `)}
-                      </div>
-                    `
-                  : this._searchQuery && !this._searching 
-                    ? html`<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No results found for "${this._searchQuery}"</div>`
-                    : nothing
-            }
-          </div>
-
-          <div class="sd-footer">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
-            ${this._details ? html`
-              <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
-                ${this._importing ? html`
-                  <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
-                  Downloading...
-                ` : html`
-                  <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                    <path d="${mdiCheck}"></path>
-                  </svg>
-                  Import Selected
-                `}
-              </button>
-            ` : nothing}
-          </div>
+                          <svg style="width:20px;height:20px;fill:var(--secondary-text-color);" viewBox="0 0 24 24">
+                            <path d="${mdiChevronRight}"></path>
+                          </svg>
+                        </div>
+                      `)}
+                    </div>
+                  `
+                : this._searchQuery && !this._searching 
+                  ? html`<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No results found for "${this._searchQuery}"</div>`
+                  : nothing
+          }
         </div>
-      </ha-dialog>
+
+        <div class="sd-footer">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
+          ${this._details ? html`
+            <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
+              ${this._importing ? html`
+                <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
+                Downloading...
+              ` : html`
+                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                  <path d="${mdiCheck}"></path>
+                </svg>
+                Import Selected
+              `}
+            </button>
+          ` : nothing}
+      </gs-dialog>
     `;
   }
 

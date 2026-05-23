@@ -19285,7 +19285,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._editingIrrigationTime = undefined;
         this._editingDrainTime = undefined;
         this._errorToast = undefined;
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _showErrorToast(message) {
         this._errorToast = message;
@@ -19380,41 +19380,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const visibleNav = NAV.filter((n) => visible.includes(n.id));
         const currentLabel = visibleNav.find((n) => n.id === this._activeTab)?.label ?? '';
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
+      <gs-dialog
+        .open=${true}
+        .heading=${'Irrigation Management'}
+        .subtitle=${this.growspaceName}
+        .iconPath=${mdiWater}
+        stageColor="${dialogColor}"
       >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
-
-          <!-- Header -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWater}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Irrigation Management</h2>
-                <gs-help-tooltip
-                  content="Schedule and manage irrigation events, soil moisture targets, and drain run-off cycles for this growspace."
-                  placement="bottom"
-                  label="Irrigation Management"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width:auto;padding:8px;">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
 
           <!-- Body: sidebar rail + content -->
           <div class="dlg-body">
@@ -19473,7 +19446,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </div>
           ` : ''}
         </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
     _renderSidebarNav(nav) {
@@ -22566,7 +22539,7 @@ let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogU
         this._isAdding = false;
     }
     _close() {
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _startEdit(stock) {
         this._editingId = stock.nutrient_id;
@@ -22607,52 +22580,38 @@ let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogU
     render() {
         if (!this.open && !this.embedded)
             return E;
-        const content = x `
-      <div
-        class="glass-dialog-container"
-        style="${this.embedded ? 'background: none; border: none; padding: 0;' : ''}"
-      >
-        ${!this.embedded
-            ? x `
-              <div class="dialog-header">
-                <div class="dialog-icon">
-                  <ha-svg-icon .path=${mdiBottleTonicPlus}></ha-svg-icon>
-                </div>
-                <div class="dialog-title-group">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <h2 class="dialog-title">Nutrient Inventory</h2>
-                    <gs-help-tooltip
-                      content=\"Track your nutrient bottles — name, brand, and current stock levels. Used to calculate feeds and trigger low-stock alerts.\"
-                      placement=\"bottom\"
-                      label=\"Nutrient Inventory\"
-                    ></gs-help-tooltip>
-                  </div>
-                  <div class="dialog-subtitle">Manage stock levels</div>
-                </div>
-                <button class="md3-button text" @click=${this._close}>
-                  <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-                </button>
-              </div>
-            `
-            : E}
-
-        <div class="dialog-content-grid" style="${this.embedded ? 'padding: 0;' : ''}">
-          ${this.isLoading
+        const innerContent = x `
+      ${this.isLoading
             ? x `<ha-circular-progress active></ha-circular-progress>`
             : this.error
-                ? x `<div class=\"error-banner\">
-                <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-                ${this.error}
-              </div>`
+                ? x `<div class="error-banner">
+            <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+            ${this.error}
+          </div>`
                 : this._renderContent()}
-        </div>
-      </div>
     `;
         if (this.embedded) {
-            return content;
+            return x `
+        <div class="glass-dialog-container" style="background: none; border: none; padding: 0;">
+          <div class="dialog-content-grid" style="padding: 0;">
+            ${innerContent}
+          </div>
+        </div>
+      `;
         }
         return x `
-      <ha-dialog open @closed=${this._close} hideActions without-header width="full"> ${content} </ha-dialog>
+      <gs-dialog
+        .open=${true}
+        .heading=${'Nutrient Inventory'}
+        .subtitle=${'Manage stock levels'}
+        .iconPath=${mdiBottleTonicPlus}
+        stageColor="var(--primary-color, #4caf50)"
+        .submitting=${this.isSaving}
+      >
+        <div class="dialog-content-grid">
+          ${innerContent}
+        </div>
+      </gs-dialog>
     `;
     }
     _renderContent() {
@@ -24187,64 +24146,44 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         this._editorState = null;
         this._pendingDelete = null;
     }
+    willUpdate(changed) {
+        if (changed.has('open') && !this.open) {
+            this._editorState = null;
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
     render() {
         if (!this.open)
             return E;
-        const close = () => {
-            this._editorState = null;
-            this.dispatchEvent(new CustomEvent('closed'));
-        };
         return x `
-      <ha-dialog
-        open
-        @closed=${close}
-        hideActions
-        without-header
-        width="large"
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
+      <gs-dialog
+        .open=${true}
+        .heading=${'Breeder Manager'}
+        .iconPath=${mdiAccountGroup}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiAccountGroup}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Breeder Manager</h2>
-                <gs-help-tooltip
-                  content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
-                  placement="bottom"
-                  label="Breeders"
-                ></gs-help-tooltip>
-              </div>
-            </div>
-            <button
-              class="md3-button text close"
-              @click=${close}
-              style="min-width:auto; padding:8px; margin-left: auto;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
+        <slot name="header-extra" slot="header-extra">
+          <gs-help-tooltip
+            content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
+            placement="bottom"
+            label="Breeders"
+          ></gs-help-tooltip>
+        </slot>
 
-          <div class="sd-content">
-            ${this._editorState ? this._renderEditor() : this._renderList()}
-          </div>
-
-          ${!this._editorState ? x `
-            <div class="sd-footer">
-              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
-                Breeders appear automatically when strains with breeder info are saved.
-              </span>
-            </div>
-          ` : E}
+        <div class="sd-content">
+          ${this._editorState ? this._renderEditor() : this._renderList()}
         </div>
-      </ha-dialog>
+
+        ${!this._editorState ? x `
+          <div class="sd-footer">
+            <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px; flex:1;">
+              Breeders appear automatically when strains with breeder info are saved.
+            </span>
+            <button class="md3-button tonal" @click=${this._close}>Close</button>
+          </div>
+        ` : E}
+      </gs-dialog>
 
       ${this._pendingDelete ? this._renderDeleteConfirmation() : E}
     `;
@@ -24466,12 +24405,6 @@ GsBreederManager.styles = [
     i$6 `
       :host {
         --accent-green: #4caf50;
-      }
-
-      .glass-dialog-container {
-        max-width: 98vw;
-        height: auto;
-        max-height: 90vh;
       }
 
       .sd-content {
@@ -25444,106 +25377,87 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         this._close();
     }
     _close() {
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     render() {
         if (!this.open)
             return E;
         return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        without-header
-        width="large"
-        .scrimClickAction=${''}
+      <gs-dialog
+        .open=${this.open}
+        heading="Seedfinder Import"
+        subtitle="Fetch detailed strain data and lineage"
+        .iconPath=${mdiWeb}
+        .stageColor=${'var(--accent-green, #4caf50)'}
+        .submitting=${this._importing}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiWeb}"></path>
+        <div class="content">
+          <div class="search-box">
+            <md3-text-input
+              style="flex: 1;"
+              placeholder="Strain Name..."
+              .value=${this._searchQuery}
+              @change=${(e) => { this._searchQuery = e.detail; }}
+              @keydown=${(e) => e.key === 'Enter' && this._search()}
+            ></md3-text-input>
+            <button class="md3-button filled" @click=${this._search} ?disabled=${this._searching}>
+              <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                <path d="${mdiMagnify}"></path>
               </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Seedfinder Import</h2>
-              <div class="dialog-subtitle">Fetch detailed strain data and lineage</div>
-            </div>
-            <button class="md3-button text" @click=${this._close} style="min-width:auto; padding:8px;">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
+              Search
             </button>
           </div>
 
-          <div class="content">
-            <div class="search-box">
-              <md3-text-input
-                style="flex: 1;"
-                placeholder="Strain Name..."
-                .value=${this._searchQuery}
-                @change=${(e) => this._searchQuery = e.detail}
-                @keydown=${(e) => e.key === 'Enter' && this._search()}
-              ></md3-text-input>
-              <button class="md3-button filled" @click=${this._search} ?disabled=${this._searching}>
-                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                  <path d="${mdiMagnify}"></path>
-                </svg>
-                Search
-              </button>
-            </div>
+          ${this._error ? x `<div class="error-box">${this._error}</div>` : E}
 
-            ${this._error ? x `<div class="error-box">${this._error}</div>` : E}
-
-            ${this._searching
+          ${this._searching
             ? x `
-                  <div class="loading-spinner">
-                    <div class="spinner"></div>
-                    <span>Searching Seedfinder...</span>
-                  </div>
-                `
+                <div class="loading-spinner">
+                  <div class="spinner"></div>
+                  <span>Searching Seedfinder...</span>
+                </div>
+              `
             : this._details
                 ? this._renderDetails()
                 : this._results.length > 0
                     ? x `
-                      <div class="results-list">
-                        <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;">Select a match:</div>
-                        ${this._results.map(r => x `
-                          <div class="result-item" @click=${() => this._selectResult(r)}>
-                            <div class="result-info">
-                              <div class="result-name">${r.name}</div>
-                              <div class="result-breeder">${r.breeder}</div>
-                            </div>
-                            <svg style="width:20px;height:20px;fill:var(--secondary-text-color);" viewBox="0 0 24 24">
-                              <path d="${mdiChevronRight}"></path>
-                            </svg>
+                    <div class="results-list">
+                      <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;">Select a match:</div>
+                      ${this._results.map(r => x `
+                        <div class="result-item" @click=${() => this._selectResult(r)}>
+                          <div class="result-info">
+                            <div class="result-name">${r.name}</div>
+                            <div class="result-breeder">${r.breeder}</div>
                           </div>
-                        `)}
-                      </div>
-                    `
+                          <svg style="width:20px;height:20px;fill:var(--secondary-text-color);" viewBox="0 0 24 24">
+                            <path d="${mdiChevronRight}"></path>
+                          </svg>
+                        </div>
+                      `)}
+                    </div>
+                  `
                     : this._searchQuery && !this._searching
                         ? x `<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No results found for "${this._searchQuery}"</div>`
                         : E}
-          </div>
-
-          <div class="sd-footer">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
-            ${this._details ? x `
-              <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
-                ${this._importing ? x `
-                  <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
-                  Downloading...
-                ` : x `
-                  <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                    <path d="${mdiCheck}"></path>
-                  </svg>
-                  Import Selected
-                `}
-              </button>
-            ` : E}
-          </div>
         </div>
-      </ha-dialog>
+
+        <div class="sd-footer">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
+          ${this._details ? x `
+            <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
+              ${this._importing ? x `
+                <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
+                Downloading...
+              ` : x `
+                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
+                  <path d="${mdiCheck}"></path>
+                </svg>
+                Import Selected
+              `}
+            </button>
+          ` : E}
+      </gs-dialog>
     `;
     }
     _renderDetails() {
@@ -31082,7 +30996,7 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
         @save-breeder=${(e) => this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }))}
         @update-breeder=${(e) => this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }))}
         @delete-breeder=${(e) => this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }))}
-        @closed=${() => { this._breederDialogOpen = false; }}
+        @close=${() => { this._breederDialogOpen = false; }}
       ></gs-breeder-manager>
     `;
     }
@@ -32784,9 +32698,6 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
             }
         }
     }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
     _handleApply() {
         this.dispatchEvent(new CustomEvent('apply-ipm', {
             detail: {
@@ -32860,40 +32771,25 @@ let GrowspaceIPMDialogUI = class GrowspaceIPMDialogUI extends i$3 {
             subtitle = 'Define treatment details';
         }
         return x `
-      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: var(--warning-color, #ff9800);">
-              <ha-svg-icon .path=${mdiBug}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">${title}</h2>
-                <gs-help-tooltip
-                  content=\"Integrated Pest Management — log pest/disease treatments, track application dates and products used.\"
-                  placement=\"bottom\"
-                  label=\"IPM\"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${subtitle}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid">
-            ${this.error ? x `<div class=\"error-bar\">${this.error}</div>` : E}
-            ${this._view === 'APPLY'
+      <gs-dialog
+        .open=${true}
+        .heading=${title}
+        .subtitle=${subtitle}
+        .iconPath=${mdiBug}
+        stageColor="var(--warning-color, #ff9800)"
+        .submitting=${this.isSubmitting}
+      >
+        <div class="dialog-content-grid">
+          ${this.error ? x `<div class="error-bar">${this.error}</div>` : E}
+          ${this._view === 'APPLY'
             ? this._renderApply()
             : this._view === 'LIST'
                 ? this._renderList()
                 : this._renderEdit()}
-          </div>
-
-          <div class="button-group">${this._renderFooterButtons()}</div>
         </div>
-      </ha-dialog>
+
+        <div class="button-group">${this._renderFooterButtons()}</div>
+      </gs-dialog>
     `;
     }
     _renderFooterButtons() {
@@ -33278,7 +33174,7 @@ let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
         this._selectedPresetId = '';
     }
     _close() {
-        this.dispatchEvent(new CustomEvent('close'));
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _handlePresetChange(e) {
         const presetId = e.detail;
@@ -33320,29 +33216,15 @@ let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
             return E;
         const dialogColor = '#2196F3';
         return x `
-      <ha-dialog open @closed=${this._close} hideActions without-header width="large">
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <ha-svg-icon .path=${mdiWaterPlus}></ha-svg-icon>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Record Watering</h2>
-                <gs-help-tooltip
-                  content=\"Log a watering event — record volume, EC, pH, and runoff data for one or more plants. Select one or more target plants below.\"
-                  placement=\"bottom\"
-                  label=\"Record Watering\"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${this.growspaceName}</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-
-          <div class="dialog-content-grid">
+      <gs-dialog
+        .open=${true}
+        .heading=${'Record Watering'}
+        .subtitle=${this.growspaceName}
+        .iconPath=${mdiWaterPlus}
+        stageColor="${dialogColor}"
+        .submitting=${this.isSubmitting}
+      >
+        <div class="dialog-content-grid">
             ${this.hasPhiWarning
             ? x `
                   <div class=\"error-bar\">
@@ -33466,8 +33348,7 @@ let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
               ${this.isSubmitting ? 'Recording...' : 'Record Watering'}
             </button>
           </div>
-        </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
     }
 };
