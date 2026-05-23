@@ -95,6 +95,9 @@ export class IrrigationDialog extends LitElement {
   @state() private _skipDuringDark = false;
   @state() private _pauseOnLowTank = true;
   @state() private _logToLogbook = true;
+  @state() private _autoAdvanceP1ToP2 = false;
+  @state() private _autoAdvanceP2ToP3 = false;
+  @state() private _haltOnRunoffEcThreshold: number | null = null;
 
   @state() private _runNowSaving = false;
   @state() private _stageAggregates: Record<string, number> | null = null;
@@ -921,6 +924,9 @@ export class IrrigationDialog extends LitElement {
     this._skipDuringDark = config.skipDuringDark ?? false;
     this._pauseOnLowTank = config.pauseOnLowTank ?? true;
     this._logToLogbook = config.logToLogbook ?? true;
+    this._autoAdvanceP1ToP2 = config.autoAdvanceP1ToP2 ?? false;
+    this._autoAdvanceP2ToP3 = config.autoAdvanceP2ToP3 ?? false;
+    this._haltOnRunoffEcThreshold = config.haltOnRunoffEcThreshold ?? null;
 
     const strat = this.device.irrigationStrategy;
     this._strategy = {
@@ -965,6 +971,9 @@ export class IrrigationDialog extends LitElement {
       skipDuringDark: this._skipDuringDark,
       pauseOnLowTank: this._pauseOnLowTank,
       logToLogbook: this._logToLogbook,
+      autoAdvanceP1ToP2: this._autoAdvanceP1ToP2,
+      autoAdvanceP2ToP3: this._autoAdvanceP2ToP3,
+      haltOnRunoffEcThreshold: this._haltOnRunoffEcThreshold,
     });
   }
 
@@ -2031,26 +2040,67 @@ export class IrrigationDialog extends LitElement {
         </div>
       </div>
 
-      <!-- Phase Triggers (stub) -->
-      <!-- TODO: implement Phase Triggers when backend exposes auto-advance logic -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <!-- Phase Triggers -->
+      <div class="detail-card">
+        <div style="margin-bottom:14px;">
           <h3 style="margin:0;">Phase Triggers</h3>
-          <span class="stub-badge">Coming soon</span>
         </div>
-        ${([
-          { label: 'Auto-advance P1 → P2', desc: 'When substrate moisture reaches field capacity' },
-          { label: 'Auto-advance P2 → P3', desc: 'N hours before lights-off (per stage)' },
-          { label: 'Halt on Runoff EC > 4.0', desc: 'Suspend cycles and alert until manual resume' },
-        ]).map((row) => html`
-          <div class="stub-row" style="margin-bottom:8px;">
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div class="stub-row-label">${row.label}</div>
-              <div class="stub-row-desc">${row.desc}</div>
+              <div class="stub-row-label">Auto-advance P1 → P2</div>
+              <div class="stub-row-desc">When substrate moisture reaches field capacity</div>
             </div>
-            <md3-switch .checked=${false} disabled></md3-switch>
+            <md3-switch
+              data-field="autoAdvanceP1ToP2"
+              .checked=${this._autoAdvanceP1ToP2}
+              @change=${(e: Event) => { this._autoAdvanceP1ToP2 = (e.target as any).checked; }}
+            ></md3-switch>
           </div>
-        `)}
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Auto-advance P2 → P3</div>
+              <div class="stub-row-desc">N hours before lights-off (per stage)</div>
+            </div>
+            <md3-switch
+              data-field="autoAdvanceP2ToP3"
+              .checked=${this._autoAdvanceP2ToP3}
+              @change=${(e: Event) => { this._autoAdvanceP2ToP3 = (e.target as any).checked; }}
+            ></md3-switch>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Halt on Runoff EC</div>
+              <div class="stub-row-desc">Suspend cycles and alert until manual resume</div>
+            </div>
+            <md3-switch
+              data-field="haltOnRunoffEc"
+              .checked=${this._haltOnRunoffEcThreshold !== null}
+              @change=${(e: Event) => {
+                this._haltOnRunoffEcThreshold = (e.target as any).checked ? 4.0 : null;
+              }}
+            ></md3-switch>
+          </div>
+          ${this._haltOnRunoffEcThreshold !== null ? html`
+            <div style="margin-top:10px;">
+              <md3-number-input
+                data-field="haltOnRunoffEcValue"
+                label="EC Threshold"
+                min="0.1"
+                step="0.1"
+                .value=${String(this._haltOnRunoffEcThreshold)}
+                @change=${(e: CustomEvent) => {
+                  const v = parseFloat(e.detail ?? (e.target as any).value);
+                  if (!isNaN(v)) this._haltOnRunoffEcThreshold = v;
+                }}
+              ></md3-number-input>
+            </div>
+          ` : nothing}
+        </div>
       </div>
     `;
   }

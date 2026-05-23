@@ -15,6 +15,9 @@ type IrrigationSettingsParams = {
   skipDuringDark?: boolean;
   pauseOnLowTank?: boolean;
   logToLogbook?: boolean;
+  autoAdvanceP1ToP2?: boolean;
+  autoAdvanceP2ToP3?: boolean;
+  haltOnRunoffEcThreshold?: number | null;
 };
 type RunIrrigationCycleParams = { growspaceId: string; duration?: number };
 
@@ -145,6 +148,9 @@ export async function setIrrigationSettings(
     skipDuringDark,
     pauseOnLowTank,
     logToLogbook,
+    autoAdvanceP1ToP2,
+    autoAdvanceP2ToP3,
+    haltOnRunoffEcThreshold,
   } = params;
   const prev = getIrrigationConfig(ctx, growspaceId);
   const patch = {
@@ -158,6 +164,9 @@ export async function setIrrigationSettings(
     skipDuringDark,
     pauseOnLowTank,
     logToLogbook,
+    autoAdvanceP1ToP2,
+    autoAdvanceP2ToP3,
+    haltOnRunoffEcThreshold,
   };
 
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
@@ -176,6 +185,9 @@ export async function setIrrigationSettings(
         skipDuringDark: prev.skipDuringDark,
         pauseOnLowTank: prev.pauseOnLowTank,
         logToLogbook: prev.logToLogbook,
+        autoAdvanceP1ToP2: prev.autoAdvanceP1ToP2,
+        autoAdvanceP2ToP3: prev.autoAdvanceP2ToP3,
+        haltOnRunoffEcThreshold: prev.haltOnRunoffEcThreshold,
       })
   );
 

@@ -44,6 +44,9 @@ export interface IrrigationConfig {
   skipDuringDark?: boolean;
   pauseOnLowTank?: boolean;
   logToLogbook?: boolean;
+  autoAdvanceP1ToP2?: boolean;
+  autoAdvanceP2ToP3?: boolean;
+  haltOnRunoffEcThreshold?: number | null;
 }
 
 export interface SerializedIrrigationStrategy {
@@ -71,6 +74,9 @@ export interface SerializedIrrigationConfig {
   skip_during_dark?: boolean;
   pause_on_low_tank?: boolean;
   log_to_logbook?: boolean;
+  auto_advance_p1_to_p2?: boolean;
+  auto_advance_p2_to_p3?: boolean;
+  halt_on_runoff_ec_threshold?: number | null;
 }
 
 export interface TankWaterEvent {

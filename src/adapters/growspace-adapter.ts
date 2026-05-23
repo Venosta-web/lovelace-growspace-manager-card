@@ -201,6 +201,9 @@ export class GrowspaceAdapter {
       skipDuringDark: irrigationConfigRaw.skip_during_dark,
       pauseOnLowTank: irrigationConfigRaw.pause_on_low_tank,
       logToLogbook: irrigationConfigRaw.log_to_logbook,
+      autoAdvanceP1ToP2: irrigationConfigRaw.auto_advance_p1_to_p2,
+      autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
+      haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
     };
 
     const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy
