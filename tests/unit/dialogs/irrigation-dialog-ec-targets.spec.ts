@@ -121,14 +121,14 @@ describe('IrrigationDialog – EC Targets tab', () => {
 
   // ── Tracer bullet ─────────────────────────────────────────────────────────
 
-  it('renders four stage rows: Seedling, Veg, Flower, Flush', async () => {
+  it('renders five stage rows: Seedling, Veg, Early Flower, Mid Flower, Late Flower / Flush', async () => {
     await openOnEcTargetsTab();
 
     const rows = element.shadowRoot!.querySelectorAll('.ec-target-row');
-    expect(rows.length).toBe(4);
+    expect(rows.length).toBe(5);
 
     const labels = Array.from(rows).map((r) => r.querySelector('.ec-stage-label')?.textContent?.trim());
-    expect(labels).toEqual(['Seedling', 'Veg', 'Flower', 'Flush']);
+    expect(labels).toEqual(['Seedling', 'Veg', 'Early Flower', 'Mid Flower', 'Late Flower / Flush']);
   });
 
   // ── Payload loading ───────────────────────────────────────────────────────
@@ -139,10 +139,11 @@ describe('IrrigationDialog – EC Targets tab', () => {
       irrigationConfig: {
         ...baseDevice.irrigationConfig,
         ecTargetRanges: [
-          { stage: 'seedling', minEc: 0.8, maxEc: 1.2 },
-          { stage: 'veg',      minEc: 1.5, maxEc: 2.0 },
-          { stage: 'flower',   minEc: 2.0, maxEc: 2.8 },
-          { stage: 'flush',    minEc: 0.2, maxEc: 0.5 },
+          { stage: 'seedling',     minEc: 0.8, maxEc: 1.2 },
+          { stage: 'veg',          minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.8 },
+          { stage: 'flower_mid',   minEc: 2.2, maxEc: 3.0 },
+          { stage: 'flower_late',  minEc: 0.2, maxEc: 0.5 },
         ],
       },
     };
@@ -155,7 +156,7 @@ describe('IrrigationDialog – EC Targets tab', () => {
     expect(getInputs(rows[0])[0].value).toBe('0.8');  // seedling min
     expect(getInputs(rows[0])[1].value).toBe('1.2');  // seedling max
     expect(getInputs(rows[1])[0].value).toBe('1.5');  // veg min
-    expect(getInputs(rows[3])[1].value).toBe('0.5');  // flush max
+    expect(getInputs(rows[4])[1].value).toBe('0.5');  // flower_late max
   });
 
   // ── State mutation ─────────────────────────────────────────────────────────
@@ -194,10 +195,11 @@ describe('IrrigationDialog – EC Targets tab', () => {
       irrigationConfig: {
         ...baseDevice.irrigationConfig,
         ecTargetRanges: [
-          { stage: 'seedling', minEc: 0.8, maxEc: 1.2 },
-          { stage: 'veg',      minEc: 1.5, maxEc: 2.0 },
-          { stage: 'flower',   minEc: 2.0, maxEc: 2.8 },
-          { stage: 'flush',    minEc: 0.2, maxEc: 0.5 },
+          { stage: 'seedling',     minEc: 0.8, maxEc: 1.2 },
+          { stage: 'veg',          minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.8 },
+          { stage: 'flower_mid',   minEc: 2.2, maxEc: 3.0 },
+          { stage: 'flower_late',  minEc: 0.2, maxEc: 0.5 },
         ],
       },
     };
@@ -207,10 +209,11 @@ describe('IrrigationDialog – EC Targets tab', () => {
     await (element as any)._saveAll();
 
     expect(mocks.setEcTargetRanges).toHaveBeenCalledWith('gs1', [
-      { stage: 'seedling', minEc: 0.8, maxEc: 1.2 },
-      { stage: 'veg',      minEc: 1.5, maxEc: 2.0 },
-      { stage: 'flower',   minEc: 2.0, maxEc: 2.8 },
-      { stage: 'flush',    minEc: 0.2, maxEc: 0.5 },
+      { stage: 'seedling',     minEc: 0.8, maxEc: 1.2 },
+      { stage: 'veg',          minEc: 1.5, maxEc: 2.0 },
+      { stage: 'flower_early', minEc: 2.0, maxEc: 2.8 },
+      { stage: 'flower_mid',   minEc: 2.2, maxEc: 3.0 },
+      { stage: 'flower_late',  minEc: 0.2, maxEc: 0.5 },
     ]);
   });
 

@@ -1,5 +1,5 @@
 import { Page } from '@playwright/test';
-import { haTest as test, expect, callHAService } from '../fixtures/ha-setup';
+import { haTest as test, expect } from '../fixtures/ha-setup';
 import { GrowspaceCard } from '../pages/GrowspaceCard';
 import { AddPlantDialog } from '../pages/Dialogs';
 
@@ -12,10 +12,20 @@ const TODAY = new Date().toISOString().split('T')[0];
  * three free slots.
  */
 async function cleanupNonAnchorPlants(page: Page, growspaceId: string): Promise<void> {
-  // Use the HA REST API — the page context already carries the Bearer token from
-  // the authentication fixture, so this works without shadow-DOM traversal tricks.
-  const response = await page.request.get('/api/states');
-  const states: any[] = await response.json();
+  // Fetch states via the browser's fetch API with an explicit auth token.
+  // page.request inherits extraHTTPHeaders but can fail silently; fetch in
+  // page.evaluate with an explicit header is more reliable.
+  const token = process.env.HA_ACCESS_TOKEN ?? '';
+  const states: any[] = await page.evaluate(
+    async ({ t }: { t: string }) => {
+      const res = await fetch('/api/states', {
+        headers: t ? { Authorization: `Bearer ${t}` } : {},
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    { t: token }
+  );
   const plantIds = states
     .filter((s) =>
       s.attributes?.plant_id &&
@@ -25,7 +35,19 @@ async function cleanupNonAnchorPlants(page: Page, growspaceId: string): Promise<
     .map((s) => s.attributes.plant_id as string);
 
   for (const plantId of plantIds) {
-    await callHAService(page, 'growspace_manager', 'remove_plant', { plant_id: plantId }).catch(() => {});
+    await page.evaluate(
+      async ({ t, pid }: { t: string; pid: string }) => {
+        await fetch('/api/services/growspace_manager/remove_plant', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${t}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ plant_id: pid }),
+        });
+      },
+      { t: token, pid: plantId }
+    );
   }
 }
 
@@ -47,15 +69,15 @@ test.describe('Add Plant Dialog', () => {
     await page.reload();
     await growspaceCard.waitForCardReady();
     await cleanupNonAnchorPlants(page, testContext.vegGrowspaceId);
-    // Wait for the card to reflect cleanup — slot (1,1) must be free before any test runs
-    await growspaceCard.emptyCell(1, 1).waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for the card to reflect cleanup — slot (1,2) must be free before any test runs.
+    // The anchor is at service(1,1) = data-col=1; the first free slot is data-col=2.
+    await growspaceCard.emptyCell(1, 2).waitFor({ state: 'visible', timeout: 10000 });
   });
 
-  // ── Helper: open the dialog by clicking the free slot at row 1, col 1 ────────
-  // Note: the card's data-col is reversed relative to the service's col param.
-  // The anchor is at service(1,1) → data-col=2. The adjacent slot is data-col=1.
+  // ── Helper: open the dialog by clicking the free slot at row 1, col 2 ────────
+  // The anchor is at service(1,1) = data-col=1. The first free slot is data-col=2.
   async function openDialog(page: Page): Promise<AddPlantDialog> {
-    await growspaceCard.emptyCell(1, 1).click();
+    await growspaceCard.emptyCell(1, 2).click();
     const dialog = new AddPlantDialog(page);
     await dialog.waitForOpen();
     return dialog;
