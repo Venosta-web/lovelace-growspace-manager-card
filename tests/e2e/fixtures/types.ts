@@ -20,4 +20,9 @@ export interface TestContext {
   dryDashboardPath: string;
   cureGrowspaceId: string;
   cureDashboardPath: string;
+  /** VWC crop-steering growspace IDs and dashboard paths */
+  vwcVegGrowspaceId: string;
+  vwcVegDashboardPath: string;
+  vwcFlowerGrowspaceId: string;
+  vwcFlowerDashboardPath: string;
 }

@@ -51,15 +51,42 @@ function sleep(ms: number): Promise<void> {
   return new Promise(r => setTimeout(r, ms));
 }
 
+interface VwcStrategyParams {
+  target_vwc_percent: number;
+  maintenance_dryback_percent: number;
+  p0_duration_minutes: number;
+  p2_stop_before_lights_off_minutes: number;
+  shot_duration_seconds: number;
+  shot_interval_minutes: number;
+}
+
 interface GrowspaceSpec {
   /** Slug used in entity IDs, e.g. "mother" → sensor.e2e_mother_overview */
   slug: string;
   name: string;
   /** Date field that makes the anchor plant adopt the right stage */
   plantStageField: string;
+  /**
+   * How many days before today to backdate the anchor plant's stage date.
+   * Defaults to 0 (today).
+   */
+  stageDaysAgo?: number;
+  /**
+   * If present, call set_irrigation_strategy after configureEnvironment using
+   * these parameters. Only set for VWC-enabled growspaces.
+   */
+  vwcStrategy?: VwcStrategyParams;
 }
 
 const TODAY = new Date().toISOString().split('T')[0];
+
+/** Returns an ISO date string for `daysAgo` days before today. */
+function stageDate(daysAgo = 0): string {
+  if (daysAgo === 0) return TODAY;
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toISOString().split('T')[0];
+}
 
 const GROWSPACES: GrowspaceSpec[] = [
   { slug: 'mother', name: 'E2E Mother', plantStageField: 'mother_start' },
@@ -68,10 +95,43 @@ const GROWSPACES: GrowspaceSpec[] = [
   { slug: 'flower', name: 'E2E Flower', plantStageField: 'flower_start' },
   { slug: 'dry',    name: 'E2E Dry',    plantStageField: 'dry_start'    },
   { slug: 'cure',   name: 'E2E Cure',   plantStageField: 'cure_start'   },
+  {
+    slug: 'vwc_veg',
+    name: 'E2E VWC Veg',
+    plantStageField: 'veg_start',
+    stageDaysAgo: 15,
+    vwcStrategy: {
+      target_vwc_percent: 65,
+      maintenance_dryback_percent: 3,
+      p0_duration_minutes: 60,
+      p2_stop_before_lights_off_minutes: 120,
+      shot_duration_seconds: 10,
+      shot_interval_minutes: 15,
+    },
+  },
+  {
+    slug: 'vwc_flower',
+    name: 'E2E VWC Flower',
+    plantStageField: 'flower_start',
+    stageDaysAgo: 40,
+    vwcStrategy: {
+      target_vwc_percent: 55,
+      maintenance_dryback_percent: 5,
+      p0_duration_minutes: 60,
+      p2_stop_before_lights_off_minutes: 120,
+      shot_duration_seconds: 10,
+      shot_interval_minutes: 15,
+    },
+  },
 ];
 
 function buildSensors(slug: string) {
-  const s = (suffix: string) => `sensor.e2e_${slug}_${suffix}`;
+  // VWC growspaces use input_number helpers so Playwright can set values directly
+  // via callService('input_number', 'set_value', ...). The coordinator accepts any
+  // entity domain, so input_number.* entity IDs work identically to sensor.*.
+  const isVwc = slug.startsWith('vwc_');
+  const domain = isVwc ? 'input_number' : 'sensor';
+  const s = (suffix: string) => `${domain}.e2e_${slug}_${suffix}`;
   return {
     temperature_sensor:      s('temperature'),
     humidity_sensor:         s('humidity'),
@@ -131,7 +191,7 @@ async function ensureStagePlant(growspaceId: string, spec: GrowspaceSpec): Promi
       strain: 'E2E Anchor',
       row: 1,
       col: 1,
-      [spec.plantStageField]: TODAY,
+      [spec.plantStageField]: stageDate(spec.stageDaysAgo),
     });
   } catch (err: any) {
     if (err.message.includes('400')) {
@@ -147,6 +207,23 @@ async function configureEnvironment(growspaceId: string, slug: string): Promise<
   await callService('growspace_manager', 'configure_environment', {
     growspace_id: growspaceId,
     ...buildSensors(slug),
+  });
+
+  console.log(`  wiring irrigation & drain pumps…`);
+  await callService('growspace_manager', 'set_irrigation_settings', {
+    growspace_id: growspaceId,
+    irrigation_pump_entity: `input_boolean.sim_e2e_${slug}_irrigation_pump`,
+    drain_pump_entity: `input_boolean.sim_e2e_${slug}_drain_pump`,
+  });
+}
+
+async function setVwcStrategy(growspaceId: string, slug: string, params: VwcStrategyParams): Promise<void> {
+  console.log(`  enabling VWC steering strategy…`);
+  await callService('growspace_manager', 'set_irrigation_strategy', {
+    growspace_id: growspaceId,
+    enabled: true,
+    lights_on_time: '06:00:00',
+    ...params,
   });
 }
 
@@ -213,6 +290,9 @@ async function main(): Promise<void> {
     const growspaceId = await ensureGrowspace(spec);
     await ensureStagePlant(growspaceId, spec);
     await configureEnvironment(growspaceId, spec.slug);
+    if (spec.vwcStrategy) {
+      await setVwcStrategy(growspaceId, spec.slug, spec.vwcStrategy);
+    }
     results.push({ slug: spec.slug, id: growspaceId });
   }
 

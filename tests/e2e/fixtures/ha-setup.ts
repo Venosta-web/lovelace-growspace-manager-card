@@ -26,6 +26,10 @@ export const haTest = authenticatedTest.extend<{ testContext: TestContext }>({
       dryDashboardPath: process.env.TEST_DRY_DASHBOARD_PATH || '',
       cureGrowspaceId: process.env.TEST_CURE_GROWSPACE_ID || '',
       cureDashboardPath: process.env.TEST_CURE_DASHBOARD_PATH || '',
+      vwcVegGrowspaceId: process.env.TEST_VWC_VEG_GROWSPACE_ID || '',
+      vwcVegDashboardPath: process.env.TEST_VWC_VEG_DASHBOARD_PATH || '',
+      vwcFlowerGrowspaceId: process.env.TEST_VWC_FLOWER_GROWSPACE_ID || '',
+      vwcFlowerDashboardPath: process.env.TEST_VWC_FLOWER_DASHBOARD_PATH || '',
     });
   },
 });
