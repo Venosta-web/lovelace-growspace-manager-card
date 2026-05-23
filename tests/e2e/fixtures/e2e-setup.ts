@@ -233,8 +233,8 @@ async function configureEnvironment(growspaceId: string, slug: string): Promise<
   console.log(`  wiring irrigation & drain pumps…`);
   await callService('growspace_manager', 'set_irrigation_settings', {
     growspace_id: growspaceId,
-    irrigation_pump_entity: `input_boolean.sim_e2e_${slug}_irrigation_pump`,
-    drain_pump_entity: `input_boolean.sim_e2e_${slug}_drain_pump`,
+    irrigation_pump_entity: `switch.sim_e2e_${slug}_irrigation_pump`,
+    drain_pump_entity: `switch.sim_e2e_${slug}_drain_pump`,
   });
 }
 
