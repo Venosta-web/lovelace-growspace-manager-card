@@ -30,7 +30,8 @@ const mocks = vi.hoisted(() => ({
     removeIrrigationTime: vi.fn().mockResolvedValue(undefined),
     addDrainTime: vi.fn().mockResolvedValue(undefined),
     removeDrainTime: vi.fn().mockResolvedValue(undefined),
-    setIrrigationStrategy: vi.fn().mockResolvedValue(undefined)
+    setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+    getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../../../src/services/data-service', () => {

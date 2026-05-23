@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
     addDrainTime: vi.fn().mockResolvedValue(true),
     removeIrrigationTime: vi.fn().mockResolvedValue(true),
     addIrrigationTime: vi.fn().mockResolvedValue(true),
+    getIrrigationAnalytics: vi.fn().mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
 }));
 
 vi.mock('../../../src/services/data-service', () => {

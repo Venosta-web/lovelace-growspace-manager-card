@@ -13,12 +13,31 @@ export class IrrigationAPI extends BaseAPI {
     drainPumpEntity: string;
     irrigationDuration: number;
     drainDuration: number;
+    soilTriggerPercent?: number | null;
+    dailyVolumeCapLiters?: number | null;
+    maxCyclesPerDay?: number | null;
+    skipDuringDark?: boolean;
+    pauseOnLowTank?: boolean;
+    logToLogbook?: boolean;
   }): Promise<void> {
     try {
       const payload = this._serializeSettings(params);
       await this.callService(DOMAIN, SERVICES.SET_IRRIGATION_SETTINGS, payload);
     } catch (err) {
       console.error('[IrrigationAPI:setIrrigationSettings] Error:', err);
+      throw err;
+    }
+  }
+
+  async runIrrigationCycle(params: { growspaceId: string; duration?: number }): Promise<void> {
+    try {
+      const payload: Record<string, unknown> = { growspace_id: params.growspaceId };
+      if (params.duration !== undefined) {
+        payload.duration = params.duration;
+      }
+      await this.callService(DOMAIN, SERVICES.RUN_IRRIGATION_CYCLE, payload);
+    } catch (err) {
+      console.error('[IrrigationAPI:runIrrigationCycle] Error:', err);
       throw err;
     }
   }
@@ -107,14 +126,27 @@ export class IrrigationAPI extends BaseAPI {
     drainPumpEntity: string;
     irrigationDuration: number;
     drainDuration: number;
+    soilTriggerPercent?: number | null;
+    dailyVolumeCapLiters?: number | null;
+    maxCyclesPerDay?: number | null;
+    skipDuringDark?: boolean;
+    pauseOnLowTank?: boolean;
+    logToLogbook?: boolean;
   }): Record<string, unknown> {
-    return {
+    const result: Record<string, unknown> = {
       growspace_id: params.growspaceId,
       irrigation_pump_entity: params.irrigationPumpEntity,
       drain_pump_entity: params.drainPumpEntity,
       irrigation_duration: params.irrigationDuration,
       drain_duration: params.drainDuration,
     };
+    if (params.soilTriggerPercent !== undefined) result.soil_trigger_percent = params.soilTriggerPercent;
+    if (params.dailyVolumeCapLiters !== undefined) result.daily_volume_cap_liters = params.dailyVolumeCapLiters;
+    if (params.maxCyclesPerDay !== undefined) result.max_cycles_per_day = params.maxCyclesPerDay;
+    if (params.skipDuringDark !== undefined) result.skip_during_dark = params.skipDuringDark;
+    if (params.pauseOnLowTank !== undefined) result.pause_on_low_tank = params.pauseOnLowTank;
+    if (params.logToLogbook !== undefined) result.log_to_logbook = params.logToLogbook;
+    return result;
   }
 
   private _serializeStrategy(strategy: Partial<IrrigationStrategy>): Record<string, unknown> {
@@ -182,5 +214,11 @@ export class IrrigationAPI extends BaseAPI {
     if (params.feedVolumeMl !== undefined) payload.feed_volume_ml = params.feedVolumeMl;
     if (params.drainVolumeMl !== undefined) payload.drain_volume_ml = params.drainVolumeMl;
     await this.callService(DOMAIN, SERVICES.LOG_DRAIN_READING, payload);
+  }
+
+  async getIrrigationAnalytics(
+    growspaceId: string
+  ): Promise<{ growspace_id: string; stage_aggregates: Record<string, number> } | null> {
+    return this.sendWebSocket(`${DOMAIN}/irrigation_analytics`, { growspace_id: growspaceId });
   }
 }

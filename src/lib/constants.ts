@@ -77,6 +77,7 @@ export const SERVICES = {
   UPDATE_HARVEST_METRICS: 'update_harvest_metrics',
   CONFIGURE_DRAIN_MONITORING: 'configure_drain_monitoring',
   LOG_DRAIN_READING: 'log_drain_reading',
+  RUN_IRRIGATION_CYCLE: 'run_irrigation_cycle',
   BATCH_ACTION: 'batch_action',
   LOG_TRAINING_EVENT: 'log_training_event',
   EXPORT_GROW_REPORT: 'export_grow_report',

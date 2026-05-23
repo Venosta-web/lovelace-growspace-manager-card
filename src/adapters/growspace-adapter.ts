@@ -195,6 +195,12 @@ export class GrowspaceAdapter {
       irrigationTimes: irrigationConfigRaw.irrigation_times,
       drainTimes: irrigationConfigRaw.drain_times,
       vegDayHours: irrigationConfigRaw.veg_day_hours,
+      soilTriggerPercent: irrigationConfigRaw.soil_trigger_percent,
+      dailyVolumeCapLiters: irrigationConfigRaw.daily_volume_cap_liters,
+      maxCyclesPerDay: irrigationConfigRaw.max_cycles_per_day,
+      skipDuringDark: irrigationConfigRaw.skip_during_dark,
+      pauseOnLowTank: irrigationConfigRaw.pause_on_low_tank,
+      logToLogbook: irrigationConfigRaw.log_to_logbook,
     };
 
     const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy
@@ -276,6 +282,12 @@ export class GrowspaceAdapter {
       drainConfig,
       energyTracking,
       waterUsage,
+
+      // Irrigation cycle telemetry
+      lastCycleTimestamp: wsData.last_cycle_timestamp ?? null,
+      nextScheduledCycle: wsData.next_scheduled_cycle ?? null,
+      cyclesToday: wsData.cycles_today ?? 0,
+      volumeDispensedToday: wsData.volume_dispensed_today ?? 0,
     });
   }
 

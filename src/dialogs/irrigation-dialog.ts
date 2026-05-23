@@ -14,6 +14,7 @@ import {
   addDrainTime,
   removeDrainTime,
   setIrrigationSettings,
+  runIrrigationCycle,
 } from '../store/growspace/irrigation-actions';
 import '../features/shared/ui';
 import '../features/shared/ui/md3-text-input';
@@ -86,6 +87,17 @@ export class IrrigationDialog extends LitElement {
   @state() private _drainLogging = false;
 
   @state() private _strategy: Partial<IrrigationStrategy> = {};
+
+  // Cycle parameters & behaviour toggles
+  @state() private _soilTriggerPercent: number | null = null;
+  @state() private _dailyVolumeCapLiters: number | null = null;
+  @state() private _maxCyclesPerDay: number | null = null;
+  @state() private _skipDuringDark = false;
+  @state() private _pauseOnLowTank = true;
+  @state() private _logToLogbook = true;
+
+  @state() private _runNowSaving = false;
+  @state() private _stageAggregates: Record<string, number> | null = null;
 
   private _dataService?: DataService;
 
@@ -471,6 +483,23 @@ export class IrrigationDialog extends LitElement {
         border: 1px solid rgba(255,152,0,0.3);
         margin-left: 8px;
       }
+
+      .action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        border-radius: 20px;
+        border: 1px solid rgba(79,195,247,0.4);
+        background: rgba(79,195,247,0.1);
+        color: #4fc3f7;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .action-btn:hover:not([disabled]) { background: rgba(79,195,247,0.2); }
+      .action-btn[disabled], .action-btn.saving { opacity: 0.5; cursor: default; }
 
       /* ── Tank row (bar-style) ── */
       .tank-row {
@@ -869,6 +898,7 @@ export class IrrigationDialog extends LitElement {
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('open') && this.open) {
       this._initializeState();
+      this._fetchStageAnalytics();
     }
     if (this.hass && (changedProps.has('hass') || !this._dataService)) {
       this._dataService = new DataService(this.hass);
@@ -885,6 +915,12 @@ export class IrrigationDialog extends LitElement {
     this._drainPumpEntity = config.drainPumpEntity || '';
     this._irrigationDuration = config.irrigationDuration || 60;
     this._drainDuration = config.drainDuration || 60;
+    this._soilTriggerPercent = config.soilTriggerPercent ?? null;
+    this._dailyVolumeCapLiters = config.dailyVolumeCapLiters ?? null;
+    this._maxCyclesPerDay = config.maxCyclesPerDay ?? null;
+    this._skipDuringDark = config.skipDuringDark ?? false;
+    this._pauseOnLowTank = config.pauseOnLowTank ?? true;
+    this._logToLogbook = config.logToLogbook ?? true;
 
     const strat = this.device.irrigationStrategy;
     this._strategy = {
@@ -923,7 +959,29 @@ export class IrrigationDialog extends LitElement {
       drainPumpEntity: this._drainPumpEntity,
       irrigationDuration: this._irrigationDuration,
       drainDuration: this._drainDuration,
+      soilTriggerPercent: this._soilTriggerPercent,
+      dailyVolumeCapLiters: this._dailyVolumeCapLiters,
+      maxCyclesPerDay: this._maxCyclesPerDay,
+      skipDuringDark: this._skipDuringDark,
+      pauseOnLowTank: this._pauseOnLowTank,
+      logToLogbook: this._logToLogbook,
     });
+  }
+
+  private async _fetchStageAnalytics() {
+    if (!this.device?.deviceId || !this._dataService) return;
+    const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
+    this._stageAggregates = result?.stage_aggregates ?? null;
+  }
+
+  private async _handleRunNow() {
+    if (!this.device?.deviceId || !this.store) return;
+    this._runNowSaving = true;
+    try {
+      await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
+    } finally {
+      this._runNowSaving = false;
+    }
   }
 
   private async _saveStrategy() {
@@ -2012,49 +2070,106 @@ export class IrrigationDialog extends LitElement {
         </div>
       </div>
 
-      <!-- Cycle Parameters (stub) -->
-      <!-- TODO: implement Cycle Parameters when backend adds soilTriggerPercent, dailyVolumeCap, maxCyclesPerDay -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <h3 style="margin:0;">Cycle Parameters</h3>
-          <span class="stub-badge">Coming soon</span>
+          <gs-help-tooltip message="Optional safety limits. Leave blank to disable."></gs-help-tooltip>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
           <div class="md3-input-group">
             <label class="md3-label">Soil Trigger (%)</label>
-            <input class="md3-input" type="number" value="38" disabled />
+            <input
+              class="md3-input"
+              type="number"
+              min="0" max="100" step="1"
+              .value=${this._soilTriggerPercent != null ? String(this._soilTriggerPercent) : ''}
+              placeholder="Off"
+              @change=${(e: Event) => {
+                const v = (e.target as HTMLInputElement).value;
+                this._soilTriggerPercent = v ? parseFloat(v) : null;
+              }}
+            />
           </div>
           <div class="md3-input-group">
             <label class="md3-label">Daily Volume Cap (L)</label>
-            <input class="md3-input" type="number" value="6.0" disabled />
+            <input
+              class="md3-input"
+              type="number"
+              min="0" step="0.1"
+              .value=${this._dailyVolumeCapLiters != null ? String(this._dailyVolumeCapLiters) : ''}
+              placeholder="Off"
+              @change=${(e: Event) => {
+                const v = (e.target as HTMLInputElement).value;
+                this._dailyVolumeCapLiters = v ? parseFloat(v) : null;
+              }}
+            />
           </div>
           <div class="md3-input-group">
             <label class="md3-label">Max Cycles / Day</label>
-            <input class="md3-input" type="number" value="8" disabled />
+            <input
+              class="md3-input"
+              type="number"
+              min="0" step="1"
+              .value=${this._maxCyclesPerDay != null ? String(this._maxCyclesPerDay) : ''}
+              placeholder="Off"
+              @change=${(e: Event) => {
+                const v = (e.target as HTMLInputElement).value;
+                this._maxCyclesPerDay = v ? parseInt(v, 10) : null;
+              }}
+            />
           </div>
         </div>
       </div>
 
-      <!-- Behaviour toggles (stub) -->
-      <!-- TODO: implement Behaviour toggles when backend supports skipDarkPeriod, pauseOnTankLow, logToLogbook -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <h3 style="margin:0;">Behaviour</h3>
-          <span class="stub-badge">Coming soon</span>
-        </div>
+      <div class="detail-card">
+        <h3 style="margin:0 0 14px;">Behaviour</h3>
         ${([
-          { label: 'Skip During Dark Period', desc: 'No cycles between lights-off and lights-on' },
-          { label: 'Pause on Tank Low',       desc: 'Halt cycles when any tank is below warning level' },
-          { label: 'Log to Logbook',          desc: 'Record start, duration, and moisture delta per cycle' },
+          {
+            label: 'Skip During Dark Period',
+            desc: 'No cycles between lights-off and lights-on',
+            get: () => this._skipDuringDark,
+            set: (v: boolean) => { this._skipDuringDark = v; },
+          },
+          {
+            label: 'Pause on Tank Low',
+            desc: 'Halt cycles when any tank is below warning level',
+            get: () => this._pauseOnLowTank,
+            set: (v: boolean) => { this._pauseOnLowTank = v; },
+          },
+          {
+            label: 'Log to Logbook',
+            desc: 'Record start, duration, and moisture delta per cycle',
+            get: () => this._logToLogbook,
+            set: (v: boolean) => { this._logToLogbook = v; },
+          },
         ]).map((row) => html`
           <div class="stub-row" style="margin-bottom:8px;">
             <div>
               <div class="stub-row-label">${row.label}</div>
               <div class="stub-row-desc">${row.desc}</div>
             </div>
-            <md3-switch .checked=${false} disabled></md3-switch>
+            <md3-switch
+              .checked=${row.get()}
+              @change=${(e: CustomEvent) => { row.set((e.target as any).checked); }}
+            ></md3-switch>
           </div>
         `)}
+      </div>
+
+      <div class="detail-card">
+        <h3 style="margin:0 0 14px;">Manual Override</h3>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button
+            class="action-btn${this._runNowSaving ? ' saving' : ''}"
+            ?disabled=${this._runNowSaving}
+            @click=${this._handleRunNow}
+          >
+            ${this._runNowSaving ? 'Starting…' : '▶ Run Now'}
+          </button>
+          <span style="font-size:12px;opacity:0.55;">
+            Triggers one irrigation cycle immediately, bypassing the schedule.
+          </span>
+        </div>
       </div>
     `;
   }
@@ -2192,7 +2307,28 @@ export class IrrigationDialog extends LitElement {
       </div>
     `;
 
+    const lastCycle = this.device?.lastCycleTimestamp
+      ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+      : null;
+    const nextCycle = this.device?.nextScheduledCycle
+      ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+      : null;
+    const cyclesToday = this.device?.cyclesToday ?? 0;
+    const volToday = this.device?.volumeDispensedToday ?? 0;
+
     return html`
+      ${hasPump ? html`
+        <div class="detail-card">
+          <h3 style="margin-top:0;margin-bottom:16px;">Cycle Telemetry</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:0;">
+            ${kpiCard('Cycles today', String(cyclesToday), '', '#4fc3f7')}
+            ${kpiCard('Dispensed today', volToday > 0 ? volToday.toFixed(2) : '—', volToday > 0 ? 'L' : '', '#81c784')}
+            ${lastCycle ? kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)') : kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
+            ${nextCycle ? kpiCard('Next cycle', nextCycle, '', '#ce93d8') : kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
+          </div>
+        </div>
+      ` : nothing}
+
       ${hasPump ? html`
         <div class="detail-card">
           <h3 style="margin-top:0;margin-bottom:16px;">Today's Usage</h3>
@@ -2336,18 +2472,21 @@ export class IrrigationDialog extends LitElement {
         </div>
       ` : nothing}
 
-      <!-- Per-Stage Summary (stub) -->
-      <!-- TODO: implement per-stage summary when backend exposes per-stage irrigation telemetry -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-          <h3 style="margin:0;">Per-Stage Summary</h3>
-          <span class="stub-badge">Coming soon</span>
+      ${this._stageAggregates && Object.keys(this._stageAggregates).length > 0 ? html`
+        <div class="detail-card">
+          <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${Object.entries(this._stageAggregates)
+              .sort(([, a], [, b]) => b - a)
+              .map(([stage, liters]) => html`
+                <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;">
+                  <span style="text-transform:capitalize;font-weight:500;">${stage}</span>
+                  <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
+                </div>
+              `)}
+          </div>
         </div>
-        <p style="font-size:0.85rem;opacity:0.6;margin:0;">
-          Average cycles/day, L/day, and dryback per growth stage will appear here
-          once per-stage telemetry is available from the backend.
-        </p>
-      </div>
+      ` : nothing}
 
       ${this._drainPumpEntity ? html`
         <div class="detail-card">

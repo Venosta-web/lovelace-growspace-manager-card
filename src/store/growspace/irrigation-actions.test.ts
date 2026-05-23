@@ -10,6 +10,7 @@ import {
   addDrainTime,
   removeDrainTime,
   setIrrigationSettings,
+  runIrrigationCycle,
 } from './irrigation-actions';
 
 function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
@@ -31,6 +32,7 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
       addDrainTime: vi.fn().mockResolvedValue(undefined),
       removeDrainTime: vi.fn().mockResolvedValue(undefined),
       setIrrigationSettings: vi.fn().mockResolvedValue(undefined),
+      runIrrigationCycle: vi.fn().mockResolvedValue(undefined),
     } as unknown as ActionContext['dataService'],
     ui: { showToast } as unknown as ActionContext['ui'],
     grid: {} as ActionContext['grid'],
@@ -470,5 +472,89 @@ describe('setIrrigationSettings', () => {
 
     expect(ctx.dataService.setIrrigationSettings).toHaveBeenCalledTimes(2);
     expect(ctx.dataService.setIrrigationSettings).toHaveBeenLastCalledWith(params);
+  });
+
+  it('sends new config fields to dataService when provided', async () => {
+    await setIrrigationSettings(ctx, {
+      growspaceId: 'gs1',
+      irrigationPumpEntity: 'switch.pump',
+      drainPumpEntity: '',
+      irrigationDuration: 60,
+      drainDuration: 60,
+      soilTriggerPercent: 38,
+      dailyVolumeCapLiters: 6.5,
+      maxCyclesPerDay: 8,
+      skipDuringDark: true,
+      pauseOnLowTank: false,
+      logToLogbook: true,
+    });
+
+    expect(ctx.dataService.setIrrigationSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        soilTriggerPercent: 38,
+        dailyVolumeCapLiters: 6.5,
+        maxCyclesPerDay: 8,
+        skipDuringDark: true,
+        pauseOnLowTank: false,
+        logToLogbook: true,
+      })
+    );
+  });
+
+  it('optimistically patches new config fields onto device', async () => {
+    await setIrrigationSettings(ctx, {
+      growspaceId: 'gs1',
+      irrigationPumpEntity: 'switch.pump',
+      drainPumpEntity: '',
+      irrigationDuration: 60,
+      drainDuration: 60,
+      soilTriggerPercent: 40,
+      skipDuringDark: true,
+      pauseOnLowTank: false,
+      logToLogbook: false,
+    });
+
+    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.soilTriggerPercent).toBe(40);
+    expect(device?.irrigationConfig.skipDuringDark).toBe(true);
+    expect(device?.irrigationConfig.pauseOnLowTank).toBe(false);
+    expect(device?.irrigationConfig.logToLogbook).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// runIrrigationCycle
+// ---------------------------------------------------------------------------
+
+describe('runIrrigationCycle', () => {
+  let ctx: ActionContext;
+
+  beforeEach(() => {
+    ctx = makeContext();
+  });
+
+  it('calls dataService.runIrrigationCycle with growspaceId', async () => {
+    await runIrrigationCycle(ctx, { growspaceId: 'gs1' });
+
+    expect(ctx.dataService.runIrrigationCycle).toHaveBeenCalledWith({ growspaceId: 'gs1' });
+  });
+
+  it('calls dataService.runIrrigationCycle with optional duration', async () => {
+    await runIrrigationCycle(ctx, { growspaceId: 'gs1', duration: 90 });
+
+    expect(ctx.dataService.runIrrigationCycle).toHaveBeenCalledWith({ growspaceId: 'gs1', duration: 90 });
+  });
+
+  it('shows error toast when backend fails', async () => {
+    vi.mocked(ctx.dataService.runIrrigationCycle).mockRejectedValue(new Error('pump error'));
+
+    await expect(
+      runIrrigationCycle(ctx, { growspaceId: 'gs1' })
+    ).rejects.toThrow();
+
+    expect(ctx.ui.showToast as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
+      expect.any(String),
+      'error'
+    );
   });
 });

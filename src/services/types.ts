@@ -38,6 +38,12 @@ export interface IrrigationConfig {
   irrigationTimes: IrrigationScheduleItem[];
   drainTimes: IrrigationScheduleItem[];
   vegDayHours?: number;
+  soilTriggerPercent?: number | null;
+  dailyVolumeCapLiters?: number | null;
+  maxCyclesPerDay?: number | null;
+  skipDuringDark?: boolean;
+  pauseOnLowTank?: boolean;
+  logToLogbook?: boolean;
 }
 
 export interface SerializedIrrigationStrategy {
@@ -59,6 +65,12 @@ export interface SerializedIrrigationConfig {
   irrigation_times: IrrigationScheduleItem[];
   drain_times: IrrigationScheduleItem[];
   veg_day_hours?: number;
+  soil_trigger_percent?: number | null;
+  daily_volume_cap_liters?: number | null;
+  max_cycles_per_day?: number | null;
+  skip_during_dark?: boolean;
+  pause_on_low_tank?: boolean;
+  log_to_logbook?: boolean;
 }
 
 export interface TankWaterEvent {
@@ -433,6 +445,12 @@ export interface GrowspaceDevice {
   energyTracking?: EnergyTracking | null;
   waterUsage?: WaterUsage | null;
   subareas?: Subarea[];
+
+  // Irrigation cycle telemetry (injected by backend view model)
+  lastCycleTimestamp?: string | null;
+  nextScheduledCycle?: string | null;
+  cyclesToday?: number;
+  volumeDispensedToday?: number;
 }
 
 // --- Utils ---

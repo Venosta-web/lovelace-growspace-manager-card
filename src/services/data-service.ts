@@ -274,6 +274,12 @@ export class DataService {
   waterGrowspace = (growspaceId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
     this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
 
+  runIrrigationCycle = (params: Parameters<IrrigationAPI['runIrrigationCycle']>[0]) =>
+    this._irrigationAPI.runIrrigationCycle(params);
+
+  getIrrigationAnalytics = (growspaceId: string) =>
+    this._irrigationAPI.getIrrigationAnalytics(growspaceId);
+
   // ── AI ───────────────────────────────────────────────────────────────────
 
   askGrowAdvice = (growspaceId: string, userQuery: string) =>

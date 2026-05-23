@@ -9,7 +9,14 @@ type IrrigationSettingsParams = {
   drainPumpEntity: string;
   irrigationDuration: number;
   drainDuration: number;
+  soilTriggerPercent?: number | null;
+  dailyVolumeCapLiters?: number | null;
+  maxCyclesPerDay?: number | null;
+  skipDuringDark?: boolean;
+  pauseOnLowTank?: boolean;
+  logToLogbook?: boolean;
 };
+type RunIrrigationCycleParams = { growspaceId: string; duration?: number };
 
 function getIrrigationConfig(ctx: ActionContext, growspaceId: string): IrrigationConfig {
   const device = ctx.data.$devices.get().find((d) => d.deviceId === growspaceId);
@@ -126,9 +133,32 @@ export async function setIrrigationSettings(
   ctx: ActionContext,
   params: IrrigationSettingsParams
 ): Promise<void> {
-  const { growspaceId, irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration } = params;
+  const {
+    growspaceId,
+    irrigationPumpEntity,
+    drainPumpEntity,
+    irrigationDuration,
+    drainDuration,
+    soilTriggerPercent,
+    dailyVolumeCapLiters,
+    maxCyclesPerDay,
+    skipDuringDark,
+    pauseOnLowTank,
+    logToLogbook,
+  } = params;
   const prev = getIrrigationConfig(ctx, growspaceId);
-  const patch = { irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration };
+  const patch = {
+    irrigationPumpEntity,
+    drainPumpEntity,
+    irrigationDuration,
+    drainDuration,
+    soilTriggerPercent,
+    dailyVolumeCapLiters,
+    maxCyclesPerDay,
+    skipDuringDark,
+    pauseOnLowTank,
+    logToLogbook,
+  };
 
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
     'update',
@@ -140,6 +170,12 @@ export async function setIrrigationSettings(
         drainPumpEntity: prev.drainPumpEntity,
         irrigationDuration: prev.irrigationDuration,
         drainDuration: prev.drainDuration,
+        soilTriggerPercent: prev.soilTriggerPercent,
+        dailyVolumeCapLiters: prev.dailyVolumeCapLiters,
+        maxCyclesPerDay: prev.maxCyclesPerDay,
+        skipDuringDark: prev.skipDuringDark,
+        pauseOnLowTank: prev.pauseOnLowTank,
+        logToLogbook: prev.logToLogbook,
       })
   );
 
@@ -152,6 +188,18 @@ export async function setIrrigationSettings(
   } catch (e) {
     ctx.optimisticManager.rollbackUpdate(actionId);
     ctx.ui.showToast('Failed to save irrigation settings', 'error');
+    throw e;
+  }
+}
+
+export async function runIrrigationCycle(
+  ctx: ActionContext,
+  params: RunIrrigationCycleParams
+): Promise<void> {
+  try {
+    await ctx.dataService.runIrrigationCycle(params);
+  } catch (e) {
+    ctx.ui.showToast('Failed to start irrigation cycle', 'error');
     throw e;
   }
 }
