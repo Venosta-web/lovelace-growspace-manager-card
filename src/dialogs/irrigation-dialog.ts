@@ -1301,14 +1301,21 @@ export class IrrigationDialog extends LitElement {
           <!-- Persistent footer -->
           <div class="dlg-footer">
             <div class="dlg-footer-meta">
-              <span>Last cycle —</span>
+              <span>Last cycle ${this.device?.lastCycleTimestamp
+                ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+                : '—'}</span>
               <span class="sep">·</span>
-              <span>Next —</span>
+              <span>Next ${this.device?.nextScheduledCycle
+                ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+                : '—'}</span>
             </div>
             <div class="dlg-footer-actions">
               <button class="md3-button text" @click=${this._close}>Close</button>
-              <!-- TODO: implement Run Now when backend exposes manual irrigation trigger -->
-              <button class="md3-button tonal" disabled title="Coming soon">Run Now</button>
+              <button
+                class="md3-button tonal"
+                ?disabled=${this._runNowSaving}
+                @click=${this._handleRunNow}
+              >${this._runNowSaving ? 'Starting…' : 'Run Now'}</button>
               <button
                 class="md3-button primary btn-save-all"
                 style="background: ${dialogColor};"
