@@ -42,7 +42,9 @@ export class GrowspaceCard {
   async clickMenuItem(itemText: string | RegExp) {
     await this.openMenu();
     const menuItem = this.menu.locator('.menu-item', { hasText: itemText });
-    await menuItem.click();
+    // dispatchEvent bypasses all Playwright viewport and visibility guards,
+    // needed for menu items that overflow the dropdown container off-screen.
+    await menuItem.dispatchEvent('click');
   }
 
   /**

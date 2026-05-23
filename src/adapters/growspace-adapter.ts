@@ -11,6 +11,7 @@ import {
   IrrigationConfig,
   IrrigationStrategy,
 } from '../types';
+import type { ECTargetStage } from '../services/types';
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -204,6 +205,11 @@ export class GrowspaceAdapter {
       autoAdvanceP1ToP2: irrigationConfigRaw.auto_advance_p1_to_p2,
       autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
       haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
+      ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map((r: { stage: string; min_ec: number; max_ec: number }) => ({
+        stage: r.stage as ECTargetStage,
+        minEc: r.min_ec,
+        maxEc: r.max_ec,
+      })),
     };
 
     const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy

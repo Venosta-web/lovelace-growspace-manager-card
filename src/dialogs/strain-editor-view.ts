@@ -20,6 +20,8 @@ import {
   mdiPlus,
   mdiStar,
   mdiStarOutline,
+  mdiCamera,
+  mdiImageMultiple,
 } from '@mdi/js';
 import './strain-import-dialog';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -54,6 +56,7 @@ export class StrainEditorView extends LitElement {
   @state() private _breederDialogOpen = false;
   @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
   @state() private _pendingDeleteBreeder: string | null = null;
+  @state() private _showAddPhotoMenu = false;
 
   private _dispatchStateChange() {
     this.dispatchEvent(
@@ -978,10 +981,11 @@ export class StrainEditorView extends LitElement {
     const gallery = this._gallery();
     const thumbIndex = gallery.findIndex((img) => img.is_thumbnail);
 
-    const handleGalleryFileChange = (e: Event) => {
+    const handleFileChange = (e: Event) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) this._handleGalleryUpload(file);
       (e.target as HTMLInputElement).value = '';
+      this._showAddPhotoMenu = false;
     };
 
     const handleDrop = (e: DragEvent) => {
@@ -991,7 +995,7 @@ export class StrainEditorView extends LitElement {
     };
 
     return html`
-      <div class="sd-form-group" style="margin-bottom: 16px;">
+      <div class="sd-form-group" style="margin-bottom: 16px; position: relative;">
         <label class="sd-label">Photo Gallery</label>
 
         <div
@@ -1037,8 +1041,11 @@ export class StrainEditorView extends LitElement {
             </div>
           `)}
 
-          <label
-            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._uploadingImage ? 'wait' : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem;"
+          <!-- Add button — opens choice menu -->
+          <button
+            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._uploadingImage ? 'wait' : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
+            ?disabled=${this._uploadingImage}
+            @click=${() => { if (!this._uploadingImage) this._showAddPhotoMenu = true; }}
           >
             ${this._uploadingImage
               ? html`<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent-green);border-radius:50%;animation:spin 1s linear infinite;"></div>`
@@ -1046,13 +1053,41 @@ export class StrainEditorView extends LitElement {
                 <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
                 Add
               `}
-            <input type="file" accept="image/*" style="display:none" ?disabled=${this._uploadingImage} @change=${handleGalleryFileChange} />
-          </label>
+          </button>
+
+          <!-- Hidden inputs: one for camera, one for file picker -->
+          <input id="gallery-camera-input" type="file" accept="image/*" capture="environment" style="display:none" @change=${handleFileChange} />
+          <input id="gallery-library-input" type="file" accept="image/*" style="display:none" @change=${handleFileChange} />
         </div>
 
         ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta ? html`
           <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px;">
             Thumbnail crop applied · click ✂ to adjust
+          </div>
+        ` : nothing}
+
+        <!-- Add-photo choice menu -->
+        ${this._showAddPhotoMenu ? html`
+          <div
+            style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
+            @click=${() => { this._showAddPhotoMenu = false; }}
+          ></div>
+          <div style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;">
+            <div style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 8px;"></div>
+            <button
+              style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
+              @click=${(e: Event) => { e.stopPropagation(); this._showAddPhotoMenu = false; (this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement)?.click(); }}
+            >
+              <svg style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+              Take Photo
+            </button>
+            <button
+              style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
+              @click=${(e: Event) => { e.stopPropagation(); this._showAddPhotoMenu = false; (this.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement)?.click(); }}
+            >
+              <svg style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;" viewBox="0 0 24 24"><path d="${mdiImageMultiple}"></path></svg>
+              Choose from Library
+            </button>
           </div>
         ` : nothing}
       </div>

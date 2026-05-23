@@ -15,6 +15,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Load .env.test from the tests/e2e directory if present
+const envPath = path.join(__dirname, '..', '.env.test');
+if (fs.existsSync(envPath)) {
+  for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    const val = trimmed.slice(eq + 1).trim();
+    if (!(key in process.env)) process.env[key] = val;
+  }
+}
+
 const BASE_URL = process.env.HA_BASE_URL ?? 'http://localhost:8123';
 const TOKEN = process.env.HA_ACCESS_TOKEN;
 

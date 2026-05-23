@@ -9,6 +9,14 @@ import type { VisionCheckupConfig } from '../lib/types/dialog';
 
 // --- Irrigation ---
 
+export type ECTargetStage = 'seedling' | 'veg' | 'flower_early' | 'flower_mid' | 'flower_late';
+
+export interface ECTargetRange {
+  stage: ECTargetStage;
+  minEc: number;
+  maxEc: number;
+}
+
 export interface IrrigationScheduleItem {
   time?: string; // HH:MM or HH:MM:SS - Legacy support
   start_time?: string; // HH:MM:SS - New format
@@ -47,6 +55,7 @@ export interface IrrigationConfig {
   autoAdvanceP1ToP2?: boolean;
   autoAdvanceP2ToP3?: boolean;
   haltOnRunoffEcThreshold?: number | null;
+  ecTargetRanges?: ECTargetRange[];
 }
 
 export interface SerializedIrrigationStrategy {
@@ -77,6 +86,7 @@ export interface SerializedIrrigationConfig {
   auto_advance_p1_to_p2?: boolean;
   auto_advance_p2_to_p3?: boolean;
   halt_on_runoff_ec_threshold?: number | null;
+  ec_target_ranges?: Array<{ stage: string; min_ec: number; max_ec: number }>;
 }
 
 export interface TankWaterEvent {

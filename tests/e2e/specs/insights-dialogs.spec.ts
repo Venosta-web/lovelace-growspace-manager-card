@@ -9,6 +9,9 @@ test.describe('Insights dialogs', () => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.dashboardPath);
     await growspaceCard.waitForCardReady();
+    // Auth redirect causes deferred re-render on first load → reload after auth settles
+    await page.reload();
+    await growspaceCard.waitForCardReady();
   });
 
   test('logbook dialog opens from menu', async ({ page }) => {

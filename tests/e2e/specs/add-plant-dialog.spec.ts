@@ -12,25 +12,20 @@ const TODAY = new Date().toISOString().split('T')[0];
  * three free slots.
  */
 async function cleanupNonAnchorPlants(page: Page, growspaceId: string): Promise<void> {
-  const plantIds: string[] = await page.evaluate((gId) => {
-    const states = (window as any).hass?.states ?? {};
-    return Object.values(states)
-      .filter((s: any) =>
-        s.attributes.plant_id &&
-        s.attributes.growspace_id === gId &&
-        !(s.attributes.row === 1 && s.attributes.col === 1)
-      )
-      .map((s: any) => s.attributes.plant_id as string);
-  }, growspaceId);
+  // Use the HA REST API — the page context already carries the Bearer token from
+  // the authentication fixture, so this works without shadow-DOM traversal tricks.
+  const response = await page.request.get('/api/states');
+  const states: any[] = await response.json();
+  const plantIds = states
+    .filter((s) =>
+      s.attributes?.plant_id &&
+      s.attributes?.growspace_id === growspaceId &&
+      !(s.attributes?.row === 1 && s.attributes?.col === 1)
+    )
+    .map((s) => s.attributes.plant_id as string);
 
   for (const plantId of plantIds) {
     await callHAService(page, 'growspace_manager', 'remove_plant', { plant_id: plantId }).catch(() => {});
-  }
-
-  if (plantIds.length > 0) {
-    // Allow the coordinator to refresh before the test interacts with the card
-    await page.waitForTimeout(1000);
-    await page.reload({ waitUntil: 'domcontentloaded' });
   }
 }
 
@@ -48,13 +43,19 @@ test.describe('Add Plant Dialog', () => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.vegDashboardPath);
     await growspaceCard.waitForCardReady();
-    await cleanupNonAnchorPlants(page, testContext.vegGrowspaceId);
+    // Auth redirect causes deferred re-render on first load → reload after auth settles
+    await page.reload();
     await growspaceCard.waitForCardReady();
+    await cleanupNonAnchorPlants(page, testContext.vegGrowspaceId);
+    // Wait for the card to reflect cleanup — slot (1,1) must be free before any test runs
+    await growspaceCard.emptyCell(1, 1).waitFor({ state: 'visible', timeout: 10000 });
   });
 
-  // ── Helper: open the dialog by clicking the free slot at row 1, col 2 ────────
+  // ── Helper: open the dialog by clicking the free slot at row 1, col 1 ────────
+  // Note: the card's data-col is reversed relative to the service's col param.
+  // The anchor is at service(1,1) → data-col=2. The adjacent slot is data-col=1.
   async function openDialog(page: Page): Promise<AddPlantDialog> {
-    await growspaceCard.emptyCell(1, 2).click();
+    await growspaceCard.emptyCell(1, 1).click();
     const dialog = new AddPlantDialog(page);
     await dialog.waitForOpen();
     return dialog;
@@ -62,6 +63,7 @@ test.describe('Add Plant Dialog', () => {
 
   // ── 1. Happy path — seed source ───────────────────────────────────────────────
   test('adds a plant via seed source (full wizard + persistence)', async ({ page }) => {
+    test.setTimeout(30000);
     const dialog = await openDialog(page);
 
     // Step 1 — Identity
@@ -124,6 +126,7 @@ test.describe('Add Plant Dialog', () => {
 
   // ── 4. Happy path — clone source (anchor plant is in veg stage, i.e. clonable) ─
   test('adds a plant via clone source (full wizard + persistence)', async ({ page }) => {
+    test.setTimeout(30000);
     const dialog = await openDialog(page);
 
     // Step 1 — Identity

@@ -84,6 +84,7 @@ var mdiAccountGroup = "M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.
 var mdiAirFilter = "M19,18.31V20A2,2 0 0,1 17,22H7A2,2 0 0,1 5,20V16.3C4.54,16.12 3.95,16 3,16A1,1 0 0,1 2,15A1,1 0 0,1 3,14C3.82,14 4.47,14.08 5,14.21V12.3C4.54,12.12 3.95,12 3,12A1,1 0 0,1 2,11A1,1 0 0,1 3,10C3.82,10 4.47,10.08 5,10.21V8.3C4.54,8.12 3.95,8 3,8A1,1 0 0,1 2,7A1,1 0 0,1 3,6C3.82,6 4.47,6.08 5,6.21V4A2,2 0 0,1 7,2H17A2,2 0 0,1 19,4V6.16C20.78,6.47 21.54,7.13 21.71,7.29C22.1,7.68 22.1,8.32 21.71,8.71C21.32,9.1 20.8,9.09 20.29,8.71V8.71C20.29,8.71 19.25,8 17,8C15.74,8 14.91,8.41 13.95,8.9C12.91,9.41 11.74,10 10,10C9.64,10 9.31,10 9,9.96V7.95C9.3,8 9.63,8 10,8C11.26,8 12.09,7.59 13.05,7.11C14.09,6.59 15.27,6 17,6V4H7V20H17V18C18.5,18 18.97,18.29 19,18.31M17,10C15.27,10 14.09,10.59 13.05,11.11C12.09,11.59 11.26,12 10,12C9.63,12 9.3,12 9,11.95V13.96C9.31,14 9.64,14 10,14C11.74,14 12.91,13.41 13.95,12.9C14.91,12.42 15.74,12 17,12C19.25,12 20.29,12.71 20.29,12.71V12.71C20.8,13.1 21.32,13.1 21.71,12.71C22.1,12.32 22.1,11.69 21.71,11.29C21.5,11.08 20.25,10 17,10M17,14C15.27,14 14.09,14.59 13.05,15.11C12.09,15.59 11.26,16 10,16C9.63,16 9.3,16 9,15.95V17.96C9.31,18 9.64,18 10,18C11.74,18 12.91,17.41 13.95,16.9C14.91,16.42 15.74,16 17,16C19.25,16 20.29,16.71 20.29,16.71V16.71C20.8,17.1 21.32,17.1 21.71,16.71C22.1,16.32 22.1,15.69 21.71,15.29C21.5,15.08 20.25,14 17,14Z";
 var mdiAirHumidifier = "M11 9C8.79 9 7 10.79 7 13S8.79 17 11 17 15 15.21 15 13 13.21 9 11 9M11 15C9.9 15 9 14.11 9 13S9.9 11 11 11 13 11.9 13 13 12.11 15 11 15M7 4H14C16.21 4 18 5.79 18 8V9H16V8C16 6.9 15.11 6 14 6H7C5.9 6 5 6.9 5 8V20H16V18H18V22H3V8C3 5.79 4.79 4 7 4M19 10.5C19 10.5 21 12.67 21 14C21 15.1 20.1 16 19 16S17 15.1 17 14C17 12.67 19 10.5 19 10.5";
 var mdiAirHumidifierOff = "M22.1 21.5L2.4 1.7L1.1 3L3.8 5.7C3.3 6.3 3 7.1 3 8V22H18V19.9L20.8 22.7L22.1 21.5M9.6 11.5L12.4 14.3C12.1 14.7 11.6 15 11 15C9.9 15 9 14.1 9 13C9 12.4 9.3 11.9 9.6 11.5M16 17.9V20H5V8C5 7.7 5.1 7.4 5.2 7.1L8.2 10.1C7.5 10.8 7 11.9 7 13C7 15.2 8.8 17 11 17C12.1 17 13.2 16.5 13.9 15.8L16 17.9M17 13.8C17.1 12.5 19 10.5 19 10.5S21 12.7 21 14C21 15 20.2 15.9 19.2 16L17 13.8M9.2 6L7.2 4H14C16.2 4 18 5.8 18 8V9H16V8C16 6.9 15.1 6 14 6H9.2Z";
+var mdiAlert = "M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z";
 var mdiAlertCircle = "M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiArrowCollapse = "M19.5,3.09L15,7.59V4H13V11H20V9H16.41L20.91,4.5L19.5,3.09M4,13V15H7.59L3.09,19.5L4.5,20.91L9,16.41V20H11V13H4Z";
 var mdiArrowDown = "M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z";
@@ -144,6 +145,7 @@ var mdiFullscreenExit = "M14,14H19V16H16V19H14V14M5,14H10V19H8V16H5V14M8,5H10V10
 var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12C20,14.4 19,16.5 17.3,18C15.9,16.7 14,16 12,16C10,16 8.2,16.7 6.7,18C5,16.5 4,14.4 4,12A8,8 0 0,1 12,4M14,5.89C13.62,5.9 13.26,6.15 13.1,6.54L11.81,9.77L11.71,10C11,10.13 10.41,10.6 10.14,11.26C9.73,12.29 10.23,13.45 11.26,13.86C12.29,14.27 13.45,13.77 13.86,12.74C14.12,12.08 14,11.32 13.57,10.76L13.67,10.5L14.96,7.29L14.97,7.26C15.17,6.75 14.92,6.17 14.41,5.96C14.28,5.91 14.15,5.89 14,5.89M10,6A1,1 0 0,0 9,7A1,1 0 0,0 10,8A1,1 0 0,0 11,7A1,1 0 0,0 10,6M7,9A1,1 0 0,0 6,10A1,1 0 0,0 7,11A1,1 0 0,0 8,10A1,1 0 0,0 7,9M17,9A1,1 0 0,0 16,10A1,1 0 0,0 17,11A1,1 0 0,0 18,10A1,1 0 0,0 17,9Z";
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
+var mdiImageMultiple = "M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M11,12L13.03,14.71L16,11L20,16H8M2,6V20A2,2 0 0,0 4,22H18V20H4V6";
 var mdiInformation = "M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiInformationOutline = "M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
@@ -5291,6 +5293,14 @@ class GrowspaceAdapter {
             skipDuringDark: irrigationConfigRaw.skip_during_dark,
             pauseOnLowTank: irrigationConfigRaw.pause_on_low_tank,
             logToLogbook: irrigationConfigRaw.log_to_logbook,
+            autoAdvanceP1ToP2: irrigationConfigRaw.auto_advance_p1_to_p2,
+            autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
+            haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
+            ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map((r) => ({
+                stage: r.stage,
+                minEc: r.min_ec,
+                maxEc: r.max_ec,
+            })),
         };
         const irrigationStrategy = wsData.irrigation_strategy
             ? {
@@ -5449,6 +5459,7 @@ const SERVICES = {
     LOG_DRYING_WEIGHT: 'log_drying_weight',
     LOG_MOISTURE_READING: 'log_moisture_reading',
     SET_VISUAL_TAG: 'set_visual_tag',
+    SET_EC_TARGET_RANGE: 'set_ec_target_range',
 };
 // Storage keys
 const STORAGE_KEYS = {
@@ -6780,6 +6791,17 @@ class IrrigationAPI extends BaseAPI {
             payload.drain_volume_ml = params.drainVolumeMl;
         await this.callService(DOMAIN$1, SERVICES.LOG_DRAIN_READING, payload);
     }
+    async setEcTargetRanges(growspaceId, ranges) {
+        for (const r of ranges) {
+            const payload = {
+                growspace_id: growspaceId,
+                stage: r.stage,
+                feed_ec_min: r.minEc,
+                feed_ec_max: r.maxEc,
+            };
+            await this.callService(DOMAIN$1, SERVICES.SET_EC_TARGET_RANGE, payload);
+        }
+    }
     async getIrrigationAnalytics(growspaceId) {
         return this.sendWebSocket(`${DOMAIN$1}/irrigation_analytics`, { growspace_id: growspaceId });
     }
@@ -7201,6 +7223,7 @@ class DataService {
         this.waterGrowspace = (growspaceId, amount, nutrients, presetId) => this._irrigationAPI.waterGrowspace(growspaceId, amount, nutrients, presetId);
         this.runIrrigationCycle = (params) => this._irrigationAPI.runIrrigationCycle(params);
         this.getIrrigationAnalytics = (growspaceId) => this._irrigationAPI.getIrrigationAnalytics(growspaceId);
+        this.setEcTargetRanges = (...args) => this._irrigationAPI.setEcTargetRanges(...args);
         // ── AI ───────────────────────────────────────────────────────────────────
         this.askGrowAdvice = (growspaceId, userQuery) => this._aiAPI.askGrowAdvice(growspaceId, userQuery);
         this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
@@ -19002,7 +19025,7 @@ async function removeDrainTime(ctx, params) {
     }
 }
 async function setIrrigationSettings(ctx, params) {
-    const { growspaceId, irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration, soilTriggerPercent, dailyVolumeCapLiters, maxCyclesPerDay, skipDuringDark, pauseOnLowTank, logToLogbook, } = params;
+    const { growspaceId, irrigationPumpEntity, drainPumpEntity, irrigationDuration, drainDuration, soilTriggerPercent, dailyVolumeCapLiters, maxCyclesPerDay, skipDuringDark, pauseOnLowTank, logToLogbook, autoAdvanceP1ToP2, autoAdvanceP2ToP3, haltOnRunoffEcThreshold, } = params;
     const prev = getIrrigationConfig(ctx, growspaceId);
     const patch = {
         irrigationPumpEntity,
@@ -19015,6 +19038,9 @@ async function setIrrigationSettings(ctx, params) {
         skipDuringDark,
         pauseOnLowTank,
         logToLogbook,
+        autoAdvanceP1ToP2,
+        autoAdvanceP2ToP3,
+        haltOnRunoffEcThreshold,
     };
     const actionId = await ctx.optimisticManager.applyOptimisticUpdate('update', params, () => ctx.data.patchDeviceIrrigationConfig(growspaceId, patch), () => ctx.data.patchDeviceIrrigationConfig(growspaceId, {
         irrigationPumpEntity: prev.irrigationPumpEntity,
@@ -19027,6 +19053,9 @@ async function setIrrigationSettings(ctx, params) {
         skipDuringDark: prev.skipDuringDark,
         pauseOnLowTank: prev.pauseOnLowTank,
         logToLogbook: prev.logToLogbook,
+        autoAdvanceP1ToP2: prev.autoAdvanceP1ToP2,
+        autoAdvanceP2ToP3: prev.autoAdvanceP2ToP3,
+        haltOnRunoffEcThreshold: prev.haltOnRunoffEcThreshold,
     }));
     try {
         await ctx.dataService.setIrrigationSettings(params);
@@ -19065,6 +19094,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainDuration = 60;
         this._activeTab = 'schedules';
         this._activePhase = 'p2';
+        this._phaseConfirmOpen = false;
+        this._pendingPhase = undefined;
         // Drain EC state
         this._drainEcEnabled = false;
         this._drainEcMaxDelta = 1.0;
@@ -19075,6 +19106,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._drainLogDrainVolume = 0;
         this._drainSaving = false;
         this._drainLogging = false;
+        this._ecTargetRanges = [
+            { stage: 'seedling', minEc: 0, maxEc: 0 },
+            { stage: 'veg', minEc: 0, maxEc: 0 },
+            { stage: 'flower_early', minEc: 0, maxEc: 0 },
+            { stage: 'flower_mid', minEc: 0, maxEc: 0 },
+            { stage: 'flower_late', minEc: 0, maxEc: 0 },
+        ];
         this._strategy = {};
         // Cycle parameters & behaviour toggles
         this._soilTriggerPercent = null;
@@ -19083,6 +19121,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._skipDuringDark = false;
         this._pauseOnLowTank = true;
         this._logToLogbook = true;
+        this._autoAdvanceP1ToP2 = false;
+        this._autoAdvanceP2ToP3 = false;
+        this._haltOnRunoffEcThreshold = null;
         this._runNowSaving = false;
         this._stageAggregates = null;
     }
@@ -19164,6 +19205,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._skipDuringDark = config.skipDuringDark ?? false;
         this._pauseOnLowTank = config.pauseOnLowTank ?? true;
         this._logToLogbook = config.logToLogbook ?? true;
+        this._autoAdvanceP1ToP2 = config.autoAdvanceP1ToP2 ?? false;
+        this._autoAdvanceP2ToP3 = config.autoAdvanceP2ToP3 ?? false;
+        this._haltOnRunoffEcThreshold = config.haltOnRunoffEcThreshold ?? null;
         const strat = this.device.irrigationStrategy;
         this._strategy = {
             enabled: strat?.enabled || false,
@@ -19181,6 +19225,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._drainEcMaxDelta = dc.maxEcDelta;
             this._drainEcTargetRunoffPercent = dc.targetRunoffPercent;
         }
+        const ranges = config.ecTargetRanges;
+        if (ranges && ranges.length > 0) {
+            this._ecTargetRanges = ['seedling', 'veg', 'flower_early', 'flower_mid', 'flower_late'].map((stage) => {
+                const found = ranges.find((r) => r.stage === stage);
+                return found ?? { stage, minEc: 0, maxEc: 0 };
+            });
+        }
     }
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
@@ -19188,6 +19239,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         await this._saveSettings();
         await this._saveStrategy();
         await this._saveDrainConfig();
+        await this._saveEcTargetRanges();
+    }
+    async _saveEcTargetRanges() {
+        if (!this.device?.deviceId || !this._dataService)
+            return;
+        await this._dataService.setEcTargetRanges(this.device.deviceId, this._ecTargetRanges);
     }
     async _saveSettings() {
         if (!this.device?.deviceId || !this.store)
@@ -19204,6 +19261,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             skipDuringDark: this._skipDuringDark,
             pauseOnLowTank: this._pauseOnLowTank,
             logToLogbook: this._logToLogbook,
+            autoAdvanceP1ToP2: this._autoAdvanceP1ToP2,
+            autoAdvanceP2ToP3: this._autoAdvanceP2ToP3,
+            haltOnRunoffEcThreshold: this._haltOnRunoffEcThreshold,
         });
     }
     async _fetchStageAnalytics() {
@@ -19532,14 +19592,21 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <!-- Persistent footer -->
           <div class="dlg-footer">
             <div class="dlg-footer-meta">
-              <span>Last cycle —</span>
+              <span>Last cycle ${this.device?.lastCycleTimestamp
+            ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+            : '—'}</span>
               <span class="sep">·</span>
-              <span>Next —</span>
+              <span>Next ${this.device?.nextScheduledCycle
+            ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
+            : '—'}</span>
             </div>
             <div class="dlg-footer-actions">
               <button class="md3-button text" @click=${this._close}>Close</button>
-              <!-- TODO: implement Run Now when backend exposes manual irrigation trigger -->
-              <button class="md3-button tonal" disabled title="Coming soon">Run Now</button>
+              <button
+                class="md3-button tonal"
+                ?disabled=${this._runNowSaving}
+                @click=${this._handleRunNow}
+              >${this._runNowSaving ? 'Starting…' : 'Run Now'}</button>
               <button
                 class="md3-button primary btn-save-all"
                 style="background: ${dialogColor};"
@@ -20146,6 +20213,24 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         else
             this._editingDrainTime = undefined;
     }
+    _handlePhaseCardClick(phaseId) {
+        if (this._activePhase === phaseId) {
+            return;
+        }
+        this._pendingPhase = phaseId;
+        this._phaseConfirmOpen = true;
+    }
+    _confirmPhaseChange() {
+        if (this._pendingPhase) {
+            this._activePhase = this._pendingPhase;
+        }
+        this._pendingPhase = undefined;
+        this._phaseConfirmOpen = false;
+    }
+    _cancelPhaseChange() {
+        this._pendingPhase = undefined;
+        this._phaseConfirmOpen = false;
+    }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     _renderSteeringTab(_color) {
         return x `
@@ -20167,7 +20252,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         ].map((p) => x `
             <div
               class="phase-card ${this._activePhase === p.id ? 'active' : ''}"
-              @click=${() => { this._activePhase = p.id; }}
+              @click=${() => this._handlePhaseCardClick(p.id)}
             >
               <div class="phase-num">Phase · ${p.label}</div>
               <div class="phase-nm">${p.name}</div>
@@ -20242,27 +20327,91 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       </div>
 
-      <!-- Phase Triggers (stub) -->
-      <!-- TODO: implement Phase Triggers when backend exposes auto-advance logic -->
-      <div class="detail-card" style="opacity:0.6;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+      <!-- Phase Triggers -->
+      <div class="detail-card">
+        <div style="margin-bottom:14px;">
           <h3 style="margin:0;">Phase Triggers</h3>
-          <span class="stub-badge">Coming soon</span>
         </div>
-        ${([
-            { label: 'Auto-advance P1 → P2', desc: 'When substrate moisture reaches field capacity' },
-            { label: 'Auto-advance P2 → P3', desc: 'N hours before lights-off (per stage)' },
-            { label: 'Halt on Runoff EC > 4.0', desc: 'Suspend cycles and alert until manual resume' },
-        ]).map((row) => x `
-          <div class="stub-row" style="margin-bottom:8px;">
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
             <div>
-              <div class="stub-row-label">${row.label}</div>
-              <div class="stub-row-desc">${row.desc}</div>
+              <div class="stub-row-label">Auto-advance P1 → P2</div>
+              <div class="stub-row-desc">When substrate moisture reaches field capacity</div>
             </div>
-            <md3-switch .checked=${false} disabled></md3-switch>
+            <md3-switch
+              data-field="autoAdvanceP1ToP2"
+              .checked=${this._autoAdvanceP1ToP2}
+              @change=${(e) => { this._autoAdvanceP1ToP2 = e.target.checked; }}
+            ></md3-switch>
           </div>
-        `)}
+        </div>
+        <div style="margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Auto-advance P2 → P3</div>
+              <div class="stub-row-desc">N hours before lights-off (per stage)</div>
+            </div>
+            <md3-switch
+              data-field="autoAdvanceP2ToP3"
+              .checked=${this._autoAdvanceP2ToP3}
+              @change=${(e) => { this._autoAdvanceP2ToP3 = e.target.checked; }}
+            ></md3-switch>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="stub-row-label">Halt on Runoff EC</div>
+              <div class="stub-row-desc">Suspend cycles and alert until manual resume</div>
+            </div>
+            <md3-switch
+              data-field="haltOnRunoffEc"
+              .checked=${this._haltOnRunoffEcThreshold !== null}
+              @change=${(e) => {
+            this._haltOnRunoffEcThreshold = e.target.checked ? 4.0 : null;
+        }}
+            ></md3-switch>
+          </div>
+          ${this._haltOnRunoffEcThreshold !== null ? x `
+            <div style="margin-top:10px;">
+              <md3-number-input
+                data-field="haltOnRunoffEcValue"
+                label="EC Threshold"
+                min="0.1"
+                step="0.1"
+                .value=${String(this._haltOnRunoffEcThreshold)}
+                @change=${(e) => {
+            const v = parseFloat(e.detail ?? e.target.value);
+            if (!isNaN(v))
+                this._haltOnRunoffEcThreshold = v;
+        }}
+              ></md3-number-input>
+            </div>
+          ` : E}
+        </div>
       </div>
+
+      <!-- Phase trigger confirmation dialog -->
+      <gs-dialog
+        .open=${this._phaseConfirmOpen}
+        heading="Confirm Phase Change"
+        .iconPath=${mdiAlert}
+        stageColor="var(--warning-color, #ff9800)"
+        @close=${this._cancelPhaseChange}
+      >
+        <div style="padding: 20px;">
+          <p style="margin: 0 0 12px 0;">
+            Are you sure you want to change the active crop steering phase to <strong>${this._pendingPhase?.toUpperCase() || ''}</strong>?
+          </p>
+          <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
+            Manually shifting phases overrides the current schedule instantly. This is a severe change that will disrupt timing and dosing parameters.
+          </p>
+        </div>
+        <div class="button-group" style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <button class="md3-button tonal" @click=${this._cancelPhaseChange}>Cancel</button>
+          <button class="md3-button primary" @click=${this._confirmPhaseChange}>Confirm</button>
+        </div>
+      </gs-dialog>
     `;
     }
     // ─── Configuration tab ───────────────────────────────────────────────────
@@ -20889,19 +21038,69 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     // ─── EC Targets tab (stub) ────────────────────────────────────────────────
     _renderEcTargetsTab() {
-        // TODO: implement EC target ranges per growth stage when backend adds
-        //       per-stage EC config (feedEcMin, feedEcMax per StageType)
+        const stageLabels = {
+            seedling: 'Seedling',
+            veg: 'Veg',
+            flower_early: 'Early Flower',
+            flower_mid: 'Mid Flower',
+            flower_late: 'Late Flower / Flush',
+        };
         return x `
-      <div class="detail-card" style="text-align:center;padding:40px 20px;">
-        <div style="font-size:2rem;margin-bottom:12px;">🧪</div>
-        <h3 style="margin-top:0;">EC Targets per Stage</h3>
-        <p style="opacity:0.6;font-size:0.9rem;max-width:400px;margin:0 auto;">
-          Configure feed EC target ranges (min/max) per growth stage — Seedling, Veg, Flower, Flush.
-          This feature is coming soon and requires backend support for per-stage EC configuration.
-        </p>
-        <div style="margin-top:16px;">
-          <span class="stub-badge" style="font-size:12px;padding:4px 12px;">Coming soon</span>
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;">
+          <h3 style="margin:0;border:none;padding:0;">EC Targets per Stage</h3>
         </div>
+        <p style="font-size:0.85rem;color:var(--secondary-text-color);margin:0 0 16px;">
+          Set feed EC target ranges (min / max) per growth stage. Save with the footer button.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">Stage</th>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">Min EC (mS/cm)</th>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">Max EC (mS/cm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this._ecTargetRanges.map((range, idx) => x `
+              <tr class="ec-target-row" style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));">
+                <td style="padding:8px;">
+                  <span class="ec-stage-label" style="font-weight:500;">${stageLabels[range.stage] ?? range.stage}</span>
+                </td>
+                <td style="padding:8px;">
+                  <input
+                    class="md3-input"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width:90px;"
+                    .value=${String(range.minEc)}
+                    @input=${(e) => {
+            const val = parseFloat(e.target.value) || 0;
+            this._ecTargetRanges = this._ecTargetRanges.map((r, i) => i === idx ? { ...r, minEc: val } : r);
+        }}
+                  />
+                </td>
+                <td style="padding:8px;">
+                  <input
+                    class="md3-input"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width:90px;"
+                    .value=${String(range.maxEc)}
+                    @input=${(e) => {
+            const val = parseFloat(e.target.value) || 0;
+            this._ecTargetRanges = this._ecTargetRanges.map((r, i) => i === idx ? { ...r, maxEc: val } : r);
+        }}
+                  />
+                </td>
+              </tr>
+            `)}
+          </tbody>
+        </table>
       </div>
     `;
     }
@@ -21690,6 +21889,12 @@ __decorate([
 ], IrrigationDialog.prototype, "_activePhase", void 0);
 __decorate([
     r$3()
+], IrrigationDialog.prototype, "_phaseConfirmOpen", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_pendingPhase", void 0);
+__decorate([
+    r$3()
 ], IrrigationDialog.prototype, "_drainEcEnabled", void 0);
 __decorate([
     r$3()
@@ -21717,6 +21922,9 @@ __decorate([
 ], IrrigationDialog.prototype, "_drainLogging", void 0);
 __decorate([
     r$3()
+], IrrigationDialog.prototype, "_ecTargetRanges", void 0);
+__decorate([
+    r$3()
 ], IrrigationDialog.prototype, "_strategy", void 0);
 __decorate([
     r$3()
@@ -21736,6 +21944,15 @@ __decorate([
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_logToLogbook", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_autoAdvanceP1ToP2", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_autoAdvanceP2ToP3", void 0);
+__decorate([
+    r$3()
+], IrrigationDialog.prototype, "_haltOnRunoffEcThreshold", void 0);
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_runNowSaving", void 0);
@@ -27288,6 +27505,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         this._breederDialogOpen = false;
         this._breederEditorState = null;
         this._pendingDeleteBreeder = null;
+        this._showAddPhotoMenu = false;
     }
     _dispatchStateChange() {
         this.dispatchEvent(new CustomEvent('editing-strain-changed', {
@@ -28156,11 +28374,12 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     _renderGallery() {
         const gallery = this._gallery();
         const thumbIndex = gallery.findIndex((img) => img.is_thumbnail);
-        const handleGalleryFileChange = (e) => {
+        const handleFileChange = (e) => {
             const file = e.target.files?.[0];
             if (file)
                 this._handleGalleryUpload(file);
             e.target.value = '';
+            this._showAddPhotoMenu = false;
         };
         const handleDrop = (e) => {
             e.preventDefault();
@@ -28169,7 +28388,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 this._handleGalleryUpload(file);
         };
         return x `
-      <div class="sd-form-group" style="margin-bottom: 16px;">
+      <div class="sd-form-group" style="margin-bottom: 16px; position: relative;">
         <label class="sd-label">Photo Gallery</label>
 
         <div
@@ -28215,8 +28434,12 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             </div>
           `)}
 
-          <label
-            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._uploadingImage ? 'wait' : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem;"
+          <!-- Add button — opens choice menu -->
+          <button
+            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._uploadingImage ? 'wait' : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
+            ?disabled=${this._uploadingImage}
+            @click=${() => { if (!this._uploadingImage)
+            this._showAddPhotoMenu = true; }}
           >
             ${this._uploadingImage
             ? x `<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent-green);border-radius:50%;animation:spin 1s linear infinite;"></div>`
@@ -28224,13 +28447,41 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
                 Add
               `}
-            <input type="file" accept="image/*" style="display:none" ?disabled=${this._uploadingImage} @change=${handleGalleryFileChange} />
-          </label>
+          </button>
+
+          <!-- Hidden inputs: one for camera, one for file picker -->
+          <input id="gallery-camera-input" type="file" accept="image/*" capture="environment" style="display:none" @change=${handleFileChange} />
+          <input id="gallery-library-input" type="file" accept="image/*" style="display:none" @change=${handleFileChange} />
         </div>
 
         ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta ? x `
           <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px;">
             Thumbnail crop applied · click ✂ to adjust
+          </div>
+        ` : E}
+
+        <!-- Add-photo choice menu -->
+        ${this._showAddPhotoMenu ? x `
+          <div
+            style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
+            @click=${() => { this._showAddPhotoMenu = false; }}
+          ></div>
+          <div style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;">
+            <div style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 8px;"></div>
+            <button
+              style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
+              @click=${(e) => { e.stopPropagation(); this._showAddPhotoMenu = false; this.shadowRoot?.getElementById('gallery-camera-input')?.click(); }}
+            >
+              <svg style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+              Take Photo
+            </button>
+            <button
+              style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
+              @click=${(e) => { e.stopPropagation(); this._showAddPhotoMenu = false; this.shadowRoot?.getElementById('gallery-library-input')?.click(); }}
+            >
+              <svg style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;" viewBox="0 0 24 24"><path d="${mdiImageMultiple}"></path></svg>
+              Choose from Library
+            </button>
           </div>
         ` : E}
       </div>
@@ -28993,6 +29244,9 @@ __decorate([
 __decorate([
     r$3()
 ], StrainEditorView.prototype, "_pendingDeleteBreeder", void 0);
+__decorate([
+    r$3()
+], StrainEditorView.prototype, "_showAddPhotoMenu", void 0);
 StrainEditorView = __decorate([
     t$2('strain-editor-view')
 ], StrainEditorView);

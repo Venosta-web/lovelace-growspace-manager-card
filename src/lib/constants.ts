@@ -89,6 +89,7 @@ export const SERVICES = {
   LOG_DRYING_WEIGHT: 'log_drying_weight',
   LOG_MOISTURE_READING: 'log_moisture_reading',
   SET_VISUAL_TAG: 'set_visual_tag',
+  SET_EC_TARGET_RANGE: 'set_ec_target_range',
 };
 
 

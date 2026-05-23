@@ -1,6 +1,7 @@
 import { BaseAPI } from '../base-api';
 import { DOMAIN, SERVICES } from '../../constants';
 import { IrrigationStrategy } from '../../types';
+import type { ECTargetRange } from '../types';
 
 /**
  * API service for irrigation control operations.
@@ -214,6 +215,18 @@ export class IrrigationAPI extends BaseAPI {
     if (params.feedVolumeMl !== undefined) payload.feed_volume_ml = params.feedVolumeMl;
     if (params.drainVolumeMl !== undefined) payload.drain_volume_ml = params.drainVolumeMl;
     await this.callService(DOMAIN, SERVICES.LOG_DRAIN_READING, payload);
+  }
+
+  async setEcTargetRanges(growspaceId: string, ranges: ECTargetRange[]): Promise<void> {
+    for (const r of ranges) {
+      const payload = {
+        growspace_id: growspaceId,
+        stage: r.stage,
+        feed_ec_min: r.minEc,
+        feed_ec_max: r.maxEc,
+      };
+      await this.callService(DOMAIN, SERVICES.SET_EC_TARGET_RANGE, payload);
+    }
   }
 
   async getIrrigationAnalytics(

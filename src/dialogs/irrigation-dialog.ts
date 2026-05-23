@@ -3,8 +3,9 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiWater, mdiPlus } from '@mdi/js';
+import { mdiWater, mdiPlus, mdiAlert } from '@mdi/js';
 import { IrrigationTime, IrrigationStrategy, GrowspaceDevice, DrainECReading, TankWaterEvent } from '../types';
+import type { ECTargetRange } from '../services/types';
 import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -74,6 +75,8 @@ export class IrrigationDialog extends LitElement {
   @state() private _errorToast: string | undefined;
   @state() private _activeTab: TabId = 'schedules';
   @state() private _activePhase: 'p1' | 'p2' | 'p3' = 'p2';
+  @state() private _phaseConfirmOpen = false;
+  @state() private _pendingPhase: 'p1' | 'p2' | 'p3' | undefined = undefined;
 
   // Drain EC state
   @state() private _drainEcEnabled = false;
@@ -85,6 +88,14 @@ export class IrrigationDialog extends LitElement {
   @state() private _drainLogDrainVolume = 0;
   @state() private _drainSaving = false;
   @state() private _drainLogging = false;
+
+  @state() private _ecTargetRanges: ECTargetRange[] = [
+    { stage: 'seedling',     minEc: 0, maxEc: 0 },
+    { stage: 'veg',          minEc: 0, maxEc: 0 },
+    { stage: 'flower_early', minEc: 0, maxEc: 0 },
+    { stage: 'flower_mid',   minEc: 0, maxEc: 0 },
+    { stage: 'flower_late',  minEc: 0, maxEc: 0 },
+  ];
 
   @state() private _strategy: Partial<IrrigationStrategy> = {};
 
@@ -946,6 +957,14 @@ export class IrrigationDialog extends LitElement {
       this._drainEcMaxDelta = dc.maxEcDelta;
       this._drainEcTargetRunoffPercent = dc.targetRunoffPercent;
     }
+
+    const ranges = config.ecTargetRanges;
+    if (ranges && ranges.length > 0) {
+      this._ecTargetRanges = (['seedling', 'veg', 'flower_early', 'flower_mid', 'flower_late'] as const).map((stage) => {
+        const found = ranges.find((r) => r.stage === stage);
+        return found ?? { stage, minEc: 0, maxEc: 0 };
+      });
+    }
   }
 
   // ─── Save actions ─────────────────────────────────────────────────────────
@@ -955,6 +974,12 @@ export class IrrigationDialog extends LitElement {
     await this._saveSettings();
     await this._saveStrategy();
     await this._saveDrainConfig();
+    await this._saveEcTargetRanges();
+  }
+
+  private async _saveEcTargetRanges() {
+    if (!this.device?.deviceId || !this._dataService) return;
+    await this._dataService.setEcTargetRanges(this.device.deviceId, this._ecTargetRanges);
   }
 
   private async _saveSettings() {
@@ -1943,6 +1968,27 @@ export class IrrigationDialog extends LitElement {
     else this._editingDrainTime = undefined;
   }
 
+  private _handlePhaseCardClick(phaseId: 'p1' | 'p2' | 'p3') {
+    if (this._activePhase === phaseId) {
+      return;
+    }
+    this._pendingPhase = phaseId;
+    this._phaseConfirmOpen = true;
+  }
+
+  private _confirmPhaseChange() {
+    if (this._pendingPhase) {
+      this._activePhase = this._pendingPhase;
+    }
+    this._pendingPhase = undefined;
+    this._phaseConfirmOpen = false;
+  }
+
+  private _cancelPhaseChange() {
+    this._pendingPhase = undefined;
+    this._phaseConfirmOpen = false;
+  }
+
   // ─── Steering tab ─────────────────────────────────────────────────────────
 
   private _renderSteeringTab(_color: string) {
@@ -1965,7 +2011,7 @@ export class IrrigationDialog extends LitElement {
           ] as const).map((p) => html`
             <div
               class="phase-card ${this._activePhase === p.id ? 'active' : ''}"
-              @click=${() => { this._activePhase = p.id; }}
+              @click=${() => this._handlePhaseCardClick(p.id)}
             >
               <div class="phase-num">Phase · ${p.label}</div>
               <div class="phase-nm">${p.name}</div>
@@ -2102,6 +2148,28 @@ export class IrrigationDialog extends LitElement {
           ` : nothing}
         </div>
       </div>
+
+      <!-- Phase trigger confirmation dialog -->
+      <gs-dialog
+        .open=${this._phaseConfirmOpen}
+        heading="Confirm Phase Change"
+        .iconPath=${mdiAlert}
+        stageColor="var(--warning-color, #ff9800)"
+        @close=${this._cancelPhaseChange}
+      >
+        <div style="padding: 20px;">
+          <p style="margin: 0 0 12px 0;">
+            Are you sure you want to change the active crop steering phase to <strong>${this._pendingPhase?.toUpperCase() || ''}</strong>?
+          </p>
+          <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
+            Manually shifting phases overrides the current schedule instantly. This is a severe change that will disrupt timing and dosing parameters.
+          </p>
+        </div>
+        <div class="button-group" style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+          <button class="md3-button tonal" @click=${this._cancelPhaseChange}>Cancel</button>
+          <button class="md3-button primary" @click=${this._confirmPhaseChange}>Confirm</button>
+        </div>
+      </gs-dialog>
     `;
   }
 
@@ -2762,19 +2830,73 @@ export class IrrigationDialog extends LitElement {
   // ─── EC Targets tab (stub) ────────────────────────────────────────────────
 
   private _renderEcTargetsTab() {
-    // TODO: implement EC target ranges per growth stage when backend adds
-    //       per-stage EC config (feedEcMin, feedEcMax per StageType)
+    const stageLabels: Record<string, string> = {
+      seedling:     'Seedling',
+      veg:          'Veg',
+      flower_early: 'Early Flower',
+      flower_mid:   'Mid Flower',
+      flower_late:  'Late Flower / Flush',
+    };
     return html`
-      <div class="detail-card" style="text-align:center;padding:40px 20px;">
-        <div style="font-size:2rem;margin-bottom:12px;">🧪</div>
-        <h3 style="margin-top:0;">EC Targets per Stage</h3>
-        <p style="opacity:0.6;font-size:0.9rem;max-width:400px;margin:0 auto;">
-          Configure feed EC target ranges (min/max) per growth stage — Seedling, Veg, Flower, Flush.
-          This feature is coming soon and requires backend support for per-stage EC configuration.
-        </p>
-        <div style="margin-top:16px;">
-          <span class="stub-badge" style="font-size:12px;padding:4px 12px;">Coming soon</span>
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;">
+          <h3 style="margin:0;border:none;padding:0;">EC Targets per Stage</h3>
         </div>
+        <p style="font-size:0.85rem;color:var(--secondary-text-color);margin:0 0 16px;">
+          Set feed EC target ranges (min / max) per growth stage. Save with the footer button.
+        </p>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">Stage</th>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">Min EC (mS/cm)</th>
+              <th style="text-align:left;padding:6px 8px;font-size:0.8rem;color:var(--secondary-text-color);">Max EC (mS/cm)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this._ecTargetRanges.map((range, idx) => html`
+              <tr class="ec-target-row" style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));">
+                <td style="padding:8px;">
+                  <span class="ec-stage-label" style="font-weight:500;">${stageLabels[range.stage] ?? range.stage}</span>
+                </td>
+                <td style="padding:8px;">
+                  <input
+                    class="md3-input"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width:90px;"
+                    .value=${String(range.minEc)}
+                    @input=${(e: Event) => {
+                      const val = parseFloat((e.target as HTMLInputElement).value) || 0;
+                      this._ecTargetRanges = this._ecTargetRanges.map((r, i) =>
+                        i === idx ? { ...r, minEc: val } : r
+                      );
+                    }}
+                  />
+                </td>
+                <td style="padding:8px;">
+                  <input
+                    class="md3-input"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    style="width:90px;"
+                    .value=${String(range.maxEc)}
+                    @input=${(e: Event) => {
+                      const val = parseFloat((e.target as HTMLInputElement).value) || 0;
+                      this._ecTargetRanges = this._ecTargetRanges.map((r, i) =>
+                        i === idx ? { ...r, maxEc: val } : r
+                      );
+                    }}
+                  />
+                </td>
+              </tr>
+            `)}
+          </tbody>
+        </table>
       </div>
     `;
   }

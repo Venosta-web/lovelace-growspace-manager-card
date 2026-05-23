@@ -280,6 +280,9 @@ export class DataService {
   getIrrigationAnalytics = (growspaceId: string) =>
     this._irrigationAPI.getIrrigationAnalytics(growspaceId);
 
+  setEcTargetRanges = (...args: Parameters<IrrigationAPI['setEcTargetRanges']>) =>
+    this._irrigationAPI.setEcTargetRanges(...args);
+
   // ── AI ───────────────────────────────────────────────────────────────────
 
   askGrowAdvice = (growspaceId: string, userQuery: string) =>

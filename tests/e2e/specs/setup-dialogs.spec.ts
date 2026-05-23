@@ -9,11 +9,14 @@ test.describe('Setup dialogs', () => {
     growspaceCard = new GrowspaceCard(page);
     await growspaceCard.navigate(testContext.dashboardPath);
     await growspaceCard.waitForCardReady();
+    // Auth redirect causes deferred re-render on first load → reload after auth settles
+    await page.reload();
+    await growspaceCard.waitForCardReady();
   });
 
   test('config dialog opens from Settings icon button', async ({ page }) => {
     // Settings is a standalone icon button in the header, not a menu item
-    await page.locator('[aria-label="Settings"]').click();
+    await growspaceCard.card.locator('[aria-label="Settings"]').click();
     const dialog = new ConfigDialog(page);
     await dialog.waitForOpen();
   });

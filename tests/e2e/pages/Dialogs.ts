@@ -143,7 +143,7 @@ export class WateringDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 
   async fillAmount(amount: number) {
@@ -168,7 +168,7 @@ export class IPMDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
@@ -182,21 +182,28 @@ export class TrainingDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
 export class IrrigationDialog {
   readonly page: Page;
   readonly dialog: Locator;
+  private readonly haDialog: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('irrigation-dialog ha-dialog');
+    this.dialog = page.locator('irrigation-dialog');
+    this.haDialog = page.locator('irrigation-dialog ha-dialog');
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.haDialog).toHaveAttribute('open', '');
+  }
+
+  async close() {
+    await this.dialog.locator('button.md3-button.text', { hasText: 'Close' }).click();
+    await expect(this.dialog).not.toBeAttached();
   }
 
   async addIrrigationTime(time: string, duration: number) {
@@ -216,7 +223,7 @@ export class IrrigationDialog {
   async removeIrrigationTime(time: string) {
     const marker = this.dialog
       .locator('.irrigation-time-bar')
-      .locator(`.chart-marker[title^="${time}"]`);
+      .locator(`.timeline-event[title^="${time}"]`);
     await marker.click();
 
     const overlay = this.dialog.locator('.overlay-backdrop');
@@ -228,7 +235,7 @@ export class IrrigationDialog {
   hasIrrigationTime(time: string): Locator {
     return this.dialog
       .locator('.irrigation-time-bar')
-      .locator(`.chart-marker[title^="${time}"]`);
+      .locator(`.timeline-event[title^="${time}"]`);
   }
 }
 
@@ -242,7 +249,7 @@ export class NutrientDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
@@ -256,7 +263,7 @@ export class StrainLibraryDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
@@ -270,7 +277,7 @@ export class LogbookDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
@@ -284,7 +291,7 @@ export class SnapshotsDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
@@ -298,7 +305,7 @@ export class GrowMasterDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }
 
@@ -312,6 +319,6 @@ export class GrowReportDialog {
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toBeVisible();
+    await expect(this.dialog).toHaveAttribute('open', '');
   }
 }

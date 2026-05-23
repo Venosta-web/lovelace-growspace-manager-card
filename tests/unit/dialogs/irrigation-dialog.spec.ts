@@ -32,6 +32,8 @@ const mocks = vi.hoisted(() => ({
     removeDrainTime: vi.fn().mockResolvedValue(undefined),
     setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
     getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
+    setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
+    configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../src/services/data-service', () => {
@@ -336,7 +338,7 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Click Save (footer Save Changes calls _saveAll → _saveSettings → _saveStrategy)
-            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
             await new Promise(r => setTimeout(r, 0));
@@ -356,7 +358,7 @@ describe('IrrigationDialog', () => {
             targetVwcInput?.dispatchEvent(new CustomEvent('change', { detail: '55' }));
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
             await new Promise(r => setTimeout(r, 0));
@@ -372,7 +374,7 @@ describe('IrrigationDialog', () => {
             input?.dispatchEvent(new CustomEvent('change', { detail: '08:00' }));
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
             await new Promise(r => setTimeout(r, 0));
@@ -475,7 +477,7 @@ describe('IrrigationDialog', () => {
             (tabs?.[1] as HTMLElement).click();
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
             await new Promise(r => setTimeout(r, 0));
@@ -685,7 +687,7 @@ describe('IrrigationDialog', () => {
             }
 
             await element.updateComplete;
-            const saveBtn = element.shadowRoot?.querySelector('button.primary') as HTMLElement;
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all') as HTMLElement;
             saveBtn.click();
             await element.updateComplete;
             await new Promise(r => setTimeout(r, 0));
@@ -1074,7 +1076,7 @@ describe('IrrigationDialog', () => {
             pumpSelect!.dispatchEvent(new Event('change'));
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
             await new Promise((r) => setTimeout(r, 0));
@@ -1094,7 +1096,7 @@ describe('IrrigationDialog', () => {
             drainSelect!.dispatchEvent(new Event('change'));
             await element.updateComplete;
 
-            const saveBtn = element.shadowRoot?.querySelector('button.primary');
+            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
             (saveBtn as HTMLElement).click();
             await element.updateComplete;
             await new Promise((r) => setTimeout(r, 0));

@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
     setIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
     getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
     configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
+    setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../src/services/data-service', () => ({
@@ -303,7 +304,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('button.primary');
+        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
         (saveBtn as HTMLElement).click();
         await element.updateComplete;
         await new Promise(r => setTimeout(r, 0));
@@ -328,7 +329,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('button.primary');
+        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
         (saveBtn as HTMLElement).click();
         await element.updateComplete;
         await new Promise(r => setTimeout(r, 0));
@@ -353,7 +354,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('button.primary');
+        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
         (saveBtn as HTMLElement).click();
         await element.updateComplete;
         await new Promise(r => setTimeout(r, 0));
@@ -378,7 +379,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('button.primary');
+        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
         (saveBtn as HTMLElement).click();
         await element.updateComplete;
         await new Promise(r => setTimeout(r, 0));
@@ -386,6 +387,151 @@ describe('IrrigationDialog – Phase Triggers', () => {
         expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
             expect.objectContaining({ haltOnRunoffEcThreshold: null })
         );
+    });
+
+    // ─── Crop Steering Phase Transitions (Confirmation Dialog) ────────────────
+
+    it('clicking the active phase card is a no-op', async () => {
+        element = new IrrigationDialog();
+        element.device = makeDevice();
+        (element as any).store = makeMockStore(element.device!);
+        element.hass = {} as any;
+
+        await openOnSteeringTab(element);
+
+        (element as any)._activePhase = 'p2';
+        await element.updateComplete;
+
+        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const activeCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P2')) as HTMLElement;
+        expect(activeCard).toBeTruthy();
+        activeCard.click();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(false);
+        expect((element as any)._activePhase).toBe('p2');
+    });
+
+    it('clicking an inactive phase card opens the confirmation dialog without updating active phase state immediately', async () => {
+        element = new IrrigationDialog();
+        element.device = makeDevice();
+        (element as any).store = makeMockStore(element.device!);
+        element.hass = {} as any;
+
+        await openOnSteeringTab(element);
+
+        (element as any)._activePhase = 'p2';
+        await element.updateComplete;
+
+        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
+        expect(inactiveCard).toBeTruthy();
+        inactiveCard.click();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(true);
+        expect((element as any)._pendingPhase).toBe('p1');
+        expect((element as any)._activePhase).toBe('p2');
+    });
+
+    it('calling _cancelPhaseChange closes the dialog and keeps the active phase unchanged', async () => {
+        element = new IrrigationDialog();
+        element.device = makeDevice();
+        (element as any).store = makeMockStore(element.device!);
+        element.hass = {} as any;
+
+        await openOnSteeringTab(element);
+
+        (element as any)._activePhase = 'p2';
+        (element as any)._pendingPhase = 'p1';
+        (element as any)._phaseConfirmOpen = true;
+        await element.updateComplete;
+
+        (element as any)._cancelPhaseChange();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(false);
+        expect((element as any)._pendingPhase).toBeUndefined();
+        expect((element as any)._activePhase).toBe('p2');
+    });
+
+    it('calling _confirmPhaseChange closes the dialog and correctly updates the _activePhase state', async () => {
+        element = new IrrigationDialog();
+        element.device = makeDevice();
+        (element as any).store = makeMockStore(element.device!);
+        element.hass = {} as any;
+
+        await openOnSteeringTab(element);
+
+        (element as any)._activePhase = 'p2';
+        (element as any)._pendingPhase = 'p1';
+        (element as any)._phaseConfirmOpen = true;
+        await element.updateComplete;
+
+        (element as any)._confirmPhaseChange();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(false);
+        expect((element as any)._pendingPhase).toBeUndefined();
+        expect((element as any)._activePhase).toBe('p1');
+    });
+
+    it('clicking Cancel button in dialog closes the dialog and keeps active phase unchanged', async () => {
+        element = new IrrigationDialog();
+        element.device = makeDevice();
+        (element as any).store = makeMockStore(element.device!);
+        element.hass = {} as any;
+
+        await openOnSteeringTab(element);
+
+        (element as any)._activePhase = 'p2';
+        await element.updateComplete;
+
+        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
+        expect(inactiveCard).toBeTruthy();
+        inactiveCard.click();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(true);
+
+        const cancelBtn = element.shadowRoot?.querySelector('gs-dialog button.tonal') as HTMLElement;
+        expect(cancelBtn).toBeTruthy();
+        cancelBtn.click();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(false);
+        expect((element as any)._pendingPhase).toBeUndefined();
+        expect((element as any)._activePhase).toBe('p2');
+    });
+
+    it('clicking Confirm button in dialog closes the dialog and updates active phase', async () => {
+        element = new IrrigationDialog();
+        element.device = makeDevice();
+        (element as any).store = makeMockStore(element.device!);
+        element.hass = {} as any;
+
+        await openOnSteeringTab(element);
+
+        (element as any)._activePhase = 'p2';
+        await element.updateComplete;
+
+        const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
+        const inactiveCard = Array.from(phaseCards ?? []).find((card: Element) => card.textContent?.includes('Phase · P1')) as HTMLElement;
+        expect(inactiveCard).toBeTruthy();
+        inactiveCard.click();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(true);
+
+        const confirmBtn = element.shadowRoot?.querySelector('gs-dialog button.primary') as HTMLElement;
+        expect(confirmBtn).toBeTruthy();
+        confirmBtn.click();
+        await element.updateComplete;
+
+        expect((element as any)._phaseConfirmOpen).toBe(false);
+        expect((element as any)._pendingPhase).toBeUndefined();
+        expect((element as any)._activePhase).toBe('p1');
     });
 
     // ─── Stub cleanup ─────────────────────────────────────────────────────────
