@@ -20,6 +20,10 @@ export class IrrigationAPI extends BaseAPI {
     skipDuringDark?: boolean;
     pauseOnLowTank?: boolean;
     logToLogbook?: boolean;
+    autoAdvanceP1ToP2?: boolean;
+    autoAdvanceP2ToP3?: boolean;
+    haltOnRunoffEcThreshold?: number | null;
+    activeSteeringPhase?: 'p1' | 'p2' | 'p3';
   }): Promise<void> {
     try {
       const payload = this._serializeSettings(params);
@@ -133,6 +137,10 @@ export class IrrigationAPI extends BaseAPI {
     skipDuringDark?: boolean;
     pauseOnLowTank?: boolean;
     logToLogbook?: boolean;
+    autoAdvanceP1ToP2?: boolean;
+    autoAdvanceP2ToP3?: boolean;
+    haltOnRunoffEcThreshold?: number | null;
+    activeSteeringPhase?: 'p1' | 'p2' | 'p3';
   }): Record<string, unknown> {
     const result: Record<string, unknown> = {
       growspace_id: params.growspaceId,
@@ -147,6 +155,10 @@ export class IrrigationAPI extends BaseAPI {
     if (params.skipDuringDark !== undefined) result.skip_during_dark = params.skipDuringDark;
     if (params.pauseOnLowTank !== undefined) result.pause_on_low_tank = params.pauseOnLowTank;
     if (params.logToLogbook !== undefined) result.log_to_logbook = params.logToLogbook;
+    if (params.autoAdvanceP1ToP2 !== undefined) result.auto_advance_p1_to_p2 = params.autoAdvanceP1ToP2;
+    if (params.autoAdvanceP2ToP3 !== undefined) result.auto_advance_p2_to_p3 = params.autoAdvanceP2ToP3;
+    if (params.haltOnRunoffEcThreshold !== undefined) result.halt_on_runoff_ec_threshold = params.haltOnRunoffEcThreshold;
+    if (params.activeSteeringPhase !== undefined) result.active_steering_phase = params.activeSteeringPhase;
     return result;
   }
 

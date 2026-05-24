@@ -18,6 +18,7 @@ type IrrigationSettingsParams = {
   autoAdvanceP1ToP2?: boolean;
   autoAdvanceP2ToP3?: boolean;
   haltOnRunoffEcThreshold?: number | null;
+  activeSteeringPhase?: 'p1' | 'p2' | 'p3';
 };
 type RunIrrigationCycleParams = { growspaceId: string; duration?: number };
 

@@ -115,8 +115,9 @@ describe('GrowspaceAPI Extra Coverage', () => {
         });
 
         it('should log detailed validation errors for collection', async () => {
+            // growspace_id must be string; number forces a Zod type mismatch that survives .default()
             const invalidCollection = {
-                gs1: { invalid_prop: true } // Missing required fields
+                gs1: { identity: { growspace_id: 123 } },
             };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(invalidCollection);
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });

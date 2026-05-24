@@ -21,17 +21,24 @@ describe('DataService Coverage Gap Fill', () => {
 
     describe('fetchGrowspaceData Cache', () => {
         it('should return cached data if called twice within TTL', async () => {
-            const mockData = { growspace_id: 'gs1', name: 'Cached GS' };
+            const mockData = {
+                identity: { growspace_id: 'gs1', name: 'Cached GS', type: 'normal' },
+                grid: { rows: 2, plants_per_row: 2, total_plants: 0, grid: {} },
+                environment: {},
+                sensors: { sensor_types: {}, sensor_coordinates: {}, sensor_groups: [] },
+                irrigation: { irrigation_config: { irrigation_times: [], drain_times: [] } },
+                metrics: { vpd_status: 'ok', granular_stage: 'unknown', is_day: false },
+            };
             // First call - should hit API
             (mockHass.connection.sendMessagePromise as any).mockResolvedValueOnce(mockData);
 
             const result1 = await service.fetchGrowspaceData('gs1');
-            expect(result1).toEqual(mockData);
+            expect((result1 as any).identity.growspace_id).toBe('gs1');
             expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledTimes(1);
 
             // Second call - should hit Cache (no new API call)
             const result2 = await service.fetchGrowspaceData('gs1');
-            expect(result2).toEqual(mockData);
+            expect((result2 as any).identity.growspace_id).toBe('gs1');
             expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledTimes(1); // Call count remains 1
         });
     });

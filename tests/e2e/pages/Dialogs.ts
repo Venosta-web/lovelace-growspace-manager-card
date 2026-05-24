@@ -260,6 +260,14 @@ export class IrrigationDialog {
     await this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input').fill(value);
   }
 
+  getNumberField(label: string): Locator {
+    return this.dialog.locator(`md3-number-input[label="${label}"]`).locator('input');
+  }
+
+  getTimeField(label: string): Locator {
+    return this.dialog.locator(`md3-text-input[type="time"][label="${label}"]`).locator('input');
+  }
+
   async saveAll() {
     await this.dialog.locator('button.md3-button.primary.btn-save-all').click();
   }

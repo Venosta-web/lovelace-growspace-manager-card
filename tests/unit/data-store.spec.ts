@@ -80,7 +80,8 @@ describe('DataStore', () => {
             const initialCache = {
                 gs1: {
                     grid: {
-                        '1-1': { plant_id: 'p1' }
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } }
                     }
                 }
             } as any;
@@ -92,8 +93,8 @@ describe('DataStore', () => {
             });
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']!.plant_id).toBe('p1-updated');
-            expect(updated!.gs1.grid['1-2']!.plant_id).toBe('p2');
+            expect(updated!.gs1.grid.grid['1-1']!.plant_id).toBe('p1-updated');
+            expect(updated!.gs1.grid.grid['1-2']!.plant_id).toBe('p2');
 
             // Immutability check
             expect(updated).not.toBe(initialCache);
@@ -116,13 +117,14 @@ describe('DataStore', () => {
             const initialCache = {
                 gs1: {
                     grid: {
-                        '1-1': { plant_id: 'p1' },
-                        '1-2': { plant_id: 'p2' }
+                        rows: 1, plants_per_row: 2, total_plants: 2,
+                        grid: { '1-1': { plant_id: 'p1' }, '1-2': { plant_id: 'p2' } }
                     }
                 },
                 gs2: {
                     grid: {
-                        '1-1': { plant_id: 'p1' }
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } }
                     }
                 }
             } as any;
@@ -132,18 +134,24 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1', 'gs1');
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']).toBeNull();
-            expect(updated!.gs1.grid['1-2']!.plant_id).toBe('p2');
-            expect(updated!.gs2.grid['1-1']!.plant_id).toBe('p1'); // Should check only gs1
+            expect(updated!.gs1.grid.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid.grid['1-2']!.plant_id).toBe('p2');
+            expect(updated!.gs2.grid.grid['1-1']!.plant_id).toBe('p1'); // Should check only gs1
         });
 
         it('should remove plant from ws cache (all growspaces)', () => {
             const initialCache = {
                 gs1: {
-                    grid: { '1-1': { plant_id: 'p1' }, '1-2': { plant_id: 'p2' } }
+                    grid: {
+                        rows: 1, plants_per_row: 2, total_plants: 2,
+                        grid: { '1-1': { plant_id: 'p1' }, '1-2': { plant_id: 'p2' } }
+                    }
                 },
                 gs2: {
-                    grid: { '1-1': { entity_id: 'sensor.plant_p1' } } // Pattern match check
+                    grid: {
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { entity_id: 'sensor.plant_p1' } } // Pattern match check
+                    }
                 }
             } as any;
             store.$wsDataCache.set(initialCache);
@@ -151,9 +159,9 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1');
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']).toBeNull();
-            expect(updated!.gs1.grid['1-2']!.plant_id).toBe('p2');
-            expect(updated.gs2.grid['1-1']).toBeNull(); // Matched by entity_id suffix logic in store
+            expect(updated!.gs1.grid.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid.grid['1-2']!.plant_id).toBe('p2');
+            expect(updated.gs2.grid.grid['1-1']).toBeNull(); // Matched by entity_id suffix logic in store
         });
 
         it('should not update cache if plant not found', () => {
@@ -190,7 +198,8 @@ describe('DataStore', () => {
             const initialCache = {
                 gs1: {
                     grid: {
-                        '1-1': { plant_id: 'p1', events: [] }
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1', events: [] } }
                     }
                 }
             } as any;
@@ -200,15 +209,16 @@ describe('DataStore', () => {
             store.addPlantEvent('p1', event as any);
 
             const updated = store.$wsDataCache.get();
-            expect(updated?.gs1?.grid['1-1']?.events).toHaveLength(1);
-            expect(updated?.gs1?.grid['1-1']?.events?.[0]).toEqual(event);
+            expect(updated?.gs1?.grid.grid['1-1']?.events).toHaveLength(1);
+            expect(updated?.gs1?.grid.grid['1-1']?.events?.[0]).toEqual(event);
         });
 
         it('should add event to plant by entity_id suffix', () => {
             const initialCache = {
                 gs1: {
                     grid: {
-                        '1-1': { entity_id: 'sensor.plant_p1', events: [] }
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { entity_id: 'sensor.plant_p1', events: [] } }
                     }
                 }
             } as any;
@@ -218,14 +228,15 @@ describe('DataStore', () => {
             store.addPlantEvent('p1', event as any);
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']!.events).toHaveLength(1);
+            expect(updated!.gs1.grid.grid['1-1']!.events).toHaveLength(1);
         });
 
         it('should create events array if not present', () => {
             const initialCache = {
                 gs1: {
                     grid: {
-                        '1-1': { plant_id: 'p1' } // No events array
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } } // No events array
                     }
                 }
             } as any;
@@ -235,7 +246,7 @@ describe('DataStore', () => {
             store.addPlantEvent('p1', event as any);
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']!.events).toHaveLength(1);
+            expect(updated!.gs1.grid.grid['1-1']!.events).toHaveLength(1);
         });
 
         it('should not modify cache if plant not found', () => {
@@ -256,23 +267,10 @@ describe('DataStore', () => {
         it('should skip growspaces with no grid', () => {
             const initialCache = {
                 gs1: { grid: null },
-                gs2: { grid: { '1-1': { plant_id: 'p1' } } }
-            } as any;
-            store.$wsDataCache.set(initialCache);
-
-            const event = { type: 'action', action: 'water' };
-            store.addPlantEvent('p1', event as any);
-
-            const updated = store.$wsDataCache.get();
-            expect(updated!.gs2.grid['1-1']!.events).toHaveLength(1);
-        });
-
-        it('should skip null plant entries in grid', () => {
-            const initialCache = {
-                gs1: {
+                gs2: {
                     grid: {
-                        '1-1': null,
-                        '1-2': { plant_id: 'p1' }
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } }
                     }
                 }
             } as any;
@@ -282,15 +280,34 @@ describe('DataStore', () => {
             store.addPlantEvent('p1', event as any);
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']).toBeNull();
-            expect(updated!.gs1.grid['1-2']!.events).toHaveLength(1);
+            expect(updated!.gs2.grid.grid['1-1']!.events).toHaveLength(1);
+        });
+
+        it('should skip null plant entries in grid', () => {
+            const initialCache = {
+                gs1: {
+                    grid: {
+                        rows: 1, plants_per_row: 2, total_plants: 1,
+                        grid: { '1-1': null, '1-2': { plant_id: 'p1' } }
+                    }
+                }
+            } as any;
+            store.$wsDataCache.set(initialCache);
+
+            const event = { type: 'action', action: 'water' };
+            store.addPlantEvent('p1', event as any);
+
+            const updated = store.$wsDataCache.get();
+            expect(updated!.gs1.grid.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid.grid['1-2']!.events).toHaveLength(1);
         });
 
         it('should remove plant from ws cache using plant map optimization', () => {
             const initialCache = {
                 gs1: {
                     grid: {
-                        '1-1': { plant_id: 'p1' }
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } }
                     }
                 }
             } as any;
@@ -304,7 +321,7 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1');
 
             const updated = store.$wsDataCache.get();
-            expect(updated!.gs1.grid['1-1']).toBeNull();
+            expect(updated!.gs1.grid.grid['1-1']).toBeNull();
         });
     });
 
@@ -355,8 +372,18 @@ describe('DataStore', () => {
 
         it('should fallback to scan if plantToDeviceMap is inconsistent', () => {
             const initialCache = {
-                gs1: { grid: { '1-1': { plant_id: 'p1' } } },
-                gs2: { grid: { '1-1': { plant_id: 'p1' } } } // p1 shouldn't be here ideally, but simulating duplication/error
+                gs1: {
+                    grid: {
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } }
+                    }
+                },
+                gs2: {
+                    grid: {
+                        rows: 1, plants_per_row: 1, total_plants: 1,
+                        grid: { '1-1': { plant_id: 'p1' } } // p1 shouldn't be here ideally, but simulating duplication/error
+                    }
+                }
             } as any;
             store.$wsDataCache.set(initialCache);
 
@@ -369,8 +396,8 @@ describe('DataStore', () => {
             store.removePlantFromWsCache('p1');
 
             const updated = store.$wsDataCache.get();
-            expect(updated?.gs1?.grid['1-1']).toBeNull();
-            expect(updated?.gs2?.grid['1-1']).toBeNull();
+            expect(updated?.gs1?.grid.grid['1-1']).toBeNull();
+            expect(updated?.gs2?.grid.grid['1-1']).toBeNull();
         });
 
         it('should handle plant_id from attributes case in setDevices', () => {

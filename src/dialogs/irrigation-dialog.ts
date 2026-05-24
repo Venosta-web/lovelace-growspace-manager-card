@@ -964,6 +964,7 @@ export class IrrigationDialog extends LitElement {
     this._autoAdvanceP1ToP2 = config.autoAdvanceP1ToP2 ?? false;
     this._autoAdvanceP2ToP3 = config.autoAdvanceP2ToP3 ?? false;
     this._haltOnRunoffEcThreshold = config.haltOnRunoffEcThreshold ?? null;
+    this._activePhase = (config.activeSteeringPhase as 'p1' | 'p2' | 'p3') ?? 'p2';
 
     const strat = this.device.irrigationStrategy;
     this._strategy = {
@@ -1027,6 +1028,7 @@ export class IrrigationDialog extends LitElement {
       autoAdvanceP1ToP2: this._autoAdvanceP1ToP2,
       autoAdvanceP2ToP3: this._autoAdvanceP2ToP3,
       haltOnRunoffEcThreshold: this._haltOnRunoffEcThreshold,
+      activeSteeringPhase: this._activePhase,
     });
   }
 
@@ -2014,6 +2016,7 @@ export class IrrigationDialog extends LitElement {
     }
     this._pendingPhase = undefined;
     this._phaseConfirmOpen = false;
+    this._saveSettings();
   }
 
   private _cancelPhaseChange() {
@@ -2202,14 +2205,14 @@ export class IrrigationDialog extends LitElement {
       <!-- Phase trigger confirmation dialog -->
       <gs-dialog
         .open=${this._phaseConfirmOpen}
-        heading="Confirm Phase Change"
+        heading="Confirm Phase Transition"
         .iconPath=${mdiAlert}
         stageColor="var(--warning-color, #ff9800)"
         @close=${this._cancelPhaseChange}
       >
         <div style="padding: 20px;">
           <p style="margin: 0 0 12px 0;">
-            Are you sure you want to change the active crop steering phase to <strong>${this._pendingPhase?.toUpperCase() || ''}</strong>?
+            Are you sure you want to transition from <strong>${this._activePhase.toUpperCase()}</strong> to <strong>${this._pendingPhase?.toUpperCase() || ''}</strong>?
           </p>
           <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
             Manually shifting phases overrides the current schedule instantly. This is a severe change that will disrupt timing and dosing parameters.

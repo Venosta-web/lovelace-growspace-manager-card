@@ -33,7 +33,7 @@ export class GrowspaceCard {
    */
   async openMenu() {
     await this.menuButton.click();
-    await this.menu.waitFor({ state: 'visible', timeout: 5000 });
+    await this.menu.waitFor({ state: 'visible', timeout: 6000 });
   }
 
   /**

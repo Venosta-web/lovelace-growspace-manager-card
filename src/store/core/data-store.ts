@@ -189,12 +189,15 @@ export class GrowspaceDataStore {
     if (!currentCache[gsId]) return;
 
     const newCache = { ...currentCache };
-    newCache[gsId] = { ...newCache[gsId] };
-    const newGrid = { ...newCache[gsId].grid };
-    newCache[gsId].grid = newGrid;
+    const gsEntry = newCache[gsId];
+    const newPlantGrid = { ...gsEntry.grid?.grid };
 
-    mutator(newGrid);
+    mutator(newPlantGrid);
 
+    newCache[gsId] = {
+      ...gsEntry,
+      grid: { ...gsEntry.grid, grid: newPlantGrid },
+    };
     this.$wsDataCache.set(newCache);
   }
 
@@ -204,10 +207,10 @@ export class GrowspaceDataStore {
     let changed = false;
 
     const removeFn = (gsId: string) => {
-      if (!newCache[gsId] || !newCache[gsId].grid) return;
+      if (!newCache[gsId] || !newCache[gsId].grid?.grid) return;
 
       let gridChanged = false;
-      const newGrid = { ...newCache[gsId].grid };
+      const newGrid = { ...newCache[gsId].grid.grid };
 
       Object.keys(newGrid).forEach((key) => {
         const plant = newGrid[key];
@@ -218,7 +221,10 @@ export class GrowspaceDataStore {
       });
 
       if (gridChanged) {
-        newCache[gsId] = { ...newCache[gsId], grid: newGrid };
+        newCache[gsId] = {
+          ...newCache[gsId],
+          grid: { ...newCache[gsId].grid, grid: newGrid },
+        };
         changed = true;
       }
     };
@@ -248,7 +254,7 @@ export class GrowspaceDataStore {
     let changed = false;
 
     Object.keys(newCache).forEach((gsId) => {
-      const grid = newCache[gsId].grid;
+      const grid = newCache[gsId].grid?.grid;
       if (!grid) return;
 
       Object.entries(grid).forEach(([key, plant]) => {
@@ -259,7 +265,10 @@ export class GrowspaceDataStore {
             ...newCache[gsId],
             grid: {
               ...newCache[gsId].grid,
-              [key]: updatedPlant,
+              grid: {
+                ...newCache[gsId].grid.grid,
+                [key]: updatedPlant,
+              },
             },
           };
           changed = true;

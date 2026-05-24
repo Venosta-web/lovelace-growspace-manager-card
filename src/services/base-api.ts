@@ -1,5 +1,12 @@
 import { HomeAssistant } from 'custom-card-helpers';
 
+/** Typed error codes returned by the backend WebSocket handlers (ADR 0005). */
+export type ErrorCode =
+  | 'coordinator_not_ready'
+  | 'entity_not_found'
+  | 'validation_failed'
+  | 'internal_error';
+
 /**
  * Base class for all API services.
  * Provides shared functionality for WebSocket communication and service calls.

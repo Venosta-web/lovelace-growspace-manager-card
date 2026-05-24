@@ -58,6 +58,7 @@ export interface IrrigationConfig {
   autoAdvanceP2ToP3?: boolean;
   haltOnRunoffEcThreshold?: number | null;
   ecTargetRanges?: ECTargetRange[];
+  activeSteeringPhase?: 'p1' | 'p2' | 'p3';
 }
 
 export interface SerializedIrrigationStrategy {
@@ -91,6 +92,7 @@ export interface SerializedIrrigationConfig {
   auto_advance_p2_to_p3?: boolean;
   halt_on_runoff_ec_threshold?: number | null;
   ec_target_ranges?: Array<{ stage: string; min_ec: number; max_ec: number }>;
+  active_steering_phase?: 'p1' | 'p2' | 'p3';
 }
 
 export interface TankWaterEvent {
@@ -171,29 +173,33 @@ export interface DrainConfig {
 
 
 export interface SerializedEnergyTracking {
-  daily_kwh: number;
-  cost_total: number;
-  cost_per_gram: number;
   cycle_start_date?: string | null;
+  cycle_start_kwh?: number | null;
 }
 
 export interface EnergyTracking {
-  dailyKwh: number;
-  costTotal: number;
-  costPerGram: number;
   cycleStartDate?: string | null;
+  cycleStartKwh?: number | null;
+  // Kept for UI backward-compat; populated when sensor data is available
+  dailyKwh?: number | null;
+  costTotal?: number | null;
+  costPerGram?: number | null;
 }
 
 export interface SerializedWaterUsage {
-  liters_per_plant_per_day: number;
-  liters_today: number;
-  water_efficiency: number;
+  total_liters?: number;
+  cycle_start_date?: string;
+  daily_readings?: Array<Record<string, unknown>>;
 }
 
 export interface WaterUsage {
-  litersPerPlantPerDay: number;
-  litersToday: number;
-  waterEfficiency: number;
+  totalLiters?: number;
+  cycleStartDate?: string;
+  dailyReadings?: Array<Record<string, unknown>>;
+  // Kept for UI backward-compat; populated when sensor data is available
+  litersPerPlantPerDay?: number | null;
+  litersToday?: number | null;
+  waterEfficiency?: number | null;
 }
 
 // --- Backend Serialized Models ---
@@ -291,32 +297,50 @@ export interface SerializedStats {
   total_plants: number;
 }
 
-// The exact structure returned by GrowspaceSerializer.serialize_growspace
-export interface GrowspaceAPIResponse
-  extends SerializedBiologicalMetrics,
-  SerializedEnvironmentAttributes,
-  SerializedStats {
-  growspace_id: string;
-  name: string;
-  type: GrowspaceType;
-  rows: number;
-  plants_per_row: number;
-  notification_target?: string | null;
-  overview_entity_id?: string;
-  dimensions?: { length: number; width: number; height: number; unit: string };
-
-  grid: Record<string, RawPlantData | null>;
-  irrigation_config: SerializedIrrigationConfig;
-  irrigation_strategy?: SerializedIrrigationStrategy | null;
-
-  drain_config?: SerializedDrainConfig | null;
-  energy_tracking?: SerializedEnergyTracking | null;
-  water_usage?: SerializedWaterUsage | null;
-  cycles_today?: number | null;
-  volume_dispensed_today?: number | null;
-  next_scheduled_cycle?: string | null;
-  last_cycle_timestamp?: string | null;
-
+// The exact structure returned by GrowspaceViewModelBuilder.build() (ADR 0005)
+export interface GrowspaceAPIResponse {
+  identity: {
+    growspace_id: string;
+    overview_entity_id?: string;
+    name: string;
+    type: GrowspaceType;
+    notification_target?: string | null;
+  };
+  grid: {
+    rows: number;
+    plants_per_row: number;
+    total_plants: number;
+    dimensions?: { length: number; width: number; height: number; unit: string };
+    grid: Record<string, RawPlantData | null>;
+  };
+  /** Environment attributes with sensor_types/coordinates/groups extracted into `sensors`. */
+  environment: Omit<SerializedEnvironmentAttributes, 'sensor_types' | 'sensor_coordinates' | 'sensor_groups'>;
+  sensors: {
+    sensor_types: Record<string, string>;
+    sensor_coordinates: Record<string, { x: number; y: number; z: number; rotation?: number }>;
+    sensor_groups: SensorGroup[];
+  };
+  irrigation: {
+    irrigation_config: SerializedIrrigationConfig;
+    irrigation_strategy?: SerializedIrrigationStrategy | null;
+    drain_config?: SerializedDrainConfig | null;
+    water_usage?: SerializedWaterUsage | null;
+    last_cycle_timestamp?: string | null;
+    next_scheduled_cycle?: string | null;
+    cycles_today?: number;
+    volume_dispensed_today?: number;
+  };
+  metrics: SerializedBiologicalMetrics & {
+    max_veg_days: number;
+    max_flower_days: number;
+    max_dry_days?: number;
+    max_cure_days?: number;
+    veg_week: number;
+    flower_week: number;
+    max_stage_summary: string;
+    air_exchange?: string | null;
+    energy_tracking?: SerializedEnergyTracking | null;
+  };
   _ts?: number; // Backend serialization timestamp for efficient equality checks
 }
 
