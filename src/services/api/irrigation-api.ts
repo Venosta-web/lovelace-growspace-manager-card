@@ -246,6 +246,6 @@ export class IrrigationAPI extends BaseAPI {
   async getIrrigationAnalytics(
     growspaceId: string
   ): Promise<{ growspace_id: string; stage_aggregates: Record<string, number> } | null> {
-    return this.sendWebSocket(`${DOMAIN}/irrigation_analytics`, { growspace_id: growspaceId });
+    return this.sendWebSocketSafe(`${DOMAIN}/irrigation_analytics`, { growspace_id: growspaceId });
   }
 }

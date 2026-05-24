@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GeneticsAPI } from '../../../../src/services/api/genetics-api';
+import { WSError } from '../../../../src/services/base-api';
 
 describe('GeneticsAPI', () => {
     let api: GeneticsAPI;
@@ -270,11 +271,10 @@ describe('GeneticsAPI', () => {
             expect(result).toEqual({ lineage: 'P1' });
         });
 
-        it('returns empty lineage if websocket fails', async () => {
+        it('throws WSError if websocket fails', async () => {
             api.updateHass(mockHass);
             callWS.mockRejectedValue(new Error('WS fail'));
-            const result = await api.updateStrainLineageTree('OG Kush', []);
-            expect(result).toEqual({ lineage: '' });
+            await expect(api.updateStrainLineageTree('OG Kush', [])).rejects.toBeInstanceOf(WSError);
         });
     });
 

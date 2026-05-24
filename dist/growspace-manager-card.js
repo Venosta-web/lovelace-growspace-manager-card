@@ -971,6 +971,30 @@ PlantUtils.DATE_FIELDS = [
     'cure_start',
 ];
 
+/** Thrown when the backend sends a structured error response over WebSocket. */
+class WSError extends Error {
+    constructor(code, message) {
+        super(message);
+        this.code = code;
+        this.name = 'WSError';
+    }
+}
+function isHassWSError(error) {
+    return (typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        'message' in error &&
+        typeof error.code === 'string');
+}
+const KNOWN_ERROR_CODES = new Set([
+    'coordinator_not_ready',
+    'entity_not_found',
+    'validation_failed',
+    'internal_error',
+]);
+function toErrorCode(raw) {
+    return KNOWN_ERROR_CODES.has(raw) ? raw : 'internal_error';
+}
 /**
  * Base class for all API services.
  * Provides shared functionality for WebSocket communication and service calls.
@@ -998,17 +1022,49 @@ class BaseAPI {
         return await this.hass.callService(domain, service, serviceData);
     }
     /**
-     * Send a WebSocket message to Home Assistant.
+     * Send a WebSocket message and throw a typed WSError on backend errors.
+     *
+     * Use this for mutations where callers need to react to specific error codes.
+     * The thrown WSError carries a typed `code` field (one of the ErrorCode values)
+     * so `withAction` and other error boundaries can surface meaningful messages.
+     *
      * @param type - WebSocket message type
      * @param data - Additional data to include in the message
-     * @returns Response data or null on error
+     * @throws WSError with a typed code when the backend returns an error response
      */
     async sendWebSocket(type, data) {
         try {
             return await this.hass.callWS({ type, ...data });
         }
         catch (error) {
-            console.error(`WebSocket call ${type} failed:`, error);
+            if (isHassWSError(error)) {
+                throw new WSError(toErrorCode(error.code), error.message);
+            }
+            throw new WSError('internal_error', error instanceof Error ? error.message : String(error));
+        }
+    }
+    /**
+     * Send a WebSocket message and return null on any error (query pattern).
+     *
+     * Use this for data-fetching calls where null is a safe sentinel and the caller
+     * already handles absent data gracefully. Errors are logged with their typed code
+     * but not re-thrown — use `sendWebSocket` when you need the error to propagate.
+     *
+     * @param type - WebSocket message type
+     * @param data - Additional data to include in the message
+     * @returns Response data, or null if the request failed
+     */
+    async sendWebSocketSafe(type, data) {
+        try {
+            return await this.sendWebSocket(type, data);
+        }
+        catch (error) {
+            if (error instanceof WSError) {
+                console.error(`WebSocket call ${type} failed [${error.code}]:`, error.message);
+            }
+            else {
+                console.error(`WebSocket call ${type} failed:`, error);
+            }
             return null;
         }
     }
@@ -6882,7 +6938,7 @@ class IrrigationAPI extends BaseAPI {
         }
     }
     async getIrrigationAnalytics(growspaceId) {
-        return this.sendWebSocket(`${DOMAIN$1}/irrigation_analytics`, { growspace_id: growspaceId });
+        return this.sendWebSocketSafe(`${DOMAIN$1}/irrigation_analytics`, { growspace_id: growspaceId });
     }
 }
 
@@ -7098,7 +7154,7 @@ class GeneticsAPI extends BaseAPI {
         super(hass);
     }
     async fetchGeneticsData() {
-        const result = await this.sendWebSocket(`${DOMAIN}/get_genetics_data`);
+        const result = await this.sendWebSocketSafe(`${DOMAIN}/get_genetics_data`);
         return result ?? { seed_batches: {}, pollination_events: {} };
     }
     async addSeedBatch(data) {
@@ -7129,16 +7185,13 @@ class GeneticsAPI extends BaseAPI {
         await this.callService(DOMAIN, 'sow_seed', { batch_id, plant_id });
     }
     async getLineageTree(plant_id) {
-        const result = await this.sendWebSocket(`${DOMAIN}/get_lineage_tree`, { plant_id });
-        return result ?? null;
+        return this.sendWebSocketSafe(`${DOMAIN}/get_lineage_tree`, { plant_id });
     }
     async getStrainLineageTree(strain_name) {
-        const result = await this.sendWebSocket(`${DOMAIN}/get_strain_lineage_tree`, { strain_name });
-        return result ?? null;
+        return this.sendWebSocketSafe(`${DOMAIN}/get_strain_lineage_tree`, { strain_name });
     }
     async updateStrainLineageTree(strain_name, parents) {
-        const result = await this.sendWebSocket(`${DOMAIN}/update_strain_lineage_tree`, { strain_name, parents });
-        return result ?? { lineage: '' };
+        return this.sendWebSocket(`${DOMAIN}/update_strain_lineage_tree`, { strain_name, parents });
     }
     async importStrainLineageTree(strain_name, tree) {
         await this.sendWebSocket(`${DOMAIN}/import_strain_lineage_tree`, { strain_name, tree });
@@ -112133,6 +112186,19 @@ class GrowspaceGridStore {
     }
 }
 
+const WS_ERROR_MESSAGES = {
+    coordinator_not_ready: 'Integration not loaded — try reloading the page',
+    entity_not_found: 'Item not found — it may have been removed',
+    validation_failed: 'Invalid input',
+    internal_error: 'Internal error',
+};
+function toUserMessage(e) {
+    if (e instanceof WSError)
+        return WS_ERROR_MESSAGES[e.code] ?? e.message;
+    if (e instanceof Error)
+        return e.message;
+    return 'Unknown error';
+}
 async function withAction(ctx, fn, opts) {
     try {
         const result = await fn();
@@ -112141,7 +112207,7 @@ async function withAction(ctx, fn, opts) {
         return result;
     }
     catch (e) {
-        const message = e instanceof Error ? e.message : 'Unknown error';
+        const message = toUserMessage(e);
         console.error(opts.errorPrefix, e);
         ctx.ui.showToast(`${opts.errorPrefix}: ${message}`, 'error');
         if (opts.rethrow)

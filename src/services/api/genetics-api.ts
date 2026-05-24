@@ -17,7 +17,7 @@ export class GeneticsAPI extends BaseAPI {
   }
 
   async fetchGeneticsData(): Promise<GeneticsData> {
-    const result = await this.sendWebSocket<GeneticsData>(
+    const result = await this.sendWebSocketSafe<GeneticsData>(
       `${DOMAIN}/get_genetics_data`
     );
     return result ?? { seed_batches: {}, pollination_events: {} };
@@ -99,30 +99,27 @@ export class GeneticsAPI extends BaseAPI {
   }
 
   async getLineageTree(plant_id: string): Promise<LineageNode | null> {
-    const result = await this.sendWebSocket<LineageNode>(
+    return this.sendWebSocketSafe<LineageNode>(
       `${DOMAIN}/get_lineage_tree`,
       { plant_id }
     );
-    return result ?? null;
   }
 
   async getStrainLineageTree(strain_name: string): Promise<LineageNode | null> {
-    const result = await this.sendWebSocket<LineageNode>(
+    return this.sendWebSocketSafe<LineageNode>(
       `${DOMAIN}/get_strain_lineage_tree`,
       { strain_name }
     );
-    return result ?? null;
   }
 
   async updateStrainLineageTree(
     strain_name: string,
     parents: Array<{ name: string; source: 'library' | 'manual' }>
   ): Promise<{ lineage: string }> {
-    const result = await this.sendWebSocket<{ lineage: string }>(
+    return this.sendWebSocket<{ lineage: string }>(
       `${DOMAIN}/update_strain_lineage_tree`,
       { strain_name, parents }
     );
-    return result ?? { lineage: '' };
   }
 
   async importStrainLineageTree(
