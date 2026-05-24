@@ -223,6 +223,8 @@ export class GrowspaceAdapter {
         maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
         shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
         shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+        autoLightTracking: wsData.irrigation_strategy.auto_light_tracking,
+        detectedLightsOnTime: wsData.irrigation_strategy.detected_lights_on_time,
       }
       : undefined;
 

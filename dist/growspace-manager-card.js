@@ -5314,6 +5314,8 @@ class GrowspaceAdapter {
                 maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
                 shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
                 shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
+                autoLightTracking: wsData.irrigation_strategy.auto_light_tracking,
+                detectedLightsOnTime: wsData.irrigation_strategy.detected_lights_on_time,
             }
             : undefined;
         const drainConfig = wsData.drain_config
@@ -6750,6 +6752,8 @@ class IrrigationAPI extends BaseAPI {
             result.shot_duration_seconds = strategy.shotDurationSeconds;
         if (strategy.shotIntervalMinutes !== undefined)
             result.shot_interval_minutes = strategy.shotIntervalMinutes;
+        if (strategy.autoLightTracking !== undefined)
+            result.auto_light_tracking = strategy.autoLightTracking;
         return result;
     }
     async waterGrowspace(growspaceId, amount, nutrients, presetId) {
@@ -19235,6 +19239,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             maintenanceDrybackPercent: strat?.maintenanceDrybackPercent || 3.0,
             shotDurationSeconds: strat?.shotDurationSeconds || 15,
             shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
+            autoLightTracking: strat?.autoLightTracking ?? false,
+            detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
         };
         const dc = this.device.drainConfig;
         if (dc) {
@@ -20299,6 +20305,17 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           ></md3-switch>
         </div>
 
+        ${(this.device?.environmentAttributes?.lightSensors?.length ?? 0) > 0 ? x `
+          <div style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;">
+            <span>Auto Track from Light Sensor</span>
+            <md3-switch
+              data-field="autoLightTracking"
+              .checked=${!!this._strategy.autoLightTracking}
+              @change=${(e) => this._updateStrategyField('autoLightTracking', e.target.checked)}
+            ></md3-switch>
+          </div>
+        ` : ''}
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div style="grid-column:span 2;border-bottom:1px solid rgba(255,255,255,0.1);margin:4px 0;"></div>
           <h4 style="grid-column:span 2;margin:4px 0;">Targets</h4>
@@ -20316,13 +20333,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
 
-          <md3-text-input
-            label="Lights On Time"
-            type="time"
-            data-scroll-target="lightsOnTime"
-            .value=${this._strategy.lightsOnTime}
-            @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
-          ></md3-text-input>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <md3-text-input
+              label="Lights On Time"
+              type="time"
+              data-scroll-target="lightsOnTime"
+              .value=${this._strategy.lightsOnTime}
+              @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
+            ></md3-text-input>
+            ${this._strategy.detectedLightsOnTime ? x `
+              <span class="auto-lights-badge">auto: ${this._strategy.detectedLightsOnTime}</span>
+            ` : ''}
+          </div>
           <md3-number-input
             label="P0 Duration (min)"
             .value=${this._strategy.p0DurationMinutes}
@@ -108552,7 +108574,7 @@ class TankRenderer extends BaseRenderer {
         tanks.forEach((tank) => {
             const entityId = tank.sensorEntity;
             currentTankIds.add(entityId);
-            let coords = sensorCoords[entityId] || { x: 0, y: depth / 2};
+            const coords = sensorCoords[entityId] || { x: 0, y: depth / 2};
             const isWarning = tank.isWarning;
             const fill = tank.fillLevel || 0;
             const liquidColor = isWarning ? 0xff4422 : 0x00aaff;

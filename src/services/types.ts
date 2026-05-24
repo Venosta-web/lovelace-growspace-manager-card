@@ -36,6 +36,8 @@ export interface IrrigationStrategy {
   maintenanceDrybackPercent: number;
   shotDurationSeconds: number;
   shotIntervalMinutes: number;
+  autoLightTracking?: boolean;
+  detectedLightsOnTime?: string | null;
 }
 
 export interface IrrigationConfig {
@@ -67,6 +69,8 @@ export interface SerializedIrrigationStrategy {
   maintenance_dryback_percent: number;
   shot_duration_seconds: number;
   shot_interval_minutes: number;
+  auto_light_tracking?: boolean;
+  detected_lights_on_time?: string | null;
 }
 
 export interface SerializedIrrigationConfig {

@@ -2,8 +2,7 @@ import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from 'custom-card-helpers';
-import type { GrowspaceDevice, SensorHistories } from '../../../types';
-import type { HistoryTimeRange } from '../../../types';
+import type { GrowspaceDevice, SensorHistories, HistoryTimeRange } from '../../../types';
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
@@ -51,10 +50,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
       <div class="graphs-container">
         ${this._renderTimeRangeSelector()}
         ${repeat<AnalyticsItem>(
-          this.items,
-          (item: AnalyticsItem) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`),
-          (item: AnalyticsItem) => this._renderItem(item)
-        )}
+      this.items,
+      (item: AnalyticsItem) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`),
+      (item: AnalyticsItem) => this._renderItem(item)
+    )}
       </div>
     `;
   }

@@ -1,11 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+
+afterEach(() => {
+  document.body.innerHTML = '';
+});
 import { createGrowspaceDevice } from '../services/types';
 import { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
 
 // Stub any HA-specific custom elements that are not available in the test environment.
-const stubTags = ['ha-dialog', 'ha-svg-icon', 'ha-icon'];
+const stubTags = ['ha-dialog', 'ha-svg-icon', 'ha-icon', 'gs-dialog'];
 for (const tag of stubTags) {
   if (!customElements.get(tag)) {
     customElements.define(tag, class extends HTMLElement {});
@@ -220,5 +224,125 @@ describe('IrrigationDialog – scrollToField', () => {
     await el.updateComplete;
     // No error thrown and no unexpected side effects — just verify the element is open
     expect((el as any).open).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Steering tab – auto light tracking
+// ---------------------------------------------------------------------------
+
+function makeSteeringDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return createGrowspaceDevice({
+    deviceId: 'gs1',
+    name: 'Tent 1',
+    irrigationConfig: {
+      irrigationPumpEntity: 'switch.pump',
+      irrigationTimes: [],
+      drainTimes: [],
+    },
+    environmentAttributes: {
+      soilMoistureSensor: 'sensor.soil',
+    },
+    ...overrides,
+  });
+}
+
+describe('IrrigationDialog – Steering tab: auto light tracking', () => {
+  it('does not show auto-track toggle when device has no light sensors', async () => {
+    const device = makeSteeringDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const toggle = el.shadowRoot!.querySelector('[data-field="autoLightTracking"]');
+    expect(toggle).toBeNull();
+  });
+
+  it('shows auto-track toggle when device has at least one light sensor', async () => {
+    const device = makeSteeringDevice({
+      environmentAttributes: {
+        soilMoistureSensor: 'sensor.soil',
+        lightSensors: ['sensor.light_1'],
+      },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const toggle = el.shadowRoot!.querySelector('[data-field="autoLightTracking"]');
+    expect(toggle).not.toBeNull();
+  });
+
+  it('toggling auto-track switch sets autoLightTracking on strategy', async () => {
+    const device = makeSteeringDevice({
+      environmentAttributes: {
+        soilMoistureSensor: 'sensor.soil',
+        lightSensors: ['sensor.light_1'],
+      },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const toggle = el.shadowRoot!.querySelector('[data-field="autoLightTracking"]') as any;
+    expect(toggle).not.toBeNull();
+
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    await el.updateComplete;
+
+    expect((el as any)._strategy.autoLightTracking).toBe(true);
+  });
+
+  it('does not show detected-time badge when detectedLightsOnTime is null', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 30,
+        p2StopBeforeLightsOffMinutes: 60,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 30,
+        shotIntervalMinutes: 20,
+        autoLightTracking: false,
+        detectedLightsOnTime: null,
+      },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const badge = el.shadowRoot!.querySelector('.auto-lights-badge');
+    expect(badge).toBeNull();
+  });
+
+  it('shows "auto: HH:MM" badge next to lightsOnTime when detectedLightsOnTime is set', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 30,
+        p2StopBeforeLightsOffMinutes: 60,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 30,
+        shotIntervalMinutes: 20,
+        autoLightTracking: true,
+        detectedLightsOnTime: '07:30',
+      },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const badge = el.shadowRoot!.querySelector('.auto-lights-badge');
+    expect(badge).not.toBeNull();
+    expect(badge!.textContent?.trim()).toBe('auto: 07:30');
   });
 });

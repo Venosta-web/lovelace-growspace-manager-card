@@ -166,6 +166,8 @@ export class IrrigationAPI extends BaseAPI {
       result.shot_duration_seconds = strategy.shotDurationSeconds;
     if (strategy.shotIntervalMinutes !== undefined)
       result.shot_interval_minutes = strategy.shotIntervalMinutes;
+    if (strategy.autoLightTracking !== undefined)
+      result.auto_light_tracking = strategy.autoLightTracking;
     return result;
   }
 

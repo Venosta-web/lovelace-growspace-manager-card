@@ -31,7 +31,7 @@ export class TankRenderer extends BaseRenderer {
         tanks.forEach((tank: any) => {
             const entityId = tank.sensorEntity;
             currentTankIds.add(entityId);
-            let coords = sensorCoords[entityId] || { x: 0, y: depth / 2, z: 0 };
+            const coords = sensorCoords[entityId] || { x: 0, y: depth / 2, z: 0 };
 
             const isWarning = tank.isWarning;
             const fill = tank.fillLevel || 0;

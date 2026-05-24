@@ -975,6 +975,8 @@ export class IrrigationDialog extends LitElement {
       maintenanceDrybackPercent: strat?.maintenanceDrybackPercent || 3.0,
       shotDurationSeconds: strat?.shotDurationSeconds || 15,
       shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
+      autoLightTracking: strat?.autoLightTracking ?? false,
+      detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
     };
 
     const dc = this.device.drainConfig;
@@ -2068,6 +2070,17 @@ export class IrrigationDialog extends LitElement {
           ></md3-switch>
         </div>
 
+        ${(this.device?.environmentAttributes?.lightSensors?.length ?? 0) > 0 ? html`
+          <div style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;">
+            <span>Auto Track from Light Sensor</span>
+            <md3-switch
+              data-field="autoLightTracking"
+              .checked=${!!this._strategy.autoLightTracking}
+              @change=${(e: Event) => this._updateStrategyField('autoLightTracking', (e.target as HTMLInputElement).checked)}
+            ></md3-switch>
+          </div>
+        ` : ''}
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div style="grid-column:span 2;border-bottom:1px solid rgba(255,255,255,0.1);margin:4px 0;"></div>
           <h4 style="grid-column:span 2;margin:4px 0;">Targets</h4>
@@ -2085,13 +2098,18 @@ export class IrrigationDialog extends LitElement {
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
 
-          <md3-text-input
-            label="Lights On Time"
-            type="time"
-            data-scroll-target="lightsOnTime"
-            .value=${this._strategy.lightsOnTime}
-            @change=${(e: CustomEvent) => this._updateStrategyField('lightsOnTime', (e.target as HTMLInputElement).value || e.detail)}
-          ></md3-text-input>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <md3-text-input
+              label="Lights On Time"
+              type="time"
+              data-scroll-target="lightsOnTime"
+              .value=${this._strategy.lightsOnTime}
+              @change=${(e: CustomEvent) => this._updateStrategyField('lightsOnTime', (e.target as HTMLInputElement).value || e.detail)}
+            ></md3-text-input>
+            ${this._strategy.detectedLightsOnTime ? html`
+              <span class="auto-lights-badge">auto: ${this._strategy.detectedLightsOnTime}</span>
+            ` : ''}
+          </div>
           <md3-number-input
             label="P0 Duration (min)"
             .value=${this._strategy.p0DurationMinutes}
