@@ -48346,6 +48346,26 @@ class MetricsUtils {
     }
 }
 
+function toDateString(value) {
+    return value.slice(0, 10);
+}
+function getFlowerFlipInfo(device, today, dismissedMap) {
+    const flippingPlants = device.plants.filter((p) => p.attributes?.flower_start && toDateString(p.attributes.flower_start) === today);
+    if (flippingPlants.length === 0)
+        return null;
+    const flowerStart = today;
+    if (dismissedMap[device.deviceId] === flowerStart)
+        return null;
+    const plantNames = flippingPlants.map((p) => p.attributes?.friendly_name ?? p.attributes?.strain ?? 'Unknown');
+    return {
+        plantNames,
+        flowerStart,
+        vegDayHours: device.irrigationConfig?.vegDayHours ?? 18,
+        flowerDayHours: 12,
+        autoLightTracking: device.irrigationStrategy?.autoLightTracking ?? false,
+    };
+}
+
 const headerStyles = i$6 `
   :host {
     display: block;
@@ -49715,6 +49735,52 @@ GrowspaceHeaderStagesUI = __decorate([
     t$2('growspace-header-stages-ui')
 ], GrowspaceHeaderStagesUI);
 
+let FlowerFlipChip = class FlowerFlipChip extends i$3 {
+    _buildTooltip() {
+        const { plantNames, flowerStart, vegDayHours, flowerDayHours, autoLightTracking } = this.info;
+        const names = plantNames.join(', ');
+        let tip = `Flower flip today (${flowerStart}): ${names}\nPhotoperiod: ${vegDayHours}h → ${flowerDayHours}h`;
+        if (autoLightTracking) {
+            tip += '\nAuto-light tracking is active — the schedule adapts automatically, but set your hardware timer to 12h.';
+        }
+        return tip;
+    }
+    _handleClick() {
+        this.dispatchEvent(new CustomEvent('flower-flip-click', {
+            detail: { growspaceId: this.growspaceId, flowerStart: this.info.flowerStart },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.info)
+            return x ``;
+        return x `
+      <growspace-chip
+        .icon=${mdiFlower}
+        .status=${'warning'}
+        .tooltip=${this._buildTooltip()}
+        .value=${'Flower Flip'}
+        @click=${this._handleClick}
+      ></growspace-chip>
+    `;
+    }
+};
+FlowerFlipChip.styles = i$6 `
+    :host {
+      display: inline-block;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], FlowerFlipChip.prototype, "info", void 0);
+__decorate([
+    n$5({ type: String })
+], FlowerFlipChip.prototype, "growspaceId", void 0);
+FlowerFlipChip = __decorate([
+    t$2('flower-flip-chip')
+], FlowerFlipChip);
+
 let GrowspaceHeaderSecondaryUI = class GrowspaceHeaderSecondaryUI extends i$3 {
     constructor() {
         super(...arguments);
@@ -49723,6 +49789,8 @@ let GrowspaceHeaderSecondaryUI = class GrowspaceHeaderSecondaryUI extends i$3 {
         this.compact = false;
         this.isMobile = false;
         this.mobileLink = false;
+        this.flowerFlipInfo = null;
+        this.growspaceId = '';
     }
     get _chipDraggable() {
         if (this.isMobile) {
@@ -49750,6 +49818,12 @@ let GrowspaceHeaderSecondaryUI = class GrowspaceHeaderSecondaryUI extends i$3 {
       <scroll-container .scrollAmount=${150}>
         <div class="secondary-strip">
           ${this.chips.map((chip) => x `
+              ${chip.key === MetricKey.OPTIMAL && this.flowerFlipInfo
+            ? x `<flower-flip-chip
+                    .info=${this.flowerFlipInfo}
+                    .growspaceId=${this.growspaceId}
+                  ></flower-flip-chip>`
+            : E}
               <growspace-chip
                 .icon=${chip.icon}
                 .label=${chip.label}
@@ -49815,6 +49889,12 @@ __decorate([
 __decorate([
     n$5({ type: Boolean })
 ], GrowspaceHeaderSecondaryUI.prototype, "mobileLink", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderSecondaryUI.prototype, "flowerFlipInfo", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceHeaderSecondaryUI.prototype, "growspaceId", void 0);
 GrowspaceHeaderSecondaryUI = __decorate([
     t$2('growspace-header-secondary-ui')
 ], GrowspaceHeaderSecondaryUI);
@@ -49836,6 +49916,7 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
         this.viewMode = '';
         this.isEditMode = false;
         this.selectedPlants = new Set();
+        this.flowerFlipInfo = null;
         this._mobileLink = false;
         this._resizeController = new ResizeController(this, () => { });
     }
@@ -49990,6 +50071,8 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
               .compact=${this.compact}
               .chips=${this.secondaryChips}
               .inventory=${this.inventory}
+              .flowerFlipInfo=${this.flowerFlipInfo}
+              .growspaceId=${this.deviceId}
               @open-nutrients=${() => this._openNutrients()}
               @toggle-graph=${(e) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
               @chip-drag-start=${(e) => this._handleChipDragStart(e.detail.event, e.detail.metric)}
@@ -50084,6 +50167,9 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], GrowspaceHeaderUI.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceHeaderUI.prototype, "flowerFlipInfo", void 0);
 __decorate([
     r$3()
 ], GrowspaceHeaderUI.prototype, "_mobileLink", void 0);
@@ -50269,6 +50355,18 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             .filter((p) => !!p.attributes?.problem)
             .map((p) => p.attributes?.strain || p.attributes?.friendly_name || 'Unknown');
     }
+    get _flowerFlipInfo() {
+        if (!this.device || !this.store?.ui?.$flowerFlipDismissed)
+            return null;
+        const today = DateTime.now().toISODate();
+        const dismissed = this.store.ui.$flowerFlipDismissed.get();
+        return getFlowerFlipInfo(this.device, today, dismissed);
+    }
+    _handleFlowerFlipClick(e) {
+        const { growspaceId, flowerStart } = e.detail;
+        this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
+        this.store?.actions.ui.openIrrigationDialog({ initialTab: 'steering', scrollToField: 'lightsOnTime' });
+    }
     render() {
         if (!this.device || !this.hass)
             return E;
@@ -50292,6 +50390,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
         .problemPlants=${this._problemPlants}
+        .flowerFlipInfo=${this._flowerFlipInfo}
         @device-changed=${this._handleDeviceChange}
         @toggle-graph=${this._handleToggleGraph}
         @chip-drag-start=${this._handleChipDragStart}
@@ -50299,6 +50398,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         @unlink-graphs=${this._handleUnlinkGraphs}
         @open-nutrients=${this._handleOpenNutrients}
         @action-triggered=${this._handleActionTriggered}
+        @flower-flip-click=${this._handleFlowerFlipClick}
       ></growspace-header-ui>
     `;
     }
@@ -111244,6 +111344,16 @@ class GrowspaceUIStore {
         this.$gridOverlayMode = atom(GridOverlayMode.NONE);
         this.$language = atom('en');
         this.$pendingDeepLinkPlantId = atom(null);
+        let initialDismissed = {};
+        try {
+            const raw = localStorage.getItem('growspace.flowerFlipDismissed');
+            if (raw)
+                initialDismissed = JSON.parse(raw);
+        }
+        catch {
+            // ignore
+        }
+        this.$flowerFlipDismissed = atom(initialDismissed);
         this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
         this.$cardViewState = computed([
             this.$viewMode,
@@ -111341,6 +111451,16 @@ class GrowspaceUIStore {
     }
     setPendingDeepLink(plantId) {
         this.$pendingDeepLinkPlantId.set(plantId);
+    }
+    dismissFlowerFlip(growspaceId, flowerStart) {
+        const updated = { ...this.$flowerFlipDismissed.get(), [growspaceId]: flowerStart };
+        this.$flowerFlipDismissed.set(updated);
+        try {
+            localStorage.setItem('growspace.flowerFlipDismissed', JSON.stringify(updated));
+        }
+        catch {
+            // ignore
+        }
     }
 }
 

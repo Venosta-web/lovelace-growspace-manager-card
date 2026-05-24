@@ -9,7 +9,9 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../../../types';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { HeaderDragController } from '../../../controllers/header-drag-controller';
 import { MetricsUtils, HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
+import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ViewMode } from '../../../constants';
+import { DateTime } from 'luxon';
 
 import '../components/growspace-header-ui';
 
@@ -231,6 +233,19 @@ export class GrowspaceHeaderContainer extends LitElement {
       .map((p) => p.attributes?.strain || p.attributes?.friendly_name || 'Unknown');
   }
 
+  private get _flowerFlipInfo(): FlowerFlipInfo | null {
+    if (!this.device || !this.store?.ui?.$flowerFlipDismissed) return null;
+    const today = DateTime.now().toISODate();
+    const dismissed = this.store.ui.$flowerFlipDismissed.get();
+    return getFlowerFlipInfo(this.device, today, dismissed);
+  }
+
+  private _handleFlowerFlipClick(e: CustomEvent) {
+    const { growspaceId, flowerStart } = e.detail;
+    this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
+    this.store?.actions.ui.openIrrigationDialog({ initialTab: 'steering', scrollToField: 'lightsOnTime' });
+  }
+
   render() {
     if (!this.device || !this.hass) return nothing;
 
@@ -255,6 +270,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
         .problemPlants=${this._problemPlants}
+        .flowerFlipInfo=${this._flowerFlipInfo}
         @device-changed=${this._handleDeviceChange}
         @toggle-graph=${this._handleToggleGraph}
         @chip-drag-start=${this._handleChipDragStart}
@@ -262,6 +278,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         @unlink-graphs=${this._handleUnlinkGraphs}
         @open-nutrients=${this._handleOpenNutrients}
         @action-triggered=${this._handleActionTriggered}
+        @flower-flip-click=${this._handleFlowerFlipClick}
       ></growspace-header-ui>
     `;
   }

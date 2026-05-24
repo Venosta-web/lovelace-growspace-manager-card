@@ -363,4 +363,32 @@ describe('UI Store', () => {
         });
     });
 
+    describe('flowerFlipDismissed', () => {
+        beforeEach(() => {
+            localStorage.removeItem('growspace.flowerFlipDismissed');
+            store = new GrowspaceUIStore();
+        });
+
+        it('initialises to an empty map', () => {
+            expect(store.$flowerFlipDismissed.get()).toEqual({});
+        });
+
+        it('dismissFlowerFlip writes growspaceId → flowerStart into the map', () => {
+            store.dismissFlowerFlip('gs1', '2026-05-24');
+            expect(store.$flowerFlipDismissed.get()).toEqual({ gs1: '2026-05-24' });
+        });
+
+        it('second dismiss for different growspace is additive', () => {
+            store.dismissFlowerFlip('gs1', '2026-05-24');
+            store.dismissFlowerFlip('gs2', '2026-05-24');
+            expect(store.$flowerFlipDismissed.get()).toEqual({ gs1: '2026-05-24', gs2: '2026-05-24' });
+        });
+
+        it('re-dismissing with a new date overwrites the old entry', () => {
+            store.dismissFlowerFlip('gs1', '2026-05-24');
+            store.dismissFlowerFlip('gs1', '2026-06-01');
+            expect(store.$flowerFlipDismissed.get()).toEqual({ gs1: '2026-06-01' });
+        });
+    });
+
 });

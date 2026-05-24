@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../../../types';
 import { HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
+import type { FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ResizeController } from '../../../controllers/resize-controller';
 import { headerStyles } from '../../../styles/header.styles';
 
@@ -31,6 +32,7 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ type: Boolean }) isEditMode = false;
   @property({ attribute: false }) selectedPlants = new Set<string>();
   @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ attribute: false }) flowerFlipInfo: FlowerFlipInfo | null = null;
 
   @state() private _mobileLink = false;
   private _resizeController = new ResizeController(this, () => {});
@@ -210,6 +212,8 @@ export class GrowspaceHeaderUI extends LitElement {
               .compact=${this.compact}
               .chips=${this.secondaryChips}
               .inventory=${this.inventory}
+              .flowerFlipInfo=${this.flowerFlipInfo}
+              .growspaceId=${this.deviceId}
               @open-nutrients=${() => this._openNutrients()}
               @toggle-graph=${(e: CustomEvent) => { e.stopPropagation(); this._toggleEnvGraph(e.detail.metric); }}
               @chip-drag-start=${(e: CustomEvent) =>

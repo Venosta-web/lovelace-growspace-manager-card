@@ -24,6 +24,7 @@ export class GrowspaceUIStore {
   public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;
   public readonly $language: WritableAtom<string>;
   public readonly $pendingDeepLinkPlantId: WritableAtom<string | null>;
+  public readonly $flowerFlipDismissed: WritableAtom<Record<string, string>>;
 
   // Computed stores
   public readonly $isCompactView: ReadableAtom<boolean>;
@@ -43,6 +44,15 @@ export class GrowspaceUIStore {
     this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
     this.$language = atom<string>('en');
     this.$pendingDeepLinkPlantId = atom<string | null>(null);
+
+    let initialDismissed: Record<string, string> = {};
+    try {
+      const raw = localStorage.getItem('growspace.flowerFlipDismissed');
+      if (raw) initialDismissed = JSON.parse(raw);
+    } catch {
+      // ignore
+    }
+    this.$flowerFlipDismissed = atom<Record<string, string>>(initialDismissed);
 
     this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
 
@@ -194,5 +204,15 @@ export class GrowspaceUIStore {
 
   public setPendingDeepLink(plantId: string | null) {
     this.$pendingDeepLinkPlantId.set(plantId);
+  }
+
+  public dismissFlowerFlip(growspaceId: string, flowerStart: string) {
+    const updated = { ...this.$flowerFlipDismissed.get(), [growspaceId]: flowerStart };
+    this.$flowerFlipDismissed.set(updated);
+    try {
+      localStorage.setItem('growspace.flowerFlipDismissed', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
   }
 }

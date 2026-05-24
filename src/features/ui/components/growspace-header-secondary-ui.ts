@@ -1,10 +1,13 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HeaderChip } from '../../../utils/metrics-utils';
 import { NutrientInventory } from '../../../types';
+import { MetricKey } from '../../environment/constants';
+import type { FlowerFlipInfo } from '../../../utils/flower-flip';
 import '../../shared/ui/scroll-container';
 import '../../shared/ui/growspace-chip';
 import '../../shared/ui/nutrient-stock-chip';
+import '../../shared/ui/flower-flip-chip';
 
 @customElement('growspace-header-secondary-ui')
 export class GrowspaceHeaderSecondaryUI extends LitElement {
@@ -13,6 +16,8 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
   @property({ type: Boolean }) public compact = false;
   @property({ type: Boolean }) public isMobile = false;
   @property({ type: Boolean }) public mobileLink = false;
+  @property({ attribute: false }) public flowerFlipInfo: FlowerFlipInfo | null = null;
+  @property({ type: String }) public growspaceId = '';
 
   private get _chipDraggable(): string {
     if (this.isMobile) {
@@ -75,6 +80,12 @@ export class GrowspaceHeaderSecondaryUI extends LitElement {
         <div class="secondary-strip">
           ${this.chips.map(
             (chip) => html`
+              ${chip.key === MetricKey.OPTIMAL && this.flowerFlipInfo
+                ? html`<flower-flip-chip
+                    .info=${this.flowerFlipInfo}
+                    .growspaceId=${this.growspaceId}
+                  ></flower-flip-chip>`
+                : nothing}
               <growspace-chip
                 .icon=${chip.icon}
                 .label=${chip.label}
