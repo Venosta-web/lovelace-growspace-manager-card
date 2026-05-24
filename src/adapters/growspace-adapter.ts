@@ -220,10 +220,10 @@ export class GrowspaceAdapter {
       activeSteeringPhase: (irrigationConfigRaw as any).active_steering_phase,
       ecTargetRanges: (
         (irrigationConfigRaw as any).ec_target_ranges ?? []
-      ).map((r: { stage: string; min_ec: number; max_ec: number }) => ({
+      ).map((r: { stage: string; feed_ec_min: number; feed_ec_max: number }) => ({
         stage: r.stage as ECTargetStage,
-        minEc: r.min_ec,
-        maxEc: r.max_ec,
+        minEc: r.feed_ec_min,
+        maxEc: r.feed_ec_max,
       })),
     };
 

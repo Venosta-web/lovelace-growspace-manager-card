@@ -5415,8 +5415,8 @@ class GrowspaceAdapter {
             activeSteeringPhase: irrigationConfigRaw.active_steering_phase,
             ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map((r) => ({
                 stage: r.stage,
-                minEc: r.min_ec,
-                maxEc: r.max_ec,
+                minEc: r.feed_ec_min,
+                maxEc: r.feed_ec_max,
             })),
         };
         const irrigationStrategyRaw = irrigation?.irrigation_strategy;
