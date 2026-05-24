@@ -4,6 +4,7 @@ import { provide } from '@lit/context';
 
 import { hassContext, configContext, strainLibraryContext, storeContext } from './lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
+import { setHass } from './services/hass-call';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
@@ -68,6 +69,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   protected firstUpdated() {
     if (this.hass) {
+      setHass(this.hass);
       this.store.updateHass(this.hass);
     }
     this.store.initializeSelectedDevice(this._config);
@@ -131,6 +133,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     super.updated(changedProps);
 
     if (changedProps.has('hass')) {
+      setHass(this.hass);
       this.store.updateHass(this.hass);
       if (this._dialogPortal) {
         this._dialogPortal.hass = this.hass;

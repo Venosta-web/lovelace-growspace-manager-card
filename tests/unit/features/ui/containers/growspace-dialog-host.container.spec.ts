@@ -2,6 +2,7 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
+import { waterPlant as sliceWaterPlant } from '../../../../../src/slices/plant';
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';
@@ -20,6 +21,19 @@ vi.mock('../../../../../src/features/shared/config/feature-flags', () => ({
 
 vi.mock('../../../../../src/features/genetics/state/genetics.actions', () => ({
     loadAllGenetics: vi.fn().mockResolvedValue(true)
+}));
+
+vi.mock('../../../../../src/slices/plant', () => ({
+    waterPlant: vi.fn().mockResolvedValue(undefined),
+    plants$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
+    selectedPlant$: { get: vi.fn().mockReturnValue(null), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
+    setPlants: vi.fn(),
+}));
+
+vi.mock('../../../../../src/services/hass-call', () => ({
+    setHass: vi.fn(),
+    callService: vi.fn().mockResolvedValue(undefined),
+    hassCall: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock required child components that are not logic-heavy for these tests
@@ -472,7 +486,7 @@ describe('GrowspaceDialogHostContainer', () => {
         }));
 
         await vi.waitFor(() => {
-            expect(mockStore.actions.environment.waterPlant).toHaveBeenCalledWith('p1', 500, {}, 'preset1');
+            expect(sliceWaterPlant).toHaveBeenCalledWith('p1', 500, {}, 'preset1');
         });
     });
 
@@ -2075,7 +2089,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.environment.waterPlant).toHaveBeenCalledWith(
+                expect(sliceWaterPlant).toHaveBeenCalledWith(
                     'p1', 500, { CalMag: 2.5 }, null
                 );
             });
@@ -2083,7 +2097,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle @submit-watering failure', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.environment.waterPlant.mockRejectedValue(new Error('Water failed'));
+            vi.mocked(sliceWaterPlant).mockRejectedValueOnce(new Error('Water failed'));
             await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
             const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
             dialog?.dispatchEvent(new CustomEvent('submit-watering', {
