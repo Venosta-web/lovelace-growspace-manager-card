@@ -815,6 +815,8 @@ export class GrowspaceDialogHost extends LitElement {
         .open=${true}
         .device=${selectedDeviceData}
         .growspaceName=${selectedDeviceData?.name || ''}
+        .initialTab=${active.payload.initialTab}
+        .scrollToField=${active.payload.scrollToField}
         @close=${() => this._closeDialogIfActive('IRRIGATION')}
         @closed=${() => this._closeDialogIfActive('IRRIGATION')}
         @data-changed=${() => this._handleDataChanged()}

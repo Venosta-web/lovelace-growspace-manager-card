@@ -411,7 +411,15 @@ describe('ActionDispatcher', () => {
 
         it('should delegate openIrrigationDialog to uiActions', () => {
             dispatcher.ui.openIrrigationDialog();
-            expect(uiActions.openIrrigationDialog).toHaveBeenCalledWith(mockStore.context);
+            expect(uiActions.openIrrigationDialog).toHaveBeenCalledWith(mockStore.context, undefined);
+        });
+
+        it('should delegate openIrrigationDialog with options to uiActions', () => {
+            dispatcher.ui.openIrrigationDialog({ initialTab: 'steering', scrollToField: 'lightsOnTime' });
+            expect(uiActions.openIrrigationDialog).toHaveBeenCalledWith(mockStore.context, {
+                initialTab: 'steering',
+                scrollToField: 'lightsOnTime',
+            });
         });
 
         it('should delegate openGrowMasterDialog to uiActions', () => {

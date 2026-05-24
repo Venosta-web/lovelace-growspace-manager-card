@@ -19090,6 +19090,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         super(...arguments);
         this.open = false;
         this.growspaceName = '';
+        this.initialTab = undefined;
+        this.scrollToField = undefined;
         this._irrigationPumpEntity = '';
         this._drainPumpEntity = '';
         this._irrigationDuration = 60;
@@ -19185,12 +19187,25 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (changedProps.has('open') && this.open) {
             this._initializeState();
             this._fetchStageAnalytics();
+            if (this.initialTab) {
+                this._activeTab = this.initialTab;
+            }
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
         if (!this._visibleTabs.includes(this._activeTab)) {
             this._activeTab = 'schedules';
+        }
+    }
+    updated(changedProps) {
+        if (changedProps.has('open') && this.open && this.scrollToField) {
+            const target = this.shadowRoot?.querySelector(`[data-scroll-target="${this.scrollToField}"]`);
+            if (!target)
+                return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.classList.add('field-pulse');
+            target.addEventListener('animationend', () => target.classList.remove('field-pulse'), { once: true });
         }
     }
     _initializeState() {
@@ -20304,6 +20319,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <md3-text-input
             label="Lights On Time"
             type="time"
+            data-scroll-target="lightsOnTime"
             .value=${this._strategy.lightsOnTime}
             @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
           ></md3-text-input>
@@ -21840,6 +21856,15 @@ IrrigationDialog.styles = [
         border-left: 3px solid #4CAF50;
       }
       .info-banner.banner-cs svg { fill: #4CAF50; }
+
+      @keyframes field-pulse-anim {
+        0%   { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb, 33,150,243), 0.5); }
+        50%  { box-shadow: 0 0 0 6px rgba(var(--primary-color-rgb, 33,150,243), 0.2); }
+        100% { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb, 33,150,243), 0); }
+      }
+      .field-pulse {
+        animation: field-pulse-anim 3s ease-out 1;
+      }
     `,
 ];
 __decorate([
@@ -21860,6 +21885,12 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], IrrigationDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ type: String })
+], IrrigationDialog.prototype, "initialTab", void 0);
+__decorate([
+    n$5({ type: String })
+], IrrigationDialog.prototype, "scrollToField", void 0);
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_irrigationPumpEntity", void 0);
@@ -38789,6 +38820,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .open=${true}
         .device=${selectedDeviceData}
         .growspaceName=${selectedDeviceData?.name || ''}
+        .initialTab=${active.payload.initialTab}
+        .scrollToField=${active.payload.scrollToField}
         @close=${() => this._closeDialogIfActive('IRRIGATION')}
         @closed=${() => this._closeDialogIfActive('IRRIGATION')}
         @data-changed=${() => this._handleDataChanged()}
@@ -113084,8 +113117,8 @@ function openStrainLibraryDialog(ctx, initialTab) {
         payload: { initialTab },
     });
 }
-function openIrrigationDialog(ctx) {
-    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+function openIrrigationDialog(ctx, options) {
+    ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: options ?? {} });
 }
 function openGrowMasterDialog(ctx, growspaceId) {
     ctx.ui.setActiveDialog({
@@ -113690,7 +113723,7 @@ class ActionDispatcher {
             openLogbookDialog: () => openLogbookDialog(this.ctx),
             openConfigDialog: (device) => openConfigDialog(this.ctx, device),
             openStrainLibraryDialog: () => openStrainLibraryDialog(this.ctx),
-            openIrrigationDialog: () => openIrrigationDialog(this.ctx),
+            openIrrigationDialog: (options) => openIrrigationDialog(this.ctx, options),
             openGrowMasterDialog: (growspaceId) => openGrowMasterDialog(this.ctx, growspaceId),
             openWateringDialog: (options) => openWateringDialog(this.ctx, options),
             openTrainingDialog: (plantIds, growspaceId) => openTrainingDialog(this.ctx, plantIds, growspaceId),

@@ -411,6 +411,22 @@ describe('ui-actions', () => {
             expect(setActiveDialogSpy).toHaveBeenCalledWith({ type: 'IRRIGATION', payload: {} });
         });
 
+        it('should open irrigation dialog with initialTab and scrollToField', () => {
+            openIrrigationDialog(ctx, { initialTab: 'steering', scrollToField: 'lightsOnTime' });
+            expect(setActiveDialogSpy).toHaveBeenCalledWith({
+                type: 'IRRIGATION',
+                payload: { initialTab: 'steering', scrollToField: 'lightsOnTime' },
+            });
+        });
+
+        it('should open irrigation dialog with only initialTab', () => {
+            openIrrigationDialog(ctx, { initialTab: 'steering' });
+            expect(setActiveDialogSpy).toHaveBeenCalledWith({
+                type: 'IRRIGATION',
+                payload: { initialTab: 'steering' },
+            });
+        });
+
         it('should open nutrients dialog', () => {
             openNutrientsDialog(ctx);
             expect(setActiveDialogSpy).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });

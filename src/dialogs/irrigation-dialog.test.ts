@@ -134,3 +134,91 @@ describe('IrrigationDialog – Run Now button', () => {
     expect(btn!.disabled).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// initialTab + scrollToField
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – initialTab', () => {
+  it('defaults to the schedules tab when no initialTab is given', async () => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect((el as any)._activeTab).toBe('schedules');
+  });
+
+  it('activates the given initialTab when the dialog opens', async () => {
+    // 'config' is always visible regardless of device state
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .initialTab=${'config'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect((el as any)._activeTab).toBe('config');
+  });
+
+  it('activates initialTab when open transitions from false to true', async () => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${false} .initialTab=${'config'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect((el as any)._activeTab).toBe('schedules');
+
+    el.open = true;
+    await el.updateComplete;
+    expect((el as any)._activeTab).toBe('config');
+  });
+
+  it('does not change tab when initialTab is not a visible tab', async () => {
+    // 'steering' requires device with pump + soil moisture sensor; without device it falls back to schedules
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect((el as any)._activeTab).toBe('schedules');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// scrollToField
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – scrollToField', () => {
+  it('queries for the scrollToField target and adds field-pulse class when the dialog opens', async () => {
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${false} .scrollToField=${'testField'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    // Create a target element and stub querySelector to return it
+    const target = document.createElement('div');
+    target.setAttribute('data-scroll-target', 'testField');
+    target.scrollIntoView = vi.fn();
+
+    const querySpy = vi.spyOn(el.shadowRoot!, 'querySelector').mockImplementation((sel: string) => {
+      if (sel === '[data-scroll-target="testField"]') return target;
+      return null;
+    });
+
+    el.open = true;
+    await el.updateComplete;
+
+    expect(querySpy).toHaveBeenCalledWith('[data-scroll-target="testField"]');
+    expect(target.classList.contains('field-pulse')).toBe(true);
+
+    querySpy.mockRestore();
+  });
+
+  it('does nothing when scrollToField matches no element', async () => {
+    // Should not throw when the target element does not exist
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${false} .scrollToField=${'nonExistentField'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    el.open = true;
+    await el.updateComplete;
+    // No error thrown and no unexpected side effects — just verify the element is open
+    expect((el as any).open).toBe(true);
+  });
+});

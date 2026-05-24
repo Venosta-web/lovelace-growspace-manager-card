@@ -271,3 +271,8 @@ export interface GrowReportDialogState {
 export interface BatchCloneDialogState {
   plantIds: string[];
 }
+
+export interface IrrigationDialogState {
+  initialTab?: string;
+  scrollToField?: string;
+}

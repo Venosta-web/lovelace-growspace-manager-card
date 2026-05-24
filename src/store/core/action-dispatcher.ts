@@ -224,7 +224,8 @@ export class ActionDispatcher {
     openConfigDialog: (device?: import('../../types').GrowspaceDevice) =>
       uiActions.openConfigDialog(this.ctx, device),
     openStrainLibraryDialog: () => uiActions.openStrainLibraryDialog(this.ctx),
-    openIrrigationDialog: () => uiActions.openIrrigationDialog(this.ctx),
+    openIrrigationDialog: (options?: { initialTab?: string; scrollToField?: string }) =>
+      uiActions.openIrrigationDialog(this.ctx, options),
     openGrowMasterDialog: (growspaceId: string) => uiActions.openGrowMasterDialog(this.ctx, growspaceId),
     openWateringDialog: (options: { plantIds?: string[]; growspaceId?: string; mode?: 'plant' | 'growspace' }) =>
       uiActions.openWateringDialog(this.ctx, options),

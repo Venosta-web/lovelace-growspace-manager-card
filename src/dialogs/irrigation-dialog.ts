@@ -49,6 +49,8 @@ export class IrrigationDialog extends LitElement {
   @property({ attribute: false }) public device: GrowspaceDevice | undefined;
 
   @property({ type: String }) public growspaceName = '';
+  @property({ type: String }) public initialTab: TabId | undefined = undefined;
+  @property({ type: String }) public scrollToField: string | undefined = undefined;
 
   @state() private _irrigationPumpEntity = '';
   @state() private _drainPumpEntity = '';
@@ -844,6 +846,15 @@ export class IrrigationDialog extends LitElement {
         border-left: 3px solid #4CAF50;
       }
       .info-banner.banner-cs svg { fill: #4CAF50; }
+
+      @keyframes field-pulse-anim {
+        0%   { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb, 33,150,243), 0.5); }
+        50%  { box-shadow: 0 0 0 6px rgba(var(--primary-color-rgb, 33,150,243), 0.2); }
+        100% { box-shadow: 0 0 0 0 rgba(var(--primary-color-rgb, 33,150,243), 0); }
+      }
+      .field-pulse {
+        animation: field-pulse-anim 3s ease-out 1;
+      }
     `,
   ];
 
@@ -913,12 +924,27 @@ export class IrrigationDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._initializeState();
       this._fetchStageAnalytics();
+      if (this.initialTab) {
+        this._activeTab = this.initialTab;
+      }
     }
     if (this.hass && (changedProps.has('hass') || !this._dataService)) {
       this._dataService = new DataService(this.hass);
     }
     if (!this._visibleTabs.includes(this._activeTab)) {
       this._activeTab = 'schedules';
+    }
+  }
+
+  protected updated(changedProps: PropertyValues): void {
+    if (changedProps.has('open') && this.open && this.scrollToField) {
+      const target = this.shadowRoot?.querySelector<HTMLElement>(
+        `[data-scroll-target="${this.scrollToField}"]`
+      );
+      if (!target) return;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('field-pulse');
+      target.addEventListener('animationend', () => target.classList.remove('field-pulse'), { once: true });
     }
   }
 
@@ -2062,6 +2088,7 @@ export class IrrigationDialog extends LitElement {
           <md3-text-input
             label="Lights On Time"
             type="time"
+            data-scroll-target="lightsOnTime"
             .value=${this._strategy.lightsOnTime}
             @change=${(e: CustomEvent) => this._updateStrategyField('lightsOnTime', (e.target as HTMLInputElement).value || e.detail)}
           ></md3-text-input>

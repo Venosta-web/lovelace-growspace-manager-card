@@ -20,6 +20,7 @@ import type {
   ECRampDialogState,
   GrowReportDialogState,
   EnvironmentConfigDialogState,
+  IrrigationDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -32,7 +33,7 @@ export type ActiveDialogState =
   | { type: 'CONFIG'; payload: ConfigDialogState }
   | { type: 'GROW_MASTER'; payload: GrowMasterDialogState }
   | { type: 'STRAIN_RECOMMENDATION'; payload: StrainRecommendationDialogState }
-  | { type: 'IRRIGATION'; payload: Record<string, never> }
+  | { type: 'IRRIGATION'; payload: IrrigationDialogState }
   | { type: 'LOGBOOK'; payload: { growspaceId: string } }
   | { type: 'WATERING'; payload: WateringDialogState }
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }

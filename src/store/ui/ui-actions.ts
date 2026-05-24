@@ -401,8 +401,11 @@ export function openStrainLibraryDialog(
   });
 }
 
-export function openIrrigationDialog(ctx: ActionContext) {
-  ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+export function openIrrigationDialog(
+  ctx: ActionContext,
+  options?: { initialTab?: string; scrollToField?: string }
+) {
+  ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: options ?? {} });
 }
 
 export function openGrowMasterDialog(ctx: ActionContext, growspaceId: string) {
