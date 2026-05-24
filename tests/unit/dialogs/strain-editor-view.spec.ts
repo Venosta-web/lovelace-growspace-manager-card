@@ -1562,5 +1562,449 @@ describe('StrainEditorView', () => {
             expect(overlay?.textContent).toContain('No breeders found');
         });
     });
+
+    // --- View Lineage ---
+
+    describe('View Lineage', () => {
+        it('dispatches view-lineage event when View lineage button is clicked', async () => {
+            editorEl.editingStrain = mockStrains[0];
+            await editorEl.updateComplete;
+
+            const listener = vi.fn();
+            editorEl.addEventListener('view-lineage', listener);
+
+            const viewBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('.sd-btn-text') || [])
+                .find(b => b.textContent?.includes('View lineage'));
+            expect(viewBtn).toBeTruthy();
+            (viewBtn as HTMLElement).click();
+
+            expect(listener).toHaveBeenCalled();
+            const detail = listener.mock.calls[0][0].detail;
+            expect(detail.strain.strain).toBe('Blue Dream');
+        });
+
+        it('_viewLineageInTree dispatches view-lineage with current editor state', () => {
+            (editorEl as any)._editorState = { strain: 'Gorilla Glue', phenotype: '#4' };
+            const listener = vi.fn();
+            editorEl.addEventListener('view-lineage', listener);
+
+            (editorEl as any)._viewLineageInTree();
+
+            expect(listener).toHaveBeenCalled();
+            expect(listener.mock.calls[0][0].detail.strain.strain).toBe('Gorilla Glue');
+        });
+    });
+
+    // --- _handleSave with onSave callback ---
+
+    describe('_handleSave with onSave callback', () => {
+        it('calls onSave prop instead of dispatching save-strain', async () => {
+            const onSaveMock = vi.fn().mockResolvedValue(undefined);
+            editorEl.onSave = onSaveMock;
+            (editorEl as any)._editorState = { strain: 'Callback Strain' };
+
+            const saveSpy = vi.fn();
+            editorEl.addEventListener('save-strain', saveSpy);
+
+            await (editorEl as any)._handleSave();
+
+            expect(onSaveMock).toHaveBeenCalledWith(expect.objectContaining({ strain: 'Callback Strain' }));
+            expect(saveSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    // --- _handleSave with remote images ---
+
+    describe('_handleSave with remote images', () => {
+        const mockHass = {
+            connection: {
+                sendMessagePromise: vi.fn(),
+            },
+        };
+
+        beforeEach(() => {
+            editorEl.hass = mockHass as any;
+        });
+
+        it('downloads remote images and sets thumbnail when found', async () => {
+            mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/local/downloaded.jpg' });
+
+            (editorEl as any)._editorState = {
+                strain: 'Remote Strain',
+                images: [
+                    { path: 'http://example.com/thumb.jpg', is_thumbnail: true },
+                    { path: '/local/local.jpg', is_thumbnail: false },
+                ],
+            };
+
+            const saveListener = vi.fn();
+            editorEl.addEventListener('save-strain', saveListener);
+
+            await (editorEl as any)._handleSave();
+
+            expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'growspace_manager/download_strain_image', url: 'http://example.com/thumb.jpg' })
+            );
+            expect(saveListener).toHaveBeenCalled();
+            const saved = saveListener.mock.calls[0][0].detail;
+            expect(saved.image).toBe('/local/downloaded.jpg');
+        });
+
+        it('promotes first image as thumbnail when no thumbnail present after download', async () => {
+            mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/local/promoted.jpg' });
+
+            (editorEl as any)._editorState = {
+                strain: 'Remote Strain',
+                images: [
+                    { path: 'http://example.com/img1.jpg', is_thumbnail: false },
+                ],
+            };
+
+            const saveListener = vi.fn();
+            editorEl.addEventListener('save-strain', saveListener);
+
+            await (editorEl as any)._handleSave();
+
+            const saved = saveListener.mock.calls[0][0].detail;
+            expect(saved.images[0].is_thumbnail).toBe(true);
+            expect(saved.image).toBe('/local/promoted.jpg');
+        });
+
+        it('resets _uploadingImage to false even when download fails', async () => {
+            mockHass.connection.sendMessagePromise.mockRejectedValue(new Error('network error'));
+            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+            (editorEl as any)._editorState = {
+                strain: 'Fail Strain',
+                images: [{ path: 'http://example.com/fail.jpg', is_thumbnail: true }],
+            };
+            editorEl.addEventListener('save-strain', vi.fn());
+
+            await (editorEl as any)._handleSave();
+
+            expect((editorEl as any)._uploadingImage).toBe(false);
+            consoleSpy.mockRestore();
+        });
+    });
+
+    // --- _downloadRemoteImages ---
+
+    describe('_downloadRemoteImages', () => {
+        const mockHass = {
+            connection: {
+                sendMessagePromise: vi.fn(),
+            },
+        };
+
+        beforeEach(() => {
+            editorEl.hass = mockHass as any;
+            (editorEl as any)._editorState = { strain: 'Test', phenotype: 'p1' };
+        });
+
+        it('returns local images unchanged', async () => {
+            const images = [{ path: '/local/image.jpg', is_thumbnail: true }];
+            const result = await (editorEl as any)._downloadRemoteImages(images);
+            expect(result).toEqual(images);
+            expect(mockHass.connection.sendMessagePromise).not.toHaveBeenCalled();
+        });
+
+        it('downloads remote images and replaces path', async () => {
+            mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/local/saved.jpg' });
+            const images = [{ path: 'http://cdn.example.com/photo.jpg', is_thumbnail: true }];
+            const result = await (editorEl as any)._downloadRemoteImages(images);
+            expect(result[0].path).toBe('/local/saved.jpg');
+            expect(result[0].is_thumbnail).toBe(true);
+        });
+
+        it('skips images that fail to download', async () => {
+            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+            mockHass.connection.sendMessagePromise.mockRejectedValue(new Error('fail'));
+            const images = [
+                { path: 'http://cdn.example.com/fail.jpg', is_thumbnail: true },
+                { path: '/local/ok.jpg', is_thumbnail: false },
+            ];
+            const result = await (editorEl as any)._downloadRemoteImages(images);
+            expect(result).toHaveLength(1);
+            expect(result[0].path).toBe('/local/ok.jpg');
+            expect(consoleSpy).toHaveBeenCalled();
+            consoleSpy.mockRestore();
+        });
+    });
+
+    // --- image_crop_meta sync to gallery ---
+
+    describe('_handleEditorChange image_crop_meta sync', () => {
+        it('syncs crop_meta to the thumbnail image in the gallery', () => {
+            (editorEl as any)._editorState = {
+                strain: 'Test',
+                images: [
+                    { path: '/a.jpg', is_thumbnail: true, crop_meta: undefined },
+                    { path: '/b.jpg', is_thumbnail: false },
+                ],
+            };
+
+            const newMeta = { x: 20, y: 30, scale: 2 };
+            (editorEl as any)._handleEditorChange('image_crop_meta', newMeta);
+
+            const images = (editorEl as any)._editorState.images;
+            expect(images[0].crop_meta).toEqual(newMeta);
+            expect(images[1].crop_meta).toBeUndefined();
+        });
+
+        it('does not modify images if field is not image_crop_meta', () => {
+            const imgs = [{ path: '/a.jpg', is_thumbnail: true }];
+            (editorEl as any)._editorState = { strain: 'Test', images: imgs };
+            (editorEl as any)._handleEditorChange('description', 'hello');
+            expect((editorEl as any)._editorState.images).toEqual(imgs);
+        });
+    });
+
+    // --- _handleSeedfinderImport with images ---
+
+    describe('_handleSeedfinderImport with images', () => {
+        it('converts images array into gallery entries with first as thumbnail', () => {
+            (editorEl as any)._editorState = { strain: 'Base' };
+            (editorEl as any)._seedfinderDialogOpen = true;
+
+            const event = new CustomEvent('import', {
+                detail: {
+                    strain: 'Imported',
+                    breeder: 'SF',
+                    images: ['http://cdn.sf.com/1.jpg', 'http://cdn.sf.com/2.jpg'],
+                },
+            });
+            (editorEl as any)._handleSeedfinderImport(event);
+
+            const state = (editorEl as any)._editorState;
+            expect(state.images).toHaveLength(2);
+            expect(state.images[0].is_thumbnail).toBe(true);
+            expect(state.images[0].path).toBe('http://cdn.sf.com/1.jpg');
+            expect(state.images[1].is_thumbnail).toBe(false);
+            expect(state.image).toBe('http://cdn.sf.com/1.jpg');
+            expect((editorEl as any)._seedfinderDialogOpen).toBe(false);
+        });
+    });
+
+    // --- _handleGalleryUpload ---
+
+    describe('_handleGalleryUpload', () => {
+        const mockHass = {
+            connection: {
+                sendMessagePromise: vi.fn(),
+            },
+        };
+
+        beforeEach(() => {
+            editorEl.hass = mockHass as any;
+            (editorEl as any)._editorState = { strain: 'Upload Test', phenotype: 'p1', images: [] };
+        });
+
+        it('uploads first image and sets it as thumbnail and main image', async () => {
+            mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/media/uploaded.jpg' });
+            vi.spyOn(PlantUtils, 'compressImage').mockResolvedValue('b64data');
+
+            const file = new File([''], 'photo.jpg', { type: 'image/jpeg' });
+            await (editorEl as any)._handleGalleryUpload(file);
+
+            const state = (editorEl as any)._editorState;
+            expect(state.images).toHaveLength(1);
+            expect(state.images[0].is_thumbnail).toBe(true);
+            expect(state.images[0].path).toBe('/media/uploaded.jpg');
+            expect(state.image).toBe('/media/uploaded.jpg');
+        });
+
+        it('uploads additional images without overriding main image', async () => {
+            (editorEl as any)._editorState = {
+                strain: 'Upload Test',
+                phenotype: 'p1',
+                image: '/existing.jpg',
+                images: [{ path: '/existing.jpg', is_thumbnail: true }],
+            };
+            mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/media/second.jpg' });
+            vi.spyOn(PlantUtils, 'compressImage').mockResolvedValue('b64data');
+
+            const file = new File([''], 'photo2.jpg', { type: 'image/jpeg' });
+            await (editorEl as any)._handleGalleryUpload(file);
+
+            const state = (editorEl as any)._editorState;
+            expect(state.images).toHaveLength(2);
+            expect(state.image).toBe('/existing.jpg');
+        });
+    });
+
+    // --- _handleSetThumbnail ---
+
+    describe('_handleSetThumbnail', () => {
+        beforeEach(() => {
+            (editorEl as any)._editorState = {
+                strain: 'Gallery Test',
+                image: '/a.jpg',
+                images: [
+                    { path: '/a.jpg', is_thumbnail: true, crop_meta: { x: 10, y: 10, scale: 1 } },
+                    { path: '/b.jpg', is_thumbnail: false },
+                    { path: '/c.jpg', is_thumbnail: false },
+                ],
+            };
+        });
+
+        it('sets the selected index as thumbnail and updates main image', () => {
+            (editorEl as any)._handleSetThumbnail(1);
+            const state = (editorEl as any)._editorState;
+
+            expect(state.images[0].is_thumbnail).toBe(false);
+            expect(state.images[1].is_thumbnail).toBe(true);
+            expect(state.images[2].is_thumbnail).toBe(false);
+            expect(state.image).toBe('/b.jpg');
+        });
+
+        it('copies crop_meta from selected image to main image', () => {
+            (editorEl as any)._editorState.images[1] = { path: '/b.jpg', is_thumbnail: false, crop_meta: { x: 50, y: 50, scale: 2 } };
+            (editorEl as any)._handleSetThumbnail(1);
+            expect((editorEl as any)._editorState.image_crop_meta).toEqual({ x: 50, y: 50, scale: 2 });
+        });
+    });
+
+    // --- _handleRemoveGalleryImage ---
+
+    describe('_handleRemoveGalleryImage', () => {
+        beforeEach(() => {
+            (editorEl as any)._editorState = {
+                strain: 'Gallery Test',
+                image: '/a.jpg',
+                images: [
+                    { path: '/a.jpg', is_thumbnail: true },
+                    { path: '/b.jpg', is_thumbnail: false },
+                    { path: '/c.jpg', is_thumbnail: false },
+                ],
+            };
+        });
+
+        it('removes a non-thumbnail image without changing the thumbnail', () => {
+            (editorEl as any)._handleRemoveGalleryImage(1);
+            const state = (editorEl as any)._editorState;
+            expect(state.images).toHaveLength(2);
+            expect(state.images.find((i: any) => i.path === '/b.jpg')).toBeUndefined();
+            expect(state.image).toBe('/a.jpg');
+        });
+
+        it('removes thumbnail and promotes next image as thumbnail', () => {
+            (editorEl as any)._handleRemoveGalleryImage(0);
+            const state = (editorEl as any)._editorState;
+            expect(state.images).toHaveLength(2);
+            expect(state.images[0].is_thumbnail).toBe(true);
+            expect(state.images[0].path).toBe('/b.jpg');
+            expect(state.image).toBe('/b.jpg');
+        });
+
+        it('clears image when last image is removed', () => {
+            (editorEl as any)._editorState.images = [{ path: '/a.jpg', is_thumbnail: true }];
+            (editorEl as any)._handleRemoveGalleryImage(0);
+            const state = (editorEl as any)._editorState;
+            expect(state.images).toHaveLength(0);
+            expect(state.image).toBe('');
+        });
+    });
+
+    // --- Gallery UI interactions ---
+
+    describe('Gallery UI interactions', () => {
+        beforeEach(async () => {
+            (editorEl as any)._editorState = {
+                strain: 'Gallery Test',
+                image: '/a.jpg',
+                images: [
+                    { path: '/a.jpg', is_thumbnail: true },
+                    { path: '/b.jpg', is_thumbnail: false },
+                ],
+            };
+            await editorEl.updateComplete;
+        });
+
+        it('clicking star button on non-thumbnail sets it as thumbnail', async () => {
+            const galleryItems = editorEl.shadowRoot?.querySelectorAll('.gallery-drop-area > div[style*="aspect-ratio"]');
+            expect(galleryItems?.length).toBe(2);
+
+            const starBtns = galleryItems?.[1].querySelectorAll('button');
+            const starBtn = starBtns?.[0] as HTMLElement;
+            expect(starBtn).toBeTruthy();
+
+            const spy = vi.spyOn(editorEl as any, '_handleSetThumbnail');
+            starBtn.click();
+            expect(spy).toHaveBeenCalledWith(1);
+        });
+
+        it('clicking remove button removes the gallery image', async () => {
+            const galleryItems = editorEl.shadowRoot?.querySelectorAll('.gallery-drop-area > div[style*="aspect-ratio"]');
+            const removeBtns = galleryItems?.[0].querySelectorAll('button');
+            const removeBtn = removeBtns?.[1] as HTMLElement;
+            expect(removeBtn).toBeTruthy();
+
+            const spy = vi.spyOn(editorEl as any, '_handleRemoveGalleryImage');
+            removeBtn.click();
+            expect(spy).toHaveBeenCalledWith(0);
+        });
+
+        it('clicking crop button on thumbnail opens crop mode', async () => {
+            const galleryItems = editorEl.shadowRoot?.querySelectorAll('.gallery-drop-area > div[style*="aspect-ratio"]');
+            const cropBtn = galleryItems?.[0].querySelector('button[title="Adjust crop"]') as HTMLElement;
+            expect(cropBtn).toBeTruthy();
+
+            cropBtn.click();
+            expect((editorEl as any)._isCropping).toBe(true);
+        });
+
+        it('clicking Add button opens the add-photo menu', async () => {
+            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+            const addBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('.gallery-drop-area > button') || [])
+                .find(b => b.textContent?.includes('Add')) as HTMLElement;
+            expect(addBtn).toBeTruthy();
+            addBtn.click();
+            expect((editorEl as any)._showAddPhotoMenu).toBe(true);
+        });
+
+        it('clicking backdrop in add-photo menu closes the menu', async () => {
+            (editorEl as any)._showAddPhotoMenu = true;
+            await editorEl.updateComplete;
+
+            const backdrop = editorEl.shadowRoot?.querySelector('[style*="inset:0"]') as HTMLElement;
+            expect(backdrop).toBeTruthy();
+            backdrop.click();
+            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+        });
+
+        it('clicking Take Photo in menu triggers camera input click', async () => {
+            (editorEl as any)._showAddPhotoMenu = true;
+            await editorEl.updateComplete;
+
+            const cameraInput = editorEl.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement;
+            expect(cameraInput).toBeTruthy();
+            const clickSpy = vi.spyOn(cameraInput, 'click').mockImplementation(() => {});
+
+            const menuButtons = editorEl.shadowRoot?.querySelectorAll('[style*="bottom:0"] button');
+            const takePhotoBtn = Array.from(menuButtons || []).find(b => b.textContent?.includes('Take Photo')) as HTMLElement;
+            expect(takePhotoBtn).toBeTruthy();
+            takePhotoBtn.click();
+
+            expect(clickSpy).toHaveBeenCalled();
+            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+        });
+
+        it('clicking Choose from Library in menu triggers library input click', async () => {
+            (editorEl as any)._showAddPhotoMenu = true;
+            await editorEl.updateComplete;
+
+            const libraryInput = editorEl.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement;
+            expect(libraryInput).toBeTruthy();
+            const clickSpy = vi.spyOn(libraryInput, 'click').mockImplementation(() => {});
+
+            const menuButtons = editorEl.shadowRoot?.querySelectorAll('[style*="bottom:0"] button');
+            const libraryBtn = Array.from(menuButtons || []).find(b => b.textContent?.includes('Choose from Library')) as HTMLElement;
+            expect(libraryBtn).toBeTruthy();
+            libraryBtn.click();
+
+            expect(clickSpy).toHaveBeenCalled();
+            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+        });
+    });
 });
 
