@@ -40,13 +40,19 @@ A single plant slot in the grid. Interactions (watering, selecting, transplantin
 **Env Graph**
 An inline historical chart that appears when a Hero Card or Chip is clicked, showing sensor data over time for that metric. Toggled via `_toggleEnvGraph` / `_toggleMetricGraph`.
 
+**EnvSnapshot**
+A normalized point-in-time view of a growspace's sensor values (temperature, humidity, vpd, light, etc.), exposed as an atom by the Environment slice. The single place that reads `hass.states` for environmental sensors. Cards and derived modules subscribe to it instead of reaching into `hass`.
+
+**HeaderMetrics module**
+Pure derived module that, given a `(growspaceId, viewContext)`, returns `{ hero, chips }` for rendering. `viewContext` is `'main' | 'subarea' | 'analytics'` — the main and subarea cards get both hero and chips; the analytics card gets chips only. Inputs are `EnvSnapshot`, plant state, and irrigation state — all atom-sourced. Replaces `MetricsUtils.computeHeaderMetrics()` and the per-card header wiring.
+
 **Device Graph**
 Variant of the Env Graph for device-type metrics (e.g. irrigation device state). Same toggle mechanism.
 
 ## Interaction Model
 
 **Store-Driven Interaction**
-Clicks on Plant Grid Cells dispatch actions through the nanostores-based UI store. The store manages selection, watering confirmation, and transplant mode as a state machine. No generic Lovelace `tap_action` is used here.
+Clicks on Plant Grid Cells dispatch actions through the nanostores-based UI store. The store manages selection, watering confirmation, and transplant mode as a state machine — owned by the [[GridInteraction slice]]. No generic Lovelace `tap_action` is used here.
 
 **Graph Toggle Interaction**
 Clicks on Hero Cards and Chips call `_toggleEnvGraph` / `_toggleMetricGraph`, which open or close the Env Graph inline. This interaction is internal to each card — not exposed as a Lovelace action.
@@ -63,6 +69,9 @@ Enum controlling the layout of the main card:
 **GridOverlayMode**
 When `ViewMode.HEATMAP` is active, overlays the grid cells with a colour gradient for a chosen metric (`temperature`, `humidity`, `vpd`, `bio_status`).
 
+**LayoutSpec**
+Declarative description of a ViewMode: `{ slots: ('header' | 'grid' | 'chart')[], overlay?: GridOverlayMode }`. A single `<growspace-view>` component reads the spec for the current ViewMode and renders the slots. HEATMAP is `{ slots: ['grid'], overlay: 'temperature' }` — a composition, not a sibling file. Adding a view mode is a config entry. Lives in the UI slice alongside ViewMode.
+
 ## Localization
 
 **Translation Key**
@@ -72,6 +81,29 @@ A dot-separated string in the format `section.key`, resolved by the `localize()`
 
 **GrowspaceDataStore**
 Nanostores-based reactive store holding plant data, nutrient inventory, and irrigation config for a growspace. Uses lazy initialization — only activates when it has subscribers.
+
+## Architecture
+
+**Slice**
+A vertical module keyed to a domain concept (Plant, Grid, Irrigation, Environment, Logbook, Strain, Camera, Subarea, AIInsight, GridInteraction, UI). A slice owns its nanostore atoms, its [[Mutator]]s, its zod schemas, and its hassCall sites. Cards import atoms (read) and mutators (write) from slices; they never reach into the HA `hass` object directly. Slices replace the older `store/{actions,atoms,dispatcher}` + `services/api/*API` split.
+
+**Mutator**
+An exported async function on a slice that wraps a single call to [[mutate]]. Example: `waterPlant(id, ml)` in the Plant slice. The mutator is the public write API of the slice; the [[Action]] it builds is private.
+
+**Action**
+The value passed to [[mutate]]: `{ type, payload, optimistic, inverse, apply }`. Slice provides what changes; the primitive owns when. Actions are not exported.
+
+**`mutate` primitive**
+Shared orchestrator that runs the action's optimistic update, calls `apply` (which goes through [[hassCall seam]]), records the `inverse` on the undo stack, and triggers sync. Replaces `undo-redo-manager.ts` + `sync-service.ts` as standalone services.
+
+**hassCall seam**
+The single transport seam to Home Assistant: `hassCall(command, params, schema)`. Lives in `services/`. Replaces the per-domain `*API extends BaseAPI` classes. Every backend call in the codebase goes through this one function; the schema is the contract.
+
+**Cross-slice mutation**
+A mutator that affects more than one slice's atoms (e.g. transplant touches Plant + Grid; harvest touches Plant + Logbook). Lives in the slice that owns the primary write and updates sibling atoms via small exported setters on those slices. The mutate primitive does *not* understand multi-slice atomicity — that's the slice author's responsibility.
+
+**GridInteraction slice**
+Owns the [[Store-Driven Interaction]] state machine for Plant Grid Cells as a discriminated-union atom: `idle | selected | confirming-water | transplanting`. Peer to Plant and Grid slices, not a subset of either. Cards subscribe to it for selection highlighting and confirmation UI.
 
 ## Irrigation
 
@@ -93,6 +125,9 @@ The four daily phases that structure a Crop Steering day, all derived from the g
 
 **Drain Schedule**
 Time-based drain events that run regardless of Irrigation Mode. Always editable in the Schedules tab.
+
+**Irrigation Dialog SM**
+A single root state machine that owns the Irrigation Dialog's interaction state. Tab (`schedules | steering | logs | ...`) is the top-level state; each tab has substates for editing rows and pending confirmations (e.g. Phase Window changes). Tab switches are guarded by per-tab "dirty" predicates. The dialog component renders the SM; data writes go through the Irrigation slice's mutators. Replaces the 35 sibling `@state()` flags in `irrigation-dialog.ts`. The same shape applies to the Config, Strain Editor, and Strain Library dialogs — a `DialogStateMachine` helper is to be extracted on the second use, not the first.
 
 ## Light Cycle Tracking
 

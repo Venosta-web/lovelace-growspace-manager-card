@@ -47,14 +47,13 @@ describe('DataService Delegation', () => {
     it('updates hass on all sub-services', () => {
       const newHass = { ...mockHass, new: true } as any;
       dataService.updateHass(newHass);
-      
+
       expect(dataService.hass).toBe(newHass);
-      
-      // Check a few representative APIs
+
       const growspaceAPIInstance = vi.mocked(GrowspaceAPI).mock.instances[0];
       const plantAPIInstance = vi.mocked(PlantAPI).mock.instances[0];
       const geneticsAPIInstance = vi.mocked(GeneticsAPI).mock.instances[0];
-      
+
       expect(growspaceAPIInstance.updateHass).toHaveBeenCalledWith(newHass);
       expect(plantAPIInstance.updateHass).toHaveBeenCalledWith(newHass);
       expect(geneticsAPIInstance.updateHass).toHaveBeenCalledWith(newHass);
@@ -148,6 +147,19 @@ describe('DataService Delegation', () => {
       dataService.setIrrigationStrategy('gs1', { enabled: true });
       expect(instance.setIrrigationStrategy).toHaveBeenCalledWith('gs1', { enabled: true });
     });
+
+    it('delegates runIrrigationCycle', () => {
+      const instance = vi.mocked(IrrigationAPI).mock.instances[0];
+      const params = { growspaceId: 'gs1', duration: 300 };
+      dataService.runIrrigationCycle(params);
+      expect(instance.runIrrigationCycle).toHaveBeenCalledWith(params);
+    });
+
+    it('delegates getIrrigationAnalytics', () => {
+      const instance = vi.mocked(IrrigationAPI).mock.instances[0];
+      dataService.getIrrigationAnalytics('gs1');
+      expect(instance.getIrrigationAnalytics).toHaveBeenCalledWith('gs1');
+    });
   });
 
   describe('GeneticsAPI delegation', () => {
@@ -155,6 +167,53 @@ describe('DataService Delegation', () => {
       const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       dataService.fetchGeneticsData();
       expect(instance.fetchGeneticsData).toHaveBeenCalled();
+    });
+
+    it('delegates addSeedBatch', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      const data = {
+        strain_name: 'OG Kush',
+        breeder: 'DNA Genetics',
+        quantity: 10,
+        acquisition_date: '2024-01-01',
+        generation: 'F1',
+      };
+      dataService.addSeedBatch(data);
+      expect(instance.addSeedBatch).toHaveBeenCalledWith(data);
+    });
+
+    it('delegates updateSeedBatch', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      const data = { batch_id: 'b1', quantity: 8 };
+      dataService.updateSeedBatch(data);
+      expect(instance.updateSeedBatch).toHaveBeenCalledWith(data);
+    });
+
+    it('delegates logPollination', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      const data = { date: '2024-03-01', donor_plant_id: 'p1', receiver_plant_id: 'p2' };
+      dataService.logPollination(data);
+      expect(instance.logPollination).toHaveBeenCalledWith(data);
+    });
+
+    it('delegates updatePollination', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      const data = { event_id: 'evt-1', notes: 'Updated' };
+      dataService.updatePollination(data);
+      expect(instance.updatePollination).toHaveBeenCalledWith(data);
+    });
+
+    it('delegates harvestSeeds', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      const data = { event_id: 'evt-1', quantity: 20 };
+      dataService.harvestSeeds(data);
+      expect(instance.harvestSeeds).toHaveBeenCalledWith(data);
+    });
+
+    it('delegates deleteSeedBatch', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      dataService.deleteSeedBatch('b1');
+      expect(instance.deleteSeedBatch).toHaveBeenCalledWith('b1');
     });
 
     it('delegates sowSeed', () => {
@@ -193,6 +252,13 @@ describe('DataService Delegation', () => {
       dataService.updateStrainLineageTree('strain1', parents);
       expect(instance.updateStrainLineageTree).toHaveBeenCalledWith('strain1', parents);
     });
+
+    it('delegates importStrainLineageTree', () => {
+      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+      const tree = { name: 'OG Kush', children: [] };
+      dataService.importStrainLineageTree('OG Kush', tree);
+      expect(instance.importStrainLineageTree).toHaveBeenCalledWith('OG Kush', tree);
+    });
   });
 
   describe('AI/Vision/Camera/Report delegation', () => {
@@ -208,10 +274,29 @@ describe('DataService Delegation', () => {
       expect(instance.triggerVisionCheckup).toHaveBeenCalledWith('gs1');
     });
 
+    it('delegates getVisionHistory', () => {
+      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      dataService.getVisionHistory('gs1', 5);
+      expect(instance.getVisionHistory).toHaveBeenCalledWith('gs1', 5);
+    });
+
+    it('delegates updateVisionCheckupConfig', () => {
+      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const config = { enabled: true, interval_hours: 12 } as any;
+      dataService.updateVisionCheckupConfig('gs1', config);
+      expect(instance.updateVisionCheckupConfig).toHaveBeenCalledWith('gs1', config);
+    });
+
     it('delegates Camera operations', () => {
       const instance = vi.mocked(CameraAPI).mock.instances[0];
       dataService.captureSnapshot('gs1');
       expect(instance.captureSnapshot).toHaveBeenCalledWith('gs1');
+    });
+
+    it('delegates getSnapshots', () => {
+      const instance = vi.mocked(CameraAPI).mock.instances[0];
+      dataService.getSnapshots('gs1', 10, 0);
+      expect(instance.getSnapshots).toHaveBeenCalledWith('gs1', 10, 0);
     });
 
     it('delegates Report operations', () => {
@@ -227,8 +312,26 @@ describe('DataService Delegation', () => {
       dataService.getSubareas('gs1');
       expect(instance.getSubareas).toHaveBeenCalledWith('gs1');
     });
-  });
 
+    it('delegates addSubarea', () => {
+      const instance = vi.mocked(SubareaAPI).mock.instances[0];
+      dataService.addSubarea('gs1', 'Veg Zone');
+      expect(instance.addSubarea).toHaveBeenCalledWith('gs1', 'Veg Zone');
+    });
+
+    it('delegates updateSubarea', () => {
+      const instance = vi.mocked(SubareaAPI).mock.instances[0];
+      const config = { veg_day_hours: 18 };
+      dataService.updateSubarea('gs1', 'sa1', config);
+      expect(instance.updateSubarea).toHaveBeenCalledWith('gs1', 'sa1', config);
+    });
+
+    it('delegates removeSubarea', () => {
+      const instance = vi.mocked(SubareaAPI).mock.instances[0];
+      dataService.removeSubarea('gs1', 'sa1');
+      expect(instance.removeSubarea).toHaveBeenCalledWith('gs1', 'sa1');
+    });
+  });
 
   describe('callService', () => {
     it('calls hass.callService', async () => {

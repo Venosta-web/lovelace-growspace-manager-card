@@ -8,7 +8,10 @@ import {
     removeNutrientStock,
     fetchECRampCurves,
     saveECRampCurve,
-    removeECRampCurve
+    removeECRampCurve,
+    saveNutrientPreset,
+    removeNutrientPreset,
+    removeIPMPreset,
 } from '../../src/store/plant/library-actions';
 import { ActionContext } from '../../src/store/core/action-context';
 
@@ -32,6 +35,9 @@ describe('LibraryActions', () => {
             fetchECRampCurves: vi.fn(),
             saveECRampCurve: vi.fn(),
             removeECRampCurve: vi.fn(),
+            saveNutrientPreset: vi.fn(),
+            removeNutrientPreset: vi.fn(),
+            removeIPMPreset: vi.fn(),
         };
 
         mockData = {
@@ -371,6 +377,117 @@ describe('LibraryActions', () => {
             mockDataService.updateNutrientStock.mockRejectedValue('string error');
             await updateNutrientStock(ctx, 'n1', 'Nutrient', 100, 1000);
             expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+        });
+    });
+
+    describe('saveNutrientPreset', () => {
+        const preset = {
+            name: 'Bloom Boost',
+            nutrients: [{ name: 'PK 13/14', dose_ml_l: 1.5 }],
+            stage: 'flower',
+        };
+
+        it('saves preset via dataService and shows success toast', async () => {
+            mockDataService.saveNutrientPreset.mockResolvedValue(undefined);
+            mockDataService.fetchNutrientPresets.mockResolvedValue(null);
+
+            await saveNutrientPreset(ctx, preset);
+
+            expect(mockDataService.saveNutrientPreset).toHaveBeenCalledWith(preset);
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Saved preset: Bloom Boost', 'success');
+        });
+
+        it('refreshes nutrient presets after saving', async () => {
+            mockDataService.saveNutrientPreset.mockResolvedValue(undefined);
+            mockDataService.fetchNutrientPresets.mockResolvedValue(null);
+
+            await saveNutrientPreset(ctx, preset);
+
+            expect(mockDataService.fetchNutrientPresets).toHaveBeenCalled();
+        });
+
+        it('shows error toast with message and rethrows when save fails (Error)', async () => {
+            mockDataService.saveNutrientPreset.mockRejectedValue(new Error('server error'));
+
+            await expect(saveNutrientPreset(ctx, preset)).rejects.toThrow('server error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to save preset: server error', 'error');
+        });
+
+        it('shows "Unknown error" toast and rethrows when save fails (non-Error)', async () => {
+            mockDataService.saveNutrientPreset.mockRejectedValue('string failure');
+
+            await expect(saveNutrientPreset(ctx, preset)).rejects.toBe('string failure');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to save preset: Unknown error', 'error');
+        });
+    });
+
+    describe('removeNutrientPreset', () => {
+        it('removes preset via dataService and shows success toast', async () => {
+            mockDataService.removeNutrientPreset.mockResolvedValue(undefined);
+            mockDataService.fetchNutrientPresets.mockResolvedValue(null);
+
+            await removeNutrientPreset(ctx, 'preset-1');
+
+            expect(mockDataService.removeNutrientPreset).toHaveBeenCalledWith('preset-1');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Removed nutrient preset', 'success');
+        });
+
+        it('refreshes nutrient presets after removal', async () => {
+            mockDataService.removeNutrientPreset.mockResolvedValue(undefined);
+            mockDataService.fetchNutrientPresets.mockResolvedValue(null);
+
+            await removeNutrientPreset(ctx, 'preset-1');
+
+            expect(mockDataService.fetchNutrientPresets).toHaveBeenCalled();
+        });
+
+        it('shows error toast with message and rethrows when removal fails (Error)', async () => {
+            mockDataService.removeNutrientPreset.mockRejectedValue(new Error('not found'));
+
+            await expect(removeNutrientPreset(ctx, 'preset-1')).rejects.toThrow('not found');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove preset: not found', 'error');
+        });
+
+        it('shows "Unknown error" toast and rethrows when removal fails (non-Error)', async () => {
+            mockDataService.removeNutrientPreset.mockRejectedValue(42);
+
+            await expect(removeNutrientPreset(ctx, 'preset-1')).rejects.toBe(42);
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove preset: Unknown error', 'error');
+        });
+    });
+
+    describe('removeIPMPreset', () => {
+        it('removes IPM preset via dataService and shows success toast', async () => {
+            mockDataService.removeIPMPreset.mockResolvedValue(undefined);
+            mockDataService.fetchIPMPresets.mockResolvedValue(null);
+
+            await removeIPMPreset(ctx, 'ipm-1');
+
+            expect(mockDataService.removeIPMPreset).toHaveBeenCalledWith('ipm-1');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Removed IPM preset', 'success');
+        });
+
+        it('refreshes IPM presets after removal', async () => {
+            mockDataService.removeIPMPreset.mockResolvedValue(undefined);
+            mockDataService.fetchIPMPresets.mockResolvedValue(null);
+
+            await removeIPMPreset(ctx, 'ipm-1');
+
+            expect(mockDataService.fetchIPMPresets).toHaveBeenCalled();
+        });
+
+        it('shows error toast with message and rethrows when removal fails (Error)', async () => {
+            mockDataService.removeIPMPreset.mockRejectedValue(new Error('forbidden'));
+
+            await expect(removeIPMPreset(ctx, 'ipm-1')).rejects.toThrow('forbidden');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove IPM preset: forbidden', 'error');
+        });
+
+        it('shows "Unknown error" toast and rethrows when removal fails (non-Error)', async () => {
+            mockDataService.removeIPMPreset.mockRejectedValue('oops');
+
+            await expect(removeIPMPreset(ctx, 'ipm-1')).rejects.toBe('oops');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to remove IPM preset: Unknown error', 'error');
         });
     });
 
