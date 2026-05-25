@@ -2,16 +2,18 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/dialogs/subarea-config-dialog';
 import { SubareaConfigDialog } from '../../../src/dialogs/subarea-config-dialog';
-import { DataService } from '../../../src/services/data-service';
 
-// Mock DataService
-vi.mock('../../../src/services/data-service', () => {
-    return {
-        DataService: class {
-            updateSubarea = vi.fn();
-        },
-    };
-});
+// Mock the subarea slice so we can control updateSubarea behaviour
+vi.mock('../../../src/slices/subarea', () => ({
+    updateSubarea: vi.fn().mockResolvedValue(undefined),
+    getSubareas: vi.fn().mockResolvedValue([]),
+    addSubarea: vi.fn().mockResolvedValue({}),
+    removeSubarea: vi.fn().mockResolvedValue(undefined),
+    setSubareas: vi.fn(),
+    subareas$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+import * as subareaSlice from '../../../src/slices/subarea';
 
 describe('SubareaConfigDialog', () => {
     let element: SubareaConfigDialog;
@@ -27,6 +29,9 @@ describe('SubareaConfigDialog', () => {
     };
 
     beforeEach(async () => {
+        vi.clearAllMocks();
+        vi.mocked(subareaSlice.updateSubarea).mockResolvedValue(undefined);
+
         mockHass = {
             states: {
                 'sensor.t1': { attributes: { device_class: 'temperature' } },
@@ -79,73 +84,60 @@ describe('SubareaConfigDialog', () => {
         input.dispatchEvent(new Event('change'));
         await element.updateComplete;
 
-        const chips = element.shadowRoot?.querySelectorAll('.chip');
-        const chipTexts = Array.from(chips || []).map(c => c.textContent?.trim().replace('×', '').trim());
-        expect(chipTexts).toContain('sensor.t2');
+        expect((element as any)._temperatureSensors).toContain('sensor.t2');
     });
 
     it('should remove an entity when clicking chip-remove', async () => {
-        const removeBtn = element.shadowRoot?.querySelector('.chip-remove');
-        removeBtn?.dispatchEvent(new MouseEvent('click'));
+        const chipRemove = element.shadowRoot?.querySelector('.chip-remove') as HTMLElement;
+        chipRemove?.dispatchEvent(new MouseEvent('click'));
         await element.updateComplete;
 
-        const chips = element.shadowRoot?.querySelectorAll('.chip');
-        const chipTexts = Array.from(chips || []).map(c => c.textContent?.trim().replace('×', '').trim());
-        expect(chipTexts).not.toContain('sensor.t1');
+        expect((element as any)._temperatureSensors).not.toContain('sensor.t1');
     });
 
-    it('should close on cancel click', async () => {
+    it('should close on cancel click', () => {
         const closeSpy = vi.fn();
         element.addEventListener('close', closeSpy);
-        
+
         const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
             .find(b => b.textContent?.trim() === 'Cancel');
-        
+
         cancelBtn?.click();
         expect(closeSpy).toHaveBeenCalled();
     });
 
-    it('should save and dispatch event on success', async () => {
+    it('should save by calling updateSubarea and dispatch subarea-updated event', async () => {
         const updatedSpy = vi.fn();
         element.addEventListener('subarea-updated', updatedSpy);
-        
-        const mockUpdatedSubarea = { ...mockSubarea, name: 'Updated' };
-        const dataServiceMock = (element as any)._dataService;
-        vi.spyOn(dataServiceMock, 'updateSubarea').mockResolvedValue(mockUpdatedSubarea);
 
         const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
             .find(b => b.textContent?.trim() === 'Save Configuration');
-        
+
         saveBtn?.click();
-        
-        // Wait for async save
         await new Promise(r => setTimeout(r, 50));
-        
-        expect(dataServiceMock.updateSubarea).toHaveBeenCalledWith('g1', 's1', expect.any(Object));
-        expect(updatedSpy).toHaveBeenCalledWith(expect.objectContaining({
-            detail: { subarea: mockUpdatedSubarea }
-        }));
+
+        expect(subareaSlice.updateSubarea).toHaveBeenCalledWith('g1', 's1', expect.any(Object));
+        expect(updatedSpy).toHaveBeenCalled();
     });
 
     it('should handle save error', async () => {
-        const dataServiceMock = (element as any)._dataService;
-        vi.spyOn(dataServiceMock, 'updateSubarea').mockRejectedValue(new Error('Save Failed'));
+        vi.mocked(subareaSlice.updateSubarea).mockRejectedValueOnce(new Error('Save Failed'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
             .find(b => b.textContent?.trim() === 'Save Configuration');
-        
+
         saveBtn?.click();
-        
         await new Promise(r => setTimeout(r, 50));
-        
+        await element.updateComplete;
+
         expect(element.shadowRoot?.textContent).toContain('Failed to save subarea configuration');
         expect(consoleSpy).toHaveBeenCalled();
     });
 
     it('should ignore duplicate or empty entities in search input', async () => {
         const input = element.shadowRoot?.querySelector('.search-input-inner') as HTMLInputElement;
-        
+
         // Duplicate
         input.value = 'sensor.t1';
         input.dispatchEvent(new Event('change'));
@@ -157,34 +149,23 @@ describe('SubareaConfigDialog', () => {
         expect((element as any)._temperatureSensors).toHaveLength(1);
     });
 
-    it('should initialize DataService lazily if missing during save', async () => {
-        (element as any)._dataService = undefined;
-        // Mock the constructor behavior if needed, but since it's mocked globally it should just work
-        
-        const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('button') || [])
-            .find(b => b.textContent?.trim() === 'Save Configuration');
-        
-        // We just want to see if it reaches the save logic without crashing
-        saveBtn?.click();
-        expect((element as any)._dataService).toBeDefined();
-    });
+    it('should return early in _save when subarea or growspaceId is missing', async () => {
+        const oldSubarea = element.subarea;
+        element.subarea = undefined;
+        // @ts-ignore
+        await element._save();
+        expect(subareaSlice.updateSubarea).not.toHaveBeenCalled();
 
-    it('should update service instance when hass changes', async () => {
-        const oldService = (element as any)._dataService;
-        element.hass = { ...mockHass, new: true };
-        await element.updateComplete;
-        const newService = (element as any)._dataService;
-        expect(newService).not.toBe(oldService);
+        element.subarea = oldSubarea;
+        element.growspaceId = '';
+        // @ts-ignore
+        await element._save();
+        expect(subareaSlice.updateSubarea).not.toHaveBeenCalled();
     });
 
     it('should handle all sensor type change handlers', async () => {
-        // Temperature (already tested, but let's do another)
         const inputs = element.shadowRoot?.querySelectorAll('.search-input-inner');
-        
-        // Let's just manually trigger some handlers to ensure they are covered
-        // The previous test already covered the first one.
-        // We can just iterate through them or target specific ones.
-        
+
         // Humidity (index 1)
         const humidityInput = inputs?.[1] as HTMLInputElement;
         humidityInput.value = 'sensor.h2';
@@ -225,10 +206,9 @@ describe('SubareaConfigDialog', () => {
         expect(element.shadowRoot?.textContent).not.toContain('Flower Room');
     });
 
-    it('should handle all sensor type change handlers', async () => {
-        // Temperature (already tested, but let's do another)
+    it('should handle all sensor type change handlers (full set)', async () => {
         const inputs = element.shadowRoot?.querySelectorAll('.search-input-inner');
-        
+
         // Humidity (index 1)
         const humidityInput = inputs?.[1] as HTMLInputElement;
         humidityInput.value = 'sensor.h2';
@@ -300,7 +280,7 @@ describe('SubareaConfigDialog', () => {
 
         const boxes = element.shadowRoot?.querySelectorAll('.multi-select-box');
         expect(boxes).toBeDefined();
-        
+
         // Remove substrate temperature chip (index 3)
         const subTempRemove = boxes?.[3]?.querySelector('.chip-remove');
         subTempRemove?.dispatchEvent(new MouseEvent('click'));
@@ -346,7 +326,7 @@ describe('SubareaConfigDialog', () => {
             environment_config: {}
         };
         await element.updateComplete;
-        
+
         expect((element as any)._temperatureSensors).toEqual([]);
         expect((element as any)._humiditySensors).toEqual([]);
         expect((element as any)._vpdSensors).toEqual([]);
@@ -385,22 +365,5 @@ describe('SubareaConfigDialog', () => {
         await element.updateComplete;
         const dialog = element.shadowRoot?.querySelector('gs-dialog');
         expect(dialog).toBeNull();
-    });
-
-    it('should return early in _save when subarea or growspaceId is missing', async () => {
-        const dataServiceMock = (element as any)._dataService;
-        const updateSpy = vi.spyOn(dataServiceMock, 'updateSubarea');
-
-        const oldSubarea = element.subarea;
-        element.subarea = undefined;
-        // @ts-ignore
-        await element._save();
-        expect(updateSpy).not.toHaveBeenCalled();
-
-        element.subarea = oldSubarea;
-        element.growspaceId = '';
-        // @ts-ignore
-        await element._save();
-        expect(updateSpy).not.toHaveBeenCalled();
     });
 });

@@ -2,6 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 
+vi.mock('../../../src/slices/subarea', () => ({
+    getSubareas: vi.fn().mockResolvedValue([]),
+    addSubarea: vi.fn().mockResolvedValue({ id: 'sa-new', name: '', environment_config: {} }),
+    removeSubarea: vi.fn().mockResolvedValue(undefined),
+    updateSubarea: vi.fn().mockResolvedValue(undefined),
+    setSubareas: vi.fn(),
+    subareas$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+import * as subareaSlice from '../../../src/slices/subarea';
+
 // Mocking custom elements that are not defined in the test environment
 const mockCustomElements = () => {
     if (!customElements.get('ha-dialog')) {
@@ -145,28 +156,29 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
     });
 
     it('should cover Subarea management branches', async () => {
+        vi.clearAllMocks();
+        vi.mocked(subareaSlice.addSubarea).mockResolvedValue({ id: 'sa1', name: 'Sub 1', environment_config: {} });
+        vi.mocked(subareaSlice.removeSubarea).mockResolvedValue(undefined);
+        vi.mocked(subareaSlice.getSubareas).mockResolvedValue([]);
+
         (element as any).envSelectedId = 'gs1';
         (element as any)._switchTab(ConfigTab.SUBAREAS);
         await element.updateComplete;
 
-        // _handleAddSubarea (No name)
+        // _handleAddSubarea (No name — early return)
         (element as any)._newSubareaName = '';
         await (element as any)._handleAddSubarea();
-        expect((element as any)._subareas).to.have.length(0);
+        expect(subareaSlice.addSubarea).not.toHaveBeenCalled();
 
         // _handleAddSubarea (Success)
         (element as any)._newSubareaName = 'Sub 1';
-        const dataService = { 
-            addSubarea: vi.fn().mockResolvedValue({}),
-            removeSubarea: vi.fn().mockResolvedValue({})
-        };
-        vi.spyOn(element as any, '_getDataService').mockReturnValue(dataService);
+        (element as any)._subareasGrowspaceId = 'gs1';
         vi.spyOn(element as any, '_loadSubareas').mockImplementation(async () => {
             (element as any)._subareas = [{ id: 'sa1', name: 'Sub 1', environment_config: {} }];
         });
 
         await (element as any)._handleAddSubarea();
-        expect(dataService.addSubarea).toHaveBeenCalledWith('gs1', 'Sub 1');
+        expect(subareaSlice.addSubarea).toHaveBeenCalledWith('gs1', 'Sub 1');
         expect((element as any)._subareas).to.have.length(1);
 
         // _handleEditSubarea
@@ -181,7 +193,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
 
         // _confirmDeleteSubarea
         await (element as any)._confirmDeleteSubarea('sa1');
-        expect(dataService.removeSubarea).toHaveBeenCalledWith('gs1', 'sa1');
+        expect(subareaSlice.removeSubarea).toHaveBeenCalledWith('gs1', 'sa1');
     });
 
     it('should cover Humidifier logic branches', async () => {
@@ -262,31 +274,27 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._handleDeleteSubarea('subarea_1');
         expect((element as any)._deleteConfirmSubareaId).to.equal('subarea_1');
 
-        // Service mocks
-        const mockDataService = {
-            addSubarea: vi.fn().mockResolvedValue(undefined),
-            removeSubarea: vi.fn().mockResolvedValue(undefined)
-        };
-        (element as any)._getDataService = () => mockDataService;
+        // Slice mocks for add + remove
+        vi.clearAllMocks();
+        vi.mocked(subareaSlice.addSubarea).mockResolvedValue({ id: 'sa-new', name: 'New Subarea', environment_config: {} });
+        vi.mocked(subareaSlice.removeSubarea).mockResolvedValue(undefined);
+        vi.mocked(subareaSlice.getSubareas).mockResolvedValue([]);
         (element as any)._subareasGrowspaceId = 'gs1';
         (element as any)._loadSubareas = vi.fn().mockResolvedValue(undefined);
 
         // _handleAddSubarea
         (element as any)._newSubareaName = 'New Subarea';
         await (element as any)._handleAddSubarea();
-        expect(mockDataService.addSubarea).toHaveBeenCalledWith('gs1', 'New Subarea');
+        expect(subareaSlice.addSubarea).toHaveBeenCalledWith('gs1', 'New Subarea');
 
         // _confirmDeleteSubarea
         await (element as any)._confirmDeleteSubarea('subarea_1');
-        expect(mockDataService.removeSubarea).toHaveBeenCalledWith('gs1', 'subarea_1');
+        expect(subareaSlice.removeSubarea).toHaveBeenCalledWith('gs1', 'subarea_1');
 
         // Cover catch blocks
-        const errorDataService = {
-            addSubarea: vi.fn().mockRejectedValue(new Error('Fail')),
-            removeSubarea: vi.fn().mockRejectedValue(new Error('Fail')),
-            getSubareas: vi.fn().mockRejectedValue(new Error('Fail'))
-        };
-        (element as any)._getDataService = () => errorDataService;
+        vi.mocked(subareaSlice.addSubarea).mockRejectedValueOnce(new Error('Fail'));
+        vi.mocked(subareaSlice.removeSubarea).mockRejectedValueOnce(new Error('Fail'));
+        vi.mocked(subareaSlice.getSubareas).mockRejectedValueOnce(new Error('Fail'));
         (element as any)._newSubareaName = 'Fail Subarea'; // must be non-empty to reach try/catch
 
         await (element as any)._handleAddSubarea();

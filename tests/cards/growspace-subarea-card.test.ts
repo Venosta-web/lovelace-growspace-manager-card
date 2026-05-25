@@ -5,14 +5,18 @@ import { DataService } from '../../src/services/data-service';
 import { ChartUtils } from '../../src/utils/chart-utils';
 import { createMockHass } from '../mocks/hass';
 
-const { mockDataService } = vi.hoisted(() => ({
-    mockDataService: {
-        getSubareas: vi.fn(),
-        getBatchHistory: vi.fn(),
-        getGrowspaceDevices: vi.fn(),
-        updateHass: vi.fn(),
-    }
-}));
+const { mockDataService, mockGetSubareas } = vi.hoisted(() => {
+    const mockGetSubareas = vi.fn();
+    return {
+        mockDataService: {
+            getSubareas: mockGetSubareas,
+            getBatchHistory: vi.fn(),
+            getGrowspaceDevices: vi.fn(),
+            updateHass: vi.fn(),
+        },
+        mockGetSubareas,
+    };
+});
 
 vi.mock('../../src/services/data-service', () => ({
     DataService: class {
@@ -20,6 +24,16 @@ vi.mock('../../src/services/data-service', () => ({
             return mockDataService;
         }
     }
+}));
+
+// Subarea slice — getSubareas is now the source of truth
+vi.mock('../../src/slices/subarea', () => ({
+    getSubareas: mockGetSubareas,
+    addSubarea: vi.fn().mockResolvedValue({}),
+    removeSubarea: vi.fn().mockResolvedValue(undefined),
+    updateSubarea: vi.fn().mockResolvedValue(undefined),
+    setSubareas: vi.fn(),
+    subareas$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn() },
 }));
 
 vi.mock('../../src/utils/chart-utils', () => ({

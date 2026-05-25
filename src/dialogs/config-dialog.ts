@@ -37,7 +37,8 @@ import {
 } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
-import type { Subarea } from '../services/types';
+import { getSubareas, addSubarea, removeSubarea } from '../slices/subarea';
+import type { Subarea } from '../slices/subarea';
 import { DataService } from '../services/data-service';
 
 // Unified stage list for the accordion — maps display id → both stage enums
@@ -1139,7 +1140,7 @@ export class ConfigDialog extends LitElement {
     this._subareasGrowspaceId = growspaceId;
     this._subareasLoading = true;
     try {
-      this._subareas = await this._getDataService().getSubareas(growspaceId);
+      this._subareas = await getSubareas(growspaceId);
     } catch (e) {
       console.error('[ConfigDialog] Failed to load subareas:', e);
       this._subareas = [];
@@ -1152,7 +1153,7 @@ export class ConfigDialog extends LitElement {
     const name = this._newSubareaName.trim();
     if (!name || !this._subareasGrowspaceId) return;
     try {
-      await this._getDataService().addSubarea(this._subareasGrowspaceId, name);
+      await addSubarea(this._subareasGrowspaceId, name);
       this._newSubareaName = '';
       this._showAddSubarea = false;
       await this._loadSubareas();
@@ -1173,7 +1174,7 @@ export class ConfigDialog extends LitElement {
   private async _confirmDeleteSubarea(subareaId: string) {
     if (!this._subareasGrowspaceId) return;
     try {
-      await this._getDataService().removeSubarea(this._subareasGrowspaceId, subareaId);
+      await removeSubarea(this._subareasGrowspaceId, subareaId);
       this._deleteConfirmSubareaId = '';
       await this._loadSubareas();
     } catch (e) {

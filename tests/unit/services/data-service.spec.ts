@@ -17,7 +17,6 @@ vi.mock('../../../src/slices/camera', () => ({
 vi.mock('../../../src/services/api/vision-api');
 vi.mock('../../../src/services/api/report-api');
 vi.mock('../../../src/services/api/genetics-api');
-vi.mock('../../../src/services/api/subarea-api');
 
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceAPI } from '../../../src/services/api/growspace-api';
@@ -31,7 +30,6 @@ import * as cameraSlice from '../../../src/slices/camera';
 import { VisionAPI } from '../../../src/services/api/vision-api';
 import { ReportAPI } from '../../../src/services/api/report-api';
 import { GeneticsAPI } from '../../../src/services/api/genetics-api';
-import { SubareaAPI } from '../../../src/services/api/subarea-api';
 
 describe('DataService Delegation', () => {
   let dataService: DataService;
@@ -309,32 +307,7 @@ describe('DataService Delegation', () => {
     });
   });
 
-  describe('SubareaAPI delegation', () => {
-    it('delegates getSubareas', () => {
-      const instance = vi.mocked(SubareaAPI).mock.instances[0];
-      dataService.getSubareas('gs1');
-      expect(instance.getSubareas).toHaveBeenCalledWith('gs1');
-    });
-
-    it('delegates addSubarea', () => {
-      const instance = vi.mocked(SubareaAPI).mock.instances[0];
-      dataService.addSubarea('gs1', 'Veg Zone');
-      expect(instance.addSubarea).toHaveBeenCalledWith('gs1', 'Veg Zone');
-    });
-
-    it('delegates updateSubarea', () => {
-      const instance = vi.mocked(SubareaAPI).mock.instances[0];
-      const config = { veg_day_hours: 18 };
-      dataService.updateSubarea('gs1', 'sa1', config);
-      expect(instance.updateSubarea).toHaveBeenCalledWith('gs1', 'sa1', config);
-    });
-
-    it('delegates removeSubarea', () => {
-      const instance = vi.mocked(SubareaAPI).mock.instances[0];
-      dataService.removeSubarea('gs1', 'sa1');
-      expect(instance.removeSubarea).toHaveBeenCalledWith('gs1', 'sa1');
-    });
-  });
+  // SubareaAPI delegation removed — subarea operations now go through slices/subarea directly.
 
   describe('callService', () => {
     it('calls hass.callService', async () => {

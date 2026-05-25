@@ -7,7 +7,8 @@ import { hassContext, configContext, storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
-import type { Subarea } from '../services/types';
+import { getSubareas } from '../slices/subarea';
+import type { Subarea } from '../slices/subarea';
 import { DataService } from '../services/data-service';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
@@ -280,7 +281,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         this._error = null;
 
         try {
-            const subareas = await this._dataService.getSubareas(this._config.growspace_id);
+            const subareas = await getSubareas(this._config.growspace_id);
             const found = subareas.find((s) => s.id === this._config.subarea_id) ?? null;
             if (!found) {
                 this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
