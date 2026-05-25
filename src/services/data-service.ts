@@ -2,13 +2,23 @@ import { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceAPIResponse } from './types';
 
 import { GrowspaceAPI } from './api/growspace-api';
-import { StrainAPI } from './api/strain-api';
 import { NutrientAPI } from './api/nutrient-api';
 import { HistoryAPI } from './api/history-api';
 import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
 import { AIAPI } from './api/ai-api';
 import { captureSnapshot as cameraSliceCaptureSnapshot, getSnapshots as cameraSliceGetSnapshots } from '../slices/camera';
+import {
+  fetchStrainLibrary as strainSliceFetchLibrary,
+  addStrain as strainSliceAdd,
+  updateStrainMeta as strainSliceUpdateMeta,
+  removeStrain as strainSliceRemove,
+  exportStrainLibrary as strainSliceExport,
+  importStrainLibrary as strainSliceImport,
+  clearStrainLibrary as strainSliceClear,
+  updateBreeder as strainSliceUpdateBreeder,
+  deleteBreeder as strainSliceDeleteBreeder,
+} from '../slices/strain';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
 import { GeneticsAPI } from './api/genetics-api';
@@ -23,7 +33,6 @@ export class DataService {
   public hass!: HomeAssistant;
 
   private _growspaceAPI: GrowspaceAPI;
-  private _strainAPI: StrainAPI;
   private _nutrientAPI: NutrientAPI;
   private _historyAPI: HistoryAPI;
   private _plantAPI: PlantAPI;
@@ -34,7 +43,6 @@ export class DataService {
   private _geneticsAPI: GeneticsAPI;
   constructor(hass?: HomeAssistant) {
     this._growspaceAPI = new GrowspaceAPI(hass);
-    this._strainAPI = new StrainAPI(hass);
     this._nutrientAPI = new NutrientAPI(hass);
     this._historyAPI = new HistoryAPI(hass);
     this._plantAPI = new PlantAPI(hass);
@@ -54,7 +62,6 @@ export class DataService {
     this.hass = hass;
     [
       this._growspaceAPI,
-      this._strainAPI,
       this._nutrientAPI,
       this._historyAPI,
       this._plantAPI,
@@ -108,33 +115,31 @@ export class DataService {
   ) =>
     this._growspaceAPI.updateSensorCoordinates(growspaceId, entityId, x, y, z, rotation);
 
-  // ── Strain ───────────────────────────────────────────────────────────────
+  // ── Strain (delegated to slices/strain) ──────────────────────────────────
 
-  getStrainLibrary = () => this._strainAPI.getStrainLibrary();
+  fetchStrainLibrary = () => strainSliceFetchLibrary();
 
-  fetchStrainLibrary = () => this._strainAPI.fetchStrainLibrary();
+  addStrain = (data: Parameters<typeof strainSliceAdd>[0]) =>
+    strainSliceAdd(data);
 
-  addStrain = (data: Parameters<StrainAPI['addStrain']>[0]) =>
-    this._strainAPI.addStrain(data);
-
-  updateStrainMeta = (data: Parameters<StrainAPI['updateStrainMeta']>[0]) =>
-    this._strainAPI.updateStrainMeta(data);
+  updateStrainMeta = (data: Parameters<typeof strainSliceUpdateMeta>[0]) =>
+    strainSliceUpdateMeta(data);
 
   removeStrain = (strain: string, phenotype?: string) =>
-    this._strainAPI.removeStrain(strain, phenotype);
+    strainSliceRemove(phenotype ? `${strain}|${phenotype}` : `${strain}|default`);
 
-  exportStrainLibrary = () => this._strainAPI.exportStrainLibrary();
+  exportStrainLibrary = () => strainSliceExport();
 
   importStrainLibrary = (file: File, replace: boolean) =>
-    this._strainAPI.importStrainLibrary(file, replace);
+    strainSliceImport(file, replace);
 
-  clearStrainLibrary = () => this._strainAPI.clearStrainLibrary();
+  clearStrainLibrary = () => strainSliceClear();
 
   updateBreeder = (oldName: string, newName: string, logo?: string) =>
-    this._strainAPI.updateBreeder(oldName, newName, logo);
+    strainSliceUpdateBreeder(oldName, newName, logo);
 
   deleteBreeder = (name: string) =>
-    this._strainAPI.deleteBreeder(name);
+    strainSliceDeleteBreeder(name);
 
   importStrainLineageTree = (strain_name: string, tree: Record<string, unknown>) =>
     this._geneticsAPI.importStrainLineageTree(strain_name, tree);

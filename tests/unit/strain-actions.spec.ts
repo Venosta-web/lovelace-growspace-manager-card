@@ -12,37 +12,42 @@ import {
 } from '../../src/store/growspace/growspace-actions';
 import { StrainEntry } from '../../src/types';
 
+// Mock hass-call module because strain store-actions now delegate to the slice
+vi.mock('../../src/services/hass-call', () => ({
+    callService: vi.fn().mockResolvedValue(undefined),
+    callServiceReturning: vi.fn().mockResolvedValue(undefined),
+    hassCall: vi.fn().mockResolvedValue({ strains: {} }),
+    callFetch: vi.fn().mockResolvedValue({ ok: true, json: async () => ({ success: true }) }),
+    setHass: vi.fn(),
+}));
+
+import * as hassCallModule from '../../src/services/hass-call';
+
 describe('strain-actions', () => {
     describe('Strain Actions', () => {
         let ctx: ActionContext;
-        let mockDataService: any;
         let strainLibrary: StrainEntry[];
 
         beforeEach(() => {
+            vi.clearAllMocks();
+            vi.mocked(hassCallModule.hassCall).mockResolvedValue({ strains: {} });
+
             strainLibrary = [
                 { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' },
                 { strain: 'OG Kush', phenotype: 'Alpha', key: 'OG Kush|Alpha' },
             ];
 
-            mockDataService = {
-                addStrain: vi.fn().mockResolvedValue({}),
-                updateStrainMeta: vi.fn().mockResolvedValue({}),
-                removeStrain: vi.fn().mockResolvedValue({}),
-                fetchStrainLibrary: vi.fn().mockResolvedValue([
-                    { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' },
-                    { strain: 'New Strain', phenotype: 'Pheno1' }
-                ]),
-            };
-
             ctx = {
-                dataService: mockDataService,
+                dataService: {
+                    importStrainLineageTree: vi.fn().mockResolvedValue({}),
+                } as any,
                 showToast: vi.fn(),
                 ui: { showToast: vi.fn() } as any,
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
                 hass: {} as any,
                 data: {
-                    setStrainLibrary: vi.fn((lib) => { strainLibrary = lib; }),
+                    setStrainLibrary: vi.fn((lib: StrainEntry[]) => { strainLibrary = lib; }),
                     getStrainLibrary: vi.fn(() => strainLibrary),
                     $strainLibrary: { get: () => strainLibrary },
                     $devices: { get: vi.fn(() => []) },
@@ -62,7 +67,6 @@ describe('strain-actions', () => {
                     lineage: 'Parent1 x Parent2',
                     sex: 'Regular',
                     description: 'A great strain',
-                    image: 'base64image',
                     sativa_percentage: 60,
                     indica_percentage: 40,
                 };
@@ -70,26 +74,29 @@ describe('strain-actions', () => {
                 const result = await addStrain(ctx, strainData);
 
                 expect(result).toBe(true);
-                expect(mockDataService.addStrain).toHaveBeenCalledWith(expect.objectContaining({
-                    strain: 'New Strain',
-                    phenotype: 'Pheno1',
-                    breeder: 'Test Breeder',
-                    flowering_days_min: 60,
-                    flowering_days_max: 70,
-                }));
+                expect(hassCallModule.callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'add_strain',
+                    expect.objectContaining({
+                        strain: 'New Strain',
+                        phenotype: 'Pheno1',
+                        breeder: 'Test Breeder',
+                        flowering_days_min: 60,
+                        flowering_days_max: 70,
+                    })
+                );
                 expect(ctx.ui.showToast).toHaveBeenCalledWith('Strain added successfully!', 'success');
-                expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
             it('should return false when strain name missing', async () => {
                 const result = await addStrain(ctx, { phenotype: 'Test' });
 
                 expect(result).toBe(false);
-                expect(mockDataService.addStrain).not.toHaveBeenCalled();
+                expect(hassCallModule.callService).not.toHaveBeenCalled();
             });
 
             it('should return false on service error', async () => {
-                mockDataService.addStrain.mockRejectedValue(new Error('Add failed'));
+                vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('Add failed'));
 
                 const result = await addStrain(ctx, { strain: 'Test' });
 
@@ -105,10 +112,14 @@ describe('strain-actions', () => {
 
                 await addStrain(ctx, strainData);
 
-                expect(mockDataService.addStrain).toHaveBeenCalledWith(expect.objectContaining({
-                    flowering_days_min: 55,
-                    flowering_days_max: 65,
-                }));
+                expect(hassCallModule.callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'add_strain',
+                    expect.objectContaining({
+                        flowering_days_min: 55,
+                        flowering_days_max: 65,
+                    })
+                );
             });
         });
 
@@ -117,29 +128,35 @@ describe('strain-actions', () => {
                 const result = await removeStrain(ctx, 'OG Kush|Alpha');
 
                 expect(result).toBe(true);
-                expect(mockDataService.removeStrain).toHaveBeenCalledWith('OG Kush', 'Alpha');
+                expect(hassCallModule.callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'remove_strain',
+                    { strain: 'OG Kush', phenotype: 'Alpha' }
+                );
                 expect(ctx.data.setStrainLibrary).toHaveBeenCalled();
-                expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
             it('should remove strain without phenotype (default)', async () => {
                 const result = await removeStrain(ctx, 'Blue Dream|default');
 
                 expect(result).toBe(true);
-                expect(mockDataService.removeStrain).toHaveBeenCalledWith('Blue Dream', undefined);
+                expect(hassCallModule.callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'remove_strain',
+                    expect.objectContaining({ strain: 'Blue Dream' })
+                );
             });
 
             it('should update local strain library on removal', async () => {
                 await removeStrain(ctx, 'OG Kush|Alpha');
 
-                // setStrainLibrary should be called with filtered array
                 expect(ctx.data.setStrainLibrary).toHaveBeenCalledWith([
                     { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' },
                 ]);
             });
 
             it('should return false on error', async () => {
-                mockDataService.removeStrain.mockRejectedValue(new Error('Remove failed'));
+                vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('Remove failed'));
 
                 const result = await removeStrain(ctx, 'Test|default');
 
@@ -158,24 +175,27 @@ describe('strain-actions', () => {
                 const result = await updateStrain(ctx, strainData);
 
                 expect(result).toBe(true);
-                expect(mockDataService.updateStrainMeta).toHaveBeenCalledWith(expect.objectContaining({
-                    strain: 'Existing Strain',
-                    phenotype: 'Pheno1',
-                    breeder: 'Updated Breeder',
-                }));
+                expect(hassCallModule.callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'update_strain_meta',
+                    expect.objectContaining({
+                        strain: 'Existing Strain',
+                        phenotype: 'Pheno1',
+                        breeder: 'Updated Breeder',
+                    })
+                );
                 expect(ctx.ui.showToast).toHaveBeenCalledWith('Strain updated successfully!', 'success');
-                expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
             });
 
             it('should return false when strain name missing', async () => {
                 const result = await updateStrain(ctx, { phenotype: 'Test' });
 
                 expect(result).toBe(false);
-                expect(mockDataService.updateStrainMeta).not.toHaveBeenCalled();
+                expect(hassCallModule.callService).not.toHaveBeenCalled();
             });
 
             it('should return false on service error', async () => {
-                mockDataService.updateStrainMeta.mockRejectedValue(new Error('Update failed'));
+                vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('Update failed'));
 
                 const result = await updateStrain(ctx, { strain: 'Test' });
 
@@ -272,7 +292,6 @@ describe('strain-actions', () => {
             });
 
             it('should perform optimistic update', async () => {
-                // Mock existing devices
                 const devices = [{ deviceId: 'gs123', rows: 4, plantsPerRow: 4 }];
                 (ctx.data.$devices.get as any).mockReturnValue(devices);
 

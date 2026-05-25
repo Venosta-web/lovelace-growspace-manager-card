@@ -15,6 +15,23 @@ import {
 } from '../../src/store/plant/library-actions';
 import { ActionContext } from '../../src/store/core/action-context';
 
+// fetchStrainLibrary in library-actions now delegates to the strain slice directly
+vi.mock('../../src/slices/strain', () => ({
+    fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+    setStrainLibrary: vi.fn(),
+    strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    addStrain: vi.fn(),
+    removeStrain: vi.fn(),
+    updateStrainMeta: vi.fn(),
+    exportStrainLibrary: vi.fn(),
+    importStrainLibrary: vi.fn(),
+    clearStrainLibrary: vi.fn(),
+    updateBreeder: vi.fn(),
+    deleteBreeder: vi.fn(),
+}));
+
+import * as strainSlice from '../../src/slices/strain';
+
 describe('LibraryActions', () => {
     let ctx: ActionContext;
     let mockDataService: any;
@@ -218,7 +235,7 @@ describe('LibraryActions', () => {
         // hass guard removed — ActionDispatcher guards against calling fetches before hass is ready
 
         it('should handle fetchStrainLibrary correctly (cache miss)', async () => {
-            mockDataService.fetchStrainLibrary.mockResolvedValue(mockStrains);
+            vi.mocked(strainSlice.fetchStrainLibrary).mockResolvedValueOnce(mockStrains as any);
             await fetchStrainLibrary(ctx);
             expect(mockData.setStrainLibrary).toHaveBeenCalledWith(mockStrains);
             expect(localStorage.getItem(CACHE_KEY)).toContain('S1');
@@ -232,28 +249,28 @@ describe('LibraryActions', () => {
             };
             localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
             await fetchStrainLibrary(ctx);
-            expect(mockDataService.fetchStrainLibrary).not.toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).not.toHaveBeenCalled();
             expect(mockData.setStrainLibrary).toHaveBeenCalledWith(mockStrains);
         });
 
         it('should handle invalid cache version or data', async () => {
             localStorage.setItem(CACHE_KEY, JSON.stringify({ version: 1, data: [] }));
-            mockDataService.fetchStrainLibrary.mockResolvedValue(mockStrains);
+            vi.mocked(strainSlice.fetchStrainLibrary).mockResolvedValueOnce(mockStrains as any);
             await fetchStrainLibrary(ctx);
-            expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should handle JSON parse error', async () => {
             localStorage.setItem(CACHE_KEY, 'invalid-json');
-            mockDataService.fetchStrainLibrary.mockResolvedValue(mockStrains);
+            vi.mocked(strainSlice.fetchStrainLibrary).mockResolvedValueOnce(mockStrains as any);
             await fetchStrainLibrary(ctx);
-            expect(mockDataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
             expect(localStorage.getItem(CACHE_KEY)).not.toBe('invalid-json');
         });
 
         it('should handle fetch error', async () => {
             const error = new Error('fail');
-            mockDataService.fetchStrainLibrary.mockRejectedValue(error);
+            vi.mocked(strainSlice.fetchStrainLibrary).mockRejectedValueOnce(error);
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
             await fetchStrainLibrary(ctx);
             expect(spy).toHaveBeenCalledWith('Failed to fetch strain library:', error);

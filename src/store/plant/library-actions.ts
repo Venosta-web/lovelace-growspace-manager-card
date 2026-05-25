@@ -1,5 +1,9 @@
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
+import {
+  fetchStrainLibrary as strainSliceFetchLibrary,
+  setStrainLibrary,
+} from '../../slices/strain';
 
 export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = false) {
   // Requires hass to be present in store (usually via dataService or just check store)
@@ -23,6 +27,7 @@ export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = fa
 
       if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
         ctx.data.setStrainLibrary(cache.data);
+        setStrainLibrary(cache.data);
         usedCache = true;
       }
     } catch (e) {
@@ -33,7 +38,7 @@ export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = fa
 
   if (!usedCache) {
     try {
-      const currentStrains = await ctx.dataService.fetchStrainLibrary();
+      const currentStrains = await strainSliceFetchLibrary();
       if (Array.isArray(currentStrains)) {
         ctx.data.setStrainLibrary(currentStrains);
 
