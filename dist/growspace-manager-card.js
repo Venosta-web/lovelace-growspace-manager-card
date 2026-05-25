@@ -9801,7 +9801,8 @@ function _growspaceIdFor(plantId) {
 /** Replace a single plant in plants$ by plant_id, merging attribute updates. */
 function _patchPlant(id, updates) {
     return plants$.get().map((p) => {
-        if ((p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== id)
+        const pid = p.attributes.plant_id ?? p.entity_id.replace('sensor.', '');
+        if (pid !== id)
             return p;
         return { ...p, attributes: { ...p.attributes, ...updates } };
     });

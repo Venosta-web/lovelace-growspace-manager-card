@@ -66,8 +66,9 @@ function _growspaceIdFor(plantId: string): string {
 /** Replace a single plant in plants$ by plant_id, merging attribute updates. */
 function _patchPlant(id: string, updates: Partial<PlantEntity['attributes']>): PlantEntity[] {
   return plants$.get().map((p) => {
-    if ((p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== id) return p;
-    if ((p.attributes.plant_id || p.entity_id.replace('sensor.', '')) !== id) return p;
+    const pid = p.attributes.plant_id ?? p.entity_id.replace('sensor.', '');
+    if (pid !== id) return p;
+    return { ...p, attributes: { ...p.attributes, ...updates } };
   });
 }
 
@@ -118,8 +119,8 @@ export async function waterPlant(
   await mutate(
     {
       type: 'waterPlant',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'water_plant', payload),
     },
     _growspaceIdFor(plantId),
@@ -152,8 +153,8 @@ export async function addPlant(params: {
   await mutate(
     {
       type: 'addPlant',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'add_plant', payload),
     },
     params.growspace_id,
@@ -186,8 +187,8 @@ export async function addPlants(params: {
   await mutate(
     {
       type: 'addPlants',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'add_plants', payload),
     },
     params.growspace_id,
@@ -288,8 +289,8 @@ export async function harvestPlant(
   await mutate(
     {
       type: 'harvestPlant',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'harvest_plant', payload),
     },
     _growspaceIdFor(plantId),
@@ -388,8 +389,8 @@ export async function takeClone(
   await mutate(
     {
       type: 'takeClone',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'take_clone', payload),
     },
     _growspaceIdFor(plantId),
@@ -441,8 +442,8 @@ export async function saveHarvestMetrics(
   await mutate(
     {
       type: 'saveHarvestMetrics',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () =>
         callService('growspace_manager', 'update_harvest_metrics', {
           plant_id: plantId,
@@ -473,8 +474,8 @@ export async function scorePlant(
   await mutate(
     {
       type: 'scorePlant',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'score_plant', payload),
     },
     _growspaceIdFor(plantId),
@@ -499,8 +500,8 @@ export async function logDryingWeight(
   await mutate(
     {
       type: 'logDryingWeight',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'log_drying_weight', payload),
     },
     _growspaceIdFor(plantId),
@@ -525,8 +526,8 @@ export async function logMoistureReading(
   await mutate(
     {
       type: 'logMoistureReading',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () => callService('growspace_manager', 'log_moisture_reading', payload),
     },
     _growspaceIdFor(plantId),
@@ -544,8 +545,8 @@ export async function setVisualTag(plantId: string, visualTag: string | null): P
   await mutate(
     {
       type: 'setVisualTag',
-      optimistic: () => {},
-      inverse: () => {},
+      optimistic: () => { },
+      inverse: () => { },
       apply: () =>
         callService('growspace_manager', 'set_visual_tag', {
           plant_id: plantId,
