@@ -7,6 +7,7 @@ import {
   setSelectedDeviceId,
   setDevices as setGridDevices,
 } from '../slices/grid';
+import { setDeviceSnapshot } from '../slices/device-state';
 import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 
 /**
@@ -118,9 +119,13 @@ export class SyncService {
       setGridDevices(devices);
     }
 
-    // Populate watched entities for next update cycle
+    // Update device-controlled entity snapshots and populate watched entities for next update cycle
+    const hassStates = this.dataService.hass?.states ?? {};
     this._watchedEntities.clear();
     devices.forEach((d) => {
+      // Device state snapshot (lights, fans, humidifiers, dehumidifiers)
+      setDeviceSnapshot(d.deviceId, d, hassStates);
+
       // Plants
       (d.plants || []).forEach((p) => {
         const eid = p.entity_id;

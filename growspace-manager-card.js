@@ -48318,7 +48318,7 @@ function friendlyDateTime(dateTimeish) {
   }
 }
 
-const STAGE_COLORS = {
+const STAGE_COLORS$1 = {
     flower: 'var(--stage-flower, #ff9800)',
     veg: 'var(--stage-veg, #4caf50)',
     seedling: 'var(--stage-seedling, #8bc34a)',
@@ -48361,7 +48361,7 @@ class MetricsUtils {
                 icon,
                 daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
                 weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
-                color: STAGE_COLORS[dominantRaw.stage] ?? '#4caf50',
+                color: STAGE_COLORS$1[dominantRaw.stage] ?? '#4caf50',
             };
         }
         // Fetch Environmental Data
@@ -48943,6 +48943,276 @@ class MetricsUtils {
         return { heroChips, secondaryChips, deviceChips };
     }
 }
+
+/**
+ * HeaderMetrics deep module — the single place in the codebase that computes
+ * header chip arrays from the three slice atoms (environment, plant, irrigation).
+ *
+ * Public API (pure computation):
+ *   computeHeaderMetrics() — derive hero + chips + dominant from slice data.
+ *                            No hass parameter — all data comes from slice atoms.
+ *
+ * Re-exports HeaderChip and DominantStageInfo so callers don't need to import
+ * from the legacy MetricsUtils.
+ */
+// ---------------------------------------------------------------------------
+// Internal constants
+// ---------------------------------------------------------------------------
+const STAGE_COLORS = {
+    flower: 'var(--stage-flower, #ff9800)',
+    veg: 'var(--stage-veg, #4caf50)',
+    seedling: 'var(--stage-seedling, #8bc34a)',
+    clone: 'var(--stage-clone, #8bc34a)',
+    mother: 'var(--stage-mother, #e91e63)',
+    dry: 'var(--stage-dry, #9c27b0)',
+    cure: 'var(--stage-cure, #2196f3)',
+};
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+function _isMetricLinked(key, groups) {
+    for (let i = 0; i < groups.length; i++) {
+        if (groups[i].includes(key))
+            return { linked: true, groupIndex: i };
+    }
+    return { linked: false, groupIndex: -1 };
+}
+function _makeChip(key, icon, value, opts = {}, activeEnvGraphs, linkedGraphGroups) {
+    const { linked, groupIndex } = _isMetricLinked(key, linkedGraphGroups);
+    const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
+    const active = activeEnvGraphs.has(key) || hasCompositeActive;
+    return {
+        key,
+        icon,
+        value,
+        multiValues: opts.multiValues,
+        entityIds: opts.entityIds,
+        label: opts.label,
+        status: opts.status,
+        tooltip: opts.tooltip,
+        active,
+        linked,
+        groupIndex,
+    };
+}
+/** Return the next upcoming HH:MM from a schedule list, wrapping to tomorrow if past. */
+function _getNextEvent(times) {
+    if (!times.length)
+        return undefined;
+    const now = DateTime.now();
+    const upcoming = times
+        .filter((t) => t.time || t.start_time)
+        .map((t) => {
+        const timeStr = (t.time ?? t.start_time);
+        const parts = timeStr.split(':');
+        const h = Number(parts[0]);
+        const m = Number(parts[1]);
+        let dt = now.set({ hour: h, minute: m, second: 0 });
+        if (dt <= now)
+            dt = dt.plus({ days: 1 });
+        return dt;
+    })
+        .sort((a, b) => a.toMillis() - b.toMillis())[0];
+    return upcoming?.toFormat('HH:mm');
+}
+function _getTankDepletionStatus(hoursRemaining, depletionStatus) {
+    if (depletionStatus === 'insufficient_data' || depletionStatus == null)
+        return undefined;
+    if (depletionStatus === 'static' || depletionStatus === 'refilling')
+        return 'optimal';
+    if (hoursRemaining == null)
+        return undefined;
+    if (hoursRemaining < 12)
+        return 'danger';
+    if (hoursRemaining < 24)
+        return 'warning';
+    if (hoursRemaining >= 48)
+        return 'optimal';
+    return undefined;
+}
+function _formatTimeRemaining(hours) {
+    if (hours == null)
+        return '';
+    if (hours >= 48)
+        return ` ${Math.floor(hours / 24)}d`;
+    return ` ${Math.round(hours)}h`;
+}
+function _buildTankChip(tanks, activeEnvGraphs, linkedGraphGroups) {
+    if (tanks.length === 0)
+        return null;
+    if (tanks.length === 1) {
+        const tank = tanks[0];
+        if (tank.fillLevel == null)
+            return null;
+        const fillPct = Math.round(tank.fillLevel);
+        const timeStr = _formatTimeRemaining(tank.hoursRemaining);
+        const status = _getTankDepletionStatus(tank.hoursRemaining, tank.depletionStatus);
+        const tooltip = tank.hoursRemaining != null
+            ? `${tank.name}: ${fillPct}% (${Math.round(tank.hoursRemaining)}h remaining)`
+            : undefined;
+        return _makeChip(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, `${fillPct}%${timeStr}`, { label: 'Tank', status, tooltip, entityIds: [tank.sensorEntity] }, activeEnvGraphs, linkedGraphGroups);
+    }
+    // Multiple tanks: average fill level + individual multiValues
+    const validLevels = tanks.filter((t) => t.fillLevel != null);
+    if (validLevels.length === 0)
+        return null;
+    const multiValues = validLevels.map((t) => `${Math.round(t.fillLevel)}%${_formatTimeRemaining(t.hoursRemaining)}`);
+    const avg = validLevels.reduce((sum, t) => sum + t.fillLevel, 0) / validLevels.length;
+    const statuses = tanks
+        .map((t) => _getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
+        .filter(Boolean);
+    let status;
+    if (statuses.includes('danger'))
+        status = 'danger';
+    else if (statuses.includes('warning'))
+        status = 'warning';
+    else if (statuses.includes('optimal'))
+        status = 'optimal';
+    return _makeChip(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, `${Math.round(avg)}%`, {
+        label: 'Tank',
+        status,
+        multiValues,
+        entityIds: tanks.map((t) => t.sensorEntity),
+        tooltip: `${tanks.length} tanks`,
+    }, activeEnvGraphs, linkedGraphGroups);
+}
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+/**
+ * Derive header chips from the three slice data sources.
+ *
+ * Constraints:
+ *  - Never imports or accesses hass / hass.states.
+ *  - Device chips (exhaust, fan, humidifier, dehumidifier) are excluded — they
+ *    require the future DeviceState slice (issue #144).
+ */
+function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = []) {
+    // --- Dominant stage ---
+    let dominant;
+    const dominantRaw = PlantUtils.getDominantStage(plants);
+    if (dominantRaw) {
+        const stageName = dominantRaw.stage.charAt(0).toUpperCase() + dominantRaw.stage.slice(1);
+        const weeks = Math.floor((dominantRaw.days - 1) / 7) + 1;
+        dominant = {
+            icon: PlantUtils.getPlantStageIcon(dominantRaw.stage),
+            daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
+            weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
+            color: STAGE_COLORS[dominantRaw.stage] ?? '#4caf50',
+        };
+    }
+    // --- Hero chips (env metrics — empty for 'analytics') ---
+    const hero = [];
+    {
+        if (envSnapshot?.temperature != null) {
+            hero.push(_makeChip(MetricKey.TEMPERATURE, mdiThermometer, `${envSnapshot.temperature}°C`, {
+                tooltip: 'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.',
+            }, activeEnvGraphs, linkedGraphGroups));
+        }
+        if (envSnapshot?.humidity != null) {
+            hero.push(_makeChip(MetricKey.HUMIDITY, mdiWaterPercent, `${envSnapshot.humidity}%`, {
+                tooltip: 'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.',
+            }, activeEnvGraphs, linkedGraphGroups));
+        }
+        if (envSnapshot?.vpd != null) {
+            hero.push(_makeChip(MetricKey.VPD, mdiCloudOutline, `${envSnapshot.vpd} kPa`, {
+                status: envSnapshot.vpdStatus ?? undefined,
+                tooltip: 'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.',
+            }, activeEnvGraphs, linkedGraphGroups));
+        }
+        if (envSnapshot?.co2 != null) {
+            hero.push(_makeChip(MetricKey.CO2, mdiWeatherCloudy, `${envSnapshot.co2} ppm`, {
+                tooltip: 'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.',
+            }, activeEnvGraphs, linkedGraphGroups));
+        }
+    }
+    // --- Secondary chips ---
+    const chips = [];
+    // Tank levels
+    const tankChip = _buildTankChip(tankLevels, activeEnvGraphs, linkedGraphGroups);
+    if (tankChip)
+        chips.push(tankChip);
+    // Irrigation / drain timing
+    if (irrigationConfig) {
+        const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes);
+        if (nextIrrigation != null) {
+            chips.push(_makeChip(MetricKey.IRRIGATION, mdiWater, nextIrrigation, { label: 'Next' }, activeEnvGraphs, linkedGraphGroups));
+        }
+        const nextDrain = _getNextEvent(irrigationConfig.drainTimes);
+        if (nextDrain != null) {
+            chips.push(_makeChip(MetricKey.DRAIN, mdiWaterMinus, nextDrain, { label: 'Next' }, activeEnvGraphs, linkedGraphGroups));
+        }
+    }
+    // DLI
+    if (envSnapshot?.dli != null) {
+        chips.push(_makeChip(MetricKey.DLI, mdiWeatherSunny, String(envSnapshot.dli), {
+            tooltip: 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.',
+        }, activeEnvGraphs, linkedGraphGroups));
+    }
+    return { hero, chips, dominant };
+}
+
+/**
+ * Environment slice — the single place in the codebase that reads hass.states
+ * for environmental sensors and exposes normalized EnvSnapshot atoms.
+ *
+ * Public API (atoms):
+ *   envSnapshots$     — read: Map<growspaceId, EnvSnapshot> (one entry per growspace)
+ *
+ * Public API (bootstrap writes):
+ *   setEnvSnapshot()  — compute + store snapshot for a growspace (called by SyncService
+ *                       on every hass update)
+ *
+ * Public API (pure computation):
+ *   computeEnvSnapshot() — derive an EnvSnapshot from a device + hass states snapshot.
+ *                          Exported so HeaderMetrics and tests can call it directly.
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+/** Per-growspace env snapshots — keyed by growspaceId. */
+const envSnapshots$ = atom(new Map());
+
+/**
+ * Irrigation slice — atoms and mutators for Irrigation domain data.
+ *
+ * Public API (atoms):
+ *   irrigationConfigs$    — read: Map<growspaceId, IrrigationConfig>
+ *   irrigationStrategies$ — read: Map<growspaceId, IrrigationStrategy>
+ *   tankLevels$           — read: Map<growspaceId, IrrigationTank[]>
+ *
+ * Public API (bootstrap writes — called by SyncService):
+ *   setIrrigationConfig()   — replace the IrrigationConfig for a growspace
+ *   setIrrigationStrategy() — replace the IrrigationStrategy for a growspace
+ *   setTankLevels()         — replace the IrrigationTank list for a growspace
+ *
+ * Public API (pure computation):
+ *   computeIrrigationMode()  — derive 'manual' | 'crop_steering' from strategy
+ *   computePhaseWindows()    — derive P0–P3 phase windows from strategy
+ *
+ * Public API (mutators):
+ *   toggleIrrigationMode()       — optimistic: flip strategy.enabled
+ *   addIrrigationTime()          — optimistic: append + sort irrigation schedule
+ *   removeIrrigationTime()       — optimistic: remove from irrigation schedule
+ *   addDrainTime()               — optimistic: append + sort drain schedule
+ *   removeDrainTime()            — optimistic: remove from drain schedule
+ *   updateIrrigationStrategy()   — optimistic: merge strategy fields
+ *   saveIrrigationSettings()     — optimistic: merge config settings
+ *   logDrainReading()            — fire-and-forget
+ *   configureDrainMonitoring()   — fire-and-forget
+ *   runIrrigationCycle()         — fire-and-forget
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ * Tank data absorption: this slice is the authoritative source for tank levels,
+ * superseding direct reads from store/growspace or services/api/TankAPI.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public read)
+// ---------------------------------------------------------------------------
+const irrigationConfigs$ = atom(new Map());
+const tankLevels$ = atom(new Map());
 
 function toDateString(value) {
     return value.slice(0, 10);
@@ -50801,6 +51071,18 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             this.store.history.loadHistoryOnDemand();
             this.store.history.startAutoRefresh();
         }
+        if (!this._envSnapshotsController) {
+            this._envSnapshotsController = new libExports.StoreController(this, envSnapshots$);
+        }
+        if (!this._plantsController) {
+            this._plantsController = new libExports.StoreController(this, plants$);
+        }
+        if (!this._irrigationConfigsController) {
+            this._irrigationConfigsController = new libExports.StoreController(this, irrigationConfigs$);
+        }
+        if (!this._tankLevelsController) {
+            this._tankLevelsController = new libExports.StoreController(this, tankLevels$);
+        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -50813,19 +51095,15 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         const state = this._headerController?.value;
         const activeEnvGraphs = state?.history?.activeEnvGraphs || new Set();
         const linkedGraphGroups = state?.history?.linkedGraphGroups || [];
-        const { mainChips, deviceChips, dominant } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);
-        // Split mainChips into Hero and Secondary
-        const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
-        const heroChips = [];
-        const secondaryChips = [];
-        mainChips.forEach(chip => {
-            if (heroKeySet.has(chip.key)) {
-                heroChips.push(chip);
-            }
-            else {
-                secondaryChips.push(chip);
-            }
-        });
+        const growspaceId = this.device.deviceId;
+        const envSnapshot = envSnapshots$.get().get(growspaceId) ?? null;
+        const growspacePlants = plants$.get().filter((p) => p.attributes.growspace_id === growspaceId);
+        const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
+        const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
+        const { hero: heroChips, chips: secondaryChips, dominant } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups);
+        // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
+        // MetricsUtils until the DeviceState slice is implemented (issue #144).
+        const { deviceChips } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);
         return { heroChips, secondaryChips, deviceChips, dominant };
     }
     willUpdate(changedProps) {
@@ -114648,6 +114926,127 @@ class ActionDispatcher {
 }
 
 /**
+ * DeviceState slice — the single place in the codebase that reads hass.states
+ * for device-controlled entities and exposes normalized DeviceSnapshot atoms.
+ *
+ * Public API (atoms):
+ *   deviceSnapshots$        — read: Map<growspaceId, DeviceSnapshot> (one entry per growspace)
+ *
+ * Public API (bootstrap writes):
+ *   setDeviceSnapshot()     — compute + store snapshot for a growspace (called by SyncService
+ *                             on every hass update)
+ *
+ * Public API (pure computation):
+ *   computeDeviceSnapshot() — derive a DeviceSnapshot from a device + hass states snapshot.
+ *                             Exported so HeaderMetrics and tests can call it directly.
+ */
+// ---------------------------------------------------------------------------
+// Internal constants
+// ---------------------------------------------------------------------------
+const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+/**
+ * Normalize a light sensor entity state.
+ * - If `unit_of_measurement` is `%`: return a rounded percentage string.
+ * - Otherwise: return "On" / "Off" for binary states.
+ */
+function _normalizeLightSensor(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    const unit = entity.attributes?.unit_of_measurement;
+    if (unit === '%') {
+        const n = parseFloat(entity.state);
+        return isNaN(n) ? undefined : `${Math.round(n)}%`;
+    }
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    return undefined;
+}
+/** Normalize an on/off device entity state to "On", "Off", or undefined. */
+function _normalizeOnOff(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    return undefined;
+}
+/**
+ * Build a DeviceEntry for a list of entity IDs using the given normalizer.
+ * Returns null when the entity list is empty (device category not configured).
+ */
+function _buildEntry(entityIds, hassStates, icon, normalizer) {
+    if (entityIds.length === 0)
+        return null;
+    if (entityIds.length === 1) {
+        const value = normalizer(hassStates[entityIds[0]]);
+        return { entityIds, value, icon };
+    }
+    // Multiple entities: collect individual values; surface "Multiple" as the aggregate.
+    const multiValues = entityIds
+        .map((id) => normalizer(hassStates[id]))
+        .filter((v) => v !== undefined);
+    return {
+        entityIds,
+        value: 'Multiple',
+        multiValues: multiValues.length > 0 ? multiValues : undefined,
+        icon,
+    };
+}
+// ---------------------------------------------------------------------------
+// Pure computation (exported — used by HeaderMetrics and tests)
+// ---------------------------------------------------------------------------
+/**
+ * Derive a normalized DeviceSnapshot for a growspace from the current hass states.
+ *
+ * This is the canonical place to read device-controlled entity states from hass.states.
+ * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
+ * instead of calling this directly.
+ */
+function computeDeviceSnapshot(device, hassStates) {
+    const env = device.environmentAttributes ?? {};
+    const lightIds = env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []);
+    const exhaustIds = env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []);
+    const circulationIds = env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []);
+    const humidifierIds = env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []);
+    const dehumidifierIds = env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
+    return {
+        lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
+        exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeOnOff),
+        circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeOnOff),
+        humidifiers: _buildEntry(humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
+        dehumidifiers: _buildEntry(dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
+    };
+}
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+/** Per-growspace device state snapshots — keyed by growspaceId. */
+const deviceSnapshots$ = atom(new Map());
+// ---------------------------------------------------------------------------
+// Bootstrap write (public)
+// ---------------------------------------------------------------------------
+/**
+ * Compute and store the DeviceSnapshot for a growspace.
+ * Called by SyncService after each hass update.
+ */
+function setDeviceSnapshot(growspaceId, device, hassStates) {
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+    const updated = new Map(deviceSnapshots$.get());
+    updated.set(growspaceId, snapshot);
+    deviceSnapshots$.set(updated);
+}
+
+/**
  * Service responsible for synchronizing data between Home Assistant and the local store.
  * Handles caching, optimizing updates, and managing the initial data fetch.
  */
@@ -114743,9 +115142,12 @@ class SyncService {
             this.dataStore.setDevices(devices);
             setDevices(devices);
         }
-        // Populate watched entities for next update cycle
+        // Update device-controlled entity snapshots and populate watched entities for next update cycle
+        const hassStates = this.dataService.hass?.states ?? {};
         this._watchedEntities.clear();
         devices.forEach((d) => {
+            // Device state snapshot (lights, fans, humidifiers, dehumidifiers)
+            setDeviceSnapshot(d.deviceId, d, hassStates);
             // Plants
             (d.plants || []).forEach((p) => {
                 const eid = p.entity_id;
