@@ -58,7 +58,7 @@ export async function callServiceReturning<T>(
   domain: string,
   service: string,
   serviceData: Record<string, unknown>,
-  schema: z.ZodType<T>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
 ): Promise<T> {
   if (!_hass) {
     throw new WSError(
@@ -108,7 +108,7 @@ export async function callServiceReturning<T>(
 export async function hassCall<T>(
   command: string,
   params: Record<string, unknown>,
-  schema: z.ZodType<T>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
 ): Promise<T> {
   if (!_hass) {
     throw new WSError('internal_error', 'hassCall: hass is not set — call setHass() first');

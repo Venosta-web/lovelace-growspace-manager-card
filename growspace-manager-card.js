@@ -15464,6 +15464,19 @@ SensorGroupDialog = __decorate([
  * `services/api/subarea-api.ts` and `services/types.ts`.
  */
 // ---------------------------------------------------------------------------
+// SensorGroup
+// ---------------------------------------------------------------------------
+const SensorGroupSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    x: numberType(),
+    y: numberType(),
+    z: numberType(),
+    temperature_sensors: arrayType(stringType()),
+    humidity_sensors: arrayType(stringType()),
+    vpd_sensors: arrayType(stringType()),
+});
+// ---------------------------------------------------------------------------
 // EnvironmentConfig
 // ---------------------------------------------------------------------------
 const EnvironmentConfigSchema = objectType({
@@ -15484,7 +15497,7 @@ const EnvironmentConfigSchema = objectType({
     dehumidifier_entities: arrayType(stringType()).optional(),
     sensor_coordinates: recordType(objectType({ x: numberType(), y: numberType(), z: numberType(), rotation: numberType().optional() }))
         .optional(),
-    sensor_groups: arrayType(unknownType()).optional(),
+    sensor_groups: arrayType(SensorGroupSchema).optional(),
     substrate_temperature_sensors: arrayType(stringType()).optional(),
     camera_entities: arrayType(stringType()).optional(),
     lung_room_temp_sensors: arrayType(stringType()).optional(),

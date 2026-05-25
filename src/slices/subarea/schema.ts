@@ -8,6 +8,21 @@
 import { z } from 'zod';
 
 // ---------------------------------------------------------------------------
+// SensorGroup
+// ---------------------------------------------------------------------------
+
+export const SensorGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  x: z.number(),
+  y: z.number(),
+  z: z.number(),
+  temperature_sensors: z.array(z.string()),
+  humidity_sensors: z.array(z.string()),
+  vpd_sensors: z.array(z.string()),
+});
+
+// ---------------------------------------------------------------------------
 // EnvironmentConfig
 // ---------------------------------------------------------------------------
 
@@ -30,7 +45,7 @@ export const EnvironmentConfigSchema = z.object({
   sensor_coordinates: z
     .record(z.object({ x: z.number(), y: z.number(), z: z.number(), rotation: z.number().optional() }))
     .optional(),
-  sensor_groups: z.array(z.unknown()).optional(),
+  sensor_groups: z.array(SensorGroupSchema).optional(),
   substrate_temperature_sensors: z.array(z.string()).optional(),
   camera_entities: z.array(z.string()).optional(),
   lung_room_temp_sensors: z.array(z.string()).optional(),
