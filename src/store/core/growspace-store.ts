@@ -10,14 +10,21 @@ import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
-import { GrowspaceGridStore } from '../grid/grid-store';
+import {
+  gridSlice,
+  setSelectedDeviceId,
+  setDevices,
+  clearOptimisticDeletedPlantIds,
+  type GridSliceRef,
+  type GridViewState,
+} from '../../slices/grid';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 
 import { ActionDispatcher } from './action-dispatcher';
 import { ActionContext } from './action-context';
 
 // Action Modules
-import * as plantActions from '../plant/plant-actions';
+import * as plantSlice from '../../slices/plant';
 import * as aiActions from '../system/ai-actions';
 
 // Services
@@ -31,6 +38,7 @@ import { EventBus } from '../../features/shared/events/event-bus';
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
   private _staleUnsub?: () => void;
+  private _devicesBridgeUnsub?: () => void;
 
   dataService!: DataService;
   hass!: HomeAssistant;
@@ -40,7 +48,7 @@ export class GrowspaceStore {
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;
-  public readonly grid: GrowspaceGridStore;
+  public readonly grid: GridSliceRef;
   public readonly history: GrowspaceHistoryStore;
 
   // Services
@@ -72,7 +80,7 @@ export class GrowspaceStore {
 
   /** Combined atom for card rendering — one subscription replaces grid + ui modules. */
   public readonly $sharedCardViewState!: ReadableAtom<{
-    grid: import('../grid/grid-store').GridViewState;
+    grid: GridViewState;
     ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T> ? T : any;
   }>;
 
@@ -104,7 +112,7 @@ export class GrowspaceStore {
 
   /** Combined atom for growspace-manager-card — extends $sharedCardViewState with strainLibrary. */
   public readonly $mainCardState!: ReadableAtom<{
-    grid: import('../grid/grid-store').GridViewState;
+    grid: GridViewState;
     ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T> ? T : any;
     strainLibrary: import('../../types').StrainEntry[];
   }>;
@@ -134,8 +142,24 @@ export class GrowspaceStore {
 
     // Per-card stores
     this.ui = new GrowspaceUIStore();
-    this.grid = new GrowspaceGridStore(shared.data);
-    this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, this.grid.$selectedDevice);
+    // Reset Grid slice singleton state so this store instance starts with a clean slate.
+    // The Grid slice uses module-level atoms (singleton); resetting here ensures that
+    // creating a new store (e.g. a new card instance or a test fixture) doesn't carry
+    // over device selection from a previous instance.
+    setSelectedDeviceId(null);
+    setDevices([]);
+    clearOptimisticDeletedPlantIds();
+    this.grid = gridSlice;
+    this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, gridSlice.$selectedDevice);
+
+    // Bridge: keep Grid slice's devices$ in sync with DataStore's $devices so that
+    // cards relying on gridViewState$.devices see the same data as store.data.$devices.
+    // SyncService also calls setGridDevices() directly; this subscription ensures the
+    // Grid slice stays in sync even when tests set data.$devices without going through
+    // SyncService (e.g. element.store.data.$devices.set([...])).
+    this._devicesBridgeUnsub = shared.data.$devices.subscribe((devices) => {
+      setDevices(devices);
+    });
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
@@ -208,7 +232,7 @@ export class GrowspaceStore {
     );
 
     // Initialize services
-    this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
+    this.syncService = new SyncService(this.dataService, shared.data, this.ui);
     this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
       this.ui.showToast(msg, type, action)
     );
@@ -234,6 +258,7 @@ export class GrowspaceStore {
 
   public destroy(): void {
     this._staleUnsub?.();
+    this._devicesBridgeUnsub?.();
     this.history.destroy();
     this.eventBus.clear();
   }
@@ -322,7 +347,14 @@ export class GrowspaceStore {
   }
 
   async movePlant(plant: PlantEntity, newRow: number, newCol: number) {
-    const success = await plantActions.movePlantPosition(this.context, plant, newRow, newCol);
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    let success = false;
+    try {
+      await plantSlice.updatePlant(plantId, { row: newRow, col: newCol });
+      success = true;
+    } catch (err) {
+      console.error('Error moving plant:', err);
+    }
     if (success) {
       this.updateGrid();
     }

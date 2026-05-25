@@ -2,7 +2,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from './data-service';
 import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
-import { GrowspaceGridStore } from '../store/grid/grid-store';
+import {
+  selectedDeviceId$,
+  setSelectedDeviceId,
+  setDevices as setGridDevices,
+} from '../slices/grid';
 import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 
 /**
@@ -26,8 +30,7 @@ export class SyncService {
   constructor(
     private dataService: DataService,
     private dataStore: GrowspaceDataStore,
-    private uiStore: GrowspaceUIStore,
-    private gridStore: GrowspaceGridStore
+    private uiStore: GrowspaceUIStore
   ) { }
 
   /**
@@ -112,6 +115,7 @@ export class SyncService {
 
     if (!this._areDeviceArraysEqual(currentDevices, devices)) {
       this.dataStore.setDevices(devices);
+      setGridDevices(devices);
     }
 
     // Populate watched entities for next update cycle
@@ -137,12 +141,10 @@ export class SyncService {
       }
     });
 
-    const selectedDevice = this.gridStore.$selectedDevice.get();
+    const selectedDevice = selectedDeviceId$.get();
     // Auto-select if needed
     if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
       const config = this._cardConfig;
-      // Default to true if not defined
-      const autoSelect = true;
 
       if (this.uiStore.$defaultApplied.get()) return;
 
@@ -150,15 +152,13 @@ export class SyncService {
         (d) => d.deviceId === config.default_growspace || d.name === config.default_growspace
       );
       if (defaultDevice) {
-        this.gridStore.setSelectedDevice(defaultDevice.deviceId);
+        setSelectedDeviceId(defaultDevice.deviceId);
         this.uiStore.setDefaultApplied(true);
         return;
       }
 
-      // Fallback to first device only if autoSelect is enabled
-      if (autoSelect) {
-        this.gridStore.setSelectedDevice(devices[0].deviceId);
-      }
+      // Fallback to first device
+      setSelectedDeviceId(devices[0].deviceId);
       this.uiStore.setDefaultApplied(true);
     }
   }
