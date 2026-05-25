@@ -1,6 +1,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
+import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
 
@@ -153,7 +154,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        expect((element as any)._autoAdvanceP1ToP2).toBe(true);
+        expect((element as any)._sm.tabs.config.draft.autoAdvanceP1ToP2).toBe(true);
     });
 
     it('loads autoAdvanceP2ToP3=true from device payload', async () => {
@@ -164,7 +165,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        expect((element as any)._autoAdvanceP2ToP3).toBe(true);
+        expect((element as any)._sm.tabs.config.draft.autoAdvanceP2ToP3).toBe(true);
     });
 
     it('loads haltOnRunoffEcThreshold from device payload', async () => {
@@ -175,7 +176,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        expect((element as any)._haltOnRunoffEcThreshold).toBe(3.5);
+        expect((element as any)._sm.tabs.config.draft.haltOnRunoffEcThreshold).toBe(3.5);
     });
 
     it('defaults all Phase Trigger fields to off when absent from payload', async () => {
@@ -186,9 +187,9 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        expect((element as any)._autoAdvanceP1ToP2).toBe(false);
-        expect((element as any)._autoAdvanceP2ToP3).toBe(false);
-        expect((element as any)._haltOnRunoffEcThreshold).toBeNull();
+        expect((element as any)._sm.tabs.config.draft.autoAdvanceP1ToP2).toBe(false);
+        expect((element as any)._sm.tabs.config.draft.autoAdvanceP2ToP3).toBe(false);
+        expect((element as any)._sm.tabs.config.draft.haltOnRunoffEcThreshold).toBeNull();
     });
 
     // ─── Slice 2: toggles are interactive ────────────────────────────────────
@@ -209,7 +210,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
 
-        expect((element as any)._autoAdvanceP1ToP2).toBe(true);
+        expect((element as any)._sm.tabs.config.draft.autoAdvanceP1ToP2).toBe(true);
     });
 
     it('toggle for Auto-advance P2→P3 updates local state', async () => {
@@ -228,7 +229,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
 
-        expect((element as any)._autoAdvanceP2ToP3).toBe(true);
+        expect((element as any)._sm.tabs.config.draft.autoAdvanceP2ToP3).toBe(true);
     });
 
     it('Halt on Runoff EC toggle sets threshold to 4.0 when enabled, null when disabled', async () => {
@@ -248,13 +249,13 @@ describe('IrrigationDialog – Phase Triggers', () => {
         toggle.checked = true;
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
-        expect((element as any)._haltOnRunoffEcThreshold).toBe(4.0);
+        expect((element as any)._sm.tabs.config.draft.haltOnRunoffEcThreshold).toBe(4.0);
 
         // Disable
         toggle.checked = false;
         toggle.dispatchEvent(new Event('change', { bubbles: true }));
         await element.updateComplete;
-        expect((element as any)._haltOnRunoffEcThreshold).toBeNull();
+        expect((element as any)._sm.tabs.config.draft.haltOnRunoffEcThreshold).toBeNull();
     });
 
     // ─── Slice 3: threshold input reveals when halt is enabled ───────────────
@@ -399,7 +400,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        (element as any)._activePhase = 'p2';
+        (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
         const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
@@ -408,8 +409,8 @@ describe('IrrigationDialog – Phase Triggers', () => {
         activeCard.click();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(false);
-        expect((element as any)._activePhase).toBe('p2');
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
+        expect((element as any)._sm.tabs.steering.phase).toBe('p2');
     });
 
     it('clicking an inactive phase card opens the confirmation dialog without updating active phase state immediately', async () => {
@@ -420,7 +421,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        (element as any)._activePhase = 'p2';
+        (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
         const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
@@ -429,9 +430,9 @@ describe('IrrigationDialog – Phase Triggers', () => {
         inactiveCard.click();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(true);
-        expect((element as any)._pendingPhase).toBe('p1');
-        expect((element as any)._activePhase).toBe('p2');
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
+        expect((element as any)._sm.tabs.steering.sub.kind === 'confirm-phase' ? (element as any)._sm.tabs.steering.sub.pending : undefined).toBe('p1');
+        expect((element as any)._sm.tabs.steering.phase).toBe('p2');
     });
 
     it('calling _cancelPhaseChange closes the dialog and keeps the active phase unchanged', async () => {
@@ -442,17 +443,15 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        (element as any)._activePhase = 'p2';
-        (element as any)._pendingPhase = 'p1';
-        (element as any)._phaseConfirmOpen = true;
+        (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
+        (element as any)._sm = transition((element as any)._sm, { type: 'REQUEST_PHASE_CHANGE', phase: 'p1' });
         await element.updateComplete;
 
         (element as any)._cancelPhaseChange();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(false);
-        expect((element as any)._pendingPhase).toBeUndefined();
-        expect((element as any)._activePhase).toBe('p2');
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
+        expect((element as any)._sm.tabs.steering.phase).toBe('p2');
     });
 
     it('calling _confirmPhaseChange closes the dialog and correctly updates the _activePhase state', async () => {
@@ -463,17 +462,15 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        (element as any)._activePhase = 'p2';
-        (element as any)._pendingPhase = 'p1';
-        (element as any)._phaseConfirmOpen = true;
+        (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
+        (element as any)._sm = transition((element as any)._sm, { type: 'REQUEST_PHASE_CHANGE', phase: 'p1' });
         await element.updateComplete;
 
         (element as any)._confirmPhaseChange();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(false);
-        expect((element as any)._pendingPhase).toBeUndefined();
-        expect((element as any)._activePhase).toBe('p1');
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
+        expect((element as any)._sm.tabs.steering.phase).toBe('p1');
     });
 
     it('clicking Cancel button in dialog closes the dialog and keeps active phase unchanged', async () => {
@@ -484,7 +481,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        (element as any)._activePhase = 'p2';
+        (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
         const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
@@ -493,16 +490,15 @@ describe('IrrigationDialog – Phase Triggers', () => {
         inactiveCard.click();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(true);
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
 
         const cancelBtn = element.shadowRoot?.querySelector('gs-dialog button.tonal') as HTMLElement;
         expect(cancelBtn).toBeTruthy();
         cancelBtn.click();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(false);
-        expect((element as any)._pendingPhase).toBeUndefined();
-        expect((element as any)._activePhase).toBe('p2');
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
+        expect((element as any)._sm.tabs.steering.phase).toBe('p2');
     });
 
     it('clicking Confirm button in dialog closes the dialog and updates active phase', async () => {
@@ -513,7 +509,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
 
         await openOnSteeringTab(element);
 
-        (element as any)._activePhase = 'p2';
+        (element as any)._sm = { ...(element as any)._sm, tabs: { ...(element as any)._sm.tabs, steering: { ...(element as any)._sm.tabs.steering, phase: 'p2' } } };
         await element.updateComplete;
 
         const phaseCards = element.shadowRoot?.querySelectorAll('.phase-card');
@@ -522,16 +518,15 @@ describe('IrrigationDialog – Phase Triggers', () => {
         inactiveCard.click();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(true);
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('confirm-phase');
 
         const confirmBtn = element.shadowRoot?.querySelector('gs-dialog button.primary') as HTMLElement;
         expect(confirmBtn).toBeTruthy();
         confirmBtn.click();
         await element.updateComplete;
 
-        expect((element as any)._phaseConfirmOpen).toBe(false);
-        expect((element as any)._pendingPhase).toBeUndefined();
-        expect((element as any)._activePhase).toBe('p1');
+        expect((element as any)._sm.tabs.steering.sub.kind).toBe('idle');
+        expect((element as any)._sm.tabs.steering.phase).toBe('p1');
     });
 
     // ─── Stub cleanup ─────────────────────────────────────────────────────────

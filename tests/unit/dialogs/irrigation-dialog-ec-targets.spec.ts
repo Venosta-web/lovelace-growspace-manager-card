@@ -114,7 +114,7 @@ describe('IrrigationDialog – EC Targets tab', () => {
 
   async function openOnEcTargetsTab() {
     element.open = true;
-    (element as any)._activeTab = 'ec_targets';
+    (element as any)._sm = { ...(element as any)._sm, activeTab: 'ec_targets' };
     document.body.appendChild(element);
     await element.updateComplete;
   }
@@ -170,7 +170,7 @@ describe('IrrigationDialog – EC Targets tab', () => {
     minInput.dispatchEvent(new Event('input', { bubbles: true }));
     await element.updateComplete;
 
-    const state = (element as any)._ecTargetRanges as Array<{ stage: string; minEc: number; maxEc: number }>;
+    const state = (element as any)._sm.tabs.ec_targets.draft as Array<{ stage: string; minEc: number; maxEc: number }>;
     expect(state[0].minEc).toBe(1.1);
   });
 
@@ -183,7 +183,7 @@ describe('IrrigationDialog – EC Targets tab', () => {
     maxInput.dispatchEvent(new Event('input', { bubbles: true }));
     await element.updateComplete;
 
-    const state = (element as any)._ecTargetRanges as Array<{ stage: string; minEc: number; maxEc: number }>;
+    const state = (element as any)._sm.tabs.ec_targets.draft as Array<{ stage: string; minEc: number; maxEc: number }>;
     expect(state[0].maxEc).toBe(2.5);
   });
 

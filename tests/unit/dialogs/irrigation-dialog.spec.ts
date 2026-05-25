@@ -1,8 +1,18 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
+import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
+
+/** Helper: read a deeply-nested SM field without triggering any reactivity. */
+function smRead(el: IrrigationDialog, path: string): unknown {
+  return path.split('.').reduce((obj: any, key) => obj?.[key], (el as any)._sm);
+}
+/** Helper: write a deeply-nested SM field by reassigning _sm so Lit re-renders. */
+function smWrite(el: IrrigationDialog, update: (sm: any) => any): void {
+  (el as any)._sm = update((el as any)._sm);
+}
 
 // Mock dependencies
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
@@ -506,8 +516,8 @@ describe('IrrigationDialog', () => {
         it('should initialize state with empty config', () => {
             element.device = { deviceId: '1' } as any;
             (element as any)._initializeState();
-            expect((element as any)._irrigationPumpEntity).toBe('');
-            expect((element as any)._irrigationDuration).toBe(60);
+            expect((element as any)._sm.tabs.schedules.draft.irrigationPumpEntity).toBe('');
+            expect((element as any)._sm.tabs.schedules.draft.irrigationDuration).toBe(60);
         });
 
         it('should NOT overwrite state on subsequent device property changes if already open', async () => {
@@ -515,7 +525,7 @@ describe('IrrigationDialog', () => {
             element.open = true;
             await element.updateComplete;
 
-            expect((element as any)._irrigationDuration).toBe(60);
+            expect((element as any)._sm.tabs.schedules.draft.irrigationDuration).toBe(60);
 
             element.device = {
                 ...mockDevice,
@@ -523,7 +533,7 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._irrigationDuration).toBe(60);
+            expect((element as any)._sm.tabs.schedules.draft.irrigationDuration).toBe(60);
         });
 
         it('should create DataService if missing when hass changes', async () => {
@@ -640,13 +650,13 @@ describe('IrrigationDialog', () => {
             // Click Steering
             tabs[1].click();
             await element.updateComplete;
-            expect((element as any)._activeTab).toBe('steering');
+            expect((element as any)._sm.activeTab).toBe('steering');
             expect(element.shadowRoot?.querySelector('.phase-grid')).toBeTruthy();
 
             // Click Schedules
             tabs[0].click();
             await element.updateComplete;
-            expect((element as any)._activeTab).toBe('schedules');
+            expect((element as any)._sm.activeTab).toBe('schedules');
             expect(element.shadowRoot?.querySelector('.timeline-track')).toBeTruthy();
         });
 
@@ -778,8 +788,8 @@ describe('IrrigationDialog', () => {
             durInput.dispatchEvent(new CustomEvent('change', { detail: '15' }));
             await element.updateComplete;
 
-            expect((element as any)._addingDrainTime.time).toBe('13:00');
-            expect((element as any)._addingDrainTime.duration).toBe(15);
+            expect((element as any)._sm.tabs.schedules.sub.time).toBe('13:00');
+            expect((element as any)._sm.tabs.schedules.sub.duration).toBe(15);
         });
 
         it('should add irrigation time with default duration fallback', async () => {
@@ -812,7 +822,7 @@ describe('IrrigationDialog', () => {
         it('should update lights_on_time using event detail fallback', async () => {
             document.body.appendChild(element);
             element.open = true;
-            (element as any)._activeTab = 'steering';
+            (element as any)._sm = { ...(element as any)._sm, activeTab: 'steering' };
             await element.updateComplete;
 
             const dateInput = element.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]');
@@ -827,7 +837,7 @@ describe('IrrigationDialog', () => {
             dateInput?.dispatchEvent(evt);
             await element.updateComplete;
 
-            expect((element as any)._strategy.lightsOnTime).toBe('07:00');
+            expect((element as any)._sm.tabs.steering.draft.lightsOnTime).toBe('07:00');
             document.body.removeChild(element);
         });
 
@@ -863,7 +873,7 @@ describe('IrrigationDialog', () => {
             // trigger click
             (drainTimeBar as HTMLElement).click();
 
-            expect((element as any)._addingDrainTime).toBeDefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('adding-drain');
             document.body.removeChild(element);
         });
 
@@ -897,7 +907,8 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             // Activate adding mode
-            (element as any)._addingIrrigationTime = { time: '12:00', duration: 60 };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION' });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '12:00', duration: 60 });
             await element.updateComplete;
 
             // Find inputs in overlay
@@ -910,7 +921,7 @@ describe('IrrigationDialog', () => {
             Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
             textInput?.dispatchEvent(evt);
 
-            expect((element as any)._addingIrrigationTime.time).toBe('12:30');
+            expect((element as any)._sm.tabs.schedules.sub.time).toBe('12:30');
 
             // Test number input with NaN
             const nanEvt = new CustomEvent('change', { detail: 'invalid' });
@@ -919,7 +930,7 @@ describe('IrrigationDialog', () => {
             // Valid change
             const validEvt = new CustomEvent('change', { detail: '120' });
             numInput?.dispatchEvent(validEvt);
-            expect((element as any)._addingIrrigationTime.duration).toBe(120);
+            expect((element as any)._sm.tabs.schedules.sub.duration).toBe(120);
 
             document.body.removeChild(element);
         });
@@ -932,7 +943,8 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
 
                 // Activate adding mode
-                (element as any)._addingDrainTime = { time: '12:00', duration: 60 };
+                (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_DRAIN' });
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_DRAIN', time: '12:00', duration: 60 });
                 await element.updateComplete;
 
                 // Find inputs in overlay
@@ -945,7 +957,7 @@ describe('IrrigationDialog', () => {
                 Object.defineProperty(evt, 'target', { value: { value: '' }, writable: true });
                 textInput?.dispatchEvent(evt);
 
-                expect((element as any)._addingDrainTime.time).toBe('12:30');
+                expect((element as any)._sm.tabs.schedules.sub.time).toBe('12:30');
 
                 // Test number input with NaN
                 const nanEvt = new CustomEvent('change', { detail: 'invalid' });
@@ -954,7 +966,7 @@ describe('IrrigationDialog', () => {
                 // Valid change
                 const validEvt = new CustomEvent('change', { detail: '120' });
                 numInput?.dispatchEvent(validEvt);
-                expect((element as any)._addingDrainTime.duration).toBe(120);
+                expect((element as any)._sm.tabs.schedules.sub.duration).toBe(120);
 
                 document.body.removeChild(element);
             });
@@ -1012,13 +1024,13 @@ describe('IrrigationDialog', () => {
             };
             (element as any)._initializeState();
 
-            expect((element as any)._strategy.lightsOnTime).toBe('06:00:00');
-            expect((element as any)._strategy.p0DurationMinutes).toBe(60);
+            expect((element as any)._sm.tabs.steering.draft.lightsOnTime).toBe('06:00:00');
+            expect((element as any)._sm.tabs.steering.draft.p0DurationMinutes).toBe(60);
         });
 
         it('should handle _updateStrategyField directly', () => {
             (element as any)._updateStrategyField('enabled', true);
-            expect((element as any)._strategy.enabled).toBe(true);
+            expect((element as any)._sm.tabs.steering.draft.enabled).toBe(true);
         });
     });
 
@@ -1192,7 +1204,7 @@ describe('IrrigationDialog', () => {
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[3] as HTMLElement).click();
             await element.updateComplete;
-            expect((element as any)._activeTab).toBe('tanks');
+            expect((element as any)._sm.activeTab).toBe('tanks');
 
             // Hide tanks
             element.device = {
@@ -1201,7 +1213,7 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._activeTab).toBe('schedules');
+            expect((element as any)._sm.activeTab).toBe('schedules');
         });
     });
 
@@ -1404,9 +1416,9 @@ describe('IrrigationDialog', () => {
         it('should fallback to Schedules tab if active tab becomes hidden', async () => {
             // Start with all capabilities
             element.device = { ...mockDevice };
-            (element as any)._activeTab = 'tanks';
+            (element as any)._sm = { ...(element as any)._sm, activeTab: 'tanks' };
             await element.updateComplete;
-            expect((element as any)._activeTab).toBe('tanks');
+            expect((element as any)._sm.activeTab).toBe('tanks');
 
             // Remove tank capability
             element.device = {
@@ -1415,7 +1427,7 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._activeTab).toBe('schedules');
+            expect((element as any)._sm.activeTab).toBe('schedules');
         });
     });
 
@@ -1569,8 +1581,8 @@ describe('IrrigationDialog', () => {
             mocks.setIrrigationSettings.mockClear();
 
             // Dirty the strategy and pump config
-            (element as any)._strategy = { ...( element as any)._strategy, enabled: true };
-            (element as any)._irrigationPumpEntity = 'switch.new_pump';
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_SCHEDULES_DRAFT', partial: { irrigationPumpEntity: 'switch.new_pump' } });
 
             const saveBtn = element.shadowRoot?.querySelector('.btn-save-all') as HTMLElement;
             saveBtn?.click();
@@ -1670,7 +1682,7 @@ describe('IrrigationDialog', () => {
             it('should return nothing when _activeTab is set to an unknown value', () => {
                 // willUpdate resets an unknown _activeTab, so we call the method directly
                 // to exercise the default: return nothing branch
-                (element as any)._activeTab = 'nonexistent_tab_xyz';
+                (element as any)._sm = { ...(element as any)._sm, activeTab: 'nonexistent_tab_xyz' };
                 const result = (element as any)._renderActiveTab('#2196F3');
                 // Lit's `nothing` is returned — just verify it's the sentinel (not a TemplateResult)
                 expect(result).not.toHaveProperty('strings');
@@ -1688,7 +1700,7 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
 
                 // Clear lightsOnTime after initialization to trigger the null-phases branch
-                (element as any)._strategy = { ...(element as any)._strategy, lightsOnTime: '' };
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { lightsOnTime: '' } });
                 await element.updateComplete;
 
                 const csSection = element.shadowRoot?.querySelector('.crop-steering-schedule');
@@ -1721,7 +1733,7 @@ describe('IrrigationDialog', () => {
                 csLink?.click();
                 await element.updateComplete;
 
-                expect((element as any)._activeTab).toBe('steering');
+                expect((element as any)._sm.activeTab).toBe('steering');
 
                 document.body.removeChild(element);
             });
@@ -1738,7 +1750,7 @@ describe('IrrigationDialog', () => {
                 nudgeLink?.click();
                 await element.updateComplete;
 
-                expect((element as any)._activeTab).toBe('steering');
+                expect((element as any)._sm.activeTab).toBe('steering');
 
                 document.body.removeChild(element);
             });
@@ -1798,7 +1810,7 @@ describe('IrrigationDialog', () => {
             });
 
             it('should update _haltOnRunoffEcThreshold when number input changes', async () => {
-                (element as any)._haltOnRunoffEcThreshold = 4.0;
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { haltOnRunoffEcThreshold: 4.0 } });
                 await element.updateComplete;
 
                 const haltInput = element.shadowRoot?.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
@@ -1807,18 +1819,18 @@ describe('IrrigationDialog', () => {
                 haltInput.dispatchEvent(new CustomEvent('change', { detail: '5.5' }));
                 await element.updateComplete;
 
-                expect((element as any)._haltOnRunoffEcThreshold).toBe(5.5);
+                expect((element as any)._sm.tabs.config.draft.haltOnRunoffEcThreshold).toBe(5.5);
             });
 
             it('should not update _haltOnRunoffEcThreshold when NaN value is provided', async () => {
-                (element as any)._haltOnRunoffEcThreshold = 4.0;
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { haltOnRunoffEcThreshold: 4.0 } });
                 await element.updateComplete;
 
                 const haltInput = element.shadowRoot?.querySelector('md3-number-input[data-field="haltOnRunoffEcValue"]') as any;
                 haltInput.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number' }));
                 await element.updateComplete;
 
-                expect((element as any)._haltOnRunoffEcThreshold).toBe(4.0);
+                expect((element as any)._sm.tabs.config.draft.haltOnRunoffEcThreshold).toBe(4.0);
             });
         });
 
@@ -1842,11 +1854,11 @@ describe('IrrigationDialog', () => {
                 soilInput.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._soilTriggerPercent).toBe(65);
+                expect((element as any)._sm.tabs.config.draft.soilTriggerPercent).toBe(65);
             });
 
             it('should set _soilTriggerPercent to null when input is cleared', async () => {
-                (element as any)._soilTriggerPercent = 50;
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { soilTriggerPercent: 50 } });
                 await element.updateComplete;
 
                 const soilInput = element.shadowRoot?.querySelector('input[min="0"][max="100"]') as HTMLInputElement;
@@ -1854,7 +1866,7 @@ describe('IrrigationDialog', () => {
                 soilInput.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._soilTriggerPercent).toBeNull();
+                expect((element as any)._sm.tabs.config.draft.soilTriggerPercent).toBeNull();
             });
 
             it('should update _dailyVolumeCapLiters from the Daily Volume Cap input', async () => {
@@ -1865,11 +1877,11 @@ describe('IrrigationDialog', () => {
                 volInput.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._dailyVolumeCapLiters).toBeCloseTo(20.5);
+                expect((element as any)._sm.tabs.config.draft.dailyVolumeCapLiters).toBeCloseTo(20.5);
             });
 
             it('should set _dailyVolumeCapLiters to null when input is cleared', async () => {
-                (element as any)._dailyVolumeCapLiters = 10;
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { dailyVolumeCapLiters: 10 } });
                 await element.updateComplete;
 
                 const volInput = element.shadowRoot?.querySelector('input[step="0.1"]') as HTMLInputElement;
@@ -1877,7 +1889,7 @@ describe('IrrigationDialog', () => {
                 volInput.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._dailyVolumeCapLiters).toBeNull();
+                expect((element as any)._sm.tabs.config.draft.dailyVolumeCapLiters).toBeNull();
             });
 
             it('should update _maxCyclesPerDay from the Max Cycles input', async () => {
@@ -1890,11 +1902,11 @@ describe('IrrigationDialog', () => {
                 maxCyclesInput!.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._maxCyclesPerDay).toBe(8);
+                expect((element as any)._sm.tabs.config.draft.maxCyclesPerDay).toBe(8);
             });
 
             it('should set _maxCyclesPerDay to null when input is cleared', async () => {
-                (element as any)._maxCyclesPerDay = 5;
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { maxCyclesPerDay: 5 } });
                 await element.updateComplete;
 
                 const allNumberInputs = Array.from(element.shadowRoot?.querySelectorAll('input[type="number"]') ?? []) as HTMLInputElement[];
@@ -1903,7 +1915,7 @@ describe('IrrigationDialog', () => {
                 maxCyclesInput!.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._maxCyclesPerDay).toBeNull();
+                expect((element as any)._sm.tabs.config.draft.maxCyclesPerDay).toBeNull();
             });
         });
 
@@ -1928,7 +1940,7 @@ describe('IrrigationDialog', () => {
                 sw.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._skipDuringDark).toBe(true);
+                expect((element as any)._sm.tabs.config.draft.skipDuringDark).toBe(true);
             });
 
             it('should update _pauseOnLowTank when second behaviour switch fires change', async () => {
@@ -1940,7 +1952,7 @@ describe('IrrigationDialog', () => {
                 sw.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._pauseOnLowTank).toBe(false);
+                expect((element as any)._sm.tabs.config.draft.pauseOnLowTank).toBe(false);
             });
 
             it('should update _logToLogbook when third behaviour switch fires change', async () => {
@@ -1952,7 +1964,7 @@ describe('IrrigationDialog', () => {
                 sw.dispatchEvent(new Event('change'));
                 await element.updateComplete;
 
-                expect((element as any)._logToLogbook).toBe(false);
+                expect((element as any)._sm.tabs.config.draft.logToLogbook).toBe(false);
             });
         });
 
@@ -2033,7 +2045,7 @@ describe('IrrigationDialog', () => {
                 (analyticsTab as HTMLElement)?.click();
                 await element.updateComplete;
 
-                (element as any)._stageAggregates = { seedling: 3, veg: 15, flower: 25 };
+                (element as any)._sm = transition((element as any)._sm, { type: 'SET_STAGE_AGGREGATES', data: { seedling: 3, veg: 15, flower: 25 } });
                 await element.updateComplete;
 
                 const content = element.shadowRoot?.querySelector('.v1-content-scroll');

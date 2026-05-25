@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { transition } from './irrigation-dialog-sm';
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -127,7 +128,7 @@ describe('IrrigationDialog – Run Now button', () => {
       <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
     `);
 
-    (el as any)._runNowSaving = true;
+    (el as any)._sm = transition((el as any)._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
     await el.updateComplete;
 
     const btn = Array.from(el.shadowRoot!.querySelectorAll('button.md3-button')).find(
@@ -149,7 +150,7 @@ describe('IrrigationDialog – initialTab', () => {
       <irrigation-dialog .open=${true}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._activeTab).toBe('schedules');
+    expect((el as any)._sm.activeTab).toBe('schedules');
   });
 
   it('activates the given initialTab when the dialog opens', async () => {
@@ -158,7 +159,7 @@ describe('IrrigationDialog – initialTab', () => {
       <irrigation-dialog .open=${true} .initialTab=${'config'}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._activeTab).toBe('config');
+    expect((el as any)._sm.activeTab).toBe('config');
   });
 
   it('activates initialTab when open transitions from false to true', async () => {
@@ -166,11 +167,11 @@ describe('IrrigationDialog – initialTab', () => {
       <irrigation-dialog .open=${false} .initialTab=${'config'}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._activeTab).toBe('schedules');
+    expect((el as any)._sm.activeTab).toBe('schedules');
 
     el.open = true;
     await el.updateComplete;
-    expect((el as any)._activeTab).toBe('config');
+    expect((el as any)._sm.activeTab).toBe('config');
   });
 
   it('does not change tab when initialTab is not a visible tab', async () => {
@@ -179,7 +180,7 @@ describe('IrrigationDialog – initialTab', () => {
       <irrigation-dialog .open=${true} .initialTab=${'steering'}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._activeTab).toBe('schedules');
+    expect((el as any)._sm.activeTab).toBe('schedules');
   });
 });
 
@@ -294,7 +295,7 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
     toggle.dispatchEvent(new Event('change'));
     await el.updateComplete;
 
-    expect((el as any)._strategy.autoLightTracking).toBe(true);
+    expect((el as any)._sm.tabs.steering.draft.autoLightTracking).toBe(true);
   });
 
   it('does not show detected-time badge when detectedLightsOnTime is null', async () => {

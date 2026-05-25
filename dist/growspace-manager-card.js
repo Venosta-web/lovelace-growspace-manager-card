@@ -19795,6 +19795,682 @@ HarvestScoringDialog = __decorate([
     t$2('harvest-scoring-dialog')
 ], HarvestScoringDialog);
 
+/**
+ * Irrigation Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM. All interaction state for IrrigationDialog lives here.
+ * The component calls `transition(sm, event)` and replaces its single `@state() _sm`.
+ *
+ * Structure:
+ *   DialogSM
+ *     .activeTab          — which tab is visible
+ *     .status             — root-level async/confirm overlay
+ *     .toast              — transient error message
+ *     .tabs               — one typed state object per tab (draft + sub-state)
+ */
+// ─── Initial state ──────────────────────────────────────────────────────────────
+const EC_STAGES = ['seedling', 'veg', 'flower_early', 'flower_mid', 'flower_late'];
+function defaultSchedulesDraft() {
+    return {
+        irrigationPumpEntity: '',
+        drainPumpEntity: '',
+        irrigationDuration: 60,
+        drainDuration: 60,
+    };
+}
+function defaultSteeringDraft() {
+    return {
+        enabled: false,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        targetVwcPercent: 45.0,
+        maintenanceDrybackPercent: 3.0,
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 15,
+        autoLightTracking: false,
+        detectedLightsOnTime: null,
+    };
+}
+function defaultConfigDraft() {
+    return {
+        soilTriggerPercent: null,
+        dailyVolumeCapLiters: null,
+        maxCyclesPerDay: null,
+        skipDuringDark: false,
+        pauseOnLowTank: true,
+        logToLogbook: true,
+        autoAdvanceP1ToP2: false,
+        autoAdvanceP2ToP3: false,
+        haltOnRunoffEcThreshold: null,
+    };
+}
+function defaultDrainEcDraft() {
+    return {
+        enabled: false,
+        maxEcDelta: 1.0,
+        targetRunoffPercent: 20,
+        logFeedEc: 2.0,
+        logDrainEc: 2.0,
+        logFeedVolume: 0,
+        logDrainVolume: 0,
+    };
+}
+function defaultEcTargetsDraft() {
+    return EC_STAGES.map((stage) => ({ stage, minEc: 0, maxEc: 0 }));
+}
+function defaultTabs() {
+    return {
+        schedules: { draft: defaultSchedulesDraft(), sub: { kind: 'idle' } },
+        steering: { draft: defaultSteeringDraft(), phase: 'p2', sub: { kind: 'idle' } },
+        config: { draft: defaultConfigDraft(), sub: { kind: 'idle' } },
+        tanks: { sub: { kind: 'idle' } },
+        water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
+        drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
+        ec_targets: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
+    };
+}
+/** Create the initial SM state, optionally seeded from a device. */
+function createInitialSM(device) {
+    const sm = {
+        activeTab: 'schedules',
+        tabs: defaultTabs(),
+        status: { kind: 'idle' },
+        toast: undefined,
+    };
+    return sm;
+}
+/** Rebuild tab drafts from device data (used on dialog open and after RESET_FROM_DEVICE). */
+function applyDeviceToSM(sm, device) {
+    const config = device.irrigationConfig ?? {};
+    const strat = device.irrigationStrategy;
+    const dc = device.drainConfig;
+    const schedulesDraft = {
+        irrigationPumpEntity: config.irrigationPumpEntity ?? '',
+        drainPumpEntity: config.drainPumpEntity ?? '',
+        irrigationDuration: config.irrigationDuration ?? 60,
+        drainDuration: config.drainDuration ?? 60,
+    };
+    const steeringDraft = {
+        enabled: strat?.enabled ?? false,
+        lightsOnTime: strat?.lightsOnTime ?? '06:00:00',
+        p0DurationMinutes: strat?.p0DurationMinutes ?? 60,
+        p2StopBeforeLightsOffMinutes: strat?.p2StopBeforeLightsOffMinutes ?? 120,
+        targetVwcPercent: strat?.targetVwcPercent ?? 45.0,
+        maintenanceDrybackPercent: strat?.maintenanceDrybackPercent ?? 3.0,
+        shotDurationSeconds: strat?.shotDurationSeconds ?? 15,
+        shotIntervalMinutes: strat?.shotIntervalMinutes ?? 15,
+        autoLightTracking: strat?.autoLightTracking ?? false,
+        detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
+    };
+    const configDraft = {
+        soilTriggerPercent: config.soilTriggerPercent ?? null,
+        dailyVolumeCapLiters: config.dailyVolumeCapLiters ?? null,
+        maxCyclesPerDay: config.maxCyclesPerDay ?? null,
+        skipDuringDark: config.skipDuringDark ?? false,
+        pauseOnLowTank: config.pauseOnLowTank ?? true,
+        logToLogbook: config.logToLogbook ?? true,
+        autoAdvanceP1ToP2: config.autoAdvanceP1ToP2 ?? false,
+        autoAdvanceP2ToP3: config.autoAdvanceP2ToP3 ?? false,
+        haltOnRunoffEcThreshold: config.haltOnRunoffEcThreshold ?? null,
+    };
+    const drainEcDraft = {
+        enabled: dc?.enabled ?? false,
+        maxEcDelta: dc?.maxEcDelta ?? 1.0,
+        targetRunoffPercent: dc?.targetRunoffPercent ?? 20,
+        logFeedEc: sm.tabs.drain_ec.draft.logFeedEc,
+        logDrainEc: sm.tabs.drain_ec.draft.logDrainEc,
+        logFeedVolume: sm.tabs.drain_ec.draft.logFeedVolume,
+        logDrainVolume: sm.tabs.drain_ec.draft.logDrainVolume,
+    };
+    const ranges = config.ecTargetRanges;
+    const ecTargetsDraft = ranges && ranges.length > 0
+        ? EC_STAGES.map((stage) => {
+            const found = ranges.find((r) => r.stage === stage);
+            return found ?? { stage, minEc: 0, maxEc: 0 };
+        })
+        : defaultEcTargetsDraft();
+    const phase = config.activeSteeringPhase ?? sm.tabs.steering.phase;
+    return {
+        ...sm,
+        tabs: {
+            ...sm.tabs,
+            schedules: { ...sm.tabs.schedules, draft: schedulesDraft },
+            steering: { ...sm.tabs.steering, draft: steeringDraft, phase },
+            config: { ...sm.tabs.config, draft: configDraft },
+            drain_ec: { ...sm.tabs.drain_ec, draft: drainEcDraft },
+            ec_targets: { ...sm.tabs.ec_targets, draft: ecTargetsDraft },
+        },
+    };
+}
+// ─── Dirty predicates ───────────────────────────────────────────────────────────
+/** True if the schedules tab has unsaved form changes relative to the device. */
+function isSchedulesDirty(sm, device) {
+    const d = sm.tabs.schedules.draft;
+    const c = device.irrigationConfig ?? {};
+    return (d.irrigationPumpEntity !== (c.irrigationPumpEntity ?? '') ||
+        d.drainPumpEntity !== (c.drainPumpEntity ?? '') ||
+        d.irrigationDuration !== (c.irrigationDuration ?? 60) ||
+        d.drainDuration !== (c.drainDuration ?? 60));
+}
+/** True if the steering tab has unsaved form changes relative to the device. */
+function isSteeringDirty(sm, device) {
+    const d = sm.tabs.steering.draft;
+    const s = device.irrigationStrategy;
+    if (!s)
+        return false;
+    return (d.enabled !== s.enabled ||
+        d.lightsOnTime !== s.lightsOnTime ||
+        d.p0DurationMinutes !== s.p0DurationMinutes ||
+        d.p2StopBeforeLightsOffMinutes !== s.p2StopBeforeLightsOffMinutes ||
+        d.targetVwcPercent !== s.targetVwcPercent ||
+        d.maintenanceDrybackPercent !== s.maintenanceDrybackPercent ||
+        d.shotDurationSeconds !== s.shotDurationSeconds ||
+        d.shotIntervalMinutes !== s.shotIntervalMinutes);
+}
+/** True if the config tab has unsaved form changes relative to the device. */
+function isConfigDirty(sm, device) {
+    const d = sm.tabs.config.draft;
+    const c = device.irrigationConfig ?? {};
+    return (d.soilTriggerPercent !== (c.soilTriggerPercent ?? null) ||
+        d.dailyVolumeCapLiters !== (c.dailyVolumeCapLiters ?? null) ||
+        d.maxCyclesPerDay !== (c.maxCyclesPerDay ?? null) ||
+        d.skipDuringDark !== (c.skipDuringDark ?? false) ||
+        d.pauseOnLowTank !== (c.pauseOnLowTank ?? true) ||
+        d.logToLogbook !== (c.logToLogbook ?? true) ||
+        d.autoAdvanceP1ToP2 !== (c.autoAdvanceP1ToP2 ?? false) ||
+        d.autoAdvanceP2ToP3 !== (c.autoAdvanceP2ToP3 ?? false) ||
+        d.haltOnRunoffEcThreshold !== (c.haltOnRunoffEcThreshold ?? null));
+}
+/** True if the drain_ec tab config portion has unsaved changes relative to the device. */
+function isDrainEcDirty(sm, device) {
+    const d = sm.tabs.drain_ec.draft;
+    const dc = device.drainConfig;
+    if (!dc)
+        return false;
+    return (d.enabled !== dc.enabled ||
+        d.maxEcDelta !== dc.maxEcDelta ||
+        d.targetRunoffPercent !== dc.targetRunoffPercent);
+}
+/** True if the ec_targets tab has unsaved changes relative to the device. */
+function isEcTargetsDirty(sm, device) {
+    const d = sm.tabs.ec_targets.draft;
+    const ranges = device.irrigationConfig?.ecTargetRanges ?? [];
+    // When the device has no ranges, the SM initialises with all-zero defaults.
+    // It is only dirty if the user has changed at least one value away from zero.
+    if (ranges.length === 0) {
+        return d.some((r) => r.minEc !== 0 || r.maxEc !== 0);
+    }
+    if (d.length !== ranges.length)
+        return true;
+    return d.some((dr) => {
+        const deviceRange = ranges.find((r) => r.stage === dr.stage);
+        return !deviceRange || deviceRange.minEc !== dr.minEc || deviceRange.maxEc !== dr.maxEc;
+    });
+}
+/**
+ * Returns true if the currently-active tab has unsaved changes.
+ * Pass this to decide between SWITCH_TAB and REQUEST_TAB.
+ */
+function isActiveTabDirty(sm, device) {
+    switch (sm.activeTab) {
+        case 'schedules': return isSchedulesDirty(sm, device);
+        case 'steering': return isSteeringDirty(sm, device);
+        case 'config': return isConfigDirty(sm, device);
+        case 'drain_ec': return isDrainEcDirty(sm, device);
+        case 'ec_targets': return isEcTargetsDirty(sm, device);
+        default: return false;
+    }
+}
+// ─── Draft reset helpers ───────────────────────────────────────────────────────
+/** Reset the active tab's draft back to device state (used after DISCARD_AND_SWITCH). */
+function resetActiveTabDraft(sm, device) {
+    const config = device.irrigationConfig ?? {};
+    const strat = device.irrigationStrategy;
+    const dc = device.drainConfig;
+    switch (sm.activeTab) {
+        case 'schedules':
+            return {
+                ...sm.tabs,
+                schedules: {
+                    draft: {
+                        irrigationPumpEntity: config.irrigationPumpEntity ?? '',
+                        drainPumpEntity: config.drainPumpEntity ?? '',
+                        irrigationDuration: config.irrigationDuration ?? 60,
+                        drainDuration: config.drainDuration ?? 60,
+                    },
+                    sub: { kind: 'idle' },
+                },
+            };
+        case 'steering':
+            return {
+                ...sm.tabs,
+                steering: {
+                    draft: {
+                        enabled: strat?.enabled ?? false,
+                        lightsOnTime: strat?.lightsOnTime ?? '06:00:00',
+                        p0DurationMinutes: strat?.p0DurationMinutes ?? 60,
+                        p2StopBeforeLightsOffMinutes: strat?.p2StopBeforeLightsOffMinutes ?? 120,
+                        targetVwcPercent: strat?.targetVwcPercent ?? 45.0,
+                        maintenanceDrybackPercent: strat?.maintenanceDrybackPercent ?? 3.0,
+                        shotDurationSeconds: strat?.shotDurationSeconds ?? 15,
+                        shotIntervalMinutes: strat?.shotIntervalMinutes ?? 15,
+                        autoLightTracking: strat?.autoLightTracking ?? false,
+                        detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
+                    },
+                    phase: sm.tabs.steering.phase,
+                    sub: { kind: 'idle' },
+                },
+            };
+        case 'config':
+            return {
+                ...sm.tabs,
+                config: {
+                    draft: {
+                        soilTriggerPercent: config.soilTriggerPercent ?? null,
+                        dailyVolumeCapLiters: config.dailyVolumeCapLiters ?? null,
+                        maxCyclesPerDay: config.maxCyclesPerDay ?? null,
+                        skipDuringDark: config.skipDuringDark ?? false,
+                        pauseOnLowTank: config.pauseOnLowTank ?? true,
+                        logToLogbook: config.logToLogbook ?? true,
+                        autoAdvanceP1ToP2: config.autoAdvanceP1ToP2 ?? false,
+                        autoAdvanceP2ToP3: config.autoAdvanceP2ToP3 ?? false,
+                        haltOnRunoffEcThreshold: config.haltOnRunoffEcThreshold ?? null,
+                    },
+                    sub: { kind: 'idle' },
+                },
+            };
+        case 'drain_ec':
+            return {
+                ...sm.tabs,
+                drain_ec: {
+                    draft: {
+                        enabled: dc?.enabled ?? false,
+                        maxEcDelta: dc?.maxEcDelta ?? 1.0,
+                        targetRunoffPercent: dc?.targetRunoffPercent ?? 20,
+                        logFeedEc: sm.tabs.drain_ec.draft.logFeedEc,
+                        logDrainEc: sm.tabs.drain_ec.draft.logDrainEc,
+                        logFeedVolume: sm.tabs.drain_ec.draft.logFeedVolume,
+                        logDrainVolume: sm.tabs.drain_ec.draft.logDrainVolume,
+                    },
+                    sub: { kind: 'idle' },
+                },
+            };
+        case 'ec_targets': {
+            const ranges = config.ecTargetRanges;
+            return {
+                ...sm.tabs,
+                ec_targets: {
+                    draft: ranges && ranges.length > 0
+                        ? EC_STAGES.map((stage) => {
+                            const found = ranges.find((r) => r.stage === stage);
+                            return found ?? { stage, minEc: 0, maxEc: 0 };
+                        })
+                        : defaultEcTargetsDraft(),
+                    sub: { kind: 'idle' },
+                },
+            };
+        }
+        default:
+            return sm.tabs;
+    }
+}
+// ─── Transition function ────────────────────────────────────────────────────────
+/** Pure state machine transition. Returns a new SM without mutating the input. */
+function transition(sm, event) {
+    switch (event.type) {
+        // ── Navigation ──────────────────────────────────────────────────────────
+        case 'REQUEST_TAB':
+            return {
+                ...sm,
+                status: { kind: 'confirm-discard', pendingTab: event.tab },
+            };
+        case 'SWITCH_TAB':
+            return {
+                ...sm,
+                activeTab: event.tab,
+                status: { kind: 'idle' },
+                tabs: {
+                    ...sm.tabs,
+                    // Clear any inline editing state when leaving the current tab
+                    schedules: sm.activeTab === 'schedules'
+                        ? { ...sm.tabs.schedules, sub: { kind: 'idle' } }
+                        : sm.tabs.schedules,
+                },
+            };
+        case 'DISCARD_AND_SWITCH': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            const pendingTab = sm.status.pendingTab;
+            // Need device to reset draft — caller must pass RESET_FROM_DEVICE first
+            // or provide the device. For pure transition, we just switch the tab and
+            // note: the component should call RESET_FROM_DEVICE immediately after.
+            return {
+                ...sm,
+                activeTab: pendingTab,
+                status: { kind: 'idle' },
+                tabs: {
+                    ...sm.tabs,
+                    schedules: { ...sm.tabs.schedules, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'CANCEL_TAB_SWITCH':
+            return {
+                ...sm,
+                status: { kind: 'idle' },
+            };
+        // ── Schedules ────────────────────────────────────────────────────────────
+        case 'BEGIN_ADD_IRRIGATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: { kind: 'adding-irrigation', time: event.time, duration: event.duration },
+                    },
+                },
+            };
+        case 'BEGIN_ADD_DRAIN':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: { kind: 'adding-drain', time: event.time, duration: event.duration },
+                    },
+                },
+            };
+        case 'BEGIN_EDIT_IRRIGATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: {
+                            kind: 'editing-irrigation',
+                            originalTime: event.originalTime,
+                            originalDuration: event.originalDuration,
+                            time: event.time,
+                            duration: event.duration,
+                        },
+                    },
+                },
+            };
+        case 'BEGIN_EDIT_DRAIN':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: {
+                            kind: 'editing-drain',
+                            originalTime: event.originalTime,
+                            originalDuration: event.originalDuration,
+                            time: event.time,
+                            duration: event.duration,
+                        },
+                    },
+                },
+            };
+        case 'CANCEL_INLINE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: { ...sm.tabs.schedules, sub: { kind: 'idle' } },
+                },
+            };
+        case 'UPDATE_ADD_IRRIGATION': {
+            const sub = sm.tabs.schedules.sub;
+            if (sub.kind !== 'adding-irrigation')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: {
+                            ...sub,
+                            ...(event.time !== undefined && { time: event.time }),
+                            ...(event.duration !== undefined && { duration: event.duration }),
+                        },
+                    },
+                },
+            };
+        }
+        case 'UPDATE_ADD_DRAIN': {
+            const sub = sm.tabs.schedules.sub;
+            if (sub.kind !== 'adding-drain')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: {
+                            ...sub,
+                            ...(event.time !== undefined && { time: event.time }),
+                            ...(event.duration !== undefined && { duration: event.duration }),
+                        },
+                    },
+                },
+            };
+        }
+        case 'UPDATE_EDIT_IRRIGATION': {
+            const sub = sm.tabs.schedules.sub;
+            if (sub.kind !== 'editing-irrigation')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: {
+                            ...sub,
+                            ...(event.time !== undefined && { time: event.time }),
+                            ...(event.duration !== undefined && { duration: event.duration }),
+                        },
+                    },
+                },
+            };
+        }
+        case 'UPDATE_EDIT_DRAIN': {
+            const sub = sm.tabs.schedules.sub;
+            if (sub.kind !== 'editing-drain')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        sub: {
+                            ...sub,
+                            ...(event.time !== undefined && { time: event.time }),
+                            ...(event.duration !== undefined && { duration: event.duration }),
+                        },
+                    },
+                },
+            };
+        }
+        case 'UPDATE_SCHEDULES_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    schedules: {
+                        ...sm.tabs.schedules,
+                        draft: { ...sm.tabs.schedules.draft, ...event.partial },
+                    },
+                },
+            };
+        // ── Steering ─────────────────────────────────────────────────────────────
+        case 'REQUEST_PHASE_CHANGE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    steering: {
+                        ...sm.tabs.steering,
+                        sub: { kind: 'confirm-phase', pending: event.phase },
+                    },
+                },
+            };
+        case 'CONFIRM_PHASE_CHANGE': {
+            const sub = sm.tabs.steering.sub;
+            if (sub.kind !== 'confirm-phase')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    steering: {
+                        ...sm.tabs.steering,
+                        phase: sub.pending,
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'CANCEL_PHASE_CHANGE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    steering: { ...sm.tabs.steering, sub: { kind: 'idle' } },
+                },
+            };
+        case 'UPDATE_STEERING_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    steering: {
+                        ...sm.tabs.steering,
+                        draft: { ...sm.tabs.steering.draft, ...event.partial },
+                    },
+                },
+            };
+        // ── Config ───────────────────────────────────────────────────────────────
+        case 'UPDATE_CONFIG_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    config: {
+                        ...sm.tabs.config,
+                        draft: { ...sm.tabs.config.draft, ...event.partial },
+                    },
+                },
+            };
+        // ── Drain EC ─────────────────────────────────────────────────────────────
+        case 'UPDATE_DRAIN_EC_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    drain_ec: {
+                        ...sm.tabs.drain_ec,
+                        draft: { ...sm.tabs.drain_ec.draft, ...event.partial },
+                    },
+                },
+            };
+        case 'SET_DRAIN_SAVING':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    drain_ec: {
+                        ...sm.tabs.drain_ec,
+                        sub: event.saving ? { kind: 'saving' } : { kind: 'idle' },
+                    },
+                },
+            };
+        case 'SET_DRAIN_LOGGING':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    drain_ec: {
+                        ...sm.tabs.drain_ec,
+                        sub: event.logging ? { kind: 'logging' } : { kind: 'idle' },
+                    },
+                },
+            };
+        // ── EC Targets ───────────────────────────────────────────────────────────
+        case 'UPDATE_EC_TARGETS_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    ec_targets: {
+                        ...sm.tabs.ec_targets,
+                        draft: event.ranges,
+                    },
+                },
+            };
+        // ── Global ───────────────────────────────────────────────────────────────
+        case 'SET_TOAST':
+            return { ...sm, toast: event.message };
+        case 'SET_RUN_NOW_SAVING':
+            return {
+                ...sm,
+                status: event.saving ? { kind: 'run-now-saving' } : { kind: 'idle' },
+            };
+        case 'SET_STAGE_AGGREGATES':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    water_analytics: {
+                        ...sm.tabs.water_analytics,
+                        stageAggregates: event.data,
+                    },
+                },
+            };
+        case 'RESET_FROM_DEVICE':
+            return applyDeviceToSM(sm, event.device);
+        default:
+            return sm;
+    }
+}
+/**
+ * Transition to a new tab with dirty-state handling baked in.
+ * Returns the new SM state. The component can use this helper instead of
+ * checking `isActiveTabDirty` and dispatching different events manually.
+ */
+function requestTabSwitch(sm, tab, device) {
+    if (sm.activeTab === tab)
+        return sm;
+    if (isActiveTabDirty(sm, device)) {
+        return transition(sm, { type: 'REQUEST_TAB', tab });
+    }
+    return transition(sm, { type: 'SWITCH_TAB', tab });
+}
+/**
+ * Discard the active tab's draft (reset to device state) and switch to the pending tab.
+ * Convenience wrapper that handles the two-step: reset draft + switch.
+ */
+function discardAndSwitch(sm, device) {
+    if (sm.status.kind !== 'confirm-discard')
+        return sm;
+    const tabs = resetActiveTabDraft(sm, device);
+    return {
+        ...sm,
+        activeTab: sm.status.pendingTab,
+        status: { kind: 'idle' },
+        tabs,
+    };
+}
+
 function getIrrigationConfig(ctx, growspaceId) {
     const device = ctx.data.$devices.get().find((d) => d.deviceId === growspaceId);
     return device ? { ...device.irrigationConfig } : { irrigationTimes: [], drainTimes: [] };
@@ -19939,44 +20615,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.growspaceName = '';
         this.initialTab = undefined;
         this.scrollToField = undefined;
-        this._irrigationPumpEntity = '';
-        this._drainPumpEntity = '';
-        this._irrigationDuration = 60;
-        this._drainDuration = 60;
-        this._activeTab = 'schedules';
-        this._activePhase = 'p2';
-        this._phaseConfirmOpen = false;
-        this._pendingPhase = undefined;
-        // Drain EC state
-        this._drainEcEnabled = false;
-        this._drainEcMaxDelta = 1.0;
-        this._drainEcTargetRunoffPercent = 20;
-        this._drainLogFeedEc = 2.0;
-        this._drainLogDrainEc = 2.0;
-        this._drainLogFeedVolume = 0;
-        this._drainLogDrainVolume = 0;
-        this._drainSaving = false;
-        this._drainLogging = false;
-        this._ecTargetRanges = [
-            { stage: 'seedling', minEc: 0, maxEc: 0 },
-            { stage: 'veg', minEc: 0, maxEc: 0 },
-            { stage: 'flower_early', minEc: 0, maxEc: 0 },
-            { stage: 'flower_mid', minEc: 0, maxEc: 0 },
-            { stage: 'flower_late', minEc: 0, maxEc: 0 },
-        ];
-        this._strategy = {};
-        // Cycle parameters & behaviour toggles
-        this._soilTriggerPercent = null;
-        this._dailyVolumeCapLiters = null;
-        this._maxCyclesPerDay = null;
-        this._skipDuringDark = false;
-        this._pauseOnLowTank = true;
-        this._logToLogbook = true;
-        this._autoAdvanceP1ToP2 = false;
-        this._autoAdvanceP2ToP3 = false;
-        this._haltOnRunoffEcThreshold = null;
-        this._runNowSaving = false;
-        this._stageAggregates = null;
+        /** Single reactive state atom. All 35 former @state() flags live here. */
+        this._sm = createInitialSM();
     }
     // ─── Visibility ───────────────────────────────────────────────────────────
     get _visibleTabs() {
@@ -20035,14 +20675,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._initializeState();
             this._fetchStageAnalytics();
             if (this.initialTab) {
-                this._activeTab = this.initialTab;
+                this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
-        if (!this._visibleTabs.includes(this._activeTab)) {
-            this._activeTab = 'schedules';
+        if (!this._visibleTabs.includes(this._sm.activeTab)) {
+            this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'schedules' });
         }
     }
     updated(changedProps) {
@@ -20058,47 +20698,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _initializeState() {
         if (!this.device)
             return;
-        const config = this.device.irrigationConfig || {};
-        this._irrigationPumpEntity = config.irrigationPumpEntity || '';
-        this._drainPumpEntity = config.drainPumpEntity || '';
-        this._irrigationDuration = config.irrigationDuration || 60;
-        this._drainDuration = config.drainDuration || 60;
-        this._soilTriggerPercent = config.soilTriggerPercent ?? null;
-        this._dailyVolumeCapLiters = config.dailyVolumeCapLiters ?? null;
-        this._maxCyclesPerDay = config.maxCyclesPerDay ?? null;
-        this._skipDuringDark = config.skipDuringDark ?? false;
-        this._pauseOnLowTank = config.pauseOnLowTank ?? true;
-        this._logToLogbook = config.logToLogbook ?? true;
-        this._autoAdvanceP1ToP2 = config.autoAdvanceP1ToP2 ?? false;
-        this._autoAdvanceP2ToP3 = config.autoAdvanceP2ToP3 ?? false;
-        this._haltOnRunoffEcThreshold = config.haltOnRunoffEcThreshold ?? null;
-        this._activePhase = config.activeSteeringPhase ?? 'p2';
-        const strat = this.device.irrigationStrategy;
-        this._strategy = {
-            enabled: strat?.enabled || false,
-            lightsOnTime: strat?.lightsOnTime || '06:00:00',
-            p0DurationMinutes: strat?.p0DurationMinutes || 60,
-            p2StopBeforeLightsOffMinutes: strat?.p2StopBeforeLightsOffMinutes || 120,
-            targetVwcPercent: strat?.targetVwcPercent || 45.0,
-            maintenanceDrybackPercent: strat?.maintenanceDrybackPercent || 3.0,
-            shotDurationSeconds: strat?.shotDurationSeconds || 15,
-            shotIntervalMinutes: strat?.shotIntervalMinutes || 15,
-            autoLightTracking: strat?.autoLightTracking ?? false,
-            detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
-        };
-        const dc = this.device.drainConfig;
-        if (dc) {
-            this._drainEcEnabled = dc.enabled;
-            this._drainEcMaxDelta = dc.maxEcDelta;
-            this._drainEcTargetRunoffPercent = dc.targetRunoffPercent;
-        }
-        const ranges = config.ecTargetRanges;
-        if (ranges && ranges.length > 0) {
-            this._ecTargetRanges = ['seedling', 'veg', 'flower_early', 'flower_mid', 'flower_late'].map((stage) => {
-                const found = ranges.find((r) => r.stage === stage);
-                return found ?? { stage, minEc: 0, maxEc: 0 };
-            });
-        }
+        this._sm = transition(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
     }
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
@@ -20111,51 +20711,53 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _saveEcTargetRanges() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        await this._dataService.setEcTargetRanges(this.device.deviceId, this._ecTargetRanges);
+        await this._dataService.setEcTargetRanges(this.device.deviceId, this._sm.tabs.ec_targets.draft);
     }
     async _saveSettings() {
         if (!this.device?.deviceId || !this.store)
             return;
+        const s = this._sm.tabs.schedules.draft;
+        const cfg = this._sm.tabs.config.draft;
         await setIrrigationSettings(this.store.context, {
             growspaceId: this.device.deviceId,
-            irrigationPumpEntity: this._irrigationPumpEntity,
-            drainPumpEntity: this._drainPumpEntity,
-            irrigationDuration: this._irrigationDuration,
-            drainDuration: this._drainDuration,
-            soilTriggerPercent: this._soilTriggerPercent,
-            dailyVolumeCapLiters: this._dailyVolumeCapLiters,
-            maxCyclesPerDay: this._maxCyclesPerDay,
-            skipDuringDark: this._skipDuringDark,
-            pauseOnLowTank: this._pauseOnLowTank,
-            logToLogbook: this._logToLogbook,
-            autoAdvanceP1ToP2: this._autoAdvanceP1ToP2,
-            autoAdvanceP2ToP3: this._autoAdvanceP2ToP3,
-            haltOnRunoffEcThreshold: this._haltOnRunoffEcThreshold,
-            activeSteeringPhase: this._activePhase,
+            irrigationPumpEntity: s.irrigationPumpEntity,
+            drainPumpEntity: s.drainPumpEntity,
+            irrigationDuration: s.irrigationDuration,
+            drainDuration: s.drainDuration,
+            soilTriggerPercent: cfg.soilTriggerPercent,
+            dailyVolumeCapLiters: cfg.dailyVolumeCapLiters,
+            maxCyclesPerDay: cfg.maxCyclesPerDay,
+            skipDuringDark: cfg.skipDuringDark,
+            pauseOnLowTank: cfg.pauseOnLowTank,
+            logToLogbook: cfg.logToLogbook,
+            autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
+            autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
+            haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
+            activeSteeringPhase: this._sm.tabs.steering.phase,
         });
     }
     async _fetchStageAnalytics() {
         if (!this.device?.deviceId || !this._dataService)
             return;
         const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
-        this._stageAggregates = result?.stage_aggregates ?? null;
+        this._sm = transition(this._sm, { type: 'SET_STAGE_AGGREGATES', data: result?.stage_aggregates ?? null });
     }
     async _handleRunNow() {
         if (!this.device?.deviceId || !this.store)
             return;
-        this._runNowSaving = true;
+        this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
         try {
             await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
         }
         finally {
-            this._runNowSaving = false;
+            this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
         }
     }
     async _saveStrategy() {
         if (!this.device?.deviceId || !this._dataService)
             return;
         try {
-            await this._dataService.setIrrigationStrategy(this.device.deviceId, this._strategy);
+            await this._dataService.setIrrigationStrategy(this.device.deviceId, this._sm.tabs.steering.draft);
         }
         catch (e) {
             console.error('Failed to save strategy:', e);
@@ -20164,19 +20766,20 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _saveDrainConfig() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        this._drainSaving = true;
+        this._sm = transition(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
+        const d = this._sm.tabs.drain_ec.draft;
         try {
             await this._dataService.configureDrainMonitoring(this.device.deviceId, {
-                enabled: this._drainEcEnabled,
-                maxEcDelta: this._drainEcMaxDelta,
-                targetRunoffPercent: this._drainEcTargetRunoffPercent,
+                enabled: d.enabled,
+                maxEcDelta: d.maxEcDelta,
+                targetRunoffPercent: d.targetRunoffPercent,
             });
         }
         catch (e) {
             this._showErrorToast('Failed to save drain config');
         }
         finally {
-            this._drainSaving = false;
+            this._sm = transition(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
         }
     }
     // ─── Schedule mutations ───────────────────────────────────────────────────
@@ -20184,11 +20787,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._addingIrrigationTime = undefined;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
         await addIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: formattedTime,
-            duration: duration || this._irrigationDuration,
+            duration: duration || this._sm.tabs.schedules.draft.irrigationDuration,
         });
     }
     async _removeIrrigationTime(time) {
@@ -20200,12 +20803,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._addingDrainTime = undefined;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await addDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
                 time: formattedTime,
-                duration: duration || this._drainDuration,
+                duration: duration || this._sm.tabs.schedules.draft.drainDuration,
             });
         }
         catch (e) {
@@ -20230,41 +20833,46 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._addingIrrigationTime = {
+        this._sm = transition(this._sm, {
+            type: 'BEGIN_ADD_IRRIGATION',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-            duration: this._irrigationDuration,
-        };
+            duration: this._sm.tabs.schedules.draft.irrigationDuration,
+        });
     }
     _startAddingDrainTime(x, width) {
         const pct = Math.max(0, Math.min(1, x / width));
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._addingDrainTime = {
-            time: `${h.toString().padStart(2, '00')}:${m.toString().padStart(2, '00')}`,
-            duration: this._drainDuration,
-        };
+        this._sm = transition(this._sm, {
+            type: 'BEGIN_ADD_DRAIN',
+            time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
+            duration: this._sm.tabs.schedules.draft.drainDuration,
+        });
     }
     _startEditingIrrigationTime(timeStr, duration) {
-        this._editingIrrigationTime = {
+        this._sm = transition(this._sm, {
+            type: 'BEGIN_EDIT_IRRIGATION',
             originalTime: timeStr,
             originalDuration: duration,
             time: timeStr.substring(0, 5),
             duration,
-        };
+        });
     }
     _startEditingDrainTime(timeStr, duration) {
-        this._editingDrainTime = {
+        this._sm = transition(this._sm, {
+            type: 'BEGIN_EDIT_DRAIN',
             originalTime: timeStr,
             originalDuration: duration,
             time: timeStr.substring(0, 5),
             duration,
-        };
+        });
     }
     async _saveEditedIrrigationTime() {
-        if (!this._editingIrrigationTime || !this.device?.deviceId || !this.store)
+        const sub = this._sm.tabs.schedules.sub;
+        if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store)
             return;
-        const { originalTime, time, duration } = this._editingIrrigationTime;
+        const { originalTime, time, duration } = sub;
         const formatted = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
         if (originalTime !== formatted) {
             const existing = this.device.irrigationConfig?.irrigationTimes || [];
@@ -20273,14 +20881,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._editingIrrigationTime = undefined;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
         await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
         await addIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: formatted, duration });
     }
     async _saveEditedDrainTime() {
-        if (!this._editingDrainTime || !this.device?.deviceId || !this.store)
+        const sub = this._sm.tabs.schedules.sub;
+        if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store)
             return;
-        const { originalTime, time, duration } = this._editingDrainTime;
+        const { originalTime, time, duration } = sub;
         const formatted = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
         if (originalTime !== formatted) {
             const existing = this.device.irrigationConfig?.drainTimes || [];
@@ -20289,15 +20898,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._editingDrainTime = undefined;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
         await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
         await addDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: formatted, duration });
     }
     async _deleteIrrigationTimeFromEdit() {
-        if (!this._editingIrrigationTime || !this.device?.deviceId || !this.store)
+        const sub = this._sm.tabs.schedules.sub;
+        if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store)
             return;
-        const { originalTime } = this._editingIrrigationTime;
-        this._editingIrrigationTime = undefined;
+        const { originalTime } = sub;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
         }
@@ -20306,10 +20916,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     async _deleteDrainTimeFromEdit() {
-        if (!this._editingDrainTime || !this.device?.deviceId || !this.store)
+        const sub = this._sm.tabs.schedules.sub;
+        if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store)
             return;
-        const { originalTime } = this._editingDrainTime;
-        this._editingDrainTime = undefined;
+        const { originalTime } = sub;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time: originalTime });
         }
@@ -20318,17 +20929,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _close() {
-        this._editingIrrigationTime = undefined;
-        this._editingDrainTime = undefined;
-        this._errorToast = undefined;
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition(this._sm, { type: 'SET_TOAST', message: undefined });
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _showErrorToast(message) {
-        this._errorToast = message;
-        setTimeout(() => { this._errorToast = undefined; }, 5000);
+        this._sm = transition(this._sm, { type: 'SET_TOAST', message });
+        setTimeout(() => { this._sm = transition(this._sm, { type: 'SET_TOAST', message: undefined }); }, 5000);
     }
     _updateStrategyField(field, value) {
-        this._strategy = { ...this._strategy, [field]: value };
+        this._sm = transition(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -20349,24 +20959,25 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _logDrainReadingNow() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        if (this._drainLogFeedEc <= 0 || this._drainLogDrainEc <= 0) {
+        const d = this._sm.tabs.drain_ec.draft;
+        if (d.logFeedEc <= 0 || d.logDrainEc <= 0) {
             this._showErrorToast('Feed EC and Drain EC must be > 0');
             return;
         }
-        this._drainLogging = true;
+        this._sm = transition(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
         try {
             await this._dataService.logDrainReading(this.device.deviceId, {
-                feedEc: this._drainLogFeedEc,
-                drainEc: this._drainLogDrainEc,
-                feedVolumeMl: this._drainLogFeedVolume || undefined,
-                drainVolumeMl: this._drainLogDrainVolume || undefined,
+                feedEc: d.logFeedEc,
+                drainEc: d.logDrainEc,
+                feedVolumeMl: d.logFeedVolume || undefined,
+                drainVolumeMl: d.logDrainVolume || undefined,
             });
         }
         catch (e) {
             this._showErrorToast('Failed to log drain reading');
         }
         finally {
-            this._drainLogging = false;
+            this._sm = transition(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
         }
     }
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -20414,7 +21025,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             { id: 'ec_targets', label: 'EC Targets', group: 'Telemetry' },
         ];
         const visibleNav = NAV.filter((n) => visible.includes(n.id));
-        const currentLabel = visibleNav.find((n) => n.id === this._activeTab)?.label ?? '';
+        const currentLabel = visibleNav.find((n) => n.id === this._sm.activeTab)?.label ?? '';
         return x `
       <gs-dialog
         .open=${true}
@@ -20472,9 +21083,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               <button class="md3-button text" @click=${this._close}>Close</button>
               <button
                 class="md3-button tonal"
-                ?disabled=${this._runNowSaving}
+                ?disabled=${this._sm.status.kind === 'run-now-saving'}
                 @click=${this._handleRunNow}
-              >${this._runNowSaving ? 'Starting…' : 'Run Now'}</button>
+              >${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : 'Run Now'}</button>
               <button
                 class="md3-button primary btn-save-all"
                 style="background: ${dialogColor};"
@@ -20483,11 +21094,30 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </div>
           </div>
 
-          ${this._errorToast ? x `
+          ${this._sm.toast ? x `
             <div class="toast-notification error">
-              <span class="toast-message">${this._errorToast}</span>
+              <span class="toast-message">${this._sm.toast}</span>
             </div>
           ` : ''}
+
+          <!-- Discard-changes confirmation -->
+          ${this._sm.status.kind === 'confirm-discard' ? x `
+            <gs-dialog
+              .open=${true}
+              heading="Discard Changes?"
+              .iconPath=${mdiAlert}
+              stageColor="var(--warning-color, #ff9800)"
+              @close=${() => { this._sm = transition(this._sm, { type: 'CANCEL_TAB_SWITCH' }); }}
+            >
+              <div style="padding:20px;">
+                <p style="margin:0 0 12px 0;">You have unsaved changes on this tab. Switch anyway and lose them?</p>
+              </div>
+              <div class="button-group" style="padding:16px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid rgba(255,255,255,0.1);">
+                <button class="md3-button tonal" @click=${() => { this._sm = transition(this._sm, { type: 'CANCEL_TAB_SWITCH' }); }}>Stay</button>
+                <button class="md3-button primary" @click=${() => { this._sm = discardAndSwitch(this._sm, this.device); }}>Discard &amp; Switch</button>
+              </div>
+            </gs-dialog>
+          ` : E}
         </div>
       </gs-dialog>
     `;
@@ -20501,9 +21131,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             return x `
           ${showCap ? x `<div class="v1-rail-caps">${item.group}</div>` : E}
           <div
-            class="v1-nav-item ${this._activeTab === item.id ? 'active' : ''}"
+            class="v1-nav-item ${this._sm.activeTab === item.id ? 'active' : ''}"
             data-tab="${item.id}"
-            @click=${() => { this._activeTab = item.id; }}
+            @click=${() => { this._sm = requestTabSwitch(this._sm, item.id, this.device); }}
           >
             <span style="flex:1;">${item.label}</span>
             ${item.badge != null ? x `<span class="nav-badge">${item.badge}</span>` : E}
@@ -20513,7 +21143,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     `;
     }
     _renderActiveTab(color) {
-        switch (this._activeTab) {
+        switch (this._sm.activeTab) {
             case 'schedules': return this._renderSchedulesTab(color);
             case 'steering': return this._renderSteeringTab(color);
             case 'config': return this._renderConfigSection();
@@ -20526,7 +21156,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     // ─── Schedules tab ────────────────────────────────────────────────────────
     _computeCropSteeringCycle() {
-        const s = this._strategy;
+        const s = this._sm.tabs.steering.draft;
         if (!s.lightsOnTime || !s.shotIntervalMinutes || !s.shotDurationSeconds)
             return [];
         const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
@@ -20553,7 +21183,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
     _computePhases() {
-        const s = this._strategy;
+        const s = this._sm.tabs.steering.draft;
         if (!s.lightsOnTime)
             return null;
         const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
@@ -20597,14 +21227,15 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const viewStart = (lightsOnMin - 120 + 1440) % 1440;
         const pctAt = (m) => ((m % 1440 - viewStart + 1440) % 1440) / day * 100;
         // VWC sparkline — computed in view-offset space to avoid midnight wrap artifacts
-        const target = this._strategy.targetVwcPercent ?? 45;
-        const dryback = this._strategy.maintenanceDrybackPercent ?? 3;
+        const steeringDraft = this._sm.tabs.steering.draft;
+        const target = steeringDraft.targetVwcPercent ?? 45;
+        const dryback = steeringDraft.maintenanceDrybackPercent ?? 3;
         const fc = target + 7;
         const base = fc - dryback - 5;
         const lightsOnOffset = 120;
         const lightsOffOffset = lightsOnOffset + lightHours * 60;
-        const p1EndOffset = lightsOnOffset + (this._strategy.p0DurationMinutes ?? 60);
-        const p3StartOffset = Math.max(p1EndOffset, lightsOffOffset - (this._strategy.p2StopBeforeLightsOffMinutes ?? 120));
+        const p1EndOffset = lightsOnOffset + (steeringDraft.p0DurationMinutes ?? 60);
+        const p3StartOffset = Math.max(p1EndOffset, lightsOffOffset - (steeringDraft.p2StopBeforeLightsOffMinutes ?? 120));
         const vwcPts = [];
         for (let offset = 0; offset <= day; offset += 8) {
             let v;
@@ -20772,7 +21403,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _renderSchedulesTab(color) {
         const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
-        const isCropSteering = !!this._strategy.enabled;
+        const schedulesDraft = this._sm.tabs.schedules.draft;
+        const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
         return x `
       ${isCropSteering ? x `
         <div class="info-banner banner-cs">
@@ -20784,16 +21416,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             <a
               href="#"
               style="color:#4CAF50;margin-left:4px;"
-              @click=${(e) => { e.preventDefault(); this._activeTab = 'steering'; }}
+              @click=${(e) => { e.preventDefault(); this._sm = requestTabSwitch(this._sm, 'steering', this.device); }}
             >Open Crop Steering →</a>
           </div>
         </div>
         ${this._renderCropSteeringSchedule(color)}
       ` : x `
-        ${this._renderScheduleSection('Irrigation Schedule', this.device?.irrigationConfig?.irrigationTimes || [], this._irrigationDuration, 'irrigation', color)}
+        ${this._renderScheduleSection('Irrigation Schedule', this.device?.irrigationConfig?.irrigationTimes || [], schedulesDraft.irrigationDuration, 'irrigation', color)}
       `}
 
-      ${this._renderScheduleSection('Drain Schedule', drainTimes, this._drainDuration, 'drain', '#FF9800')}
+      ${this._renderScheduleSection('Drain Schedule', drainTimes, schedulesDraft.drainDuration, 'drain', '#FF9800')}
 
       ${!isCropSteering ? x `
         <div class="info-banner nudge-card">
@@ -20805,7 +21437,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             <a
               href="#"
               style="color:var(--stage-color,${color});margin-left:4px;"
-              @click=${(e) => { e.preventDefault(); this._activeTab = 'steering'; }}
+              @click=${(e) => { e.preventDefault(); this._sm = requestTabSwitch(this._sm, 'steering', this.device); }}
             >Open Crop Steering →</a>
           </div>
         </div>
@@ -20814,8 +21446,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _renderScheduleSection(title, times, defaultDuration, type, color) {
         const nowMinutes = this._getNowMinutes();
-        const addingTime = type === 'irrigation' ? this._addingIrrigationTime : this._addingDrainTime;
-        const editingTime = type === 'irrigation' ? this._editingIrrigationTime : this._editingDrainTime;
+        const schedulesSub = this._sm.tabs.schedules.sub;
+        const addingTime = type === 'irrigation' && schedulesSub.kind === 'adding-irrigation' ? schedulesSub
+            : type === 'drain' && schedulesSub.kind === 'adding-drain' ? schedulesSub
+                : undefined;
+        const editingTime = type === 'irrigation' && schedulesSub.kind === 'editing-irrigation' ? schedulesSub
+            : type === 'drain' && schedulesSub.kind === 'editing-drain' ? schedulesSub
+                : undefined;
         const chipClass = type === 'irrigation' ? 'irrig-chip' : 'drain-chip';
         const validTimes = times.filter((t) => t && (t.time || t.start_time));
         return x `
@@ -20951,10 +21588,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 .value=${addingTime.time}
                 @change=${(e) => {
             const val = e.target.value || e.detail;
-            if (type === 'irrigation' && this._addingIrrigationTime)
-                this._addingIrrigationTime = { ...this._addingIrrigationTime, time: val };
-            if (type === 'drain' && this._addingDrainTime)
-                this._addingDrainTime = { ...this._addingDrainTime, time: val };
+            if (type === 'irrigation')
+                this._sm = transition(this._sm, { type: 'UPDATE_ADD_IRRIGATION', time: val });
+            else
+                this._sm = transition(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
         }}
               ></md3-text-input>
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
@@ -20974,10 +21611,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 @change=${(e) => {
             const val = parseInt(e.detail);
             if (!isNaN(val)) {
-                if (type === 'irrigation' && this._addingIrrigationTime)
-                    this._addingIrrigationTime = { ...this._addingIrrigationTime, duration: val };
-                if (type === 'drain' && this._addingDrainTime)
-                    this._addingDrainTime = { ...this._addingDrainTime, duration: val };
+                if (type === 'irrigation')
+                    this._sm = transition(this._sm, { type: 'UPDATE_ADD_IRRIGATION', duration: val });
+                else
+                    this._sm = transition(this._sm, { type: 'UPDATE_ADD_DRAIN', duration: val });
             }
         }}
               ></md3-number-input>
@@ -21013,10 +21650,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 .value=${editingTime.time}
                 @change=${(e) => {
             const val = e.target.value || e.detail;
-            if (type === 'irrigation' && this._editingIrrigationTime)
-                this._editingIrrigationTime = { ...this._editingIrrigationTime, time: val };
-            if (type === 'drain' && this._editingDrainTime)
-                this._editingDrainTime = { ...this._editingDrainTime, time: val };
+            if (type === 'irrigation')
+                this._sm = transition(this._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: val });
+            else
+                this._sm = transition(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
         }}
               ></md3-text-input>
               <div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);">
@@ -21036,10 +21673,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 @change=${(e) => {
             const val = parseInt(e.detail);
             if (!isNaN(val)) {
-                if (type === 'irrigation' && this._editingIrrigationTime)
-                    this._editingIrrigationTime = { ...this._editingIrrigationTime, duration: val };
-                if (type === 'drain' && this._editingDrainTime)
-                    this._editingDrainTime = { ...this._editingDrainTime, duration: val };
+                if (type === 'irrigation')
+                    this._sm = transition(this._sm, { type: 'UPDATE_EDIT_IRRIGATION', duration: val });
+                else
+                    this._sm = transition(this._sm, { type: 'UPDATE_EDIT_DRAIN', duration: val });
             }
         }}
               ></md3-number-input>
@@ -21066,42 +21703,37 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _openAddTimeDialog(type) {
         if (type === 'irrigation') {
-            this._addingIrrigationTime = { time: '12:00', duration: this._irrigationDuration };
+            this._sm = transition(this._sm, {
+                type: 'BEGIN_ADD_IRRIGATION',
+                time: '12:00',
+                duration: this._sm.tabs.schedules.draft.irrigationDuration,
+            });
         }
         else {
-            this._addingDrainTime = { time: '12:00', duration: this._drainDuration };
+            this._sm = transition(this._sm, {
+                type: 'BEGIN_ADD_DRAIN',
+                time: '12:00',
+                duration: this._sm.tabs.schedules.draft.drainDuration,
+            });
         }
     }
-    _cancelAddTime(type) {
-        if (type === 'irrigation')
-            this._addingIrrigationTime = undefined;
-        else
-            this._addingDrainTime = undefined;
+    _cancelAddTime(_type) {
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
     }
-    _cancelEditTime(type) {
-        if (type === 'irrigation')
-            this._editingIrrigationTime = undefined;
-        else
-            this._editingDrainTime = undefined;
+    _cancelEditTime(_type) {
+        this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
     }
     _handlePhaseCardClick(phaseId) {
-        if (this._activePhase === phaseId) {
+        if (this._sm.tabs.steering.phase === phaseId)
             return;
-        }
-        this._pendingPhase = phaseId;
-        this._phaseConfirmOpen = true;
+        this._sm = transition(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
     }
     _confirmPhaseChange() {
-        if (this._pendingPhase) {
-            this._activePhase = this._pendingPhase;
-        }
-        this._pendingPhase = undefined;
-        this._phaseConfirmOpen = false;
+        this._sm = transition(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
         this._saveSettings();
     }
     _cancelPhaseChange() {
-        this._pendingPhase = undefined;
-        this._phaseConfirmOpen = false;
+        this._sm = transition(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     _renderSteeringTab(_color) {
@@ -21123,7 +21755,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             { id: 'p3', label: 'P3', name: 'Dryback', desc: 'Final stretch of the photoperiod — controlled substrate dry.' },
         ].map((p) => x `
             <div
-              class="phase-card ${this._activePhase === p.id ? 'active' : ''}"
+              class="phase-card ${this._sm.tabs.steering.phase === p.id ? 'active' : ''}"
               @click=${() => this._handlePhaseCardClick(p.id)}
             >
               <div class="phase-num">Phase · ${p.label}</div>
@@ -21146,7 +21778,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <span>Enable VWC Steering</span>
           <md3-switch
             data-field="enabled"
-            .checked=${this._strategy.enabled}
+            .checked=${this._sm.tabs.steering.draft.enabled}
             @change=${(e) => this._updateStrategyField('enabled', e.target.checked)}
           ></md3-switch>
         </div>
@@ -21156,7 +21788,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             <span>Auto Track from Light Sensor</span>
             <md3-switch
               data-field="autoLightTracking"
-              .checked=${!!this._strategy.autoLightTracking}
+              .checked=${!!this._sm.tabs.steering.draft.autoLightTracking}
               @change=${(e) => this._updateStrategyField('autoLightTracking', e.target.checked)}
             ></md3-switch>
           </div>
@@ -21168,12 +21800,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <md3-number-input
             label="Target VWC (%)"
-            .value=${this._strategy.targetVwcPercent}
+            .value=${this._sm.tabs.steering.draft.targetVwcPercent}
             @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
           ></md3-number-input>
           <md3-number-input
             label="Dryback (%)"
-            .value=${this._strategy.maintenanceDrybackPercent}
+            .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
             @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
@@ -21184,21 +21816,21 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               label="Lights On Time"
               type="time"
               data-scroll-target="lightsOnTime"
-              .value=${this._strategy.lightsOnTime}
+              .value=${this._sm.tabs.steering.draft.lightsOnTime}
               @change=${(e) => this._updateStrategyField('lightsOnTime', e.target.value || e.detail)}
             ></md3-text-input>
-            ${this._strategy.detectedLightsOnTime ? x `
-              <span class="auto-lights-badge">auto: ${this._strategy.detectedLightsOnTime}</span>
+            ${this._sm.tabs.steering.draft.detectedLightsOnTime ? x `
+              <span class="auto-lights-badge">auto: ${this._sm.tabs.steering.draft.detectedLightsOnTime}</span>
             ` : ''}
           </div>
           <md3-number-input
             label="P0 Duration (min)"
-            .value=${this._strategy.p0DurationMinutes}
+            .value=${this._sm.tabs.steering.draft.p0DurationMinutes}
             @change=${(e) => this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
           ></md3-number-input>
           <md3-number-input
             label="P2 Stop Buffer (min)"
-            .value=${this._strategy.p2StopBeforeLightsOffMinutes}
+            .value=${this._sm.tabs.steering.draft.p2StopBeforeLightsOffMinutes}
             @change=${(e) => this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
@@ -21206,12 +21838,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <md3-number-input
             label="Shot Duration (sec)"
-            .value=${this._strategy.shotDurationSeconds}
+            .value=${this._sm.tabs.steering.draft.shotDurationSeconds}
             @change=${(e) => this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
           ></md3-number-input>
           <md3-number-input
             label="Shot Interval (min)"
-            .value=${this._strategy.shotIntervalMinutes}
+            .value=${this._sm.tabs.steering.draft.shotIntervalMinutes}
             @change=${(e) => this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
           ></md3-number-input>
         </div>
@@ -21230,8 +21862,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </div>
             <md3-switch
               data-field="autoAdvanceP1ToP2"
-              .checked=${this._autoAdvanceP1ToP2}
-              @change=${(e) => { this._autoAdvanceP1ToP2 = e.target.checked; }}
+              .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
+              @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { autoAdvanceP1ToP2: e.target.checked } }); }}
             ></md3-switch>
           </div>
         </div>
@@ -21243,8 +21875,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </div>
             <md3-switch
               data-field="autoAdvanceP2ToP3"
-              .checked=${this._autoAdvanceP2ToP3}
-              @change=${(e) => { this._autoAdvanceP2ToP3 = e.target.checked; }}
+              .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
+              @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { autoAdvanceP2ToP3: e.target.checked } }); }}
             ></md3-switch>
           </div>
         </div>
@@ -21256,24 +21888,24 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </div>
             <md3-switch
               data-field="haltOnRunoffEc"
-              .checked=${this._haltOnRunoffEcThreshold !== null}
+              .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
               @change=${(e) => {
-            this._haltOnRunoffEcThreshold = e.target.checked ? 4.0 : null;
+            this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null } });
         }}
             ></md3-switch>
           </div>
-          ${this._haltOnRunoffEcThreshold !== null ? x `
+          ${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null ? x `
             <div style="margin-top:10px;">
               <md3-number-input
                 data-field="haltOnRunoffEcValue"
                 label="EC Threshold"
                 min="0.1"
                 step="0.1"
-                .value=${String(this._haltOnRunoffEcThreshold)}
+                .value=${String(this._sm.tabs.config.draft.haltOnRunoffEcThreshold)}
                 @change=${(e) => {
             const v = parseFloat(e.detail ?? e.target.value);
             if (!isNaN(v))
-                this._haltOnRunoffEcThreshold = v;
+                this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { haltOnRunoffEcThreshold: v } });
         }}
               ></md3-number-input>
             </div>
@@ -21283,7 +21915,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
       <!-- Phase trigger confirmation dialog -->
       <gs-dialog
-        .open=${this._phaseConfirmOpen}
+        .open=${this._sm.tabs.steering.sub.kind === 'confirm-phase'}
         heading="Confirm Phase Transition"
         .iconPath=${mdiAlert}
         stageColor="var(--warning-color, #ff9800)"
@@ -21291,7 +21923,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
       >
         <div style="padding: 20px;">
           <p style="margin: 0 0 12px 0;">
-            Are you sure you want to transition from <strong>${this._activePhase.toUpperCase()}</strong> to <strong>${this._pendingPhase?.toUpperCase() || ''}</strong>?
+            Are you sure you want to transition from <strong>${this._sm.tabs.steering.phase.toUpperCase()}</strong> to <strong>${this._sm.tabs.steering.sub.kind === 'confirm-phase' ? this._sm.tabs.steering.sub.pending.toUpperCase() : ''}</strong>?
           </p>
           <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
             Manually shifting phases overrides the current schedule instantly. This is a severe change that will disrupt timing and dosing parameters.
@@ -21310,8 +21942,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
       <div class="detail-card">
         <div class="section-header"><h3>Pump Configuration</h3></div>
         <div class="section-content">
-          ${this._renderEntitySelect('Irrigation Pump', this._irrigationPumpEntity, ['switch', 'input_boolean'], (e) => { this._irrigationPumpEntity = e.target.value; })}
-          ${this._renderEntitySelect('Drain Pump (Optional)', this._drainPumpEntity, ['switch', 'input_boolean'], (e) => { this._drainPumpEntity = e.target.value; })}
+          ${this._renderEntitySelect('Irrigation Pump', this._sm.tabs.schedules.draft.irrigationPumpEntity, ['switch', 'input_boolean'], (e) => { this._sm = transition(this._sm, { type: 'UPDATE_SCHEDULES_DRAFT', partial: { irrigationPumpEntity: e.target.value } }); })}
+          ${this._renderEntitySelect('Drain Pump (Optional)', this._sm.tabs.schedules.draft.drainPumpEntity, ['switch', 'input_boolean'], (e) => { this._sm = transition(this._sm, { type: 'UPDATE_SCHEDULES_DRAFT', partial: { drainPumpEntity: e.target.value } }); })}
         </div>
       </div>
 
@@ -21327,11 +21959,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               class="md3-input"
               type="number"
               min="0" max="100" step="1"
-              .value=${this._soilTriggerPercent != null ? String(this._soilTriggerPercent) : ''}
+              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null ? String(this._sm.tabs.config.draft.soilTriggerPercent) : ''}
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._soilTriggerPercent = v ? parseFloat(v) : null;
+            this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { soilTriggerPercent: v ? parseFloat(v) : null } });
         }}
             />
           </div>
@@ -21341,11 +21973,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               class="md3-input"
               type="number"
               min="0" step="0.1"
-              .value=${this._dailyVolumeCapLiters != null ? String(this._dailyVolumeCapLiters) : ''}
+              .value=${this._sm.tabs.config.draft.dailyVolumeCapLiters != null ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters) : ''}
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._dailyVolumeCapLiters = v ? parseFloat(v) : null;
+            this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null } });
         }}
             />
           </div>
@@ -21355,11 +21987,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               class="md3-input"
               type="number"
               min="0" step="1"
-              .value=${this._maxCyclesPerDay != null ? String(this._maxCyclesPerDay) : ''}
+              .value=${this._sm.tabs.config.draft.maxCyclesPerDay != null ? String(this._sm.tabs.config.draft.maxCyclesPerDay) : ''}
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._maxCyclesPerDay = v ? parseInt(v, 10) : null;
+            this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null } });
         }}
             />
           </div>
@@ -21372,20 +22004,20 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             {
                 label: 'Skip During Dark Period',
                 desc: 'No cycles between lights-off and lights-on',
-                get: () => this._skipDuringDark,
-                set: (v) => { this._skipDuringDark = v; },
+                get: () => this._sm.tabs.config.draft.skipDuringDark,
+                set: (v) => { this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { skipDuringDark: v } }); },
             },
             {
                 label: 'Pause on Tank Low',
                 desc: 'Halt cycles when any tank is below warning level',
-                get: () => this._pauseOnLowTank,
-                set: (v) => { this._pauseOnLowTank = v; },
+                get: () => this._sm.tabs.config.draft.pauseOnLowTank,
+                set: (v) => { this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { pauseOnLowTank: v } }); },
             },
             {
                 label: 'Log to Logbook',
                 desc: 'Record start, duration, and moisture delta per cycle',
-                get: () => this._logToLogbook,
-                set: (v) => { this._logToLogbook = v; },
+                get: () => this._sm.tabs.config.draft.logToLogbook,
+                set: (v) => { this._sm = transition(this._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { logToLogbook: v } }); },
             },
         ]).map((row) => x `
           <div class="stub-row" style="margin-bottom:8px;">
@@ -21405,11 +22037,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <h3 style="margin:0 0 14px;">Manual Override</h3>
         <div style="display:flex;align-items:center;gap:12px;">
           <button
-            class="action-btn${this._runNowSaving ? ' saving' : ''}"
-            ?disabled=${this._runNowSaving}
+            class="action-btn${this._sm.status.kind === 'run-now-saving' ? ' saving' : ''}"
+            ?disabled=${this._sm.status.kind === 'run-now-saving'}
             @click=${this._handleRunNow}
           >
-            ${this._runNowSaving ? 'Starting…' : '▶ Run Now'}
+            ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : '▶ Run Now'}
           </button>
           <span style="font-size:12px;opacity:0.55;">
             Triggers one irrigation cycle immediately, bypassing the schedule.
@@ -21702,11 +22334,11 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       ` : E}
 
-      ${this._stageAggregates && Object.keys(this._stageAggregates).length > 0 ? x `
+      ${this._sm.tabs.water_analytics.stageAggregates && Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0 ? x `
         <div class="detail-card">
           <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            ${Object.entries(this._stageAggregates)
+            ${Object.entries(this._sm.tabs.water_analytics.stageAggregates)
             .sort(([, a], [, b]) => b - a)
             .map(([stage, liters]) => x `
                 <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;">
@@ -21718,7 +22350,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       ` : E}
 
-      ${this._drainPumpEntity ? x `
+      ${this._sm.tabs.schedules.draft.drainPumpEntity ? x `
         <div class="detail-card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3 style="margin:0;">Volume History</h3>
@@ -21790,12 +22422,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const recent = readings.slice(-20).reverse();
         const lastReading = recent[0];
         const lastDelta = lastReading ? (lastReading.drainEc - lastReading.feedEc) : null;
-        const isOverThreshold = lastDelta !== null && this._drainEcEnabled && lastDelta > this._drainEcMaxDelta;
-        const statusColor = !this._drainEcEnabled ? 'rgba(255,255,255,0.3)'
+        const drainDraft = this._sm.tabs.drain_ec.draft;
+        const isOverThreshold = lastDelta !== null && drainDraft.enabled && lastDelta > drainDraft.maxEcDelta;
+        const statusColor = !drainDraft.enabled ? 'rgba(255,255,255,0.3)'
             : isOverThreshold ? '#f44336'
-                : lastDelta !== null && lastDelta > this._drainEcMaxDelta * 0.7 ? '#FF9800'
+                : lastDelta !== null && lastDelta > drainDraft.maxEcDelta * 0.7 ? '#FF9800'
                     : '#4caf50';
-        const statusText = !this._drainEcEnabled ? 'Monitoring disabled'
+        const statusText = !drainDraft.enabled ? 'Monitoring disabled'
             : lastDelta === null ? 'No readings yet'
                 : isOverThreshold ? `Salt buildup alert — Δ${lastDelta.toFixed(2)} mS/cm above threshold`
                     : `EC OK — Δ${lastDelta.toFixed(2)} mS/cm`;
@@ -21818,7 +22451,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
       <div class="detail-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <h3 style="margin:0;">Monitoring Configuration</h3>
-          ${this._drainSaving ? x `<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>` : E}
+          ${this._sm.tabs.drain_ec.sub.kind === 'saving' ? x `<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>` : E}
         </div>
         <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
           Alert when drain EC exceeds feed EC by more than the max delta.
@@ -21826,24 +22459,24 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:16px;">
           <span>Enable EC drain monitoring</span>
           <md3-switch
-            .checked=${this._drainEcEnabled}
-            @change=${(e) => { this._drainEcEnabled = e.target.checked; }}
+            .checked=${drainDraft.enabled}
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { enabled: e.target.checked } }); }}
           ></md3-switch>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <md3-number-input
             label="Max EC Delta (mS/cm)"
-            .value=${this._drainEcMaxDelta}
+            .value=${drainDraft.maxEcDelta}
             step="0.1" min="0.1"
-            ?disabled=${!this._drainEcEnabled}
-            @change=${(e) => { this._drainEcMaxDelta = parseFloat(e.detail) || 1.0; }}
+            ?disabled=${!drainDraft.enabled}
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { maxEcDelta: parseFloat(e.detail) || 1.0 } }); }}
           ></md3-number-input>
           <md3-number-input
             label="Target Runoff (%)"
-            .value=${this._drainEcTargetRunoffPercent}
+            .value=${drainDraft.targetRunoffPercent}
             min="5" max="50" step="5"
-            ?disabled=${!this._drainEcEnabled}
-            @change=${(e) => { this._drainEcTargetRunoffPercent = parseInt(e.detail) || 20; }}
+            ?disabled=${!drainDraft.enabled}
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { targetRunoffPercent: parseInt(e.detail) || 20 } }); }}
           ></md3-number-input>
         </div>
       </div>
@@ -21854,22 +22487,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           Manually log feed EC and drain EC values measured with a handheld meter. Volumes are optional.
         </p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-          <md3-number-input label="Feed EC (mS/cm)" .value=${this._drainLogFeedEc} step="0.1" min="0"
-            @change=${(e) => { this._drainLogFeedEc = parseFloat(e.detail) || 0; }}></md3-number-input>
-          <md3-number-input label="Drain EC (mS/cm)" .value=${this._drainLogDrainEc} step="0.1" min="0"
-            @change=${(e) => { this._drainLogDrainEc = parseFloat(e.detail) || 0; }}></md3-number-input>
-          <md3-number-input label="Feed Volume (mL) — optional" .value=${this._drainLogFeedVolume} step="100" min="0"
-            @change=${(e) => { this._drainLogFeedVolume = parseInt(e.detail) || 0; }}></md3-number-input>
-          <md3-number-input label="Drain Volume (mL) — optional" .value=${this._drainLogDrainVolume} step="100" min="0"
-            @change=${(e) => { this._drainLogDrainVolume = parseInt(e.detail) || 0; }}></md3-number-input>
+          <md3-number-input label="Feed EC (mS/cm)" .value=${drainDraft.logFeedEc} step="0.1" min="0"
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedEc: parseFloat(e.detail) || 0 } }); }}></md3-number-input>
+          <md3-number-input label="Drain EC (mS/cm)" .value=${drainDraft.logDrainEc} step="0.1" min="0"
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logDrainEc: parseFloat(e.detail) || 0 } }); }}></md3-number-input>
+          <md3-number-input label="Feed Volume (mL) — optional" .value=${drainDraft.logFeedVolume} step="100" min="0"
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedVolume: parseInt(e.detail) || 0 } }); }}></md3-number-input>
+          <md3-number-input label="Drain Volume (mL) — optional" .value=${drainDraft.logDrainVolume} step="100" min="0"
+            @change=${(e) => { this._sm = transition(this._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logDrainVolume: parseInt(e.detail) || 0 } }); }}></md3-number-input>
         </div>
-        ${this._drainLogFeedEc > 0 && this._drainLogDrainEc > 0 ? x `
+        ${drainDraft.logFeedEc > 0 && drainDraft.logDrainEc > 0 ? x `
           <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:0.9rem;">
-            <span>EC Delta: <strong style="color:${(this._drainLogDrainEc - this._drainLogFeedEc) > this._drainEcMaxDelta ? '#f44336' : '#4caf50'}">
-              Δ${(this._drainLogDrainEc - this._drainLogFeedEc).toFixed(2)} mS/cm
+            <span>EC Delta: <strong style="color:${(drainDraft.logDrainEc - drainDraft.logFeedEc) > drainDraft.maxEcDelta ? '#f44336' : '#4caf50'}">
+              Δ${(drainDraft.logDrainEc - drainDraft.logFeedEc).toFixed(2)} mS/cm
             </strong></span>
-            ${this._drainLogFeedVolume > 0 && this._drainLogDrainVolume > 0 ? x `
-              <span>Runoff: <strong>${((this._drainLogDrainVolume / this._drainLogFeedVolume) * 100).toFixed(1)}%</strong></span>
+            ${drainDraft.logFeedVolume > 0 && drainDraft.logDrainVolume > 0 ? x `
+              <span>Runoff: <strong>${((drainDraft.logDrainVolume / drainDraft.logFeedVolume) * 100).toFixed(1)}%</strong></span>
             ` : E}
           </div>
         ` : E}
@@ -21877,8 +22510,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           class="md3-button primary"
           style="background:#FF9800;"
           @click=${this._logDrainReadingNow}
-          ?disabled=${this._drainLogging || this._drainLogFeedEc <= 0 || this._drainLogDrainEc <= 0}
-        >${this._drainLogging ? 'Logging…' : 'Log Reading'}</button>
+          ?disabled=${this._sm.tabs.drain_ec.sub.kind === 'logging' || drainDraft.logFeedEc <= 0 || drainDraft.logDrainEc <= 0}
+        >${this._sm.tabs.drain_ec.sub.kind === 'logging' ? 'Logging…' : 'Log Reading'}</button>
       </div>
 
       <div class="detail-card">
@@ -21903,7 +22536,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               <tbody>
                 ${recent.map((r) => {
             const delta = r.drainEc - r.feedEc;
-            const overThreshold = this._drainEcEnabled && delta > this._drainEcMaxDelta;
+            const overThreshold = drainDraft.enabled && delta > drainDraft.maxEcDelta;
             const runoffPct = r.feedVolumeMl && r.drainVolumeMl
                 ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
                 : '—';
@@ -21912,7 +22545,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       <td style="padding:6px 8px;opacity:0.7;">${new Date(r.timestamp).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                       <td style="text-align:right;padding:6px 8px;">${r.feedEc.toFixed(2)}</td>
                       <td style="text-align:right;padding:6px 8px;">${r.drainEc.toFixed(2)}</td>
-                      <td style="text-align:right;padding:6px 8px;color:${overThreshold ? '#f44336' : delta > this._drainEcMaxDelta * 0.7 ? '#FF9800' : '#4caf50'};font-weight:500;">
+                      <td style="text-align:right;padding:6px 8px;color:${overThreshold ? '#f44336' : delta > drainDraft.maxEcDelta * 0.7 ? '#FF9800' : '#4caf50'};font-weight:500;">
                         ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
                       </td>
                       <td style="text-align:right;padding:6px 8px;opacity:0.6;">${runoffPct}</td>
@@ -21952,7 +22585,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </tr>
           </thead>
           <tbody>
-            ${this._ecTargetRanges.map((range, idx) => x `
+            ${this._sm.tabs.ec_targets.draft.map((range, idx) => x `
               <tr class="ec-target-row" style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));">
                 <td style="padding:8px;">
                   <span class="ec-stage-label" style="font-weight:500;">${stageLabels[range.stage] ?? range.stage}</span>
@@ -21968,7 +22601,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     .value=${String(range.minEc)}
                     @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._ecTargetRanges = this._ecTargetRanges.map((r, i) => i === idx ? { ...r, minEc: val } : r);
+            this._sm = transition(this._sm, {
+                type: 'UPDATE_EC_TARGETS_DRAFT',
+                ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
+            });
         }}
                   />
                 </td>
@@ -21983,7 +22619,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     .value=${String(range.maxEc)}
                     @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._ecTargetRanges = this._ecTargetRanges.map((r, i) => i === idx ? { ...r, maxEc: val } : r);
+            this._sm = transition(this._sm, {
+                type: 'UPDATE_EC_TARGETS_DRAFT',
+                ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
+            });
         }}
                   />
                 </td>
@@ -22761,109 +23400,7 @@ __decorate([
 ], IrrigationDialog.prototype, "scrollToField", void 0);
 __decorate([
     r$3()
-], IrrigationDialog.prototype, "_irrigationPumpEntity", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainPumpEntity", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_irrigationDuration", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainDuration", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_addingIrrigationTime", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_addingDrainTime", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_editingIrrigationTime", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_editingDrainTime", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_errorToast", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_activeTab", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_activePhase", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_phaseConfirmOpen", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_pendingPhase", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainEcEnabled", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainEcMaxDelta", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainEcTargetRunoffPercent", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainLogFeedEc", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainLogDrainEc", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainLogFeedVolume", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainLogDrainVolume", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainSaving", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_drainLogging", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_ecTargetRanges", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_strategy", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_soilTriggerPercent", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_dailyVolumeCapLiters", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_maxCyclesPerDay", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_skipDuringDark", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_pauseOnLowTank", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_logToLogbook", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_autoAdvanceP1ToP2", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_autoAdvanceP2ToP3", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_haltOnRunoffEcThreshold", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_runNowSaving", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_stageAggregates", void 0);
+], IrrigationDialog.prototype, "_sm", void 0);
 IrrigationDialog = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);
