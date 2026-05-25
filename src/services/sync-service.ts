@@ -8,6 +8,9 @@ import {
   setDevices as setGridDevices,
 } from '../slices/grid';
 import { setDeviceSnapshot } from '../slices/device-state';
+import { setEnvSnapshot } from '../slices/environment';
+import { setPlants } from '../slices/plant';
+import { setIrrigationConfig, setTankLevels } from '../slices/irrigation';
 import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 
 /**
@@ -122,9 +125,20 @@ export class SyncService {
     // Update device-controlled entity snapshots and populate watched entities for next update cycle
     const hassStates = this.dataService.hass?.states ?? {};
     this._watchedEntities.clear();
+    const allPlants = devices.flatMap((d) => d.plants || []);
+    setPlants(allPlants);
     devices.forEach((d) => {
       // Device state snapshot (lights, fans, humidifiers, dehumidifiers)
       setDeviceSnapshot(d.deviceId, d, hassStates);
+
+      // Environment slice (hero chips: temperature, humidity, VPD, CO2)
+      if (d.name) setEnvSnapshot(d.deviceId, d, hassStates);
+
+      // Irrigation slice (tank level chip, next irrigation/drain chips)
+      if (d.irrigationConfig) {
+        setIrrigationConfig(d.deviceId, d.irrigationConfig);
+      }
+      setTankLevels(d.deviceId, d.environmentAttributes?.irrigationTanks ?? []);
 
       // Plants
       (d.plants || []).forEach((p) => {

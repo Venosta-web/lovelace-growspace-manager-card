@@ -9789,6 +9789,12 @@ const gridSlice = {
 // ---------------------------------------------------------------------------
 const plants$ = atom([]);
 // ---------------------------------------------------------------------------
+// Bootstrap write (called by SyncService when fresh data arrives)
+// ---------------------------------------------------------------------------
+function setPlants(plants) {
+    plants$.set(plants);
+}
+// ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
 /** Resolve the growspace_id for a plant by its plant_id from plants$. Returns '' if not found. */
@@ -49149,6 +49155,16 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
             tooltip: 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.',
         }, activeEnvGraphs, linkedGraphGroups));
     }
+    // Optimal conditions
+    if (envSnapshot?.optimalConditions != null) {
+        const { isOptimal, reasons } = envSnapshot.optimalConditions;
+        let optimalLabel = 'Optimal Conditions';
+        if (!isOptimal) {
+            optimalLabel =
+                reasons.length > 0 ? `Not Optimal: ${reasons.join(', ')}` : 'Not Optimal';
+        }
+        chips.push(_makeChip(MetricKey.OPTIMAL, isOptimal ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, { status: isOptimal ? 'optimal' : 'warning' }, activeEnvGraphs, linkedGraphGroups));
+    }
     return { hero, chips, dominant };
 }
 
@@ -49170,10 +49186,180 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
  * Action type, payload shapes, and zod schemas are private to this module.
  */
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+const UNAVAILABLE_STATES$1 = new Set(['unavailable', 'unknown']);
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+/** Convert device name to slug (e.g. "Tent 1" → "tent_1"). */
+function _slugify(text) {
+    return text
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^\w-]+/g, '')
+        .replace(/[_-]+/g, '_')
+        .replace(/^[_-]+/, '')
+        .replace(/[_-]+$/, '');
+}
+/** Resolve the slug used for entity ID construction. */
+function _resolveSlug(device) {
+    if (device.overviewEntityId) {
+        return device.overviewEntityId.replace('sensor.', '').replace(/_overview$/, '');
+    }
+    return _slugify(device.name);
+}
+/** Return the env entity ID for the device type. */
+function _envEntityId(slug, deviceType) {
+    if (deviceType === 'cure')
+        return 'binary_sensor.cure_optimal_curing';
+    if (deviceType === 'dry')
+        return 'binary_sensor.dry_optimal_drying';
+    return `binary_sensor.${slug}_optimal_conditions`;
+}
+/** Read a numeric attribute from an entity, returning null if absent or NaN. */
+function _numAttr(entity, key) {
+    if (!entity)
+        return null;
+    const val = entity.attributes[key];
+    if (val === undefined || val === null)
+        return null;
+    const n = Number(val);
+    return isNaN(n) ? null : n;
+}
+/** Parse a hass entity state as a float, returning null if unavailable/unknown/NaN. */
+function _parseState(entity) {
+    if (!entity)
+        return null;
+    if (UNAVAILABLE_STATES$1.has(entity.state))
+        return null;
+    const n = parseFloat(entity.state);
+    return isNaN(n) ? null : n;
+}
+/** Resolve VPD using the three-tier fallback chain. */
+function _resolveVpd(envEntity, device, slug, hassStates) {
+    // 1. From env entity attributes
+    const fromAttrs = _numAttr(envEntity, 'vpd');
+    if (fromAttrs !== null)
+        return fromAttrs;
+    // 2. From envAttrs.vpdSensor
+    const vpdSensorId = device.environmentAttributes?.vpdSensor;
+    if (vpdSensorId) {
+        const val = _parseState(hassStates[vpdSensorId]);
+        if (val !== null)
+            return val;
+    }
+    // 3a. Calculated VPD — name-slug ID
+    const calcNameSlug = _slugify(`${device.name} Calculated VPD`);
+    const calcNameId = `sensor.${calcNameSlug}`;
+    const fromNameSlug = _parseState(hassStates[calcNameId]);
+    if (fromNameSlug !== null)
+        return fromNameSlug;
+    // 3b. Calculated VPD — UUID-based legacy ID
+    const calcUuidId = `sensor.${device.deviceId}_calculated_vpd`;
+    const fromUuid = _parseState(hassStates[calcUuidId]);
+    if (fromUuid !== null)
+        return fromUuid;
+    return null;
+}
+/** Derive VPD status from overview entity or threshold comparison. */
+function _resolveVpdStatus(vpd, overviewEntity) {
+    // 1. Prefer the backend-computed status from the overview entity
+    const fromEntity = overviewEntity?.attributes?.vpd_status;
+    if (fromEntity && fromEntity !== 'unknown') {
+        const s = String(fromEntity);
+        if (s === 'optimal' || s === 'warning' || s === 'danger')
+            return s;
+    }
+    // 2. Derive from thresholds when vpd is known
+    if (vpd === null)
+        return null;
+    const targetMin = overviewEntity?.attributes?.vpd_target_min;
+    const targetMax = overviewEntity?.attributes?.vpd_target_max;
+    const dangerMin = overviewEntity?.attributes?.vpd_danger_min;
+    const dangerMax = overviewEntity?.attributes?.vpd_danger_max;
+    if (targetMin === undefined ||
+        targetMax === undefined ||
+        dangerMin === undefined ||
+        dangerMax === undefined) {
+        return null;
+    }
+    if (vpd < Number(dangerMin) || vpd > Number(dangerMax))
+        return 'danger';
+    if (vpd < Number(targetMin) || vpd > Number(targetMax))
+        return 'warning';
+    return 'optimal';
+}
+// ---------------------------------------------------------------------------
+// Pure computation (exported — used by HeaderMetrics and tests)
+// ---------------------------------------------------------------------------
+/**
+ * Derive a normalized EnvSnapshot for a growspace from the current hass states.
+ *
+ * This is the canonical place to read environmental sensor data from hass.states.
+ * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
+ * instead of calling this directly.
+ */
+function computeEnvSnapshot(device, hassStates) {
+    const slug = _resolveSlug(device);
+    const isSpecial = device.type === 'cure' || device.type === 'dry';
+    const envEntityId = _envEntityId(slug, device.type);
+    const envEntity = hassStates[envEntityId];
+    const overviewEntity = device.overviewEntityId
+        ? hassStates[device.overviewEntityId]
+        : undefined;
+    // Core readings
+    const temperature = _numAttr(envEntity, 'temperature');
+    const humidity = _numAttr(envEntity, 'humidity');
+    const vpd = _resolveVpd(envEntity, device, slug, hassStates);
+    const vpdStatus = _resolveVpdStatus(vpd, overviewEntity);
+    // co2 — absent for cure/dry spaces
+    const co2Raw = _numAttr(envEntity, 'co2');
+    const co2 = isSpecial ? null : co2Raw;
+    // Lights
+    const isLightsOnRaw = envEntity?.attributes?.is_lights_on;
+    const hasLightSensor = isLightsOnRaw !== undefined && isLightsOnRaw !== null;
+    const isLightsOn = hasLightSensor ? isLightsOnRaw === true : null;
+    // DLI
+    const dliEntityId = `sensor.${slug}_dli`;
+    const dli = _parseState(hassStates[dliEntityId]);
+    // Optimal conditions — envEntity IS the binary_sensor.${slug}_optimal_conditions entity
+    const optimalConditions = envEntity
+        ? {
+            isOptimal: envEntity.state === 'on',
+            reasons: Array.isArray(envEntity.attributes.reasons) ? envEntity.attributes.reasons : [],
+        }
+        : null;
+    return {
+        temperature,
+        humidity,
+        vpd,
+        vpdStatus,
+        co2,
+        isLightsOn,
+        hasLightSensor,
+        dli,
+        optimalConditions,
+    };
+}
+// ---------------------------------------------------------------------------
 // Atoms (public)
 // ---------------------------------------------------------------------------
 /** Per-growspace env snapshots — keyed by growspaceId. */
 const envSnapshots$ = atom(new Map());
+// ---------------------------------------------------------------------------
+// Bootstrap write (public)
+// ---------------------------------------------------------------------------
+/**
+ * Compute and store the EnvSnapshot for a growspace.
+ * Called by SyncService after each hass update.
+ */
+function setEnvSnapshot(growspaceId, device, hassStates) {
+    const snapshot = computeEnvSnapshot(device, hassStates);
+    const updated = new Map(envSnapshots$.get());
+    updated.set(growspaceId, snapshot);
+    envSnapshots$.set(updated);
+}
 
 /**
  * Irrigation slice — atoms and mutators for Irrigation domain data.
@@ -49213,6 +49399,19 @@ const envSnapshots$ = atom(new Map());
 // ---------------------------------------------------------------------------
 const irrigationConfigs$ = atom(new Map());
 const tankLevels$ = atom(new Map());
+// ---------------------------------------------------------------------------
+// Bootstrap writes (called by SyncService when fresh data arrives)
+// ---------------------------------------------------------------------------
+function setIrrigationConfig(growspaceId, config) {
+    const updated = new Map(irrigationConfigs$.get());
+    updated.set(growspaceId, config);
+    irrigationConfigs$.set(updated);
+}
+function setTankLevels(growspaceId, tanks) {
+    const updated = new Map(tankLevels$.get());
+    updated.set(growspaceId, tanks);
+    tankLevels$.set(updated);
+}
 
 function toDateString(value) {
     return value.slice(0, 10);
@@ -115107,9 +115306,19 @@ class SyncService {
         // Update device-controlled entity snapshots and populate watched entities for next update cycle
         const hassStates = this.dataService.hass?.states ?? {};
         this._watchedEntities.clear();
+        const allPlants = devices.flatMap((d) => d.plants || []);
+        setPlants(allPlants);
         devices.forEach((d) => {
             // Device state snapshot (lights, fans, humidifiers, dehumidifiers)
             setDeviceSnapshot(d.deviceId, d, hassStates);
+            // Environment slice (hero chips: temperature, humidity, VPD, CO2)
+            if (d.name)
+                setEnvSnapshot(d.deviceId, d, hassStates);
+            // Irrigation slice (tank level chip, next irrigation/drain chips)
+            if (d.irrigationConfig) {
+                setIrrigationConfig(d.deviceId, d.irrigationConfig);
+            }
+            setTankLevels(d.deviceId, d.environmentAttributes?.irrigationTanks ?? []);
             // Plants
             (d.plants || []).forEach((p) => {
                 const eid = p.entity_id;
