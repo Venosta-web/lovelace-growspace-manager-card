@@ -7,7 +7,7 @@ import type { DataService } from '../../../services/data-service';
 import type { GrowspaceDataStore } from '../../../store/core/data-store';
 import type { GrowspaceUIStore } from '../../../store/ui/ui-store';
 import type { GrowspaceHistoryStore } from '../../../store/history/history-store';
-import type { GrowspaceGridStore } from '../../../store/grid/grid-store';
+import type { GridSliceRef } from '../../../slices/grid';
 import type { UndoRedoManager } from '../../../services/undo-redo-manager';
 import type { OptimisticManager } from '../../../store/system/optimistic-manager';
 import type { SyncService } from '../../../services/sync-service';
@@ -40,7 +40,7 @@ export interface ActionContext {
   data: GrowspaceDataStore;
   ui: GrowspaceUIStore;
   history: GrowspaceHistoryStore;
-  grid: GrowspaceGridStore;
+  grid: GridSliceRef;
 
   // Helper functions
   showToast(message: string, type: ToastType, action?: ToastAction): void;
