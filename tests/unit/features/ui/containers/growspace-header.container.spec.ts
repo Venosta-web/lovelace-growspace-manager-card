@@ -2,7 +2,11 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import { ViewMode } from '../../../../../src/constants';
+import { MetricKey } from '../../../../../src/features/environment/constants';
 import { MetricsUtils } from '../../../../../src/utils/metrics-utils';
+import { envSnapshots$ } from '../../../../../src/slices/environment';
+import { plants$ } from '../../../../../src/slices/plant';
+import { irrigationConfigs$, tankLevels$ } from '../../../../../src/slices/irrigation';
 import '../../../../../src/features/ui/containers/growspace-header.container';
 import type { GrowspaceHeaderContainer } from '../../../../../src/features/ui/containers/growspace-header.container';
 
@@ -96,6 +100,12 @@ describe('GrowspaceHeaderContainer', () => {
 
     beforeEach(async () => {
         mockStore = buildMockStore();
+
+        // Reset slice atoms to empty state before each test
+        envSnapshots$.set(new Map());
+        plants$.set([]);
+        irrigationConfigs$.set(new Map());
+        tankLevels$.set(new Map());
 
         element = await fixture<GrowspaceHeaderContainer>(html`<growspace-header></growspace-header>`);
         (element as any).store = mockStore;
@@ -200,26 +210,41 @@ describe('GrowspaceHeaderContainer', () => {
 
     // --- Metrics splitting ---
 
-    it('_metrics splits chips into hero and secondary', () => {
+    it('_metrics splits chips into hero (from slice atoms) and device chips (from MetricsUtils)', () => {
+        // Seed env snapshot for the test growspace
+        envSnapshots$.set(new Map([
+            ['grow1', {
+                temperature: 25,
+                humidity: 50,
+                vpd: 1.2,
+                vpdStatus: 'optimal',
+                co2: 800,
+                isLightsOn: true,
+                hasLightSensor: true,
+                dli: null,
+            }],
+        ]));
+
+        // MetricsUtils still provides deviceChips
         (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-            mainChips: [
-                { key: 'temperature', value: '25' },
-                { key: 'humidity', value: '50' },
-                { key: 'vpd', value: '1.2' },
-                { key: 'co2', value: '800' },
-                { key: 'custom', value: 'val' },
-            ],
-            deviceChips: [{ key: 'battery', value: '80' }],
-            dominant: { stage: 'flowering' },
+            mainChips: [],
+            deviceChips: [{ key: 'exhaust', value: 'on' }],
+            dominant: undefined,
         });
 
         const metrics = (element as any)._metrics;
+
+        // Hero: temperature, humidity, vpd, co2 from envSnapshots$
         expect(metrics.heroChips).toHaveLength(4);
-        expect(metrics.heroChips.map((c: any) => c.key)).toEqual(['temperature', 'humidity', 'vpd', 'co2']);
-        expect(metrics.secondaryChips).toHaveLength(1);
-        expect(metrics.secondaryChips[0].key).toBe('custom');
+        const heroKeys = metrics.heroChips.map((c: any) => c.key);
+        expect(heroKeys).toContain(MetricKey.TEMPERATURE);
+        expect(heroKeys).toContain(MetricKey.HUMIDITY);
+        expect(heroKeys).toContain(MetricKey.VPD);
+        expect(heroKeys).toContain(MetricKey.CO2);
+
+        // deviceChips still come from MetricsUtils
         expect(metrics.deviceChips).toHaveLength(1);
-        expect(metrics.dominant.stage).toBe('flowering');
+        expect(metrics.deviceChips[0].key).toBe('exhaust');
     });
 
     it('_metrics returns empty state if device or hass is missing', () => {

@@ -9,6 +9,10 @@ import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../../../types';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { HeaderDragController } from '../../../controllers/header-drag-controller';
 import { MetricsUtils, HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
+import { computeHeaderMetrics } from '../../../slices/header-metrics';
+import { envSnapshots$ } from '../../../slices/environment';
+import { plants$ } from '../../../slices/plant';
+import { irrigationConfigs$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ViewMode } from '../../../constants';
 import { DateTime } from 'luxon';
@@ -33,6 +37,10 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _headerController!: StoreController<any>;
   private _actionsController!: StoreController<any>;
   private _historyCacheController!: StoreController<any>;
+  private _envSnapshotsController!: StoreController<any>;
+  private _plantsController!: StoreController<any>;
+  private _irrigationConfigsController!: StoreController<any>;
+  private _tankLevelsController!: StoreController<any>;
   private _dragController = new HeaderDragController(this);
 
   get activeEnvGraphs() {
@@ -58,6 +66,18 @@ export class GrowspaceHeaderContainer extends LitElement {
       this.store.history.loadHistoryOnDemand();
       this.store.history.startAutoRefresh();
     }
+    if (!this._envSnapshotsController) {
+      this._envSnapshotsController = new StoreController(this, envSnapshots$);
+    }
+    if (!this._plantsController) {
+      this._plantsController = new StoreController(this, plants$);
+    }
+    if (!this._irrigationConfigsController) {
+      this._irrigationConfigsController = new StoreController(this, irrigationConfigs$);
+    }
+    if (!this._tankLevelsController) {
+      this._tankLevelsController = new StoreController(this, tankLevels$);
+    }
   }
 
   connectedCallback() {
@@ -74,25 +94,32 @@ export class GrowspaceHeaderContainer extends LitElement {
     const activeEnvGraphs = state?.history?.activeEnvGraphs || new Set();
     const linkedGraphGroups = state?.history?.linkedGraphGroups || [];
 
-    const { mainChips, deviceChips, dominant } = MetricsUtils.computeHeaderMetrics(
+    const growspaceId = this.device.deviceId;
+    const envSnapshot = envSnapshots$.get().get(growspaceId) ?? null;
+    const growspacePlants = plants$.get().filter(
+      (p) => p.attributes.growspace_id === growspaceId,
+    );
+    const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
+    const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
+
+    const { hero: heroChips, chips: secondaryChips, dominant } = computeHeaderMetrics(
+      envSnapshot,
+      growspacePlants,
+      irrigationConfig,
+      growspaceTanks,
+      'main',
+      activeEnvGraphs,
+      linkedGraphGroups,
+    );
+
+    // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
+    // MetricsUtils until the DeviceState slice is implemented (issue #144).
+    const { deviceChips } = MetricsUtils.computeHeaderMetrics(
       this.hass,
       this.device,
       activeEnvGraphs,
-      linkedGraphGroups
+      linkedGraphGroups,
     );
-
-    // Split mainChips into Hero and Secondary
-    const heroKeySet = new Set(['temperature', 'humidity', 'vpd', 'co2']);
-    const heroChips: HeaderChip[] = [];
-    const secondaryChips: HeaderChip[] = [];
-
-    mainChips.forEach(chip => {
-      if (heroKeySet.has(chip.key)) {
-        heroChips.push(chip);
-      } else {
-        secondaryChips.push(chip);
-      }
-    });
 
     return { heroChips, secondaryChips, deviceChips, dominant };
   }
