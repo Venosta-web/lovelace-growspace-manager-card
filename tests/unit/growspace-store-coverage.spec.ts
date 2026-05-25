@@ -4,9 +4,47 @@ import { GrowspaceStore } from '../../src/store/core/growspace-store';
 import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import * as _uiStore from '../../src/store/ui/ui-store';
 import * as _dataStore from '../../src/store/core/data-store';
+import * as strainSlice from '../../src/slices/strain';
 
 const uiStore = _uiStore as any;
 const dataStore = _dataStore as any;
+
+vi.mock('../../src/slices/strain', () => ({
+    fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+    setStrainLibrary: vi.fn(),
+    addStrain: vi.fn().mockResolvedValue(undefined),
+    updateStrainMeta: vi.fn().mockResolvedValue(undefined),
+    removeStrain: vi.fn().mockResolvedValue(undefined),
+    exportStrainLibrary: vi.fn().mockResolvedValue(undefined),
+    importStrainLibrary: vi.fn().mockResolvedValue({ success: true }),
+    clearStrainLibrary: vi.fn().mockResolvedValue(undefined),
+    updateBreeder: vi.fn().mockResolvedValue(undefined),
+    deleteBreeder: vi.fn().mockResolvedValue(undefined),
+    strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+vi.mock('../../src/slices/plant', () => ({
+    plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    selectedPlant$: { get: vi.fn(() => null), set: vi.fn(), subscribe: vi.fn() },
+    setPlants: vi.fn(),
+    waterPlant: vi.fn().mockResolvedValue(undefined),
+    addPlant: vi.fn().mockResolvedValue(undefined),
+    addPlants: vi.fn().mockResolvedValue(undefined),
+    updatePlant: vi.fn().mockResolvedValue(undefined),
+    deletePlant: vi.fn().mockResolvedValue(undefined),
+    harvestPlant: vi.fn().mockResolvedValue(undefined),
+    movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+    swapPlants: vi.fn().mockResolvedValue(undefined),
+    takeClone: vi.fn().mockResolvedValue(undefined),
+    printLabel: vi.fn().mockResolvedValue(undefined),
+    saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+    scorePlant: vi.fn().mockResolvedValue(undefined),
+    logDryingWeight: vi.fn().mockResolvedValue(undefined),
+    logMoistureReading: vi.fn().mockResolvedValue(undefined),
+    setVisualTag: vi.fn().mockResolvedValue(undefined),
+    addOptimisticDeletedPlantId: vi.fn(),
+    removeOptimisticDeletedPlantId: vi.fn(),
+}));
 
 // Mock ui-store
 vi.mock('../../src/store/ui/ui-store', () => {
@@ -748,9 +786,9 @@ describe('GrowspaceStore Branch Coverage', () => {
             const cache = { version: 2, timestamp: Date.now(), data: strains };
             localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
 
-            mockDataServiceInstance.fetchStrainLibrary.mockClear();
+            vi.mocked(strainSlice.fetchStrainLibrary).mockClear();
             await store.actions.library.fetchStrains();
-            expect(mockDataServiceInstance.fetchStrainLibrary).not.toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).not.toHaveBeenCalled();
             expect(store.data.setStrainLibrary).toHaveBeenCalledWith(strains);
         });
 
@@ -760,18 +798,16 @@ describe('GrowspaceStore Branch Coverage', () => {
             const cache = { version: 2, timestamp: Date.now() - (7 * 24 * 60 * 60 * 1000 + 100), data: strains };
             localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
 
-            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue([]);
             await store.actions.library.fetchStrains();
-            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should handle corrupt strain library cache', async () => {
             localStorage.setItem('growspace_strain_library_v2', 'invalid json');
-            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue([]);
             await store.actions.library.fetchStrains();
             // It gets re-populated with fresh data
             expect(localStorage.getItem('growspace_strain_library_v2')).not.toBe('invalid json');
-            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should cover openNutrientPresetsDialog', () => {
@@ -955,7 +991,7 @@ describe('GrowspaceStore Branch Coverage', () => {
 
             await store.actions.library.fetchStrains(); // Should fall through to fetch
 
-            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should handle fetchIPMPresets API returning null/undefined', async () => {
@@ -996,7 +1032,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             localStorage.setItem('growspace_strain_library_v2', JSON.stringify(cache));
             await store.actions.library.fetchStrains();
             // Should fall through to fetch because Date.now() - 0 is huge
-            expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should handle undefined timestamp in nutrient presets cache', async () => {
@@ -1024,7 +1060,7 @@ describe('GrowspaceStore Branch Coverage', () => {
 
     describe('API Response Validation', () => {
         it('should handle fetchStrainLibrary returning non-array', async () => {
-            mockDataServiceInstance.fetchStrainLibrary.mockResolvedValue({ not: 'array' });
+            vi.mocked(strainSlice.fetchStrainLibrary).mockResolvedValueOnce({ not: 'array' } as any);
             await store.actions.library.fetchStrains();
             expect(dataStore.setStrainLibrary).not.toHaveBeenCalled();
         });

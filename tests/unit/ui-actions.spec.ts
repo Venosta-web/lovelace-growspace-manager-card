@@ -28,7 +28,21 @@ import { ActionContext } from '../../src/store/core/action-context';
 import { ViewMode, ConfigTab } from '../../src/constants';
 import * as libraryActions from '../../src/store/plant/library-actions';
 
-vi.mock('../../src/store/plant/library-actions');
+vi.mock('../../src/store/plant/library-actions', () => ({
+    fetchStrainLibrary: vi.fn(),
+    fetchNutrientPresets: vi.fn(),
+    fetchIPMPresets: vi.fn(),
+    fetchNutrientInventory: vi.fn(),
+    updateNutrientStock: vi.fn(),
+    removeNutrientStock: vi.fn(),
+    fetchECRampCurves: vi.fn(),
+    saveECRampCurve: vi.fn(),
+    removeECRampCurve: vi.fn(),
+    saveIPMPreset: vi.fn(),
+    saveNutrientPreset: vi.fn(),
+    removeNutrientPreset: vi.fn(),
+    removeIPMPreset: vi.fn(),
+}));
 
 describe('ui-actions', () => {
     let ctx: ActionContext;
@@ -79,7 +93,8 @@ describe('ui-actions', () => {
                 $selectedDevice: { get: vi.fn() },
             },
             dataService: {
-                fetchStrainLibrary: vi.fn()
+                fetchStrainLibrary: vi.fn(),
+                fetchIPMPresets: vi.fn(),
             },
             showToast: showToastSpy
         } as unknown as ActionContext;

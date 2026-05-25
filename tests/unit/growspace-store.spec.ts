@@ -5,6 +5,8 @@ import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-stor
 import { PlantEntity } from '../../src/types';
 import * as _uiStore from '../../src/store/ui/ui-store';
 import * as _dataStore from '../../src/store/core/data-store';
+import * as strainSlice from '../../src/slices/strain';
+import * as plantSlice from '../../src/slices/plant';
 
 const uiStore = _uiStore as any;
 const dataStore = _dataStore as any;
@@ -16,6 +18,43 @@ import * as strainActions from '../../src/store/plant/strain-actions';
 import * as aiActions from '../../src/store/system/ai-actions';
 import * as keyboardActions from '../../src/store/system/keyboard-actions';
 import * as uiActions from '../../src/store/ui/ui-actions';
+
+vi.mock('../../src/slices/strain', () => ({
+    fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+    setStrainLibrary: vi.fn(),
+    addStrain: vi.fn().mockResolvedValue(undefined),
+    updateStrainMeta: vi.fn().mockResolvedValue(undefined),
+    removeStrain: vi.fn().mockResolvedValue(undefined),
+    exportStrainLibrary: vi.fn().mockResolvedValue(undefined),
+    importStrainLibrary: vi.fn().mockResolvedValue({ success: true }),
+    clearStrainLibrary: vi.fn().mockResolvedValue(undefined),
+    updateBreeder: vi.fn().mockResolvedValue(undefined),
+    deleteBreeder: vi.fn().mockResolvedValue(undefined),
+    strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+vi.mock('../../src/slices/plant', () => ({
+    plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    selectedPlant$: { get: vi.fn(() => null), set: vi.fn(), subscribe: vi.fn() },
+    setPlants: vi.fn(),
+    waterPlant: vi.fn().mockResolvedValue(undefined),
+    addPlant: vi.fn().mockResolvedValue(undefined),
+    addPlants: vi.fn().mockResolvedValue(undefined),
+    updatePlant: vi.fn().mockResolvedValue(undefined),
+    deletePlant: vi.fn().mockResolvedValue(undefined),
+    harvestPlant: vi.fn().mockResolvedValue(undefined),
+    movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+    swapPlants: vi.fn().mockResolvedValue(undefined),
+    takeClone: vi.fn().mockResolvedValue(undefined),
+    printLabel: vi.fn().mockResolvedValue(undefined),
+    saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+    scorePlant: vi.fn().mockResolvedValue(undefined),
+    logDryingWeight: vi.fn().mockResolvedValue(undefined),
+    logMoistureReading: vi.fn().mockResolvedValue(undefined),
+    setVisualTag: vi.fn().mockResolvedValue(undefined),
+    addOptimisticDeletedPlantId: vi.fn(),
+    removeOptimisticDeletedPlantId: vi.fn(),
+}));
 
 vi.mock('../../src/store/system/optimistic-manager', () => {
     return {
@@ -442,14 +481,14 @@ describe('GrowspaceStore', () => {
     describe('Device & Strain Logic', () => {
         it('should add strain and refresh library', async () => {
             await store.actions.strain.add({ strain: 'New Strain' });
-            expect(store.dataService.addStrain).toHaveBeenCalled();
-            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.addStrain).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
             expect(uiStore.showToast).toHaveBeenCalledWith(expect.stringContaining('added'), 'success');
         });
 
         it('should handle add strain error', async () => {
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            mockDataServiceInstance.addStrain.mockRejectedValue(new Error('Fail'));
+            vi.mocked(strainSlice.addStrain).mockRejectedValueOnce(new Error('Fail'));
             await store.actions.strain.add({ strain: 'Fail' });
             expect(spy).toHaveBeenCalled();
         });
@@ -457,12 +496,12 @@ describe('GrowspaceStore', () => {
         it('should remove strain', async () => {
             (dataStore.$strainLibrary.get as any).mockReturnValue([{ key: 'S1|P1', strain: 'S1' }]);
             await store.actions.strain.remove('S1|P1');
-            expect(store.dataService.removeStrain).toHaveBeenCalledWith('S1', 'P1');
+            expect(strainSlice.removeStrain).toHaveBeenCalledWith('S1|P1');
         });
 
         it('should handle remove strain error', async () => {
             const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            mockDataServiceInstance.removeStrain.mockRejectedValue(new Error('Fail'));
+            vi.mocked(strainSlice.removeStrain).mockRejectedValueOnce(new Error('Fail'));
             await store.actions.strain.remove('S1');
             expect(spy).toHaveBeenCalled();
         });
@@ -876,7 +915,7 @@ describe('GrowspaceStore', () => {
             file.text = vi.fn().mockResolvedValue('[{"strain":"S1"}]');
 
             await store.actions.library.import(file, false);
-            expect(store.dataService.addStrain).toHaveBeenCalledWith(expect.objectContaining({ strain: 'S1' }));
+            expect(strainSlice.addStrain).toHaveBeenCalledWith(expect.objectContaining({ strain: 'S1' }));
         });
 
         it('should handle import library failure', async () => {
@@ -1015,7 +1054,7 @@ describe('GrowspaceStore', () => {
 
         it('should move plant error catch', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            mockDataServiceInstance.updatePlant.mockRejectedValue(new Error('Move Fail'));
+            vi.mocked(plantSlice.updatePlant).mockRejectedValueOnce(new Error('Move Fail'));
             await store.movePlant({ attributes: { plant_id: 'p1' } } as any, 1, 1);
             expect(consoleSpy).toHaveBeenCalledWith('Error moving plant:', expect.any(Error));
         });
@@ -1080,7 +1119,7 @@ describe('GrowspaceStore', () => {
 
         it('should return from addStrain if no strain name', async () => {
             await store.actions.strain.add({ strain: '' });
-            expect(store.dataService.addStrain).not.toHaveBeenCalled();
+            expect(strainSlice.addStrain).not.toHaveBeenCalled();
         });
 
         it('should handle addStrain with full optional fields', async () => {
@@ -1090,7 +1129,7 @@ describe('GrowspaceStore', () => {
                 flowering_days_max: '70'
             } as any);
 
-            expect(store.dataService.addStrain).toHaveBeenCalledWith(expect.objectContaining({
+            expect(strainSlice.addStrain).toHaveBeenCalledWith(expect.objectContaining({
                 flowering_days_min: 60,
                 flowering_days_max: 70
             }));
@@ -1098,8 +1137,7 @@ describe('GrowspaceStore', () => {
 
         it('should handle removeStrain with "default" phenotype', async () => {
             await store.actions.strain.remove('Strain|default');
-            // Should pass undefined for phenotype
-            expect(store.dataService.removeStrain).toHaveBeenCalledWith('Strain', undefined);
+            expect(strainSlice.removeStrain).toHaveBeenCalledWith('Strain|default');
         });
 
         it('should handle full grid in openAddPlantDialog', () => {
@@ -1156,7 +1194,7 @@ describe('GrowspaceStore', () => {
         await store.actions.library.fetchStrains(false);
 
         expect(dataStore.setStrainLibrary).toHaveBeenCalledWith([{ strain: 'Cached' }]);
-        expect(store.dataService.fetchStrainLibrary).not.toHaveBeenCalled();
+        expect(strainSlice.fetchStrainLibrary).not.toHaveBeenCalled();
     });
 
     it('should fetch strain library if cache invalid json', async () => {
@@ -1166,12 +1204,12 @@ describe('GrowspaceStore', () => {
         await store.actions.library.fetchStrains(false);
 
         expect(spy).toHaveBeenCalledWith('Failed to parse cached strain library', expect.any(Error));
-        expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+        expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
     });
 
     it('should fetch strain library backend error log', async () => {
         vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
-        mockDataServiceInstance.fetchStrainLibrary.mockRejectedValue(new Error('Backend Fail'));
+        vi.mocked(strainSlice.fetchStrainLibrary).mockRejectedValueOnce(new Error('Backend Fail'));
         const spy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
         await store.actions.library.fetchStrains(false);
@@ -1513,7 +1551,6 @@ describe('GrowspaceStore', () => {
     describe('Strain Library Caching', () => {
         beforeEach(() => {
             vi.spyOn(store.data, 'setStrainLibrary');
-            vi.spyOn(store.dataService, 'fetchStrainLibrary');
             vi.spyOn(Storage.prototype, 'setItem');
         });
 
@@ -1533,7 +1570,7 @@ describe('GrowspaceStore', () => {
             await store.actions.library.fetchStrains(false);
 
             expect(store.data.setStrainLibrary).toHaveBeenCalledWith(cacheData.data);
-            expect(store.dataService.fetchStrainLibrary).not.toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).not.toHaveBeenCalled();
         });
 
         it('should ignore cache if expired', async () => {
@@ -1543,11 +1580,11 @@ describe('GrowspaceStore', () => {
                 data: [{ strain: 'Old' }]
             };
             vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(cacheData));
-            (store.dataService.fetchStrainLibrary as any).mockResolvedValue([{ strain: 'New' }]);
+            vi.mocked(strainSlice.fetchStrainLibrary).mockResolvedValueOnce([{ strain: 'New' } as any]);
 
             await store.actions.library.fetchStrains(false);
 
-            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
             expect(store.data.setStrainLibrary).toHaveBeenCalledWith([{ strain: 'New' }]);
         });
 
@@ -1558,27 +1595,25 @@ describe('GrowspaceStore', () => {
                 data: []
             };
             vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(cacheData));
-            (store.dataService.fetchStrainLibrary as any).mockResolvedValue([]);
 
             await store.actions.library.fetchStrains(false);
-            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should handle malformed cache gracefully', async () => {
             vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('{ bad json');
             const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
-            (store.dataService.fetchStrainLibrary as any).mockResolvedValue([]);
 
             await store.actions.library.fetchStrains(false);
 
             expect(removeItemSpy).toHaveBeenCalledWith('growspace_strain_library_v2');
-            expect(store.dataService.fetchStrainLibrary).toHaveBeenCalled();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
 
         it('should update cache after fetch', async () => {
             vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
             const newData = [{ strain: 'Fresh', key: 'Fresh|' } as any];
-            (store.dataService.fetchStrainLibrary as any).mockResolvedValue(newData);
+            vi.mocked(strainSlice.fetchStrainLibrary).mockResolvedValueOnce(newData);
 
             await store.actions.library.fetchStrains(false);
 
@@ -1590,10 +1625,10 @@ describe('GrowspaceStore', () => {
 
         it('should handle fetch failure without cache', async () => {
             vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
-            (store.dataService.fetchStrainLibrary as any).mockRejectedValue(new Error('Fail'));
+            vi.mocked(strainSlice.fetchStrainLibrary).mockRejectedValueOnce(new Error('Fail'));
 
             await store.actions.library.fetchStrains(false);
-            expect(store.data.setStrainLibrary).not.toHaveBeenCalled(); // Or logic handles it?
+            expect(store.data.setStrainLibrary).not.toHaveBeenCalled();
             // Code catches error and logs. data not set.
         });
     });
@@ -2690,9 +2725,9 @@ describe('GrowspaceStore', () => {
                 // 2. Old cache
                 const oldCache = JSON.stringify({ version: 2, timestamp: Date.now() - 100000000, data: [] });
                 getItemSpy.mockReturnValue(oldCache);
-                mockDataServiceInstance.fetchStrainLibrary.mockClear();
+                vi.mocked(strainSlice.fetchStrainLibrary).mockClear();
                 await store.actions.library.fetchStrains();
-                expect(mockDataServiceInstance.fetchStrainLibrary).toHaveBeenCalled();
+                expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
             });
 
             it('should handle confirmAddPlants with no new plants added', async () => {
