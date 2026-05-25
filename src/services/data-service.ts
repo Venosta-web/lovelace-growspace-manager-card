@@ -8,11 +8,10 @@ import { HistoryAPI } from './api/history-api';
 import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
 import { AIAPI } from './api/ai-api';
-import { CameraAPI } from './api/camera-api';
+import { captureSnapshot as cameraSliceCaptureSnapshot, getSnapshots as cameraSliceGetSnapshots } from '../slices/camera';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
 import { GeneticsAPI } from './api/genetics-api';
-import { SubareaAPI } from './api/subarea-api';
 
 /**
  * DataService — single hass-propagation point for all domain API clients.
@@ -30,12 +29,9 @@ export class DataService {
   private _plantAPI: PlantAPI;
   private _irrigationAPI: IrrigationAPI;
   private _aiAPI: AIAPI;
-  private _cameraAPI: CameraAPI;
   private _visionAPI: VisionAPI;
   private _reportAPI: ReportAPI;
   private _geneticsAPI: GeneticsAPI;
-  private _subareaAPI: SubareaAPI;
-
   constructor(hass?: HomeAssistant) {
     this._growspaceAPI = new GrowspaceAPI(hass);
     this._strainAPI = new StrainAPI(hass);
@@ -44,11 +40,9 @@ export class DataService {
     this._plantAPI = new PlantAPI(hass);
     this._irrigationAPI = new IrrigationAPI(hass);
     this._aiAPI = new AIAPI(hass);
-    this._cameraAPI = new CameraAPI(hass);
     this._visionAPI = new VisionAPI(hass);
     this._reportAPI = new ReportAPI(hass);
     this._geneticsAPI = new GeneticsAPI(hass);
-    this._subareaAPI = new SubareaAPI(hass);
 
     if (hass) {
       this.hass = hass;
@@ -66,11 +60,9 @@ export class DataService {
       this._plantAPI,
       this._irrigationAPI,
       this._aiAPI,
-      this._cameraAPI,
       this._visionAPI,
       this._reportAPI,
       this._geneticsAPI,
-      this._subareaAPI,
     ].forEach((api) => api.updateHass(hass));
   }
 
@@ -296,10 +288,10 @@ export class DataService {
   // ── Camera ───────────────────────────────────────────────────────────────
 
   captureSnapshot = (growspaceId: string) =>
-    this._cameraAPI.captureSnapshot(growspaceId);
+    cameraSliceCaptureSnapshot(growspaceId);
 
   getSnapshots = (growspaceId: string, limit?: number, offset?: number) =>
-    this._cameraAPI.getSnapshots(growspaceId, limit, offset);
+    cameraSliceGetSnapshots(growspaceId, limit, offset);
 
   // ── Vision ───────────────────────────────────────────────────────────────
 
@@ -359,20 +351,6 @@ export class DataService {
 
   updateStrainLineageTree = (...args: Parameters<GeneticsAPI['updateStrainLineageTree']>) =>
     this._geneticsAPI.updateStrainLineageTree(...args);
-
-  // ── Subarea ──────────────────────────────────────────────────────────────
-
-  getSubareas = (...args: Parameters<SubareaAPI['getSubareas']>) =>
-    this._subareaAPI.getSubareas(...args);
-
-  addSubarea = (...args: Parameters<SubareaAPI['addSubarea']>) =>
-    this._subareaAPI.addSubarea(...args);
-
-  updateSubarea = (...args: Parameters<SubareaAPI['updateSubarea']>) =>
-    this._subareaAPI.updateSubarea(...args);
-
-  removeSubarea = (...args: Parameters<SubareaAPI['removeSubarea']>) =>
-    this._subareaAPI.removeSubarea(...args);
 
   // ── Generic ──────────────────────────────────────────────────────────────
 

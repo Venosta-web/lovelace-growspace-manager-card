@@ -2,6 +2,8 @@ import { LitElement, html, TemplateResult, PropertyValues, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
+import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
+import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 import { ActiveDialogState } from '../../../ui-state';
@@ -89,6 +91,9 @@ export class GrowspaceDialogHost extends LitElement {
 
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
+    if (changed.has('hass') && this.hass) {
+      setHass(this.hass);
+    }
     if (changed.has('store')) {
       this._initControllers();
     }
@@ -872,7 +877,7 @@ export class GrowspaceDialogHost extends LitElement {
           if (payload?.mode === 'plant') {
             const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
             const promises = plantIds.map((pid: string) =>
-              this.store?.actions.environment.waterPlant(pid, volume, nutrientRecord, presetId)
+              sliceWaterPlant(pid, volume, nutrientRecord, presetId)
             );
             await Promise.all(promises);
           } else {

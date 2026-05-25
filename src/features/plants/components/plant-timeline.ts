@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PlantTimelineEvent, TimelineEventMetadata } from '../../../types';
-import { getTimelineService } from '../../../services/timeline-service';
+import { addPlantNote, deleteEvent } from '../../../slices/logbook';
 import { formatRelativeDay, formatTime, getDateKey } from '../../../utils/date-utils';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../shared/ui/quick-note-input';
@@ -423,8 +423,7 @@ export class PlantTimeline extends LitElement {
     noteInput.setSaving(true);
 
     try {
-      const service = getTimelineService(this.hass);
-      await service.addPlantNote(this.plant_id, {
+      await addPlantNote(this.plant_id, {
         notes: e.detail.text,
         images: e.detail.images,
       });
@@ -454,8 +453,7 @@ export class PlantTimeline extends LitElement {
     if (this._deletingEventId === null) return;
 
     try {
-      const service = getTimelineService(this.hass);
-      await service.deleteEvent(this._deletingEventId);
+      await deleteEvent(this._deletingEventId);
       this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
     } catch (err) {
       console.error('Error deleting event:', err);

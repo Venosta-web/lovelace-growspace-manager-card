@@ -3,6 +3,16 @@ import { SnapshotsDialog } from '../../../src/dialogs/snapshots-dialog';
 import type { VisionCheckupResult } from '../../../src/lib/types/dialog';
 import '../../../src/dialogs/snapshots-dialog';
 
+// Mock the camera slice — snapshots-dialog calls getSnapshots / captureSnapshot directly
+vi.mock('../../../src/slices/camera', () => ({
+  getSnapshots: vi.fn().mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 }),
+  captureSnapshot: vi.fn().mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] }),
+  setSnapshots: vi.fn(),
+  snapshots$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+import * as cameraSlice from '../../../src/slices/camera';
+
 // Mock ha-dialog if not already defined
 if (!customElements.get('ha-dialog')) {
     class HaDialogMock extends HTMLElement {
@@ -54,9 +64,12 @@ describe('SnapshotsDialog', () => {
     let mockUi: any;
 
     beforeEach(async () => {
+        vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
+        vi.mocked(cameraSlice.captureSnapshot).mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] });
+
         mockSnapshotsActions = {
-            list: vi.fn(),
-            capture: vi.fn(),
+            visionHistory: vi.fn(),
+            triggerCheckup: vi.fn(),
         };
 
         mockUi = {
@@ -81,6 +94,9 @@ describe('SnapshotsDialog', () => {
 
         document.body.appendChild(element);
         await element.updateComplete;
+        vi.clearAllMocks();
+        vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
+        vi.mocked(cameraSlice.captureSnapshot).mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] });
     });
 
     afterEach(() => {
@@ -90,7 +106,7 @@ describe('SnapshotsDialog', () => {
     });
 
     it('should show loading state when fetching snapshots', async () => {
-        mockSnapshotsActions.list.mockReturnValue(new Promise(() => { })); // Never resolves
+        vi.mocked(cameraSlice.getSnapshots).mockReturnValue(new Promise(() => { })); // Never resolves
         element.dialogState = { growspaceId: 'gs1' };
         element.open = true;
         await element.updateComplete;
@@ -104,7 +120,7 @@ describe('SnapshotsDialog', () => {
             { path: '/local/snap1.jpg', filename: 'snap1.jpg', timestamp: '20240101_123456' },
             { path: '/local/snap2.jpg', filename: 'snap2.jpg', timestamp: '20240101_133456' },
         ];
-        mockSnapshotsActions.list.mockResolvedValue({ snapshots: mockSnapshots });
+        vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: mockSnapshots, total: 2 });
 
         element.dialogState = { growspaceId: 'gs1' };
         element.open = true;
@@ -121,7 +137,7 @@ describe('SnapshotsDialog', () => {
     });
 
     it('should show empty state when no snapshots are found', async () => {
-        mockSnapshotsActions.list.mockResolvedValue({ snapshots: [] });
+        vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
 
         element.dialogState = { growspaceId: 'gs1' };
         element.open = true;
@@ -136,7 +152,7 @@ describe('SnapshotsDialog', () => {
 
     it('should handle fetch error and show toast', async () => {
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-        mockSnapshotsActions.list.mockRejectedValue(new Error('Fetch Failed'));
+        vi.mocked(cameraSlice.getSnapshots).mockRejectedValue(new Error('Fetch Failed'));
 
         element.dialogState = { growspaceId: 'gs1' };
         element.open = true;
@@ -148,8 +164,8 @@ describe('SnapshotsDialog', () => {
     });
 
     it('should capture snapshot and refresh the list', async () => {
-        mockSnapshotsActions.capture.mockResolvedValue({});
-        mockSnapshotsActions.list.mockResolvedValue({ snapshots: [] });
+        vi.mocked(cameraSlice.captureSnapshot).mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] });
+        vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
 
         element.dialogState = { growspaceId: 'gs1' };
         element.open = true;
@@ -164,12 +180,13 @@ describe('SnapshotsDialog', () => {
 
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(mockSnapshotsActions.capture).toHaveBeenCalledWith('gs1');
-        expect(mockSnapshotsActions.list).toHaveBeenCalledTimes(2); // Initial open + after capture
+        expect(cameraSlice.captureSnapshot).toHaveBeenCalledWith('gs1');
+        expect(cameraSlice.getSnapshots).toHaveBeenCalledTimes(2); // Initial open + after capture
     });
 
-    it('should handle capture error "no_cameras"', async () => {
-        mockSnapshotsActions.capture.mockRejectedValue({ code: 'no_cameras' });
+    it('should handle capture error and show toast', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        vi.mocked(cameraSlice.captureSnapshot).mockRejectedValue(new Error('Fail'));
 
         element.dialogState = { growspaceId: 'gs1' };
         element.open = true;
@@ -179,21 +196,8 @@ describe('SnapshotsDialog', () => {
         (captureBtn as HTMLElement).click();
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(mockUi.showToast).not.toHaveBeenCalled(); // Action handles toast
-    });
-
-    it('should handle generic capture error', async () => {
-        mockSnapshotsActions.capture.mockRejectedValue(new Error('Fail'));
-
-        element.dialogState = { growspaceId: 'gs1' };
-        element.open = true;
-        await element.updateComplete;
-
-        const captureBtn = element.shadowRoot?.querySelector('md3-button');
-        (captureBtn as HTMLElement).click();
-        await new Promise(resolve => setTimeout(resolve, 0));
-
-        expect(mockUi.showToast).not.toHaveBeenCalled(); // Action handles toast
+        expect(mockUi.showToast).toHaveBeenCalledWith('Failed to capture snapshot', 'error');
+        consoleSpy.mockRestore();
     });
 
     it('should fetch snapshots when refresh button is clicked', async () => {
@@ -204,7 +208,7 @@ describe('SnapshotsDialog', () => {
         const refreshBtn = element.shadowRoot?.querySelector('button[title="Refresh"]') as HTMLButtonElement;
         refreshBtn.click();
 
-        expect(mockSnapshotsActions.list).toHaveBeenCalledWith('gs1');
+        expect(cameraSlice.getSnapshots).toHaveBeenCalledWith('gs1');
     });
 
     it('should close dialog when close button is clicked', async () => {
@@ -238,11 +242,12 @@ describe('SnapshotsDialog', () => {
         element.open = true;
         await element.updateComplete;
 
-        mockSnapshotsActions.list.mockClear();
+        vi.mocked(cameraSlice.getSnapshots).mockClear();
+        vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs2', snapshots: [], total: 0 });
         element.dialogState = { growspaceId: 'gs2' };
         await element.updateComplete;
 
-        expect(mockSnapshotsActions.list).toHaveBeenCalledWith('gs2');
+        expect(cameraSlice.getSnapshots).toHaveBeenCalledWith('gs2');
     });
 
     it('should handle short or invalid timestamps in _formatDate', () => {
@@ -260,9 +265,10 @@ describe('Vision Checkup tab', () => {
   let mockVisionHistory: VisionCheckupResult[];
 
   beforeEach(async () => {
+    vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
+    vi.mocked(cameraSlice.captureSnapshot).mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] });
+
     mockSnapshotsActions = {
-      list: vi.fn().mockResolvedValue({ snapshots: [] }),
-      capture: vi.fn(),
       visionHistory: vi.fn(),
       triggerCheckup: vi.fn()
     };

@@ -27,7 +27,7 @@ import {
 import { hassContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { PlantStage, type PlantEntity, type PlantOverviewEditedAttributes, type GrowspaceEvent, type PlantTimelineEvent, type StrainEntry } from '../../../types';
-import { getTimelineService } from '../../../services/timeline-service';
+import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -297,12 +297,11 @@ export class PlantOverviewContainer extends LitElement {
     const growspaceId = this.plant?.attributes?.growspace_id;
     if (!growspaceId || !this.hass) return;
     try {
-      const service = getTimelineService(this.hass);
       const plantId = this.plant.attributes?.plant_id;
       // Fetch by plantId so events from previous growspaces are included
       const events = plantId
-        ? await service.fetchPlantEvents(plantId, growspaceId)
-        : await service.fetchGrowspaceEvents(growspaceId);
+        ? await fetchPlantEvents(plantId, growspaceId)
+        : await fetchGrowspaceEvents(growspaceId);
       
       this._logbookEvents = events;
       this._logbookEventsAtom.set(events);

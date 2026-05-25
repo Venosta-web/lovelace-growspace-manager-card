@@ -4909,8 +4909,19 @@ ZodPromise.create;
 ZodOptional.create;
 ZodNullable.create;
 
+/**
+ * Grid slice — zod schemas for grid-domain API payloads.
+ *
+ * Moved from the monolithic `schemas/api-schema.ts`.  These are the authoritative
+ * contracts for the grid portion of the Growspace API response.
+ *
+ * All schemas are private to the Grid slice unless re-exported here.
+ */
+// ---------------------------------------------------------------------------
+// Individual plant slot (the grid cell description returned by the backend)
+// ---------------------------------------------------------------------------
 const PlantSlotSchema = objectType({
-    entity_id: stringType().optional().default(''), // Ensure default if missing
+    entity_id: stringType().optional().default(''),
     plant_id: stringType().optional().default(''),
     stage: stringType().optional().default('unknown'),
     strain: stringType().optional().default(''),
@@ -4941,6 +4952,32 @@ const PlantSlotSchema = objectType({
 })
     .catchall(unknownType())
     .nullable();
+// ---------------------------------------------------------------------------
+// Grid dimensions — physical size metadata for a growspace grid
+// ---------------------------------------------------------------------------
+const GridDimensionsSchema = objectType({
+    length: numberType().optional(),
+    width: numberType().optional(),
+    height: numberType().optional(),
+    unit: stringType().optional().default('cm'),
+})
+    .optional();
+// ---------------------------------------------------------------------------
+// Grid API object — the `grid` key in a single growspace API response
+// ---------------------------------------------------------------------------
+const GridApiSchema = objectType({
+    rows: numberType().optional().default(3),
+    plants_per_row: numberType().optional().default(3),
+    total_plants: numberType().optional().default(0),
+    dimensions: GridDimensionsSchema,
+    grid: recordType(stringType(), PlantSlotSchema)
+        .nullable()
+        .optional()
+        .transform((v) => v ?? {}),
+})
+    .optional()
+    .default({});
+
 const IrrigationScheduleItemSchema = objectType({
     time: stringType().optional(),
     start_time: stringType().optional(),
@@ -5006,24 +5043,7 @@ const GrowspaceAPIResponseSchema = objectType({
     })
         .optional()
         .default({ growspace_id: '', name: '', type: 'normal' }),
-    grid: objectType({
-        rows: numberType().optional().default(3),
-        plants_per_row: numberType().optional().default(3),
-        total_plants: numberType().optional().default(0),
-        dimensions: objectType({
-            length: numberType().optional(),
-            width: numberType().optional(),
-            height: numberType().optional(),
-            unit: stringType().optional().default('cm'),
-        })
-            .optional(),
-        grid: recordType(stringType(), PlantSlotSchema)
-            .nullable()
-            .optional()
-            .transform((v) => v ?? {}),
-    })
-        .optional()
-        .default({}),
+    grid: GridApiSchema,
     environment: objectType({
         temperature_sensor: stringType().optional(),
         humidity_sensor: stringType().optional(),
@@ -5513,8 +5533,6 @@ class GrowspaceAdapter {
 const DOMAIN$1 = 'growspace_manager';
 // WebSocket message types
 const WS_TYPE_GET_DATA = 'growspace_manager/get_data';
-const WS_TYPE_GET_LOG = 'growspace_manager/get_log';
-const WS_TYPE_GET_ALERTS = 'growspace_manager/get_alerts';
 const WS_TYPE_GET_HISTORY_STATS = 'growspace_manager/get_history_stats';
 const WS_TYPE_GET_NUTRIENT_PRESETS = 'growspace_manager/get_nutrient_presets';
 const WS_TYPE_GET_IPM_PRESETS = 'growspace_manager/get_ipm_presets';
@@ -5522,14 +5540,8 @@ const WS_TYPE_GET_NUTRIENT_INVENTORY = 'growspace_manager/get_nutrient_inventory
 const WS_TYPE_UPDATE_NUTRIENT_STOCK = 'growspace_manager/update_nutrient_stock';
 const WS_TYPE_REMOVE_NUTRIENT_STOCK = 'growspace_manager/remove_nutrient_stock';
 const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves';
-const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
-const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
 const WS_TYPE_GET_VISION_HISTORY = 'growspace_manager/get_vision_history';
 const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG = 'growspace_manager/update_vision_checkup_config';
-const WS_TYPE_GET_SUBAREAS = 'growspace_manager/get_subareas';
-const WS_TYPE_ADD_SUBAREA = 'growspace_manager/add_subarea';
-const WS_TYPE_UPDATE_SUBAREA = 'growspace_manager/update_subarea';
-const WS_TYPE_REMOVE_SUBAREA = 'growspace_manager/remove_subarea';
 const WS_TYPE_UPDATE_SENSOR_COORDINATES = 'growspace_manager/update_sensor_coordinates';
 // Home Assistant services
 const SERVICES = {
@@ -7016,51 +7028,412 @@ class AIAPI extends BaseAPI {
     }
 }
 
-class CameraAPI extends BaseAPI {
-    /**
-     * Captures snapshots from all configured cameras for a growspace.
-     * @param growspaceId The ID of the growspace
-     * @returns A promise that resolves to the capture response
-     */
-    async captureSnapshot(growspaceId) {
-        if (!this.hass)
-            return null;
-        try {
-            const response = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_CAPTURE_SNAPSHOT,
-                growspace_id: growspaceId,
-            });
-            return response;
+let clean = Symbol('clean');
+
+let listenerQueue = [];
+let lqIndex = 0;
+const QUEUE_ITEMS_PER_LISTENER = 4;
+let epoch = 0;
+
+/* @__NO_SIDE_EFFECTS__ */
+const atom = initialValue => {
+  let listeners = [];
+  let $atom = {
+    get() {
+      if (!$atom.lc) {
+        $atom.listen(() => {})();
+      }
+      return $atom.value
+    },
+    lc: 0,
+    listen(listener) {
+      $atom.lc = listeners.push(listener);
+
+      return () => {
+        for (
+          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
+          i < listenerQueue.length;
+
+        ) {
+          if (listenerQueue[i] === listener) {
+            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
+          } else {
+            i += QUEUE_ITEMS_PER_LISTENER;
+          }
         }
-        catch (error) {
-            console.error(`[CameraAPI] Failed to capture snapshot for ${growspaceId}:`, error);
-            throw error;
+
+        let index = listeners.indexOf(listener);
+        if (~index) {
+          listeners.splice(index, 1);
+          if (!--$atom.lc) $atom.off();
         }
+      }
+    },
+    notify(oldValue, changedKey) {
+      epoch++;
+      let runListenerQueue = !listenerQueue.length;
+      for (let listener of listeners) {
+        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
+      }
+
+      if (runListenerQueue) {
+        for (
+          lqIndex = 0;
+          lqIndex < listenerQueue.length;
+          lqIndex += QUEUE_ITEMS_PER_LISTENER
+        ) {
+          listenerQueue[lqIndex](
+            listenerQueue[lqIndex + 1],
+            listenerQueue[lqIndex + 2],
+            listenerQueue[lqIndex + 3]
+          );
+        }
+        listenerQueue.length = 0;
+      }
+    },
+    /* It will be called on last listener unsubscribing.
+       We will redefine it in onMount and onStop. */
+    off() {},
+    set(newValue) {
+      let oldValue = $atom.value;
+      if (oldValue !== newValue) {
+        $atom.value = newValue;
+        $atom.notify(oldValue);
+      }
+    },
+    subscribe(listener) {
+      let unbind = $atom.listen(listener);
+      listener($atom.value);
+      return unbind
+    },
+    value: initialValue
+  };
+
+  {
+    $atom[clean] = () => {
+      listeners = [];
+      $atom.lc = 0;
+      $atom.off();
+    };
+  }
+
+  return $atom
+};
+
+const MOUNT = 5;
+const UNMOUNT = 6;
+const REVERT_MUTATION = 10;
+
+let on = (object, listener, eventKey, mutateStore) => {
+  object.events = object.events || {};
+  if (!object.events[eventKey + REVERT_MUTATION]) {
+    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
+      // eslint-disable-next-line no-sequences
+      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
+        shared: {},
+        ...eventProps
+      });
+    });
+  }
+  object.events[eventKey] = object.events[eventKey] || [];
+  object.events[eventKey].push(listener);
+  return () => {
+    let currentListeners = object.events[eventKey];
+    let index = currentListeners.indexOf(listener);
+    currentListeners.splice(index, 1);
+    if (!currentListeners.length) {
+      delete object.events[eventKey];
+      object.events[eventKey + REVERT_MUTATION]();
+      delete object.events[eventKey + REVERT_MUTATION];
     }
-    /**
-     * Retrieves paginated snapshots for a growspace.
-     * @param growspaceId The ID of the growspace
-     * @param limit Maximum number of snapshots to return (default: 50)
-     * @param offset Offset to start from (default: 0)
-     * @returns A promise that resolves to the get snapshots response
-     */
-    async getSnapshots(growspaceId, limit = 50, offset = 0) {
-        if (!this.hass)
-            return null;
-        try {
-            const response = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_GET_SNAPSHOTS,
-                growspace_id: growspaceId,
-                limit,
-                offset,
-            });
-            return response;
+  }
+};
+
+let STORE_UNMOUNT_DELAY = 1000;
+
+let onMount = ($store, initialize) => {
+  let listener = payload => {
+    let destroy = initialize(payload);
+    if (destroy) $store.events[UNMOUNT].push(destroy);
+  };
+  return on($store, listener, MOUNT, runListeners => {
+    let originListen = $store.listen;
+    $store.listen = (...args) => {
+      if (!$store.lc && !$store.active) {
+        $store.active = true;
+        runListeners();
+      }
+      return originListen(...args)
+    };
+
+    let originOff = $store.off;
+    $store.events[UNMOUNT] = [];
+    $store.off = () => {
+      originOff();
+      setTimeout(() => {
+        if ($store.active && !$store.lc) {
+          $store.active = false;
+          for (let destroy of $store.events[UNMOUNT]) destroy();
+          $store.events[UNMOUNT] = [];
         }
-        catch (error) {
-            console.error(`[CameraAPI] Failed to get snapshots for ${growspaceId}:`, error);
-            throw error;
-        }
+      }, STORE_UNMOUNT_DELAY);
+    };
+
+    {
+      let originClean = $store[clean];
+      $store[clean] = () => {
+        for (let destroy of $store.events[UNMOUNT]) destroy();
+        $store.events[UNMOUNT] = [];
+        $store.active = false;
+        originClean();
+      };
     }
+
+    return () => {
+      $store.listen = originListen;
+      $store.off = originOff;
+    }
+  })
+};
+
+let computedStore = (stores, cb, batched) => {
+  if (!Array.isArray(stores)) stores = [stores];
+
+  let previousArgs;
+  let currentEpoch;
+  let set = () => {
+    if (currentEpoch === epoch) return
+    currentEpoch = epoch;
+    let args = stores.map($store => $store.get());
+    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
+      previousArgs = args;
+      let value = cb(...args);
+      if (value && value.then && value.t) {
+        value.then(asyncValue => {
+          if (previousArgs === args) {
+            // Prevent a stale set
+            $computed.set(asyncValue);
+          }
+        });
+      } else {
+        $computed.set(value);
+        currentEpoch = epoch;
+      }
+    }
+  };
+  let $computed = atom(undefined);
+  let get = $computed.get;
+  $computed.get = () => {
+    set();
+    return get()
+  };
+  let run = set;
+
+  onMount($computed, () => {
+    let unbinds = stores.map($store => $store.listen(run));
+    set();
+    return () => {
+      for (let unbind of unbinds) unbind();
+    }
+  });
+
+  return $computed
+};
+
+/* @__NO_SIDE_EFFECTS__ */
+const computed = (stores, fn) => computedStore(stores, fn);
+
+/* @__NO_SIDE_EFFECTS__ */
+const map = (initial = {}) => {
+  let $map = atom(initial);
+
+  $map.setKey = function (key, value) {
+    let oldMap = $map.value;
+    if (typeof value === 'undefined' && key in $map.value) {
+      $map.value = { ...$map.value };
+      delete $map.value[key];
+      $map.notify(oldMap, key);
+    } else if ($map.value[key] !== value) {
+      $map.value = {
+        ...$map.value,
+        [key]: value
+      };
+      $map.notify(oldMap, key);
+    }
+  };
+
+  return $map
+};
+
+let _hass;
+/**
+ * Call a Home Assistant service through the shared hass reference.
+ * Use for fire-and-forget mutations (water_plant, add_plant, etc.).
+ */
+async function callService(domain, service, serviceData = {}) {
+    if (!_hass) {
+        throw new WSError('internal_error', 'callService: hass is not set — call setHass() first');
+    }
+    await _hass.callService(domain, service, serviceData);
+}
+/**
+ * Inject the current HomeAssistant instance.
+ * Called once at card init and again whenever `hass` changes.
+ */
+function setHass(hass) {
+    _hass = hass;
+}
+/**
+ * Call a Home Assistant service and return its response payload.
+ *
+ * Use for service calls that set `return_response: true` (e.g. AI advice,
+ * report generation). The response is validated with a zod schema before
+ * being returned.
+ *
+ * @param domain      - HA service domain (e.g. 'growspace_manager')
+ * @param service     - HA service name (e.g. 'ask_grow_advice')
+ * @param serviceData - Service call payload
+ * @param schema      - Zod schema to validate the response
+ */
+async function callServiceReturning(domain, service, serviceData, schema) {
+    if (!_hass) {
+        throw new WSError('internal_error', 'callServiceReturning: hass is not set — call setHass() first');
+    }
+    let raw;
+    try {
+        raw = await _hass.connection.sendMessagePromise({
+            type: 'call_service',
+            domain,
+            service,
+            service_data: serviceData,
+            return_response: true,
+        });
+    }
+    catch (err) {
+        throw new WSError('internal_error', err instanceof Error ? err.message : String(err));
+    }
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) {
+        throw new WSError('internal_error', `callServiceReturning: response schema mismatch for "${domain}.${service}": ${parsed.error.message}`);
+    }
+    return parsed.data;
+}
+/**
+ * Single transport seam to Home Assistant.
+ *
+ * Sends a WebSocket message, validates the response with a zod schema, and
+ * returns the typed result. Throws a typed WSError on backend errors or when
+ * the response does not match the schema.
+ *
+ * @param command - WebSocket message type (e.g. 'growspace_manager/water_plant')
+ * @param params  - Additional fields merged into the WebSocket message
+ * @param schema  - Zod schema to validate and narrow the response
+ */
+async function hassCall(command, params, schema) {
+    if (!_hass) {
+        throw new WSError('internal_error', 'hassCall: hass is not set — call setHass() first');
+    }
+    let raw;
+    try {
+        raw = await _hass.callWS({ type: command, ...params });
+    }
+    catch (error) {
+        if (typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            'message' in error &&
+            typeof error.code === 'string') {
+            const { code, message } = error;
+            throw new WSError((['coordinator_not_ready', 'entity_not_found', 'validation_failed', 'internal_error'].includes(code)
+                ? code
+                : 'internal_error'), message);
+        }
+        throw new WSError('internal_error', error instanceof Error ? error.message : String(error));
+    }
+    const parsed = schema.safeParse(raw);
+    if (!parsed.success) {
+        throw new WSError('internal_error', `hassCall: response schema mismatch for "${command}": ${parsed.error.message}`);
+    }
+    return parsed.data;
+}
+
+/**
+ * Camera slice — zod schemas for WebSocket response validation.
+ *
+ * Replaces the plain TypeScript interfaces that lived in
+ * `services/api/camera-api.ts`.
+ */
+// ---------------------------------------------------------------------------
+// Snapshot
+// ---------------------------------------------------------------------------
+const SnapshotSchema = objectType({
+    path: stringType(),
+    filename: stringType(),
+    timestamp: stringType(),
+});
+// ---------------------------------------------------------------------------
+// get_snapshots response
+// ---------------------------------------------------------------------------
+const GetSnapshotsResponseSchema = objectType({
+    growspace_id: stringType(),
+    snapshots: arrayType(SnapshotSchema),
+    total: numberType().int(),
+});
+// ---------------------------------------------------------------------------
+// capture_snapshot response
+// ---------------------------------------------------------------------------
+const CaptureSnapshotResponseSchema = objectType({
+    growspace_id: stringType(),
+    timestamp: stringType(),
+    snapshots: arrayType(stringType()),
+});
+
+/**
+ * Camera slice — atoms and mutators for snapshot data.
+ *
+ * Public API (atoms):
+ *   snapshots$          — read: snapshots for the most-recently queried growspace
+ *   setSnapshots()      — write: replace snapshot list (called by bootstrap/sync)
+ *
+ * Public API (mutators):
+ *   getSnapshots(growspaceId, limit?, offset?)  — fetch paginated snapshots, updates snapshots$
+ *   captureSnapshot(growspaceId)                — trigger camera capture, returns response
+ *
+ * Zod schemas and response types are in ./schema.ts and private to this module
+ * except where re-exported for consumer type use.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const snapshots$ = atom([]);
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Fetch paginated snapshots for a growspace.
+ *
+ * Updates snapshots$ with the returned list on success.
+ * Re-throws on backend errors without mutating snapshots$.
+ *
+ * @param growspaceId - The growspace to query
+ * @param limit       - Maximum results to return (default 50)
+ * @param offset      - Pagination offset (default 0)
+ */
+async function getSnapshots$1(growspaceId, limit = 50, offset = 0) {
+    const response = await hassCall('growspace_manager/get_snapshots', { growspace_id: growspaceId, limit, offset }, GetSnapshotsResponseSchema);
+    snapshots$.set(response.snapshots);
+    return response;
+}
+/**
+ * Trigger a camera capture for all configured cameras in a growspace.
+ *
+ * No optimistic state — capture is a backend-authoritative operation.
+ * Re-throws on backend errors.
+ *
+ * @param growspaceId - The growspace whose cameras to trigger
+ */
+async function captureSnapshot$1(growspaceId) {
+    return hassCall('growspace_manager/capture_snapshot', { growspace_id: growspaceId }, CaptureSnapshotResponseSchema);
 }
 
 class VisionAPI extends BaseAPI {
@@ -7198,84 +7571,6 @@ class GeneticsAPI extends BaseAPI {
     }
 }
 
-class SubareaAPI extends BaseAPI {
-    /**
-     * Fetches all subareas for a growspace.
-     */
-    async getSubareas(growspaceId) {
-        if (!this.hass)
-            return [];
-        try {
-            const response = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_GET_SUBAREAS,
-                growspace_id: growspaceId,
-            });
-            return response;
-        }
-        catch (error) {
-            console.error(`[SubareaAPI] Failed to get subareas for ${growspaceId}:`, error);
-            throw error;
-        }
-    }
-    /**
-     * Adds a new subarea to a growspace.
-     */
-    async addSubarea(growspaceId, name) {
-        if (!this.hass)
-            throw new Error('[SubareaAPI] Hass instance is missing');
-        try {
-            const response = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_ADD_SUBAREA,
-                growspace_id: growspaceId,
-                name,
-            });
-            return response;
-        }
-        catch (error) {
-            console.error(`[SubareaAPI] Failed to add subarea to ${growspaceId}:`, error);
-            throw error;
-        }
-    }
-    /**
-     * Updates the environment config of an existing subarea.
-     */
-    async updateSubarea(growspaceId, subareaId, environmentConfig) {
-        if (!this.hass)
-            throw new Error('[SubareaAPI] Hass instance is missing');
-        try {
-            const response = await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_UPDATE_SUBAREA,
-                growspace_id: growspaceId,
-                subarea_id: subareaId,
-                environment_config: environmentConfig,
-            });
-            return response;
-        }
-        catch (error) {
-            console.error(`[SubareaAPI] Failed to update subarea ${subareaId}:`, error);
-            throw error;
-        }
-    }
-    /**
-     * Removes a subarea from a growspace.
-     */
-    async removeSubarea(growspaceId, subareaId) {
-        if (!this.hass)
-            throw new Error('[SubareaAPI] Hass instance is missing');
-        try {
-            await this.hass.connection.sendMessagePromise({
-                type: WS_TYPE_REMOVE_SUBAREA,
-                growspace_id: growspaceId,
-                subarea_id: subareaId,
-            });
-        }
-        catch (error) {
-            console.error(`[SubareaAPI] Failed to remove subarea ${subareaId}:`, error);
-            throw error;
-        }
-    }
-}
-
 /**
  * DataService — single hass-propagation point for all domain API clients.
  *
@@ -7361,8 +7656,8 @@ class DataService {
         this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
         this.getStrainRecommendation = (userQuery) => this._aiAPI.getStrainRecommendation(userQuery);
         // ── Camera ───────────────────────────────────────────────────────────────
-        this.captureSnapshot = (growspaceId) => this._cameraAPI.captureSnapshot(growspaceId);
-        this.getSnapshots = (growspaceId, limit, offset) => this._cameraAPI.getSnapshots(growspaceId, limit, offset);
+        this.captureSnapshot = (growspaceId) => captureSnapshot$1(growspaceId);
+        this.getSnapshots = (growspaceId, limit, offset) => getSnapshots$1(growspaceId, limit, offset);
         // ── Vision ───────────────────────────────────────────────────────────────
         this.getVisionHistory = (growspaceId, limit) => this._visionAPI.getVisionHistory(growspaceId, limit);
         this.triggerVisionCheckup = (growspaceId) => this._visionAPI.triggerVisionCheckup(growspaceId);
@@ -7384,11 +7679,6 @@ class DataService {
         this.getLineageTree = (plant_id) => this._geneticsAPI.getLineageTree(plant_id);
         this.getStrainLineageTree = (strain_name) => this._geneticsAPI.getStrainLineageTree(strain_name);
         this.updateStrainLineageTree = (...args) => this._geneticsAPI.updateStrainLineageTree(...args);
-        // ── Subarea ──────────────────────────────────────────────────────────────
-        this.getSubareas = (...args) => this._subareaAPI.getSubareas(...args);
-        this.addSubarea = (...args) => this._subareaAPI.addSubarea(...args);
-        this.updateSubarea = (...args) => this._subareaAPI.updateSubarea(...args);
-        this.removeSubarea = (...args) => this._subareaAPI.removeSubarea(...args);
         this._growspaceAPI = new GrowspaceAPI(hass);
         this._strainAPI = new StrainAPI(hass);
         this._nutrientAPI = new NutrientAPI(hass);
@@ -7396,11 +7686,9 @@ class DataService {
         this._plantAPI = new PlantAPI(hass);
         this._irrigationAPI = new IrrigationAPI(hass);
         this._aiAPI = new AIAPI(hass);
-        this._cameraAPI = new CameraAPI(hass);
         this._visionAPI = new VisionAPI(hass);
         this._reportAPI = new ReportAPI(hass);
         this._geneticsAPI = new GeneticsAPI(hass);
-        this._subareaAPI = new SubareaAPI(hass);
         if (hass) {
             this.hass = hass;
         }
@@ -7416,11 +7704,9 @@ class DataService {
             this._plantAPI,
             this._irrigationAPI,
             this._aiAPI,
-            this._cameraAPI,
             this._visionAPI,
             this._reportAPI,
             this._geneticsAPI,
-            this._subareaAPI,
         ].forEach((api) => api.updateHass(hass));
     }
     // ── Generic ──────────────────────────────────────────────────────────────
@@ -9362,6 +9648,557 @@ GrowspaceEnvChart = __decorate([
     t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
 
+/**
+ * mutate primitive — owns optimistic updates, undo stack, and sync trigger.
+ *
+ * Replaces undo-redo-manager.ts + sync-service.ts for migrated mutators.
+ * Each slice builds its domain mutators on top of this primitive.
+ */
+const _undoStack = [];
+const MAX_UNDO = 10;
+/**
+ * Execute an action: optimistic → apply → record undo.
+ * On apply failure: run inverse (rollback) and re-throw.
+ */
+async function mutate(action) {
+    action.optimistic();
+    try {
+        await action.apply();
+    }
+    catch (err) {
+        action.inverse();
+        throw err;
+    }
+    _undoStack.push({ type: action.type, inverse: action.inverse });
+    if (_undoStack.length > MAX_UNDO) {
+        _undoStack.shift();
+    }
+}
+
+/**
+ * Grid slice — atoms, computed state, and sibling setters for the Grid domain.
+ *
+ * Public API (atoms):
+ *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
+ *   selectedDeviceId$         — read/write: the currently selected device ID
+ *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
+ *   activeDevices$            — read: devices with optimistically deleted plants filtered out
+ *   growspaceOptions$         — read: device_id → device name map for selectors
+ *   gridLayout$               — read: computed grid layout for the selected device
+ *
+ * Public API (bootstrap writes):
+ *   setDevices()              — replace the devices array (called by SyncService)
+ *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
+ *
+ * Public API (sibling setters — called by Plant slice cross-slice mutations):
+ *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
+ *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
+ *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
+ *
+ * GridSliceRef / gridSlice:
+ *   A stable facade object compatible with the legacy ActionContext.grid interface.
+ *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
+ *   through this facade without knowing about the underlying atoms.
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+/** All growspace devices — bootstrapped by SyncService on every data refresh. */
+const devices$ = atom([]);
+/**
+ * The currently selected growspace device ID.
+ *
+ * NOTE: this is a module-level singleton.  Multiple card instances on the same
+ * dashboard share this state.  Per-card selection isolation is deferred to a
+ * later refactor step.
+ */
+const selectedDeviceId$ = atom(null);
+/**
+ * Plant IDs that have been optimistically removed from the grid by the Plant
+ * slice before the backend confirms the mutation.  The Grid slice filters these
+ * out of `activeDevices$` so the UI reflects the change immediately.
+ */
+const optimisticDeletedPlantIds$ = atom(new Set());
+// ---------------------------------------------------------------------------
+// Computed atoms (public)
+// ---------------------------------------------------------------------------
+/** Devices with optimistically deleted plants stripped out. */
+const activeDevices$ = computed([devices$, optimisticDeletedPlantIds$], (devices, deletedIds) => devices.map((d) => ({
+    ...d,
+    plants: d.plants.filter((p) => {
+        const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+        return !deletedIds.has(pid);
+    }),
+})));
+/** device_id → device name map for growspace selector dropdowns. */
+const growspaceOptions$ = computed(activeDevices$, (devices) => Object.fromEntries(devices.map((d) => [d.deviceId, d.name])));
+/** Grid layout for the currently selected device. */
+const gridLayout$ = computed([activeDevices$, selectedDeviceId$], (devices, selectedId) => {
+    if (!selectedId)
+        return { effectiveRows: 0, grid: [] };
+    const device = devices.find((d) => d.deviceId === selectedId);
+    if (!device)
+        return { effectiveRows: 0, grid: [] };
+    const effectiveRows = PlantUtils.calculateEffectiveRows(device);
+    const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
+    return { effectiveRows, grid };
+});
+/** Combined view-state atom (one subscription covers grid + selector + device list). */
+const gridViewState$ = computed([activeDevices$, selectedDeviceId$, gridLayout$, growspaceOptions$], (devices, selectedDevice, gridLayout, growspaceOptions) => ({
+    devices,
+    selectedDevice,
+    gridLayout,
+    growspaceOptions,
+}));
+// ---------------------------------------------------------------------------
+// Bootstrap writes (public)
+// ---------------------------------------------------------------------------
+/** Replace the full device list. Called by SyncService after every data refresh. */
+function setDevices(devices) {
+    devices$.set(devices);
+}
+/** Set the active growspace device. Called by cards via handleDeviceChange. */
+function setSelectedDeviceId(id) {
+    selectedDeviceId$.set(id);
+}
+// ---------------------------------------------------------------------------
+// Sibling setters — called by Plant slice during cross-slice mutations
+// ---------------------------------------------------------------------------
+/**
+ * Optimistically hide a plant from the grid.
+ * Call this from Plant slice mutators (deletePlant, movePlantToGrowspace) before
+ * the backend confirms the change so the cell clears immediately.
+ */
+function addOptimisticDeletedPlantId(plantId) {
+    const ids = new Set(optimisticDeletedPlantIds$.get());
+    ids.add(plantId);
+    optimisticDeletedPlantIds$.set(ids);
+}
+/**
+ * Restore a plant to the grid (called from the mutation's `inverse` on failure).
+ */
+function removeOptimisticDeletedPlantId(plantId) {
+    const ids = new Set(optimisticDeletedPlantIds$.get());
+    ids.delete(plantId);
+    optimisticDeletedPlantIds$.set(ids);
+}
+/**
+ * Clear all optimistic deletes.  Called by GrowspaceStore._pruneOptimisticDeletions
+ * after SyncService confirms the backend state.
+ */
+function clearOptimisticDeletedPlantIds() {
+    optimisticDeletedPlantIds$.set(new Set());
+}
+// ---------------------------------------------------------------------------
+// GridSliceRef facade — backward-compatible ActionContext.grid interface
+// ---------------------------------------------------------------------------
+/**
+ * Stable facade that satisfies the `ActionContext.grid` contract used by action
+ * modules (ctx.grid.$selectedDevice, ctx.grid.setSelectedDevice, etc.).
+ * Pass `gridSlice` wherever `GrowspaceGridStore` was previously expected.
+ */
+const gridSlice = {
+    $selectedDevice: selectedDeviceId$,
+    $growspaceOptions: growspaceOptions$,
+    $activeDevices: activeDevices$,
+    $gridLayout: gridLayout$,
+    $gridViewState: gridViewState$,
+    setSelectedDevice: setSelectedDeviceId,
+};
+
+/**
+ * Plant slice — atoms and mutators for Plant domain data.
+ *
+ * Public API (atoms):
+ *   plants$          — read: all plant entities for the active growspace
+ *   selectedPlant$   — read: the currently-selected plant (null if none)
+ *   setPlants()      — write: replace the plants array (called by bootstrap/sync)
+ *
+ * Public API (mutators):
+ *   waterPlant()          — water a plant (pilot mutator)
+ *   addPlant()            — add a single plant to a growspace
+ *   addPlants()           — batch-add plants to a growspace
+ *   updatePlant()         — update attributes on a plant (optimistic)
+ *   deletePlant()         — remove a plant (optimistic)
+ *   harvestPlant()        — move a plant to its harvest target
+ *   movePlantToGrowspace() — move/transplant a plant to any growspace
+ *   swapPlants()          — swap grid positions of two plants (optimistic)
+ *   takeClone()           — take clones from a mother plant
+ *   printLabel()          — fire-and-forget: print a plant label
+ *   saveHarvestMetrics()  — persist yield metrics on a harvested plant
+ *   scorePlant()          — score phenotype traits on a plant
+ *   logDryingWeight()     — log a drying weight reading
+ *   logMoistureReading()  — log a substrate moisture reading
+ *   setVisualTag()        — attach or clear a visual tag on a plant
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ * Cross-slice side-effects via Grid slice sibling setters are wired below.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public read)
+// ---------------------------------------------------------------------------
+const plants$ = atom([]);
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+/** Replace a single plant in plants$ by plant_id, merging attribute updates. */
+function _patchPlant(id, updates) {
+    return plants$.get().map((p) => {
+        if ((p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== id)
+            return p;
+        return { ...p, attributes: { ...p.attributes, ...updates } };
+    });
+}
+/** Swap the row/col of two plants in plants$ by their IDs. */
+function _swapPositions(id1, id2) {
+    const current = plants$.get();
+    const p1 = current.find((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === id1);
+    const p2 = current.find((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === id2);
+    if (!p1 || !p2)
+        return current;
+    const [r1, c1] = [p1.attributes.row, p1.attributes.col];
+    const [r2, c2] = [p2.attributes.row, p2.attributes.col];
+    return current.map((p) => {
+        const pid = p.attributes.plant_id ?? p.entity_id.replace('sensor.', '');
+        if (pid === id1)
+            return { ...p, attributes: { ...p.attributes, row: r2, col: c2 } };
+        if (pid === id2)
+            return { ...p, attributes: { ...p.attributes, row: r1, col: c1 } };
+        return p;
+    });
+}
+// ---------------------------------------------------------------------------
+// Mutators (public write)
+// ---------------------------------------------------------------------------
+/**
+ * Water a plant.
+ *
+ * Optimistic: none (backend is authoritative for watering state).
+ * Apply: calls growspace_manager.water_plant.
+ * Inverse: no-op.
+ */
+async function waterPlant$1(plantId, amountMl, nutrients, presetId) {
+    const payload = {
+        plant_id: plantId,
+        amount: amountMl,
+    };
+    if (nutrients && Object.keys(nutrients).length > 0) {
+        payload.nutrients = nutrients;
+    }
+    if (presetId) {
+        payload.preset_id = presetId;
+    }
+    await mutate({
+        type: 'waterPlant',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'water_plant', payload),
+    });
+}
+/**
+ * Add a single plant to a growspace.
+ *
+ * Optimistic: none (no ID assigned until backend responds).
+ * Apply: calls growspace_manager.add_plant.
+ * Inverse: no-op.
+ */
+async function addPlant(params) {
+    const payload = { ...params };
+    await mutate({
+        type: 'addPlant',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'add_plant', payload),
+    });
+}
+/**
+ * Batch-add plants to a growspace.
+ *
+ * Optimistic: none.
+ * Apply: calls growspace_manager.add_plants.
+ * Inverse: no-op.
+ */
+async function addPlants(params) {
+    const payload = { ...params };
+    await mutate({
+        type: 'addPlants',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'add_plants', payload),
+    });
+}
+/**
+ * Update attributes on a plant.
+ *
+ * Optimistic: patches plants$ immediately with the new attributes.
+ * Apply: calls growspace_manager.update_plant.
+ * Inverse: restores the original plant in plants$.
+ */
+async function updatePlant(plantId, updates) {
+    const originalList = plants$.get();
+    const patched = _patchPlant(plantId, updates);
+    await mutate({
+        type: 'updatePlant',
+        optimistic: () => plants$.set(patched),
+        inverse: () => plants$.set(originalList),
+        apply: () => callService('growspace_manager', 'update_plant', { plant_id: plantId, ...updates }),
+    });
+}
+/**
+ * Remove a plant from its growspace.
+ *
+ * Optimistic: removes the plant from plants$ immediately; adds to Grid slice's
+ *   optimisticDeletedPlantIds so the cell clears in the grid layout.
+ * Apply: calls growspace_manager.remove_plant.
+ * Inverse: restores the plant to plants$ and removes from optimistic deletes.
+ */
+async function deletePlant(plantId) {
+    const originalList = plants$.get();
+    const filtered = originalList.filter((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== plantId);
+    await mutate({
+        type: 'deletePlant',
+        optimistic: () => {
+            plants$.set(filtered);
+            addOptimisticDeletedPlantId(plantId);
+        },
+        inverse: () => {
+            plants$.set(originalList);
+            removeOptimisticDeletedPlantId(plantId);
+        },
+        apply: () => callService('growspace_manager', 'remove_plant', { plant_id: plantId }),
+    });
+}
+/**
+ * Move a plant to its next harvest stage (flower→dry, dry→cure, etc.).
+ *
+ * Optimistic: none (backend decides the new stage/location).
+ * Apply: calls growspace_manager.harvest_plant.
+ * Inverse: no-op.
+ *
+ * TODO(slice-logbook): record a harvest event in the Logbook slice.
+ */
+async function harvestPlant(plantId, targetGrowspaceId, metrics) {
+    const payload = {
+        plant_id: plantId,
+        target_growspace_id: targetGrowspaceId,
+    };
+    if (metrics) {
+        if (metrics.wet_weight != null)
+            payload.wet_weight = metrics.wet_weight;
+        if (metrics.dry_weight != null)
+            payload.dry_weight = metrics.dry_weight;
+        if (metrics.trim_weight != null)
+            payload.trim_weight = metrics.trim_weight;
+        if (metrics.thc_percentage != null)
+            payload.thc_percentage = metrics.thc_percentage;
+        if (metrics.cbd_percentage != null)
+            payload.cbd_percentage = metrics.cbd_percentage;
+        if (metrics.terpene_profile)
+            payload.terpene_profile = metrics.terpene_profile;
+    }
+    await mutate({
+        type: 'harvestPlant',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'harvest_plant', payload),
+    });
+}
+/**
+ * Move or transplant a plant to a specific growspace.
+ *
+ * Uses move_clone for clone-stage plants; move_plant for all others.
+ *
+ * Optimistic: adds plant to Grid slice's optimisticDeletedPlantIds to clear its source cell.
+ * Apply: calls growspace_manager.move_clone or move_plant.
+ * Inverse: removes from optimistic deletes to restore the source cell.
+ */
+async function movePlantToGrowspace(plant, targetGrowspaceId, transitionDate) {
+    const plantId = plant.attributes.plant_id ?? plant.entity_id.replace('sensor.', '');
+    const isClone = plant.attributes.stage === 'clone';
+    const service = isClone ? 'move_clone' : 'move_plant';
+    const payload = {
+        plant_id: plantId,
+        target_growspace_id: targetGrowspaceId,
+    };
+    await mutate({
+        type: 'movePlantToGrowspace',
+        optimistic: () => {
+            addOptimisticDeletedPlantId(plantId);
+        },
+        inverse: () => {
+            removeOptimisticDeletedPlantId(plantId);
+        },
+        apply: () => callService('growspace_manager', service, payload),
+    });
+}
+/**
+ * Swap the grid positions of two plants.
+ *
+ * Optimistic: swaps row/col for both plants in plants$.
+ * Apply: calls growspace_manager.switch_plants.
+ * Inverse: swaps back on failure.
+ *
+ * The Grid slice's gridLayout$ is derived from devices$ which updates on the next
+ * SyncService refresh; plants$ carries the optimistic swap for immediate render.
+ */
+async function swapPlants(plantId1, plantId2) {
+    const originalList = plants$.get();
+    const swapped = _swapPositions(plantId1, plantId2);
+    await mutate({
+        type: 'swapPlants',
+        optimistic: () => plants$.set(swapped),
+        inverse: () => plants$.set(originalList),
+        apply: () => callService('growspace_manager', 'switch_plants', {
+            plant1_id: plantId1,
+            plant2_id: plantId2,
+        }),
+    });
+}
+/**
+ * Take clones from a mother plant.
+ *
+ * Optimistic: none.
+ * Apply: calls growspace_manager.take_clone.
+ * Inverse: no-op.
+ */
+async function takeClone(motherPlant, numClones, targetGrowspaceId) {
+    const plantId = motherPlant.attributes.plant_id ?? motherPlant.entity_id.replace('sensor.', '');
+    const payload = { mother_plant_id: plantId };
+    if (numClones !== undefined)
+        payload.num_clones = numClones;
+    if (targetGrowspaceId)
+        payload.target_growspace_id = targetGrowspaceId;
+    await mutate({
+        type: 'takeClone',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'take_clone', payload),
+    });
+}
+/**
+ * Print a label for a plant or strain (fire-and-forget, no undo).
+ *
+ * Not wrapped in mutate — label printing is a side-effect-only operation.
+ */
+async function printLabel(params) {
+    const payload = {};
+    if (params.plantId !== undefined)
+        payload.plant_id = params.plantId;
+    if (params.strain !== undefined)
+        payload.strain = params.strain;
+    if (params.phenotype !== undefined)
+        payload.phenotype = params.phenotype;
+    if (params.breeder !== undefined)
+        payload.breeder = params.breeder;
+    if (params.lineage !== undefined)
+        payload.lineage = params.lineage;
+    if (params.breederLogo !== undefined)
+        payload.breeder_logo = params.breederLogo;
+    if (params.deviceId !== undefined)
+        payload.device_id = params.deviceId;
+    if (params.preview !== undefined)
+        payload.preview = params.preview;
+    await callService('growspace_manager', 'print_label', payload);
+}
+/**
+ * Persist harvest yield metrics on a harvested plant.
+ *
+ * No-ops silently when the metrics object has no keys.
+ * Optimistic: none.
+ * Apply: calls growspace_manager.update_harvest_metrics.
+ * Inverse: no-op.
+ */
+async function saveHarvestMetrics(plantId, metrics) {
+    if (Object.keys(metrics).length === 0)
+        return;
+    await mutate({
+        type: 'saveHarvestMetrics',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'update_harvest_metrics', {
+            plant_id: plantId,
+            ...metrics,
+        }),
+    });
+}
+/**
+ * Score phenotype traits on a plant.
+ *
+ * No-ops silently when every value in the scores map is null or undefined.
+ * Optimistic: none.
+ * Apply: calls growspace_manager.score_plant.
+ * Inverse: no-op.
+ */
+async function scorePlant(plantId, scores) {
+    const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
+    if (!hasValue)
+        return;
+    const payload = { plant_id: plantId, ...scores };
+    await mutate({
+        type: 'scorePlant',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'score_plant', payload),
+    });
+}
+/**
+ * Log a drying weight reading for a plant.
+ *
+ * Optimistic: none.
+ * Apply: calls growspace_manager.log_drying_weight.
+ * Inverse: no-op.
+ */
+async function logDryingWeight(plantId, weightGrams, date) {
+    const payload = { plant_id: plantId, weight_grams: weightGrams };
+    if (date)
+        payload.date = date;
+    await mutate({
+        type: 'logDryingWeight',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'log_drying_weight', payload),
+    });
+}
+/**
+ * Log a substrate moisture reading for a plant.
+ *
+ * Optimistic: none.
+ * Apply: calls growspace_manager.log_moisture_reading.
+ * Inverse: no-op.
+ */
+async function logMoistureReading(plantId, moisturePercent, date) {
+    const payload = { plant_id: plantId, moisture_percent: moisturePercent };
+    if (date)
+        payload.date = date;
+    await mutate({
+        type: 'logMoistureReading',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'log_moisture_reading', payload),
+    });
+}
+/**
+ * Attach or clear a visual tag on a plant.
+ *
+ * Optimistic: none.
+ * Apply: calls growspace_manager.set_visual_tag.
+ * Inverse: no-op.
+ */
+async function setVisualTag(plantId, visualTag) {
+    await mutate({
+        type: 'setVisualTag',
+        optimistic: () => { },
+        inverse: () => { },
+        apply: () => callService('growspace_manager', 'set_visual_tag', {
+            plant_id: plantId,
+            visual_tag: visualTag,
+        }),
+    });
+}
+
 var lib = {};
 
 var StoreController = {};
@@ -10787,129 +11624,177 @@ Md3DateInput = __decorate([
 ], Md3DateInput);
 
 /**
- * Service for timeline and event log operations
- * Centralizes all backend API calls related to timelines
+ * Logbook slice — zod schemas for WebSocket response validation.
+ *
+ * Consolidates the GrowspaceEvent interface from
+ * `src/features/environment/types.ts` and the NotePayload from
+ * `src/services/timeline-service.ts`.
  */
-class TimelineService {
-    constructor(hass) {
-        this.hass = hass;
-    }
-    /**
-     * Fetch growspace event log
-     * @param growspaceId - The growspace ID to fetch events for
-     * @param limit - Maximum number of events to fetch (default: 50)
-     */
-    async fetchGrowspaceEvents(growspaceId, limit = 50) {
-        try {
-            // Fetch both logs (user/system) and alerts (environmental) concurrently
-            const [logsResponse, alertsResponse] = await Promise.all([
-                this.hass.callWS({
-                    type: WS_TYPE_GET_LOG,
-                    growspace_id: growspaceId,
-                    limit, // User logs are less frequent, standard limit ok
-                }),
-                this.hass.callWS({
-                    type: WS_TYPE_GET_ALERTS,
-                    growspace_id: growspaceId,
-                    limit: 300, // Alerts are frequent, need higher limit to not miss recent ones
-                }),
-            ]);
-            const logs = logsResponse?.[growspaceId] || [];
-            const alerts = alertsResponse?.[growspaceId] || [];
-            // Combine and sort by timestamp descending
-            const combined = [...logs, ...alerts].sort((a, b) => {
-                const tA = new Date(a.timestamp || a.start_time).getTime();
-                const tB = new Date(b.timestamp || b.start_time).getTime();
-                return tB - tA; // Newest first
-            });
-            return combined;
-        }
-        catch (e) {
-            console.error('Error fetching growspace events:', e);
-            throw e;
-        }
-    }
-    /**
-     * Fetch all events for a specific plant across all growspaces it has been in.
-     * Use this in the plant overview dialog so history is not lost after stage moves.
-     * @param plantId - The plant ID to fetch events for
-     * @param growspaceId - The plant's current growspace (for shared/irrigation events)
-     * @param limit - Maximum number of events to fetch (default: 50)
-     */
-    async fetchPlantEvents(plantId, growspaceId, limit = 50) {
-        try {
-            const [logsResponse, alertsResponse] = await Promise.all([
-                this.hass.callWS({
-                    type: WS_TYPE_GET_LOG,
-                    plant_id: plantId,
-                    growspace_id: growspaceId,
-                    limit,
-                }),
-                this.hass.callWS({
-                    type: WS_TYPE_GET_ALERTS,
-                    plant_id: plantId,
-                    growspace_id: growspaceId,
-                    limit: 300,
-                }),
-            ]);
-            const logs = logsResponse?.[plantId] || [];
-            const alerts = alertsResponse?.[plantId] || [];
-            const combined = [...logs, ...alerts].sort((a, b) => {
-                const tA = new Date(a.timestamp || a.start_time).getTime();
-                const tB = new Date(b.timestamp || b.start_time).getTime();
-                return tB - tA;
-            });
-            return combined;
-        }
-        catch (e) {
-            console.error('Error fetching plant events:', e);
-            throw e;
-        }
-    }
-    /**
-     * Add a note to a plant timeline
-     * @param plantId - The plant ID to add the note to
-     * @param payload - Note data including text, images, and tags
-     */
-    async addPlantNote(plantId, payload) {
-        await this.hass.callWS({
-            type: 'growspace_manager/add_timeline_note',
-            plant_id: plantId,
-            notes: payload.notes,
-            images: payload.images || [],
-            transition_date: payload.transitionDate || new Date().toISOString(),
-        });
-    }
-    async addGrowspaceNote(growspaceId, payload) {
-        await this.hass.callWS({
-            type: 'growspace_manager/add_growspace_note',
-            growspace_id: growspaceId,
-            notes: payload.notes,
-            images: payload.images || [],
-        });
-    }
-    /**
-     * Delete a timeline event
-     * @param eventId - The event ID to delete
-     */
-    async deleteEvent(eventId) {
-        await this.hass.callWS({
-            type: 'growspace_manager/remove_timeline_event',
-            event_id: eventId,
-        });
-    }
+// ---------------------------------------------------------------------------
+// LogbookEntry (a.k.a. GrowspaceEvent in legacy code)
+// ---------------------------------------------------------------------------
+const LogbookEntrySchema = objectType({
+    sensor_type: stringType(),
+    growspace_id: stringType(),
+    start_time: stringType(),
+    end_time: stringType(),
+    duration_sec: numberType(),
+    severity: numberType(),
+    category: stringType(),
+    reasons: arrayType(stringType()),
+    timestamp: stringType().optional(),
+    notes: stringType().optional(),
+    images: arrayType(stringType()).optional(),
+    tags: arrayType(stringType()).optional(),
+    plant_id: stringType().optional(),
+    metadata: recordType(unknownType()).optional(),
+    event_id: unionType([stringType(), numberType()]).optional(),
+});
+// ---------------------------------------------------------------------------
+// Response schemas
+// ---------------------------------------------------------------------------
+/**
+ * get_log and get_alerts both return Record<id, LogbookEntry[]>.
+ * The key is either growspace_id or plant_id depending on the call.
+ */
+const LogResponseSchema = recordType(arrayType(LogbookEntrySchema));
+/** remove_timeline_event returns nothing meaningful. */
+const DeleteEventResponseSchema = unknownType();
+/** add_timeline_note and add_growspace_note return nothing meaningful. */
+const AddNoteResponseSchema = unknownType();
+
+/**
+ * Logbook slice — atoms and mutators for event log / timeline data.
+ *
+ * Public API (atoms):
+ *   growspaceEvents$   — read: merged log+alert events for the last queried growspace
+ *   plantEvents$       — read: merged log+alert events for the last queried plant
+ *
+ * Public API (bootstrap / sibling writes):
+ *   setGrowspaceEvents(entries) — replace growspaceEvents$ (called by sync or cross-slice)
+ *   setPlantEvents(entries)     — replace plantEvents$ (called by sync or cross-slice)
+ *
+ * Public API (mutators):
+ *   fetchGrowspaceEvents(growspaceId, limit?) — fetch log+alerts, merge, update growspaceEvents$
+ *   fetchPlantEvents(plantId, growspaceId, limit?) — same scoped to a plant
+ *   addPlantNote(plantId, payload)      — fire-and-forget: add a note to a plant timeline
+ *   addGrowspaceNote(growspaceId, payload) — fire-and-forget: add a note to a growspace
+ *   deleteEvent(eventId)                — optimistic remove from both atoms + backend call
+ *
+ * Zod schemas and response types are in ./schema.ts.
+ *
+ * Cross-slice notes:
+ *   The Plant slice calls setGrowspaceEvents/setPlantEvents after harvest or other
+ *   mutations that produce logbook entries, so both atoms stay consistent without
+ *   requiring a full refetch.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const growspaceEvents$ = atom([]);
+const plantEvents$ = atom([]);
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+/** Merge log + alert entries and sort newest-first. */
+function _merge(logs, alerts) {
+    return [...logs, ...alerts].sort((a, b) => {
+        const tA = new Date(a.timestamp ?? a.start_time).getTime();
+        const tB = new Date(b.timestamp ?? b.start_time).getTime();
+        return tB - tA;
+    });
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Fetch log and alert entries for a growspace, merge them, and update growspaceEvents$.
+ *
+ * Re-throws on backend errors without modifying growspaceEvents$.
+ *
+ * @param growspaceId - The growspace to query
+ * @param limit       - Max log entries (default 50); alerts use 6× this value
+ */
+async function fetchGrowspaceEvents(growspaceId, limit = 50) {
+    const [logsResp, alertsResp] = await Promise.all([
+        hassCall('growspace_manager/get_log', { growspace_id: growspaceId, limit }, LogResponseSchema),
+        hassCall('growspace_manager/get_alerts', { growspace_id: growspaceId, limit: limit * 6 }, LogResponseSchema),
+    ]);
+    const merged = _merge(logsResp[growspaceId] ?? [], alertsResp[growspaceId] ?? []);
+    growspaceEvents$.set(merged);
+    return merged;
 }
 /**
- * Singleton factory for TimelineService
- * Ensures only one instance exists per HASS instance
+ * Fetch log and alert entries scoped to a plant, merge them, and update plantEvents$.
+ *
+ * Re-throws on backend errors without modifying plantEvents$.
+ *
+ * @param plantId     - The plant to query
+ * @param growspaceId - The plant's current growspace (for shared/irrigation events)
+ * @param limit       - Max log entries (default 50); alerts use 6× this value
  */
-let _instance = null;
-function getTimelineService(hass) {
-    // Create new instance if none exists or HASS instance changed
-    if (!_instance || _instance.hass !== hass) {
-        _instance = new TimelineService(hass);
-    }
-    return _instance;
+async function fetchPlantEvents(plantId, growspaceId, limit = 50) {
+    const [logsResp, alertsResp] = await Promise.all([
+        hassCall('growspace_manager/get_log', { plant_id: plantId, growspace_id: growspaceId, limit }, LogResponseSchema),
+        hassCall('growspace_manager/get_alerts', { plant_id: plantId, growspace_id: growspaceId, limit: limit * 6 }, LogResponseSchema),
+    ]);
+    const merged = _merge(logsResp[plantId] ?? [], alertsResp[plantId] ?? []);
+    plantEvents$.set(merged);
+    return merged;
+}
+/**
+ * Add a note to a plant's timeline (fire-and-forget, no undo).
+ *
+ * @param plantId - Target plant
+ * @param payload - Note content: notes text, optional images, tags, transitionDate
+ */
+async function addPlantNote(plantId, payload) {
+    await hassCall('growspace_manager/add_timeline_note', {
+        plant_id: plantId,
+        notes: payload.notes,
+        images: payload.images ?? [],
+        tags: payload.tags ?? [],
+        transition_date: payload.transitionDate ?? new Date().toISOString(),
+    }, AddNoteResponseSchema);
+}
+/**
+ * Add a note to a growspace's log (fire-and-forget, no undo).
+ *
+ * @param growspaceId - Target growspace
+ * @param payload     - Note content: notes text, optional images
+ */
+async function addGrowspaceNote(growspaceId, payload) {
+    await hassCall('growspace_manager/add_growspace_note', {
+        growspace_id: growspaceId,
+        notes: payload.notes,
+        images: payload.images ?? [],
+    }, AddNoteResponseSchema);
+}
+/**
+ * Delete a logbook/timeline event by ID.
+ *
+ * Optimistic: removes from growspaceEvents$ and plantEvents$ immediately.
+ * Apply: calls growspace_manager/remove_timeline_event.
+ * Inverse: restores both atoms on failure.
+ *
+ * @param eventId - The event_id to delete (string or number)
+ */
+async function deleteEvent(eventId) {
+    const originalGrowspace = growspaceEvents$.get();
+    const originalPlant = plantEvents$.get();
+    const filtered = (entries) => entries.filter((e) => e.event_id !== eventId);
+    await mutate({
+        type: 'deleteEvent',
+        optimistic: () => {
+            growspaceEvents$.set(filtered(originalGrowspace));
+            plantEvents$.set(filtered(originalPlant));
+        },
+        inverse: () => {
+            growspaceEvents$.set(originalGrowspace);
+            plantEvents$.set(originalPlant);
+        },
+        apply: () => hassCall('growspace_manager/remove_timeline_event', { event_id: eventId }, DeleteEventResponseSchema).then(() => undefined),
+    });
 }
 
 /**
@@ -12132,8 +13017,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         this._isLoading = true;
         this._error = undefined;
         try {
-            const service = getTimelineService(this.hass);
-            this._events = await service.fetchGrowspaceEvents(this.growspaceId, 50);
+            this._events = await fetchGrowspaceEvents(this.growspaceId, 50);
         }
         catch (e) {
             console.error('Error fetching logbook events:', e);
@@ -14918,6 +15802,166 @@ SensorGroupDialog = __decorate([
     t$2('sensor-group-dialog')
 ], SensorGroupDialog);
 
+/**
+ * Subarea slice — zod schemas for WebSocket response validation.
+ *
+ * Replaces the plain TypeScript interfaces that lived in
+ * `services/api/subarea-api.ts` and `services/types.ts`.
+ */
+// ---------------------------------------------------------------------------
+// EnvironmentConfig
+// ---------------------------------------------------------------------------
+const EnvironmentConfigSchema = objectType({
+    temperature_sensor: stringType().nullish(),
+    humidity_sensor: stringType().nullish(),
+    vpd_sensor: stringType().nullish(),
+    co2_sensor: stringType().nullish(),
+    soil_moisture_sensor: stringType().nullish(),
+    veg_day_hours: numberType().optional(),
+    flower_day_hours: numberType().optional(),
+    temperature_sensors: arrayType(stringType()).optional(),
+    humidity_sensors: arrayType(stringType()).optional(),
+    vpd_sensors: arrayType(stringType()).optional(),
+    light_sensors: arrayType(stringType()).optional(),
+    exhaust_fan_entities: arrayType(stringType()).optional(),
+    circulation_fan_entities: arrayType(stringType()).optional(),
+    humidifier_entities: arrayType(stringType()).optional(),
+    dehumidifier_entities: arrayType(stringType()).optional(),
+    sensor_coordinates: recordType(objectType({ x: numberType(), y: numberType(), z: numberType(), rotation: numberType().optional() }))
+        .optional(),
+    sensor_groups: arrayType(unknownType()).optional(),
+    substrate_temperature_sensors: arrayType(stringType()).optional(),
+    camera_entities: arrayType(stringType()).optional(),
+    lung_room_temp_sensors: arrayType(stringType()).optional(),
+    ph_sensors: arrayType(stringType()).optional(),
+    feed_ec_sensors: arrayType(stringType()).optional(),
+    substrate_ec_sensors: arrayType(stringType()).optional(),
+    runoff_ec_sensors: arrayType(stringType()).optional(),
+    drain_volume_sensors: arrayType(stringType()).optional(),
+    irrigation_flow_sensors: arrayType(stringType()).optional(),
+    power_sensors: arrayType(stringType()).optional(),
+    energy_sensors: arrayType(stringType()).optional(),
+    electricity_cost_per_kwh: numberType().optional(),
+    dli_target_veg: numberType().optional(),
+    dli_target_flower: numberType().optional(),
+    control_dehumidifier: booleanType().optional(),
+    stress_threshold: numberType().optional(),
+    mold_threshold: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// Subarea
+// ---------------------------------------------------------------------------
+const SubareaSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    environment_config: EnvironmentConfigSchema,
+});
+// ---------------------------------------------------------------------------
+// Response schemas
+// ---------------------------------------------------------------------------
+/** get_subareas returns an array of Subarea objects. */
+const GetSubareasResponseSchema = arrayType(SubareaSchema);
+/** add_subarea and update_subarea return a single Subarea. */
+const SubareaResponseSchema = SubareaSchema;
+/** remove_subarea returns nothing meaningful. */
+const RemoveSubareaResponseSchema = unknownType();
+
+/**
+ * Subarea slice — atoms and mutators for Subarea domain data.
+ *
+ * Public API (atoms):
+ *   subareas$       — read: subareas for the most-recently queried growspace
+ *   setSubareas()   — write: replace subarea list (called by bootstrap/sync)
+ *
+ * Public API (mutators):
+ *   getSubareas(growspaceId)                          — fetch subareas, updates subareas$
+ *   addSubarea(growspaceId, name)                     — add a subarea, appends to subareas$
+ *   updateSubarea(growspaceId, subareaId, envConfig)  — update env config (optimistic)
+ *   removeSubarea(growspaceId, subareaId)             — remove a subarea (optimistic)
+ *
+ * Zod schemas and response types are in ./schema.ts.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const subareas$ = atom([]);
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Fetch all subareas for a growspace.
+ *
+ * Updates subareas$ with the returned list on success.
+ * Re-throws on backend errors without mutating subareas$.
+ *
+ * @param growspaceId - The growspace to query
+ */
+async function getSubareas(growspaceId) {
+    const result = await hassCall('growspace_manager/get_subareas', { growspace_id: growspaceId }, GetSubareasResponseSchema);
+    subareas$.set(result);
+    return result;
+}
+/**
+ * Add a new subarea to a growspace.
+ *
+ * No optimistic update — the backend assigns the subarea ID.
+ * Appends the returned subarea to subareas$ on success.
+ * Re-throws on backend errors without modifying subareas$.
+ *
+ * @param growspaceId - The growspace to add the subarea to
+ * @param name        - Display name for the new subarea
+ */
+async function addSubarea(growspaceId, name) {
+    const created = await hassCall('growspace_manager/add_subarea', { growspace_id: growspaceId, name }, SubareaResponseSchema);
+    subareas$.set([...subareas$.get(), created]);
+    return created;
+}
+/**
+ * Update the environment config of an existing subarea.
+ *
+ * Optimistic: patches subareas$ immediately.
+ * Apply: calls growspace_manager/update_subarea.
+ * Inverse: restores the original subareas$ on failure.
+ *
+ * @param growspaceId       - The parent growspace
+ * @param subareaId         - The subarea to update
+ * @param environmentConfig - Partial environment config to merge
+ */
+async function updateSubarea(growspaceId, subareaId, environmentConfig) {
+    const originalList = subareas$.get();
+    const patched = originalList.map((s) => {
+        if (s.id !== subareaId)
+            return s;
+        return { ...s, environment_config: { ...s.environment_config, ...environmentConfig } };
+    });
+    await mutate({
+        type: 'updateSubarea',
+        optimistic: () => subareas$.set(patched),
+        inverse: () => subareas$.set(originalList),
+        apply: () => hassCall('growspace_manager/update_subarea', { growspace_id: growspaceId, subarea_id: subareaId, environment_config: environmentConfig }, SubareaResponseSchema).then(() => undefined),
+    });
+}
+/**
+ * Remove a subarea from a growspace.
+ *
+ * Optimistic: removes the subarea from subareas$ immediately.
+ * Apply: calls growspace_manager/remove_subarea.
+ * Inverse: restores subareas$ on failure.
+ *
+ * @param growspaceId - The parent growspace
+ * @param subareaId   - The subarea to remove
+ */
+async function removeSubarea(growspaceId, subareaId) {
+    const originalList = subareas$.get();
+    const filtered = originalList.filter((s) => s.id !== subareaId);
+    await mutate({
+        type: 'removeSubarea',
+        optimistic: () => subareas$.set(filtered),
+        inverse: () => subareas$.set(originalList),
+        apply: () => hassCall('growspace_manager/remove_subarea', { growspace_id: growspaceId, subarea_id: subareaId }, RemoveSubareaResponseSchema).then(() => undefined),
+    });
+}
+
 let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -14938,9 +15982,6 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
         this._error = '';
     }
     willUpdate(changedProperties) {
-        if (changedProperties.has('hass') && this.hass) {
-            this._dataService = new DataService(this.hass);
-        }
         if (changedProperties.has('subarea') && this.subarea) {
             this._populateFromSubarea(this.subarea);
         }
@@ -14967,9 +16008,6 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
     async _save() {
         if (!this.subarea || !this.growspaceId)
             return;
-        if (!this._dataService) {
-            this._dataService = new DataService(this.hass);
-        }
         this._saving = true;
         this._error = '';
         const updatedConfig = {
@@ -14985,7 +16023,11 @@ let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
             camera_entities: this._cameraEntities,
         };
         try {
-            const updated = await this._dataService.updateSubarea(this.growspaceId, this.subarea.id, updatedConfig);
+            await updateSubarea(this.growspaceId, this.subarea.id, updatedConfig);
+            const updated = {
+                ...this.subarea,
+                environment_config: { ...this.subarea.environment_config, ...updatedConfig },
+            };
             this.dispatchEvent(new CustomEvent('subarea-updated', {
                 detail: { subarea: updated },
                 bubbles: true,
@@ -15803,7 +16845,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._subareasGrowspaceId = growspaceId;
         this._subareasLoading = true;
         try {
-            this._subareas = await this._getDataService().getSubareas(growspaceId);
+            this._subareas = await getSubareas(growspaceId);
         }
         catch (e) {
             console.error('[ConfigDialog] Failed to load subareas:', e);
@@ -15818,7 +16860,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         if (!name || !this._subareasGrowspaceId)
             return;
         try {
-            await this._getDataService().addSubarea(this._subareasGrowspaceId, name);
+            await addSubarea(this._subareasGrowspaceId, name);
             this._newSubareaName = '';
             this._showAddSubarea = false;
             await this._loadSubareas();
@@ -15838,7 +16880,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         if (!this._subareasGrowspaceId)
             return;
         try {
-            await this._getDataService().removeSubarea(this._subareasGrowspaceId, subareaId);
+            await removeSubarea(this._subareasGrowspaceId, subareaId);
             this._deleteConfirmSubareaId = '';
             await this._loadSubareas();
         }
@@ -22172,9 +23214,8 @@ let GrowspaceTimeline = class GrowspaceTimeline extends i$3 {
             return;
         this._isLoading = true;
         this._hasError = false;
-        const service = getTimelineService(this.hass);
         try {
-            this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
+            this._events = await fetchGrowspaceEvents(this.growspaceId, 100);
         }
         catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'Fetch failed';
@@ -22965,8 +24006,7 @@ let LogbookDialog = class LogbookDialog extends i$3 {
             return;
         noteInput.setSaving(true);
         try {
-            const service = getTimelineService(this.hass);
-            await service.addGrowspaceNote(this.growspaceId, {
+            await addGrowspaceNote(this.growspaceId, {
                 notes: e.detail.text,
                 images: e.detail.images,
             });
@@ -24426,14 +25466,12 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _fetchSnapshots() {
-        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
+        if (!this.dialogState?.growspaceId)
             return;
         this._isLoading = true;
         try {
-            const response = await this.store.actions.snapshots.list(this.dialogState.growspaceId);
-            if (response) {
-                this._snapshots = response.snapshots || [];
-            }
+            const response = await getSnapshots$1(this.dialogState.growspaceId);
+            this._snapshots = response.snapshots;
         }
         catch (err) {
             console.error('[SnapshotsDialog] Failed to fetch snapshots:', err);
@@ -24444,17 +25482,16 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _captureSnapshot() {
-        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
+        if (!this.dialogState?.growspaceId)
             return;
         this._isCapturing = true;
         try {
-            await this.store.actions.snapshots.capture(this.dialogState.growspaceId);
-            // Refresh the list immediately
+            await captureSnapshot$1(this.dialogState.growspaceId);
             await this._fetchSnapshots();
         }
         catch (err) {
             console.error('[SnapshotsDialog] Failed to capture snapshot:', err);
-            // Action handles toast
+            this.store.ui.showToast('Failed to capture snapshot', 'error');
         }
         finally {
             this._isCapturing = false;
@@ -34131,243 +35168,6 @@ GrowspaceWateringDialogUI = __decorate([
     t$2('growspace-watering-dialog-ui')
 ], GrowspaceWateringDialogUI);
 
-let clean = Symbol('clean');
-
-let listenerQueue = [];
-let lqIndex = 0;
-const QUEUE_ITEMS_PER_LISTENER = 4;
-let epoch = 0;
-
-/* @__NO_SIDE_EFFECTS__ */
-const atom = initialValue => {
-  let listeners = [];
-  let $atom = {
-    get() {
-      if (!$atom.lc) {
-        $atom.listen(() => {})();
-      }
-      return $atom.value
-    },
-    lc: 0,
-    listen(listener) {
-      $atom.lc = listeners.push(listener);
-
-      return () => {
-        for (
-          let i = lqIndex + QUEUE_ITEMS_PER_LISTENER;
-          i < listenerQueue.length;
-
-        ) {
-          if (listenerQueue[i] === listener) {
-            listenerQueue.splice(i, QUEUE_ITEMS_PER_LISTENER);
-          } else {
-            i += QUEUE_ITEMS_PER_LISTENER;
-          }
-        }
-
-        let index = listeners.indexOf(listener);
-        if (~index) {
-          listeners.splice(index, 1);
-          if (!--$atom.lc) $atom.off();
-        }
-      }
-    },
-    notify(oldValue, changedKey) {
-      epoch++;
-      let runListenerQueue = !listenerQueue.length;
-      for (let listener of listeners) {
-        listenerQueue.push(listener, $atom.value, oldValue, changedKey);
-      }
-
-      if (runListenerQueue) {
-        for (
-          lqIndex = 0;
-          lqIndex < listenerQueue.length;
-          lqIndex += QUEUE_ITEMS_PER_LISTENER
-        ) {
-          listenerQueue[lqIndex](
-            listenerQueue[lqIndex + 1],
-            listenerQueue[lqIndex + 2],
-            listenerQueue[lqIndex + 3]
-          );
-        }
-        listenerQueue.length = 0;
-      }
-    },
-    /* It will be called on last listener unsubscribing.
-       We will redefine it in onMount and onStop. */
-    off() {},
-    set(newValue) {
-      let oldValue = $atom.value;
-      if (oldValue !== newValue) {
-        $atom.value = newValue;
-        $atom.notify(oldValue);
-      }
-    },
-    subscribe(listener) {
-      let unbind = $atom.listen(listener);
-      listener($atom.value);
-      return unbind
-    },
-    value: initialValue
-  };
-
-  {
-    $atom[clean] = () => {
-      listeners = [];
-      $atom.lc = 0;
-      $atom.off();
-    };
-  }
-
-  return $atom
-};
-
-const MOUNT = 5;
-const UNMOUNT = 6;
-const REVERT_MUTATION = 10;
-
-let on = (object, listener, eventKey, mutateStore) => {
-  object.events = object.events || {};
-  if (!object.events[eventKey + REVERT_MUTATION]) {
-    object.events[eventKey + REVERT_MUTATION] = mutateStore(eventProps => {
-      // eslint-disable-next-line no-sequences
-      object.events[eventKey].reduceRight((event, l) => (l(event), event), {
-        shared: {},
-        ...eventProps
-      });
-    });
-  }
-  object.events[eventKey] = object.events[eventKey] || [];
-  object.events[eventKey].push(listener);
-  return () => {
-    let currentListeners = object.events[eventKey];
-    let index = currentListeners.indexOf(listener);
-    currentListeners.splice(index, 1);
-    if (!currentListeners.length) {
-      delete object.events[eventKey];
-      object.events[eventKey + REVERT_MUTATION]();
-      delete object.events[eventKey + REVERT_MUTATION];
-    }
-  }
-};
-
-let STORE_UNMOUNT_DELAY = 1000;
-
-let onMount = ($store, initialize) => {
-  let listener = payload => {
-    let destroy = initialize(payload);
-    if (destroy) $store.events[UNMOUNT].push(destroy);
-  };
-  return on($store, listener, MOUNT, runListeners => {
-    let originListen = $store.listen;
-    $store.listen = (...args) => {
-      if (!$store.lc && !$store.active) {
-        $store.active = true;
-        runListeners();
-      }
-      return originListen(...args)
-    };
-
-    let originOff = $store.off;
-    $store.events[UNMOUNT] = [];
-    $store.off = () => {
-      originOff();
-      setTimeout(() => {
-        if ($store.active && !$store.lc) {
-          $store.active = false;
-          for (let destroy of $store.events[UNMOUNT]) destroy();
-          $store.events[UNMOUNT] = [];
-        }
-      }, STORE_UNMOUNT_DELAY);
-    };
-
-    {
-      let originClean = $store[clean];
-      $store[clean] = () => {
-        for (let destroy of $store.events[UNMOUNT]) destroy();
-        $store.events[UNMOUNT] = [];
-        $store.active = false;
-        originClean();
-      };
-    }
-
-    return () => {
-      $store.listen = originListen;
-      $store.off = originOff;
-    }
-  })
-};
-
-let computedStore = (stores, cb, batched) => {
-  if (!Array.isArray(stores)) stores = [stores];
-
-  let previousArgs;
-  let currentEpoch;
-  let set = () => {
-    if (currentEpoch === epoch) return
-    currentEpoch = epoch;
-    let args = stores.map($store => $store.get());
-    if (!previousArgs || args.some((arg, i) => arg !== previousArgs[i])) {
-      previousArgs = args;
-      let value = cb(...args);
-      if (value && value.then && value.t) {
-        value.then(asyncValue => {
-          if (previousArgs === args) {
-            // Prevent a stale set
-            $computed.set(asyncValue);
-          }
-        });
-      } else {
-        $computed.set(value);
-        currentEpoch = epoch;
-      }
-    }
-  };
-  let $computed = atom(undefined);
-  let get = $computed.get;
-  $computed.get = () => {
-    set();
-    return get()
-  };
-  let run = set;
-
-  onMount($computed, () => {
-    let unbinds = stores.map($store => $store.listen(run));
-    set();
-    return () => {
-      for (let unbind of unbinds) unbind();
-    }
-  });
-
-  return $computed
-};
-
-/* @__NO_SIDE_EFFECTS__ */
-const computed = (stores, fn) => computedStore(stores, fn);
-
-/* @__NO_SIDE_EFFECTS__ */
-const map = (initial = {}) => {
-  let $map = atom(initial);
-
-  $map.setKey = function (key, value) {
-    let oldMap = $map.value;
-    if (typeof value === 'undefined' && key in $map.value) {
-      $map.value = { ...$map.value };
-      delete $map.value[key];
-      $map.notify(oldMap, key);
-    } else if ($map.value[key] !== value) {
-      $map.value = {
-        ...$map.value,
-        [key]: value
-      };
-      $map.notify(oldMap, key);
-    }
-  };
-
-  return $map
-};
-
 /**
  * Plant Overview ViewModel
  *
@@ -36147,8 +36947,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
             return;
         noteInput.setSaving(true);
         try {
-            const service = getTimelineService(this.hass);
-            await service.addPlantNote(this.plant_id, {
+            await addPlantNote(this.plant_id, {
                 notes: e.detail.text,
                 images: e.detail.images,
             });
@@ -36175,8 +36974,7 @@ let PlantTimeline = class PlantTimeline extends i$3 {
         if (this._deletingEventId === null)
             return;
         try {
-            const service = getTimelineService(this.hass);
-            await service.deleteEvent(this._deletingEventId);
+            await deleteEvent(this._deletingEventId);
             this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
         }
         catch (err) {
@@ -37396,12 +38194,11 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         if (!growspaceId || !this.hass)
             return;
         try {
-            const service = getTimelineService(this.hass);
             const plantId = this.plant.attributes?.plant_id;
             // Fetch by plantId so events from previous growspaces are included
             const events = plantId
-                ? await service.fetchPlantEvents(plantId, growspaceId)
-                : await service.fetchGrowspaceEvents(growspaceId);
+                ? await fetchPlantEvents(plantId, growspaceId)
+                : await fetchGrowspaceEvents(growspaceId);
             this._logbookEvents = events;
             this._logbookEventsAtom.set(events);
         }
@@ -38334,6 +39131,9 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     updated(changed) {
         super.updated(changed);
+        if (changed.has('hass') && this.hass) {
+            setHass(this.hass);
+        }
         if (changed.has('store')) {
             this._initControllers();
         }
@@ -39020,7 +39820,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 }
                 if (payload?.mode === 'plant') {
                     const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
-                    const promises = plantIds.map((pid) => this.store?.actions.environment.waterPlant(pid, volume, nutrientRecord, presetId));
+                    const promises = plantIds.map((pid) => waterPlant$1(pid, volume, nutrientRecord, presetId));
                     await Promise.all(promises);
                 }
                 else {
@@ -112143,49 +112943,6 @@ class GrowspaceHistoryStore {
     }
 }
 
-class GrowspaceGridStore {
-    constructor(dataStore) {
-        this.$selectedDevice = atom(null);
-        this.$activeDevices = computed([dataStore.$devices, dataStore.$optimisticDeletedPlantIds], (devices, deletedIds) => {
-            return devices.map((d) => ({
-                ...d,
-                plants: d.plants.filter((p) => {
-                    const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-                    return !deletedIds.has(pId);
-                }),
-            }));
-        });
-        this.$growspaceOptions = computed(this.$activeDevices, (devices) => {
-            const options = {};
-            for (const d of devices) {
-                options[d.deviceId] = d.name;
-            }
-            return options;
-        });
-        this.$gridLayout = computed([this.$activeDevices, this.$selectedDevice], (devices, selectedId) => {
-            if (!selectedId) {
-                return { effectiveRows: 0, grid: [] };
-            }
-            const device = devices.find((d) => d.deviceId === selectedId);
-            if (!device) {
-                return { effectiveRows: 0, grid: [] };
-            }
-            const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-            const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
-            return { effectiveRows, grid };
-        });
-        this.$gridViewState = computed([this.$activeDevices, this.$gridLayout, this.$growspaceOptions, this.$selectedDevice], (devices, gridLayout, growspaceOptions, selectedDevice) => ({
-            devices,
-            selectedDevice,
-            gridLayout,
-            growspaceOptions,
-        }));
-    }
-    setSelectedDevice(deviceId) {
-        this.$selectedDevice.set(deviceId);
-    }
-}
-
 const WS_ERROR_MESSAGES = {
     coordinator_not_ready: 'Integration not loaded — try reloading the page',
     entity_not_found: 'Item not found — it may have been removed',
@@ -112469,512 +113226,6 @@ async function removeIPMPreset(ctx, presetId) {
         const error = e instanceof Error ? e.message : 'Unknown error';
         ctx.ui.showToast(`Failed to remove IPM preset: ${error}`, 'error');
         throw e;
-    }
-}
-
-/**
- * Plant Actions - Unified business logic for plant operations.
- */
-/**
- * Update a single plant with new attributes.
- */
-async function updatePlant(ctx, plantId, updates) {
-    await withAction(ctx, () => ctx.dataService.updatePlant({ plant_id: plantId, ...updates }), {
-        success: 'Plant updated',
-        errorPrefix: 'Failed to update plant',
-    });
-}
-/**
- * Bulk update plants from dialog state.
- */
-async function updatePlantFromDialog(ctx, dialogState) {
-    const { plant, editedAttributes, selectedPlantIds } = dialogState;
-    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
-    const isBulkEdit = targetIds.length > 1;
-    const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
-    await withAction(ctx, async () => {
-        await Promise.all(targetIds.map((id) => ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id })));
-        ctx.closeDialog();
-        await ctx.refreshData();
-        if (ctx.ui.$isEditMode.get()) {
-            ctx.ui.clearPlantSelection();
-            ctx.ui.setEditMode(false);
-        }
-    }, { errorPrefix: 'Failed to update plant(s)' });
-}
-/**
- * Internal helper for API deletion with optimistic updates
- */
-async function _deletePlantsApi(ctx, plantIds) {
-    plantIds.forEach((id) => ctx.data.addOptimisticDeletedPlantId(id));
-    try {
-        await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
-        return true;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to delete plant:', e);
-        ctx.ui.showToast(`Failed to delete: ${error}`, 'error');
-        plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
-        return false;
-    }
-}
-/**
- * High-level delete action with Undo/Redo
- */
-async function handleDeletePlant(ctx, plantId) {
-    const ids = Array.isArray(plantId) ? plantId : [plantId];
-    const plantsToRestore = [];
-    const devices = ctx.data.$devices.get();
-    ids.forEach((id) => {
-        for (const device of devices) {
-            const plant = device.plants?.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
-            if (plant) {
-                plantsToRestore.push({
-                    growspace_id: plant.attributes.growspace_id || device.deviceId,
-                    row: plant.attributes.row,
-                    col: plant.attributes.col,
-                    strain: plant.attributes.strain,
-                    phenotype: plant.attributes.phenotype,
-                    veg_start: plant.attributes.veg_start,
-                    flower_start: plant.attributes.flower_start,
-                    mother_start: plant.attributes.mother_start,
-                    clone_start: plant.attributes.clone_start,
-                    seedling_start: plant.attributes.seedling_start,
-                    dry_start: plant.attributes.dry_start,
-                    cure_start: plant.attributes.cure_start,
-                });
-                break;
-            }
-        }
-    });
-    const success = await _deletePlantsApi(ctx, ids);
-    if (success) {
-        ctx.undoRedoManager.pushAction({
-            type: ids.length > 1 ? 'batch-delete' : 'delete',
-            description: ids.length > 1
-                ? `Deleted ${ids.length} plants`
-                : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
-            reverse: async () => {
-                for (const p of plantsToRestore) {
-                    // plantsToRestore contains required fields from the original plant - assert to API type
-                    await ctx.dataService.addPlant(p);
-                }
-                await ctx.refreshData();
-            },
-            redo: async () => {
-                await handleDeletePlant(ctx, ids);
-            },
-        });
-        // UI Updates
-        // Note: deselectPlants logic needs to be checked. UI store has toggle but not explicit deselect multiple?
-        // ctx.ui.deselectPlants(ids) was in the original code, implying ui store has it.
-        // Assuming ctx.ui has a method to deselect.
-        // If not, we iterate.
-        // Checking ui-store.ts would confirm, assuming it has specific method.
-        // We'll trust the original code's intent or use remove.
-        ctx.ui.deselectPlants(ids);
-        if (ctx.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
-            ctx.closeDialog();
-        }
-        ctx.refreshData(); // updateGrid equivalent
-    }
-}
-/**
- * Move plant to next stage (flower→dry, dry→cure, mother→clone).
- */
-async function movePlantToNextStage(ctx, plant, metrics) {
-    const stage = plant.attributes?.stage;
-    let targetGrowspace = '';
-    const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-    if (!stage || !movableStages.has(stage)) {
-        ctx.ui.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
-        return false;
-    }
-    if (stage === 'flower') {
-        targetGrowspace = 'dry';
-    }
-    else if (stage === 'dry') {
-        targetGrowspace = 'cure';
-    }
-    else if (stage === 'mother') {
-        targetGrowspace = 'clone';
-    }
-    else {
-        console.error('Unknown stage, cannot move plant', targetGrowspace);
-        return false;
-    }
-    const ok = await withAction(ctx, async () => {
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
-        // Small delay to allow backend commit to complete before fetching updated data
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await ctx.refreshData();
-        ctx.closeDialog();
-        return true;
-    }, { success: `Plant moved to ${targetGrowspace}`, errorPrefix: 'Failed to move plant' });
-    return ok !== undefined;
-}
-/**
- * Internal API move clone wrapper
- */
-async function _movePlantApi(ctx, plant, targetGrowspaceId) {
-    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-    if (plant.attributes.stage === 'clone') {
-        await ctx.dataService.moveClone(plantId, targetGrowspaceId);
-    }
-    else {
-        // Note: historically this integration used harvestPlant for general room moves
-        await ctx.dataService.harvestPlant(plantId, targetGrowspaceId);
-    }
-}
-/**
- * Move plant to a specific growspace with Undo/Redo.
- */
-async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
-    const originalGrowspace = plant.attributes.growspace_id || 'unknown';
-    const ok = await withAction(ctx, async () => {
-        await _movePlantApi(ctx, plant, targetGrowspace);
-        // Small delay to allow backend commit to complete before fetching updated data
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await ctx.refreshData();
-        ctx.closeDialog();
-        ctx.undoRedoManager.pushAction({
-            type: 'move',
-            description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
-            reverse: async () => {
-                await movePlantToGrowspace(ctx, plant, originalGrowspace);
-            },
-            redo: async () => {
-                await movePlantToGrowspace(ctx, plant, targetGrowspace);
-            },
-        });
-        return true;
-    }, { errorPrefix: 'Failed to move plant' });
-    return ok !== undefined;
-}
-/**
- * Take clones from a mother plant.
- */
-async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
-    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
-    const cloneCount = numClones || 1;
-    const ok = await withAction(ctx, async () => {
-        await ctx.dataService.takeClone({
-            mother_plant_id: plantId,
-            num_clones: numClones,
-            target_growspace_id: targetGrowspaceId,
-        });
-        return true;
-    }, {
-        success: `Taking ${cloneCount} clone${cloneCount > 1 ? 's' : ''}...`,
-        errorPrefix: 'Failed to take clone',
-    });
-    return ok !== undefined;
-}
-/**
- * Move plant to new grid position (Internal)
- */
-async function movePlantPosition(ctx, plant, newRow, newCol) {
-    try {
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        await ctx.dataService.updatePlant({
-            plant_id: plantId,
-            row: newRow,
-            col: newCol,
-        });
-        return true;
-    }
-    catch (err) {
-        console.error('Error moving plant:', err);
-        return false;
-    }
-}
-/**
- * Handle drag and drop between grid cells with Undo/Redo
- */
-async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant) {
-    if (!sourcePlant || !sourcePlant.attributes)
-        return false;
-    const originalRow = sourcePlant.attributes.row;
-    const originalCol = sourcePlant.attributes.col;
-    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
-    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
-    console.log('handlePlantDrop:', {
-        sourceId,
-        targetId,
-        growspaceId: sourcePlant.attributes.growspace_id,
-    });
-    if (sourceId === targetId)
-        return false;
-    const growspaceId = sourcePlant.attributes.growspace_id;
-    if (!growspaceId)
-        return false;
-    // Helper to perform optimistic grid update
-    const performOptimisticGridUpdate = (isRevert = false) => {
-        // growspaceId is guaranteed truthy by closure capture from outer scope check
-        const updateGridLogic = (grid) => {
-            let sourceKey = null;
-            let targetKey = null;
-            Object.entries(grid).forEach(([key, plant]) => {
-                if (!plant)
-                    return;
-                const pId = plant.plant_id || plant.entity_id.replace('sensor.', '');
-                if (pId === sourceId)
-                    sourceKey = key;
-                if (targetId && pId === targetId)
-                    targetKey = key;
-            });
-            if (sourceKey && targetKey) {
-                const sData = grid[sourceKey];
-                const tData = grid[targetKey];
-                const newSourceRow = isRevert ? originalRow : targetRow;
-                const newSourceCol = isRevert ? originalCol : targetCol;
-                const newTargetRow = isRevert ? targetRow : originalRow;
-                const newTargetCol = isRevert ? targetCol : originalCol;
-                // sData and tData are guaranteed to exist because sourceKey and targetKey came from the grid iteration
-                sData.row = newSourceRow;
-                sData.col = newSourceCol;
-                tData.row = newTargetRow;
-                tData.col = newTargetCol;
-                grid[sourceKey] = tData;
-                grid[targetKey] = sData;
-            }
-        };
-        // 1. Update Cache
-        ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
-        // 2. Update Devices Atom (for immediate UI Reactivity)
-        const devices = ctx.data.$devices.get();
-        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
-        if (deviceIdx >= 0) {
-            const newDevices = [...devices];
-            const device = { ...newDevices[deviceIdx] };
-            const newGrid = { ...device.grid };
-            updateGridLogic(newGrid);
-            device.grid = newGrid;
-            newDevices[deviceIdx] = device;
-            ctx.data.$devices.set(newDevices);
-        }
-    };
-    try {
-        if (targetPlant && growspaceId) {
-            // Use OptimisticManager
-            const actionId = await ctx.optimisticManager.applyOptimisticUpdate('swap', {
-                sourceId,
-                targetId: targetId,
-                growspaceId,
-                originalRow,
-                originalCol,
-                targetRow,
-                targetCol,
-            }, () => performOptimisticGridUpdate(false), // Apply
-            () => performOptimisticGridUpdate(true) // Revert
-            );
-            // Perform actual API call
-            await ctx.dataService.swapPlants(sourceId, targetId);
-            // Confirm update and add to history
-            ctx.optimisticManager.confirmUpdate(actionId, {
-                description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
-                redo: async () => {
-                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                },
-            });
-            return true;
-        }
-        else {
-            // Non-swap move (to empty) - keep existing logic for now or refactor later
-            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
-            ctx.undoRedoManager.pushAction({
-                type: 'move',
-                description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-                reverse: async () => {
-                    await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
-                    await ctx.refreshData();
-                },
-                redo: async () => {
-                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                },
-            });
-            await ctx.refreshData();
-            return true;
-        }
-    }
-    catch (err) {
-        console.error('Error during drag-and-drop:', err);
-        ctx.refreshData();
-        return false;
-    }
-}
-/**
- * Add a new plant to a growspace.
- */
-async function confirmAddPlant(ctx, detail) {
-    const selectedDevice = ctx.grid.$selectedDevice.get();
-    if (!selectedDevice) {
-        ctx.ui.showToast('No growspace selected', 'error');
-        return false;
-    }
-    const ok = await withAction(ctx, async () => {
-        if (detail.addToLibrary) {
-            try {
-                await ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
-                await fetchStrainLibrary(ctx, true);
-                ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
-            }
-            catch (e) {
-                console.error('Failed to add strain to library:', e);
-                ctx.ui.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
-            }
-        }
-        await ctx.dataService.addPlant({
-            growspace_id: selectedDevice,
-            row: detail.row,
-            col: detail.col,
-            strain: detail.strain,
-            phenotype: detail.phenotype,
-            veg_start: detail.veg_start,
-            flower_start: detail.flower_start,
-            seedling_start: detail.seedling_start,
-            mother_start: detail.mother_start,
-            clone_start: detail.clone_start,
-            dry_start: detail.dry_start,
-            cure_start: detail.cure_start,
-        });
-        ctx.closeDialog();
-        await ctx.refreshData();
-        return true;
-    }, { success: 'Plant added successfully', errorPrefix: 'Failed to add plant' });
-    return ok !== undefined;
-}
-/**
- * Batch add plants with Undo/Redo
- */
-async function confirmAddPlants(ctx, detail) {
-    const selectedDevice = ctx.grid.$selectedDevice.get();
-    if (!selectedDevice) {
-        ctx.ui.showToast('No growspace selected', 'error');
-        return;
-    }
-    const devices = ctx.data.$devices.get();
-    const beforeIds = new Set();
-    devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
-    await withAction(ctx, async () => {
-        if (detail.addToLibrary) {
-            try {
-                const amount = detail.amount || 1;
-                const startNumber = detail.start_number || 1;
-                const promises = [];
-                for (let i = 0; i < amount; i++) {
-                    const currentNumber = startNumber + i;
-                    const phenoName = detail.phenotype
-                        ? `${detail.phenotype} #${currentNumber}`
-                        : `Strain #${currentNumber}`;
-                    if (detail.strain) {
-                        promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
-                    }
-                }
-                await Promise.all(promises);
-                await fetchStrainLibrary(ctx, true);
-                ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
-            }
-            catch (e) {
-                console.error('Failed to add strains to library:', e);
-                ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
-            }
-        }
-        const { addToLibrary: _, ...apiPayload } = detail;
-        await ctx.dataService.addPlants({
-            ...apiPayload,
-            growspace_id: selectedDevice,
-        });
-        await ctx.refreshData();
-        const afterDevices = ctx.data.$devices.get();
-        const addedIds = [];
-        afterDevices.forEach((d) => d.plants?.forEach((p) => {
-            const id = p.attributes.plant_id || '';
-            if (id && !beforeIds.has(id))
-                addedIds.push(id);
-        }));
-        if (addedIds.length > 0) {
-            ctx.undoRedoManager.pushAction({
-                type: 'batch-delete',
-                description: `Added ${addedIds.length} plants`,
-                reverse: async () => {
-                    await _deletePlantsApi(ctx, addedIds);
-                    await ctx.refreshData();
-                },
-                redo: async () => {
-                    await confirmAddPlants(ctx, detail);
-                },
-            });
-        }
-        ctx.closeDialog();
-    }, { success: 'Batch plants added successfully', errorPrefix: 'Failed to add plants' });
-}
-/**
- * Print a label for a plant or strain.
- */
-async function printLabel(ctx, params) {
-    const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
-    const baseUrl = window.location.origin + window.location.pathname;
-    try {
-        const result = await ctx.dataService.printLabel({
-            plant_id: plantId,
-            strain,
-            phenotype,
-            breeder,
-            lineage,
-            breeder_logo: breederLogo,
-            device_id: deviceId,
-            preview,
-            base_url: baseUrl,
-        });
-        if (!preview) {
-            ctx.ui.showToast('Label printing command sent', 'success');
-        }
-        return result;
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        console.error('Failed to print label:', e);
-        ctx.ui.showToast(`Failed to print label: ${error}`, 'error');
-        throw e;
-    }
-}
-/**
- * Save harvest yield metrics for a plant.
- * No-ops if the metrics object has no keys (nothing to persist).
- */
-async function saveHarvestMetrics(ctx, plantId, metrics) {
-    if (Object.keys(metrics).length === 0)
-        return;
-    try {
-        await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
-        ctx.ui.showToast('Harvest metrics saved', 'success');
-        await ctx.refreshData(true);
-    }
-    catch (error) {
-        ctx.ui.showToast(`Failed to save harvest metrics: ${error}`, 'error');
-        throw error;
-    }
-}
-/**
- * Score a plant's phenotype traits.
- * No-ops if every value in the scores map is null or undefined.
- */
-async function scorePhenotype(ctx, plantId, scores) {
-    const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
-    if (!hasValue)
-        return;
-    try {
-        await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
-        ctx.ui.showToast('Scores saved', 'success');
-        await ctx.refreshData(true);
-    }
-    catch (error) {
-        ctx.ui.showToast(`Failed to save scores: ${error}`, 'error');
-        throw error;
     }
 }
 
@@ -113818,22 +114069,6 @@ async function applyIPM(ctx, detail) {
     }, { success: 'IPM treatment applied successfully', errorPrefix: 'Failed to apply IPM', rethrow: true });
 }
 
-async function logDryingWeight(ctx, plantId, weightGrams, date) {
-    await withAction(ctx, () => ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date }), {
-        success: 'Weight logged', errorPrefix: 'Failed to log weight', rethrow: true,
-    });
-}
-async function logMoistureReading(ctx, plantId, moisturePercent, date) {
-    await withAction(ctx, () => ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date }), {
-        success: 'Moisture logged', errorPrefix: 'Failed to log moisture', rethrow: true,
-    });
-}
-async function setVisualTag(ctx, plantId, visualTag) {
-    await withAction(ctx, () => ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag }), {
-        success: 'Visual tag saved', errorPrefix: 'Failed to save visual tag', rethrow: true,
-    });
-}
-
 /**
  * Keyboard Actions - Pure functions for keyboard navigation.
  * Encapsulates keyboard shortcuts and navigation logic without coupling to store lifecycle.
@@ -113891,11 +114126,11 @@ function handleKeyboardNavigation(ctx, key) {
                 // The handleDeletePlant in plant-actions checks for plant_id or entity_id.
                 // Let's pass the ID we can find.
                 const idToDelete = focusedPlant.attributes.plant_id || focusedPlant.entity_id;
-                handleDeletePlant(ctx, idToDelete);
+                deletePlant(idToDelete);
             }
             else if (ctx.ui.$selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
-                handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
+                Array.from(ctx.ui.$selectedPlants.get()).forEach((id) => deletePlant(id));
             }
             break;
     }
@@ -113905,32 +114140,135 @@ class ActionDispatcher {
     constructor(store) {
         this.store = store;
         this.plant = {
-            update: (id, updates) => updatePlant(this.ctx, id, updates),
-            delete: (id) => handleDeletePlant(this.ctx, id),
-            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
-            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
-            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
-            harvest: (plant, metrics) => movePlantToNextStage(this.ctx, plant, metrics),
-            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
-            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
-            finishDrying: (plant) => movePlantToNextStage(this.ctx, plant),
-            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
-                row: r,
-                col: c,
-                strain: s,
-                phenotype: p,
-            }),
-            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
-            saveHarvestMetrics: (plantId, metrics) => saveHarvestMetrics(this.ctx, plantId, metrics),
-            scorePhenotype: (plantId, scores) => scorePhenotype(this.ctx, plantId, scores),
-            printLabel: (params) => printLabel(this.ctx, params),
-            logDryingWeight: (plantId, weightGrams, date) => logDryingWeight(this.ctx, plantId, weightGrams, date),
-            logMoistureReading: (plantId, moisturePercent, date) => logMoistureReading(this.ctx, plantId, moisturePercent, date),
-            setVisualTag: (plantId, visualTag) => setVisualTag(this.ctx, plantId, visualTag),
+            update: async (id, updates) => {
+                try {
+                    await updatePlant(id, updates);
+                    this.ctx.ui.showToast('Plant updated', 'success');
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to update plant: ${msg}`, 'error');
+                }
+            },
+            delete: (id) => this._deletePlants(id),
+            move: async (plant, growspace) => {
+                const plantId = plant.attributes?.plant_id || plant.entity_id?.replace('sensor.', '') || '';
+                const originalGrowspaceId = plant.attributes?.growspace_id || '';
+                try {
+                    await movePlantToGrowspace(plant, growspace);
+                    this.ctx.undoRedoManager.pushAction({
+                        type: 'move',
+                        description: `Moved plant to ${growspace}`,
+                        reverse: async () => {
+                            await harvestPlant(plantId, originalGrowspaceId);
+                            await this.ctx.refreshData();
+                        },
+                        redo: async () => {
+                            await movePlantToGrowspace(plant, growspace);
+                            await this.ctx.refreshData();
+                        },
+                    });
+                    await new Promise((_resolve) => setTimeout(_resolve, 500));
+                    await this.ctx.refreshData();
+                    this.ctx.closeDialog();
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to move plant: ${msg}`, 'error');
+                }
+            },
+            drop: (row, col, target, source) => this._handlePlantDrop(row, col, target, source),
+            nextStage: (plant) => this._movePlantToNextStage(plant),
+            harvest: (plant, metrics) => this._movePlantToNextStage(plant, metrics),
+            takeClone: async (mother, num, targetGrowspaceId) => {
+                const cloneCount = num ?? 1;
+                try {
+                    await takeClone(mother, num, targetGrowspaceId);
+                    this.ctx.ui.showToast(`Taking ${cloneCount} clone${cloneCount > 1 ? 's' : ''}...`, 'success');
+                    return true;
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to take clone: ${msg}`, 'error');
+                    return false;
+                }
+            },
+            updateFromDialog: (state) => this._updatePlantFromDialog(state),
+            finishDrying: (plant) => this._movePlantToNextStage(plant),
+            add: (gid, r, c, s, p) => this._confirmAddPlant({ growspace_id: gid, row: r, col: c, strain: s, phenotype: p }),
+            addBatch: (detail) => this._confirmAddPlants(detail),
+            saveHarvestMetrics: async (plantId, metrics) => {
+                try {
+                    await saveHarvestMetrics(plantId, metrics);
+                    this.ctx.ui.showToast('Harvest metrics saved', 'success');
+                    await this.ctx.refreshData(true);
+                }
+                catch (err) {
+                    this.ctx.ui.showToast(`Failed to save harvest metrics: ${err}`, 'error');
+                    throw err;
+                }
+            },
+            scorePhenotype: async (plantId, scores) => {
+                try {
+                    await scorePlant(plantId, scores);
+                    this.ctx.ui.showToast('Scores saved', 'success');
+                    await this.ctx.refreshData(true);
+                }
+                catch (err) {
+                    this.ctx.ui.showToast(`Failed to save scores: ${err}`, 'error');
+                    throw err;
+                }
+            },
+            printLabel: async (params) => {
+                try {
+                    await printLabel(params);
+                    if (!params.preview) {
+                        this.ctx.ui.showToast('Label printing command sent', 'success');
+                    }
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to print label: ${msg}`, 'error');
+                    throw err;
+                }
+            },
+            logDryingWeight: async (plantId, weightGrams, date) => {
+                try {
+                    await logDryingWeight(plantId, weightGrams, date);
+                    this.ctx.ui.showToast('Weight logged', 'success');
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to log weight: ${msg}`, 'error');
+                    throw err;
+                }
+            },
+            logMoistureReading: async (plantId, moisturePercent, date) => {
+                try {
+                    await logMoistureReading(plantId, moisturePercent, date);
+                    this.ctx.ui.showToast('Moisture logged', 'success');
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to log moisture: ${msg}`, 'error');
+                    throw err;
+                }
+            },
+            setVisualTag: async (plantId, visualTag) => {
+                try {
+                    await setVisualTag(plantId, visualTag);
+                    this.ctx.ui.showToast('Visual tag saved', 'success');
+                }
+                catch (err) {
+                    const msg = err instanceof Error ? err.message : 'Unknown error';
+                    this.ctx.ui.showToast(`Failed to save visual tag: ${msg}`, 'error');
+                    throw err;
+                }
+            },
             confirmAdd: async (detail) => {
                 if (!detail.strain)
                     return;
-                await confirmAddPlant(this.ctx, detail);
+                await this._confirmAddPlant(detail);
             },
             batchAction: async (action, entityIds, data) => {
                 if (entityIds.length === 0)
@@ -114028,7 +114366,7 @@ class ActionDispatcher {
                 const ids = Array.from(this.ctx.ui.$selectedPlants.get());
                 if (!ids.length)
                     return;
-                await handleDeletePlant(this.ctx, ids);
+                await this._deletePlants(ids);
             },
             toggleEnvGraph: (metric) => {
                 if (metric === 'crop_steering') {
@@ -114132,6 +114470,278 @@ class ActionDispatcher {
     get ctx() {
         return this.store.context;
     }
+    // ---------------------------------------------------------------------------
+    // Private plant helpers (inlined from store/plant/plant-actions.ts)
+    // ---------------------------------------------------------------------------
+    async _deletePlants(plantId) {
+        const ids = Array.isArray(plantId) ? plantId : [plantId];
+        const plantsToRestore = [];
+        const devices = this.ctx.data.$devices.get();
+        ids.forEach((id) => {
+            for (const device of devices) {
+                const plant = device.plants?.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
+                if (plant) {
+                    plantsToRestore.push({
+                        growspace_id: plant.attributes.growspace_id || device.deviceId,
+                        row: plant.attributes.row,
+                        col: plant.attributes.col,
+                        strain: plant.attributes.strain,
+                        phenotype: plant.attributes.phenotype,
+                        veg_start: plant.attributes.veg_start,
+                        flower_start: plant.attributes.flower_start,
+                        mother_start: plant.attributes.mother_start,
+                        clone_start: plant.attributes.clone_start,
+                        seedling_start: plant.attributes.seedling_start,
+                        dry_start: plant.attributes.dry_start,
+                        cure_start: plant.attributes.cure_start,
+                    });
+                    break;
+                }
+            }
+        });
+        try {
+            await Promise.all(ids.map((id) => deletePlant(id)));
+        }
+        catch (err) {
+            const error = err instanceof Error ? err.message : 'Unknown error';
+            this.ctx.ui.showToast(`Failed to delete: ${error}`, 'error');
+            return;
+        }
+        this.ctx.undoRedoManager.pushAction({
+            type: ids.length > 1 ? 'batch-delete' : 'delete',
+            description: ids.length > 1
+                ? `Deleted ${ids.length} plants`
+                : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+            reverse: async () => {
+                for (const p of plantsToRestore) {
+                    await this.ctx.dataService.addPlant(p);
+                }
+                await this.ctx.refreshData();
+            },
+            redo: async () => {
+                await this._deletePlants(ids);
+            },
+        });
+        this.ctx.ui.deselectPlants(ids);
+        if (this.ctx.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
+            this.ctx.closeDialog();
+        }
+        this.ctx.refreshData();
+    }
+    async _movePlantToNextStage(plant, metrics) {
+        const stage = plant.attributes?.stage;
+        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
+        if (!stage || !movableStages.has(stage)) {
+            this.ctx.ui.showToast(`Plant must be in mother or flower or dry or cure stage to move. stage is ${stage}`, 'error');
+            return false;
+        }
+        let targetGrowspace;
+        if (stage === 'flower')
+            targetGrowspace = 'dry';
+        else if (stage === 'dry')
+            targetGrowspace = 'cure';
+        else if (stage === 'mother')
+            targetGrowspace = 'clone';
+        else {
+            console.error('Unknown stage, cannot move plant', stage);
+            return false;
+        }
+        try {
+            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+            await harvestPlant(plantId, targetGrowspace, metrics);
+            await new Promise((_resolve) => setTimeout(_resolve, 500));
+            await this.ctx.refreshData();
+            this.ctx.closeDialog();
+            this.ctx.ui.showToast(`Plant moved to ${targetGrowspace}`, 'success');
+            return true;
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            this.ctx.ui.showToast(`Failed to move plant: ${msg}`, 'error');
+            return false;
+        }
+    }
+    async _updatePlantFromDialog(dialogState) {
+        const { plant, editedAttributes, selectedPlantIds } = dialogState;
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+        const isBulkEdit = targetIds.length > 1;
+        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
+        try {
+            await Promise.all(targetIds.map((id) => updatePlant(id, payloadTemplate)));
+            this.ctx.closeDialog();
+            await this.ctx.refreshData();
+            if (this.ctx.ui.$isEditMode.get()) {
+                this.ctx.ui.clearPlantSelection();
+                this.ctx.ui.setEditMode(false);
+            }
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            console.error('Failed to update plant(s)', err instanceof Error ? err : new Error(msg));
+            this.ctx.ui.showToast(`Failed to update plant(s): ${msg}`, 'error');
+        }
+    }
+    async _confirmAddPlant(detail) {
+        const selectedDevice = detail.growspace_id ?? this.ctx.grid.$selectedDevice.get();
+        if (!selectedDevice) {
+            this.ctx.ui.showToast('No growspace selected', 'error');
+            return false;
+        }
+        if (detail.addToLibrary) {
+            try {
+                await this.ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
+                await fetchStrainLibrary(this.ctx, true);
+                this.ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+            }
+            catch (e) {
+                console.error('Failed to add strain to library:', e);
+                this.ctx.ui.showToast('Failed to add strain to library, conducting plant addition', 'info');
+            }
+        }
+        try {
+            await addPlant({
+                growspace_id: selectedDevice,
+                row: detail.row,
+                col: detail.col,
+                strain: detail.strain,
+                phenotype: detail.phenotype,
+                veg_start: detail.veg_start,
+                flower_start: detail.flower_start,
+                seedling_start: detail.seedling_start,
+                mother_start: detail.mother_start,
+                clone_start: detail.clone_start,
+                dry_start: detail.dry_start,
+                cure_start: detail.cure_start,
+            });
+            this.ctx.closeDialog();
+            await this.ctx.refreshData();
+            this.ctx.ui.showToast('Plant added successfully', 'success');
+            return true;
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            this.ctx.ui.showToast(`Failed to add plant: ${msg}`, 'error');
+            return false;
+        }
+    }
+    async _confirmAddPlants(detail) {
+        const selectedDevice = this.ctx.grid.$selectedDevice.get();
+        if (!selectedDevice) {
+            this.ctx.ui.showToast('No growspace selected', 'error');
+            return;
+        }
+        const devices = this.ctx.data.$devices.get();
+        const beforeIds = new Set();
+        devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
+        if (detail.addToLibrary) {
+            try {
+                const amount = detail.amount || 1;
+                const startNumber = detail.start_number || 1;
+                const promises = [];
+                for (let i = 0; i < amount; i++) {
+                    const currentNumber = startNumber + i;
+                    const phenoName = detail.phenotype
+                        ? `${detail.phenotype} #${currentNumber}`
+                        : `Strain #${currentNumber}`;
+                    if (detail.strain) {
+                        promises.push(this.ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
+                    }
+                }
+                await Promise.all(promises);
+                await fetchStrainLibrary(this.ctx, true);
+                this.ctx.ui.showToast(`Added ${detail.amount} strain variants to library`, 'success');
+            }
+            catch (e) {
+                console.error('Failed to add strains to library:', e);
+                this.ctx.ui.showToast('Failed to add strains to library, conducting plant addition', 'info');
+            }
+        }
+        try {
+            const { addToLibrary: _, ...apiPayload } = detail;
+            await addPlants({
+                ...apiPayload,
+                growspace_id: selectedDevice,
+            });
+            await this.ctx.refreshData();
+            const afterDevices = this.ctx.data.$devices.get();
+            const addedIds = [];
+            afterDevices.forEach((d) => d.plants?.forEach((p) => {
+                const id = p.attributes.plant_id || '';
+                if (id && !beforeIds.has(id))
+                    addedIds.push(id);
+            }));
+            if (addedIds.length > 0) {
+                this.ctx.undoRedoManager.pushAction({
+                    type: 'batch-delete',
+                    description: `Added ${addedIds.length} plants`,
+                    reverse: async () => {
+                        await Promise.all(addedIds.map((id) => deletePlant(id)));
+                        await this.ctx.refreshData();
+                    },
+                    redo: async () => {
+                        await this._confirmAddPlants(detail);
+                    },
+                });
+            }
+            this.ctx.closeDialog();
+            this.ctx.ui.showToast('Batch plants added successfully', 'success');
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            this.ctx.ui.showToast(`Failed to add plants: ${msg}`, 'error');
+        }
+    }
+    async _handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant) {
+        if (!sourcePlant || !sourcePlant.attributes)
+            return false;
+        const originalRow = sourcePlant.attributes.row;
+        const originalCol = sourcePlant.attributes.col;
+        const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+        const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
+        if (sourceId === targetId)
+            return false;
+        const growspaceId = sourcePlant.attributes.growspace_id;
+        if (!growspaceId)
+            return false;
+        try {
+            if (targetPlant) {
+                await swapPlants(sourceId, targetId);
+                this.ctx.undoRedoManager.pushAction({
+                    type: 'move',
+                    description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
+                    reverse: async () => {
+                        await swapPlants(sourceId, targetId);
+                    },
+                    redo: async () => {
+                        await this._handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant);
+                    },
+                });
+                return true;
+            }
+            else {
+                await updatePlant(sourceId, { row: targetRow, col: targetCol });
+                this.ctx.undoRedoManager.pushAction({
+                    type: 'move',
+                    description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+                    reverse: async () => {
+                        await updatePlant(sourceId, { row: originalRow, col: originalCol });
+                        await this.ctx.refreshData();
+                    },
+                    redo: async () => {
+                        await this._handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant);
+                    },
+                });
+                await this.ctx.refreshData();
+                return true;
+            }
+        }
+        catch (err) {
+            console.error('Error during drag-and-drop:', err);
+            this.ctx.refreshData();
+            return false;
+        }
+    }
 }
 
 /**
@@ -114145,11 +114755,10 @@ class SyncService {
         }
         this._cardConfig = config;
     }
-    constructor(dataService, dataStore, uiStore, gridStore) {
+    constructor(dataService, dataStore, uiStore) {
         this.dataService = dataService;
         this.dataStore = dataStore;
         this.uiStore = uiStore;
-        this.gridStore = gridStore;
         this._isFetchingWS = false;
         this._watchedEntities = new Set();
         /** Per-card config — not shared across card instances. */
@@ -114229,6 +114838,7 @@ class SyncService {
         const currentDevices = this.dataStore.$devices.get();
         if (!this._areDeviceArraysEqual(currentDevices, devices)) {
             this.dataStore.setDevices(devices);
+            setDevices(devices);
         }
         // Populate watched entities for next update cycle
         this._watchedEntities.clear();
@@ -114253,7 +114863,7 @@ class SyncService {
                 });
             }
         });
-        const selectedDevice = this.gridStore.$selectedDevice.get();
+        const selectedDevice = selectedDeviceId$.get();
         // Auto-select if needed
         if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
             const config = this._cardConfig;
@@ -114261,14 +114871,12 @@ class SyncService {
                 return;
             const defaultDevice = devices.find((d) => d.deviceId === config.default_growspace || d.name === config.default_growspace);
             if (defaultDevice) {
-                this.gridStore.setSelectedDevice(defaultDevice.deviceId);
+                setSelectedDeviceId(defaultDevice.deviceId);
                 this.uiStore.setDefaultApplied(true);
                 return;
             }
-            // Fallback to first device only if autoSelect is enabled
-            {
-                this.gridStore.setSelectedDevice(devices[0].deviceId);
-            }
+            // Fallback to first device
+            setSelectedDeviceId(devices[0].deviceId);
             this.uiStore.setDefaultApplied(true);
         }
     }
@@ -114605,8 +115213,23 @@ class GrowspaceStore {
         this.dataService = shared.dataService;
         // Per-card stores
         this.ui = new GrowspaceUIStore();
-        this.grid = new GrowspaceGridStore(shared.data);
-        this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, this.grid.$selectedDevice);
+        // Reset Grid slice singleton state so this store instance starts with a clean slate.
+        // The Grid slice uses module-level atoms (singleton); resetting here ensures that
+        // creating a new store (e.g. a new card instance or a test fixture) doesn't carry
+        // over device selection from a previous instance.
+        setSelectedDeviceId(null);
+        setDevices([]);
+        clearOptimisticDeletedPlantIds();
+        this.grid = gridSlice;
+        this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, gridSlice.$selectedDevice);
+        // Bridge: keep Grid slice's devices$ in sync with DataStore's $devices so that
+        // cards relying on gridViewState$.devices see the same data as store.data.$devices.
+        // SyncService also calls setGridDevices() directly; this subscription ensures the
+        // Grid slice stays in sync even when tests set data.$devices without going through
+        // SyncService (e.g. element.store.data.$devices.set([...])).
+        this._devicesBridgeUnsub = shared.data.$devices.subscribe((devices) => {
+            setDevices(devices);
+        });
         // Cross-store computed atoms
         this.$dialogHostState = computed([
             this.ui.$activeDialog,
@@ -114642,7 +115265,7 @@ class GrowspaceStore {
         this.$headerState = computed([this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState], (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history }));
         this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
-        this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
+        this.syncService = new SyncService(this.dataService, shared.data, this.ui);
         this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.ui.showToast(msg, type, action));
         this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
         // Initialize new infrastructure (Phase 1)
@@ -114662,6 +115285,7 @@ class GrowspaceStore {
     }
     destroy() {
         this._staleUnsub?.();
+        this._devicesBridgeUnsub?.();
         this.history.destroy();
         this.eventBus.clear();
     }
@@ -114732,7 +115356,15 @@ class GrowspaceStore {
         this.refreshData();
     }
     async movePlant(plant, newRow, newCol) {
-        const success = await movePlantPosition(this.context, plant, newRow, newCol);
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        let success = false;
+        try {
+            await updatePlant(plantId, { row: newRow, col: newCol });
+            success = true;
+        }
+        catch (err) {
+            console.error('Error moving plant:', err);
+        }
         if (success) {
             this.updateGrid();
         }
@@ -115125,6 +115757,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     }
     firstUpdated() {
         if (this.hass) {
+            setHass(this.hass);
             this.store.updateHass(this.hass);
         }
         this.store.initializeSelectedDevice(this._config);
@@ -115175,6 +115808,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     updated(changedProps) {
         super.updated(changedProps);
         if (changedProps.has('hass')) {
+            setHass(this.hass);
             this.store.updateHass(this.hass);
             if (this._dialogPortal) {
                 this._dialogPortal.hass = this.hass;
@@ -115704,16 +116338,138 @@ GrowspaceAnalyticsCard = __decorate([
     t$2('growspace-analytics-card')
 ], GrowspaceAnalyticsCard);
 
+/**
+ * AIInsight slice — zod schemas for backend response validation.
+ *
+ * GrowAdviceResponseSchema validates the payload returned by the
+ * ask_grow_advice and analyze_all_growspaces HA services.
+ */
+// The backend returns either a plain string or a nested { response: string }
+// object (sometimes double-nested). We accept both shapes and let the slice
+// extract the text.
+const responseBody = unionType([
+    stringType(),
+    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
+]);
+const GrowAdviceResponseSchema = unionType([
+    stringType(),
+    objectType({ response: responseBody }),
+    recordType(unknownType()),
+]);
+
+/**
+ * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
+ *
+ * Public API (atoms):
+ *   aiInsight$      — read: last AI response text (null if none loaded yet)
+ *   isAiLoading$    — read: whether an AI request is in-flight
+ *   aiError$        — read: error message from the last failed request (null = none)
+ *
+ * Public API (mutators):
+ *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
+ *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
+ *   dismissInsight()                     — clear the current insight and any error
+ *   clearAiError()                       — clear only the error without touching the insight
+ *
+ * Zod schemas are in ./schema.ts and private to this module.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const aiInsight$ = atom(null);
+const isAiLoading$ = atom(false);
+const aiError$ = atom(null);
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+/**
+ * Extract a plain text string from a GrowAdviceResponse, which the backend
+ * may return as a string or as a nested `{ response: string }` object.
+ */
+function _extractText(raw) {
+    if (typeof raw === 'string')
+        return raw;
+    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
+        const inner = raw.response;
+        if (typeof inner === 'string')
+            return inner;
+        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
+            const deepInner = inner.response;
+            if (typeof deepInner === 'string')
+                return deepInner;
+        }
+        return JSON.stringify(inner);
+    }
+    return JSON.stringify(raw);
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Ask the AI for cultivation advice about a specific growspace.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function askGrowAdvice(growspaceId, userQuery) {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Request an AI analysis that covers all growspaces at once.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function analyzeAllGrowspaces() {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Clear the current insight and any error state.
+ * Use this when the user dismisses the AI response panel.
+ */
+function dismissInsight() {
+    aiInsight$.set(null);
+    aiError$.set(null);
+}
+
 let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     constructor() {
         super(...arguments);
         this._sharedStore = growspaceStoreRegistry.acquire();
         this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
+        this._aiInsightController = new libExports.StoreController(this, aiInsight$);
+        this._aiLoadingController = new libExports.StoreController(this, isAiLoading$);
+        this._aiErrorController = new libExports.StoreController(this, aiError$);
         this._userQuery = '';
-        this._isLoading = false;
-        this._response = null;
-        this._error = null;
         this._handleError = (error, errorInfo) => {
             console.error('Growspace AI Insight Card caught error:', error, errorInfo);
             if (this.hass) {
@@ -115736,6 +116492,7 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     }
     disconnectedCallback() {
         super.disconnectedCallback();
+        dismissInsight();
         this.store.destroy();
         growspaceStoreRegistry.release();
     }
@@ -115772,27 +116529,10 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
             grid_min_rows: 5,
         };
     }
-    _extractText(res) {
-        if (typeof res === 'string')
-            return res;
-        if (!res.response)
-            return JSON.stringify(res);
-        if (typeof res.response === 'string')
-            return res.response;
-        const nested = res.response;
-        if ('response' in nested && typeof nested.response === 'string') {
-            return nested.response;
-        }
-        return JSON.stringify(res.response);
-    }
     async _analyze(all) {
-        this._isLoading = true;
-        this._response = null;
-        this._error = null;
         try {
-            let responseText;
             if (all) {
-                responseText = await this.store.dataService.analyzeAllGrowspaces();
+                await analyzeAllGrowspaces();
             }
             else {
                 const device = this.selectedDevice;
@@ -115802,16 +116542,11 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
                 if (!devices.find((d) => d.deviceId === device)) {
                     throw new Error('Selected device not found in devices list.');
                 }
-                responseText = await this.store.dataService.askGrowAdvice(device, this._userQuery);
+                await askGrowAdvice(device, this._userQuery);
             }
-            this._response = this._extractText(responseText);
         }
         catch (e) {
-            this._error = e instanceof Error ? e.message : 'Unknown error occurred during analysis.';
             console.error('AI Analysis failed:', e);
-        }
-        finally {
-            this._isLoading = false;
         }
     }
     render() {
@@ -115834,6 +116569,9 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
         }
         const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
         const targetName = selectedDeviceData ? selectedDeviceData.name : 'Unknown Growspace';
+        const isLoading = this._aiLoadingController.value;
+        const response = this._aiInsightController.value;
+        const error = this._aiErrorController.value;
         return x `
       <error-boundary
         .fallbackMessage=${'Failed to load Growspace AI Insights'}
@@ -115841,7 +116579,7 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
       >
         <ha-card>
           <div class="unified-growspace-card glass-surface glass-panel" style="padding: 24px;">
-            
+
             <div class="ai-header">
                 <div class="ai-icon">
                     <svg viewBox="0 0 24 24">
@@ -115865,22 +116603,22 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
               <button
                 class="md3-button tonal"
                 @click=${() => this._analyze(true)}
-                ?disabled=${this._isLoading}
-                style="opacity: ${this._isLoading ? 0.7 : 1}"
+                ?disabled=${isLoading}
+                style="opacity: ${isLoading ? 0.7 : 1}"
               >
                 Analyze All
               </button>
               <button
                 class="md3-button primary"
                 @click=${() => this._analyze(false)}
-                ?disabled=${this._isLoading}
-                style="opacity: ${this._isLoading ? 0.7 : 1}"
+                ?disabled=${isLoading}
+                style="opacity: ${isLoading ? 0.7 : 1}"
               >
-                ${this._isLoading ? 'Analyzing...' : 'Analyze Specific'}
+                ${isLoading ? 'Analyzing...' : 'Analyze Specific'}
               </button>
             </div>
 
-            ${this._isLoading ? x `
+            ${isLoading ? x `
               <div class="gm-loading">
                 <svg class="spinner" viewBox="0 0 24 24">
                   <path d="${mdiLoading}" fill="currentColor"></path>
@@ -115889,15 +116627,15 @@ let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
               </div>
             ` : E}
 
-            ${!this._isLoading && this._response ? x `
+            ${!isLoading && response ? x `
               <div class="gm-response-box">
-                ${this._response}
+                ${response}
               </div>
             ` : E}
 
-            ${this._error ? x `
+            ${error ? x `
               <div class="error-state">
-                Error: ${this._error}
+                Error: ${error}
               </div>
             ` : E}
 
@@ -116020,15 +116758,6 @@ __decorate([
 __decorate([
     r$3()
 ], GrowspaceAiInsightCard.prototype, "_userQuery", void 0);
-__decorate([
-    r$3()
-], GrowspaceAiInsightCard.prototype, "_isLoading", void 0);
-__decorate([
-    r$3()
-], GrowspaceAiInsightCard.prototype, "_response", void 0);
-__decorate([
-    r$3()
-], GrowspaceAiInsightCard.prototype, "_error", void 0);
 GrowspaceAiInsightCard = __decorate([
     t$2('growspace-ai-insight-card')
 ], GrowspaceAiInsightCard);
@@ -116666,7 +117395,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         this._loading = true;
         this._error = null;
         try {
-            const subareas = await this._dataService.getSubareas(this._config.growspace_id);
+            const subareas = await getSubareas(this._config.growspace_id);
             const found = subareas.find((s) => s.id === this._config.subarea_id) ?? null;
             if (!found) {
                 this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
@@ -119087,7 +119816,6 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
         this._subareas = [];
         this._loadingSubareas = false;
         this._gsController = new GrowspaceOptionsController(this);
-        this._dataService = null;
     }
     setConfig(config) {
         this._config = config;
@@ -119106,16 +119834,10 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
     async _loadSubareas(growspaceId) {
         if (!growspaceId || !this.hass)
             return;
-        if (!this._dataService) {
-            this._dataService = new DataService(this.hass);
-        }
-        else {
-            this._dataService.updateHass(this.hass);
-        }
         this._loadingSubareas = true;
         this._subareas = [];
         try {
-            this._subareas = await this._dataService.getSubareas(growspaceId);
+            this._subareas = await getSubareas(growspaceId);
         }
         catch (err) {
             console.error('[GrowspaceSubareaCardEditor] Failed to load subareas:', err);

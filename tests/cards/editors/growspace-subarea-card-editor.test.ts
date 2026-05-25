@@ -4,18 +4,29 @@ import '../../../src/cards/editors/growspace-subarea-card-editor';
 import { GrowspaceSubareaCardEditor } from '../../../src/cards/editors/growspace-subarea-card-editor';
 import { DataService } from '../../../src/services/data-service';
 
-// Mock DataService
+// Mock DataService (still used by GrowspaceOptionsController)
 vi.mock('../../../src/services/data-service', () => {
     return {
         DataService: class {
             updateHass = vi.fn();
-            getSubareas = vi.fn().mockResolvedValue([
-                { id: 'sa1', name: 'Veg Area' },
-                { id: 'sa2', name: 'Flower Area' }
-            ]);
         },
     };
 });
+
+// Mock subarea slice
+vi.mock('../../../src/slices/subarea', () => ({
+    getSubareas: vi.fn().mockResolvedValue([
+        { id: 'sa1', name: 'Veg Area', environment_config: {} },
+        { id: 'sa2', name: 'Flower Area', environment_config: {} },
+    ]),
+    addSubarea: vi.fn().mockResolvedValue({}),
+    removeSubarea: vi.fn().mockResolvedValue(undefined),
+    updateSubarea: vi.fn().mockResolvedValue(undefined),
+    setSubareas: vi.fn(),
+    subareas$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+import * as subareaSlice from '../../../src/slices/subarea';
 
 describe('GrowspaceSubareaCardEditor', () => {
     let element: GrowspaceSubareaCardEditor;
@@ -145,7 +156,7 @@ describe('GrowspaceSubareaCardEditor', () => {
         expect(loadSubareasSpy).toHaveBeenCalledWith('gs1');
     });
 
-    test('_loadSubareas sets subareas from DataService', async () => {
+    test('_loadSubareas sets subareas from slice', async () => {
         element.hass = mockHass;
         await (element as any)._loadSubareas('gs1');
         expect((element as any)._subareas.length).toBe(2);
@@ -153,11 +164,10 @@ describe('GrowspaceSubareaCardEditor', () => {
     });
 
     test('_loadSubareas catches errors and sets empty subareas', async () => {
-        const dataServiceMock = (element as any)._dataService || new DataService(mockHass);
-        (element as any)._dataService = dataServiceMock;
-        vi.spyOn(dataServiceMock, 'getSubareas').mockRejectedValue(new Error('API Error'));
+        vi.mocked(subareaSlice.getSubareas).mockRejectedValueOnce(new Error('API Error'));
         const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
+        element.hass = mockHass;
         await (element as any)._loadSubareas('gs1');
 
         expect((element as any)._subareas).toEqual([]);

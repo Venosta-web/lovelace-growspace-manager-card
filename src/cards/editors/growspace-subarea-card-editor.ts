@@ -1,8 +1,8 @@
 import { LitElement, html, css, CSSResultGroup, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
-import { DataService } from '../../services/data-service';
-import type { Subarea } from '../../services/types';
+import { getSubareas } from '../../slices/subarea';
+import type { Subarea } from '../../slices/subarea';
 import { GrowspaceOptionsController } from '../../controllers/growspace-options-controller';
 import { computeEditorLabel } from '../../lib/editor-utils';
 import { sharedStyles } from '../../styles/shared.styles';
@@ -16,7 +16,6 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   @state() private _loadingSubareas = false;
 
   private _gsController = new GrowspaceOptionsController(this);
-  private _dataService: DataService | null = null;
 
   public setConfig(config: GrowspaceSubareaCardConfig): void {
     this._config = config;
@@ -37,17 +36,11 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   private async _loadSubareas(growspaceId: string): Promise<void> {
     if (!growspaceId || !this.hass) return;
 
-    if (!this._dataService) {
-      this._dataService = new DataService(this.hass);
-    } else {
-      this._dataService.updateHass(this.hass);
-    }
-
     this._loadingSubareas = true;
     this._subareas = [];
 
     try {
-      this._subareas = await this._dataService.getSubareas(growspaceId);
+      this._subareas = await getSubareas(growspaceId);
     } catch (err) {
       console.error('[GrowspaceSubareaCardEditor] Failed to load subareas:', err);
       this._subareas = [];

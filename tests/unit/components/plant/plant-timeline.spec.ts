@@ -26,14 +26,22 @@ import {
 } from '@mdi/js';
 import { vi, describe, it, beforeEach, expect } from 'vitest';
 
-// Mock the service BEFORE importing anything that might use it
-const mockTimelineService = {
-  addPlantNote: vi.fn(),
-  deleteEvent: vi.fn(),
-};
+// vi.mock is hoisted — use vi.hoisted() to share refs between mock factory and tests
+const { mockAddPlantNote, mockDeleteEvent } = vi.hoisted(() => ({
+  mockAddPlantNote: vi.fn(),
+  mockDeleteEvent: vi.fn(),
+}));
 
-vi.mock('../../../../src/services/timeline-service', () => ({
-  getTimelineService: vi.fn(() => mockTimelineService),
+vi.mock('../../../../src/slices/logbook', () => ({
+  addPlantNote: mockAddPlantNote,
+  deleteEvent: mockDeleteEvent,
+  addGrowspaceNote: vi.fn(),
+  fetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+  fetchPlantEvents: vi.fn().mockResolvedValue([]),
+  growspaceEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  plantEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  setGrowspaceEvents: vi.fn(),
+  setPlantEvents: vi.fn(),
 }));
 
 if (!customElements.get('plant-timeline')) {
@@ -205,7 +213,7 @@ describe('PlantTimeline', () => {
     it('handles note submission', async () => {
       vi.useFakeTimers();
       const input = element.shadowRoot?.querySelector('quick-note-input');
-      mockTimelineService.addPlantNote.mockResolvedValueOnce(undefined);
+      mockAddPlantNote.mockResolvedValueOnce(undefined);
       
       input?.dispatchEvent(new CustomEvent('submit', {
         detail: { text: 'New Note', images: ['img1.jpg'] }
@@ -214,12 +222,12 @@ describe('PlantTimeline', () => {
       // Advance timers to skip the 1s delay before refresh dispatch
       await vi.runAllTimersAsync();
       
-      expect(mockTimelineService.addPlantNote).toHaveBeenCalled();
+      expect(mockAddPlantNote).toHaveBeenCalled();
       vi.useRealTimers();
 
       // Error case
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockTimelineService.addPlantNote.mockRejectedValueOnce(new Error('Fail'));
+      mockAddPlantNote.mockRejectedValueOnce(new Error('Fail'));
       input?.dispatchEvent(new CustomEvent('submit', {
         detail: { text: 'Fail Note', images: [] }
       }));
@@ -241,14 +249,14 @@ describe('PlantTimeline', () => {
       expect((element as any)._showDeleteConfirmation).to.be.false;
 
       deleteBtn.click();
-      mockTimelineService.deleteEvent.mockResolvedValueOnce(undefined);
+      mockDeleteEvent.mockResolvedValueOnce(undefined);
       dialog?.dispatchEvent(new CustomEvent('confirm'));
       await element.updateComplete;
-      expect(mockTimelineService.deleteEvent).toHaveBeenCalledWith('123');
+      expect(mockDeleteEvent).toHaveBeenCalledWith('123');
 
       // Error case
       deleteBtn.click();
-      mockTimelineService.deleteEvent.mockRejectedValueOnce(new Error('Delete fail'));
+      mockDeleteEvent.mockRejectedValueOnce(new Error('Delete fail'));
       dialog?.dispatchEvent(new CustomEvent('confirm'));
       await element.updateComplete;
       expect((element as any)._showDeleteConfirmation).to.be.false;
@@ -649,7 +657,7 @@ describe('PlantTimeline', () => {
 
     it('handles note submission error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockTimelineService.addPlantNote.mockRejectedValueOnce(new Error('Test Error'));
+      mockAddPlantNote.mockRejectedValueOnce(new Error('Test Error'));
 
       // @ts-ignore
       await element._handleNoteSubmit({ detail: { text: 'FAIL', images: [] } } as any);
@@ -679,7 +687,7 @@ describe('PlantTimeline', () => {
 
     it('handles delete error', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockTimelineService.deleteEvent.mockRejectedValueOnce(new Error('Delete fail'));
+      mockDeleteEvent.mockRejectedValueOnce(new Error('Delete fail'));
       
       // @ts-ignore
       element._deletingEventId = 'fail_id';
@@ -695,7 +703,7 @@ describe('PlantTimeline', () => {
       // @ts-ignore
       await element._handleNoteSubmit({ detail: {} } as any);
       // Should return early without calling service
-      expect(mockTimelineService.addPlantNote).not.toHaveBeenCalled();
+      expect(mockAddPlantNote).not.toHaveBeenCalled();
       spy.mockRestore();
     });
 
@@ -704,7 +712,7 @@ describe('PlantTimeline', () => {
       element._deletingEventId = null;
       // @ts-ignore
       await element._confirmDeleteEvent();
-      expect(mockTimelineService.deleteEvent).not.toHaveBeenCalled();
+      expect(mockDeleteEvent).not.toHaveBeenCalled();
     });
 
     it('uses mdiDumbbell for training action', () => {

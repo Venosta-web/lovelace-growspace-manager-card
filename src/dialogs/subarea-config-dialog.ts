@@ -3,8 +3,8 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { mdiViewGrid } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
-import type { Subarea, EnvironmentConfig } from '../services/types';
-import { DataService } from '../services/data-service';
+import { updateSubarea } from '../slices/subarea';
+import type { Subarea, EnvironmentConfig } from '../slices/subarea';
 import '../features/shared/ui/gs-dialog';
 import '../features/shared/ui/gs-help-tooltip';
 
@@ -29,8 +29,6 @@ export class SubareaConfigDialog extends LitElement {
 
   @state() private _saving = false;
   @state() private _error = '';
-
-  private _dataService?: DataService;
 
   static styles = [
     dialogStyles,
@@ -131,9 +129,6 @@ export class SubareaConfigDialog extends LitElement {
   ];
 
   protected willUpdate(changedProperties: Map<string, unknown>) {
-    if (changedProperties.has('hass') && this.hass) {
-      this._dataService = new DataService(this.hass);
-    }
     if (changedProperties.has('subarea') && this.subarea) {
       this._populateFromSubarea(this.subarea);
     }
@@ -162,9 +157,6 @@ export class SubareaConfigDialog extends LitElement {
 
   private async _save() {
     if (!this.subarea || !this.growspaceId) return;
-    if (!this._dataService) {
-      this._dataService = new DataService(this.hass);
-    }
 
     this._saving = true;
     this._error = '';
@@ -183,11 +175,11 @@ export class SubareaConfigDialog extends LitElement {
     };
 
     try {
-      const updated = await this._dataService.updateSubarea(
-        this.growspaceId,
-        this.subarea.id,
-        updatedConfig
-      );
+      await updateSubarea(this.growspaceId, this.subarea.id, updatedConfig);
+      const updated: Subarea = {
+        ...this.subarea,
+        environment_config: { ...this.subarea.environment_config, ...updatedConfig },
+      };
       this.dispatchEvent(
         new CustomEvent('subarea-updated', {
           detail: { subarea: updated },

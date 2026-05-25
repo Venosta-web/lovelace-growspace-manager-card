@@ -34,7 +34,11 @@ npm run format       # prettier --write
 ```
 
 **Before declaring a change done:** `npm run lint`, `npm test`, and `npm run build` must
-all pass. Run `npm run test:e2e` only when touching interaction or visual flows.
+all pass.
+
+When you change anything in `tests/e2e/` (specs, fixtures, page objects): run
+`npm run test:ha` against a real HA instance. If `tests/e2e/fixtures/e2e-setup.ts` was
+modified, re-run the setup script first (see **[AGENTS.md](./AGENTS.md)**).
 
 Unit tests run in **real Chromium** (vitest browser mode via `@vitest/browser-playwright`),
 not jsdom, and include **pixelmatch screenshot tests** — rendering changes can shift
