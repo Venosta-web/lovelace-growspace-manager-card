@@ -11,7 +11,7 @@ import '../features/shared/ui/quick-note-input';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
-import { getTimelineService } from '../services/timeline-service';
+import { addGrowspaceNote } from '../slices/logbook';
 
 type LogbookTab = 'list' | 'timeline';
 
@@ -133,8 +133,7 @@ export class LogbookDialog extends LitElement {
 
     noteInput.setSaving(true);
     try {
-      const service = getTimelineService(this.hass);
-      await service.addGrowspaceNote(this.growspaceId, {
+      await addGrowspaceNote(this.growspaceId, {
         notes: e.detail.text,
         images: e.detail.images,
       });

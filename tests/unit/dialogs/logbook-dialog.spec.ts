@@ -2,7 +2,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LogbookDialog } from '../../../src/dialogs/logbook-dialog';
 import '../../../src/dialogs/logbook-dialog';
-import { getTimelineService } from '../../../src/services/timeline-service';
 
 // Mock dependencies
 vi.mock('../../../src/features/shared/ui/growspace-logbook', () => ({
@@ -12,8 +11,20 @@ vi.mock('../../../src/features/shared/ui/growspace-logbook', () => ({
     }
 }));
 
-vi.mock('../../../src/services/timeline-service', () => ({
-    getTimelineService: vi.fn(),
+const { mockAddGrowspaceNote } = vi.hoisted(() => ({
+    mockAddGrowspaceNote: vi.fn(),
+}));
+
+vi.mock('../../../src/slices/logbook', () => ({
+    addGrowspaceNote: mockAddGrowspaceNote,
+    fetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+    fetchPlantEvents: vi.fn().mockResolvedValue([]),
+    addPlantNote: vi.fn(),
+    deleteEvent: vi.fn(),
+    growspaceEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    plantEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+    setGrowspaceEvents: vi.fn(),
+    setPlantEvents: vi.fn(),
 }));
 
 // Mock ha-dialog if not already defined
@@ -37,13 +48,9 @@ if (!customElements.get('quick-note-input')) {
 
 describe('LogbookDialog', () => {
     let element: LogbookDialog;
-    const mockTimelineService = {
-        addGrowspaceNote: vi.fn(),
-    };
 
     beforeEach(async () => {
         vi.clearAllMocks();
-        vi.mocked(getTimelineService).mockReturnValue(mockTimelineService as any);
 
         element = new LogbookDialog();
         document.body.appendChild(element);
@@ -177,12 +184,12 @@ describe('LogbookDialog', () => {
                 }
             });
 
-            mockTimelineService.addGrowspaceNote.mockResolvedValue(undefined);
+            mockAddGrowspaceNote.mockResolvedValue(undefined);
 
             noteInput.dispatchEvent(submitEvent);
 
             expect(setSavingSpy).toHaveBeenCalledWith(true);
-            expect(mockTimelineService.addGrowspaceNote).toHaveBeenCalledWith('test-growspace', {
+            expect(mockAddGrowspaceNote).toHaveBeenCalledWith('test-growspace', {
                 notes: 'Test note',
                 images: ['image1.jpg']
             });
@@ -208,7 +215,7 @@ describe('LogbookDialog', () => {
             });
 
             const error = new Error('Service error');
-            mockTimelineService.addGrowspaceNote.mockRejectedValue(error);
+            mockAddGrowspaceNote.mockRejectedValue(error);
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             noteInput.dispatchEvent(submitEvent);
@@ -234,7 +241,7 @@ describe('LogbookDialog', () => {
 
             await (element as any)._handleNoteSubmit(submitEvent);
 
-            expect(mockTimelineService.addGrowspaceNote).not.toHaveBeenCalled();
+            expect(mockAddGrowspaceNote).not.toHaveBeenCalled();
 
             querySpy.mockRestore();
         });

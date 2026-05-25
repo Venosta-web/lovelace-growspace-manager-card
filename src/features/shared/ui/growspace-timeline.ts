@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { GrowspaceEvent } from '../../../types';
-import { getTimelineService } from '../../../services/timeline-service';
+import { fetchGrowspaceEvents } from '../../../slices/logbook';
 import { getEventTimestamp, formatDateTime, formatShortDate } from '../../../utils/date-utils';
 import { sharedStyles } from '../../../styles/shared.styles';
 import {
@@ -237,9 +237,8 @@ export class GrowspaceTimeline extends LitElement {
     if (!this.hass || !this.growspaceId) return;
     this._isLoading = true;
     this._hasError = false;
-    const service = getTimelineService(this.hass);
     try {
-      this._events = await service.fetchGrowspaceEvents(this.growspaceId, 100);
+      this._events = await fetchGrowspaceEvents(this.growspaceId, 100);
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : 'Fetch failed';
       console.error('Error fetching growspace events:', e);
