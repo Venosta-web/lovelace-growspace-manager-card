@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
 import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
+import { gridInteraction$, cancel } from '../../src/slices/grid-interaction';
 import { PlantEntity } from '../../src/types';
 import * as _uiStore from '../../src/store/ui/ui-store';
 import * as _dataStore from '../../src/store/core/data-store';
@@ -354,11 +355,14 @@ describe('GrowspaceStore', () => {
             (dataStore.$devices.get as any).mockReturnValue([{ deviceId: 'd1', plants }]);
         });
 
-        it('should handle Enter key to open plant dialog', () => {
+        it('should handle Enter key by selecting the focused plant in gridInteraction$', () => {
+            cancel();
             (uiStore.$focusedPlantIndex.get as any).mockReturnValue(1);
             store.actions.ui.handleKeyboardNavigation('Enter');
 
-            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
+            const state = gridInteraction$.get();
+            expect(state.status).toBe('selected');
+            expect((state as { status: 'selected'; plantId: string }).plantId).toBe('p2');
         });
 
         it('should delete multiple selected plants on Backspace', async () => {
@@ -414,22 +418,6 @@ describe('GrowspaceStore', () => {
             expect(uiStore.clearPlantSelection).toHaveBeenCalled();
         });
 
-        it('should handle plant click (normal)', () => {
-            const plant = { entity_id: 's.p1', attributes: { plant_id: 'p1' } } as any;
-            store.actions.ui.handlePlantClick(plant);
-            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
-        });
-
-        it('should handle plant click (edit mode)', () => {
-            (uiStore.$isEditMode.get as any).mockReturnValue(true);
-            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p2']));
-
-            const plant = { entity_id: 's.p1', attributes: { plant_id: 'p1' } } as any;
-            store.actions.ui.handlePlantClick(plant);
-
-            expect(uiStore.togglePlantSelection).toHaveBeenCalledWith('p1');
-            expect(uiStore.$activeDialog.set).toHaveBeenCalled();
-        });
     });
 
     describe('Move Plant Logic', () => {
@@ -1101,15 +1089,6 @@ describe('GrowspaceStore', () => {
             expect(spy).not.toHaveBeenCalled();
         });
 
-        it('should handle plant click in edit mode (toggle selection)', () => {
-            (uiStore.$isEditMode.get as any).mockReturnValue(true);
-            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1']));
-            const p2 = { attributes: { plant_id: 'p2' } } as any;
-
-            store.actions.ui.handlePlantClick(p2);
-            // Should toggle p2 ON
-            expect(uiStore.togglePlantSelection).toHaveBeenCalledWith('p2');
-        });
 
         it('should handle move plant validation for unknown/invalid stage', () => {
             const spy = vi.spyOn(uiStore, 'showToast');
@@ -1158,15 +1137,6 @@ describe('GrowspaceStore', () => {
             }));
         });
 
-        it('should handle plant click in edit mode with no selection active', () => {
-            (uiStore.$isEditMode.get as any).mockReturnValue(true);
-            (uiStore.$selectedPlants.get as any).mockReturnValue(new Set()); // Empty
-            const p1 = { attributes: { plant_id: 'p1' } } as any;
-
-            store.actions.ui.handlePlantClick(p1);
-
-            expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
-        });
 
 
 
@@ -1353,23 +1323,6 @@ describe('GrowspaceStore', () => {
         expect(uiStore.setViewMode).toHaveBeenCalledWith('header');
     });
 
-    it('should handle clicking already selected plant in edit mode (bulk open)', () => {
-        (uiStore.$isEditMode.get as any).mockReturnValue(true);
-        (uiStore.$selectedPlants.get as any).mockReturnValue(new Set(['p1']));
-        const p1 = { attributes: { plant_id: 'p1' } } as any;
-
-        // Ensure togglePlantSelection is tracked
-        const toggleSpy = vi.spyOn(uiStore, 'togglePlantSelection');
-
-        store.actions.ui.handlePlantClick(p1);
-
-        expect(uiStore.$activeDialog.set).toHaveBeenCalledWith(expect.objectContaining({
-            type: 'PLANT_OVERVIEW',
-            payload: expect.objectContaining({ selectedPlantIds: ['p1'] })
-        }));
-        // Should NOT toggle because p1 is already in set
-        expect(toggleSpy).not.toHaveBeenCalled();
-    });
 
     it('should handle analyzeGrowspace success (all=false) and update dialog', async () => {
         store.grid.$selectedDevice.set('d1');

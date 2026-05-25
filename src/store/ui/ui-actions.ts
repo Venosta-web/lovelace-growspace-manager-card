@@ -76,18 +76,6 @@ export function exitEditMode(ctx: ActionContext) {
   ctx.ui.clearPlantSelection();
 }
 
-export function handlePlantClick(ctx: ActionContext, plant: PlantEntity) {
-  if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
-    const plantId = plant.attributes.plant_id;
-    if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
-      togglePlantSelection(ctx, plantId);
-    }
-    openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
-  } else {
-    openPlantOverviewDialog(ctx, plant);
-  }
-}
-
 export function openPlantOverviewDialog(
   ctx: ActionContext,
   plant: PlantEntity,

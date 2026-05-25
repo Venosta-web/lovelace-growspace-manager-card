@@ -19,6 +19,7 @@ import { storeContext } from '../../../context';
 import { createGrowspaceGridViewModel, type GrowspaceGridViewModel } from '../viewmodels/growspace-grid.viewmodel';
 import type { GridCellClickEvent, GridDropEvent, GridMobileDropEvent } from '../components/growspace-grid-ui';
 import { GrowspaceGridUI } from '../components/growspace-grid-ui';
+import { gridInteraction$, select } from '../../../slices/grid-interaction';
 import '../components/growspace-grid-ui';
 import '../containers/plant-card.container';
 
@@ -41,6 +42,7 @@ export class GrowspaceGridContainer extends LitElement {
 
   private viewModel!: ReadableAtom<GrowspaceGridViewModel>;
   private viewModelController!: StoreController<GrowspaceGridViewModel>;
+  private _gridInteractionUnsub?: () => void;
 
   connectedCallback() {
     super.connectedCallback();
@@ -48,6 +50,16 @@ export class GrowspaceGridContainer extends LitElement {
       this.viewModel = createGrowspaceGridViewModel(this.plants, this.rows, this.cols, this.store);
       this.viewModelController = new StoreController(this, this.viewModel);
     }
+    this._gridInteractionUnsub = gridInteraction$.listen((state) => {
+      if (state.status === 'selected') {
+        this._openDialogForPlant(state.plantId);
+      }
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._gridInteractionUnsub?.();
   }
 
   updated(changedProps: Map<string, any>) {
@@ -88,12 +100,37 @@ export class GrowspaceGridContainer extends LitElement {
   }
 
   /**
-   * Handle cell click - opens plant overview dialog
+   * Handle cell click — updates GridInteraction state, which triggers dialog opening via subscription.
    */
   private _handleCellClick(e: CustomEvent<GridCellClickEvent>) {
     const { cell } = e.detail;
-    if (cell.plant) {
-      this.store.actions.ui.handlePlantClick(cell.plant);
+    const plantId = cell.plant?.attributes?.plant_id;
+    if (plantId) {
+      select(plantId);
+    }
+  }
+
+  /** Find a plant in the current grid by its plant_id. */
+  private _findPlant(plantId: string): PlantEntity | null {
+    for (const row of this.plants) {
+      for (const cell of row) {
+        if (cell?.attributes?.plant_id === plantId) return cell;
+      }
+    }
+    return null;
+  }
+
+  /** Open the plant overview dialog, preserving edit-mode multi-selection behaviour. */
+  private _openDialogForPlant(plantId: string): void {
+    const plant = this._findPlant(plantId);
+    if (!plant) return;
+    if (this.store.ui.$isEditMode.get() && this.store.ui.$selectedPlants.get().size > 0) {
+      if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
+        this.store.actions.ui.togglePlantSelection(plantId);
+      }
+      this.store.actions.ui.openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
+    } else {
+      this.store.actions.ui.openPlantOverviewDialog(plant);
     }
   }
 

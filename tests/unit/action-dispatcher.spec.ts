@@ -38,7 +38,6 @@ vi.mock('../../src/store/plant/strain-actions', () => ({
 
 vi.mock('../../src/store/ui/ui-actions', () => ({
     togglePlantSelection: vi.fn(),
-    handlePlantClick: vi.fn(),
     openAddPlantDialog: vi.fn(),
     openPlantOverviewDialog: vi.fn(),
     selectAllPlants: vi.fn(),
@@ -318,11 +317,6 @@ describe('ActionDispatcher', () => {
         it('should delegate togglePlantSelection to uiActions', () => {
             dispatcher.ui.togglePlantSelection('p1');
             expect(uiActions.togglePlantSelection).toHaveBeenCalledWith(mockStore.context, 'p1');
-        });
-
-        it('should delegate handlePlantClick to uiActions', () => {
-            dispatcher.ui.handlePlantClick(mockPlant);
-            expect(uiActions.handlePlantClick).toHaveBeenCalledWith(mockStore.context, mockPlant);
         });
 
         it('should delegate openAddPlantDialog to uiActions', () => {

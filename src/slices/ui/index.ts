@@ -6,7 +6,6 @@
  *   isLoading$              — read: whether the card is in a loading state
  *   activeDialog$           — read: currently open dialog (NONE when closed)
  *   isEditMode$             — read: whether edit mode is active
- *   isTransplantMode$       — read: whether transplant mode is active
  *   selectedPlants$         — read: set of selected plant IDs
  *   focusedPlantIndex$      — read: keyboard-focused plant index (-1 = none)
  *   menuOpen$               — read: whether the card menu is open
@@ -37,8 +36,6 @@
  *   clearToast()            — dismiss the current toast
  *   setDefaultApplied()     — mark the config default as applied
  *   setError()              — set or clear the global error
- *   toggleTransplantMode()  — flip transplant mode on/off
- *   exitTransplantMode()    — always sets transplant mode to false
  *   setLanguage()           — change the UI language
  *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
  *   dismissFlowerFlip()     — record a dismissed flower-flip notification
@@ -50,6 +47,7 @@ import { atom, computed } from 'nanostores';
 import type { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
+import { cancel } from '../grid-interaction';
 
 // ---------------------------------------------------------------------------
 // Atoms (public)
@@ -59,7 +57,6 @@ export const viewMode$ = atom<GrowspaceViewMode>(ViewMode.STANDARD);
 export const isLoading$ = atom<boolean>(true);
 export const activeDialog$ = atom<ActiveDialogState>({ type: 'NONE' });
 export const isEditMode$ = atom<boolean>(false);
-export const isTransplantMode$ = atom<boolean>(false);
 export const selectedPlants$ = atom<Set<string>>(new Set());
 export const focusedPlantIndex$ = atom<number>(-1);
 export const menuOpen$ = atom<boolean>(false);
@@ -173,7 +170,7 @@ export function setEditMode(isEdit: boolean): void {
   isEditMode$.set(isEdit);
   if (!isEdit) {
     selectedPlants$.set(new Set());
-    exitTransplantMode();
+    cancel();
   }
 }
 
@@ -237,16 +234,6 @@ export function setDefaultApplied(applied: boolean): void {
 /** Set or clear the global error string. */
 export function setError(err: string | null): void {
   error$.set(err);
-}
-
-/** Toggle transplant mode on/off. */
-export function toggleTransplantMode(): void {
-  isTransplantMode$.set(!isTransplantMode$.get());
-}
-
-/** Always exits transplant mode. */
-export function exitTransplantMode(): void {
-  isTransplantMode$.set(false);
 }
 
 /** Update the UI language. */

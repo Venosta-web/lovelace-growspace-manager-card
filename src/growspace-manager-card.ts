@@ -27,6 +27,7 @@ import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/core/growspace-store';
 import { growspaceStoreRegistry } from './store/core/growspace-store-registry';
 import { StoreController } from '@nanostores/lit';
+import { startTransplant } from './slices/grid-interaction';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
@@ -264,7 +265,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   };
 
   private _handleTransplantMode = () => {
-    this.store.ui.toggleTransplantMode();
+    startTransplant();
   };
 
   protected render(): TemplateResult {

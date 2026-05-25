@@ -92,9 +92,8 @@ export class GrowspaceStore {
     nutrientPresets: Record<string, import('../../types').NutrientPreset>;
   }>;
 
-  /** Combined atom for growspace-view-standard — one subscription replaces two. */
+  /** Combined atom for growspace-view-standard. */
   public readonly $viewStandardState!: ReadableAtom<{
-    isTransplantMode: boolean;
     devices: import('../../types').GrowspaceDevice[];
   }>;
 
@@ -217,8 +216,8 @@ export class GrowspaceStore {
     );
 
     this.$viewStandardState = computed(
-      [this.ui.$isTransplantMode, this.data.$devices],
-      (isTransplantMode, devices) => ({ isTransplantMode, devices })
+      [this.data.$devices],
+      (devices) => ({ devices })
     );
 
     this.$headerState = computed(

@@ -6,6 +6,13 @@ import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import { createMockHass } from '../mocks/hass';
 
+vi.mock('../../src/slices/grid-interaction', () => ({
+    startTransplant: vi.fn(),
+    select: vi.fn(),
+    cancel: vi.fn(),
+    gridInteraction$: { get: vi.fn(() => ({ status: 'idle' })), set: vi.fn(), listen: vi.fn(() => () => {}) },
+}));
+
 // Ensure the custom element is defined
 if (!customElements.get('growspace-grid-card')) {
     customElements.define('growspace-grid-card', GrowspaceGridCard);
@@ -116,7 +123,7 @@ describe('GrowspaceGridCard', () => {
             { event: 'training-selected', spy: vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog') },
             { event: 'ipm-selected', spy: vi.spyOn(element.store.actions.ui, 'openIPMDialog') },
             { event: 'delete-selected', spy: vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants') },
-            { event: 'transplant-mode', spy: vi.spyOn(element.store.ui, 'toggleTransplantMode') },
+            { event: 'transplant-mode', spy: vi.spyOn(await import('../../src/slices/grid-interaction'), 'startTransplant') },
         ];
 
         for (const { event, spy } of handlers) {
@@ -226,7 +233,8 @@ describe('GrowspaceGridCard', () => {
         const deviceChangeSpy = vi.spyOn(element.store, 'handleDeviceChange').mockImplementation(() => {});
         const setActiveDialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
         const setEditModeSpy = vi.spyOn(element.store.ui, 'setEditMode');
-        const toggleTransplantSpy = vi.spyOn(element.store.ui, 'toggleTransplantMode');
+        const { startTransplant } = await import('../../src/slices/grid-interaction');
+        const toggleTransplantSpy = vi.mocked(startTransplant);
 
         // Dispatch events directly on container
         cardContainer?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));

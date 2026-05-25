@@ -6,6 +6,7 @@ import { mdiChevronUp } from '@mdi/js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../../types';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { gridInteraction$ } from '../../../slices/grid-interaction';
 import '../../ui/containers/growspace-header.container';
 import '../../ui/containers/growspace-analytics.container';
 import '../../ui/components/growspace-edit-mode-banner-ui';
@@ -32,11 +33,15 @@ export class GrowspaceViewStandard extends LitElement {
   @property({ type: Number }) selectedCount = 0;
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
 
-  private _viewStandardController!: StoreController<{ isTransplantMode: boolean; devices: GrowspaceDevice[] }>;
+  private _viewStandardController!: StoreController<{ devices: GrowspaceDevice[] }>;
+  private _gridInteractionController!: StoreController<typeof gridInteraction$ extends import('nanostores').ReadableAtom<infer T> ? T : never>;
 
   private _initControllers() {
     if (this.store && !this._viewStandardController) {
       this._viewStandardController = new StoreController(this, this.store.$viewStandardState);
+    }
+    if (!this._gridInteractionController) {
+      this._gridInteractionController = new StoreController(this, gridInteraction$);
     }
   }
 
@@ -118,7 +123,7 @@ export class GrowspaceViewStandard extends LitElement {
             ></growspace-edit-mode-banner>
           `
         : ''}
-      ${this._viewStandardController?.value?.isTransplantMode
+      ${this._gridInteractionController?.value?.status === 'transplanting'
         ? html`
             <transplant-source-panel
               .clonePlants=${this._getPlantsByStage('clone')}

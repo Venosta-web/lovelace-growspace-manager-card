@@ -22,6 +22,7 @@ import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
+import { startTransplant } from '../slices/grid-interaction';
 
 @customElement('growspace-grid-card')
 export class GrowspaceGridCard extends LitElement implements LovelaceCard {
@@ -141,7 +142,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   private _handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
   private _handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
   private _handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
-  private _handleTransplantMode = () => this.store.ui.toggleTransplantMode();
+  private _handleTransplantMode = () => startTransplant();
 
   // We ignore growspace changes and view mode changes as this card is dedicated 
   // to a specific view. Growspace changes are handled contextually if needed.

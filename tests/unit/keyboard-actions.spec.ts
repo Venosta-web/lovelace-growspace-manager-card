@@ -10,7 +10,12 @@ import { ActionContext } from '../../src/store/core/action-context';
 // Mock the action modules
 vi.mock('../../src/store/ui/ui-actions', () => ({
     exitEditMode: vi.fn(),
-    handlePlantClick: vi.fn(),
+}));
+
+vi.mock('../../src/slices/grid-interaction', () => ({
+    select: vi.fn(),
+    cancel: vi.fn(),
+    gridInteraction$: { get: vi.fn(() => ({ status: 'idle' })), set: vi.fn(), listen: vi.fn(() => () => {}) },
 }));
 
 vi.mock('../../src/store/plant/plant-actions', () => ({
@@ -154,22 +159,22 @@ describe('keyboard-actions', () => {
             expect(store.ui.setFocusedPlantIndex).toHaveBeenCalledWith(1);
         });
 
-        it('should trigger plant click on Enter', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
+        it('should call select with plant id on Enter', async () => {
+            const { select } = await import('../../src/slices/grid-interaction');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(0);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Enter');
 
-            expect(handlePlantClick).toHaveBeenCalledWith(mockContext, mockPlants[0]);
+            expect(select).toHaveBeenCalledWith('p1');
         });
 
-        it('should trigger plant click on Space', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
+        it('should call select with plant id on Space', async () => {
+            const { select } = await import('../../src/slices/grid-interaction');
             vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(1);
 
             keyboardActions.handleKeyboardNavigation(mockContext, ' ');
 
-            expect(handlePlantClick).toHaveBeenCalledWith(mockContext, mockPlants[1]);
+            expect(select).toHaveBeenCalledWith('p2');
         });
 
         it('should delete focused plant on Delete', async () => {
@@ -238,22 +243,22 @@ describe('keyboard-actions', () => {
             expect(store.ui.setFocusedPlantIndex).toHaveBeenCalledWith(0);
         });
 
-        it('should not trigger plant click on Enter when index is out of bounds', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
-            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1); // Invalid index
+        it('should not call select on Enter when index is out of bounds', async () => {
+            const { select } = await import('../../src/slices/grid-interaction');
+            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(-1);
 
             keyboardActions.handleKeyboardNavigation(mockContext, 'Enter');
 
-            expect(handlePlantClick).not.toHaveBeenCalled();
+            expect(select).not.toHaveBeenCalled();
         });
 
-        it('should not trigger plant click on Space when index exceeds plants length', async () => {
-            const { handlePlantClick } = await import('../../src/store/ui/ui-actions');
-            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(99); // Out of bounds
+        it('should not call select on Space when index exceeds plants length', async () => {
+            const { select } = await import('../../src/slices/grid-interaction');
+            vi.mocked(store.ui.$focusedPlantIndex.get).mockReturnValue(99);
 
             keyboardActions.handleKeyboardNavigation(mockContext, ' ');
 
-            expect(handlePlantClick).not.toHaveBeenCalled();
+            expect(select).not.toHaveBeenCalled();
         });
 
         it('should do nothing when selected device is not found in devices list', () => {

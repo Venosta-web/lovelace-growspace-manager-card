@@ -51427,6 +51427,77 @@ function createGrowspaceGridViewModel(plants, rows, cols, store) {
     });
 }
 
+/**
+ * GridInteraction slice — store-driven interaction state machine for Plant Grid Cells.
+ *
+ * Public API (atom):
+ *   gridInteraction$   — read: current interaction state (discriminated union)
+ *
+ * Public API (transitions):
+ *   select(plantId)        — idle → selected; selected(same) → idle; selected(other) → selected(other);
+ *                            confirming-water → selected; no-op while transplanting
+ *   confirmWater()         — selected → confirming-water; no-op otherwise
+ *   cancel()               — any → idle
+ *   startTransplant()      — selected → transplanting; no-op otherwise
+ *   completeTransplant()   — transplanting → idle; no-op otherwise
+ *
+ * The type system (discriminated union) prevents callers from accessing fields
+ * that don't exist on a given status — e.g. `plantId` is absent on `idle`.
+ * Runtime guards make illegal transitions no-ops so callers never need to
+ * pre-check the current status.
+ *
+ * This slice owns no backend calls — all state is local UI-only.
+ * Cross-slice side-effects (Plant mutations, Grid optimistic updates) are
+ * triggered by action modules that call transition functions here then call
+ * the relevant Plant / Grid slice mutators.
+ */
+// ---------------------------------------------------------------------------
+// Atom (public)
+// ---------------------------------------------------------------------------
+/** Current interaction state for the Plant Grid. */
+const gridInteraction$ = atom({ status: 'idle' });
+// ---------------------------------------------------------------------------
+// Transitions (public)
+// ---------------------------------------------------------------------------
+/**
+ * Select a plant cell.
+ *
+ * - idle            → selected { plantId }
+ * - selected(same)  → idle  (toggle: deselects the cell)
+ * - selected(other) → selected { plantId }  (switch selection)
+ * - confirming-water → selected { plantId }  (aborts confirmation)
+ * - transplanting   → no-op  (source plant is locked during transplant)
+ */
+function select(plantId) {
+    const state = gridInteraction$.get();
+    if (state.status === 'transplanting')
+        return;
+    if (state.status === 'selected' && state.plantId === plantId) {
+        gridInteraction$.set({ status: 'idle' });
+        return;
+    }
+    gridInteraction$.set({ status: 'selected', plantId });
+}
+/**
+ * Cancel the current interaction and return to idle.
+ * Safe to call from any state.
+ */
+function cancel() {
+    gridInteraction$.set({ status: 'idle' });
+}
+/**
+ * Begin transplant mode from the currently selected plant.
+ *
+ * - selected → transplanting { sourcePlantId: plantId }
+ * - all other states → no-op
+ */
+function startTransplant() {
+    const state = gridInteraction$.get();
+    if (state.status !== 'selected')
+        return;
+    gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
+}
+
 const variables = i$6 `
   :host {
     /* MD3 Color System */
@@ -53227,6 +53298,15 @@ let GrowspaceGridContainer = class GrowspaceGridContainer extends i$3 {
             this.viewModel = createGrowspaceGridViewModel(this.plants, this.rows, this.cols, this.store);
             this.viewModelController = new libExports.StoreController(this, this.viewModel);
         }
+        this._gridInteractionUnsub = gridInteraction$.listen((state) => {
+            if (state.status === 'selected') {
+                this._openDialogForPlant(state.plantId);
+            }
+        });
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this._gridInteractionUnsub?.();
     }
     updated(changedProps) {
         super.updated(changedProps);
@@ -53261,12 +53341,38 @@ let GrowspaceGridContainer = class GrowspaceGridContainer extends i$3 {
     `;
     }
     /**
-     * Handle cell click - opens plant overview dialog
+     * Handle cell click — updates GridInteraction state, which triggers dialog opening via subscription.
      */
     _handleCellClick(e) {
         const { cell } = e.detail;
-        if (cell.plant) {
-            this.store.actions.ui.handlePlantClick(cell.plant);
+        const plantId = cell.plant?.attributes?.plant_id;
+        if (plantId) {
+            select(plantId);
+        }
+    }
+    /** Find a plant in the current grid by its plant_id. */
+    _findPlant(plantId) {
+        for (const row of this.plants) {
+            for (const cell of row) {
+                if (cell?.attributes?.plant_id === plantId)
+                    return cell;
+            }
+        }
+        return null;
+    }
+    /** Open the plant overview dialog, preserving edit-mode multi-selection behaviour. */
+    _openDialogForPlant(plantId) {
+        const plant = this._findPlant(plantId);
+        if (!plant)
+            return;
+        if (this.store.ui.$isEditMode.get() && this.store.ui.$selectedPlants.get().size > 0) {
+            if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
+                this.store.actions.ui.togglePlantSelection(plantId);
+            }
+            this.store.actions.ui.openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
+        }
+        else {
+            this.store.actions.ui.openPlantOverviewDialog(plant);
         }
     }
     /**
@@ -54976,6 +55082,9 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
         if (this.store && !this._viewStandardController) {
             this._viewStandardController = new libExports.StoreController(this, this.store.$viewStandardState);
         }
+        if (!this._gridInteractionController) {
+            this._gridInteractionController = new libExports.StoreController(this, gridInteraction$);
+        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -55044,7 +55153,7 @@ let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
             ></growspace-edit-mode-banner>
           `
             : ''}
-      ${this._viewStandardController?.value?.isTransplantMode
+      ${this._gridInteractionController?.value?.status === 'transplanting'
             ? x `
             <transplant-source-panel
               .clonePlants=${this._getPlantsByStage('clone')}
@@ -111932,7 +112041,6 @@ class GrowspaceUIStore {
         this.$isLoading = atom(true);
         this.$activeDialog = atom({ type: 'NONE' });
         this.$isEditMode = atom(false);
-        this.$isTransplantMode = atom(false);
         this.$selectedPlants = atom(new Set());
         this.$focusedPlantIndex = atom(-1);
         this.$menuOpen = atom(false);
@@ -111993,10 +112101,9 @@ class GrowspaceUIStore {
     }
     setEditMode(isEdit) {
         this.$isEditMode.set(isEdit);
-        // Clear selection and exit transplant mode when exiting edit mode
         if (!isEdit) {
             this.$selectedPlants.set(new Set());
-            this.exitTransplantMode();
+            cancel();
         }
     }
     togglePlantSelection(plantId) {
@@ -112037,12 +112144,6 @@ class GrowspaceUIStore {
     }
     setError(error) {
         this.$error.set(error);
-    }
-    toggleTransplantMode() {
-        this.$isTransplantMode.set(!this.$isTransplantMode.get());
-    }
-    exitTransplantMode() {
-        this.$isTransplantMode.set(false);
     }
     setLanguage(lang) {
         this.$language.set(lang);
@@ -113540,18 +113641,6 @@ function exitEditMode(ctx) {
     ctx.ui.setEditMode(false);
     ctx.ui.clearPlantSelection();
 }
-function handlePlantClick(ctx, plant) {
-    if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
-        const plantId = plant.attributes.plant_id;
-        if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
-            togglePlantSelection(ctx, plantId);
-        }
-        openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
-    }
-    else {
-        openPlantOverviewDialog(ctx, plant);
-    }
-}
 function openPlantOverviewDialog(ctx, plant, selectedIds) {
     ctx.ui.setActiveDialog({
         type: 'PLANT_OVERVIEW',
@@ -114296,11 +114385,15 @@ function handleKeyboardNavigation(ctx, key) {
             ctx.ui.setFocusedPlantIndex((currentIndex - 1 + plants.length) % plants.length);
             break;
         case 'Enter':
-        case ' ':
+        case ' ': {
             if (currentIndex >= 0 && currentIndex < plants.length) {
-                handlePlantClick(ctx, plants[currentIndex]);
+                const plantId = plants[currentIndex].attributes.plant_id;
+                if (plantId) {
+                    select(plantId);
+                }
             }
             break;
+        }
         case 'Delete':
         case 'Backspace':
             if (currentIndex >= 0 && currentIndex < plants.length) {
@@ -114402,8 +114495,6 @@ class ActionDispatcher {
         this.ui = {
             /** Toggle plant selection state */
             togglePlantSelection: (plantOrId) => togglePlantSelection(this.ctx, plantOrId),
-            /** Handle plant card click (opens overview dialog) */
-            handlePlantClick: (plant) => handlePlantClick(this.ctx, plant),
             /** Open add plant dialog at specific position */
             openAddPlantDialog: (row, col) => openAddPlantDialog(this.ctx, row, col),
             /** Open plant overview dialog */
@@ -115073,7 +115164,7 @@ class GrowspaceStore {
             devices,
             nutrientPresets,
         }));
-        this.$viewStandardState = computed([this.ui.$isTransplantMode, this.data.$devices], (isTransplantMode, devices) => ({ isTransplantMode, devices }));
+        this.$viewStandardState = computed([this.data.$devices], (devices) => ({ devices }));
         this.$headerState = computed([this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState], (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history }));
         this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
@@ -115542,7 +115633,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
             void this.store.actions.ui.deleteSelectedPlants();
         };
         this._handleTransplantMode = () => {
-            this.store.ui.toggleTransplantMode();
+            startTransplant();
         };
         this._handleError = (error, errorInfo) => {
             // Always log to console
@@ -115828,7 +115919,7 @@ let GrowspaceGridCard = class GrowspaceGridCard extends i$3 {
         this._handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
         this._handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
         this._handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
-        this._handleTransplantMode = () => this.store.ui.toggleTransplantMode();
+        this._handleTransplantMode = () => startTransplant();
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Grid Card caught error:', error, errorInfo);
             if (this.hass) {

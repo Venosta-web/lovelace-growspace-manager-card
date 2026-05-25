@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
 import { atom, computed } from 'nanostores';
+import { gridInteraction$, cancel } from '../../../../src/slices/grid-interaction';
 
 // Mock imports — include both legacy paths (for old imports still in the view) and new container paths
 vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
@@ -52,22 +53,19 @@ import { GrowspaceViewStandard } from '../../../../src/features/shared/layouts/g
 describe('GrowspaceViewStandard', () => {
     let element: GrowspaceViewStandard;
     let mockStore: any;
-    let isTransplantModeAtom: any;
     let devicesAtom: any;
 
     beforeEach(async () => {
-        isTransplantModeAtom = atom(false);
+        cancel();
         devicesAtom = atom([]);
 
         const $viewStandardState = computed(
-            [isTransplantModeAtom, devicesAtom],
-            (isTransplantMode, devices) => ({ isTransplantMode, devices })
+            [devicesAtom],
+            (devices) => ({ devices })
         );
 
         mockStore = {
-            ui: {
-                $isTransplantMode: isTransplantModeAtom,
-            },
+            ui: {},
             actions: {
                 ui: {
                     toast: vi.fn(),
@@ -137,18 +135,17 @@ describe('GrowspaceViewStandard', () => {
         expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
     });
 
-    it('should show transplant source panel when in transplant mode', async () => {
-        isTransplantModeAtom.set(true);
-        // Set some devices for _getPlantsByStage
+    it('should show transplant source panel when gridInteraction$ is transplanting', async () => {
         devicesAtom.set([
             {
                 name: 'GS1',
                 plants: [
                     { attributes: { stage: 'clone', plant_id: 'p1' } },
-                    { attributes: { stage: 'seedling', plant_id: 'p2' } }
-                ]
-            }
+                    { attributes: { stage: 'seedling', plant_id: 'p2' } },
+                ],
+            },
         ]);
+        gridInteraction$.set({ status: 'transplanting', sourcePlantId: 'p1' });
         element.requestUpdate();
         await element.updateComplete;
 
@@ -156,6 +153,14 @@ describe('GrowspaceViewStandard', () => {
         expect(panel).toBeTruthy();
         expect(panel.clonePlants.length).toBe(1);
         expect(panel.seedlingPlants.length).toBe(1);
+    });
+
+    it('should hide transplant source panel when gridInteraction$ is not transplanting', async () => {
+        gridInteraction$.set({ status: 'idle' });
+        element.requestUpdate();
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.querySelector('transplant-source-panel')).toBeFalsy();
     });
 
     it('should show view toggle button if initial_view_mode is header', async () => {

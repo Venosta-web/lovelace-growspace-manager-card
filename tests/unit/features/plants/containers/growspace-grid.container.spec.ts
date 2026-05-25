@@ -6,6 +6,10 @@ import { storeContext } from '../../../../../src/context';
 import '../../../../../src/features/plants/containers/growspace-grid.container';
 import type { GrowspaceGridContainer } from '../../../../../src/features/plants/containers/growspace-grid.container';
 import type { PlantEntity } from '../../../../../src/types';
+import {
+  gridInteraction$,
+  cancel,
+} from '../../../../../src/slices/grid-interaction';
 
 describe('GrowspaceGridContainer', () => {
   let element: GrowspaceGridContainer;
@@ -21,6 +25,7 @@ describe('GrowspaceGridContainer', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    cancel();
 
     mockStore = {
       ui: {
@@ -35,7 +40,7 @@ describe('GrowspaceGridContainer', () => {
       },
       actions: {
         ui: {
-          handlePlantClick: vi.fn(),
+          openPlantOverviewDialog: vi.fn(),
           openAddPlantDialog: vi.fn(),
         },
         plant: {
@@ -69,13 +74,25 @@ describe('GrowspaceGridContainer', () => {
     expect(gridUI.cells.length).to.equal(4);
   });
 
-  it('delegates plant click to store action', async () => {
+  it('cell click transitions gridInteraction$ to selected with the plant id', async () => {
     const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
     gridUI.dispatchEvent(new CustomEvent('cell-click', {
-      detail: { cell: { plant: mockPlant } }
+      detail: { cell: { plant: mockPlant } },
     }));
 
-    expect(mockStore.actions.ui.handlePlantClick).toHaveBeenCalledWith(mockPlant);
+    const state = gridInteraction$.get();
+    expect(state.status).toBe('selected');
+    expect((state as { status: 'selected'; plantId: string }).plantId).toBe('plant_test1');
+  });
+
+  it('opens plant overview dialog when gridInteraction$ transitions to selected', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('cell-click', {
+      detail: { cell: { plant: mockPlant } },
+    }));
+
+    await element.updateComplete;
+    expect(mockStore.actions.ui.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
   });
 
   it('delegates empty slot click to store action (0-based indexing)', async () => {
@@ -270,13 +287,14 @@ describe('GrowspaceGridContainer', () => {
     expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
   });
 
-  it('handles cell-click when cell has no plant', async () => {
+  it('handles cell-click when cell has no plant (no-op)', async () => {
     const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
     gridUI.dispatchEvent(new CustomEvent('cell-click', {
-      detail: { cell: { plant: null } }
+      detail: { cell: { plant: null } },
     }));
 
-    expect(mockStore.actions.ui.handlePlantClick).not.toHaveBeenCalled();
+    expect(gridInteraction$.get().status).toBe('idle');
+    expect(mockStore.actions.ui.openPlantOverviewDialog).not.toHaveBeenCalled();
   });
 
   it('handles grid-drop when transplantData is invalid JSON', async () => {

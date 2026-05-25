@@ -6,6 +6,13 @@ import { LibraryExportReadyEvent } from '../../src/lib/events';
 import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
 
+vi.mock('../../src/slices/grid-interaction', () => ({
+    startTransplant: vi.fn(),
+    select: vi.fn(),
+    cancel: vi.fn(),
+    gridInteraction$: { get: vi.fn(() => ({ status: 'idle' })), set: vi.fn(), listen: vi.fn(() => () => {}) },
+}));
+
 // Mock dependencies
 // Mock dependencies
 vi.mock('../../src/features/ui/containers/growspace-header.container', () => ({}));
@@ -80,7 +87,6 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             selectAllPlants: vi.fn(),
             setFocusedPlantIndex: vi.fn(),
             setActiveDialog: vi.fn(),
-            toggleTransplantMode: vi.fn(),
         };
         grid = {
             $activeDevices: atomMocks.$activeDevices,
@@ -456,10 +462,10 @@ describe('GrowspaceManagerCard', () => {
             expect(spy).toHaveBeenCalled();
         });
 
-        it('should handle transplant mode', () => {
-            const spy = vi.spyOn(element.store.ui, 'toggleTransplantMode');
+        it('should handle transplant mode', async () => {
+            const { startTransplant } = await import('../../src/slices/grid-interaction');
             (element as any)._handleTransplantMode();
-            expect(spy).toHaveBeenCalled();
+            expect(startTransplant).toHaveBeenCalled();
         });
 
         it('should handle batch add plants', () => {

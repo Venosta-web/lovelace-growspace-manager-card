@@ -6,7 +6,6 @@ import {
     selectAllPlants,
     clearPlantSelection,
     exitEditMode,
-    handlePlantClick,
     handleDeepLink,
     openBatchWateringDialog,
     openBatchTrainingDialog,
@@ -172,21 +171,6 @@ describe('ui-actions', () => {
     });
 
     describe('Navigation & Dialogs', () => {
-        it('handlePlantClick should open overview dialog in normal mode', () => {
-            const plant = { attributes: { plant_id: 'p1' } } as any;
-            handlePlantClick(ctx, plant);
-            expect(setActiveDialogSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
-        });
-
-        it('handlePlantClick should toggle selection in edit mode', () => {
-            const plant = { attributes: { plant_id: 'p1' } } as any;
-            mockUIState.$isEditMode.get.mockReturnValue(true);
-            mockUIState.$selectedPlants.get.mockReturnValue(new Set(['p2'])); // One selected to ensure we are in multi-select flow
-
-            handlePlantClick(ctx, plant);
-            expect(togglePlantSelectionSpy).toHaveBeenCalledWith('p1');
-        });
-
         it('handleDeepLink should set pending link if devices not ready', () => {
             (ctx.data.$devices.get as any).mockReturnValue([]);
             handleDeepLink(ctx, 'p1');

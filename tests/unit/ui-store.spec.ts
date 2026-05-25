@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { ViewMode, GridOverlayMode } from '../../src/constants';
+import { gridInteraction$, cancel } from '../../src/slices/grid-interaction';
 
 describe('UI Store', () => {
     let store: GrowspaceUIStore;
@@ -110,10 +111,10 @@ describe('UI Store', () => {
             expect(store.$selectedPlants.get().size).toBe(0);
         });
 
-        it('should exit transplant mode when exiting edit mode', () => {
-            store.$isTransplantMode.set(true);
+        it('should cancel grid interaction when exiting edit mode', () => {
+            gridInteraction$.set({ status: 'selected', plantId: 'p1' });
             store.setEditMode(false);
-            expect(store.$isTransplantMode.get()).toBe(false);
+            expect(gridInteraction$.get().status).toBe('idle');
         });
 
         it('should NOT clear selection when entering edit mode', () => {
@@ -347,21 +348,6 @@ describe('UI Store', () => {
         });
     });
 
-    describe('Transplant Mode', () => {
-        it('should toggle transplant mode', () => {
-            expect(store.$isTransplantMode.get()).toBe(false);
-            store.toggleTransplantMode();
-            expect(store.$isTransplantMode.get()).toBe(true);
-            store.toggleTransplantMode();
-            expect(store.$isTransplantMode.get()).toBe(false);
-        });
-
-        it('should exit transplant mode', () => {
-            store.$isTransplantMode.set(true);
-            store.exitTransplantMode();
-            expect(store.$isTransplantMode.get()).toBe(false);
-        });
-    });
 
     describe('flowerFlipDismissed', () => {
         beforeEach(() => {

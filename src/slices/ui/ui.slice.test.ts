@@ -12,7 +12,6 @@ import {
   isLoading$,
   activeDialog$,
   isEditMode$,
-  isTransplantMode$,
   selectedPlants$,
   focusedPlantIndex$,
   menuOpen$,
@@ -37,12 +36,11 @@ import {
   showToast,
   clearToast,
   setError,
-  toggleTransplantMode,
-  exitTransplantMode,
   setLanguage,
   setPendingDeepLink,
   dismissFlowerFlip,
 } from './index';
+import { gridInteraction$, cancel } from '../grid-interaction';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
 
 // ---------------------------------------------------------------------------
@@ -54,7 +52,6 @@ beforeEach(() => {
   isLoading$.set(true);
   activeDialog$.set({ type: 'NONE' });
   isEditMode$.set(false);
-  isTransplantMode$.set(false);
   selectedPlants$.set(new Set());
   focusedPlantIndex$.set(-1);
   menuOpen$.set(false);
@@ -65,6 +62,7 @@ beforeEach(() => {
   language$.set('en');
   pendingDeepLinkPlantId$.set(null);
   flowerFlipDismissed$.set({});
+  cancel();
 });
 
 // ---------------------------------------------------------------------------
@@ -156,11 +154,11 @@ describe('setEditMode', () => {
     expect(selectedPlants$.get().size).toBe(0);
   });
 
-  it('exiting edit mode exits transplant mode', () => {
+  it('exiting edit mode cancels any active grid interaction', () => {
     setEditMode(true);
-    isTransplantMode$.set(true);
+    gridInteraction$.set({ status: 'selected', plantId: 'p1' });
     setEditMode(false);
-    expect(isTransplantMode$.get()).toBe(false);
+    expect(gridInteraction$.get().status).toBe('idle');
   });
 });
 
@@ -211,30 +209,6 @@ describe('deselectPlants', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Transplant mode
-// ---------------------------------------------------------------------------
-
-describe('toggleTransplantMode', () => {
-  it('flips false → true', () => {
-    toggleTransplantMode();
-    expect(isTransplantMode$.get()).toBe(true);
-  });
-
-  it('flips true → false', () => {
-    isTransplantMode$.set(true);
-    toggleTransplantMode();
-    expect(isTransplantMode$.get()).toBe(false);
-  });
-});
-
-describe('exitTransplantMode', () => {
-  it('always sets isTransplantMode$ to false', () => {
-    isTransplantMode$.set(true);
-    exitTransplantMode();
-    expect(isTransplantMode$.get()).toBe(false);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // Toast / notification

@@ -172,10 +172,6 @@ export class ActionDispatcher {
     togglePlantSelection: (plantOrId: string | PlantEntity) =>
       uiActions.togglePlantSelection(this.ctx, plantOrId),
 
-    /** Handle plant card click (opens overview dialog) */
-    handlePlantClick: (plant: PlantEntity) =>
-      uiActions.handlePlantClick(this.ctx, plant),
-
     /** Open add plant dialog at specific position */
     openAddPlantDialog: (row?: number, col?: number) =>
       uiActions.openAddPlantDialog(this.ctx, row, col),
