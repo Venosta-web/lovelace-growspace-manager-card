@@ -51589,123 +51589,6 @@ class LibraryExportReadyEvent extends CustomEvent {
 LibraryExportReadyEvent.TYPE = 'library-export-ready';
 
 /**
- * Growspace Grid ViewModel
- *
- * Consolidates all business logic and state for the growspace grid display.
- * Single computed atom that components subscribe to.
- */
-/**
- * Overlay color constants
- */
-const OVERLAY_COLORS = {
-    OK: 'var(--overlay-ok-color, rgba(76, 175, 80, 0.15))',
-    WARNING: 'var(--overlay-warning-color, rgba(255, 152, 0, 0.15))',
-    DANGER: 'var(--overlay-danger-color, rgba(244, 67, 54, 0.15))',
-    ALERT: 'var(--overlay-alert-color, rgba(244, 67, 54, 0.2))',
-    TRANSPARENT: 'transparent',
-};
-/**
- * Calculate overlay color for a plant based on overlay mode
- */
-function calculateOverlayColor(mode, plant, store) {
-    if (mode === GridOverlayMode.NONE) {
-        return OVERLAY_COLORS.TRANSPARENT;
-    }
-    const growspaceId = plant.attributes.growspace_id;
-    if (!growspaceId) {
-        return OVERLAY_COLORS.TRANSPARENT;
-    }
-    const device = store.data.$devices.get().find((d) => d.deviceId === growspaceId);
-    if (!device) {
-        return OVERLAY_COLORS.TRANSPARENT;
-    }
-    switch (mode) {
-        case GridOverlayMode.VPD: {
-            const { vpdStatus } = device.biologicalMetrics;
-            if (vpdStatus === 'ok')
-                return OVERLAY_COLORS.OK;
-            if (vpdStatus === StatusLevel.WARNING)
-                return OVERLAY_COLORS.WARNING;
-            if (vpdStatus === StatusLevel.DANGER)
-                return OVERLAY_COLORS.DANGER;
-            break;
-        }
-        case GridOverlayMode.BIO_STATUS: {
-            const { hass } = store;
-            if (!hass)
-                return OVERLAY_COLORS.TRANSPARENT;
-            const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
-            const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
-            const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
-            if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
-                return OVERLAY_COLORS.ALERT;
-            }
-            if (optimalEntity?.state === 'on') {
-                return OVERLAY_COLORS.OK;
-            }
-            const { vpdStatus } = device.biologicalMetrics;
-            if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
-                return OVERLAY_COLORS.WARNING;
-            }
-            break;
-        }
-    }
-    return OVERLAY_COLORS.TRANSPARENT;
-}
-/**
- * Transform flat plant grid into cell data with overlay information
- */
-function transformGridCells(plants, cols, overlayMode, selectedPlants, store) {
-    const flatGrid = plants.flat();
-    return flatGrid.map((plant, index) => {
-        const row = Math.floor(index / cols) + 1;
-        const col = (index % cols) + 1;
-        return {
-            plant,
-            row,
-            col,
-            overlayColor: plant ? calculateOverlayColor(overlayMode, plant, store) : OVERLAY_COLORS.TRANSPARENT,
-            isSelected: plant ? selectedPlants.has(plant.attributes.plant_id || '') : false,
-        };
-    });
-}
-/**
- * Create growspace grid view model
- *
- * @param plants - 2D array of plants in grid layout
- * @param rows - Number of rows in grid
- * @param cols - Number of columns in grid
- * @param store - Global store instance
- * @returns Computed atom with view model data
- */
-function createGrowspaceGridViewModel(plants, rows, cols, store) {
-    return computed([
-        store.ui.$isEditMode,
-        store.ui.$selectedPlants,
-        store.ui.$isCompactView,
-        store.ui.$isLoading,
-        store.ui.$gridOverlayMode,
-        store.data.$devices,
-    ], (isEditMode, selectedPlants, isCompactView, isLoading, overlayMode) => {
-        // Pre-compute list view flag (grids wider than 5 columns use list layout)
-        const isListView = cols > 5;
-        // Transform grid cells with overlay data
-        const cells = transformGridCells(plants, cols, overlayMode, selectedPlants, store);
-        return {
-            rows,
-            cols,
-            isListView,
-            cells,
-            isEditMode,
-            isCompactView,
-            isLoading,
-            overlayMode,
-            selectedPlants,
-        };
-    });
-}
-
-/**
  * GridInteraction slice — store-driven interaction state machine for Plant Grid Cells.
  *
  * Public API (atom):
@@ -51775,6 +51658,1396 @@ function startTransplant() {
         return;
     gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
 }
+
+/**
+ * UI slice — atoms and mutators for global UI state.
+ *
+ * Public API (atoms):
+ *   viewMode$               — read: active view mode (standard/compact/header/heatmap)
+ *   isLoading$              — read: whether the card is in a loading state
+ *   activeDialog$           — read: currently open dialog (NONE when closed)
+ *   isEditMode$             — read: whether edit mode is active
+ *   selectedPlants$         — read: set of selected plant IDs
+ *   focusedPlantIndex$      — read: keyboard-focused plant index (-1 = none)
+ *   menuOpen$               — read: whether the card menu is open
+ *   notification$           — read: active toast notification (null = none)
+ *   error$                  — read: global error string (null = none)
+ *   defaultApplied$         — read: whether the card config default was applied
+ *   gridOverlayMode$        — read: active grid overlay mode
+ *   language$               — read: active UI language code
+ *   pendingDeepLinkPlantId$ — read: plant ID awaiting deep-link navigation (null = none)
+ *   flowerFlipDismissed$    — read: map of growspace ID → dismissed flower-flip date
+ *   isCompactView$          — computed: true when viewMode is COMPACT
+ *   cardViewState$          — computed: combined view-state object for card subscription
+ *
+ * Public API (mutators):
+ *   setViewMode()           — switch the active view mode
+ *   setGridOverlayMode()    — switch the active grid overlay
+ *   setIsLoading()          — toggle loading state
+ *   openDialog()            — set the active dialog
+ *   closeDialog()           — reset dialog to NONE
+ *   setEditMode()           — enter/exit edit mode (clears selection on exit)
+ *   togglePlantSelection()  — add/remove a plant from the selection set
+ *   selectAllPlants()       — replace the selection with all provided IDs
+ *   clearPlantSelection()   — empty the selection
+ *   deselectPlants()        — remove specific plant IDs from the selection
+ *   setFocusedPlantIndex()  — set the keyboard-focus index
+ *   setMenuOpen()           — open/close the card menu
+ *   showToast()             — display a toast notification
+ *   clearToast()            — dismiss the current toast
+ *   setDefaultApplied()     — mark the config default as applied
+ *   setError()              — set or clear the global error
+ *   setLanguage()           — change the UI language
+ *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
+ *   dismissFlowerFlip()     — record a dismissed flower-flip notification
+ *
+ * This slice owns no backend calls — all state is local UI-only.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const viewMode$ = atom(ViewMode.STANDARD);
+atom(GridOverlayMode.NONE);
+/** Map of growspace ID → flower-flip start date that the user has dismissed. */
+atom(_loadFlowerFlipDismissed());
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+function _loadFlowerFlipDismissed() {
+    try {
+        const raw = localStorage.getItem('growspace.flowerFlipDismissed');
+        if (raw)
+            return JSON.parse(raw);
+    }
+    catch {
+        // Ignore — localStorage unavailable (SSR / test environments).
+    }
+    return {};
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/** Switch the active view mode (standard / compact / header / heatmap). */
+function setViewMode(mode) {
+    viewMode$.set(mode);
+}
+
+/**
+ * LayoutSpec — declarative layout configuration for each ViewMode.
+ *
+ * Public API:
+ *   LayoutSlot         — union of recognised slot names
+ *   LayoutSpec         — { slots, overlay? } configuration object
+ *   VIEW_MODE_LAYOUT_MAP — static map from every ViewMode to its LayoutSpec
+ *   layoutSpec$        — computed atom: the LayoutSpec for the active viewMode$
+ */
+// ---------------------------------------------------------------------------
+// Static map
+// ---------------------------------------------------------------------------
+const VIEW_MODE_LAYOUT_MAP = {
+    [ViewMode.STANDARD]: {
+        slots: ['header', 'chart', 'grid'],
+        viewVariant: ViewMode.STANDARD,
+        chartType: 'analytics',
+    },
+    [ViewMode.COMPACT]: {
+        slots: ['grid'],
+        viewVariant: ViewMode.COMPACT,
+    },
+    [ViewMode.HEADER]: {
+        slots: ['header'],
+        viewVariant: ViewMode.HEADER,
+    },
+    [ViewMode.HEATMAP]: {
+        slots: ['header', 'chart'],
+        viewVariant: ViewMode.HEATMAP,
+        chartType: 'heatmap',
+    },
+};
+// ---------------------------------------------------------------------------
+// Computed atom
+// ---------------------------------------------------------------------------
+/** The LayoutSpec that corresponds to the currently active view mode. */
+const layoutSpec$ = computed(viewMode$, (mode) => VIEW_MODE_LAYOUT_MAP[mode]);
+
+const growspaceCardStyles = i$6 `
+  :host {
+    display: block;
+    font-family: 'Roboto', sans-serif;
+    color: var(--growspace-card-text);
+  }
+
+  ha-card {
+    padding: var(--spacing-lg);
+    border-radius: var(--border-radius-lg);
+    background: var(--growspace-card-bg);
+    box-shadow: var(--card-shadow);
+    transition: var(--transition-medium);
+  }
+
+  ha-card:hover {
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  /* Unified Card Container - Glassmorphism 2.0 */
+  .unified-growspace-card {
+    /* Glass effect provided by .glass-surface .glass-panel */
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  /* Edit Mode Banner */
+  .edit-mode-banner {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
+    border: 1px solid rgba(76, 175, 80, 0.4);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--primary-text-color, #fff);
+    font-weight: 500;
+    font-size: 0.95rem;
+  }
+
+  .banner-content svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .stat-chip svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    opacity: 0.8;
+    pointer-events: none; /* Ensure key events pass through to chip/container */
+  }
+
+  @keyframes pulse-red {
+    0% {
+      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    }
+  }
+
+  .stat-chip.status-warning {
+    color: #ffa726 !important;
+    border-color: rgba(255, 167, 38, 0.5) !important;
+    background: rgba(255, 167, 38, 0.1) !important;
+  }
+
+  .stat-chip.status-danger {
+    color: #ef5350 !important;
+    border-color: rgba(239, 83, 80, 0.5) !important;
+    background: rgba(239, 83, 80, 0.1) !important;
+    animation: pulse-red 2s infinite;
+  }
+  .banner-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* 24h Chart */
+  .gs-chart-container {
+    margin-top: 8px;
+    height: 150px;
+    position: relative;
+    width: 100%;
+  }
+
+  .gs-chart-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
+  }
+
+  .chart-line {
+    fill: none;
+    stroke: var(--primary-light-color, #ffeb3b);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .chart-gradient-fill {
+    fill: url(#gradient);
+    opacity: 0.2;
+  }
+
+  /* Time Range Selector - MD3 Tonal Chips */
+  .time-range-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    justify-content: flex-end;
+  }
+  .range-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid transparent;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    border-radius: 8px; /* Small rounding for compact look */
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    letter-spacing: 0.5px;
+  }
+  .range-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--primary-text-color, #fff);
+  }
+  .range-btn.active {
+    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
+    color: var(--primary-color, #4caf50);
+    border-color: rgba(var(--rgb-primary-color, 76, 175, 80), 0.3);
+    font-weight: 600;
+  }
+
+  /* Time markers for chart */
+  .chart-markers {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -24px;
+    padding: 0 10px;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.3);
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Accessibility */
+  .sr-only-announcer {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .gs-tooltip {
+    position: absolute;
+    top: 10px;
+    background: rgba(30, 30, 35, 0.9);
+    color: var(--primary-text-color, #fff);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    pointer-events: none;
+    transform: translate(-50%, 0);
+    z-index: 10;
+    white-space: nowrap;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    line-height: 1.4;
+    text-align: center;
+  }
+  .gs-tooltip .time {
+    font-weight: bold;
+    color: var(--primary-light-color);
+    margin-bottom: 2px;
+  }
+
+  .gs-cursor-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.3);
+    pointer-events: none;
+    z-index: 5;
+    border-left: 1px dashed rgba(255, 255, 255, 0.5);
+  }
+
+  /* Light Cycle Card Nested */
+  .gs-light-cycle-card {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .gs-light-cycle-card.collapsed {
+    padding: 12px 20px;
+    gap: 0;
+  }
+
+  .gs-light-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    cursor: pointer;
+  }
+
+  .gs-light-cycle-card.collapsed .gs-light-header-row {
+    margin-bottom: 0;
+  }
+
+  .gs-light-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--primary-text-color, #fff);
+  }
+
+  .gs-icon-box {
+    background: var(--secondary-background-color, rgba(255, 235, 59, 0.05));
+    border: 1px solid var(--divider-color, rgba(255, 235, 59, 0.2));
+    border-radius: 14px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-light-color);
+  }
+
+  .gs-light-subtitle {
+    font-size: 0.75rem;
+    opacity: 0.5;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .light-status-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+  }
+
+  .target-cycle-text {
+    font-size: 0.9rem;
+    opacity: 0.5;
+    text-align: right;
+    margin-top: 4px;
+  }
+
+  /* Bottom Action Cards */
+  .gs-action-cards {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .action-card {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: default; /* Or pointer if clickable */
+  }
+
+  .ac-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ac-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ac-icon.on {
+    background: rgba(255, 235, 59, 0.1);
+    color: var(--primary-light-color);
+  }
+
+  .ac-icon.off {
+    background: rgba(120, 144, 156, 0.1);
+    color: #90a4ae;
+  }
+
+  .ac-text h4 {
+    margin: 0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    opacity: 0.5;
+    letter-spacing: 0.5px;
+  }
+
+  .ac-text .time {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-text-color, #fff);
+  }
+
+  .ac-text .time span {
+    font-size: 0.9rem;
+    font-weight: 400;
+    opacity: 0.7;
+    margin-left: 2px;
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--spacing-md);
+  }
+
+  .grid.compact {
+    gap: var(--spacing-sm);
+  }
+
+  ha-dialog {
+    --mdc-dialog-border-radius: var(--border-radius-md);
+    --mdc-dialog-box-shadow: var(--card-shadow-hover);
+  }
+
+  .no-data {
+    text-align: center;
+    color: var(--secondary-text-color);
+    padding: var(--spacing-lg);
+    font-style: italic;
+    background: var(--growspace-empty-bg);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md) 0;
+  }
+
+  .error {
+    color: var(--error-color);
+    padding: var(--spacing-md);
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md) 0;
+  }
+  ha-dialog.strain-dialog {
+    --mdc-dialog-min-width: 45vw;
+    --mdc-dialog-max-width: 45vw;
+    --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
+  }
+  .dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .form-group label {
+    font-weight: 500;
+    color: var(--primary-text-color);
+    font-size: 0.9rem;
+  }
+
+  .form-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid var(--divider-color);
+    border-radius: var(--border-radius);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    background: var(--card-background-color);
+    color: var(--primary-text-color);
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
+  }
+
+  /* Empty Plant Card Styles */
+  .plant-card-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    aspect-ratio: 1;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    color: var(--secondary-text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .plant-card-empty:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .plant-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+
+  /* Strain Library Styles - Glassmorphism & Table */
+  .strain-search-container {
+    position: relative;
+    margin-bottom: var(--spacing-md);
+  }
+  .search-input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    padding-left: 40px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--primary-text-color);
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+  }
+  .search-input:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
+    outline: none;
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: var(--secondary-text-color);
+    pointer-events: none;
+  }
+
+  .strain-table-container {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .strain-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .strain-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  .strain-row:last-child {
+    border-bottom: none;
+  }
+  .strain-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .strain-cell {
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+  }
+  .strain-cell.expand-icon {
+    width: 40px;
+    justify-content: center;
+    color: var(--secondary-text-color);
+  }
+  .strain-cell.content {
+    flex: 1;
+    font-weight: 500;
+    font-size: 1.1rem;
+  }
+  .strain-cell.actions {
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+  }
+
+  .pheno-row {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  .pheno-list {
+    padding: var(--spacing-sm) var(--spacing-lg);
+  }
+  .pheno-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    color: var(--secondary-text-color);
+  }
+  .pheno-item:last-child {
+    border-bottom: none;
+  }
+
+  .fab-button {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--plant-border-color-default);
+    color: var(--growspace-card-text);
+    border: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+    z-index: 10;
+  }
+  .fab-button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  }
+  .fab-button:active {
+    transform: scale(0.95);
+  }
+
+  /* Add Form Overlay */
+  .add-form-overlay {
+    position: absolute;
+    bottom: 90px;
+    right: 24px;
+    width: 300px;
+    background: var(--card-background-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: var(--spacing-md);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+    animation: slideUp 0.3s ease-out;
+  }
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .badge {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    margin-left: 8px;
+    color: var(--secondary-text-color);
+  }
+
+  /* Clear Confirmation */
+  .confirmation-overlay {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .rotate-icon {
+    transition: transform 0.3s ease;
+  }
+  .rotate-icon.expanded {
+    transform: rotate(180deg);
+  }
+
+  /* Allow Grid Items to Scale Down (Fix 5-col Overflow) */
+  .plant-card-rich,
+  .plant-card-empty {
+    min-width: 0;
+  }
+
+  /* Force List View for Wide Grids on Desktop */
+  .grid.force-list-view {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    /* Remove grid template */
+    grid-template-columns: 1fr !important;
+    grid-template-rows: auto !important;
+  }
+
+  .grid.force-list-view .plant-card-rich {
+    min-height: auto;
+    aspect-ratio: unset;
+    flex-direction: row;
+    align-items: center;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .grid.force-list-view .plant-card-bg {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .grid.force-list-view .plant-card-overlay {
+    display: none;
+  }
+
+  .grid.force-list-view .plant-card-content {
+    flex-direction: row;
+    padding: 0;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .grid.force-list-view .pc-info {
+    margin-top: 0;
+    align-items: flex-start;
+    text-align: left;
+    flex: 1;
+    gap: 2px;
+  }
+
+  .grid.force-list-view .pc-strain-name {
+    font-size: 1rem;
+  }
+
+  .grid.force-list-view .pc-pheno {
+    font-size: 0.85rem;
+  }
+
+  .grid.force-list-view .pc-stage {
+    margin-top: 2px;
+    font-size: 0.85rem;
+  }
+
+  .grid.force-list-view .pc-stats {
+    width: auto;
+    padding: 0;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .grid.force-list-view .pc-stat-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .grid.force-list-view .plant-card-empty {
+    min-height: 80px;
+    aspect-ratio: unset;
+    flex-direction: row;
+    justify-content: flex-start;
+    padding: 0 24px;
+    gap: 16px;
+  }
+
+  @media (max-width: 600px) {
+    .unified-growspace-card {
+      padding: 12px;
+    }
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .selector-container {
+      justify-content: center;
+    }
+    /* Switch Grid to List View */
+    .grid {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: var(--spacing-sm);
+      grid-template-columns: unset !important;
+      grid-template-rows: unset !important;
+    }
+
+    /* Mobile List View for Rich Cards */
+    .plant-card-rich {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: auto;
+      aspect-ratio: unset;
+      flex-direction: row;
+      align-items: center;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    .plant-card-bg {
+      /* Turn background into a thumbnail on mobile */
+      position: relative !important;
+      width: 64px !important;
+      height: 64px !important;
+      border-radius: 8px;
+      flex-shrink: 0;
+      background-color: rgba(0, 0, 0, 0.2);
+      object-fit: cover !important;
+    }
+
+    .plant-card-overlay {
+      display: none;
+    }
+
+    .plant-card-content {
+      position: static;
+      z-index: auto;
+      display: flex;
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      flex-direction: row;
+      padding: 0;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .pc-info {
+      display: flex;
+      flex-direction: column;
+      margin-top: 0;
+      align-items: flex-start;
+      text-align: left;
+      flex: 1;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .pc-strain-name {
+      font-size: 0.9rem;
+      color: #fff !important;
+      font-weight: 700;
+    }
+
+    .pc-pheno {
+      font-size: 0.8rem;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7)) !important;
+    }
+
+    .pc-stage {
+      margin-top: 2px;
+      font-size: 0.8rem;
+      color: var(--stage-color, var(--primary-text-color, #fff)) !important;
+      font-weight: 600;
+    }
+
+    .pc-stats {
+      width: auto;
+      padding: 0;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .pc-stat-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Hide non-current stages on mobile */
+    .pc-stat-item:not(.current-stage) {
+      display: none;
+    }
+
+    /* Empty Slot in List View */
+    .plant-card-empty {
+      min-height: 80px;
+      aspect-ratio: unset;
+      flex-direction: row;
+      justify-content: flex-start;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    /* Header vertical stacking */
+    .gs-header-top {
+      flex-direction: column;
+    }
+    .gs-stats-chips {
+      flex-direction: column;
+      width: 100%;
+      align-items: stretch;
+      gap: 4px;
+    }
+    .stat-chip {
+      width: 100%;
+      box-sizing: border-box;
+      justify-content: space-between; /* Icon/Value spread */
+    }
+
+    /* Mobile specific dialog adjustments */
+    ha-dialog.strain-dialog .mdc-dialog__surface {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+    }
+    .fab-button {
+      bottom: 16px;
+      right: 16px;
+    }
+    .add-form-overlay {
+      bottom: 80px;
+      right: 16px;
+      left: 16px;
+      width: auto;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .plant {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Glassmorphism for Dialogs */
+  ha-dialog {
+    --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
+    --mdc-dialog-min-width: 400px;
+    --mdc-dialog-max-width: 90vw;
+  }
+
+  /* MD3 Dialog Layout */
+  .dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+  }
+
+  .dialog-icon {
+    width: 48px;
+    height: 48px;
+    padding: 12px;
+    border-radius: 16px; /* MD3 medium shape */
+    background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
+    color: var(--stage-color, #4caf50);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dialog-title-group {
+    flex: 1;
+  }
+
+  .dialog-title {
+    font-size: 1.5rem;
+    font-weight: 500; /* MD3 Headline Small */
+    margin: 0;
+    color: var(--primary-text-color, #ffffff);
+  }
+
+  .dialog-subtitle {
+    font-size: 0.875rem;
+    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
+    margin-top: 4px;
+    text-transform: capitalize;
+  }
+
+  /* MD3 Cards inside Dialog */
+  .detail-card {
+    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+    border-radius: 12px;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
+  }
+
+  .detail-card h3 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--secondary-text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* View Modes */
+  .view-mode-container {
+    position: relative;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Compact Mode (Grid Only) */
+  .compact-exit-fab {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 100;
+  }
+  .compact-exit-fab:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+    color: #fff;
+    border-color: var(--primary-color);
+  }
+
+  /* Header Only Mode */
+  .header .expand-handle {
+    width: 100%;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px; /* Match collapse handle */
+    margin-top: 8px; /* Match collapse handle spacing */
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Button Reset */
+    padding: 0;
+    outline: none;
+    color: inherit;
+  }
+  .header .expand-handle:hover {
+    background: rgba(var(--rgb-primary-color), 0.1);
+    color: var(--primary-color);
+  }
+
+  /* Collapse Handle (Standard Mode -> Header Only) */
+  .collapse-handle {
+    width: 100%;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px; /* Rounded top and bottom for visual separation */
+    margin-top: 8px; /* Spacing from grid */
+    transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    /* Button Reset */
+    padding: 0;
+    outline: none;
+    color: inherit;
+  }
+  .collapse-handle:hover {
+    background: rgba(var(--rgb-primary-color), 0.1);
+    color: var(--primary-color);
+  }
+
+  /* Respect user motion preferences (WCAG 2.3.3) */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+`;
+
+let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.items = [];
+        this.isLoading = false;
+        this.range = '24h';
+        this.sensorHistory = {};
+    }
+    render() {
+        if (this.items.length === 0)
+            return x ``;
+        if (this.isLoading) {
+            return x `
+        <div class="graphs-container">
+          ${this._renderTimeRangeSelector()}
+          <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);">
+            <div class="loading-spinner" style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
+            <span style="margin-left:12px;">Loading history data...</span>
+          </div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="graphs-container">
+        ${this._renderTimeRangeSelector()}
+        ${c(this.items, (item) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`), (item) => this._renderItem(item))}
+      </div>
+    `;
+    }
+    _renderTimeRangeSelector() {
+        const ranges = ['1h', '6h', '24h', '7d'];
+        return x `
+      <div class="time-range-selector">
+        ${ranges.map((r) => x `
+          <button
+            class="range-btn ${this.range === r ? 'active' : ''}"
+            @click=${() => this._emitSetRange(r)}
+          >${r}</button>
+        `)}
+      </div>
+    `;
+    }
+    _renderItem(item) {
+        if (item.type === 'group') {
+            return x `
+        <growspace-env-chart
+          .hass=${this.hass}
+          .device=${this.device}
+          .sensorHistory=${this.sensorHistory}
+          .metrics=${item.metrics}
+          .isCombined=${true}
+          .range=${this.range}
+          @toggle-graph=${(e) => this._redispatch('toggle-graph', e.detail)}
+          @unlink-graphs=${(e) => this._redispatch('unlink-graphs', e.detail)}
+          @unlink-graph=${(e) => this._redispatch('unlink-graph', e.detail)}
+        ></growspace-env-chart>
+      `;
+        }
+        return x `
+      <growspace-env-chart
+        .hass=${this.hass}
+        .device=${this.device}
+        .sensorHistory=${this.sensorHistory}
+        .metricKey=${item.metrics[0]}
+        .metrics=${item.metrics}
+        .range=${this.range}
+        @toggle-graph=${(e) => this._redispatch('toggle-graph', e.detail)}
+      ></growspace-env-chart>
+    `;
+    }
+    _emitSetRange(range) {
+        this.dispatchEvent(new CustomEvent('set-range', { detail: range, bubbles: true, composed: true }));
+    }
+    _redispatch(type, detail) {
+        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+    }
+};
+GrowspaceAnalyticsUI.styles = [
+    growspaceCardStyles,
+    sharedStyles,
+    i$6 `
+      :host { display: block; }
+      .graphs-container { display: flex; flex-direction: column; gap: 12px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "items", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceAnalyticsUI.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "range", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "hass", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "device", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsUI.prototype, "sensorHistory", void 0);
+GrowspaceAnalyticsUI = __decorate([
+    t$2('growspace-analytics-ui')
+], GrowspaceAnalyticsUI);
+
+let GrowspaceAnalyticsContainer = class GrowspaceAnalyticsContainer extends i$3 {
+    _initControllers() {
+        if (this.store && !this._controller) {
+            this._controller = new libExports.StoreController(this, this.store.history.$analyticsViewState);
+            this.store.history.startAutoRefresh();
+        }
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._initControllers();
+    }
+    disconnectedCallback() {
+        super.disconnectedCallback();
+        this.store?.history?.stopAutoRefresh();
+    }
+    firstUpdated() {
+        if (this.store?.history && !this._controller?.value?.historyLoaded) {
+            this.store.history.loadHistoryOnDemand();
+        }
+    }
+    updated() {
+        const state = this._controller?.value;
+        if (this.store?.history && state && !state.historyLoaded && !state.historyLoading) {
+            this.store.history.loadHistoryOnDemand();
+        }
+    }
+    get _items() {
+        if (!this._controller)
+            return [];
+        const { activeEnvGraphs = new Set(), linkedGraphGroups = [] } = this._controller.value ?? {};
+        const getSortIndex = (metric) => {
+            const i = METRIC_SORT_ORDER.indexOf(metric);
+            return i !== -1 ? i : 999;
+        };
+        const items = [];
+        const processed = new Set();
+        linkedGraphGroups.forEach((group) => {
+            const active = group.filter((m) => activeEnvGraphs.has(m));
+            if (active.length > 0) {
+                items.push({ type: 'group', metrics: active, sortIndex: Math.min(...active.map(getSortIndex)) });
+                active.forEach((m) => processed.add(m));
+            }
+        });
+        activeEnvGraphs.forEach((metric) => {
+            if (!processed.has(metric)) {
+                const base = metric.includes(':') ? metric.split(':')[0] : metric;
+                items.push({ type: 'single', metrics: [metric], sortIndex: getSortIndex(base) });
+            }
+        });
+        return items.sort((a, b) => a.sortIndex - b.sortIndex);
+    }
+    render() {
+        const state = this._controller?.value;
+        if (!state || state.activeEnvGraphs?.size === 0 || !this.device)
+            return x ``;
+        return x `
+      <growspace-analytics-ui
+        .items=${this._items}
+        .isLoading=${state.historyLoading}
+        .range=${this.store.history.getRange()}
+        .hass=${this.hass}
+        .device=${this.device}
+        .sensorHistory=${state.combinedHistory || {}}
+        @set-range=${this._handleSetRange}
+        @toggle-graph=${this._handleToggleGraph}
+        @unlink-graphs=${this._handleUnlinkGraphs}
+        @unlink-graph=${this._handleUnlinkGraphMetric}
+      ></growspace-analytics-ui>
+    `;
+    }
+    _handleSetRange(e) {
+        if (this.device) {
+            this.store.history.setGraphRange(this.device.deviceId, e.detail);
+            this.store.history.loadHistoryOnDemand();
+        }
+    }
+    _handleToggleGraph(e) {
+        const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
+        if (metric) {
+            this.store?.actions.ui.toggleEnvGraph(metric);
+        }
+    }
+    _handleUnlinkGraphs(e) {
+        this.store.history.unlinkGraphGroup(e.detail);
+    }
+    _handleUnlinkGraphMetric(e) {
+        this.store.history.unlinkGraphMetric(e.detail);
+    }
+};
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], GrowspaceAnalyticsContainer.prototype, "hass", void 0);
+__decorate([
+    c$2({ context: storeContext })
+], GrowspaceAnalyticsContainer.prototype, "store", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceAnalyticsContainer.prototype, "device", void 0);
+GrowspaceAnalyticsContainer = __decorate([
+    t$2('growspace-analytics')
+], GrowspaceAnalyticsContainer);
 
 const variables = i$6 `
   :host {
@@ -51887,529 +53160,6 @@ const variables = i$6 `
     --primary-light-color-active: rgba(255, 255, 255, 0.2);
   }
 `;
-
-/**
- * Growspace Grid UI - Presentational Component
- *
- * Pure Lit component that renders the plant grid.
- * Receives all data via props, emits events for user interactions.
- * No store access, no business logic.
- */
-let GrowspaceGridUI = class GrowspaceGridUI extends i$3 {
-    constructor() {
-        super(...arguments);
-        // Grid data from ViewModel
-        this.rows = 3;
-        this.cols = 3;
-        this.isListView = false;
-        this.cells = [];
-        // UI state
-        this.isEditMode = false;
-        this.isCompactView = false;
-        this.isLoading = false;
-        this.overlayMode = GridOverlayMode.NONE;
-        // Drag state (managed internally by UI component)
-        this._draggedPlant = null;
-        this._gridRef = e$1();
-    }
-    focusCard(index) {
-        const cards = this._plantCards;
-        if (cards && cards[index]) {
-            cards[index].focus();
-        }
-    }
-    _handleDragStart(plant) {
-        this._draggedPlant = plant;
-        this.dispatchEvent(new CustomEvent('plant-drag-start', {
-            bubbles: true,
-            composed: true,
-            detail: { plant },
-        }));
-    }
-    _handleDragOver(e) {
-        e.preventDefault();
-        if (e.dataTransfer) {
-            e.dataTransfer.dropEffect = 'move';
-        }
-    }
-    _handleDrop(e, targetRow, targetCol, targetPlant) {
-        if (e)
-            e.preventDefault();
-        // Emit drop event to container with the dragged plant
-        this.dispatchEvent(new CustomEvent('grid-drop', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                targetRow,
-                targetCol,
-                targetPlant,
-                draggedPlant: this._draggedPlant,
-                originalEvent: e,
-            },
-        }));
-        this._draggedPlant = null;
-    }
-    _handleMobileDrop(e) {
-        // Forward mobile drop event to container
-        this.dispatchEvent(new CustomEvent('grid-mobile-drop', {
-            bubbles: true,
-            composed: true,
-            detail: e.detail,
-        }));
-    }
-    _handleCellClick(cell) {
-        // Emit cell click event
-        this.dispatchEvent(new CustomEvent('cell-click', {
-            bubbles: true,
-            composed: true,
-            detail: { cell },
-        }));
-    }
-    _handleEmptySlotClick(row, col) {
-        // Emit empty slot click event (opens add plant dialog)
-        this.dispatchEvent(new CustomEvent('empty-slot-click', {
-            bubbles: true,
-            composed: true,
-            detail: { row, col },
-        }));
-    }
-    render() {
-        const gridStyle = this.isListView
-            ? ''
-            : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
-        return x `
-      <div
-        class="grid ${this.isCompactView ? 'compact' : ''} ${this.isListView ? 'force-list-view' : ''}"
-        style="${gridStyle}"
-        @mobile-drop=${this._handleMobileDrop}
-        @dragover=${this._handleDragOver}
-        ${n$2(this._gridRef)}
-      >
-        ${this.isLoading
-            ? this._renderSkeletonGrid()
-            : c(this.cells, (cell) => (cell.plant ? cell.plant.attributes?.plant_id || cell.plant.entity_id : `empty-${cell.row}-${cell.col}`), (cell) => this._renderGridCell(cell))}
-      </div>
-    `;
-    }
-    _renderGridCell(cell) {
-        if (!cell.plant) {
-            return this._renderEmptySlot(cell.row, cell.col);
-        }
-        return x `
-      <div class="grid-item-wrapper">
-        <plant-card-container
-          .plant=${cell.plant}
-          .row=${cell.row}
-          .col=${cell.col}
-          @plant-click=${() => this._handleCellClick(cell)}
-          @plant-drag-start=${() => this._handleDragStart(cell.plant)}
-          @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, cell.row, cell.col, cell.plant)}
-        ></plant-card-container>
-        ${this.overlayMode !== GridOverlayMode.NONE
-            ? x `<div class="grid-overlay" style="background-color: ${cell.overlayColor}"></div>`
-            : E}
-      </div>
-    `;
-    }
-    _renderEmptySlot(row, col) {
-        return x `
-      <div
-        class="plant-card-empty"
-        data-row="${row}"
-        data-col="${col}"
-        style="grid-row: ${row}; grid-column: ${col}; position: relative;"
-        @click=${() => this._handleEmptySlotClick(row, col)}
-        @drop=${(e) => this._handleDrop(e, row, col, null)}
-      >
-        <div class="plant-header">
-          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiPlus}"></path>
-          </svg>
-        </div>
-        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
-      </div>
-    `;
-    }
-    _renderSkeletonGrid() {
-        const count = this.rows * this.cols;
-        return Array(count)
-            .fill(0)
-            .map(() => x `<div class="skeleton-card"></div>`);
-    }
-};
-GrowspaceGridUI.styles = [
-    variables,
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-        container-type: inline-size;
-        container-name: growspace-grid;
-        /* Overlay colors for theming */
-        --overlay-ok-color: rgba(76, 175, 80, 0.15);
-        --overlay-warning-color: rgba(255, 152, 0, 0.15);
-        --overlay-danger-color: rgba(244, 67, 54, 0.15);
-        --overlay-alert-color: rgba(244, 67, 54, 0.2);
-      }
-
-      .grid {
-        display: grid;
-        gap: var(--spacing-md);
-        /* Position relative needed for coordinate calculation */
-        position: relative;
-        contain: layout;
-      }
-
-      .grid.compact {
-        gap: var(--spacing-sm);
-      }
-
-      /* Empty Plant Card Styles */
-      .plant-card-empty {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        aspect-ratio: 1;
-        border: 1.5px dashed color-mix(in srgb, var(--primary-color, #4caf50) 30%, transparent);
-        border-radius: var(--border-radius-lg, 16px);
-        color: color-mix(in srgb, var(--primary-color, #4caf50) 65%, transparent);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        background: color-mix(in srgb, var(--primary-color, #4caf50) 4%, transparent);
-      }
-
-      /* Skeleton Loading */
-      .skeleton-card {
-        height: 100%;
-        aspect-ratio: 1;
-        border-radius: var(--border-radius-lg, 16px);
-        background: var(--glass-bg);
-        animation: pulse 1.5s infinite;
-      }
-
-      @keyframes pulse {
-        0% {
-          opacity: 0.6;
-        }
-        50% {
-          opacity: 0.3;
-        }
-        100% {
-          opacity: 0.6;
-        }
-      }
-
-      .plant-card-empty:hover {
-        border-color: var(--primary-color, #4caf50);
-        color: var(--primary-color, #4caf50);
-        background: color-mix(in srgb, var(--primary-color, #4caf50) 8%, transparent);
-        transform: translateY(-2px);
-      }
-
-      .grid-item-wrapper {
-        position: relative;
-        height: 100%;
-        width: 100%;
-        contain: layout;
-      }
-
-      .grid-overlay {
-        position: absolute;
-        inset: 0;
-        border-radius: var(--border-radius-lg, 16px);
-        pointer-events: none;
-        z-index: 2;
-        transition: background-color 0.3s ease;
-      }
-
-      .plant-card-rich,
-      .plant-card-empty {
-        min-width: 0;
-      }
-
-      .plant-header {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 8px;
-      }
-
-      /* Force List View for Wide Grids on Desktop */
-      .grid.force-list-view {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-        /* Remove grid template */
-        grid-template-columns: 1fr !important;
-        grid-template-rows: auto !important;
-      }
-
-      .grid.force-list-view .plant-card-rich {
-        min-height: auto;
-        aspect-ratio: unset;
-        flex-direction: row;
-        align-items: center;
-        padding: 12px;
-        gap: 12px;
-      }
-
-      .grid.force-list-view .plant-card-bg {
-        position: relative;
-        width: 64px;
-        height: 64px;
-        border-radius: 8px;
-        flex-shrink: 0;
-        background-color: rgba(0, 0, 0, 0.2);
-      }
-
-      .grid.force-list-view .plant-card-overlay {
-        display: none;
-      }
-
-      .grid.force-list-view .plant-card-content {
-        flex-direction: row;
-        padding: 0;
-        align-items: center;
-        width: 100%;
-        justify-content: space-between;
-        gap: 8px;
-      }
-
-      .grid.force-list-view .pc-info {
-        margin-top: 0;
-        align-items: flex-start;
-        text-align: left;
-        flex: 1;
-        gap: 2px;
-      }
-
-      .grid.force-list-view .pc-strain-name {
-        font-size: 1rem;
-      }
-
-      .grid.force-list-view .pc-pheno {
-        font-size: 0.85rem;
-      }
-
-      .grid.force-list-view .pc-stage {
-        margin-top: 2px;
-        font-size: 0.85rem;
-      }
-
-      .grid.force-list-view .pc-stats {
-        width: auto;
-        padding: 0;
-        gap: 12px;
-        flex-shrink: 0;
-      }
-
-      .grid.force-list-view .pc-stat-item svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      .grid.force-list-view .plant-card-empty {
-        min-height: 80px;
-        aspect-ratio: unset;
-        flex-direction: row;
-        justify-content: flex-start;
-        padding: 0 24px;
-        gap: 16px;
-      }
-
-      @media (max-width: 600px) {
-        .grid {
-          display: flex !important;
-          flex-direction: column !important;
-          gap: var(--spacing-sm);
-          grid-template-columns: unset !important;
-          grid-template-rows: unset !important;
-        }
-
-        /* Mobile List View for Rich Cards */
-        .plant-card-rich {
-          width: 100%;
-          box-sizing: border-box;
-          min-height: auto;
-          aspect-ratio: unset;
-          flex-direction: row;
-          align-items: center;
-          padding: 12px;
-          gap: 12px;
-        }
-
-        .plant-card-bg {
-          /* Turn background into a thumbnail on mobile */
-          position: relative !important;
-          width: 64px !important;
-          height: 64px !important;
-          border-radius: 8px;
-          flex-shrink: 0;
-          background-color: rgba(0, 0, 0, 0.2);
-          object-fit: cover !important;
-        }
-
-        .plant-card-overlay {
-          display: none;
-        }
-
-        .plant-card-content {
-          position: static;
-          z-index: auto;
-          display: flex;
-          flex: 1;
-          min-width: 0;
-          width: 100%;
-          flex-direction: row;
-          padding: 0;
-          align-items: center;
-          justify-content: space-between;
-          gap: 12px;
-        }
-
-        .pc-info {
-          display: flex;
-          flex-direction: column;
-          margin-top: 0;
-          align-items: flex-start;
-          text-align: left;
-          flex: 1;
-          gap: 2px;
-          min-width: 0;
-        }
-
-        .pc-strain-name {
-          font-size: 0.9rem;
-          color: var(--primary-text-color, #fff) !important;
-          font-weight: 700;
-        }
-
-        .pc-pheno {
-          font-size: 0.8rem;
-          color: rgba(255, 255, 255, 0.7) !important;
-        }
-
-        .pc-stage {
-          margin-top: 2px;
-          font-size: 0.8rem;
-          color: var(--stage-color, #fff) !important;
-          font-weight: 600;
-        }
-
-        .pc-stats {
-          width: auto;
-          padding: 0;
-          gap: 12px;
-          flex-shrink: 0;
-        }
-
-        .pc-stat-item svg {
-          width: 20px;
-          height: 20px;
-        }
-
-        /* Hide non-current stages on mobile */
-        .pc-stat-item:not(.current-stage) {
-          display: none;
-        }
-
-        /* Empty Slot in List View */
-        .plant-card-empty {
-          min-height: 80px;
-          aspect-ratio: unset;
-          flex-direction: row;
-          justify-content: flex-start;
-          padding: 0 24px;
-          gap: 16px;
-        }
-      }
-
-      @container growspace-grid (max-width: 400px) {
-        .grid {
-          display: flex !important;
-          flex-direction: column !important;
-          gap: var(--spacing-sm);
-        }
-
-        .plant-card-rich {
-          flex-direction: row;
-          align-items: center;
-          padding: 12px;
-          gap: 12px;
-        }
-
-        .plant-card-empty {
-          min-height: 80px;
-          aspect-ratio: unset;
-          flex-direction: row;
-        }
-      }
-
-      /* Ghost Plant Styling */
-      .ghost-plant {
-        position: absolute;
-        inset: 0;
-        border: 2px dashed var(--primary-color, #4caf50);
-        border-radius: var(--border-radius-lg, 16px);
-        background: rgba(76, 175, 80, 0.1);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        opacity: 0.6;
-        pointer-events: none;
-        animation: ghost-pulse 2s ease-in-out infinite;
-      }
-
-      @keyframes ghost-pulse {
-        0%,
-        100% {
-          opacity: 0.4;
-        }
-        50% {
-          opacity: 0.7;
-        }
-      }
-
-      .ghost-plant-icon {
-        width: 48px;
-        height: 48px;
-        opacity: 0.7;
-        fill: var(--primary-color, #4caf50);
-      }
-    `,
-];
-__decorate([
-    n$5({ type: Number })
-], GrowspaceGridUI.prototype, "rows", void 0);
-__decorate([
-    n$5({ type: Number })
-], GrowspaceGridUI.prototype, "cols", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceGridUI.prototype, "isListView", void 0);
-__decorate([
-    n$5({ type: Array })
-], GrowspaceGridUI.prototype, "cells", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceGridUI.prototype, "isEditMode", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceGridUI.prototype, "isCompactView", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceGridUI.prototype, "isLoading", void 0);
-__decorate([
-    n$5()
-], GrowspaceGridUI.prototype, "overlayMode", void 0);
-__decorate([
-    r$2('plant-card-container')
-], GrowspaceGridUI.prototype, "_plantCards", void 0);
-GrowspaceGridUI = __decorate([
-    t$2('growspace-grid-ui')
-], GrowspaceGridUI);
 
 class DragDropController {
     constructor(host) {
@@ -53551,6 +54301,809 @@ PlantCardContainer = __decorate([
     t$2('plant-card-container')
 ], PlantCardContainer);
 
+let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.clonePlants = [];
+        this.seedlingPlants = [];
+    }
+    _handleDragStart(e, plant) {
+        if (!e.dataTransfer)
+            return;
+        // Set dragged plant data
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('application/json', JSON.stringify({
+            type: 'transplant',
+            plant_id: plant.attributes.plant_id,
+            source_growspace_id: plant.attributes.growspace_id,
+            strain: plant.attributes.strain,
+            phenotype: plant.attributes.phenotype,
+            stage: plant.attributes.stage,
+        }));
+        // Set visual feedback
+        const target = e.currentTarget;
+        target.setAttribute('dragging', '');
+        // Remove dragging attribute on drag end
+        target.addEventListener('dragend', () => {
+            target.removeAttribute('dragging');
+        }, { once: true });
+    }
+    render() {
+        return x `
+      <div class="transplant-panel">
+        <div class="section">
+          <div class="section-header">
+            <h3>Clone Stage</h3>
+            <span class="count-badge">${this.clonePlants.length}</span>
+          </div>
+          <div class="source-grid">
+            ${this.clonePlants.length === 0
+            ? x `<div class="empty-state">No clones available</div>`
+            : this.clonePlants.map((p) => this._renderDraggablePlant(p, 'clone'))}
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-header">
+            <h3>Seedling Stage</h3>
+            <span class="count-badge">${this.seedlingPlants.length}</span>
+          </div>
+          <div class="source-grid">
+            ${this.seedlingPlants.length === 0
+            ? x `<div class="empty-state">No seedlings available</div>`
+            : this.seedlingPlants.map((p) => this._renderDraggablePlant(p, 'seedling'))}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderDraggablePlant(plant, _stage) {
+        return x `
+      <plant-card-container
+        class="source-plant-card"
+        .plant=${plant}
+        .row=${plant.attributes.row}
+        .col=${plant.attributes.col}
+        .forceDraggable=${true}
+        draggable="true"
+        @dragstart=${(e) => this._handleDragStart(e, plant)}
+      ></plant-card-container>
+    `;
+    }
+};
+TransplantSourcePanel.styles = [
+    variables,
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        margin-bottom: 24px;
+      }
+
+      .transplant-panel {
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: var(--border-radius-xl, 20px);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 4px;
+      }
+
+      .section-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .count-badge {
+        background: rgba(var(--rgb-primary-color), 0.2);
+        color: var(--primary-color);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .source-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 12px;
+        min-height: 60px;
+      }
+
+      .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: var(--secondary-text-color);
+        font-style: italic;
+        padding: 20px;
+      }
+
+      .source-plant-card {
+        cursor: move;
+        transition: all 0.2s ease;
+      }
+
+      .source-plant-card:hover {
+        transform: translateY(-4px);
+      }
+
+      .source-plant-card[dragging] {
+        opacity: 0.4;
+      }
+
+      @media (max-width: 600px) {
+        .source-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Array })
+], TransplantSourcePanel.prototype, "clonePlants", void 0);
+__decorate([
+    n$5({ type: Array })
+], TransplantSourcePanel.prototype, "seedlingPlants", void 0);
+TransplantSourcePanel = __decorate([
+    t$2('transplant-source-panel')
+], TransplantSourcePanel);
+
+/**
+ * Growspace Grid ViewModel
+ *
+ * Consolidates all business logic and state for the growspace grid display.
+ * Single computed atom that components subscribe to.
+ */
+/**
+ * Overlay color constants
+ */
+const OVERLAY_COLORS = {
+    OK: 'var(--overlay-ok-color, rgba(76, 175, 80, 0.15))',
+    WARNING: 'var(--overlay-warning-color, rgba(255, 152, 0, 0.15))',
+    DANGER: 'var(--overlay-danger-color, rgba(244, 67, 54, 0.15))',
+    ALERT: 'var(--overlay-alert-color, rgba(244, 67, 54, 0.2))',
+    TRANSPARENT: 'transparent',
+};
+/**
+ * Calculate overlay color for a plant based on overlay mode
+ */
+function calculateOverlayColor(mode, plant, store) {
+    if (mode === GridOverlayMode.NONE) {
+        return OVERLAY_COLORS.TRANSPARENT;
+    }
+    const growspaceId = plant.attributes.growspace_id;
+    if (!growspaceId) {
+        return OVERLAY_COLORS.TRANSPARENT;
+    }
+    const device = store.data.$devices.get().find((d) => d.deviceId === growspaceId);
+    if (!device) {
+        return OVERLAY_COLORS.TRANSPARENT;
+    }
+    switch (mode) {
+        case GridOverlayMode.VPD: {
+            const { vpdStatus } = device.biologicalMetrics;
+            if (vpdStatus === 'ok')
+                return OVERLAY_COLORS.OK;
+            if (vpdStatus === StatusLevel.WARNING)
+                return OVERLAY_COLORS.WARNING;
+            if (vpdStatus === StatusLevel.DANGER)
+                return OVERLAY_COLORS.DANGER;
+            break;
+        }
+        case GridOverlayMode.BIO_STATUS: {
+            const { hass } = store;
+            if (!hass)
+                return OVERLAY_COLORS.TRANSPARENT;
+            const optimalEntity = hass.states[`binary_sensor.${growspaceId}_optimal_conditions`];
+            const stressEntity = hass.states[`binary_sensor.${growspaceId}_plants_under_stress`];
+            const moldEntity = hass.states[`binary_sensor.${growspaceId}_high_mold_risk`];
+            if (stressEntity?.state === 'on' || moldEntity?.state === 'on') {
+                return OVERLAY_COLORS.ALERT;
+            }
+            if (optimalEntity?.state === 'on') {
+                return OVERLAY_COLORS.OK;
+            }
+            const { vpdStatus } = device.biologicalMetrics;
+            if (vpdStatus === StatusLevel.WARNING || vpdStatus === StatusLevel.DANGER) {
+                return OVERLAY_COLORS.WARNING;
+            }
+            break;
+        }
+    }
+    return OVERLAY_COLORS.TRANSPARENT;
+}
+/**
+ * Transform flat plant grid into cell data with overlay information
+ */
+function transformGridCells(plants, cols, overlayMode, selectedPlants, store) {
+    const flatGrid = plants.flat();
+    return flatGrid.map((plant, index) => {
+        const row = Math.floor(index / cols) + 1;
+        const col = (index % cols) + 1;
+        return {
+            plant,
+            row,
+            col,
+            overlayColor: plant ? calculateOverlayColor(overlayMode, plant, store) : OVERLAY_COLORS.TRANSPARENT,
+            isSelected: plant ? selectedPlants.has(plant.attributes.plant_id || '') : false,
+        };
+    });
+}
+/**
+ * Create growspace grid view model
+ *
+ * @param plants - 2D array of plants in grid layout
+ * @param rows - Number of rows in grid
+ * @param cols - Number of columns in grid
+ * @param store - Global store instance
+ * @returns Computed atom with view model data
+ */
+function createGrowspaceGridViewModel(plants, rows, cols, store) {
+    return computed([
+        store.ui.$isEditMode,
+        store.ui.$selectedPlants,
+        store.ui.$isCompactView,
+        store.ui.$isLoading,
+        store.ui.$gridOverlayMode,
+        store.data.$devices,
+    ], (isEditMode, selectedPlants, isCompactView, isLoading, overlayMode) => {
+        // Pre-compute list view flag (grids wider than 5 columns use list layout)
+        const isListView = cols > 5;
+        // Transform grid cells with overlay data
+        const cells = transformGridCells(plants, cols, overlayMode, selectedPlants, store);
+        return {
+            rows,
+            cols,
+            isListView,
+            cells,
+            isEditMode,
+            isCompactView,
+            isLoading,
+            overlayMode,
+            selectedPlants,
+        };
+    });
+}
+
+/**
+ * Growspace Grid UI - Presentational Component
+ *
+ * Pure Lit component that renders the plant grid.
+ * Receives all data via props, emits events for user interactions.
+ * No store access, no business logic.
+ */
+let GrowspaceGridUI = class GrowspaceGridUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        // Grid data from ViewModel
+        this.rows = 3;
+        this.cols = 3;
+        this.isListView = false;
+        this.cells = [];
+        // UI state
+        this.isEditMode = false;
+        this.isCompactView = false;
+        this.isLoading = false;
+        this.overlayMode = GridOverlayMode.NONE;
+        // Drag state (managed internally by UI component)
+        this._draggedPlant = null;
+        this._gridRef = e$1();
+    }
+    focusCard(index) {
+        const cards = this._plantCards;
+        if (cards && cards[index]) {
+            cards[index].focus();
+        }
+    }
+    _handleDragStart(plant) {
+        this._draggedPlant = plant;
+        this.dispatchEvent(new CustomEvent('plant-drag-start', {
+            bubbles: true,
+            composed: true,
+            detail: { plant },
+        }));
+    }
+    _handleDragOver(e) {
+        e.preventDefault();
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = 'move';
+        }
+    }
+    _handleDrop(e, targetRow, targetCol, targetPlant) {
+        if (e)
+            e.preventDefault();
+        // Emit drop event to container with the dragged plant
+        this.dispatchEvent(new CustomEvent('grid-drop', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                targetRow,
+                targetCol,
+                targetPlant,
+                draggedPlant: this._draggedPlant,
+                originalEvent: e,
+            },
+        }));
+        this._draggedPlant = null;
+    }
+    _handleMobileDrop(e) {
+        // Forward mobile drop event to container
+        this.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+            bubbles: true,
+            composed: true,
+            detail: e.detail,
+        }));
+    }
+    _handleCellClick(cell) {
+        // Emit cell click event
+        this.dispatchEvent(new CustomEvent('cell-click', {
+            bubbles: true,
+            composed: true,
+            detail: { cell },
+        }));
+    }
+    _handleEmptySlotClick(row, col) {
+        // Emit empty slot click event (opens add plant dialog)
+        this.dispatchEvent(new CustomEvent('empty-slot-click', {
+            bubbles: true,
+            composed: true,
+            detail: { row, col },
+        }));
+    }
+    render() {
+        const gridStyle = this.isListView
+            ? ''
+            : `grid-template-columns: repeat(${this.cols}, minmax(0, 1fr)); grid-template-rows: repeat(${this.rows}, 1fr);`;
+        return x `
+      <div
+        class="grid ${this.isCompactView ? 'compact' : ''} ${this.isListView ? 'force-list-view' : ''}"
+        style="${gridStyle}"
+        @mobile-drop=${this._handleMobileDrop}
+        @dragover=${this._handleDragOver}
+        ${n$2(this._gridRef)}
+      >
+        ${this.isLoading
+            ? this._renderSkeletonGrid()
+            : c(this.cells, (cell) => (cell.plant ? cell.plant.attributes?.plant_id || cell.plant.entity_id : `empty-${cell.row}-${cell.col}`), (cell) => this._renderGridCell(cell))}
+      </div>
+    `;
+    }
+    _renderGridCell(cell) {
+        if (!cell.plant) {
+            return this._renderEmptySlot(cell.row, cell.col);
+        }
+        return x `
+      <div class="grid-item-wrapper">
+        <plant-card-container
+          .plant=${cell.plant}
+          .row=${cell.row}
+          .col=${cell.col}
+          @plant-click=${() => this._handleCellClick(cell)}
+          @plant-drag-start=${() => this._handleDragStart(cell.plant)}
+          @plant-drop=${(e) => this._handleDrop(e.detail.originalEvent, cell.row, cell.col, cell.plant)}
+        ></plant-card-container>
+        ${this.overlayMode !== GridOverlayMode.NONE
+            ? x `<div class="grid-overlay" style="background-color: ${cell.overlayColor}"></div>`
+            : E}
+      </div>
+    `;
+    }
+    _renderEmptySlot(row, col) {
+        return x `
+      <div
+        class="plant-card-empty"
+        data-row="${row}"
+        data-col="${col}"
+        style="grid-row: ${row}; grid-column: ${col}; position: relative;"
+        @click=${() => this._handleEmptySlotClick(row, col)}
+        @drop=${(e) => this._handleDrop(e, row, col, null)}
+      >
+        <div class="plant-header">
+          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
+            <path d="${mdiPlus}"></path>
+          </svg>
+        </div>
+        <div style="font-weight: 500; opacity: 0.8;">Add Plant</div>
+      </div>
+    `;
+    }
+    _renderSkeletonGrid() {
+        const count = this.rows * this.cols;
+        return Array(count)
+            .fill(0)
+            .map(() => x `<div class="skeleton-card"></div>`);
+    }
+};
+GrowspaceGridUI.styles = [
+    variables,
+    sharedStyles,
+    i$6 `
+      :host {
+        display: block;
+        container-type: inline-size;
+        container-name: growspace-grid;
+        /* Overlay colors for theming */
+        --overlay-ok-color: rgba(76, 175, 80, 0.15);
+        --overlay-warning-color: rgba(255, 152, 0, 0.15);
+        --overlay-danger-color: rgba(244, 67, 54, 0.15);
+        --overlay-alert-color: rgba(244, 67, 54, 0.2);
+      }
+
+      .grid {
+        display: grid;
+        gap: var(--spacing-md);
+        /* Position relative needed for coordinate calculation */
+        position: relative;
+        contain: layout;
+      }
+
+      .grid.compact {
+        gap: var(--spacing-sm);
+      }
+
+      /* Empty Plant Card Styles */
+      .plant-card-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        aspect-ratio: 1;
+        border: 1.5px dashed color-mix(in srgb, var(--primary-color, #4caf50) 30%, transparent);
+        border-radius: var(--border-radius-lg, 16px);
+        color: color-mix(in srgb, var(--primary-color, #4caf50) 65%, transparent);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 4%, transparent);
+      }
+
+      /* Skeleton Loading */
+      .skeleton-card {
+        height: 100%;
+        aspect-ratio: 1;
+        border-radius: var(--border-radius-lg, 16px);
+        background: var(--glass-bg);
+        animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 0.3;
+        }
+        100% {
+          opacity: 0.6;
+        }
+      }
+
+      .plant-card-empty:hover {
+        border-color: var(--primary-color, #4caf50);
+        color: var(--primary-color, #4caf50);
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 8%, transparent);
+        transform: translateY(-2px);
+      }
+
+      .grid-item-wrapper {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        contain: layout;
+      }
+
+      .grid-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: var(--border-radius-lg, 16px);
+        pointer-events: none;
+        z-index: 2;
+        transition: background-color 0.3s ease;
+      }
+
+      .plant-card-rich,
+      .plant-card-empty {
+        min-width: 0;
+      }
+
+      .plant-header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+      }
+
+      /* Force List View for Wide Grids on Desktop */
+      .grid.force-list-view {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-sm);
+        /* Remove grid template */
+        grid-template-columns: 1fr !important;
+        grid-template-rows: auto !important;
+      }
+
+      .grid.force-list-view .plant-card-rich {
+        min-height: auto;
+        aspect-ratio: unset;
+        flex-direction: row;
+        align-items: center;
+        padding: 12px;
+        gap: 12px;
+      }
+
+      .grid.force-list-view .plant-card-bg {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        background-color: rgba(0, 0, 0, 0.2);
+      }
+
+      .grid.force-list-view .plant-card-overlay {
+        display: none;
+      }
+
+      .grid.force-list-view .plant-card-content {
+        flex-direction: row;
+        padding: 0;
+        align-items: center;
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .grid.force-list-view .pc-info {
+        margin-top: 0;
+        align-items: flex-start;
+        text-align: left;
+        flex: 1;
+        gap: 2px;
+      }
+
+      .grid.force-list-view .pc-strain-name {
+        font-size: 1rem;
+      }
+
+      .grid.force-list-view .pc-pheno {
+        font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stage {
+        margin-top: 2px;
+        font-size: 0.85rem;
+      }
+
+      .grid.force-list-view .pc-stats {
+        width: auto;
+        padding: 0;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+
+      .grid.force-list-view .pc-stat-item svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .grid.force-list-view .plant-card-empty {
+        min-height: 80px;
+        aspect-ratio: unset;
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 0 24px;
+        gap: 16px;
+      }
+
+      @media (max-width: 600px) {
+        .grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: var(--spacing-sm);
+          grid-template-columns: unset !important;
+          grid-template-rows: unset !important;
+        }
+
+        /* Mobile List View for Rich Cards */
+        .plant-card-rich {
+          width: 100%;
+          box-sizing: border-box;
+          min-height: auto;
+          aspect-ratio: unset;
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .plant-card-bg {
+          /* Turn background into a thumbnail on mobile */
+          position: relative !important;
+          width: 64px !important;
+          height: 64px !important;
+          border-radius: 8px;
+          flex-shrink: 0;
+          background-color: rgba(0, 0, 0, 0.2);
+          object-fit: cover !important;
+        }
+
+        .plant-card-overlay {
+          display: none;
+        }
+
+        .plant-card-content {
+          position: static;
+          z-index: auto;
+          display: flex;
+          flex: 1;
+          min-width: 0;
+          width: 100%;
+          flex-direction: row;
+          padding: 0;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .pc-info {
+          display: flex;
+          flex-direction: column;
+          margin-top: 0;
+          align-items: flex-start;
+          text-align: left;
+          flex: 1;
+          gap: 2px;
+          min-width: 0;
+        }
+
+        .pc-strain-name {
+          font-size: 0.9rem;
+          color: var(--primary-text-color, #fff) !important;
+          font-weight: 700;
+        }
+
+        .pc-pheno {
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.7) !important;
+        }
+
+        .pc-stage {
+          margin-top: 2px;
+          font-size: 0.8rem;
+          color: var(--stage-color, #fff) !important;
+          font-weight: 600;
+        }
+
+        .pc-stats {
+          width: auto;
+          padding: 0;
+          gap: 12px;
+          flex-shrink: 0;
+        }
+
+        .pc-stat-item svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        /* Hide non-current stages on mobile */
+        .pc-stat-item:not(.current-stage) {
+          display: none;
+        }
+
+        /* Empty Slot in List View */
+        .plant-card-empty {
+          min-height: 80px;
+          aspect-ratio: unset;
+          flex-direction: row;
+          justify-content: flex-start;
+          padding: 0 24px;
+          gap: 16px;
+        }
+      }
+
+      @container growspace-grid (max-width: 400px) {
+        .grid {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: var(--spacing-sm);
+        }
+
+        .plant-card-rich {
+          flex-direction: row;
+          align-items: center;
+          padding: 12px;
+          gap: 12px;
+        }
+
+        .plant-card-empty {
+          min-height: 80px;
+          aspect-ratio: unset;
+          flex-direction: row;
+        }
+      }
+
+      /* Ghost Plant Styling */
+      .ghost-plant {
+        position: absolute;
+        inset: 0;
+        border: 2px dashed var(--primary-color, #4caf50);
+        border-radius: var(--border-radius-lg, 16px);
+        background: rgba(76, 175, 80, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.6;
+        pointer-events: none;
+        animation: ghost-pulse 2s ease-in-out infinite;
+      }
+
+      @keyframes ghost-pulse {
+        0%,
+        100% {
+          opacity: 0.4;
+        }
+        50% {
+          opacity: 0.7;
+        }
+      }
+
+      .ghost-plant-icon {
+        width: 48px;
+        height: 48px;
+        opacity: 0.7;
+        fill: var(--primary-color, #4caf50);
+      }
+    `,
+];
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGridUI.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceGridUI.prototype, "cols", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isListView", void 0);
+__decorate([
+    n$5({ type: Array })
+], GrowspaceGridUI.prototype, "cells", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isCompactView", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceGridUI.prototype, "isLoading", void 0);
+__decorate([
+    n$5()
+], GrowspaceGridUI.prototype, "overlayMode", void 0);
+__decorate([
+    r$2('plant-card-container')
+], GrowspaceGridUI.prototype, "_plantCards", void 0);
+GrowspaceGridUI = __decorate([
+    t$2('growspace-grid-ui')
+], GrowspaceGridUI);
+
 /**
  * Growspace Grid Container
  *
@@ -53751,1766 +55304,6 @@ __decorate([
 GrowspaceGridContainer = __decorate([
     t$2('growspace-grid-container')
 ], GrowspaceGridContainer);
-
-const growspaceCardStyles = i$6 `
-  :host {
-    display: block;
-    font-family: 'Roboto', sans-serif;
-    color: var(--growspace-card-text);
-  }
-
-  ha-card {
-    padding: var(--spacing-lg);
-    border-radius: var(--border-radius-lg);
-    background: var(--growspace-card-bg);
-    box-shadow: var(--card-shadow);
-    transition: var(--transition-medium);
-  }
-
-  ha-card:hover {
-    box-shadow: var(--card-shadow-hover);
-  }
-
-  /* Unified Card Container - Glassmorphism 2.0 */
-  .unified-growspace-card {
-    /* Glass effect provided by .glass-surface .glass-panel */
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-  /* Edit Mode Banner */
-  .edit-mode-banner {
-    background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.25));
-    border: 1px solid rgba(76, 175, 80, 0.4);
-    border-radius: 12px;
-    padding: 12px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    animation: slideDown 0.3s ease;
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .banner-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--primary-text-color, #fff);
-    font-weight: 500;
-    font-size: 0.95rem;
-  }
-
-  .banner-content svg {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-  }
-
-  .stat-chip svg {
-    width: 18px;
-    height: 18px;
-    fill: currentColor;
-    opacity: 0.8;
-    pointer-events: none; /* Ensure key events pass through to chip/container */
-  }
-
-  @keyframes pulse-red {
-    0% {
-      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-    }
-    70% {
-      box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-    }
-    100% {
-      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-    }
-  }
-
-  .stat-chip.status-warning {
-    color: #ffa726 !important;
-    border-color: rgba(255, 167, 38, 0.5) !important;
-    background: rgba(255, 167, 38, 0.1) !important;
-  }
-
-  .stat-chip.status-danger {
-    color: #ef5350 !important;
-    border-color: rgba(239, 83, 80, 0.5) !important;
-    background: rgba(239, 83, 80, 0.1) !important;
-    animation: pulse-red 2s infinite;
-  }
-  .banner-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  /* 24h Chart */
-  .gs-chart-container {
-    margin-top: 8px;
-    height: 150px;
-    position: relative;
-    width: 100%;
-  }
-
-  .gs-chart-svg {
-    width: 100%;
-    height: 100%;
-    filter: drop-shadow(0 0 4px rgba(255, 235, 59, 0.2));
-  }
-
-  .chart-line {
-    fill: none;
-    stroke: var(--primary-light-color, #ffeb3b);
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .chart-gradient-fill {
-    fill: url(#gradient);
-    opacity: 0.2;
-  }
-
-  /* Time Range Selector - MD3 Tonal Chips */
-  .time-range-selector {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-    justify-content: flex-end;
-  }
-  .range-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid transparent;
-    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-    border-radius: 8px; /* Small rounding for compact look */
-    padding: 6px 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
-    letter-spacing: 0.5px;
-  }
-  .range-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--primary-text-color, #fff);
-  }
-  .range-btn.active {
-    background: rgba(var(--rgb-primary-color, 76, 175, 80), 0.15);
-    color: var(--primary-color, #4caf50);
-    border-color: rgba(var(--rgb-primary-color, 76, 175, 80), 0.3);
-    font-weight: 600;
-  }
-
-  /* Time markers for chart */
-  .chart-markers {
-    display: flex;
-    justify-content: space-between;
-    margin-top: -24px;
-    padding: 0 10px;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.3);
-    font-weight: 500;
-    position: relative;
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  /* Accessibility */
-  .sr-only-announcer {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .gs-tooltip {
-    position: absolute;
-    top: 10px;
-    background: rgba(30, 30, 35, 0.9);
-    color: var(--primary-text-color, #fff);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    pointer-events: none;
-    transform: translate(-50%, 0);
-    z-index: 10;
-    white-space: nowrap;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    line-height: 1.4;
-    text-align: center;
-  }
-  .gs-tooltip .time {
-    font-weight: bold;
-    color: var(--primary-light-color);
-    margin-bottom: 2px;
-  }
-
-  .gs-cursor-line {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 1px;
-    background: rgba(255, 255, 255, 0.3);
-    pointer-events: none;
-    z-index: 5;
-    border-left: 1px dashed rgba(255, 255, 255, 0.5);
-  }
-
-  /* Light Cycle Card Nested */
-  .gs-light-cycle-card {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 16px;
-    padding: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    transition: all 0.3s ease;
-  }
-
-  .gs-light-cycle-card.collapsed {
-    padding: 12px 20px;
-    gap: 0;
-  }
-
-  .gs-light-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-    cursor: pointer;
-  }
-
-  .gs-light-cycle-card.collapsed .gs-light-header-row {
-    margin-bottom: 0;
-  }
-
-  .gs-light-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--primary-text-color, #fff);
-  }
-
-  .gs-icon-box {
-    background: var(--secondary-background-color, rgba(255, 235, 59, 0.05));
-    border: 1px solid var(--divider-color, rgba(255, 235, 59, 0.2));
-    border-radius: 14px;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary-light-color);
-  }
-
-  .gs-light-subtitle {
-    font-size: 0.75rem;
-    opacity: 0.5;
-    font-weight: 500;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
-
-  .light-status-text {
-    font-size: 1.5rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
-    box-shadow: 0 0 8px currentColor;
-  }
-
-  .target-cycle-text {
-    font-size: 0.9rem;
-    opacity: 0.5;
-    text-align: right;
-    margin-top: 4px;
-  }
-
-  /* Bottom Action Cards */
-  .gs-action-cards {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-  }
-
-  .action-card {
-    flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 16px;
-    padding: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: default; /* Or pointer if clickable */
-  }
-
-  .ac-content {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .ac-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .ac-icon.on {
-    background: rgba(255, 235, 59, 0.1);
-    color: var(--primary-light-color);
-  }
-
-  .ac-icon.off {
-    background: rgba(120, 144, 156, 0.1);
-    color: #90a4ae;
-  }
-
-  .ac-text h4 {
-    margin: 0;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    opacity: 0.5;
-    letter-spacing: 0.5px;
-  }
-
-  .ac-text .time {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: var(--primary-text-color, #fff);
-  }
-
-  .ac-text .time span {
-    font-size: 0.9rem;
-    font-weight: 400;
-    opacity: 0.7;
-    margin-left: 2px;
-  }
-
-  .grid {
-    display: grid;
-    gap: var(--spacing-md);
-  }
-
-  .grid.compact {
-    gap: var(--spacing-sm);
-  }
-
-  ha-dialog {
-    --mdc-dialog-border-radius: var(--border-radius-md);
-    --mdc-dialog-box-shadow: var(--card-shadow-hover);
-  }
-
-  .no-data {
-    text-align: center;
-    color: var(--secondary-text-color);
-    padding: var(--spacing-lg);
-    font-style: italic;
-    background: var(--growspace-empty-bg);
-    border-radius: var(--border-radius-md);
-    margin: var(--spacing-md) 0;
-  }
-
-  .error {
-    color: var(--error-color);
-    padding: var(--spacing-md);
-    background: var(--error-bg);
-    border: 1px solid var(--error-border);
-    border-radius: var(--border-radius-md);
-    margin: var(--spacing-md) 0;
-  }
-  ha-dialog.strain-dialog {
-    --mdc-dialog-min-width: 45vw;
-    --mdc-dialog-max-width: 45vw;
-    --mdc-dialog-surface-fill-color: var(--growspace-card-bg);
-  }
-  .dialog-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) 0;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-xs);
-  }
-
-  .form-group label {
-    font-weight: 500;
-    color: var(--primary-text-color);
-    font-size: 0.9rem;
-  }
-
-  .form-input {
-    padding: var(--spacing-sm) var(--spacing-md);
-    border: 2px solid var(--divider-color);
-    border-radius: var(--border-radius);
-    font-family: inherit;
-    font-size: 0.9rem;
-    transition: var(--transition);
-    background: var(--card-background-color);
-    color: var(--primary-text-color);
-  }
-
-  .form-input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(var(--rgb-primary-color), 0.1);
-  }
-
-  /* Empty Plant Card Styles */
-  .plant-card-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    aspect-ratio: 1;
-    border: 2px dashed rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
-    color: var(--secondary-text-color);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .plant-card-empty:hover {
-    border-color: var(--primary-color);
-    color: var(--primary-color);
-    background: rgba(255, 255, 255, 0.05);
-    transform: translateY(-2px);
-  }
-
-  .plant-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 8px;
-  }
-
-  /* Strain Library Styles - Glassmorphism & Table */
-  .strain-search-container {
-    position: relative;
-    margin-bottom: var(--spacing-md);
-  }
-  .search-input {
-    width: 100%;
-    padding: var(--spacing-sm) var(--spacing-lg);
-    padding-left: 40px;
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--primary-text-color);
-    backdrop-filter: blur(10px);
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-    transition: var(--transition);
-  }
-  .search-input:focus {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: var(--primary-color);
-    outline: none;
-  }
-  .search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    color: var(--secondary-text-color);
-    pointer-events: none;
-  }
-
-  .strain-table-container {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    overflow: hidden;
-    max-height: 60vh;
-    overflow-y: auto;
-  }
-
-  .strain-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .strain-row {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  .strain-row:last-child {
-    border-bottom: none;
-  }
-  .strain-row:hover {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  .strain-cell {
-    padding: var(--spacing-md);
-    display: flex;
-    align-items: center;
-  }
-  .strain-cell.expand-icon {
-    width: 40px;
-    justify-content: center;
-    color: var(--secondary-text-color);
-  }
-  .strain-cell.content {
-    flex: 1;
-    font-weight: 500;
-    font-size: 1.1rem;
-  }
-  .strain-cell.actions {
-    justify-content: flex-end;
-    gap: var(--spacing-sm);
-  }
-
-  .pheno-row {
-    background: rgba(0, 0, 0, 0.2);
-  }
-  .pheno-list {
-    padding: var(--spacing-sm) var(--spacing-lg);
-  }
-  .pheno-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--spacing-sm) 0;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-    color: var(--secondary-text-color);
-  }
-  .pheno-item:last-child {
-    border-bottom: none;
-  }
-
-  .fab-button {
-    position: absolute;
-    bottom: 24px;
-    right: 24px;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--plant-border-color-default);
-    color: var(--growspace-card-text);
-    border: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition:
-      transform 0.2s,
-      box-shadow 0.2s;
-    z-index: 10;
-  }
-  .fab-button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  }
-  .fab-button:active {
-    transform: scale(0.95);
-  }
-
-  /* Add Form Overlay */
-  .add-form-overlay {
-    position: absolute;
-    bottom: 90px;
-    right: 24px;
-    width: 300px;
-    background: var(--card-background-color);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: var(--spacing-md);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-    z-index: 10;
-    animation: slideUp 0.3s ease-out;
-  }
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .badge {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    margin-left: 8px;
-    color: var(--secondary-text-color);
-  }
-
-  /* Clear Confirmation */
-  .confirmation-overlay {
-    position: absolute;
-    bottom: 24px;
-    left: 24px;
-    background: var(--error-bg);
-    border: 1px solid var(--error-border);
-    padding: var(--spacing-sm) var(--spacing-md);
-    border-radius: 24px;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    animation: fadeIn 0.2s ease-out;
-  }
-
-  .rotate-icon {
-    transition: transform 0.3s ease;
-  }
-  .rotate-icon.expanded {
-    transform: rotate(180deg);
-  }
-
-  /* Allow Grid Items to Scale Down (Fix 5-col Overflow) */
-  .plant-card-rich,
-  .plant-card-empty {
-    min-width: 0;
-  }
-
-  /* Force List View for Wide Grids on Desktop */
-  .grid.force-list-view {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    /* Remove grid template */
-    grid-template-columns: 1fr !important;
-    grid-template-rows: auto !important;
-  }
-
-  .grid.force-list-view .plant-card-rich {
-    min-height: auto;
-    aspect-ratio: unset;
-    flex-direction: row;
-    align-items: center;
-    padding: 12px;
-    gap: 12px;
-  }
-
-  .grid.force-list-view .plant-card-bg {
-    position: relative;
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
-    flex-shrink: 0;
-    background-color: rgba(0, 0, 0, 0.2);
-  }
-
-  .grid.force-list-view .plant-card-overlay {
-    display: none;
-  }
-
-  .grid.force-list-view .plant-card-content {
-    flex-direction: row;
-    padding: 0;
-    align-items: center;
-    width: 100%;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .grid.force-list-view .pc-info {
-    margin-top: 0;
-    align-items: flex-start;
-    text-align: left;
-    flex: 1;
-    gap: 2px;
-  }
-
-  .grid.force-list-view .pc-strain-name {
-    font-size: 1rem;
-  }
-
-  .grid.force-list-view .pc-pheno {
-    font-size: 0.85rem;
-  }
-
-  .grid.force-list-view .pc-stage {
-    margin-top: 2px;
-    font-size: 0.85rem;
-  }
-
-  .grid.force-list-view .pc-stats {
-    width: auto;
-    padding: 0;
-    gap: 12px;
-    flex-shrink: 0;
-  }
-
-  .grid.force-list-view .pc-stat-item svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .grid.force-list-view .plant-card-empty {
-    min-height: 80px;
-    aspect-ratio: unset;
-    flex-direction: row;
-    justify-content: flex-start;
-    padding: 0 24px;
-    gap: 16px;
-  }
-
-  @media (max-width: 600px) {
-    .unified-growspace-card {
-      padding: 12px;
-    }
-    .header {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .selector-container {
-      justify-content: center;
-    }
-    /* Switch Grid to List View */
-    .grid {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: var(--spacing-sm);
-      grid-template-columns: unset !important;
-      grid-template-rows: unset !important;
-    }
-
-    /* Mobile List View for Rich Cards */
-    .plant-card-rich {
-      width: 100%;
-      box-sizing: border-box;
-      min-height: auto;
-      aspect-ratio: unset;
-      flex-direction: row;
-      align-items: center;
-      padding: 12px;
-      gap: 12px;
-    }
-
-    .plant-card-bg {
-      /* Turn background into a thumbnail on mobile */
-      position: relative !important;
-      width: 64px !important;
-      height: 64px !important;
-      border-radius: 8px;
-      flex-shrink: 0;
-      background-color: rgba(0, 0, 0, 0.2);
-      object-fit: cover !important;
-    }
-
-    .plant-card-overlay {
-      display: none;
-    }
-
-    .plant-card-content {
-      position: static;
-      z-index: auto;
-      display: flex;
-      flex: 1;
-      min-width: 0;
-      width: 100%;
-      flex-direction: row;
-      padding: 0;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .pc-info {
-      display: flex;
-      flex-direction: column;
-      margin-top: 0;
-      align-items: flex-start;
-      text-align: left;
-      flex: 1;
-      gap: 2px;
-      min-width: 0;
-    }
-
-    .pc-strain-name {
-      font-size: 0.9rem;
-      color: #fff !important;
-      font-weight: 700;
-    }
-
-    .pc-pheno {
-      font-size: 0.8rem;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.7)) !important;
-    }
-
-    .pc-stage {
-      margin-top: 2px;
-      font-size: 0.8rem;
-      color: var(--stage-color, var(--primary-text-color, #fff)) !important;
-      font-weight: 600;
-    }
-
-    .pc-stats {
-      width: auto;
-      padding: 0;
-      gap: 12px;
-      flex-shrink: 0;
-    }
-
-    .pc-stat-item svg {
-      width: 20px;
-      height: 20px;
-    }
-
-    /* Hide non-current stages on mobile */
-    .pc-stat-item:not(.current-stage) {
-      display: none;
-    }
-
-    /* Empty Slot in List View */
-    .plant-card-empty {
-      min-height: 80px;
-      aspect-ratio: unset;
-      flex-direction: row;
-      justify-content: flex-start;
-      padding: 0 24px;
-      gap: 16px;
-    }
-
-    /* Header vertical stacking */
-    .gs-header-top {
-      flex-direction: column;
-    }
-    .gs-stats-chips {
-      flex-direction: column;
-      width: 100%;
-      align-items: stretch;
-      gap: 4px;
-    }
-    .stat-chip {
-      width: 100%;
-      box-sizing: border-box;
-      justify-content: space-between; /* Icon/Value spread */
-    }
-
-    /* Mobile specific dialog adjustments */
-    ha-dialog.strain-dialog .mdc-dialog__surface {
-      width: 100vw !important;
-      height: 100vh !important;
-      max-height: 100vh !important;
-      border-radius: 0 !important;
-    }
-    .fab-button {
-      bottom: 16px;
-      right: 16px;
-    }
-    .add-form-overlay {
-      bottom: 80px;
-      right: 16px;
-      left: 16px;
-      width: auto;
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .plant {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  /* Glassmorphism for Dialogs */
-  ha-dialog {
-    --mdc-dialog-surface-fill-color: transparent; /* Transparent base for glass effect */
-    --mdc-dialog-min-width: 400px;
-    --mdc-dialog-max-width: 90vw;
-  }
-
-  /* MD3 Dialog Layout */
-  .dialog-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-  }
-
-  .dialog-icon {
-    width: 48px;
-    height: 48px;
-    padding: 12px;
-    border-radius: 16px; /* MD3 medium shape */
-    background: rgba(var(--stage-color-rgb, 76, 175, 80), 0.2);
-    color: var(--stage-color, #4caf50);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .dialog-title-group {
-    flex: 1;
-  }
-
-  .dialog-title {
-    font-size: 1.5rem;
-    font-weight: 500; /* MD3 Headline Small */
-    margin: 0;
-    color: var(--primary-text-color, #ffffff);
-  }
-
-  .dialog-subtitle {
-    font-size: 0.875rem;
-    color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
-    margin-top: 4px;
-    text-transform: capitalize;
-  }
-
-  /* MD3 Cards inside Dialog */
-  .detail-card {
-    background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-    border-radius: 12px;
-    padding: var(--spacing-md);
-    margin-bottom: var(--spacing-md);
-    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.05));
-  }
-
-  .detail-card h3 {
-    margin: 0 0 var(--spacing-sm) 0;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--secondary-text-color);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  /* View Modes */
-  .view-mode-container {
-    position: relative;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Compact Mode (Grid Only) */
-  .compact-exit-fab {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    color: rgba(255, 255, 255, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    z-index: 100;
-  }
-  .compact-exit-fab:hover {
-    background: rgba(0, 0, 0, 0.8);
-    transform: scale(1.1);
-    color: #fff;
-    border-color: var(--primary-color);
-  }
-
-  /* Header Only Mode */
-  .header .expand-handle {
-    width: 100%;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 12px; /* Match collapse handle */
-    margin-top: 8px; /* Match collapse handle spacing */
-    transition: all 0.2s;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    /* Button Reset */
-    padding: 0;
-    outline: none;
-    color: inherit;
-  }
-  .header .expand-handle:hover {
-    background: rgba(var(--rgb-primary-color), 0.1);
-    color: var(--primary-color);
-  }
-
-  /* Collapse Handle (Standard Mode -> Header Only) */
-  .collapse-handle {
-    width: 100%;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 12px; /* Rounded top and bottom for visual separation */
-    margin-top: 8px; /* Spacing from grid */
-    transition: all 0.2s;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    /* Button Reset */
-    padding: 0;
-    outline: none;
-    color: inherit;
-  }
-  .collapse-handle:hover {
-    background: rgba(var(--rgb-primary-color), 0.1);
-    color: var(--primary-color);
-  }
-
-  /* Respect user motion preferences (WCAG 2.3.3) */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-`;
-
-let GrowspaceViewCompact = class GrowspaceViewCompact extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.grid = [];
-        this.rows = 0;
-        this.cols = 0;
-        this.isLoading = false;
-    }
-    focusPlant(index) {
-        const grid = this.shadowRoot?.querySelector('growspace-grid-container');
-        if (grid) {
-            grid.focusPlant(index);
-        }
-    }
-    render() {
-        return x `
-      <div class="compact-controls">
-        <button
-          class="compact-exit-fab"
-          @click=${() => this._dispatchModeChange('standard')}
-          title="Exit Compact Mode"
-        >
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiFullscreenExit}"></path>
-          </svg>
-        </button>
-      </div>
-      <div class="view-mode-container compact">
-        <growspace-grid-container
-          .plants=${this.grid}
-          .rows=${this.rows}
-          .cols=${this.cols}
-        ></growspace-grid-container>
-      </div>
-    `;
-    }
-    _dispatchModeChange(mode) {
-        this.dispatchEvent(new CustomEvent('view-mode-changed', {
-            detail: { mode },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-};
-GrowspaceViewCompact.styles = [
-    growspaceCardStyles,
-    sharedStyles,
-    uiStyles,
-    variables,
-    i$6 `
-      :host {
-        display: block;
-        position: relative;
-      }
-      .view-mode-container {
-        position: relative;
-      }
-      .compact-controls {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        width: 100%;
-        margin-bottom: 8px;
-        gap: 8px;
-      }
-      .compact-exit-fab {
-        width: 40px;
-        height: 40px;
-        padding: 0;
-        border-radius: 50%;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--primary-text-color, #fff);
-        cursor: pointer;
-        transition: all 0.2s;
-      }
-      .compact-exit-fab:hover {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.2));
-      }
-      .compact-exit-fab svg {
-        width: 22px;
-        height: 22px;
-        fill: currentColor;
-      }
-    `,
-];
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewCompact.prototype, "grid", void 0);
-__decorate([
-    n$5({ type: Number })
-], GrowspaceViewCompact.prototype, "rows", void 0);
-__decorate([
-    n$5({ type: Number })
-], GrowspaceViewCompact.prototype, "cols", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceViewCompact.prototype, "isLoading", void 0);
-GrowspaceViewCompact = __decorate([
-    t$2('growspace-view-compact')
-], GrowspaceViewCompact);
-
-let GrowspaceViewHeader = class GrowspaceViewHeader extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.growspaceOptions = {};
-    }
-    render() {
-        if (!this.device)
-            return x ``;
-        return x `
-      <div class="view-mode-container header">
-        <growspace-header
-          .device=${this.device}
-          @growspace-changed=${(e) => this._redispatch(e, 'growspace-changed')}
-        ></growspace-header>
-        <button class="expand-handle" @click=${this._dispatchToggle}>
-          <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-            <path d="${mdiChevronDown}"></path>
-          </svg>
-        </button>
-      </div>
-    `;
-    }
-    _redispatch(e, type) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent(type, {
-            detail: e.detail || e.target.value, // Fallback if it was a raw change event
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _dispatchToggle() {
-        this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
-    }
-};
-GrowspaceViewHeader.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewHeader.prototype, "device", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewHeader.prototype, "growspaceOptions", void 0);
-GrowspaceViewHeader = __decorate([
-    t$2('growspace-view-header')
-], GrowspaceViewHeader);
-
-let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.items = [];
-        this.isLoading = false;
-        this.range = '24h';
-        this.sensorHistory = {};
-    }
-    render() {
-        if (this.items.length === 0)
-            return x ``;
-        if (this.isLoading) {
-            return x `
-        <div class="graphs-container">
-          ${this._renderTimeRangeSelector()}
-          <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);">
-            <div class="loading-spinner" style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
-            <span style="margin-left:12px;">Loading history data...</span>
-          </div>
-        </div>
-      `;
-        }
-        return x `
-      <div class="graphs-container">
-        ${this._renderTimeRangeSelector()}
-        ${c(this.items, (item) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`), (item) => this._renderItem(item))}
-      </div>
-    `;
-    }
-    _renderTimeRangeSelector() {
-        const ranges = ['1h', '6h', '24h', '7d'];
-        return x `
-      <div class="time-range-selector">
-        ${ranges.map((r) => x `
-          <button
-            class="range-btn ${this.range === r ? 'active' : ''}"
-            @click=${() => this._emitSetRange(r)}
-          >${r}</button>
-        `)}
-      </div>
-    `;
-    }
-    _renderItem(item) {
-        if (item.type === 'group') {
-            return x `
-        <growspace-env-chart
-          .hass=${this.hass}
-          .device=${this.device}
-          .sensorHistory=${this.sensorHistory}
-          .metrics=${item.metrics}
-          .isCombined=${true}
-          .range=${this.range}
-          @toggle-graph=${(e) => this._redispatch('toggle-graph', e.detail)}
-          @unlink-graphs=${(e) => this._redispatch('unlink-graphs', e.detail)}
-          @unlink-graph=${(e) => this._redispatch('unlink-graph', e.detail)}
-        ></growspace-env-chart>
-      `;
-        }
-        return x `
-      <growspace-env-chart
-        .hass=${this.hass}
-        .device=${this.device}
-        .sensorHistory=${this.sensorHistory}
-        .metricKey=${item.metrics[0]}
-        .metrics=${item.metrics}
-        .range=${this.range}
-        @toggle-graph=${(e) => this._redispatch('toggle-graph', e.detail)}
-      ></growspace-env-chart>
-    `;
-    }
-    _emitSetRange(range) {
-        this.dispatchEvent(new CustomEvent('set-range', { detail: range, bubbles: true, composed: true }));
-    }
-    _redispatch(type, detail) {
-        this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
-    }
-};
-GrowspaceAnalyticsUI.styles = [
-    growspaceCardStyles,
-    sharedStyles,
-    i$6 `
-      :host { display: block; }
-      .graphs-container { display: flex; flex-direction: column; gap: 12px; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-    `,
-];
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceAnalyticsUI.prototype, "items", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceAnalyticsUI.prototype, "isLoading", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceAnalyticsUI.prototype, "range", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceAnalyticsUI.prototype, "hass", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceAnalyticsUI.prototype, "device", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceAnalyticsUI.prototype, "sensorHistory", void 0);
-GrowspaceAnalyticsUI = __decorate([
-    t$2('growspace-analytics-ui')
-], GrowspaceAnalyticsUI);
-
-let GrowspaceAnalyticsContainer = class GrowspaceAnalyticsContainer extends i$3 {
-    _initControllers() {
-        if (this.store && !this._controller) {
-            this._controller = new libExports.StoreController(this, this.store.history.$analyticsViewState);
-            this.store.history.startAutoRefresh();
-        }
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        this._initControllers();
-    }
-    disconnectedCallback() {
-        super.disconnectedCallback();
-        this.store?.history?.stopAutoRefresh();
-    }
-    firstUpdated() {
-        if (this.store?.history && !this._controller?.value?.historyLoaded) {
-            this.store.history.loadHistoryOnDemand();
-        }
-    }
-    updated() {
-        const state = this._controller?.value;
-        if (this.store?.history && state && !state.historyLoaded && !state.historyLoading) {
-            this.store.history.loadHistoryOnDemand();
-        }
-    }
-    get _items() {
-        if (!this._controller)
-            return [];
-        const { activeEnvGraphs = new Set(), linkedGraphGroups = [] } = this._controller.value ?? {};
-        const getSortIndex = (metric) => {
-            const i = METRIC_SORT_ORDER.indexOf(metric);
-            return i !== -1 ? i : 999;
-        };
-        const items = [];
-        const processed = new Set();
-        linkedGraphGroups.forEach((group) => {
-            const active = group.filter((m) => activeEnvGraphs.has(m));
-            if (active.length > 0) {
-                items.push({ type: 'group', metrics: active, sortIndex: Math.min(...active.map(getSortIndex)) });
-                active.forEach((m) => processed.add(m));
-            }
-        });
-        activeEnvGraphs.forEach((metric) => {
-            if (!processed.has(metric)) {
-                const base = metric.includes(':') ? metric.split(':')[0] : metric;
-                items.push({ type: 'single', metrics: [metric], sortIndex: getSortIndex(base) });
-            }
-        });
-        return items.sort((a, b) => a.sortIndex - b.sortIndex);
-    }
-    render() {
-        const state = this._controller?.value;
-        if (!state || state.activeEnvGraphs?.size === 0 || !this.device)
-            return x ``;
-        return x `
-      <growspace-analytics-ui
-        .items=${this._items}
-        .isLoading=${state.historyLoading}
-        .range=${this.store.history.getRange()}
-        .hass=${this.hass}
-        .device=${this.device}
-        .sensorHistory=${state.combinedHistory || {}}
-        @set-range=${this._handleSetRange}
-        @toggle-graph=${this._handleToggleGraph}
-        @unlink-graphs=${this._handleUnlinkGraphs}
-        @unlink-graph=${this._handleUnlinkGraphMetric}
-      ></growspace-analytics-ui>
-    `;
-    }
-    _handleSetRange(e) {
-        if (this.device) {
-            this.store.history.setGraphRange(this.device.deviceId, e.detail);
-            this.store.history.loadHistoryOnDemand();
-        }
-    }
-    _handleToggleGraph(e) {
-        const metric = typeof e.detail === 'string' ? e.detail : e.detail.metric;
-        if (metric) {
-            this.store?.actions.ui.toggleEnvGraph(metric);
-        }
-    }
-    _handleUnlinkGraphs(e) {
-        this.store.history.unlinkGraphGroup(e.detail);
-    }
-    _handleUnlinkGraphMetric(e) {
-        this.store.history.unlinkGraphMetric(e.detail);
-    }
-};
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], GrowspaceAnalyticsContainer.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext })
-], GrowspaceAnalyticsContainer.prototype, "store", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceAnalyticsContainer.prototype, "device", void 0);
-GrowspaceAnalyticsContainer = __decorate([
-    t$2('growspace-analytics')
-], GrowspaceAnalyticsContainer);
-
-let TransplantSourcePanel = class TransplantSourcePanel extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.clonePlants = [];
-        this.seedlingPlants = [];
-    }
-    _handleDragStart(e, plant) {
-        if (!e.dataTransfer)
-            return;
-        // Set dragged plant data
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('application/json', JSON.stringify({
-            type: 'transplant',
-            plant_id: plant.attributes.plant_id,
-            source_growspace_id: plant.attributes.growspace_id,
-            strain: plant.attributes.strain,
-            phenotype: plant.attributes.phenotype,
-            stage: plant.attributes.stage,
-        }));
-        // Set visual feedback
-        const target = e.currentTarget;
-        target.setAttribute('dragging', '');
-        // Remove dragging attribute on drag end
-        target.addEventListener('dragend', () => {
-            target.removeAttribute('dragging');
-        }, { once: true });
-    }
-    render() {
-        return x `
-      <div class="transplant-panel">
-        <div class="section">
-          <div class="section-header">
-            <h3>Clone Stage</h3>
-            <span class="count-badge">${this.clonePlants.length}</span>
-          </div>
-          <div class="source-grid">
-            ${this.clonePlants.length === 0
-            ? x `<div class="empty-state">No clones available</div>`
-            : this.clonePlants.map((p) => this._renderDraggablePlant(p, 'clone'))}
-          </div>
-        </div>
-
-        <div class="section">
-          <div class="section-header">
-            <h3>Seedling Stage</h3>
-            <span class="count-badge">${this.seedlingPlants.length}</span>
-          </div>
-          <div class="source-grid">
-            ${this.seedlingPlants.length === 0
-            ? x `<div class="empty-state">No seedlings available</div>`
-            : this.seedlingPlants.map((p) => this._renderDraggablePlant(p, 'seedling'))}
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    _renderDraggablePlant(plant, _stage) {
-        return x `
-      <plant-card-container
-        class="source-plant-card"
-        .plant=${plant}
-        .row=${plant.attributes.row}
-        .col=${plant.attributes.col}
-        .forceDraggable=${true}
-        draggable="true"
-        @dragstart=${(e) => this._handleDragStart(e, plant)}
-      ></plant-card-container>
-    `;
-    }
-};
-TransplantSourcePanel.styles = [
-    variables,
-    sharedStyles,
-    i$6 `
-      :host {
-        display: block;
-        margin-bottom: 24px;
-      }
-
-      .transplant-panel {
-        background: var(--glass-bg);
-        border: var(--glass-border);
-        border-radius: var(--border-radius-xl, 20px);
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 4px;
-      }
-
-      .section-header h3 {
-        margin: 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--primary-text-color);
-      }
-
-      .count-badge {
-        background: rgba(var(--rgb-primary-color), 0.2);
-        color: var(--primary-color);
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 0.85rem;
-        font-weight: 600;
-      }
-
-      .source-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 12px;
-        min-height: 60px;
-      }
-
-      .empty-state {
-        grid-column: 1 / -1;
-        text-align: center;
-        color: var(--secondary-text-color);
-        font-style: italic;
-        padding: 20px;
-      }
-
-      .source-plant-card {
-        cursor: move;
-        transition: all 0.2s ease;
-      }
-
-      .source-plant-card:hover {
-        transform: translateY(-4px);
-      }
-
-      .source-plant-card[dragging] {
-        opacity: 0.4;
-      }
-
-      @media (max-width: 600px) {
-        .source-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    `,
-];
-__decorate([
-    n$5({ type: Array })
-], TransplantSourcePanel.prototype, "clonePlants", void 0);
-__decorate([
-    n$5({ type: Array })
-], TransplantSourcePanel.prototype, "seedlingPlants", void 0);
-TransplantSourcePanel = __decorate([
-    t$2('transplant-source-panel')
-], TransplantSourcePanel);
-
-let GrowspaceViewStandard = class GrowspaceViewStandard extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.growspaceOptions = {};
-        this.grid = [];
-        this.rows = 0;
-        this.cols = 0;
-        this.isLoading = false;
-        this.isEditMode = false;
-        this.isCompact = false;
-        this.selectedCount = 0;
-    }
-    _initControllers() {
-        if (this.store && !this._viewStandardController) {
-            this._viewStandardController = new libExports.StoreController(this, this.store.$viewStandardState);
-        }
-        if (!this._gridInteractionController) {
-            this._gridInteractionController = new libExports.StoreController(this, gridInteraction$);
-        }
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        this._initControllers();
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('store')) {
-            this._initControllers();
-        }
-    }
-    _getPlantsByStage(stage) {
-        const devices = this._viewStandardController?.value?.devices || [];
-        return devices
-            .flatMap((d) => (d.plants || []).map((p) => ({
-            ...p,
-            _growspaceName: d.name,
-        })))
-            .filter((p) => p.attributes.stage === stage);
-    }
-    async _handleTransplantDrop(e) {
-        const detail = e.detail;
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const targetGrowspaceId = this.device?.deviceId;
-            if (!targetGrowspaceId)
-                return;
-            await this.store.hass.callService('growspace_manager', 'update_plant', {
-                plant_id: detail.plant_id,
-                growspace_id: targetGrowspaceId,
-                row: detail.target_row,
-                col: detail.target_col,
-                veg_start: today,
-            });
-            this.store.actions.ui.toast('Plant transplanted successfully', 'success');
-            // Refresh data after a small delay
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            await this.store.refreshData();
-        }
-        catch (error) {
-            console.error('[GrowspaceViewStandard] Transplant failed:', error);
-            this.store.actions.ui.toast('Failed to transplant plant', 'error');
-        }
-    }
-    focusPlant(index) {
-        const grid = this.shadowRoot?.querySelector('growspace-grid-container');
-        if (grid) {
-            grid.focusPlant(index);
-        }
-    }
-    render() {
-        if (!this.device)
-            return x ``;
-        return x `
-      <growspace-header
-        .device=${this.device}
-        @growspace-changed=${(e) => this._redispatch(e, 'growspace-changed')}
-      ></growspace-header>
-
-      <growspace-analytics .device=${this.device}></growspace-analytics>
-
-      ${this.isEditMode
-            ? x `
-            <growspace-edit-mode-banner
-              .selectedCount=${this.selectedCount}
-              @batch-add-plants=${(e) => this._redispatch(e, 'batch-add-plants')}
-            ></growspace-edit-mode-banner>
-          `
-            : ''}
-      ${this._gridInteractionController?.value?.status === 'transplanting'
-            ? x `
-            <transplant-source-panel
-              .clonePlants=${this._getPlantsByStage('clone')}
-              .seedlingPlants=${this._getPlantsByStage('seedling')}
-            ></transplant-source-panel>
-          `
-            : ''}
-
-      <growspace-grid-container
-        .plants=${this.grid}
-        .rows=${this.rows}
-        .cols=${this.cols}
-        @transplant-drop=${(e) => this._handleTransplantDrop(e)}
-      ></growspace-grid-container>
-
-      ${this.config?.initial_view_mode === 'header'
-            ? x `
-            <button
-              class="collapse-handle"
-              @click=${this._dispatchToggle}
-              aria-label="Toggle view expansion"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiChevronUp}"></path>
-              </svg>
-            </button>
-          `
-            : ''}
-    `;
-    }
-    _redispatch(e, type) {
-        e.stopPropagation();
-        this.dispatchEvent(new CustomEvent(type, {
-            detail: e.detail || e.target.value,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    _dispatchToggle() {
-        this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
-    }
-};
-GrowspaceViewStandard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
-__decorate([
-    c$2({ context: storeContext, subscribe: true })
-], GrowspaceViewStandard.prototype, "store", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewStandard.prototype, "device", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewStandard.prototype, "growspaceOptions", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewStandard.prototype, "grid", void 0);
-__decorate([
-    n$5({ type: Number })
-], GrowspaceViewStandard.prototype, "rows", void 0);
-__decorate([
-    n$5({ type: Number })
-], GrowspaceViewStandard.prototype, "cols", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceViewStandard.prototype, "isLoading", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceViewStandard.prototype, "isEditMode", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceViewStandard.prototype, "isCompact", void 0);
-__decorate([
-    n$5({ type: Number })
-], GrowspaceViewStandard.prototype, "selectedCount", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceViewStandard.prototype, "config", void 0);
-GrowspaceViewStandard = __decorate([
-    t$2('growspace-view-standard')
-], GrowspaceViewStandard);
 
 /**
  * @license
@@ -112105,88 +111898,285 @@ Heatmap3D = __decorate([
 ], Heatmap3D);
 
 /**
- * Wrapper view for the 3D Heatmap that includes the growspace header.
- * This follows the pattern of other view components (header, standard, compact).
+ * <growspace-view> — unified layout component driven by LayoutSpec.
+ *
+ * Replaces the per-mode layout files (growspace-view-standard, -compact,
+ * -header, -heatmap) with a single component that reads a ViewMode → LayoutSpec
+ * configuration map and renders only the slots declared in the spec.
+ *
+ * Slot responsibilities:
+ *   header — growspace-header (selector, title, phase info)
+ *   chart  — growspace-analytics (standard) or heatmap-3d (heatmap mode)
+ *   grid   — growspace-grid-container (plant placement grid)
+ *
+ * The active LayoutSpec is derived automatically from the global `viewMode$`
+ * atom via the `layoutSpec$` computed atom — no manual wiring required.
  */
-let GrowspaceViewHeatmap = class GrowspaceViewHeatmap extends i$3 {
+let GrowspaceView = class GrowspaceView extends i$3 {
     constructor() {
         super(...arguments);
+        // ── Props forwarded from the switcher / card ──────────────────────────────
+        this.viewMode = ViewMode.STANDARD;
         this.growspaceOptions = {};
+        this.grid = [];
+        this.rows = 0;
+        this.cols = 0;
+        this.isLoading = false;
+        this.isEditMode = false;
+        this.isCompact = false;
+        this.selectedCount = 0;
         this.editMode3DCords = false;
+        // ── Internal store subscriptions ──────────────────────────────────────────
+        this._specController = new libExports.StoreController(this, layoutSpec$);
     }
-    _handleEditModeChange(e) {
-        this.editMode3DCords = e.detail.enabled;
+    _initControllers() {
+        if (this.store) {
+            if (!this._viewStandardController) {
+                this._viewStandardController = new libExports.StoreController(this, this.store.$viewStandardState);
+            }
+        }
+        if (!this._gridInteractionController) {
+            this._gridInteractionController = new libExports.StoreController(this, gridInteraction$);
+        }
     }
-    _handleSensorPositionChanged(e) {
-        // Bubble the event up for parent components to handle persistence
-        this.dispatchEvent(new CustomEvent('sensor-position-changed', {
-            detail: e.detail,
-            bubbles: true,
-            composed: true,
-        }));
+    connectedCallback() {
+        super.connectedCallback();
+        this._initControllers();
     }
+    willUpdate(changedProps) {
+        if (changedProps.has('store')) {
+            this._initControllers();
+        }
+    }
+    // ── Public API (mirrors the individual view components) ───────────────────
+    focusPlant(index) {
+        const grid = this.shadowRoot?.querySelector('growspace-grid-container');
+        if (grid) {
+            grid.focusPlant(index);
+        }
+    }
+    // ── Render ────────────────────────────────────────────────────────────────
     render() {
-        if (!this.device)
-            return x ``;
+        const spec = this._specController.value;
+        return x `
+      ${spec?.slots.includes('header') ? this._renderHeader() : ''}
+      ${spec?.slots.includes('chart') ? this._renderChart() : ''}
+      ${spec?.slots.includes('grid') ? this._renderGrid() : ''}
+    `;
+    }
+    // ── Slot renderers ────────────────────────────────────────────────────────
+    _renderHeader() {
+        const spec = this._specController.value;
+        if (spec?.viewVariant === ViewMode.HEADER) {
+            return x `
+        <div class="view-mode-container header">
+          <growspace-header
+            .device=${this.device}
+            @growspace-changed=${(e) => this._redispatch(e, 'growspace-changed')}
+          ></growspace-header>
+          <button class="expand-handle" @click=${this._dispatchToggle}>
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiChevronDown}"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+        }
         return x `
       <growspace-header
         .device=${this.device}
         @growspace-changed=${(e) => this._redispatch(e, 'growspace-changed')}
       ></growspace-header>
-
-      <heatmap-3d
-        .device=${this.device}
-        .hass=${this.hass}
-        .editMode3DCords=${this.editMode3DCords}
-        .keyboardRotateEnabled=${this.growspaceOptions?.keyboard_rotate_enabled ?? false}
-        .keyboardRotateSpeed=${this.growspaceOptions?.keyboard_rotate_speed ?? 1.0}
-        @edit-mode-changed=${this._handleEditModeChange}
-        @sensor-position-changed=${this._handleSensorPositionChanged}
-      ></heatmap-3d>
     `;
+    }
+    _renderChart() {
+        const spec = this._specController.value;
+        if (spec?.chartType === 'heatmap') {
+            return x `
+        <heatmap-3d
+          .device=${this.device}
+          .hass=${this.hass}
+          .editMode3DCords=${this.editMode3DCords}
+          .keyboardRotateEnabled=${this.growspaceOptions?.keyboard_rotate_enabled ?? false}
+          .keyboardRotateSpeed=${this.growspaceOptions?.keyboard_rotate_speed ?? 1.0}
+          @edit-mode-changed=${(e) => {
+                this.editMode3DCords = e.detail.enabled;
+            }}
+          @sensor-position-changed=${(e) => this._redispatch(e, 'sensor-position-changed')}
+        ></heatmap-3d>
+      `;
+        }
+        return x `<growspace-analytics .device=${this.device}></growspace-analytics>`;
+    }
+    _renderGrid() {
+        if (this._specController.value?.viewVariant === ViewMode.COMPACT) {
+            return x `
+        <div class="compact-controls">
+          <button
+            class="compact-exit-fab"
+            @click=${() => this._dispatchModeChange('standard')}
+            title="Exit Compact Mode"
+          >
+            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiFullscreenExit}"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="view-mode-container compact">
+          <growspace-grid-container
+            .plants=${this.grid}
+            .rows=${this.rows}
+            .cols=${this.cols}
+          ></growspace-grid-container>
+        </div>
+      `;
+        }
+        return x `
+      ${this.isEditMode
+            ? x `
+            <growspace-edit-mode-banner
+              .selectedCount=${this.selectedCount}
+              @batch-add-plants=${(e) => this._redispatch(e, 'batch-add-plants')}
+            ></growspace-edit-mode-banner>
+          `
+            : ''}
+      ${this._gridInteractionController?.value?.status === 'transplanting'
+            ? x `
+            <transplant-source-panel
+              .clonePlants=${this._getPlantsByStage('clone')}
+              .seedlingPlants=${this._getPlantsByStage('seedling')}
+            ></transplant-source-panel>
+          `
+            : ''}
+      <growspace-grid-container
+        .plants=${this.grid}
+        .rows=${this.rows}
+        .cols=${this.cols}
+        @transplant-drop=${(e) => this._handleTransplantDrop(e)}
+      ></growspace-grid-container>
+      ${this.config?.initial_view_mode === 'header'
+            ? x `
+            <button
+              class="collapse-handle"
+              @click=${this._dispatchToggle}
+              aria-label="Toggle view expansion"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiChevronUp}"></path>
+              </svg>
+            </button>
+          `
+            : ''}
+    `;
+    }
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    _getPlantsByStage(stage) {
+        const devices = this._viewStandardController?.value?.devices || [];
+        return devices
+            .flatMap((d) => (d.plants || []).map((p) => ({
+            ...p,
+            _growspaceName: d.name,
+        })))
+            .filter((p) => p.attributes.stage === stage);
+    }
+    async _handleTransplantDrop(e) {
+        const detail = e.detail;
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const targetGrowspaceId = this.device?.deviceId;
+            if (!targetGrowspaceId)
+                return;
+            await this.store.hass.callService('growspace_manager', 'update_plant', {
+                plant_id: detail.plant_id,
+                growspace_id: targetGrowspaceId,
+                row: detail.target_row,
+                col: detail.target_col,
+                veg_start: today,
+            });
+            this.store.actions.ui.toast('Plant transplanted successfully', 'success');
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            await this.store.refreshData();
+        }
+        catch (error) {
+            console.error('[GrowspaceView] Transplant failed:', error);
+            this.store.actions.ui.toast('Failed to transplant plant', 'error');
+        }
     }
     _redispatch(e, type) {
         e.stopPropagation();
         this.dispatchEvent(new CustomEvent(type, {
-            detail: e.detail,
+            detail: e.detail || e.target.value,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _dispatchToggle() {
+        this.dispatchEvent(new CustomEvent('toggle-expansion', { bubbles: true, composed: true }));
+    }
+    _dispatchModeChange(mode) {
+        this.dispatchEvent(new CustomEvent('view-mode-changed', {
+            detail: { mode },
             bubbles: true,
             composed: true,
         }));
     }
 };
-GrowspaceViewHeatmap.styles = i$6 `
-    :host {
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      width: 100%;
-    }
-
-    growspace-header {
-      flex-shrink: 0;
-    }
-
-    heatmap-3d {
-      flex: 1;
-      min-height: 0;
-    }
-  `;
+// ── Styles ────────────────────────────────────────────────────────────────
+GrowspaceView.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
+__decorate([
+    c$2({ context: storeContext, subscribe: true })
+], GrowspaceView.prototype, "store", void 0);
+__decorate([
+    n$5({ type: String })
+], GrowspaceView.prototype, "viewMode", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceViewHeatmap.prototype, "device", void 0);
+], GrowspaceView.prototype, "hass", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceViewHeatmap.prototype, "hass", void 0);
+], GrowspaceView.prototype, "device", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceViewHeatmap.prototype, "growspaceOptions", void 0);
+], GrowspaceView.prototype, "growspaceOptions", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceView.prototype, "grid", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceView.prototype, "rows", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceView.prototype, "cols", void 0);
 __decorate([
     n$5({ type: Boolean })
-], GrowspaceViewHeatmap.prototype, "editMode3DCords", void 0);
-GrowspaceViewHeatmap = __decorate([
-    t$2('growspace-view-heatmap')
-], GrowspaceViewHeatmap);
+], GrowspaceView.prototype, "isLoading", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceView.prototype, "isEditMode", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceView.prototype, "isCompact", void 0);
+__decorate([
+    n$5({ type: Number })
+], GrowspaceView.prototype, "selectedCount", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceView.prototype, "config", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], GrowspaceView.prototype, "editMode3DCords", void 0);
+GrowspaceView = __decorate([
+    t$2('growspace-view')
+], GrowspaceView);
 
+/**
+ * Thin adapter that bridges the card's property API to the declarative
+ * <growspace-view> component.  It:
+ *   • keeps the same @property surface so parent cards need no changes
+ *   • forwards the active viewMode to the global atom so <growspace-view>
+ *     can derive its LayoutSpec reactively
+ *   • proxies focusPlant() calls down to the active grid
+ */
 let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
     constructor() {
         super(...arguments);
@@ -112203,12 +112193,16 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
     }
     updated(changedProps) {
         super.updated(changedProps);
+        // Keep the global atom in sync when the card updates the property.
+        if (changedProps.has('viewMode')) {
+            setViewMode(this.viewMode);
+        }
         if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {
             this.focusPlant(this.focusedPlantIndex);
         }
     }
     focusPlant(index) {
-        const activeView = this.shadowRoot?.querySelector('growspace-view-standard, growspace-view-compact');
+        const activeView = this.shadowRoot?.querySelector('growspace-view');
         if (activeView && 'focusPlant' in activeView) {
             activeView.focusPlant(index);
         }
@@ -112216,59 +112210,27 @@ let GrowspaceViewSwitcher = class GrowspaceViewSwitcher extends i$3 {
     render() {
         if (!this.device)
             return x ``;
-        if (this.viewMode === ViewMode.COMPACT) {
-            return x `
-        <error-boundary heading="Detailed View Error">
-          <growspace-view-compact
-            .grid=${this.grid}
-            .rows=${this.rows}
-            .cols=${this.device.plantsPerRow}
-            .isLoading=${this.isLoading}
-          ></growspace-view-compact>
-        </error-boundary>
-      `;
-        }
-        if (this.viewMode === ViewMode.HEADER) {
-            return x `
-        <error-boundary heading="Header View Error">
-          <growspace-view-header
-            .device=${this.device}
-            .growspaceOptions=${this.growspaceOptions}
-          ></growspace-view-header>
-        </error-boundary>
-      `;
-        }
-        if (this.viewMode === ViewMode.HEATMAP) {
-            return x `
-        <error-boundary heading="Heatmap View Error">
-          <growspace-view-heatmap
-            .device=${this.device}
-            .hass=${this.hass}
-            .growspaceOptions=${this.growspaceOptions}
-          ></growspace-view-heatmap>
-        </error-boundary>
-      `;
-        }
-        // Standard Mode
         return x `
-      <error-boundary heading="Dashboard View Error">
-        <growspace-view-standard
+      <error-boundary heading="View Error">
+        <growspace-view
+          .viewMode=${this.viewMode}
+          .hass=${this.hass}
           .device=${this.device}
           .growspaceOptions=${this.growspaceOptions}
           .grid=${this.grid}
           .rows=${this.rows}
           .cols=${this.device.plantsPerRow}
+          .isLoading=${this.isLoading}
           .isEditMode=${this.isEditMode}
           .isCompact=${this.isCompact}
           .selectedCount=${this.selectedCount}
           .config=${this.config}
-          .isLoading=${this.isLoading}
           @batch-add-plants=${(e) => this.dispatchEvent(new CustomEvent('batch-add-plants', {
             detail: e.detail,
             bubbles: true,
             composed: true,
         }))}
-        ></growspace-view-standard>
+        ></growspace-view>
       </error-boundary>
     `;
     }
