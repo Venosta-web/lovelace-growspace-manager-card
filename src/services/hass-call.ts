@@ -28,6 +28,58 @@ export function setHass(hass: HomeAssistant): void {
 }
 
 /**
+ * Call a Home Assistant service and return its response payload.
+ *
+ * Use for service calls that set `return_response: true` (e.g. AI advice,
+ * report generation). The response is validated with a zod schema before
+ * being returned.
+ *
+ * @param domain      - HA service domain (e.g. 'growspace_manager')
+ * @param service     - HA service name (e.g. 'ask_grow_advice')
+ * @param serviceData - Service call payload
+ * @param schema      - Zod schema to validate the response
+ */
+export async function callServiceReturning<T>(
+  domain: string,
+  service: string,
+  serviceData: Record<string, unknown>,
+  schema: z.ZodType<T>,
+): Promise<T> {
+  if (!_hass) {
+    throw new WSError(
+      'internal_error',
+      'callServiceReturning: hass is not set — call setHass() first',
+    );
+  }
+
+  let raw: unknown;
+  try {
+    raw = await _hass.connection.sendMessagePromise({
+      type: 'call_service',
+      domain,
+      service,
+      service_data: serviceData,
+      return_response: true,
+    });
+  } catch (err) {
+    throw new WSError(
+      'internal_error',
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+
+  const parsed = schema.safeParse(raw);
+  if (!parsed.success) {
+    throw new WSError(
+      'internal_error',
+      `callServiceReturning: response schema mismatch for "${domain}.${service}": ${parsed.error.message}`,
+    );
+  }
+
+  return parsed.data;
+}
+
+/**
  * Single transport seam to Home Assistant.
  *
  * Sends a WebSocket message, validates the response with a zod schema, and
