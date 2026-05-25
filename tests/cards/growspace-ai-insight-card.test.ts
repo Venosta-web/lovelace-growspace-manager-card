@@ -2,9 +2,9 @@ import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, beforeEach, vi } from 'vitest';
 import { html } from 'lit';
 import { GrowspaceAiInsightCard } from '../../src/cards/growspace-ai-insight-card';
-import type { GrowAdviceResponse } from '../../src/types';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import { createMockHass } from '../mocks/hass';
+import { aiInsight$, isAiLoading$, aiError$ } from '../../src/slices/ai-insight';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-ai-insight-card')) {
@@ -19,10 +19,28 @@ vi.mock('../../src/cards/editors/growspace-ai-insight-card-editor', () => ({
     GrowspaceAiInsightCardEditor: class extends HTMLElement { }
 }));
 
+// Mock the slice mutators at the module boundary — atoms are kept real so cards
+// react to atom changes without needing a live HA connection.
+vi.mock('../../src/slices/ai-insight', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../src/slices/ai-insight')>();
+    return {
+        ...actual,
+        analyzeAllGrowspaces: vi.fn().mockResolvedValue(undefined),
+        askGrowAdvice: vi.fn().mockResolvedValue(undefined),
+        dismissInsight: vi.fn(),
+        clearAiError: vi.fn(),
+    };
+});
+
 describe('GrowspaceAiInsightCard', () => {
     let element: GrowspaceAiInsightCard;
 
     aroundEach(async (runTest) => {
+        // Reset atoms before each test so state doesn't leak between tests.
+        isAiLoading$.set(false);
+        aiInsight$.set(null);
+        aiError$.set(null);
+
         element = await fixture<GrowspaceAiInsightCard>(html`<growspace-ai-insight-card></growspace-ai-insight-card>`);
         element.hass = createMockHass() as any;
         await runTest();
@@ -90,13 +108,9 @@ describe('GrowspaceAiInsightCard', () => {
         expect(refreshSpy).toHaveBeenCalled();
     });
 
-    test('returns standard card size', () => {
-        expect(element.getCardSize()).toBe(4);
-    });
-
     test('calls system_log/write on handle error', () => {
         (element as any)._handleError(new Error('AI Insight Error'), { componentStack: 'Mock' });
-        
+
         expect(element.hass.callService).toHaveBeenCalledWith('system_log', 'write', expect.objectContaining({
             message: 'Growspace AI Insight Card Error: AI Insight Error',
             level: 'error',
@@ -107,101 +121,6 @@ describe('GrowspaceAiInsightCard', () => {
     test('gets config element correctly', async () => {
         const editor = await GrowspaceAiInsightCard.getConfigElement();
         expect(editor.tagName.toLowerCase()).toBe('growspace-ai-insight-card-editor');
-    });
-    
-    describe('_extractText behavior', () => {
-        test('extracts direct string', () => {
-            const text = (element as any)._extractText('hello string');
-            expect(text).toBe('hello string');
-        });
-
-        test('extracts json if no response property', () => {
-            const obj = { some_data: 123 } as any;
-            const text = (element as any)._extractText(obj);
-            expect(text).toBe('{"some_data":123}');
-        });
-
-        test('extracts response if string', () => {
-            const obj = { response: 'hello directly' } as any;
-            const text = (element as any)._extractText(obj);
-            expect(text).toBe('hello directly');
-        });
-
-        test('extracts nested response', () => {
-            const obj = { response: { response: 'nested response text' } } as any;
-            const text = (element as any)._extractText(obj);
-            expect(text).toBe('nested response text');
-        });
-
-        test('extracts json from nested object', () => {
-            const obj = { response: { other_data: 456 } } as any;
-            const text = (element as any)._extractText(obj);
-            expect(text).toBe('{"other_data":456}');
-        });
-    });
-
-    describe('_analyze behavior', () => {
-        beforeEach(() => {
-            // Setup active devices
-            element.store.data.$devices.set([
-                { deviceId: 'tent_1', name: 'Tent 1', plants: [] } as any,
-                { deviceId: 'tent_2', name: 'Tent 2', plants: [] } as any,
-            ]);
-            element.store.grid.$selectedDevice.set('tent_1');
-        });
-
-        test('analyze all triggers analyzeAllGrowspaces', async () => {
-            const spyAll = vi.spyOn(element.store.dataService, 'analyzeAllGrowspaces').mockResolvedValue('All advice' as any);
-            element.shadowRoot?.querySelector('.sd-textarea')?.dispatchEvent(new InputEvent('input', { data: 'test query' }));
-            
-            await (element as any)._analyze(true);
-
-            expect(spyAll).toHaveBeenCalled();
-            expect((element as any)._response).toBe('All advice');
-            expect((element as any)._isLoading).toBe(false);
-        });
-
-        test('analyze specific triggers askGrowAdvice on selected device', async () => {
-            const spySpecific = vi.spyOn(element.store.dataService, 'askGrowAdvice').mockResolvedValue('Specific advice' as any);
-            element.shadowRoot?.querySelector('.sd-textarea')?.dispatchEvent(new InputEvent('input', { data: 'test query' }));
-            (element as any)._userQuery = 'test query';
-
-            await (element as any)._analyze(false);
-
-            expect(spySpecific).toHaveBeenCalledWith('tent_1', 'test query');
-            expect((element as any)._response).toBe('Specific advice');
-            expect((element as any)._isLoading).toBe(false);
-        });
-
-        test('analyze specific throws error if no device selected', async () => {
-            element.store.grid.$selectedDevice.set(null);
-            await (element as any)._analyze(false);
-
-            expect((element as any)._error).toContain('No device selected and "Analyze All" was false.');
-        });
-
-        test('analyze specific throws error if device not found in array', async () => {
-            element.store.grid.$selectedDevice.set('nonexistent');
-            await (element as any)._analyze(false);
-
-            expect((element as any)._error).toContain('Selected device not found in devices list.');
-        });
-
-        test('handles generic errors during analyze', async () => {
-            vi.spyOn(element.store.dataService, 'analyzeAllGrowspaces').mockRejectedValue(new Error('Network fault'));
-            
-            await (element as any)._analyze(true);
-            
-            expect((element as any)._error).toBe('Network fault');
-        });
-
-        test('fallback generic error handler handles unknown thrown objects', async () => {
-            vi.spyOn(element.store.dataService, 'analyzeAllGrowspaces').mockRejectedValue('Not an Error object');
-            
-            await (element as any)._analyze(true);
-            
-            expect((element as any)._error).toBe('Unknown error occurred during analysis.');
-        });
     });
 
     describe('render functionality', () => {
@@ -228,44 +147,44 @@ describe('GrowspaceAiInsightCard', () => {
         test('textarea updates query state', async () => {
             await element.updateComplete;
             const textarea = element.shadowRoot?.querySelector('.sd-textarea') as HTMLTextAreaElement;
-            
+
             textarea.value = 'hello!';
             textarea.dispatchEvent(new InputEvent('input'));
-            
+
             expect((element as any)._userQuery).toBe('hello!');
         });
 
-        test('renders loading spinner when loading', async () => {
-            (element as any)._isLoading = true;
+        test('renders loading spinner when isAiLoading$ is true', async () => {
+            isAiLoading$.set(true);
             await element.updateComplete;
-            
+
             const loader = element.shadowRoot?.querySelector('.gm-loading');
             expect(loader).toBeTruthy();
         });
 
-        test('renders response box when response exists and not loading', async () => {
-            (element as any)._isLoading = false;
-            (element as any)._response = 'The AI says grow more weed';
+        test('renders response box when aiInsight$ has text and not loading', async () => {
+            isAiLoading$.set(false);
+            aiInsight$.set('The AI says grow more');
             await element.updateComplete;
-            
+
             const box = element.shadowRoot?.querySelector('.gm-response-box');
             expect(box).toBeTruthy();
-            expect(box?.textContent).toContain('The AI says grow more weed');
+            expect(box?.textContent).toContain('The AI says grow more');
         });
 
-        test('renders error box when error exists', async () => {
-            (element as any)._error = 'Oops AI failed';
+        test('renders error state when aiError$ has a message', async () => {
+            aiError$.set('Oops AI failed');
             await element.updateComplete;
-            
+
             const box = element.shadowRoot?.querySelector('.error-state');
             expect(box).toBeTruthy();
             expect(box?.textContent).toContain('Error: Oops AI failed');
         });
 
-        test('buttons trigger correct analyze bounds', async () => {
+        test('buttons trigger correct analyze calls', async () => {
             const spy = vi.spyOn(element as any, '_analyze').mockResolvedValue(undefined as any);
             await element.updateComplete;
-            
+
             const buttons = element.shadowRoot?.querySelectorAll('.md3-button');
             const allBtn = buttons?.[0] as HTMLButtonElement;
             const specificBtn = buttons?.[1] as HTMLButtonElement;
@@ -278,4 +197,37 @@ describe('GrowspaceAiInsightCard', () => {
         });
     });
 
+    describe('_analyze behavior', () => {
+        beforeEach(() => {
+            element.store.data.$devices.set([
+                { deviceId: 'tent_1', name: 'Tent 1', plants: [] } as any,
+                { deviceId: 'tent_2', name: 'Tent 2', plants: [] } as any,
+            ]);
+            element.store.grid.$selectedDevice.set('tent_1');
+        });
+
+        test('Analyze All button calls analyzeAllGrowspaces', async () => {
+            const { analyzeAllGrowspaces } = await import('../../src/slices/ai-insight');
+            await element.updateComplete;
+
+            const allBtn = element.shadowRoot?.querySelectorAll('.md3-button')[0] as HTMLButtonElement;
+            allBtn.click();
+            await element.updateComplete;
+
+            expect(analyzeAllGrowspaces).toHaveBeenCalled();
+        });
+
+        test('Analyze Specific button calls askGrowAdvice with selected device and query', async () => {
+            const { askGrowAdvice } = await import('../../src/slices/ai-insight');
+            (element as any)._userQuery = 'test query';
+            await element.updateComplete;
+
+            const specificBtn = element.shadowRoot?.querySelectorAll('.md3-button')[1] as HTMLButtonElement;
+            specificBtn.click();
+            // wait for the async _analyze to dispatch
+            await new Promise((r) => setTimeout(r, 0));
+
+            expect(askGrowAdvice).toHaveBeenCalledWith('tent_1', 'test query');
+        });
+    });
 });

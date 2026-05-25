@@ -62,6 +62,7 @@ describe('Plant slice', () => {
       await waterPlant('plant-1', 500);
       expect(mutate).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'waterPlant' }),
+        expect.any(String),
       );
     });
 

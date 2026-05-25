@@ -105,17 +105,20 @@ export async function updateSubarea(
     return { ...s, environment_config: { ...s.environment_config, ...environmentConfig } };
   });
 
-  await mutate({
-    type: 'updateSubarea',
-    optimistic: () => subareas$.set(patched),
-    inverse: () => subareas$.set(originalList),
-    apply: () =>
-      hassCall(
-        'growspace_manager/update_subarea',
-        { growspace_id: growspaceId, subarea_id: subareaId, environment_config: environmentConfig },
-        SubareaResponseSchema,
-      ).then(() => undefined),
-  });
+  await mutate(
+    {
+      type: 'updateSubarea',
+      optimistic: () => subareas$.set(patched),
+      inverse: () => subareas$.set(originalList),
+      apply: () =>
+        hassCall(
+          'growspace_manager/update_subarea',
+          { growspace_id: growspaceId, subarea_id: subareaId, environment_config: environmentConfig },
+          SubareaResponseSchema,
+        ).then(() => undefined),
+    },
+    growspaceId,
+  );
 }
 
 /**
@@ -132,15 +135,18 @@ export async function removeSubarea(growspaceId: string, subareaId: string): Pro
   const originalList = subareas$.get();
   const filtered = originalList.filter((s) => s.id !== subareaId);
 
-  await mutate({
-    type: 'removeSubarea',
-    optimistic: () => subareas$.set(filtered),
-    inverse: () => subareas$.set(originalList),
-    apply: () =>
-      hassCall(
-        'growspace_manager/remove_subarea',
-        { growspace_id: growspaceId, subarea_id: subareaId },
-        RemoveSubareaResponseSchema,
-      ).then(() => undefined),
-  });
+  await mutate(
+    {
+      type: 'removeSubarea',
+      optimistic: () => subareas$.set(filtered),
+      inverse: () => subareas$.set(originalList),
+      apply: () =>
+        hassCall(
+          'growspace_manager/remove_subarea',
+          { growspace_id: growspaceId, subarea_id: subareaId },
+          RemoveSubareaResponseSchema,
+        ).then(() => undefined),
+    },
+    growspaceId,
+  );
 }

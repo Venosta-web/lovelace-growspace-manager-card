@@ -22,7 +22,7 @@
 import { atom } from 'nanostores';
 import { z } from 'zod';
 import { callService, callFetch, hassCall } from '../../services/hass-call';
-import { StrainLibraryWrapperSchema } from './schema';
+import { StrainLibrarySchema, StrainLibraryWrapperSchema } from './schema';
 import type { StrainEntry, StrainGalleryImage, CropMeta } from '../../types';
 
 // ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ export function setStrainLibrary(library: StrainEntry[]): void {
 // ---------------------------------------------------------------------------
 
 /** Parse a raw WS response into a sorted StrainEntry[]. */
-function _parseLibrary(rawStrains: z.infer<typeof StrainLibraryWrapperSchema>['strains']): StrainEntry[] {
+function _parseLibrary(rawStrains: z.output<typeof StrainLibrarySchema>): StrainEntry[] {
   const results: StrainEntry[] = [];
 
   for (const [strainName, strainData] of Object.entries(rawStrains)) {

@@ -228,7 +228,7 @@ describe('removeStrain', () => {
     );
     // 'default' phenotype is omitted (treated as no phenotype)
     const call = vi.mocked(hassCallModule.callService).mock.calls[0][2];
-    expect(call.phenotype).toBeUndefined();
+    expect(call?.phenotype).toBeUndefined();
   });
 
   it('includes phenotype in payload for non-default phenotypes', async () => {
@@ -304,7 +304,7 @@ describe('importStrainLibrary', () => {
     vi.mocked(hassCallModule.callFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: true }),
-    });
+    } as unknown as Response);
 
     const result = await importStrainLibrary(file, false);
 
@@ -321,7 +321,7 @@ describe('importStrainLibrary', () => {
       ok: false,
       text: async () => 'Server error',
       statusText: 'Bad Request',
-    });
+    } as unknown as Response);
 
     await expect(importStrainLibrary(file, true)).rejects.toThrow('Server error');
   });
@@ -331,7 +331,7 @@ describe('importStrainLibrary', () => {
     vi.mocked(hassCallModule.callFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ success: false, error: 'Duplicate strains' }),
-    });
+    } as unknown as Response);
 
     await expect(importStrainLibrary(file, false)).rejects.toThrow('Duplicate strains');
   });

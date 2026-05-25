@@ -189,21 +189,28 @@ export async function deleteEvent(eventId: string | number): Promise<void> {
   const filtered = (entries: LogbookEntry[]) =>
     entries.filter((e) => e.event_id !== eventId);
 
-  await mutate({
-    type: 'deleteEvent',
-    optimistic: () => {
-      growspaceEvents$.set(filtered(originalGrowspace));
-      plantEvents$.set(filtered(originalPlant));
+  const growspaceId =
+    [...originalGrowspace, ...originalPlant].find((e) => e.event_id === eventId)
+      ?.growspace_id ?? '';
+
+  await mutate(
+    {
+      type: 'deleteEvent',
+      optimistic: () => {
+        growspaceEvents$.set(filtered(originalGrowspace));
+        plantEvents$.set(filtered(originalPlant));
+      },
+      inverse: () => {
+        growspaceEvents$.set(originalGrowspace);
+        plantEvents$.set(originalPlant);
+      },
+      apply: () =>
+        hassCall(
+          'growspace_manager/remove_timeline_event',
+          { event_id: eventId },
+          DeleteEventResponseSchema,
+        ).then(() => undefined),
     },
-    inverse: () => {
-      growspaceEvents$.set(originalGrowspace);
-      plantEvents$.set(originalPlant);
-    },
-    apply: () =>
-      hassCall(
-        'growspace_manager/remove_timeline_event',
-        { event_id: eventId },
-        DeleteEventResponseSchema,
-      ).then(() => undefined),
-  });
+    growspaceId,
+  );
 }

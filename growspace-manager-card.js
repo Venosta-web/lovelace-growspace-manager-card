@@ -5142,7 +5142,7 @@ const GrowspaceAPIResponseSchema = objectType({
 })
     .passthrough(); // Allow extra fields
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
-const StrainPhenotypeSchema = objectType({
+const StrainPhenotypeSchema$1 = objectType({
     description: stringType().nullable().optional().transform(v => v ?? undefined),
     image_path: stringType().nullable().optional().transform(v => v ?? undefined),
     image_crop_meta: objectType({ x: numberType(), y: numberType(), scale: numberType() }).nullable().optional().transform(v => v ?? undefined),
@@ -5150,7 +5150,7 @@ const StrainPhenotypeSchema = objectType({
     flower_days_max: numberType().nullable().optional().transform(v => v ?? undefined),
 })
     .catchall(unknownType());
-const StrainDataSchema = objectType({
+const StrainDataSchema$1 = objectType({
     meta: objectType({
         breeder: stringType().nullable().optional().transform(v => v ?? undefined),
         breeder_logo: stringType().nullable().optional().transform(v => v ?? undefined),
@@ -5164,12 +5164,12 @@ const StrainDataSchema = objectType({
         .passthrough()
         .optional()
         .default({}),
-    phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({}),
+    phenotypes: recordType(stringType(), StrainPhenotypeSchema$1).optional().default({}),
 })
     .passthrough();
-const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
-const StrainLibraryWrapperSchema = objectType({
-    strains: StrainLibrarySchema,
+const StrainLibrarySchema$1 = recordType(stringType(), StrainDataSchema$1);
+objectType({
+    strains: StrainLibrarySchema$1,
     strain_list: arrayType(stringType()).optional(),
 })
     .passthrough();
@@ -5905,295 +5905,6 @@ class GrowspaceAPI extends BaseAPI {
     }
 }
 GrowspaceAPI.CACHE_TTL_MS = 30_000; // 30 seconds
-
-/**
- * API service for strain library operations.
- * Handles fetching, adding, removing, importing, and exporting strains.
- */
-class StrainAPI extends BaseAPI {
-    getStrainLibrary() {
-        const knownIds = ['sensor.strain_library', 'sensor.growspace_manager_strain_library'];
-        let rawStrains;
-        // Direct O(1) Lookup
-        for (const id of knownIds) {
-            const entity = this.hass.states[id];
-            if (entity?.attributes?.strains) {
-                rawStrains = entity.attributes.strains;
-                break;
-            }
-        }
-        // Fallback: O(N) Scan (Legacy)
-        if (!rawStrains) {
-            const allStates = Object.values(this.hass.states);
-            const strainSensor = allStates.find((s) => s.attributes && 'strains' in s.attributes);
-            rawStrains = strainSensor?.attributes?.strains;
-        }
-        // If no sensor data, return empty
-        if (!rawStrains) {
-            return [];
-        }
-        // Existing parsing logic...
-        if (Array.isArray(rawStrains)) {
-            return rawStrains.map((s) => ({
-                strain: s,
-                phenotype: '',
-                key: `${s}|default`,
-            }));
-        }
-        if (typeof rawStrains === 'object') {
-            const results = [];
-            for (const [strainName, strainData] of Object.entries(rawStrains)) {
-                const meta = strainData.meta ?? {};
-                const phenotypes = strainData.phenotypes ?? {};
-                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
-                    const typedPhenoData = phenoData;
-                    const gallery = typedPhenoData.images;
-                    const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
-                    results.push({
-                        strain: strainName,
-                        phenotype: phenoName,
-                        key: `${strainName}|${phenoName}`,
-                        breeder: meta.breeder,
-                        breeder_logo: meta.breeder_logo,
-                        type: meta.type,
-                        lineage: meta.lineage,
-                        parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
-                        sex: meta.sex,
-                        sativa_percentage: meta.sativa_percentage,
-                        indica_percentage: meta.indica_percentage,
-                        is_stub: meta.is_stub,
-                        description: typedPhenoData.description,
-                        image: thumbnail?.path ?? typedPhenoData.image_path,
-                        image_crop_meta: thumbnail?.crop_meta ?? typedPhenoData.image_crop_meta,
-                        images: gallery,
-                        flowering_days_min: typedPhenoData.flower_days_min,
-                        flowering_days_max: typedPhenoData.flower_days_max,
-                    });
-                });
-            }
-            return results.sort((a, b) => {
-                const strainComp = a.strain.localeCompare(b.strain);
-                if (strainComp !== 0)
-                    return strainComp;
-                return a.phenotype.localeCompare(b.phenotype);
-            });
-        }
-        return [];
-    }
-    async fetchStrainLibrary() {
-        try {
-            // Use WebSocket API to bypass the 16KB attribute limit of state machine
-            const rawResponse = await this.hass.connection.sendMessagePromise({
-                type: 'growspace_manager/get_strain_library',
-            });
-            // Remove legacy or wrapper 'response' key if present
-            if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
-                delete rawResponse.response;
-            }
-            const parsed = StrainLibraryWrapperSchema.safeParse(rawResponse);
-            let rawStrains = {};
-            if (parsed.success) {
-                rawStrains = parsed.data.strains;
-            }
-            else {
-                // Fallback for backward compatibility
-                const legacyParsed = StrainLibrarySchema.safeParse(rawResponse);
-                if (legacyParsed.success) {
-                    rawStrains = legacyParsed.data;
-                }
-                else {
-                    console.warn('[StrainAPI:fetchStrainLibrary] API Verification warning:', parsed.error.format());
-                    return [];
-                }
-            }
-            const currentStrains = [];
-            Object.entries(rawStrains).forEach(([strainName, data]) => {
-                if (strainName === 'response')
-                    return;
-                const meta = data.meta ?? {};
-                let phenotypes = data.phenotypes;
-                if (!phenotypes) {
-                    phenotypes = {};
-                }
-                Object.entries(phenotypes).forEach(([phenoName, phenoData]) => {
-                    const typedPhenoData = phenoData;
-                    const gallery = typedPhenoData.images;
-                    const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
-                    currentStrains.push({
-                        strain: strainName,
-                        phenotype: phenoName,
-                        key: `${strainName}|${phenoName}`,
-                        breeder: meta.breeder,
-                        breeder_logo: meta.breeder_logo,
-                        type: meta.type,
-                        lineage: meta.lineage,
-                        parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
-                        sex: meta.sex,
-                        sativa_percentage: meta.sativa_percentage,
-                        indica_percentage: meta.indica_percentage,
-                        is_stub: meta.is_stub,
-                        description: typedPhenoData.description,
-                        image: thumbnail?.path ?? typedPhenoData.image_path,
-                        image_crop_meta: thumbnail?.crop_meta ?? typedPhenoData.image_crop_meta,
-                        images: gallery,
-                        flowering_days_min: typedPhenoData.flower_days_min,
-                        flowering_days_max: typedPhenoData.flower_days_max,
-                    });
-                });
-            });
-            return currentStrains;
-        }
-        catch (e) {
-            console.error('Failed to fetch strain library for grid:', e);
-            return [];
-        }
-    }
-    async addStrain(data) {
-        try {
-            const payload = { ...data };
-            // Clean undefined keys
-            Object.keys(payload).forEach((key) => {
-                if (payload[key] === undefined) {
-                    delete payload[key];
-                }
-            });
-            if (data.images && data.images.length > 0) {
-                // Gallery is authoritative — send it and skip single-image fields
-                delete payload.image;
-            }
-            else if (data.image) {
-                if (data.image.startsWith('data:')) {
-                    payload.image_base64 = data.image;
-                    delete payload.image;
-                }
-                else {
-                    // Both remote (http/https) and local (/local/...) paths go as image_path
-                    payload.image_path = data.image;
-                    delete payload.image;
-                }
-            }
-            await this.callService(DOMAIN$1, SERVICES.ADD_STRAIN, payload);
-        }
-        catch (err) {
-            console.error('[StrainAPI:addStrain] Error:', err);
-            throw err;
-        }
-    }
-    async removeStrain(strain, phenotype) {
-        try {
-            await this.callService(DOMAIN$1, SERVICES.REMOVE_STRAIN, {
-                strain,
-                phenotype,
-            });
-        }
-        catch (err) {
-            console.error('[StrainAPI:removeStrain] Error:', err);
-            throw err;
-        }
-    }
-    async exportStrainLibrary() {
-        try {
-            await this.callService(DOMAIN$1, SERVICES.EXPORT_STRAIN_LIBRARY, {});
-        }
-        catch (err) {
-            console.error('[StrainAPI:exportStrainLibrary] Error:', err);
-            throw err;
-        }
-    }
-    async importStrainLibrary(file, replace) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('replace', replace.toString());
-        try {
-            const response = await this.hass.fetchWithAuth('/api/growspace_manager/import_strains', {
-                method: 'POST',
-                body: formData,
-            });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(errorText || response.statusText);
-            }
-            const result = await response.json();
-            if (result.success) {
-                return result;
-            }
-            else {
-                throw new Error(result.error || 'Unknown import error');
-            }
-        }
-        catch (err) {
-            console.error('[StrainAPI:importStrainLibrary] Error:', err);
-            const msg = err instanceof Error ? err.message : 'Failed to import strain library';
-            throw new Error(msg);
-        }
-    }
-    async clearStrainLibrary() {
-        try {
-            await this.callService(DOMAIN$1, SERVICES.CLEAR_STRAIN_LIBRARY, {});
-        }
-        catch (err) {
-            console.error('[StrainAPI:clearStrainLibrary] Error:', err);
-            throw err;
-        }
-    }
-    async updateBreeder(oldName, newName, logo) {
-        try {
-            await this.hass.connection.sendMessagePromise({
-                type: 'growspace_manager/update_breeder',
-                original_name: oldName,
-                new_name: newName,
-                logo: logo !== undefined ? logo : undefined,
-            });
-        }
-        catch (err) {
-            console.error('[StrainAPI:updateBreeder] Error:', err);
-            throw err;
-        }
-    }
-    async deleteBreeder(name) {
-        try {
-            await this.hass.connection.sendMessagePromise({
-                type: 'growspace_manager/delete_breeder',
-                breeder_name: name,
-            });
-        }
-        catch (err) {
-            console.error('[StrainAPI:deleteBreeder] Error:', err);
-            throw err;
-        }
-    }
-    async updateStrainMeta(data) {
-        try {
-            const payload = { ...data };
-            // Clean undefined keys
-            Object.keys(payload).forEach((key) => {
-                if (payload[key] === undefined) {
-                    delete payload[key];
-                }
-            });
-            if (data.images && data.images.length > 0) {
-                // Gallery is authoritative — send it and skip single-image fields
-                delete payload.image;
-            }
-            else if (data.image) {
-                if (data.image.startsWith('data:')) {
-                    payload.image_base64 = data.image;
-                    delete payload.image;
-                }
-                else {
-                    // Both remote (http/https) and local (/local/...) paths go as image_path
-                    payload.image_path = data.image;
-                    delete payload.image;
-                }
-            }
-            await this.callService(DOMAIN$1, SERVICES.UPDATE_STRAIN_META, payload);
-        }
-        catch (err) {
-            console.error('[StrainAPI:updateStrainMeta] Error:', err);
-            throw err;
-        }
-    }
-}
 
 /**
  * API service for nutrient and IPM operations.
@@ -7284,6 +6995,20 @@ function setHass(hass) {
     _hass = hass;
 }
 /**
+ * Make an authenticated HTTP request through the shared hass reference.
+ * Wraps `hass.fetchWithAuth` for use from slice mutators that need REST APIs
+ * (e.g. multipart file uploads) rather than WebSocket calls.
+ *
+ * @param path    - Absolute HA API path (e.g. '/api/growspace_manager/import_strains')
+ * @param init    - Fetch init options (method, body, etc.)
+ */
+async function callFetch(path, init) {
+    if (!_hass) {
+        throw new WSError('internal_error', 'callFetch: hass is not set — call setHass() first');
+    }
+    return _hass.fetchWithAuth(path, init);
+}
+/**
  * Call a Home Assistant service and return its response payload.
  *
  * Use for service calls that set `return_response: true` (e.g. AI advice,
@@ -7434,6 +7159,237 @@ async function getSnapshots$1(growspaceId, limit = 50, offset = 0) {
  */
 async function captureSnapshot$1(growspaceId) {
     return hassCall('growspace_manager/capture_snapshot', { growspace_id: growspaceId }, CaptureSnapshotResponseSchema);
+}
+
+/**
+ * Strain slice — zod schemas for WebSocket and service-call response validation.
+ *
+ * Mirrors the strain-related schemas from `schemas/api-schema.ts` and adds
+ * typed output shapes for each WS command.
+ */
+// ---------------------------------------------------------------------------
+// Raw response shapes (WS: growspace_manager/get_strain_library)
+// ---------------------------------------------------------------------------
+const StrainPhenotypeSchema = objectType({
+    description: stringType().optional(),
+    image_path: stringType().optional(),
+    image_crop_meta: unknownType().optional(),
+    images: arrayType(unknownType()).optional(),
+    flower_days_min: numberType().optional(),
+    flower_days_max: numberType().optional(),
+})
+    .passthrough();
+const StrainDataSchema = objectType({
+    meta: objectType({
+        breeder: stringType().optional(),
+        breeder_logo: stringType().optional(),
+        type: stringType().optional(),
+        lineage: stringType().optional(),
+        lineage_tree: arrayType(objectType({ name: stringType(), source: stringType(), phenotype: stringType().optional() }))
+            .optional(),
+        sex: stringType().optional(),
+        sativa_percentage: numberType().optional(),
+        indica_percentage: numberType().optional(),
+        is_stub: booleanType().optional(),
+    })
+        .optional()
+        .default({}),
+    phenotypes: recordType(stringType(), StrainPhenotypeSchema).optional().default({}),
+})
+    .passthrough();
+const StrainLibrarySchema = recordType(stringType(), StrainDataSchema);
+const StrainLibraryWrapperSchema = objectType({
+    strains: StrainLibrarySchema,
+    strain_list: arrayType(stringType()).optional(),
+});
+
+/**
+ * Strain slice — atoms and mutators for the strain library.
+ *
+ * Public API (atoms):
+ *   strainLibrary$         — read: current list of parsed StrainEntry objects
+ *   setStrainLibrary()     — write: replace library (called by bootstrap/sync)
+ *
+ * Public API (mutators):
+ *   fetchStrainLibrary()   — WS fetch → parses response → updates strainLibrary$
+ *   addStrain(data)        — service call to add a strain
+ *   removeStrain(key)      — service call to remove a strain (parses "strain|phenotype" key)
+ *   updateStrainMeta(data) — service call to update strain metadata
+ *   exportStrainLibrary()  — service call to trigger server-side export
+ *   importStrainLibrary(file, replace) — REST upload to import a JSON library
+ *   clearStrainLibrary()   — service call to wipe the library
+ *   updateBreeder(old, new, logo?) — WS call to rename/update a breeder
+ *   deleteBreeder(name)    — WS call to delete a breeder
+ *
+ * Zod schemas are in ./schema.ts.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const strainLibrary$ = atom([]);
+// ---------------------------------------------------------------------------
+// Bootstrap write (called by SyncService / store when fresh data arrives)
+// ---------------------------------------------------------------------------
+function setStrainLibrary(library) {
+    strainLibrary$.set(library);
+}
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+/** Parse a raw WS response into a sorted StrainEntry[]. */
+function _parseLibrary(rawStrains) {
+    const results = [];
+    for (const [strainName, strainData] of Object.entries(rawStrains)) {
+        if (strainName === 'response')
+            continue;
+        const meta = strainData.meta ?? {};
+        const phenotypes = strainData.phenotypes ?? {};
+        for (const [phenoName, phenoData] of Object.entries(phenotypes)) {
+            const gallery = phenoData.images;
+            const thumbnail = gallery?.find((img) => img.is_thumbnail) ?? gallery?.[0];
+            results.push({
+                strain: strainName,
+                phenotype: phenoName,
+                key: `${strainName}|${phenoName}`,
+                breeder: meta.breeder,
+                breeder_logo: meta.breeder_logo,
+                type: meta.type,
+                lineage: meta.lineage,
+                parents: meta.lineage_tree?.length ? meta.lineage_tree : undefined,
+                sex: meta.sex,
+                sativa_percentage: meta.sativa_percentage,
+                indica_percentage: meta.indica_percentage,
+                is_stub: meta.is_stub,
+                description: phenoData.description,
+                image: thumbnail?.path ?? phenoData.image_path,
+                image_crop_meta: thumbnail?.crop_meta ?? phenoData.image_crop_meta,
+                images: gallery,
+                flowering_days_min: phenoData.flower_days_min,
+                flowering_days_max: phenoData.flower_days_max,
+            });
+        }
+    }
+    return results.sort((a, b) => {
+        const cmp = a.strain.localeCompare(b.strain);
+        return cmp !== 0 ? cmp : a.phenotype.localeCompare(b.phenotype);
+    });
+}
+/**
+ * Build the service-call payload for add/update operations, applying the
+ * image-routing rules:
+ *   - gallery present  → send `images`, omit `image`
+ *   - data: URL        → send `image_base64`, omit `image`
+ *   - path/remote URL  → send `image_path`, omit `image`
+ */
+function _buildStrainPayload(data) {
+    const payload = { ...data };
+    // Remove undefined keys
+    for (const key of Object.keys(payload)) {
+        if (payload[key] === undefined)
+            delete payload[key];
+    }
+    if (data.images && data.images.length > 0) {
+        delete payload.image;
+    }
+    else if (data.image) {
+        if (data.image.startsWith('data:')) {
+            payload.image_base64 = data.image;
+        }
+        else {
+            payload.image_path = data.image;
+        }
+        delete payload.image;
+    }
+    return payload;
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Fetch the full strain library over WebSocket.
+ *
+ * Updates strainLibrary$ on success. Re-throws on backend errors.
+ */
+async function fetchStrainLibrary$1() {
+    const response = await hassCall('growspace_manager/get_strain_library', {}, StrainLibraryWrapperSchema);
+    const entries = _parseLibrary(response.strains);
+    strainLibrary$.set(entries);
+    return entries;
+}
+/**
+ * Add a strain to the library.
+ */
+async function addStrain$1(data) {
+    await callService('growspace_manager', 'add_strain', _buildStrainPayload(data));
+}
+/**
+ * Remove a strain from the library by its composite key ("strain|phenotype").
+ *
+ * A phenotype of "default" is treated as no phenotype (omitted from the payload).
+ */
+async function removeStrain$1(key) {
+    const parts = key.split('|');
+    const strain = parts[0];
+    const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
+    await callService('growspace_manager', 'remove_strain', { strain, ...(phenotype ? { phenotype } : {}) });
+}
+/**
+ * Update metadata for an existing strain.
+ */
+async function updateStrainMeta(data) {
+    await callService('growspace_manager', 'update_strain_meta', _buildStrainPayload(data));
+}
+/**
+ * Trigger a server-side export of the strain library.
+ */
+async function exportStrainLibrary$1() {
+    await callService('growspace_manager', 'export_strain_library', {});
+}
+/**
+ * Import a strain library from a JSON file via REST.
+ *
+ * @param file    - The JSON file to upload
+ * @param replace - Whether to replace the existing library (true) or merge (false)
+ */
+async function importStrainLibrary(file, replace) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('replace', replace.toString());
+    const response = await callFetch('/api/growspace_manager/import_strains', {
+        method: 'POST',
+        body: formData,
+    });
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || response.statusText);
+    }
+    const result = await response.json();
+    if (!result.success) {
+        throw new Error(result.error ?? 'Unknown import error');
+    }
+    return result;
+}
+/**
+ * Clear the entire strain library.
+ */
+async function clearStrainLibrary() {
+    await callService('growspace_manager', 'clear_strain_library', {});
+}
+/**
+ * Rename or update a breeder entry.
+ */
+async function updateBreeder$1(oldName, newName, logo) {
+    await hassCall('growspace_manager/update_breeder', {
+        original_name: oldName,
+        new_name: newName,
+        ...(logo !== undefined ? { logo } : {}),
+    }, unknownType());
+}
+/**
+ * Delete a breeder and disassociate it from strains.
+ */
+async function deleteBreeder$1(name) {
+    await hassCall('growspace_manager/delete_breeder', { breeder_name: name }, unknownType());
 }
 
 class VisionAPI extends BaseAPI {
@@ -7591,17 +7547,16 @@ class DataService {
         this.removeEnvironment = (growspaceId) => this._growspaceAPI.removeEnvironment(growspaceId);
         this.resetWaterTracking = (growspaceId) => this._growspaceAPI.resetWaterTracking(growspaceId);
         this.updateSensorCoordinates = (growspaceId, entityId, x, y, z, rotation) => this._growspaceAPI.updateSensorCoordinates(growspaceId, entityId, x, y, z, rotation);
-        // ── Strain ───────────────────────────────────────────────────────────────
-        this.getStrainLibrary = () => this._strainAPI.getStrainLibrary();
-        this.fetchStrainLibrary = () => this._strainAPI.fetchStrainLibrary();
-        this.addStrain = (data) => this._strainAPI.addStrain(data);
-        this.updateStrainMeta = (data) => this._strainAPI.updateStrainMeta(data);
-        this.removeStrain = (strain, phenotype) => this._strainAPI.removeStrain(strain, phenotype);
-        this.exportStrainLibrary = () => this._strainAPI.exportStrainLibrary();
-        this.importStrainLibrary = (file, replace) => this._strainAPI.importStrainLibrary(file, replace);
-        this.clearStrainLibrary = () => this._strainAPI.clearStrainLibrary();
-        this.updateBreeder = (oldName, newName, logo) => this._strainAPI.updateBreeder(oldName, newName, logo);
-        this.deleteBreeder = (name) => this._strainAPI.deleteBreeder(name);
+        // ── Strain (delegated to slices/strain) ──────────────────────────────────
+        this.fetchStrainLibrary = () => fetchStrainLibrary$1();
+        this.addStrain = (data) => addStrain$1(data);
+        this.updateStrainMeta = (data) => updateStrainMeta(data);
+        this.removeStrain = (strain, phenotype) => removeStrain$1(phenotype ? `${strain}|${phenotype}` : `${strain}|default`);
+        this.exportStrainLibrary = () => exportStrainLibrary$1();
+        this.importStrainLibrary = (file, replace) => importStrainLibrary(file, replace);
+        this.clearStrainLibrary = () => clearStrainLibrary();
+        this.updateBreeder = (oldName, newName, logo) => updateBreeder$1(oldName, newName, logo);
+        this.deleteBreeder = (name) => deleteBreeder$1(name);
         this.importStrainLineageTree = (strain_name, tree) => this._geneticsAPI.importStrainLineageTree(strain_name, tree);
         // ── Nutrient ─────────────────────────────────────────────────────────────
         this.fetchNutrientPresets = () => this._nutrientAPI.fetchNutrientPresets();
@@ -7680,7 +7635,6 @@ class DataService {
         this.getStrainLineageTree = (strain_name) => this._geneticsAPI.getStrainLineageTree(strain_name);
         this.updateStrainLineageTree = (...args) => this._geneticsAPI.updateStrainLineageTree(...args);
         this._growspaceAPI = new GrowspaceAPI(hass);
-        this._strainAPI = new StrainAPI(hass);
         this._nutrientAPI = new NutrientAPI(hass);
         this._historyAPI = new HistoryAPI(hass);
         this._plantAPI = new PlantAPI(hass);
@@ -7698,7 +7652,6 @@ class DataService {
         this.hass = hass;
         [
             this._growspaceAPI,
-            this._strainAPI,
             this._nutrientAPI,
             this._historyAPI,
             this._plantAPI,
@@ -9653,14 +9606,28 @@ GrowspaceEnvChart = __decorate([
  *
  * Replaces undo-redo-manager.ts + sync-service.ts for migrated mutators.
  * Each slice builds its domain mutators on top of this primitive.
+ *
+ * The undo stack is scoped per growspace so that undoing on Tent B cannot
+ * silently roll back an action taken on Tent A.
  */
-const _undoStack = [];
+const _undoStack = new Map();
 const MAX_UNDO = 10;
+function _stackFor(growspaceId) {
+    let stack = _undoStack.get(growspaceId);
+    if (!stack) {
+        stack = [];
+        _undoStack.set(growspaceId, stack);
+    }
+    return stack;
+}
 /**
  * Execute an action: optimistic → apply → record undo.
  * On apply failure: run inverse (rollback) and re-throw.
+ *
+ * @param growspaceId  The growspace this action belongs to. Undo entries
+ *                     never cross growspace boundaries.
  */
-async function mutate(action) {
+async function mutate(action, growspaceId) {
     action.optimistic();
     try {
         await action.apply();
@@ -9669,9 +9636,10 @@ async function mutate(action) {
         action.inverse();
         throw err;
     }
-    _undoStack.push({ type: action.type, inverse: action.inverse });
-    if (_undoStack.length > MAX_UNDO) {
-        _undoStack.shift();
+    const stack = _stackFor(growspaceId);
+    stack.push({ type: action.type, inverse: action.inverse });
+    if (stack.length > MAX_UNDO) {
+        stack.shift();
     }
 }
 
@@ -9764,27 +9732,6 @@ function setDevices(devices) {
 function setSelectedDeviceId(id) {
     selectedDeviceId$.set(id);
 }
-// ---------------------------------------------------------------------------
-// Sibling setters — called by Plant slice during cross-slice mutations
-// ---------------------------------------------------------------------------
-/**
- * Optimistically hide a plant from the grid.
- * Call this from Plant slice mutators (deletePlant, movePlantToGrowspace) before
- * the backend confirms the change so the cell clears immediately.
- */
-function addOptimisticDeletedPlantId(plantId) {
-    const ids = new Set(optimisticDeletedPlantIds$.get());
-    ids.add(plantId);
-    optimisticDeletedPlantIds$.set(ids);
-}
-/**
- * Restore a plant to the grid (called from the mutation's `inverse` on failure).
- */
-function removeOptimisticDeletedPlantId(plantId) {
-    const ids = new Set(optimisticDeletedPlantIds$.get());
-    ids.delete(plantId);
-    optimisticDeletedPlantIds$.set(ids);
-}
 /**
  * Clear all optimistic deletes.  Called by GrowspaceStore._pruneOptimisticDeletions
  * after SyncService confirms the backend state.
@@ -9844,30 +9791,19 @@ const plants$ = atom([]);
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
+/** Resolve the growspace_id for a plant by its plant_id from plants$. Returns '' if not found. */
+function _growspaceIdFor(plantId) {
+    const plant = plants$
+        .get()
+        .find((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === plantId);
+    return plant?.attributes.growspace_id ?? '';
+}
 /** Replace a single plant in plants$ by plant_id, merging attribute updates. */
 function _patchPlant(id, updates) {
     return plants$.get().map((p) => {
         if ((p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== id)
             return p;
         return { ...p, attributes: { ...p.attributes, ...updates } };
-    });
-}
-/** Swap the row/col of two plants in plants$ by their IDs. */
-function _swapPositions(id1, id2) {
-    const current = plants$.get();
-    const p1 = current.find((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === id1);
-    const p2 = current.find((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === id2);
-    if (!p1 || !p2)
-        return current;
-    const [r1, c1] = [p1.attributes.row, p1.attributes.col];
-    const [r2, c2] = [p2.attributes.row, p2.attributes.col];
-    return current.map((p) => {
-        const pid = p.attributes.plant_id ?? p.entity_id.replace('sensor.', '');
-        if (pid === id1)
-            return { ...p, attributes: { ...p.attributes, row: r2, col: c2 } };
-        if (pid === id2)
-            return { ...p, attributes: { ...p.attributes, row: r1, col: c1 } };
-        return p;
     });
 }
 // ---------------------------------------------------------------------------
@@ -9896,39 +9832,7 @@ async function waterPlant$1(plantId, amountMl, nutrients, presetId) {
         optimistic: () => { },
         inverse: () => { },
         apply: () => callService('growspace_manager', 'water_plant', payload),
-    });
-}
-/**
- * Add a single plant to a growspace.
- *
- * Optimistic: none (no ID assigned until backend responds).
- * Apply: calls growspace_manager.add_plant.
- * Inverse: no-op.
- */
-async function addPlant(params) {
-    const payload = { ...params };
-    await mutate({
-        type: 'addPlant',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'add_plant', payload),
-    });
-}
-/**
- * Batch-add plants to a growspace.
- *
- * Optimistic: none.
- * Apply: calls growspace_manager.add_plants.
- * Inverse: no-op.
- */
-async function addPlants(params) {
-    const payload = { ...params };
-    await mutate({
-        type: 'addPlants',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'add_plants', payload),
-    });
+    }, _growspaceIdFor(plantId));
 }
 /**
  * Update attributes on a plant.
@@ -9937,7 +9841,7 @@ async function addPlants(params) {
  * Apply: calls growspace_manager.update_plant.
  * Inverse: restores the original plant in plants$.
  */
-async function updatePlant(plantId, updates) {
+async function updatePlant$1(plantId, updates) {
     const originalList = plants$.get();
     const patched = _patchPlant(plantId, updates);
     await mutate({
@@ -9945,258 +9849,7 @@ async function updatePlant(plantId, updates) {
         optimistic: () => plants$.set(patched),
         inverse: () => plants$.set(originalList),
         apply: () => callService('growspace_manager', 'update_plant', { plant_id: plantId, ...updates }),
-    });
-}
-/**
- * Remove a plant from its growspace.
- *
- * Optimistic: removes the plant from plants$ immediately; adds to Grid slice's
- *   optimisticDeletedPlantIds so the cell clears in the grid layout.
- * Apply: calls growspace_manager.remove_plant.
- * Inverse: restores the plant to plants$ and removes from optimistic deletes.
- */
-async function deletePlant(plantId) {
-    const originalList = plants$.get();
-    const filtered = originalList.filter((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== plantId);
-    await mutate({
-        type: 'deletePlant',
-        optimistic: () => {
-            plants$.set(filtered);
-            addOptimisticDeletedPlantId(plantId);
-        },
-        inverse: () => {
-            plants$.set(originalList);
-            removeOptimisticDeletedPlantId(plantId);
-        },
-        apply: () => callService('growspace_manager', 'remove_plant', { plant_id: plantId }),
-    });
-}
-/**
- * Move a plant to its next harvest stage (flower→dry, dry→cure, etc.).
- *
- * Optimistic: none (backend decides the new stage/location).
- * Apply: calls growspace_manager.harvest_plant.
- * Inverse: no-op.
- *
- * TODO(slice-logbook): record a harvest event in the Logbook slice.
- */
-async function harvestPlant(plantId, targetGrowspaceId, metrics) {
-    const payload = {
-        plant_id: plantId,
-        target_growspace_id: targetGrowspaceId,
-    };
-    if (metrics) {
-        if (metrics.wet_weight != null)
-            payload.wet_weight = metrics.wet_weight;
-        if (metrics.dry_weight != null)
-            payload.dry_weight = metrics.dry_weight;
-        if (metrics.trim_weight != null)
-            payload.trim_weight = metrics.trim_weight;
-        if (metrics.thc_percentage != null)
-            payload.thc_percentage = metrics.thc_percentage;
-        if (metrics.cbd_percentage != null)
-            payload.cbd_percentage = metrics.cbd_percentage;
-        if (metrics.terpene_profile)
-            payload.terpene_profile = metrics.terpene_profile;
-    }
-    await mutate({
-        type: 'harvestPlant',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'harvest_plant', payload),
-    });
-}
-/**
- * Move or transplant a plant to a specific growspace.
- *
- * Uses move_clone for clone-stage plants; move_plant for all others.
- *
- * Optimistic: adds plant to Grid slice's optimisticDeletedPlantIds to clear its source cell.
- * Apply: calls growspace_manager.move_clone or move_plant.
- * Inverse: removes from optimistic deletes to restore the source cell.
- */
-async function movePlantToGrowspace(plant, targetGrowspaceId, transitionDate) {
-    const plantId = plant.attributes.plant_id ?? plant.entity_id.replace('sensor.', '');
-    const isClone = plant.attributes.stage === 'clone';
-    const service = isClone ? 'move_clone' : 'move_plant';
-    const payload = {
-        plant_id: plantId,
-        target_growspace_id: targetGrowspaceId,
-    };
-    await mutate({
-        type: 'movePlantToGrowspace',
-        optimistic: () => {
-            addOptimisticDeletedPlantId(plantId);
-        },
-        inverse: () => {
-            removeOptimisticDeletedPlantId(plantId);
-        },
-        apply: () => callService('growspace_manager', service, payload),
-    });
-}
-/**
- * Swap the grid positions of two plants.
- *
- * Optimistic: swaps row/col for both plants in plants$.
- * Apply: calls growspace_manager.switch_plants.
- * Inverse: swaps back on failure.
- *
- * The Grid slice's gridLayout$ is derived from devices$ which updates on the next
- * SyncService refresh; plants$ carries the optimistic swap for immediate render.
- */
-async function swapPlants(plantId1, plantId2) {
-    const originalList = plants$.get();
-    const swapped = _swapPositions(plantId1, plantId2);
-    await mutate({
-        type: 'swapPlants',
-        optimistic: () => plants$.set(swapped),
-        inverse: () => plants$.set(originalList),
-        apply: () => callService('growspace_manager', 'switch_plants', {
-            plant1_id: plantId1,
-            plant2_id: plantId2,
-        }),
-    });
-}
-/**
- * Take clones from a mother plant.
- *
- * Optimistic: none.
- * Apply: calls growspace_manager.take_clone.
- * Inverse: no-op.
- */
-async function takeClone(motherPlant, numClones, targetGrowspaceId) {
-    const plantId = motherPlant.attributes.plant_id ?? motherPlant.entity_id.replace('sensor.', '');
-    const payload = { mother_plant_id: plantId };
-    if (numClones !== undefined)
-        payload.num_clones = numClones;
-    if (targetGrowspaceId)
-        payload.target_growspace_id = targetGrowspaceId;
-    await mutate({
-        type: 'takeClone',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'take_clone', payload),
-    });
-}
-/**
- * Print a label for a plant or strain (fire-and-forget, no undo).
- *
- * Not wrapped in mutate — label printing is a side-effect-only operation.
- */
-async function printLabel(params) {
-    const payload = {};
-    if (params.plantId !== undefined)
-        payload.plant_id = params.plantId;
-    if (params.strain !== undefined)
-        payload.strain = params.strain;
-    if (params.phenotype !== undefined)
-        payload.phenotype = params.phenotype;
-    if (params.breeder !== undefined)
-        payload.breeder = params.breeder;
-    if (params.lineage !== undefined)
-        payload.lineage = params.lineage;
-    if (params.breederLogo !== undefined)
-        payload.breeder_logo = params.breederLogo;
-    if (params.deviceId !== undefined)
-        payload.device_id = params.deviceId;
-    if (params.preview !== undefined)
-        payload.preview = params.preview;
-    await callService('growspace_manager', 'print_label', payload);
-}
-/**
- * Persist harvest yield metrics on a harvested plant.
- *
- * No-ops silently when the metrics object has no keys.
- * Optimistic: none.
- * Apply: calls growspace_manager.update_harvest_metrics.
- * Inverse: no-op.
- */
-async function saveHarvestMetrics(plantId, metrics) {
-    if (Object.keys(metrics).length === 0)
-        return;
-    await mutate({
-        type: 'saveHarvestMetrics',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'update_harvest_metrics', {
-            plant_id: plantId,
-            ...metrics,
-        }),
-    });
-}
-/**
- * Score phenotype traits on a plant.
- *
- * No-ops silently when every value in the scores map is null or undefined.
- * Optimistic: none.
- * Apply: calls growspace_manager.score_plant.
- * Inverse: no-op.
- */
-async function scorePlant(plantId, scores) {
-    const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
-    if (!hasValue)
-        return;
-    const payload = { plant_id: plantId, ...scores };
-    await mutate({
-        type: 'scorePlant',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'score_plant', payload),
-    });
-}
-/**
- * Log a drying weight reading for a plant.
- *
- * Optimistic: none.
- * Apply: calls growspace_manager.log_drying_weight.
- * Inverse: no-op.
- */
-async function logDryingWeight(plantId, weightGrams, date) {
-    const payload = { plant_id: plantId, weight_grams: weightGrams };
-    if (date)
-        payload.date = date;
-    await mutate({
-        type: 'logDryingWeight',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'log_drying_weight', payload),
-    });
-}
-/**
- * Log a substrate moisture reading for a plant.
- *
- * Optimistic: none.
- * Apply: calls growspace_manager.log_moisture_reading.
- * Inverse: no-op.
- */
-async function logMoistureReading(plantId, moisturePercent, date) {
-    const payload = { plant_id: plantId, moisture_percent: moisturePercent };
-    if (date)
-        payload.date = date;
-    await mutate({
-        type: 'logMoistureReading',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'log_moisture_reading', payload),
-    });
-}
-/**
- * Attach or clear a visual tag on a plant.
- *
- * Optimistic: none.
- * Apply: calls growspace_manager.set_visual_tag.
- * Inverse: no-op.
- */
-async function setVisualTag(plantId, visualTag) {
-    await mutate({
-        type: 'setVisualTag',
-        optimistic: () => { },
-        inverse: () => { },
-        apply: () => callService('growspace_manager', 'set_visual_tag', {
-            plant_id: plantId,
-            visual_tag: visualTag,
-        }),
-    });
+    }, _growspaceIdFor(plantId));
 }
 
 var lib = {};
@@ -11783,6 +11436,8 @@ async function deleteEvent(eventId) {
     const originalGrowspace = growspaceEvents$.get();
     const originalPlant = plantEvents$.get();
     const filtered = (entries) => entries.filter((e) => e.event_id !== eventId);
+    const growspaceId = [...originalGrowspace, ...originalPlant].find((e) => e.event_id === eventId)
+        ?.growspace_id ?? '';
     await mutate({
         type: 'deleteEvent',
         optimistic: () => {
@@ -11794,7 +11449,7 @@ async function deleteEvent(eventId) {
             plantEvents$.set(originalPlant);
         },
         apply: () => hassCall('growspace_manager/remove_timeline_event', { event_id: eventId }, DeleteEventResponseSchema).then(() => undefined),
-    });
+    }, growspaceId);
 }
 
 /**
@@ -15809,6 +15464,19 @@ SensorGroupDialog = __decorate([
  * `services/api/subarea-api.ts` and `services/types.ts`.
  */
 // ---------------------------------------------------------------------------
+// SensorGroup
+// ---------------------------------------------------------------------------
+const SensorGroupSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    x: numberType(),
+    y: numberType(),
+    z: numberType(),
+    temperature_sensors: arrayType(stringType()),
+    humidity_sensors: arrayType(stringType()),
+    vpd_sensors: arrayType(stringType()),
+});
+// ---------------------------------------------------------------------------
 // EnvironmentConfig
 // ---------------------------------------------------------------------------
 const EnvironmentConfigSchema = objectType({
@@ -15829,7 +15497,7 @@ const EnvironmentConfigSchema = objectType({
     dehumidifier_entities: arrayType(stringType()).optional(),
     sensor_coordinates: recordType(objectType({ x: numberType(), y: numberType(), z: numberType(), rotation: numberType().optional() }))
         .optional(),
-    sensor_groups: arrayType(unknownType()).optional(),
+    sensor_groups: arrayType(SensorGroupSchema).optional(),
     substrate_temperature_sensors: arrayType(stringType()).optional(),
     camera_entities: arrayType(stringType()).optional(),
     lung_room_temp_sensors: arrayType(stringType()).optional(),
@@ -15939,7 +15607,7 @@ async function updateSubarea(growspaceId, subareaId, environmentConfig) {
         optimistic: () => subareas$.set(patched),
         inverse: () => subareas$.set(originalList),
         apply: () => hassCall('growspace_manager/update_subarea', { growspace_id: growspaceId, subarea_id: subareaId, environment_config: environmentConfig }, SubareaResponseSchema).then(() => undefined),
-    });
+    }, growspaceId);
 }
 /**
  * Remove a subarea from a growspace.
@@ -15959,7 +15627,7 @@ async function removeSubarea(growspaceId, subareaId) {
         optimistic: () => subareas$.set(filtered),
         inverse: () => subareas$.set(originalList),
         apply: () => hassCall('growspace_manager/remove_subarea', { growspace_id: growspaceId, subarea_id: subareaId }, RemoveSubareaResponseSchema).then(() => undefined),
-    });
+    }, growspaceId);
 }
 
 let SubareaConfigDialog = class SubareaConfigDialog extends i$3 {
@@ -112989,6 +112657,7 @@ async function fetchStrainLibrary(ctx, force = false) {
             const age = Date.now() - (cache.timestamp || 0);
             if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
                 ctx.data.setStrainLibrary(cache.data);
+                setStrainLibrary(cache.data);
                 usedCache = true;
             }
         }
@@ -112999,7 +112668,7 @@ async function fetchStrainLibrary(ctx, force = false) {
     }
     if (!usedCache) {
         try {
-            const currentStrains = await ctx.dataService.fetchStrainLibrary();
+            const currentStrains = await fetchStrainLibrary$1();
             if (Array.isArray(currentStrains)) {
                 ctx.data.setStrainLibrary(currentStrains);
                 const cacheData = {
@@ -113230,6 +112899,512 @@ async function removeIPMPreset(ctx, presetId) {
 }
 
 /**
+ * Plant Actions - Unified business logic for plant operations.
+ */
+/**
+ * Update a single plant with new attributes.
+ */
+async function updatePlant(ctx, plantId, updates) {
+    await withAction(ctx, () => ctx.dataService.updatePlant({ plant_id: plantId, ...updates }), {
+        success: 'Plant updated',
+        errorPrefix: 'Failed to update plant',
+    });
+}
+/**
+ * Bulk update plants from dialog state.
+ */
+async function updatePlantFromDialog(ctx, dialogState) {
+    const { plant, editedAttributes, selectedPlantIds } = dialogState;
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+    const isBulkEdit = targetIds.length > 1;
+    const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
+    await withAction(ctx, async () => {
+        await Promise.all(targetIds.map((id) => ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id })));
+        ctx.closeDialog();
+        await ctx.refreshData();
+        if (ctx.ui.$isEditMode.get()) {
+            ctx.ui.clearPlantSelection();
+            ctx.ui.setEditMode(false);
+        }
+    }, { errorPrefix: 'Failed to update plant(s)' });
+}
+/**
+ * Internal helper for API deletion with optimistic updates
+ */
+async function _deletePlantsApi(ctx, plantIds) {
+    plantIds.forEach((id) => ctx.data.addOptimisticDeletedPlantId(id));
+    try {
+        await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
+        return true;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Failed to delete plant:', e);
+        ctx.ui.showToast(`Failed to delete: ${error}`, 'error');
+        plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
+        return false;
+    }
+}
+/**
+ * High-level delete action with Undo/Redo
+ */
+async function handleDeletePlant(ctx, plantId) {
+    const ids = Array.isArray(plantId) ? plantId : [plantId];
+    const plantsToRestore = [];
+    const devices = ctx.data.$devices.get();
+    ids.forEach((id) => {
+        for (const device of devices) {
+            const plant = device.plants?.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
+            if (plant) {
+                plantsToRestore.push({
+                    growspace_id: plant.attributes.growspace_id || device.deviceId,
+                    row: plant.attributes.row,
+                    col: plant.attributes.col,
+                    strain: plant.attributes.strain,
+                    phenotype: plant.attributes.phenotype,
+                    veg_start: plant.attributes.veg_start,
+                    flower_start: plant.attributes.flower_start,
+                    mother_start: plant.attributes.mother_start,
+                    clone_start: plant.attributes.clone_start,
+                    seedling_start: plant.attributes.seedling_start,
+                    dry_start: plant.attributes.dry_start,
+                    cure_start: plant.attributes.cure_start,
+                });
+                break;
+            }
+        }
+    });
+    const success = await _deletePlantsApi(ctx, ids);
+    if (success) {
+        ctx.undoRedoManager.pushAction({
+            type: ids.length > 1 ? 'batch-delete' : 'delete',
+            description: ids.length > 1
+                ? `Deleted ${ids.length} plants`
+                : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+            reverse: async () => {
+                for (const p of plantsToRestore) {
+                    // plantsToRestore contains required fields from the original plant - assert to API type
+                    await ctx.dataService.addPlant(p);
+                }
+                await ctx.refreshData();
+            },
+            redo: async () => {
+                await handleDeletePlant(ctx, ids);
+            },
+        });
+        // UI Updates
+        // Note: deselectPlants logic needs to be checked. UI store has toggle but not explicit deselect multiple?
+        // ctx.ui.deselectPlants(ids) was in the original code, implying ui store has it.
+        // Assuming ctx.ui has a method to deselect.
+        // If not, we iterate.
+        // Checking ui-store.ts would confirm, assuming it has specific method.
+        // We'll trust the original code's intent or use remove.
+        ctx.ui.deselectPlants(ids);
+        if (ctx.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
+            ctx.closeDialog();
+        }
+        ctx.refreshData(); // updateGrid equivalent
+    }
+}
+/**
+ * Move plant to next stage (flower→dry, dry→cure, mother→clone).
+ */
+async function movePlantToNextStage(ctx, plant, metrics) {
+    const stage = plant.attributes?.stage;
+    let targetGrowspace = '';
+    const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
+    if (!stage || !movableStages.has(stage)) {
+        ctx.ui.showToast('Plant must be in mother or flower or dry or cure stage to move. stage is ' + stage, 'error');
+        return false;
+    }
+    if (stage === 'flower') {
+        targetGrowspace = 'dry';
+    }
+    else if (stage === 'dry') {
+        targetGrowspace = 'cure';
+    }
+    else if (stage === 'mother') {
+        targetGrowspace = 'clone';
+    }
+    else {
+        console.error('Unknown stage, cannot move plant', targetGrowspace);
+        return false;
+    }
+    const ok = await withAction(ctx, async () => {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        await ctx.dataService.harvestPlant(plantId, targetGrowspace, ...(metrics ? [metrics] : []));
+        // Small delay to allow backend commit to complete before fetching updated data
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await ctx.refreshData();
+        ctx.closeDialog();
+        return true;
+    }, { success: `Plant moved to ${targetGrowspace}`, errorPrefix: 'Failed to move plant' });
+    return ok !== undefined;
+}
+/**
+ * Internal API move clone wrapper
+ */
+async function _movePlantApi(ctx, plant, targetGrowspaceId) {
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    if (plant.attributes.stage === 'clone') {
+        await ctx.dataService.moveClone(plantId, targetGrowspaceId);
+    }
+    else {
+        // Note: historically this integration used harvestPlant for general room moves
+        await ctx.dataService.harvestPlant(plantId, targetGrowspaceId);
+    }
+}
+/**
+ * Move plant to a specific growspace with Undo/Redo.
+ */
+async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
+    const originalGrowspace = plant.attributes.growspace_id || 'unknown';
+    const ok = await withAction(ctx, async () => {
+        await _movePlantApi(ctx, plant, targetGrowspace);
+        // Small delay to allow backend commit to complete before fetching updated data
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        await ctx.refreshData();
+        ctx.closeDialog();
+        ctx.undoRedoManager.pushAction({
+            type: 'move',
+            description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
+            reverse: async () => {
+                await movePlantToGrowspace(ctx, plant, originalGrowspace);
+            },
+            redo: async () => {
+                await movePlantToGrowspace(ctx, plant, targetGrowspace);
+            },
+        });
+        return true;
+    }, { errorPrefix: 'Failed to move plant' });
+    return ok !== undefined;
+}
+/**
+ * Take clones from a mother plant.
+ */
+async function takeClone(ctx, motherPlant, numClones, targetGrowspaceId) {
+    const plantId = motherPlant.attributes?.plant_id || motherPlant.entity_id.replace('sensor.', '');
+    const cloneCount = numClones || 1;
+    const ok = await withAction(ctx, async () => {
+        await ctx.dataService.takeClone({
+            mother_plant_id: plantId,
+            num_clones: numClones,
+            target_growspace_id: targetGrowspaceId,
+        });
+        return true;
+    }, {
+        success: `Taking ${cloneCount} clone${cloneCount > 1 ? 's' : ''}...`,
+        errorPrefix: 'Failed to take clone',
+    });
+    return ok !== undefined;
+}
+/**
+ * Move plant to new grid position (Internal)
+ */
+async function movePlantPosition(ctx, plant, newRow, newCol) {
+    try {
+        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+        await ctx.dataService.updatePlant({
+            plant_id: plantId,
+            row: newRow,
+            col: newCol,
+        });
+        return true;
+    }
+    catch (err) {
+        console.error('Error moving plant:', err);
+        return false;
+    }
+}
+/**
+ * Handle drag and drop between grid cells with Undo/Redo
+ */
+async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant) {
+    if (!sourcePlant || !sourcePlant.attributes)
+        return false;
+    const originalRow = sourcePlant.attributes.row;
+    const originalCol = sourcePlant.attributes.col;
+    const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+    const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
+    console.log('handlePlantDrop:', {
+        sourceId,
+        targetId,
+        growspaceId: sourcePlant.attributes.growspace_id,
+    });
+    if (sourceId === targetId)
+        return false;
+    const growspaceId = sourcePlant.attributes.growspace_id;
+    if (!growspaceId)
+        return false;
+    // Helper to perform optimistic grid update
+    const performOptimisticGridUpdate = (isRevert = false) => {
+        // growspaceId is guaranteed truthy by closure capture from outer scope check
+        const updateGridLogic = (grid) => {
+            let sourceKey = null;
+            let targetKey = null;
+            Object.entries(grid).forEach(([key, plant]) => {
+                if (!plant)
+                    return;
+                const pId = plant.plant_id || plant.entity_id.replace('sensor.', '');
+                if (pId === sourceId)
+                    sourceKey = key;
+                if (targetId && pId === targetId)
+                    targetKey = key;
+            });
+            if (sourceKey && targetKey) {
+                const sData = grid[sourceKey];
+                const tData = grid[targetKey];
+                const newSourceRow = isRevert ? originalRow : targetRow;
+                const newSourceCol = isRevert ? originalCol : targetCol;
+                const newTargetRow = isRevert ? targetRow : originalRow;
+                const newTargetCol = isRevert ? targetCol : originalCol;
+                // sData and tData are guaranteed to exist because sourceKey and targetKey came from the grid iteration
+                sData.row = newSourceRow;
+                sData.col = newSourceCol;
+                tData.row = newTargetRow;
+                tData.col = newTargetCol;
+                grid[sourceKey] = tData;
+                grid[targetKey] = sData;
+            }
+        };
+        // 1. Update Cache
+        ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
+        // 2. Update Devices Atom (for immediate UI Reactivity)
+        const devices = ctx.data.$devices.get();
+        const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
+        if (deviceIdx >= 0) {
+            const newDevices = [...devices];
+            const device = { ...newDevices[deviceIdx] };
+            const newGrid = { ...device.grid };
+            updateGridLogic(newGrid);
+            device.grid = newGrid;
+            newDevices[deviceIdx] = device;
+            ctx.data.$devices.set(newDevices);
+        }
+    };
+    try {
+        if (targetPlant && growspaceId) {
+            // Use OptimisticManager
+            const actionId = await ctx.optimisticManager.applyOptimisticUpdate('swap', {
+                sourceId,
+                targetId: targetId,
+                growspaceId,
+                originalRow,
+                originalCol,
+                targetRow,
+                targetCol,
+            }, () => performOptimisticGridUpdate(false), // Apply
+            () => performOptimisticGridUpdate(true) // Revert
+            );
+            // Perform actual API call
+            await ctx.dataService.swapPlants(sourceId, targetId);
+            // Confirm update and add to history
+            ctx.optimisticManager.confirmUpdate(actionId, {
+                description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
+                redo: async () => {
+                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
+                },
+            });
+            return true;
+        }
+        else {
+            // Non-swap move (to empty) - keep existing logic for now or refactor later
+            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
+            ctx.undoRedoManager.pushAction({
+                type: 'move',
+                description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+                reverse: async () => {
+                    await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+                    await ctx.refreshData();
+                },
+                redo: async () => {
+                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
+                },
+            });
+            await ctx.refreshData();
+            return true;
+        }
+    }
+    catch (err) {
+        console.error('Error during drag-and-drop:', err);
+        ctx.refreshData();
+        return false;
+    }
+}
+/**
+ * Add a new plant to a growspace.
+ */
+async function confirmAddPlant(ctx, detail) {
+    const selectedDevice = ctx.grid.$selectedDevice.get();
+    if (!selectedDevice) {
+        ctx.ui.showToast('No growspace selected', 'error');
+        return false;
+    }
+    const ok = await withAction(ctx, async () => {
+        if (detail.addToLibrary) {
+            try {
+                await ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
+                await fetchStrainLibrary(ctx, true);
+                ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+            }
+            catch (e) {
+                console.error('Failed to add strain to library:', e);
+                ctx.ui.showToast(`Failed to add strain to library, conducting plant addition`, 'info');
+            }
+        }
+        await ctx.dataService.addPlant({
+            growspace_id: selectedDevice,
+            row: detail.row,
+            col: detail.col,
+            strain: detail.strain,
+            phenotype: detail.phenotype,
+            veg_start: detail.veg_start,
+            flower_start: detail.flower_start,
+            seedling_start: detail.seedling_start,
+            mother_start: detail.mother_start,
+            clone_start: detail.clone_start,
+            dry_start: detail.dry_start,
+            cure_start: detail.cure_start,
+        });
+        ctx.closeDialog();
+        await ctx.refreshData();
+        return true;
+    }, { success: 'Plant added successfully', errorPrefix: 'Failed to add plant' });
+    return ok !== undefined;
+}
+/**
+ * Batch add plants with Undo/Redo
+ */
+async function confirmAddPlants(ctx, detail) {
+    const selectedDevice = ctx.grid.$selectedDevice.get();
+    if (!selectedDevice) {
+        ctx.ui.showToast('No growspace selected', 'error');
+        return;
+    }
+    const devices = ctx.data.$devices.get();
+    const beforeIds = new Set();
+    devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
+    await withAction(ctx, async () => {
+        if (detail.addToLibrary) {
+            try {
+                const amount = detail.amount || 1;
+                const startNumber = detail.start_number || 1;
+                const promises = [];
+                for (let i = 0; i < amount; i++) {
+                    const currentNumber = startNumber + i;
+                    const phenoName = detail.phenotype
+                        ? `${detail.phenotype} #${currentNumber}`
+                        : `Strain #${currentNumber}`;
+                    if (detail.strain) {
+                        promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
+                    }
+                }
+                await Promise.all(promises);
+                await fetchStrainLibrary(ctx, true);
+                ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
+            }
+            catch (e) {
+                console.error('Failed to add strains to library:', e);
+                ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
+            }
+        }
+        const { addToLibrary: _, ...apiPayload } = detail;
+        await ctx.dataService.addPlants({
+            ...apiPayload,
+            growspace_id: selectedDevice,
+        });
+        await ctx.refreshData();
+        const afterDevices = ctx.data.$devices.get();
+        const addedIds = [];
+        afterDevices.forEach((d) => d.plants?.forEach((p) => {
+            const id = p.attributes.plant_id || '';
+            if (id && !beforeIds.has(id))
+                addedIds.push(id);
+        }));
+        if (addedIds.length > 0) {
+            ctx.undoRedoManager.pushAction({
+                type: 'batch-delete',
+                description: `Added ${addedIds.length} plants`,
+                reverse: async () => {
+                    await _deletePlantsApi(ctx, addedIds);
+                    await ctx.refreshData();
+                },
+                redo: async () => {
+                    await confirmAddPlants(ctx, detail);
+                },
+            });
+        }
+        ctx.closeDialog();
+    }, { success: 'Batch plants added successfully', errorPrefix: 'Failed to add plants' });
+}
+/**
+ * Print a label for a plant or strain.
+ */
+async function printLabel(ctx, params) {
+    const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
+    const baseUrl = window.location.origin + window.location.pathname;
+    try {
+        const result = await ctx.dataService.printLabel({
+            plant_id: plantId,
+            strain,
+            phenotype,
+            breeder,
+            lineage,
+            breeder_logo: breederLogo,
+            device_id: deviceId,
+            preview,
+            base_url: baseUrl,
+        });
+        if (!preview) {
+            ctx.ui.showToast('Label printing command sent', 'success');
+        }
+        return result;
+    }
+    catch (e) {
+        const error = e instanceof Error ? e.message : 'Unknown error';
+        console.error('Failed to print label:', e);
+        ctx.ui.showToast(`Failed to print label: ${error}`, 'error');
+        throw e;
+    }
+}
+/**
+ * Save harvest yield metrics for a plant.
+ * No-ops if the metrics object has no keys (nothing to persist).
+ */
+async function saveHarvestMetrics(ctx, plantId, metrics) {
+    if (Object.keys(metrics).length === 0)
+        return;
+    try {
+        await ctx.dataService.updateHarvestMetrics({ plant_id: plantId, ...metrics });
+        ctx.ui.showToast('Harvest metrics saved', 'success');
+        await ctx.refreshData(true);
+    }
+    catch (error) {
+        ctx.ui.showToast(`Failed to save harvest metrics: ${error}`, 'error');
+        throw error;
+    }
+}
+/**
+ * Score a plant's phenotype traits.
+ * No-ops if every value in the scores map is null or undefined.
+ */
+async function scorePhenotype(ctx, plantId, scores) {
+    const hasValue = Object.values(scores).some((v) => v !== null && v !== undefined);
+    if (!hasValue)
+        return;
+    try {
+        await ctx.dataService.scorePlant({ plant_id: plantId, ...scores });
+        ctx.ui.showToast('Scores saved', 'success');
+        await ctx.refreshData(true);
+    }
+    catch (error) {
+        ctx.ui.showToast(`Failed to save scores: ${error}`, 'error');
+        throw error;
+    }
+}
+
+/**
  * Strain & Growspace Actions - Unified CRUD logic.
  */
 /**
@@ -113265,8 +113440,7 @@ async function addStrain(ctx, strainData) {
     if (!strainData.strain)
         return false;
     const ok = await withAction(ctx, async () => {
-        const payload = _createStrainPayload(strainData);
-        await ctx.dataService.addStrain(payload);
+        await addStrain$1(_createStrainPayload(strainData));
         const tree = strainData.parents;
         if (tree?.parents?.length) {
             await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
@@ -113283,8 +113457,7 @@ async function updateStrain(ctx, strainData) {
     if (!strainData.strain)
         return false;
     const ok = await withAction(ctx, async () => {
-        const payload = _createStrainPayload(strainData);
-        await ctx.dataService.updateStrainMeta(payload);
+        await updateStrainMeta(_createStrainPayload(strainData));
         const tree = strainData.parents;
         if (tree?.parents?.length) {
             await ctx.dataService.importStrainLineageTree(strainData.strain, tree);
@@ -113299,10 +113472,7 @@ async function updateStrain(ctx, strainData) {
  */
 async function removeStrain(ctx, strainKey) {
     try {
-        const parts = strainKey.split('|');
-        const strain = parts[0];
-        const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-        await ctx.dataService.removeStrain(strain, phenotype);
+        await removeStrain$1(strainKey);
         const current = ctx.data.$strainLibrary.get();
         ctx.data.setStrainLibrary(current.filter((s) => s.key !== strainKey));
         await fetchStrainLibrary(ctx, true);
@@ -114069,6 +114239,22 @@ async function applyIPM(ctx, detail) {
     }, { success: 'IPM treatment applied successfully', errorPrefix: 'Failed to apply IPM', rethrow: true });
 }
 
+async function logDryingWeight(ctx, plantId, weightGrams, date) {
+    await withAction(ctx, () => ctx.dataService.logDryingWeight({ plant_id: plantId, weight_grams: weightGrams, date }), {
+        success: 'Weight logged', errorPrefix: 'Failed to log weight', rethrow: true,
+    });
+}
+async function logMoistureReading(ctx, plantId, moisturePercent, date) {
+    await withAction(ctx, () => ctx.dataService.logMoistureReading({ plant_id: plantId, moisture_percent: moisturePercent, date }), {
+        success: 'Moisture logged', errorPrefix: 'Failed to log moisture', rethrow: true,
+    });
+}
+async function setVisualTag(ctx, plantId, visualTag) {
+    await withAction(ctx, () => ctx.dataService.setVisualTag({ plant_id: plantId, visual_tag: visualTag }), {
+        success: 'Visual tag saved', errorPrefix: 'Failed to save visual tag', rethrow: true,
+    });
+}
+
 /**
  * Keyboard Actions - Pure functions for keyboard navigation.
  * Encapsulates keyboard shortcuts and navigation logic without coupling to store lifecycle.
@@ -114126,11 +114312,11 @@ function handleKeyboardNavigation(ctx, key) {
                 // The handleDeletePlant in plant-actions checks for plant_id or entity_id.
                 // Let's pass the ID we can find.
                 const idToDelete = focusedPlant.attributes.plant_id || focusedPlant.entity_id;
-                deletePlant(idToDelete);
+                handleDeletePlant(ctx, idToDelete);
             }
             else if (ctx.ui.$selectedPlants.get().size > 0) {
                 // If multiple plants are selected, delete them
-                Array.from(ctx.ui.$selectedPlants.get()).forEach((id) => deletePlant(id));
+                handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
             }
             break;
     }
@@ -114140,135 +114326,32 @@ class ActionDispatcher {
     constructor(store) {
         this.store = store;
         this.plant = {
-            update: async (id, updates) => {
-                try {
-                    await updatePlant(id, updates);
-                    this.ctx.ui.showToast('Plant updated', 'success');
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to update plant: ${msg}`, 'error');
-                }
-            },
-            delete: (id) => this._deletePlants(id),
-            move: async (plant, growspace) => {
-                const plantId = plant.attributes?.plant_id || plant.entity_id?.replace('sensor.', '') || '';
-                const originalGrowspaceId = plant.attributes?.growspace_id || '';
-                try {
-                    await movePlantToGrowspace(plant, growspace);
-                    this.ctx.undoRedoManager.pushAction({
-                        type: 'move',
-                        description: `Moved plant to ${growspace}`,
-                        reverse: async () => {
-                            await harvestPlant(plantId, originalGrowspaceId);
-                            await this.ctx.refreshData();
-                        },
-                        redo: async () => {
-                            await movePlantToGrowspace(plant, growspace);
-                            await this.ctx.refreshData();
-                        },
-                    });
-                    await new Promise((_resolve) => setTimeout(_resolve, 500));
-                    await this.ctx.refreshData();
-                    this.ctx.closeDialog();
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to move plant: ${msg}`, 'error');
-                }
-            },
-            drop: (row, col, target, source) => this._handlePlantDrop(row, col, target, source),
-            nextStage: (plant) => this._movePlantToNextStage(plant),
-            harvest: (plant, metrics) => this._movePlantToNextStage(plant, metrics),
-            takeClone: async (mother, num, targetGrowspaceId) => {
-                const cloneCount = num ?? 1;
-                try {
-                    await takeClone(mother, num, targetGrowspaceId);
-                    this.ctx.ui.showToast(`Taking ${cloneCount} clone${cloneCount > 1 ? 's' : ''}...`, 'success');
-                    return true;
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to take clone: ${msg}`, 'error');
-                    return false;
-                }
-            },
-            updateFromDialog: (state) => this._updatePlantFromDialog(state),
-            finishDrying: (plant) => this._movePlantToNextStage(plant),
-            add: (gid, r, c, s, p) => this._confirmAddPlant({ growspace_id: gid, row: r, col: c, strain: s, phenotype: p }),
-            addBatch: (detail) => this._confirmAddPlants(detail),
-            saveHarvestMetrics: async (plantId, metrics) => {
-                try {
-                    await saveHarvestMetrics(plantId, metrics);
-                    this.ctx.ui.showToast('Harvest metrics saved', 'success');
-                    await this.ctx.refreshData(true);
-                }
-                catch (err) {
-                    this.ctx.ui.showToast(`Failed to save harvest metrics: ${err}`, 'error');
-                    throw err;
-                }
-            },
-            scorePhenotype: async (plantId, scores) => {
-                try {
-                    await scorePlant(plantId, scores);
-                    this.ctx.ui.showToast('Scores saved', 'success');
-                    await this.ctx.refreshData(true);
-                }
-                catch (err) {
-                    this.ctx.ui.showToast(`Failed to save scores: ${err}`, 'error');
-                    throw err;
-                }
-            },
-            printLabel: async (params) => {
-                try {
-                    await printLabel(params);
-                    if (!params.preview) {
-                        this.ctx.ui.showToast('Label printing command sent', 'success');
-                    }
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to print label: ${msg}`, 'error');
-                    throw err;
-                }
-            },
-            logDryingWeight: async (plantId, weightGrams, date) => {
-                try {
-                    await logDryingWeight(plantId, weightGrams, date);
-                    this.ctx.ui.showToast('Weight logged', 'success');
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to log weight: ${msg}`, 'error');
-                    throw err;
-                }
-            },
-            logMoistureReading: async (plantId, moisturePercent, date) => {
-                try {
-                    await logMoistureReading(plantId, moisturePercent, date);
-                    this.ctx.ui.showToast('Moisture logged', 'success');
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to log moisture: ${msg}`, 'error');
-                    throw err;
-                }
-            },
-            setVisualTag: async (plantId, visualTag) => {
-                try {
-                    await setVisualTag(plantId, visualTag);
-                    this.ctx.ui.showToast('Visual tag saved', 'success');
-                }
-                catch (err) {
-                    const msg = err instanceof Error ? err.message : 'Unknown error';
-                    this.ctx.ui.showToast(`Failed to save visual tag: ${msg}`, 'error');
-                    throw err;
-                }
-            },
+            update: (id, updates) => updatePlant(this.ctx, id, updates),
+            delete: (id) => handleDeletePlant(this.ctx, id),
+            move: (plant, growspace) => movePlantToGrowspace(this.ctx, plant, growspace),
+            drop: (row, col, target, source) => handlePlantDrop(this.ctx, row, col, target, source),
+            nextStage: (plant) => movePlantToNextStage(this.ctx, plant),
+            harvest: (plant, metrics) => movePlantToNextStage(this.ctx, plant, metrics),
+            takeClone: (mother, num, targetGrowspaceId) => takeClone(this.ctx, mother, num, targetGrowspaceId),
+            updateFromDialog: (state) => updatePlantFromDialog(this.ctx, state),
+            finishDrying: (plant) => movePlantToNextStage(this.ctx, plant),
+            add: (gid, r, c, s, p) => confirmAddPlant(this.ctx, {
+                row: r,
+                col: c,
+                strain: s,
+                phenotype: p,
+            }),
+            addBatch: (detail) => confirmAddPlants(this.ctx, detail),
+            saveHarvestMetrics: (plantId, metrics) => saveHarvestMetrics(this.ctx, plantId, metrics),
+            scorePhenotype: (plantId, scores) => scorePhenotype(this.ctx, plantId, scores),
+            printLabel: (params) => printLabel(this.ctx, params),
+            logDryingWeight: (plantId, weightGrams, date) => logDryingWeight(this.ctx, plantId, weightGrams, date),
+            logMoistureReading: (plantId, moisturePercent, date) => logMoistureReading(this.ctx, plantId, moisturePercent, date),
+            setVisualTag: (plantId, visualTag) => setVisualTag(this.ctx, plantId, visualTag),
             confirmAdd: async (detail) => {
                 if (!detail.strain)
                     return;
-                await this._confirmAddPlant(detail);
+                await confirmAddPlant(this.ctx, detail);
             },
             batchAction: async (action, entityIds, data) => {
                 if (entityIds.length === 0)
@@ -114366,7 +114449,7 @@ class ActionDispatcher {
                 const ids = Array.from(this.ctx.ui.$selectedPlants.get());
                 if (!ids.length)
                     return;
-                await this._deletePlants(ids);
+                await handleDeletePlant(this.ctx, ids);
             },
             toggleEnvGraph: (metric) => {
                 if (metric === 'crop_steering') {
@@ -114469,278 +114552,6 @@ class ActionDispatcher {
     }
     get ctx() {
         return this.store.context;
-    }
-    // ---------------------------------------------------------------------------
-    // Private plant helpers (inlined from store/plant/plant-actions.ts)
-    // ---------------------------------------------------------------------------
-    async _deletePlants(plantId) {
-        const ids = Array.isArray(plantId) ? plantId : [plantId];
-        const plantsToRestore = [];
-        const devices = this.ctx.data.$devices.get();
-        ids.forEach((id) => {
-            for (const device of devices) {
-                const plant = device.plants?.find((p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === id);
-                if (plant) {
-                    plantsToRestore.push({
-                        growspace_id: plant.attributes.growspace_id || device.deviceId,
-                        row: plant.attributes.row,
-                        col: plant.attributes.col,
-                        strain: plant.attributes.strain,
-                        phenotype: plant.attributes.phenotype,
-                        veg_start: plant.attributes.veg_start,
-                        flower_start: plant.attributes.flower_start,
-                        mother_start: plant.attributes.mother_start,
-                        clone_start: plant.attributes.clone_start,
-                        seedling_start: plant.attributes.seedling_start,
-                        dry_start: plant.attributes.dry_start,
-                        cure_start: plant.attributes.cure_start,
-                    });
-                    break;
-                }
-            }
-        });
-        try {
-            await Promise.all(ids.map((id) => deletePlant(id)));
-        }
-        catch (err) {
-            const error = err instanceof Error ? err.message : 'Unknown error';
-            this.ctx.ui.showToast(`Failed to delete: ${error}`, 'error');
-            return;
-        }
-        this.ctx.undoRedoManager.pushAction({
-            type: ids.length > 1 ? 'batch-delete' : 'delete',
-            description: ids.length > 1
-                ? `Deleted ${ids.length} plants`
-                : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
-            reverse: async () => {
-                for (const p of plantsToRestore) {
-                    await this.ctx.dataService.addPlant(p);
-                }
-                await this.ctx.refreshData();
-            },
-            redo: async () => {
-                await this._deletePlants(ids);
-            },
-        });
-        this.ctx.ui.deselectPlants(ids);
-        if (this.ctx.ui.$activeDialog.get().type === 'PLANT_OVERVIEW') {
-            this.ctx.closeDialog();
-        }
-        this.ctx.refreshData();
-    }
-    async _movePlantToNextStage(plant, metrics) {
-        const stage = plant.attributes?.stage;
-        const movableStages = new Set(['mother', 'flower', 'dry', 'cure']);
-        if (!stage || !movableStages.has(stage)) {
-            this.ctx.ui.showToast(`Plant must be in mother or flower or dry or cure stage to move. stage is ${stage}`, 'error');
-            return false;
-        }
-        let targetGrowspace;
-        if (stage === 'flower')
-            targetGrowspace = 'dry';
-        else if (stage === 'dry')
-            targetGrowspace = 'cure';
-        else if (stage === 'mother')
-            targetGrowspace = 'clone';
-        else {
-            console.error('Unknown stage, cannot move plant', stage);
-            return false;
-        }
-        try {
-            const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-            await harvestPlant(plantId, targetGrowspace, metrics);
-            await new Promise((_resolve) => setTimeout(_resolve, 500));
-            await this.ctx.refreshData();
-            this.ctx.closeDialog();
-            this.ctx.ui.showToast(`Plant moved to ${targetGrowspace}`, 'success');
-            return true;
-        }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown error';
-            this.ctx.ui.showToast(`Failed to move plant: ${msg}`, 'error');
-            return false;
-        }
-    }
-    async _updatePlantFromDialog(dialogState) {
-        const { plant, editedAttributes, selectedPlantIds } = dialogState;
-        const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
-        const targetIds = selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
-        const isBulkEdit = targetIds.length > 1;
-        const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
-        try {
-            await Promise.all(targetIds.map((id) => updatePlant(id, payloadTemplate)));
-            this.ctx.closeDialog();
-            await this.ctx.refreshData();
-            if (this.ctx.ui.$isEditMode.get()) {
-                this.ctx.ui.clearPlantSelection();
-                this.ctx.ui.setEditMode(false);
-            }
-        }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown error';
-            console.error('Failed to update plant(s)', err instanceof Error ? err : new Error(msg));
-            this.ctx.ui.showToast(`Failed to update plant(s): ${msg}`, 'error');
-        }
-    }
-    async _confirmAddPlant(detail) {
-        const selectedDevice = detail.growspace_id ?? this.ctx.grid.$selectedDevice.get();
-        if (!selectedDevice) {
-            this.ctx.ui.showToast('No growspace selected', 'error');
-            return false;
-        }
-        if (detail.addToLibrary) {
-            try {
-                await this.ctx.dataService.addStrain({ strain: detail.strain, phenotype: detail.phenotype });
-                await fetchStrainLibrary(this.ctx, true);
-                this.ctx.ui.showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
-            }
-            catch (e) {
-                console.error('Failed to add strain to library:', e);
-                this.ctx.ui.showToast('Failed to add strain to library, conducting plant addition', 'info');
-            }
-        }
-        try {
-            await addPlant({
-                growspace_id: selectedDevice,
-                row: detail.row,
-                col: detail.col,
-                strain: detail.strain,
-                phenotype: detail.phenotype,
-                veg_start: detail.veg_start,
-                flower_start: detail.flower_start,
-                seedling_start: detail.seedling_start,
-                mother_start: detail.mother_start,
-                clone_start: detail.clone_start,
-                dry_start: detail.dry_start,
-                cure_start: detail.cure_start,
-            });
-            this.ctx.closeDialog();
-            await this.ctx.refreshData();
-            this.ctx.ui.showToast('Plant added successfully', 'success');
-            return true;
-        }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown error';
-            this.ctx.ui.showToast(`Failed to add plant: ${msg}`, 'error');
-            return false;
-        }
-    }
-    async _confirmAddPlants(detail) {
-        const selectedDevice = this.ctx.grid.$selectedDevice.get();
-        if (!selectedDevice) {
-            this.ctx.ui.showToast('No growspace selected', 'error');
-            return;
-        }
-        const devices = this.ctx.data.$devices.get();
-        const beforeIds = new Set();
-        devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
-        if (detail.addToLibrary) {
-            try {
-                const amount = detail.amount || 1;
-                const startNumber = detail.start_number || 1;
-                const promises = [];
-                for (let i = 0; i < amount; i++) {
-                    const currentNumber = startNumber + i;
-                    const phenoName = detail.phenotype
-                        ? `${detail.phenotype} #${currentNumber}`
-                        : `Strain #${currentNumber}`;
-                    if (detail.strain) {
-                        promises.push(this.ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
-                    }
-                }
-                await Promise.all(promises);
-                await fetchStrainLibrary(this.ctx, true);
-                this.ctx.ui.showToast(`Added ${detail.amount} strain variants to library`, 'success');
-            }
-            catch (e) {
-                console.error('Failed to add strains to library:', e);
-                this.ctx.ui.showToast('Failed to add strains to library, conducting plant addition', 'info');
-            }
-        }
-        try {
-            const { addToLibrary: _, ...apiPayload } = detail;
-            await addPlants({
-                ...apiPayload,
-                growspace_id: selectedDevice,
-            });
-            await this.ctx.refreshData();
-            const afterDevices = this.ctx.data.$devices.get();
-            const addedIds = [];
-            afterDevices.forEach((d) => d.plants?.forEach((p) => {
-                const id = p.attributes.plant_id || '';
-                if (id && !beforeIds.has(id))
-                    addedIds.push(id);
-            }));
-            if (addedIds.length > 0) {
-                this.ctx.undoRedoManager.pushAction({
-                    type: 'batch-delete',
-                    description: `Added ${addedIds.length} plants`,
-                    reverse: async () => {
-                        await Promise.all(addedIds.map((id) => deletePlant(id)));
-                        await this.ctx.refreshData();
-                    },
-                    redo: async () => {
-                        await this._confirmAddPlants(detail);
-                    },
-                });
-            }
-            this.ctx.closeDialog();
-            this.ctx.ui.showToast('Batch plants added successfully', 'success');
-        }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown error';
-            this.ctx.ui.showToast(`Failed to add plants: ${msg}`, 'error');
-        }
-    }
-    async _handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant) {
-        if (!sourcePlant || !sourcePlant.attributes)
-            return false;
-        const originalRow = sourcePlant.attributes.row;
-        const originalCol = sourcePlant.attributes.col;
-        const sourceId = sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
-        const targetId = targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
-        if (sourceId === targetId)
-            return false;
-        const growspaceId = sourcePlant.attributes.growspace_id;
-        if (!growspaceId)
-            return false;
-        try {
-            if (targetPlant) {
-                await swapPlants(sourceId, targetId);
-                this.ctx.undoRedoManager.pushAction({
-                    type: 'move',
-                    description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
-                    reverse: async () => {
-                        await swapPlants(sourceId, targetId);
-                    },
-                    redo: async () => {
-                        await this._handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant);
-                    },
-                });
-                return true;
-            }
-            else {
-                await updatePlant(sourceId, { row: targetRow, col: targetCol });
-                this.ctx.undoRedoManager.pushAction({
-                    type: 'move',
-                    description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-                    reverse: async () => {
-                        await updatePlant(sourceId, { row: originalRow, col: originalCol });
-                        await this.ctx.refreshData();
-                    },
-                    redo: async () => {
-                        await this._handlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant);
-                    },
-                });
-                await this.ctx.refreshData();
-                return true;
-            }
-        }
-        catch (err) {
-            console.error('Error during drag-and-drop:', err);
-            this.ctx.refreshData();
-            return false;
-        }
     }
 }
 
@@ -115359,7 +115170,7 @@ class GrowspaceStore {
         const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
         let success = false;
         try {
-            await updatePlant(plantId, { row: newRow, col: newCol });
+            await updatePlant$1(plantId, { row: newRow, col: newCol });
             success = true;
         }
         catch (err) {
