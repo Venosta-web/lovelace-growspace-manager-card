@@ -59,7 +59,7 @@ export function setPlants(plants: PlantEntity[]): void {
 function _patchPlant(id: string, updates: Partial<PlantEntity['attributes']>): PlantEntity[] {
   return plants$.get().map((p) => {
     if ((p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== id) return p;
-    return { ...p, attributes: { ...p.attributes, ...updates } };
+    if ((p.attributes.plant_id || p.entity_id.replace('sensor.', '')) !== id) return p;
   });
 }
 
