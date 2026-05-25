@@ -3,7 +3,6 @@ import { customElement, property, state, query } from 'lit/decorators.js';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import type { GrowspaceCarouselCardConfig } from '../lib/types/config';
 import '../growspace-manager-card';
-import type { GrowspaceManagerCard } from '../growspace-manager-card';
 
 @customElement('growspace-carousel-card')
 export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
@@ -11,7 +10,6 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
   @state() private _config!: GrowspaceCarouselCardConfig;
 
   @query('.carousel-wrapper') private _wrapper!: HTMLElement;
-  @query('growspace-manager-card') private _managerCard!: GrowspaceManagerCard;
 
   private _currentIndex = 0;
   private _timer?: number;
@@ -111,14 +109,9 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     // Wait for slide out animation (matches CSS transition duration)
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Update active growspace index
+    // Advance the index; re-render will propagate the new default_growspace via config.
     this._currentIndex = (this._currentIndex + 1) % active.length;
-    const nextDeviceId = active[this._currentIndex];
-
-    // Instruct the inner manager card to switch context
-    if (this._managerCard && this._managerCard.store) {
-      this._managerCard.store.handleDeviceChange(nextDeviceId);
-    }
+    this.requestUpdate();
 
     // Jump to the right side seamlessly (prepare for slide in)
     this._wrapper.classList.remove('slide-out');

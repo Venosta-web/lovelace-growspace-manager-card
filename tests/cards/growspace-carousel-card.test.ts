@@ -115,7 +115,7 @@ describe('GrowspaceCarouselCard', () => {
     expect(nextSlideSpy).toHaveBeenCalled();
   });
 
-  test('_nextSlide updates index and calls store.handleDeviceChange', async () => {
+  test('_nextSlide advances index and triggers re-render (declarative config update)', async () => {
     vi.useFakeTimers();
     const config = {
       type: 'custom:growspace-carousel-card',
@@ -125,9 +125,8 @@ describe('GrowspaceCarouselCard', () => {
     element.setConfig(config as any);
     await element.updateComplete;
 
-    const managerCard = element.shadowRoot?.querySelector('growspace-manager-card') as any;
-    expect(managerCard).toBeTruthy();
-    const handleDeviceChangeSpy = vi.spyOn(managerCard.store, 'handleDeviceChange');
+    // Spy on requestUpdate to verify a re-render is requested instead of store mutation.
+    const requestUpdateSpy = vi.spyOn(element as any, 'requestUpdate');
 
     // Manually trigger _nextSlide
     const nextSlidePromise = (element as any)._nextSlide();
@@ -139,9 +138,9 @@ describe('GrowspaceCarouselCard', () => {
     // Advance time for first timeout (300ms)
     await vi.advanceTimersByTimeAsync(300);
 
-    // After first timeout, index should update
+    // After first timeout, index should advance and a re-render should be queued.
     expect((element as any)._currentIndex).toBe(1);
-    expect(handleDeviceChangeSpy).toHaveBeenCalledWith('device2');
+    expect(requestUpdateSpy).toHaveBeenCalled();
 
     // Advance time for second timeout (300ms)
     await vi.advanceTimersByTimeAsync(300);

@@ -11,13 +11,10 @@ import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
 import {
-  gridSlice,
-  setSelectedDeviceId,
-  setDevices,
-  clearOptimisticDeletedPlantIds,
   type GridSliceRef,
   type GridViewState,
 } from '../../slices/grid';
+import { GrowspaceGridStore } from '../grid/grid-store';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 
 import { ActionDispatcher } from './action-dispatcher';
@@ -38,7 +35,6 @@ import { EventBus } from '../../features/shared/events/event-bus';
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
   private _staleUnsub?: () => void;
-  private _devicesBridgeUnsub?: () => void;
 
   dataService!: DataService;
   hass!: HomeAssistant;
@@ -141,24 +137,8 @@ export class GrowspaceStore {
 
     // Per-card stores
     this.ui = new GrowspaceUIStore();
-    // Reset Grid slice singleton state so this store instance starts with a clean slate.
-    // The Grid slice uses module-level atoms (singleton); resetting here ensures that
-    // creating a new store (e.g. a new card instance or a test fixture) doesn't carry
-    // over device selection from a previous instance.
-    setSelectedDeviceId(null);
-    setDevices([]);
-    clearOptimisticDeletedPlantIds();
-    this.grid = gridSlice;
-    this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, gridSlice.$selectedDevice);
-
-    // Bridge: keep Grid slice's devices$ in sync with DataStore's $devices so that
-    // cards relying on gridViewState$.devices see the same data as store.data.$devices.
-    // SyncService also calls setGridDevices() directly; this subscription ensures the
-    // Grid slice stays in sync even when tests set data.$devices without going through
-    // SyncService (e.g. element.store.data.$devices.set([...])).
-    this._devicesBridgeUnsub = shared.data.$devices.subscribe((devices) => {
-      setDevices(devices);
-    });
+    this.grid = new GrowspaceGridStore(shared.data);
+    this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, this.grid.$selectedDevice);
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
@@ -231,7 +211,7 @@ export class GrowspaceStore {
     );
 
     // Initialize services
-    this.syncService = new SyncService(this.dataService, shared.data, this.ui);
+    this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
     this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
       this.ui.showToast(msg, type, action)
     );
@@ -257,7 +237,6 @@ export class GrowspaceStore {
 
   public destroy(): void {
     this._staleUnsub?.();
-    this._devicesBridgeUnsub?.();
     this.history.destroy();
     this.eventBus.clear();
   }
