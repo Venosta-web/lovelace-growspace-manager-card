@@ -34,6 +34,8 @@ vi.mock('../../../../../src/services/hass-call', () => ({
     setHass: vi.fn(),
     callService: vi.fn().mockResolvedValue(undefined),
     hassCall: vi.fn().mockResolvedValue(undefined),
+    callFetch: vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
+    callServiceReturning: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock required child components that are not logic-heavy for these tests

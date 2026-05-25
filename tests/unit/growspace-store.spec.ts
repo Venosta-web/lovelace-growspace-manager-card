@@ -102,7 +102,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $nutrientPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), set: vi.fn(), subscribe: vi.fn() },
         $nutrientInventory: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
-        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     };
     const actions = {
         setDevices: vi.fn((v) => atoms.$devices.set(v)),
