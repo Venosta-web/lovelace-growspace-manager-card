@@ -298,6 +298,168 @@ describe('computeEnvSnapshot — co2', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Cycle 10 — temperature fallback to environmentAttributes.temperatureSensor
+// ---------------------------------------------------------------------------
+
+describe('computeEnvSnapshot — temperature sensor fallback', () => {
+  it('falls back to temperatureSensor when the env entity attribute is absent', () => {
+    const device = makeDevice({
+      environmentAttributes: { temperatureSensor: 'sensor.tent_1_temperature' },
+    });
+    const hassStates: HassStates = {
+      // env entity exists but has no temperature attribute
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
+      'sensor.tent_1_temperature': makeHassEntity('sensor.tent_1_temperature', '23.5', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.temperature).toBeCloseTo(23.5);
+  });
+
+  it('returns null for temperature when both the env entity attribute and temperatureSensor are absent', () => {
+    const device = makeDevice({
+      environmentAttributes: { temperatureSensor: 'sensor.tent_1_temperature' },
+    });
+    // temperatureSensor entity not in hass states at all
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.temperature).toBeNull();
+  });
+
+  it('prefers the env entity attribute over temperatureSensor', () => {
+    const device = makeDevice({
+      environmentAttributes: { temperatureSensor: 'sensor.tent_1_temperature' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', { temperature: 24.5 }),
+      'sensor.tent_1_temperature': makeHassEntity('sensor.tent_1_temperature', '20.0', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.temperature).toBe(24.5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 11 — humidity fallback to environmentAttributes.humiditySensor
+// ---------------------------------------------------------------------------
+
+describe('computeEnvSnapshot — humidity sensor fallback', () => {
+  it('falls back to humiditySensor when the env entity attribute is absent', () => {
+    const device = makeDevice({
+      environmentAttributes: { humiditySensor: 'sensor.tent_1_humidity' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
+      'sensor.tent_1_humidity': makeHassEntity('sensor.tent_1_humidity', '62', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.humidity).toBeCloseTo(62);
+  });
+
+  it('returns null for humidity when both the env entity attribute and humiditySensor are absent', () => {
+    const device = makeDevice({
+      environmentAttributes: { humiditySensor: 'sensor.tent_1_humidity' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.humidity).toBeNull();
+  });
+
+  it('prefers the env entity attribute over humiditySensor', () => {
+    const device = makeDevice({
+      environmentAttributes: { humiditySensor: 'sensor.tent_1_humidity' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', { humidity: 58 }),
+      'sensor.tent_1_humidity': makeHassEntity('sensor.tent_1_humidity', '70', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.humidity).toBe(58);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 12 — CO2 fallback to environmentAttributes.co2Sensor
+// ---------------------------------------------------------------------------
+
+describe('computeEnvSnapshot — co2 sensor fallback', () => {
+  it('falls back to co2Sensor when the env entity attribute is absent', () => {
+    const device = makeDevice({
+      environmentAttributes: { co2Sensor: 'sensor.tent_1_co2' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
+      'sensor.tent_1_co2': makeHassEntity('sensor.tent_1_co2', '900', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.co2).toBeCloseTo(900);
+  });
+
+  it('returns null for co2 when both the env entity attribute and co2Sensor are absent', () => {
+    const device = makeDevice({
+      environmentAttributes: { co2Sensor: 'sensor.tent_1_co2' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.co2).toBeNull();
+  });
+
+  it('prefers the env entity attribute over co2Sensor', () => {
+    const device = makeDevice({
+      environmentAttributes: { co2Sensor: 'sensor.tent_1_co2' },
+    });
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', { co2: 850 }),
+      'sensor.tent_1_co2': makeHassEntity('sensor.tent_1_co2', '1000', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.co2).toBe(850);
+  });
+
+  it('co2Sensor fallback is suppressed for cure growspaces', () => {
+    const device = makeDevice({
+      type: 'cure' as GrowspaceDevice['type'],
+      environmentAttributes: { co2Sensor: 'sensor.cure_co2' },
+    });
+    const hassStates: HassStates = {
+      'binary_sensor.cure_optimal_curing': makeHassEntity(
+        'binary_sensor.cure_optimal_curing',
+        'on',
+        {},
+      ),
+      'sensor.cure_co2': makeHassEntity('sensor.cure_co2', '800', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.co2).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cycle 7 — isLightsOn + hasLightSensor
 // ---------------------------------------------------------------------------
 

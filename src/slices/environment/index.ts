@@ -91,6 +91,20 @@ function _parseState(entity: HassEntity | undefined): number | null {
   return isNaN(n) ? null : n;
 }
 
+/** Resolve a metric using the two-tier fallback chain: attribute → sensor entity. */
+function _resolveFromSensor(
+  attrValue: number | null,
+  sensorId: string | undefined,
+  hassStates: HassStates,
+): number | null {
+  if (attrValue !== null) return attrValue;
+  if (sensorId) {
+    const val = _parseState(hassStates[sensorId]);
+    if (val !== null) return val;
+  }
+  return null;
+}
+
 /** Resolve VPD using the three-tier fallback chain. */
 function _resolveVpd(
   envEntity: HassEntity | undefined,
@@ -180,13 +194,26 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
     : undefined;
 
   // Core readings
-  const temperature = _numAttr(envEntity, 'temperature');
-  const humidity = _numAttr(envEntity, 'humidity');
+  const envAttrs = device.environmentAttributes;
+  const temperature = _resolveFromSensor(
+    _numAttr(envEntity, 'temperature'),
+    envAttrs?.temperatureSensor,
+    hassStates,
+  );
+  const humidity = _resolveFromSensor(
+    _numAttr(envEntity, 'humidity'),
+    envAttrs?.humiditySensor,
+    hassStates,
+  );
   const vpd = _resolveVpd(envEntity, device, slug, hassStates);
   const vpdStatus = _resolveVpdStatus(vpd, overviewEntity);
 
-  // co2 — absent for cure/dry spaces
-  const co2Raw = _numAttr(envEntity, 'co2');
+  // co2 — absent for cure/dry spaces; falls back to co2Sensor when attribute is missing
+  const co2Raw = _resolveFromSensor(
+    _numAttr(envEntity, 'co2'),
+    envAttrs?.co2Sensor,
+    hassStates,
+  );
   const co2 = isSpecial ? null : co2Raw;
 
   // Lights
