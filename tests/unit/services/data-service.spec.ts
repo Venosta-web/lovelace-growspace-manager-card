@@ -8,7 +8,12 @@ vi.mock('../../../src/services/api/history-api');
 vi.mock('../../../src/services/api/plant-api');
 vi.mock('../../../src/services/api/irrigation-api');
 vi.mock('../../../src/services/api/ai-api');
-vi.mock('../../../src/services/api/camera-api');
+vi.mock('../../../src/slices/camera', () => ({
+  captureSnapshot: vi.fn().mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] }),
+  getSnapshots: vi.fn().mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 }),
+  setSnapshots: vi.fn(),
+  snapshots$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+}));
 vi.mock('../../../src/services/api/vision-api');
 vi.mock('../../../src/services/api/report-api');
 vi.mock('../../../src/services/api/genetics-api');
@@ -22,7 +27,7 @@ import { HistoryAPI } from '../../../src/services/api/history-api';
 import { PlantAPI } from '../../../src/services/api/plant-api';
 import { IrrigationAPI } from '../../../src/services/api/irrigation-api';
 import { AIAPI } from '../../../src/services/api/ai-api';
-import { CameraAPI } from '../../../src/services/api/camera-api';
+import * as cameraSlice from '../../../src/slices/camera';
 import { VisionAPI } from '../../../src/services/api/vision-api';
 import { ReportAPI } from '../../../src/services/api/report-api';
 import { GeneticsAPI } from '../../../src/services/api/genetics-api';
@@ -288,15 +293,13 @@ describe('DataService Delegation', () => {
     });
 
     it('delegates Camera operations', () => {
-      const instance = vi.mocked(CameraAPI).mock.instances[0];
       dataService.captureSnapshot('gs1');
-      expect(instance.captureSnapshot).toHaveBeenCalledWith('gs1');
+      expect(cameraSlice.captureSnapshot).toHaveBeenCalledWith('gs1');
     });
 
     it('delegates getSnapshots', () => {
-      const instance = vi.mocked(CameraAPI).mock.instances[0];
       dataService.getSnapshots('gs1', 10, 0);
-      expect(instance.getSnapshots).toHaveBeenCalledWith('gs1', 10, 0);
+      expect(cameraSlice.getSnapshots).toHaveBeenCalledWith('gs1', 10, 0);
     });
 
     it('delegates Report operations', () => {

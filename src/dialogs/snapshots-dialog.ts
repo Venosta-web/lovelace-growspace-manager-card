@@ -6,7 +6,7 @@ import { hassContext, storeContext } from '../context';
 import { SnapshotsDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import { mdiCamera, mdiRefresh } from '@mdi/js';
-import { Snapshot } from '../services/api/camera-api';
+import { type Snapshot, getSnapshots, captureSnapshot } from '../slices/camera';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { VisionCheckupResult } from '../lib/types/dialog';
@@ -110,14 +110,12 @@ export class SnapshotsDialog extends LitElement {
     }
 
     private async _fetchSnapshots() {
-        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
+        if (!this.dialogState?.growspaceId) return;
 
         this._isLoading = true;
         try {
-            const response = await this.store.actions.snapshots.list(this.dialogState.growspaceId);
-            if (response) {
-                this._snapshots = response.snapshots || [];
-            }
+            const response = await getSnapshots(this.dialogState.growspaceId);
+            this._snapshots = response.snapshots;
         } catch (err) {
             console.error('[SnapshotsDialog] Failed to fetch snapshots:', err);
             this.store.ui.showToast('Failed to load snapshots', 'error');
@@ -127,16 +125,15 @@ export class SnapshotsDialog extends LitElement {
     }
 
     private async _captureSnapshot() {
-        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
+        if (!this.dialogState?.growspaceId) return;
 
         this._isCapturing = true;
         try {
-            await this.store.actions.snapshots.capture(this.dialogState.growspaceId);
-            // Refresh the list immediately
+            await captureSnapshot(this.dialogState.growspaceId);
             await this._fetchSnapshots();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('[SnapshotsDialog] Failed to capture snapshot:', err);
-            // Action handles toast
+            this.store.ui.showToast('Failed to capture snapshot', 'error');
         } finally {
             this._isCapturing = false;
         }

@@ -8,7 +8,7 @@ import { HistoryAPI } from './api/history-api';
 import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
 import { AIAPI } from './api/ai-api';
-import { CameraAPI } from './api/camera-api';
+import { captureSnapshot as cameraSliceCaptureSnapshot, getSnapshots as cameraSliceGetSnapshots } from '../slices/camera';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
 import { GeneticsAPI } from './api/genetics-api';
@@ -30,7 +30,6 @@ export class DataService {
   private _plantAPI: PlantAPI;
   private _irrigationAPI: IrrigationAPI;
   private _aiAPI: AIAPI;
-  private _cameraAPI: CameraAPI;
   private _visionAPI: VisionAPI;
   private _reportAPI: ReportAPI;
   private _geneticsAPI: GeneticsAPI;
@@ -44,7 +43,6 @@ export class DataService {
     this._plantAPI = new PlantAPI(hass);
     this._irrigationAPI = new IrrigationAPI(hass);
     this._aiAPI = new AIAPI(hass);
-    this._cameraAPI = new CameraAPI(hass);
     this._visionAPI = new VisionAPI(hass);
     this._reportAPI = new ReportAPI(hass);
     this._geneticsAPI = new GeneticsAPI(hass);
@@ -66,7 +64,6 @@ export class DataService {
       this._plantAPI,
       this._irrigationAPI,
       this._aiAPI,
-      this._cameraAPI,
       this._visionAPI,
       this._reportAPI,
       this._geneticsAPI,
@@ -296,10 +293,10 @@ export class DataService {
   // ── Camera ───────────────────────────────────────────────────────────────
 
   captureSnapshot = (growspaceId: string) =>
-    this._cameraAPI.captureSnapshot(growspaceId);
+    cameraSliceCaptureSnapshot(growspaceId);
 
   getSnapshots = (growspaceId: string, limit?: number, offset?: number) =>
-    this._cameraAPI.getSnapshots(growspaceId, limit, offset);
+    cameraSliceGetSnapshots(growspaceId, limit, offset);
 
   // ── Vision ───────────────────────────────────────────────────────────────
 
