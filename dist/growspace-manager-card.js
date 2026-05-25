@@ -9644,119 +9644,6 @@ async function mutate(action, growspaceId) {
 }
 
 /**
- * Grid slice — atoms, computed state, and sibling setters for the Grid domain.
- *
- * Public API (atoms):
- *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
- *   selectedDeviceId$         — read/write: the currently selected device ID
- *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
- *   activeDevices$            — read: devices with optimistically deleted plants filtered out
- *   growspaceOptions$         — read: device_id → device name map for selectors
- *   gridLayout$               — read: computed grid layout for the selected device
- *
- * Public API (bootstrap writes):
- *   setDevices()              — replace the devices array (called by SyncService)
- *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
- *
- * Public API (sibling setters — called by Plant slice cross-slice mutations):
- *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
- *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
- *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
- *
- * GridSliceRef / gridSlice:
- *   A stable facade object compatible with the legacy ActionContext.grid interface.
- *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
- *   through this facade without knowing about the underlying atoms.
- *
- * Action type, payload shapes, and zod schemas are private to this module.
- * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-/** All growspace devices — bootstrapped by SyncService on every data refresh. */
-const devices$ = atom([]);
-/**
- * The currently selected growspace device ID.
- *
- * NOTE: this is a module-level singleton.  Multiple card instances on the same
- * dashboard share this state.  Per-card selection isolation is deferred to a
- * later refactor step.
- */
-const selectedDeviceId$ = atom(null);
-/**
- * Plant IDs that have been optimistically removed from the grid by the Plant
- * slice before the backend confirms the mutation.  The Grid slice filters these
- * out of `activeDevices$` so the UI reflects the change immediately.
- */
-const optimisticDeletedPlantIds$ = atom(new Set());
-// ---------------------------------------------------------------------------
-// Computed atoms (public)
-// ---------------------------------------------------------------------------
-/** Devices with optimistically deleted plants stripped out. */
-const activeDevices$ = computed([devices$, optimisticDeletedPlantIds$], (devices, deletedIds) => devices.map((d) => ({
-    ...d,
-    plants: d.plants.filter((p) => {
-        const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
-        return !deletedIds.has(pid);
-    }),
-})));
-/** device_id → device name map for growspace selector dropdowns. */
-const growspaceOptions$ = computed(activeDevices$, (devices) => Object.fromEntries(devices.map((d) => [d.deviceId, d.name])));
-/** Grid layout for the currently selected device. */
-const gridLayout$ = computed([activeDevices$, selectedDeviceId$], (devices, selectedId) => {
-    if (!selectedId)
-        return { effectiveRows: 0, grid: [] };
-    const device = devices.find((d) => d.deviceId === selectedId);
-    if (!device)
-        return { effectiveRows: 0, grid: [] };
-    const effectiveRows = PlantUtils.calculateEffectiveRows(device);
-    const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
-    return { effectiveRows, grid };
-});
-/** Combined view-state atom (one subscription covers grid + selector + device list). */
-const gridViewState$ = computed([activeDevices$, selectedDeviceId$, gridLayout$, growspaceOptions$], (devices, selectedDevice, gridLayout, growspaceOptions) => ({
-    devices,
-    selectedDevice,
-    gridLayout,
-    growspaceOptions,
-}));
-// ---------------------------------------------------------------------------
-// Bootstrap writes (public)
-// ---------------------------------------------------------------------------
-/** Replace the full device list. Called by SyncService after every data refresh. */
-function setDevices(devices) {
-    devices$.set(devices);
-}
-/** Set the active growspace device. Called by cards via handleDeviceChange. */
-function setSelectedDeviceId(id) {
-    selectedDeviceId$.set(id);
-}
-/**
- * Clear all optimistic deletes.  Called by GrowspaceStore._pruneOptimisticDeletions
- * after SyncService confirms the backend state.
- */
-function clearOptimisticDeletedPlantIds() {
-    optimisticDeletedPlantIds$.set(new Set());
-}
-// ---------------------------------------------------------------------------
-// GridSliceRef facade — backward-compatible ActionContext.grid interface
-// ---------------------------------------------------------------------------
-/**
- * Stable facade that satisfies the `ActionContext.grid` contract used by action
- * modules (ctx.grid.$selectedDevice, ctx.grid.setSelectedDevice, etc.).
- * Pass `gridSlice` wherever `GrowspaceGridStore` was previously expected.
- */
-const gridSlice = {
-    $selectedDevice: selectedDeviceId$,
-    $growspaceOptions: growspaceOptions$,
-    $activeDevices: activeDevices$,
-    $gridLayout: gridLayout$,
-    $gridViewState: gridViewState$,
-    setSelectedDevice: setSelectedDeviceId,
-};
-
-/**
  * Plant slice — atoms and mutators for Plant domain data.
  *
  * Public API (atoms):
@@ -113689,6 +113576,49 @@ class GrowspaceHistoryStore {
     }
 }
 
+class GrowspaceGridStore {
+    constructor(dataStore) {
+        this.$selectedDevice = atom(null);
+        this.$activeDevices = computed([dataStore.$devices, dataStore.$optimisticDeletedPlantIds], (devices, deletedIds) => {
+            return devices.map((d) => ({
+                ...d,
+                plants: d.plants.filter((p) => {
+                    const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+                    return !deletedIds.has(pId);
+                }),
+            }));
+        });
+        this.$growspaceOptions = computed(this.$activeDevices, (devices) => {
+            const options = {};
+            for (const d of devices) {
+                options[d.deviceId] = d.name;
+            }
+            return options;
+        });
+        this.$gridLayout = computed([this.$activeDevices, this.$selectedDevice], (devices, selectedId) => {
+            if (!selectedId) {
+                return { effectiveRows: 0, grid: [] };
+            }
+            const device = devices.find((d) => d.deviceId === selectedId);
+            if (!device) {
+                return { effectiveRows: 0, grid: [] };
+            }
+            const effectiveRows = PlantUtils.calculateEffectiveRows(device);
+            const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
+            return { effectiveRows, grid };
+        });
+        this.$gridViewState = computed([this.$activeDevices, this.$gridLayout, this.$growspaceOptions, this.$selectedDevice], (devices, gridLayout, growspaceOptions, selectedDevice) => ({
+            devices,
+            selectedDevice,
+            gridLayout,
+            growspaceOptions,
+        }));
+    }
+    setSelectedDevice(deviceId) {
+        this.$selectedDevice.set(deviceId);
+    }
+}
+
 const WS_ERROR_MESSAGES = {
     coordinator_not_ready: 'Integration not loaded — try reloading the page',
     entity_not_found: 'Item not found — it may have been removed',
@@ -115755,10 +115685,11 @@ class SyncService {
         }
         this._cardConfig = config;
     }
-    constructor(dataService, dataStore, uiStore) {
+    constructor(dataService, dataStore, uiStore, gridStore) {
         this.dataService = dataService;
         this.dataStore = dataStore;
         this.uiStore = uiStore;
+        this.gridStore = gridStore;
         this._isFetchingWS = false;
         this._watchedEntities = new Set();
         /** Per-card config — not shared across card instances. */
@@ -115838,7 +115769,6 @@ class SyncService {
         const currentDevices = this.dataStore.$devices.get();
         if (!this._areDeviceArraysEqual(currentDevices, devices)) {
             this.dataStore.setDevices(devices);
-            setDevices(devices);
         }
         // Update device-controlled entity snapshots and populate watched entities for next update cycle
         const hassStates = this.dataService.hass?.states ?? {};
@@ -115876,7 +115806,7 @@ class SyncService {
                 });
             }
         });
-        const selectedDevice = selectedDeviceId$.get();
+        const selectedDevice = this.gridStore.$selectedDevice.get();
         // Auto-select if needed
         if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
             const config = this._cardConfig;
@@ -115884,12 +115814,12 @@ class SyncService {
                 return;
             const defaultDevice = devices.find((d) => d.deviceId === config.default_growspace || d.name === config.default_growspace);
             if (defaultDevice) {
-                setSelectedDeviceId(defaultDevice.deviceId);
+                this.gridStore.setSelectedDevice(defaultDevice.deviceId);
                 this.uiStore.setDefaultApplied(true);
                 return;
             }
             // Fallback to first device
-            setSelectedDeviceId(devices[0].deviceId);
+            this.gridStore.setSelectedDevice(devices[0].deviceId);
             this.uiStore.setDefaultApplied(true);
         }
     }
@@ -116226,23 +116156,8 @@ class GrowspaceStore {
         this.dataService = shared.dataService;
         // Per-card stores
         this.ui = new GrowspaceUIStore();
-        // Reset Grid slice singleton state so this store instance starts with a clean slate.
-        // The Grid slice uses module-level atoms (singleton); resetting here ensures that
-        // creating a new store (e.g. a new card instance or a test fixture) doesn't carry
-        // over device selection from a previous instance.
-        setSelectedDeviceId(null);
-        setDevices([]);
-        clearOptimisticDeletedPlantIds();
-        this.grid = gridSlice;
-        this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, gridSlice.$selectedDevice);
-        // Bridge: keep Grid slice's devices$ in sync with DataStore's $devices so that
-        // cards relying on gridViewState$.devices see the same data as store.data.$devices.
-        // SyncService also calls setGridDevices() directly; this subscription ensures the
-        // Grid slice stays in sync even when tests set data.$devices without going through
-        // SyncService (e.g. element.store.data.$devices.set([...])).
-        this._devicesBridgeUnsub = shared.data.$devices.subscribe((devices) => {
-            setDevices(devices);
-        });
+        this.grid = new GrowspaceGridStore(shared.data);
+        this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, this.grid.$selectedDevice);
         // Cross-store computed atoms
         this.$dialogHostState = computed([
             this.ui.$activeDialog,
@@ -116278,7 +116193,7 @@ class GrowspaceStore {
         this.$headerState = computed([this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState], (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history }));
         this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
-        this.syncService = new SyncService(this.dataService, shared.data, this.ui);
+        this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
         this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.ui.showToast(msg, type, action));
         this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
         // Initialize new infrastructure (Phase 1)
@@ -116298,7 +116213,6 @@ class GrowspaceStore {
     }
     destroy() {
         this._staleUnsub?.();
-        this._devicesBridgeUnsub?.();
         this.history.destroy();
         this.eventBus.clear();
     }
@@ -119150,13 +119064,9 @@ let GrowspaceCarouselCard = class GrowspaceCarouselCard extends i$3 {
         this._wrapper.classList.add('slide-out');
         // Wait for slide out animation (matches CSS transition duration)
         await new Promise(resolve => setTimeout(resolve, 300));
-        // Update active growspace index
+        // Advance the index; re-render will propagate the new default_growspace via config.
         this._currentIndex = (this._currentIndex + 1) % active.length;
-        const nextDeviceId = active[this._currentIndex];
-        // Instruct the inner manager card to switch context
-        if (this._managerCard && this._managerCard.store) {
-            this._managerCard.store.handleDeviceChange(nextDeviceId);
-        }
+        this.requestUpdate();
         // Jump to the right side seamlessly (prepare for slide in)
         this._wrapper.classList.remove('slide-out');
         this._wrapper.classList.add('slide-in-prepare');
@@ -119230,9 +119140,6 @@ __decorate([
 __decorate([
     e$6('.carousel-wrapper')
 ], GrowspaceCarouselCard.prototype, "_wrapper", void 0);
-__decorate([
-    e$6('growspace-manager-card')
-], GrowspaceCarouselCard.prototype, "_managerCard", void 0);
 GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);

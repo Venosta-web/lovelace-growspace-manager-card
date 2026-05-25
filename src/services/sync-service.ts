@@ -2,11 +2,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from './data-service';
 import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
-import {
-  selectedDeviceId$,
-  setSelectedDeviceId,
-  setDevices as setGridDevices,
-} from '../slices/grid';
+import type { GridSliceRef } from '../slices/grid';
 import { setDeviceSnapshot } from '../slices/device-state';
 import { setEnvSnapshot } from '../slices/environment';
 import { setPlants } from '../slices/plant';
@@ -34,7 +30,8 @@ export class SyncService {
   constructor(
     private dataService: DataService,
     private dataStore: GrowspaceDataStore,
-    private uiStore: GrowspaceUIStore
+    private uiStore: GrowspaceUIStore,
+    private gridStore: GridSliceRef
   ) { }
 
   /**
@@ -119,7 +116,6 @@ export class SyncService {
 
     if (!this._areDeviceArraysEqual(currentDevices, devices)) {
       this.dataStore.setDevices(devices);
-      setGridDevices(devices);
     }
 
     // Update device-controlled entity snapshots and populate watched entities for next update cycle
@@ -160,7 +156,7 @@ export class SyncService {
       }
     });
 
-    const selectedDevice = selectedDeviceId$.get();
+    const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed
     if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
       const config = this._cardConfig;
@@ -171,13 +167,13 @@ export class SyncService {
         (d) => d.deviceId === config.default_growspace || d.name === config.default_growspace
       );
       if (defaultDevice) {
-        setSelectedDeviceId(defaultDevice.deviceId);
+        this.gridStore.setSelectedDevice(defaultDevice.deviceId);
         this.uiStore.setDefaultApplied(true);
         return;
       }
 
       // Fallback to first device
-      setSelectedDeviceId(devices[0].deviceId);
+      this.gridStore.setSelectedDevice(devices[0].deviceId);
       this.uiStore.setDefaultApplied(true);
     }
   }
