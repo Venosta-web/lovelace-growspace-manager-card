@@ -3,6 +3,9 @@
  *
  * Replaces undo-redo-manager.ts + sync-service.ts for migrated mutators.
  * Each slice builds its domain mutators on top of this primitive.
+ *
+ * The undo stack is scoped per growspace so that undoing on Tent B cannot
+ * silently roll back an action taken on Tent A.
  */
 
 export interface Action {
@@ -18,14 +21,26 @@ export interface Action {
 
 type UndoEntry = { type: string; inverse: () => void };
 
-const _undoStack: UndoEntry[] = [];
+const _undoStack = new Map<string, UndoEntry[]>();
 const MAX_UNDO = 10;
+
+function _stackFor(growspaceId: string): UndoEntry[] {
+  let stack = _undoStack.get(growspaceId);
+  if (!stack) {
+    stack = [];
+    _undoStack.set(growspaceId, stack);
+  }
+  return stack;
+}
 
 /**
  * Execute an action: optimistic → apply → record undo.
  * On apply failure: run inverse (rollback) and re-throw.
+ *
+ * @param growspaceId  The growspace this action belongs to. Undo entries
+ *                     never cross growspace boundaries.
  */
-export async function mutate(action: Action): Promise<void> {
+export async function mutate(action: Action, growspaceId: string): Promise<void> {
   action.optimistic();
   try {
     await action.apply();
@@ -33,20 +48,21 @@ export async function mutate(action: Action): Promise<void> {
     action.inverse();
     throw err;
   }
-  _undoStack.push({ type: action.type, inverse: action.inverse });
-  if (_undoStack.length > MAX_UNDO) {
-    _undoStack.shift();
+  const stack = _stackFor(growspaceId);
+  stack.push({ type: action.type, inverse: action.inverse });
+  if (stack.length > MAX_UNDO) {
+    stack.shift();
   }
 }
 
-/** Whether there is an action on the undo stack. */
-export function canUndo(): boolean {
-  return _undoStack.length > 0;
+/** Whether there is an action on the undo stack for the given growspace. */
+export function canUndo(growspaceId: string): boolean {
+  return (_undoStack.get(growspaceId)?.length ?? 0) > 0;
 }
 
-/** Undo the most recent successful action. */
-export async function undo(): Promise<void> {
-  const entry = _undoStack.pop();
+/** Undo the most recent successful action for the given growspace. */
+export async function undo(growspaceId: string): Promise<void> {
+  const entry = _undoStack.get(growspaceId)?.pop();
   if (!entry) return;
   entry.inverse();
 }

@@ -55,6 +55,14 @@ export function setPlants(plants: PlantEntity[]): void {
 // Private helpers
 // ---------------------------------------------------------------------------
 
+/** Resolve the growspace_id for a plant by its plant_id from plants$. Returns '' if not found. */
+function _growspaceIdFor(plantId: string): string {
+  const plant = plants$
+    .get()
+    .find((p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === plantId);
+  return plant?.attributes.growspace_id ?? '';
+}
+
 /** Replace a single plant in plants$ by plant_id, merging attribute updates. */
 function _patchPlant(id: string, updates: Partial<PlantEntity['attributes']>): PlantEntity[] {
   return plants$.get().map((p) => {
@@ -107,12 +115,15 @@ export async function waterPlant(
     payload.preset_id = presetId;
   }
 
-  await mutate({
-    type: 'waterPlant',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'water_plant', payload),
-  });
+  await mutate(
+    {
+      type: 'waterPlant',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'water_plant', payload),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -138,12 +149,15 @@ export async function addPlant(params: {
 }): Promise<void> {
   const payload: Record<string, unknown> = { ...params };
 
-  await mutate({
-    type: 'addPlant',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'add_plant', payload),
-  });
+  await mutate(
+    {
+      type: 'addPlant',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'add_plant', payload),
+    },
+    params.growspace_id,
+  );
 }
 
 /**
@@ -169,12 +183,15 @@ export async function addPlants(params: {
 }): Promise<void> {
   const payload: Record<string, unknown> = { ...params };
 
-  await mutate({
-    type: 'addPlants',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'add_plants', payload),
-  });
+  await mutate(
+    {
+      type: 'addPlants',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'add_plants', payload),
+    },
+    params.growspace_id,
+  );
 }
 
 /**
@@ -191,13 +208,16 @@ export async function updatePlant(
   const originalList = plants$.get();
   const patched = _patchPlant(plantId, updates);
 
-  await mutate({
-    type: 'updatePlant',
-    optimistic: () => plants$.set(patched),
-    inverse: () => plants$.set(originalList),
-    apply: () =>
-      callService('growspace_manager', 'update_plant', { plant_id: plantId, ...updates }),
-  });
+  await mutate(
+    {
+      type: 'updatePlant',
+      optimistic: () => plants$.set(patched),
+      inverse: () => plants$.set(originalList),
+      apply: () =>
+        callService('growspace_manager', 'update_plant', { plant_id: plantId, ...updates }),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -214,18 +234,21 @@ export async function deletePlant(plantId: string): Promise<void> {
     (p) => (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) !== plantId,
   );
 
-  await mutate({
-    type: 'deletePlant',
-    optimistic: () => {
-      plants$.set(filtered);
-      addOptimisticDeletedPlantId(plantId);
+  await mutate(
+    {
+      type: 'deletePlant',
+      optimistic: () => {
+        plants$.set(filtered);
+        addOptimisticDeletedPlantId(plantId);
+      },
+      inverse: () => {
+        plants$.set(originalList);
+        removeOptimisticDeletedPlantId(plantId);
+      },
+      apply: () => callService('growspace_manager', 'remove_plant', { plant_id: plantId }),
     },
-    inverse: () => {
-      plants$.set(originalList);
-      removeOptimisticDeletedPlantId(plantId);
-    },
-    apply: () => callService('growspace_manager', 'remove_plant', { plant_id: plantId }),
-  });
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -262,12 +285,15 @@ export async function harvestPlant(
     if (metrics.terpene_profile) payload.terpene_profile = metrics.terpene_profile;
   }
 
-  await mutate({
-    type: 'harvestPlant',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'harvest_plant', payload),
-  });
+  await mutate(
+    {
+      type: 'harvestPlant',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'harvest_plant', payload),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -296,16 +322,21 @@ export async function movePlantToGrowspace(
     payload.transition_date = transitionDate;
   }
 
-  await mutate({
-    type: 'movePlantToGrowspace',
-    optimistic: () => {
-      addOptimisticDeletedPlantId(plantId);
+  const sourceGrowspaceId = _growspaceIdFor(plantId);
+
+  await mutate(
+    {
+      type: 'movePlantToGrowspace',
+      optimistic: () => {
+        addOptimisticDeletedPlantId(plantId);
+      },
+      inverse: () => {
+        removeOptimisticDeletedPlantId(plantId);
+      },
+      apply: () => callService('growspace_manager', service, payload),
     },
-    inverse: () => {
-      removeOptimisticDeletedPlantId(plantId);
-    },
-    apply: () => callService('growspace_manager', service, payload),
-  });
+    sourceGrowspaceId,
+  );
 }
 
 /**
@@ -322,16 +353,19 @@ export async function swapPlants(plantId1: string, plantId2: string): Promise<vo
   const originalList = plants$.get();
   const swapped = _swapPositions(plantId1, plantId2);
 
-  await mutate({
-    type: 'swapPlants',
-    optimistic: () => plants$.set(swapped),
-    inverse: () => plants$.set(originalList),
-    apply: () =>
-      callService('growspace_manager', 'switch_plants', {
-        plant1_id: plantId1,
-        plant2_id: plantId2,
-      }),
-  });
+  await mutate(
+    {
+      type: 'swapPlants',
+      optimistic: () => plants$.set(swapped),
+      inverse: () => plants$.set(originalList),
+      apply: () =>
+        callService('growspace_manager', 'switch_plants', {
+          plant1_id: plantId1,
+          plant2_id: plantId2,
+        }),
+    },
+    _growspaceIdFor(plantId1),
+  );
 }
 
 /**
@@ -351,12 +385,15 @@ export async function takeClone(
   if (numClones !== undefined) payload.num_clones = numClones;
   if (targetGrowspaceId) payload.target_growspace_id = targetGrowspaceId;
 
-  await mutate({
-    type: 'takeClone',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'take_clone', payload),
-  });
+  await mutate(
+    {
+      type: 'takeClone',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'take_clone', payload),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -401,16 +438,19 @@ export async function saveHarvestMetrics(
 ): Promise<void> {
   if (Object.keys(metrics).length === 0) return;
 
-  await mutate({
-    type: 'saveHarvestMetrics',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () =>
-      callService('growspace_manager', 'update_harvest_metrics', {
-        plant_id: plantId,
-        ...metrics,
-      }),
-  });
+  await mutate(
+    {
+      type: 'saveHarvestMetrics',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () =>
+        callService('growspace_manager', 'update_harvest_metrics', {
+          plant_id: plantId,
+          ...metrics,
+        }),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -430,12 +470,15 @@ export async function scorePlant(
 
   const payload: Record<string, unknown> = { plant_id: plantId, ...scores };
 
-  await mutate({
-    type: 'scorePlant',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'score_plant', payload),
-  });
+  await mutate(
+    {
+      type: 'scorePlant',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'score_plant', payload),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -453,12 +496,15 @@ export async function logDryingWeight(
   const payload: Record<string, unknown> = { plant_id: plantId, weight_grams: weightGrams };
   if (date) payload.date = date;
 
-  await mutate({
-    type: 'logDryingWeight',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'log_drying_weight', payload),
-  });
+  await mutate(
+    {
+      type: 'logDryingWeight',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'log_drying_weight', payload),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -476,12 +522,15 @@ export async function logMoistureReading(
   const payload: Record<string, unknown> = { plant_id: plantId, moisture_percent: moisturePercent };
   if (date) payload.date = date;
 
-  await mutate({
-    type: 'logMoistureReading',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () => callService('growspace_manager', 'log_moisture_reading', payload),
-  });
+  await mutate(
+    {
+      type: 'logMoistureReading',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () => callService('growspace_manager', 'log_moisture_reading', payload),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
 
 /**
@@ -492,14 +541,17 @@ export async function logMoistureReading(
  * Inverse: no-op.
  */
 export async function setVisualTag(plantId: string, visualTag: string | null): Promise<void> {
-  await mutate({
-    type: 'setVisualTag',
-    optimistic: () => {},
-    inverse: () => {},
-    apply: () =>
-      callService('growspace_manager', 'set_visual_tag', {
-        plant_id: plantId,
-        visual_tag: visualTag,
-      }),
-  });
+  await mutate(
+    {
+      type: 'setVisualTag',
+      optimistic: () => {},
+      inverse: () => {},
+      apply: () =>
+        callService('growspace_manager', 'set_visual_tag', {
+          plant_id: plantId,
+          visual_tag: visualTag,
+        }),
+    },
+    _growspaceIdFor(plantId),
+  );
 }
