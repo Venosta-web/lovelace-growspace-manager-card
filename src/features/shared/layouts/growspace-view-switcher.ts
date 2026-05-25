@@ -2,18 +2,24 @@ import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../../types';
 import { ViewMode } from '../../../constants';
+import { setViewMode } from '../../../slices/ui';
 
-// Import Views
-import './growspace-view-compact';
-import './growspace-view-header';
-import './growspace-view-standard';
-import './growspace-view-heatmap';
+// Register the unified view component
+import './growspace-view';
 import '../ui/error-boundary';
 
+/**
+ * Thin adapter that bridges the card's property API to the declarative
+ * <growspace-view> component.  It:
+ *   • keeps the same @property surface so parent cards need no changes
+ *   • forwards the active viewMode to the global atom so <growspace-view>
+ *     can derive its LayoutSpec reactively
+ *   • proxies focusPlant() calls down to the active grid
+ */
 @customElement('growspace-view-switcher')
 export class GrowspaceViewSwitcher extends LitElement {
   @property({ type: String }) viewMode: string = ViewMode.STANDARD;
-  @property({ attribute: false }) hass: any;
+  @property({ attribute: false }) hass: unknown;
   @property({ attribute: false }) device: GrowspaceDevice | undefined;
   @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
   @property({ attribute: false }) grid: (PlantEntity | null)[][] = [];
@@ -30,16 +36,19 @@ export class GrowspaceViewSwitcher extends LitElement {
 
   protected updated(changedProps: Map<string | number | symbol, unknown>): void {
     super.updated(changedProps);
+
+    // Keep the global atom in sync when the card updates the property.
+    if (changedProps.has('viewMode')) {
+      setViewMode(this.viewMode as import('../../../types').GrowspaceViewMode);
+    }
+
     if (changedProps.has('focusedPlantIndex') && this.focusedPlantIndex >= 0) {
       this.focusPlant(this.focusedPlantIndex);
     }
   }
 
   public focusPlant(index: number) {
-    const activeView = this.shadowRoot?.querySelector(
-      'growspace-view-standard, growspace-view-compact'
-    );
-
+    const activeView = this.shadowRoot?.querySelector('growspace-view');
     if (activeView && 'focusPlant' in activeView) {
       (activeView as { focusPlant: (index: number) => void }).focusPlant(index);
     }
@@ -48,65 +57,30 @@ export class GrowspaceViewSwitcher extends LitElement {
   protected render(): TemplateResult {
     if (!this.device) return html``;
 
-    if (this.viewMode === ViewMode.COMPACT) {
-      return html`
-        <error-boundary heading="Detailed View Error">
-          <growspace-view-compact
-            .grid=${this.grid}
-            .rows=${this.rows}
-            .cols=${this.device.plantsPerRow}
-            .isLoading=${this.isLoading}
-          ></growspace-view-compact>
-        </error-boundary>
-      `;
-    }
-
-    if (this.viewMode === ViewMode.HEADER) {
-      return html`
-        <error-boundary heading="Header View Error">
-          <growspace-view-header
-            .device=${this.device}
-            .growspaceOptions=${this.growspaceOptions}
-          ></growspace-view-header>
-        </error-boundary>
-      `;
-    }
-
-    if (this.viewMode === ViewMode.HEATMAP) {
-      return html`
-        <error-boundary heading="Heatmap View Error">
-          <growspace-view-heatmap
-            .device=${this.device}
-            .hass=${this.hass}
-            .growspaceOptions=${this.growspaceOptions}
-          ></growspace-view-heatmap>
-        </error-boundary>
-      `;
-    }
-
-    // Standard Mode
     return html`
-      <error-boundary heading="Dashboard View Error">
-        <growspace-view-standard
+      <error-boundary heading="View Error">
+        <growspace-view
+          .viewMode=${this.viewMode}
+          .hass=${this.hass}
           .device=${this.device}
           .growspaceOptions=${this.growspaceOptions}
           .grid=${this.grid}
           .rows=${this.rows}
           .cols=${this.device.plantsPerRow}
+          .isLoading=${this.isLoading}
           .isEditMode=${this.isEditMode}
           .isCompact=${this.isCompact}
           .selectedCount=${this.selectedCount}
           .config=${this.config}
-          .isLoading=${this.isLoading}
           @batch-add-plants=${(e: CustomEvent) =>
-        this.dispatchEvent(
-          new CustomEvent('batch-add-plants', {
-            detail: e.detail,
-            bubbles: true,
-            composed: true,
-          })
-        )}
-        ></growspace-view-standard>
+            this.dispatchEvent(
+              new CustomEvent('batch-add-plants', {
+                detail: e.detail,
+                bubbles: true,
+                composed: true,
+              })
+            )}
+        ></growspace-view>
       </error-boundary>
     `;
   }

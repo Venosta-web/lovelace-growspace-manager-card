@@ -33,6 +33,7 @@ export interface EnvSnapshot {
   isLightsOn: boolean | null;
   hasLightSensor: boolean;
   dli: number | null;
+  optimalConditions: { isOptimal: boolean; reasons: string[] } | null;
 }
 
 type HassStates = Record<string, HassEntity>;
@@ -197,6 +198,14 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
   const dliEntityId = `sensor.${slug}_dli`;
   const dli = _parseState(hassStates[dliEntityId]);
 
+  // Optimal conditions — envEntity IS the binary_sensor.${slug}_optimal_conditions entity
+  const optimalConditions = envEntity
+    ? {
+        isOptimal: envEntity.state === 'on',
+        reasons: Array.isArray(envEntity.attributes.reasons) ? envEntity.attributes.reasons : [],
+      }
+    : null;
+
   return {
     temperature,
     humidity,
@@ -206,6 +215,7 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
     isLightsOn,
     hasLightSensor,
     dli,
+    optimalConditions,
   };
 }
 

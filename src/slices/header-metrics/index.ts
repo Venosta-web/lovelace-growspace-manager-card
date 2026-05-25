@@ -19,6 +19,8 @@ import {
   mdiWater,
   mdiWaterMinus,
   mdiBarrel,
+  mdiRadioboxMarked,
+  mdiRadioboxBlank,
 } from '@mdi/js';
 import { DateTime } from 'luxon';
 import type { EnvSnapshot } from '../environment';
@@ -387,6 +389,26 @@ export function computeHeaderMetrics(
           tooltip:
             'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.',
         },
+        activeEnvGraphs,
+        linkedGraphGroups,
+      ),
+    );
+  }
+
+  // Optimal conditions
+  if (envSnapshot?.optimalConditions != null) {
+    const { isOptimal, reasons } = envSnapshot.optimalConditions;
+    let optimalLabel = 'Optimal Conditions';
+    if (!isOptimal) {
+      optimalLabel =
+        reasons.length > 0 ? `Not Optimal: ${reasons.join(', ')}` : 'Not Optimal';
+    }
+    chips.push(
+      _makeChip(
+        MetricKey.OPTIMAL,
+        isOptimal ? mdiRadioboxMarked : mdiRadioboxBlank,
+        optimalLabel,
+        { status: isOptimal ? 'optimal' : 'warning' },
         activeEnvGraphs,
         linkedGraphGroups,
       ),

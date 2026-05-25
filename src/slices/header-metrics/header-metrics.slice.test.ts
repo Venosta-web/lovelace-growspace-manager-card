@@ -26,6 +26,7 @@ function makeEnvSnapshot(overrides: Partial<EnvSnapshot> = {}): EnvSnapshot {
     isLightsOn: null,
     hasLightSensor: false,
     dli: null,
+    optimalConditions: null,
     ...overrides,
   };
 }
@@ -429,5 +430,52 @@ describe('Cycle 9 — viewContext filter', () => {
     const { chips } = computeHeaderMetrics(env, [], null, [], 'analytics');
 
     expect(chips.find((c) => c.key === MetricKey.DLI)).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 10 — optimal conditions chip
+// ---------------------------------------------------------------------------
+
+describe('Cycle 10 — optimal conditions chip', () => {
+  it('returns an optimal chip with status "optimal" when conditions are met', () => {
+    const env = makeEnvSnapshot({ optimalConditions: { isOptimal: true, reasons: [] } });
+
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.OPTIMAL);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('Optimal Conditions');
+    expect(chip!.status).toBe('optimal');
+  });
+
+  it('returns an optimal chip with status "warning" and reason when conditions are not met', () => {
+    const env = makeEnvSnapshot({
+      optimalConditions: { isOptimal: false, reasons: ['Temperature too high'] },
+    });
+
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.OPTIMAL);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('Not Optimal: Temperature too high');
+    expect(chip!.status).toBe('warning');
+  });
+
+  it('returns "Not Optimal" label without reason list when reasons is empty', () => {
+    const env = makeEnvSnapshot({ optimalConditions: { isOptimal: false, reasons: [] } });
+
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.OPTIMAL);
+    expect(chip!.value).toBe('Not Optimal');
+  });
+
+  it('omits the optimal chip when optimalConditions is null', () => {
+    const env = makeEnvSnapshot({ optimalConditions: null });
+
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+
+    expect(chips.find((c) => c.key === MetricKey.OPTIMAL)).toBeUndefined();
   });
 });
