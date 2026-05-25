@@ -28,6 +28,21 @@ export function setHass(hass: HomeAssistant): void {
 }
 
 /**
+ * Make an authenticated HTTP request through the shared hass reference.
+ * Wraps `hass.fetchWithAuth` for use from slice mutators that need REST APIs
+ * (e.g. multipart file uploads) rather than WebSocket calls.
+ *
+ * @param path    - Absolute HA API path (e.g. '/api/growspace_manager/import_strains')
+ * @param init    - Fetch init options (method, body, etc.)
+ */
+export async function callFetch(path: string, init?: RequestInit): Promise<Response> {
+  if (!_hass) {
+    throw new WSError('internal_error', 'callFetch: hass is not set — call setHass() first');
+  }
+  return _hass.fetchWithAuth(path, init);
+}
+
+/**
  * Call a Home Assistant service and return its response payload.
  *
  * Use for service calls that set `return_response: true` (e.g. AI advice,

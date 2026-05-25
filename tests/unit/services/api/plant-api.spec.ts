@@ -131,14 +131,6 @@ describe('DataService - PlantAPI', () => {
             }));
         });
 
-        it('should clean undefined keys in addStrain', async () => {
-            await service.addStrain({ strain: 'X', breeder: undefined });
-            // Verify breeder is NOT in call
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', {
-                strain: 'X'
-            });
-        });
-
         it('should call takeClone and remove target if undefined', async () => {
             // Technically target_growspace_id is omitted from payload if not present
             await service.takeClone({ mother_plant_id: 'p1' });

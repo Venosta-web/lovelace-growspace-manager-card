@@ -6,6 +6,11 @@ import { StrainEntry } from '../../types';
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import { fetchStrainLibrary } from './library-actions';
+import {
+  addStrain as strainSliceAdd,
+  updateStrainMeta as strainSliceUpdateMeta,
+  removeStrain as strainSliceRemove,
+} from '../../slices/strain';
 
 /**
  * Create consistent payload for strain operations.
@@ -46,8 +51,7 @@ export async function addStrain(
   const ok = await withAction(
     ctx,
     async () => {
-      const payload = _createStrainPayload(strainData);
-      await ctx.dataService.addStrain(payload);
+      await strainSliceAdd(_createStrainPayload(strainData) as Parameters<typeof strainSliceAdd>[0]);
       const tree = (strainData as any).parents;
       if (tree?.parents?.length) {
         await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
@@ -72,8 +76,7 @@ export async function updateStrain(
   const ok = await withAction(
     ctx,
     async () => {
-      const payload = _createStrainPayload(strainData);
-      await ctx.dataService.updateStrainMeta(payload);
+      await strainSliceUpdateMeta(_createStrainPayload(strainData) as Parameters<typeof strainSliceUpdateMeta>[0]);
       const tree = (strainData as any).parents;
       if (tree?.parents?.length) {
         await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
@@ -91,11 +94,7 @@ export async function updateStrain(
  */
 export async function removeStrain(ctx: ActionContext, strainKey: string): Promise<boolean> {
   try {
-    const parts = strainKey.split('|');
-    const strain = parts[0];
-    const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-
-    await ctx.dataService.removeStrain(strain, phenotype);
+    await strainSliceRemove(strainKey);
 
     const current = ctx.data.$strainLibrary.get();
     ctx.data.setStrainLibrary(current.filter((s) => s.key !== strainKey));

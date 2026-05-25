@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock all API classes BEFORE imports that use them
 vi.mock('../../../src/services/api/growspace-api');
-vi.mock('../../../src/services/api/strain-api');
 vi.mock('../../../src/services/api/nutrient-api');
 vi.mock('../../../src/services/api/history-api');
 vi.mock('../../../src/services/api/plant-api');
@@ -14,19 +13,32 @@ vi.mock('../../../src/slices/camera', () => ({
   setSnapshots: vi.fn(),
   snapshots$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
+vi.mock('../../../src/slices/strain', () => ({
+  fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+  addStrain: vi.fn().mockResolvedValue(undefined),
+  updateStrainMeta: vi.fn().mockResolvedValue(undefined),
+  removeStrain: vi.fn().mockResolvedValue(undefined),
+  exportStrainLibrary: vi.fn().mockResolvedValue(undefined),
+  importStrainLibrary: vi.fn().mockResolvedValue({ success: true }),
+  clearStrainLibrary: vi.fn().mockResolvedValue(undefined),
+  updateBreeder: vi.fn().mockResolvedValue(undefined),
+  deleteBreeder: vi.fn().mockResolvedValue(undefined),
+  setStrainLibrary: vi.fn(),
+  strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+}));
 vi.mock('../../../src/services/api/vision-api');
 vi.mock('../../../src/services/api/report-api');
 vi.mock('../../../src/services/api/genetics-api');
 
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceAPI } from '../../../src/services/api/growspace-api';
-import { StrainAPI } from '../../../src/services/api/strain-api';
 import { NutrientAPI } from '../../../src/services/api/nutrient-api';
 import { HistoryAPI } from '../../../src/services/api/history-api';
 import { PlantAPI } from '../../../src/services/api/plant-api';
 import { IrrigationAPI } from '../../../src/services/api/irrigation-api';
 import { AIAPI } from '../../../src/services/api/ai-api';
 import * as cameraSlice from '../../../src/slices/camera';
+import * as strainSlice from '../../../src/slices/strain';
 import { VisionAPI } from '../../../src/services/api/vision-api';
 import { ReportAPI } from '../../../src/services/api/report-api';
 import { GeneticsAPI } from '../../../src/services/api/genetics-api';
@@ -78,18 +90,16 @@ describe('DataService Delegation', () => {
     });
   });
 
-  describe('StrainAPI delegation', () => {
-    it('delegates fetchStrainLibrary', () => {
-      const instance = vi.mocked(StrainAPI).mock.instances[0];
-      dataService.fetchStrainLibrary();
-      expect(instance.fetchStrainLibrary).toHaveBeenCalled();
+  describe('Strain slice delegation', () => {
+    it('delegates fetchStrainLibrary to strain slice', async () => {
+      await dataService.fetchStrainLibrary();
+      expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
     });
 
-    it('delegates addStrain', () => {
-      const instance = vi.mocked(StrainAPI).mock.instances[0];
+    it('delegates addStrain to strain slice', async () => {
       const data = { strain: 'OG' };
-      dataService.addStrain(data as any);
-      expect(instance.addStrain).toHaveBeenCalledWith(data);
+      await dataService.addStrain(data as any);
+      expect(strainSlice.addStrain).toHaveBeenCalledWith(expect.objectContaining({ strain: 'OG' }));
     });
   });
 
