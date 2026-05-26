@@ -6,7 +6,7 @@ import { GrowspaceNutrientPresetsEditorUI } from './growspace-nutrient-presets-e
 const mockTags = ['ha-svg-icon', 'gs-dialog', 'md3-text-input', 'md3-number-input'];
 for (const tag of mockTags) {
   if (!customElements.get(tag)) {
-    customElements.define(tag, class extends HTMLElement {});
+    customElements.define(tag, class extends HTMLElement { });
   }
 }
 

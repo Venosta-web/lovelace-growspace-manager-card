@@ -36,6 +36,11 @@ function makeMockStore(runCycleFn = vi.fn().mockResolvedValue(undefined)) {
   };
 }
 
+// Collapse all whitespace runs to a single space for text-content assertions.
+function normalize(s: string | null | undefined): string {
+  return (s ?? '').replace(/\s+/g, ' ').trim();
+}
+
 // ---------------------------------------------------------------------------
 // Footer meta – timestamps
 // ---------------------------------------------------------------------------
@@ -49,7 +54,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
     await el.updateComplete;
 
     const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
-    const text = meta?.textContent ?? '';
+    const text = normalize(meta?.textContent);
     // Formatted timestamp includes HH:MM, so a colon should appear after "Last cycle"
     expect(text).toMatch(/Last cycle.+:/);
   });
@@ -62,7 +67,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
     await el.updateComplete;
 
     const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
-    expect(meta?.textContent).toContain('Last cycle —');
+    expect(normalize(meta?.textContent)).toContain('Last cycle —');
   });
 
   it('shows a formatted next-cycle time when nextScheduledCycle is set', async () => {
@@ -73,7 +78,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
     await el.updateComplete;
 
     const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
-    const text = meta?.textContent ?? '';
+    const text = normalize(meta?.textContent);
     expect(text).toMatch(/Next.+:/);
   });
 
@@ -85,7 +90,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
     await el.updateComplete;
 
     const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
-    expect(meta?.textContent).toContain('Next —');
+    expect(normalize(meta?.textContent)).toContain('Next —');
   });
 });
 

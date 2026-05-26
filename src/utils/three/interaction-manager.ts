@@ -1,8 +1,6 @@
 import * as THREE from 'three';
 import { DragControls } from 'three/examples/jsm/controls/DragControls.js';
 import { SceneManager } from './scene-manager';
-import { BaseRenderer } from './renderers/base-renderer';
-import { PlantUtils } from '../plant-utils';
 
 export class InteractionManager {
   private sceneManager: SceneManager;

@@ -9,7 +9,7 @@
  */
 
 import { computed } from 'nanostores';
-import { ViewMode, GridOverlayMode } from '../../constants';
+import { ViewMode } from '../../constants';
 import type { GrowspaceViewMode, GridOverlayMode as GridOverlayModeType } from '../../types';
 import { viewMode$ } from './index';
 

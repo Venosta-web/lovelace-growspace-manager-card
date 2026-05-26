@@ -46,8 +46,8 @@ describe('GrowReportDialog', () => {
     it('renders the header title and growspace name', () => {
         const title = element.shadowRoot?.querySelector('.dialog-title');
         const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-        expect(title?.textContent).toBe('Grow Report');
-        expect(subtitle?.textContent).toBe('Main Tent');
+        expect(title?.textContent?.trim()).toBe('Grow Report');
+        expect(subtitle?.textContent?.trim()).toBe('Main Tent');
     });
 
     it('renders the "x" close button in the header', () => {
@@ -165,7 +165,7 @@ describe('GrowReportDialog', () => {
         await element.updateComplete;
 
         const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-        expect(subtitle?.textContent).toBe('New Tent Name');
+        expect(subtitle?.textContent?.trim()).toBe('New Tent Name');
     });
 
     it('renders stage chips when summary has strains', async () => {
@@ -213,7 +213,7 @@ describe('GrowReportDialog', () => {
         element.requestUpdate();
         await element.updateComplete;
         const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-        expect(subtitle?.textContent).toBe('');
+        expect(subtitle?.textContent?.trim()).toBe('');
     });
 
     it('prevents concurrent exports', async () => {

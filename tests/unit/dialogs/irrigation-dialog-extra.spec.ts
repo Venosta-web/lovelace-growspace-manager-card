@@ -170,7 +170,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should render schedule summary with irrigation and drain events', () => {
-            const text = element.shadowRoot?.textContent;
+            const text = (element.shadowRoot?.textContent ?? '').replace(/\s+/g, ' ');
             expect(text).toContain('1 events/day');
             expect(text).toContain('08:00');
             expect(text).toContain('09:00');
@@ -533,7 +533,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         beforeEach(async () => {
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             // When all features enabled: Schedules[0], Steering[1], Config[2], Tanks[3], Analytics[4], Drain EC[5]
-            (tabs?.[5] as HTMLElement).click(); 
+            (tabs?.[5] as HTMLElement).click();
             await element.updateComplete;
         });
 
@@ -592,7 +592,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
                     irrigationTimes: [{ time: '12:00:00', duration: 60 }],
                 },
             } as any;
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '12:00', duration: 30 });
 
             await (element as any)._saveEditedIrrigationTime();
@@ -604,7 +604,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should show error toast when adding fails during edit save', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '10:00', duration: 60 });
             mocks.addIrrigationTime.mockRejectedValueOnce(new Error('Add Fail'));
 
@@ -618,7 +618,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Template Event Handlers', () => {
         it('should update adding state on time change', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION' });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
@@ -630,7 +630,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should update adding state on duration change', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION' });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
@@ -642,7 +642,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should update editing state on time change', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 60 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 60, originalTime: '08:00', originalDuration: 60 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
@@ -654,7 +654,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should update editing state on duration change', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 60 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 60, originalTime: '08:00', originalDuration: 60 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
@@ -666,7 +666,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle invalid duration input', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION' });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 60 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
@@ -717,7 +717,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should handle _handleResetWaterTracking when user confirms', async () => {
             vi.spyOn(window, 'confirm').mockReturnValue(true);
-            const notifySpy = vi.spyOn(element as any, '_notifyDataChanged').mockImplementation(() => {});
+            const notifySpy = vi.spyOn(element as any, '_notifyDataChanged').mockImplementation(() => { });
             await (element as any)._handleResetWaterTracking();
             expect(mocks.resetWaterTracking || true).toBeTruthy(); // resetWaterTracking may not be in mocks
             notifySpy.mockRestore();
@@ -738,7 +738,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
                     drainTimes: [{ time: '10:00:00', duration: 45 }],
                 },
             } as any;
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00', duration: 45 });
 
             await (element as any)._saveEditedDrainTime();
@@ -750,7 +750,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle remove failure in _saveEditedIrrigationTime', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '11:00', duration: 30 });
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('Remove Fail'));
 
@@ -762,7 +762,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle remove failure in _saveEditedDrainTime', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '11:00', duration: 45 });
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Fail'));
 
@@ -981,7 +981,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedIrrigationTime when time already in HH:MM:SS format', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '11:00:00', duration: 30 });
             await (element as any)._saveEditedIrrigationTime();
             expect(mocks.addIrrigationTime).toHaveBeenCalledWith(
@@ -990,7 +990,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedDrainTime when time already in HH:MM:SS format', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '11:00:00', duration: 45 });
             await (element as any)._saveEditedDrainTime();
             expect(mocks.addDrainTime).toHaveBeenCalledWith(
@@ -999,14 +999,14 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should call addIrrigationTime when editing irrigation time to new value', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '09:00', duration: 30 });
             await (element as any)._saveEditedIrrigationTime();
             expect(mocks.addIrrigationTime).toHaveBeenCalled();
         });
 
         it('should call addDrainTime when editing drain time to new value', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00', duration: 45 });
             await (element as any)._saveEditedDrainTime();
             expect(mocks.addDrainTime).toHaveBeenCalled();
@@ -1037,8 +1037,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
         it('should handle resetWaterTracking API error gracefully', async () => {
             vi.spyOn(window, 'confirm').mockReturnValue(true);
             mocks.resetWaterTracking.mockRejectedValueOnce(new Error('Reset failed'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => {});
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 
             await (element as any)._handleResetWaterTracking();
 
@@ -1060,7 +1060,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should ignore NaN duration in edit overlay', async () => {
-            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 30 });
             await element.updateComplete;
 

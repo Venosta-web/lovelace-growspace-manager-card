@@ -31,6 +31,7 @@ export class GrowspaceDataStore {
     Record<string, import('../../schemas/api-schema').ECRampCurve>
   >;
   public readonly $nutrientDataState: ReadableAtom<NutrientDataState>;
+
   /** Incremented by GrowspaceSharedStore when a push event requires a full data refresh. */
   public readonly $staleCounter: WritableAtom<number>;
 

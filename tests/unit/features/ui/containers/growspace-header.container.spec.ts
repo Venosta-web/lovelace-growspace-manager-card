@@ -12,7 +12,7 @@ import type { GrowspaceHeaderContainer } from '../../../../../src/features/ui/co
 
 vi.mock('../../../../../src/features/ui/components/growspace-header-ui', () => {
     if (!customElements.get('growspace-header-ui')) {
-        customElements.define('growspace-header-ui', class extends HTMLElement {});
+        customElements.define('growspace-header-ui', class extends HTMLElement { });
     }
     return {};
 });
@@ -20,7 +20,7 @@ vi.mock('../../../../../src/features/ui/components/growspace-header-ui', () => {
 // Mock HeaderDragController since it has side effects
 vi.mock('../../../../../src/controllers/header-drag-controller', () => ({
     HeaderDragController: class {
-        constructor() {}
+        constructor() { }
         handleDragStart = vi.fn();
         handleDrop = vi.fn();
     },
@@ -58,39 +58,39 @@ const buildMockStore = () => {
         showToast: vi.fn(),
     };
     return {
-    // Keep top-level references so old assertions still work
-    get openAddPlantDialog() { return ui_actions.openAddPlantDialog; },
-    get openConfigDialog() { return ui_actions.openConfigDialog; },
-    get openStrainLibraryDialog() { return ui_actions.openStrainLibraryDialog; },
-    get openIrrigationDialog() { return ui_actions.openIrrigationDialog; },
-    get openGrowMasterDialog() { return ui_actions.openGrowMasterDialog; },
-    get openLogbookDialog() { return ui_actions.openLogbookDialog; },
-    get openSnapshotsDialog() { return ui_actions.openSnapshotsDialog; },
-    get openWateringDialog() { return ui_actions.openWateringDialog; },
-    get openIPMDialog() { return ui_actions.openIPMDialog; },
-    get openNutrientsDialog() { return ui_actions.openNutrientsDialog; },
-    get openECRampDialog() { return ui_actions.openECRampDialog; },
-    get openGrowReportDialog() { return ui_actions.openGrowReportDialog; },
-    get toggleEnvGraph() { return ui_actions.toggleEnvGraph; },
-    actions: { ui: ui_actions },
-    handleDeviceChange: vi.fn(),
-    history: {
-        $historyCache: atom({}),
-        linkGraphs: vi.fn(),
-        unlinkGraphGroup: vi.fn(),
-        loadHistoryOnDemand: vi.fn(),
-        startAutoRefresh: vi.fn(),
-        getRange: vi.fn().mockReturnValue('24h'),
-    },
-    ui: {
-        setEditMode: vi.fn(),
-        setViewMode: vi.fn(),
-        $selectedPlants: { get: vi.fn().mockReturnValue(new Set<string>()) },
-        $viewMode: { get: vi.fn().mockReturnValue('standard') },
-        $isEditMode: { get: vi.fn().mockReturnValue(false) },
-    },
-    $headerState: atom<any>(null),
-    $headerActionsState: atom({ viewMode: 'standard', isEditMode: false, selectedPlants: new Set() }),
+        // Keep top-level references so old assertions still work
+        get openAddPlantDialog() { return ui_actions.openAddPlantDialog; },
+        get openConfigDialog() { return ui_actions.openConfigDialog; },
+        get openStrainLibraryDialog() { return ui_actions.openStrainLibraryDialog; },
+        get openIrrigationDialog() { return ui_actions.openIrrigationDialog; },
+        get openGrowMasterDialog() { return ui_actions.openGrowMasterDialog; },
+        get openLogbookDialog() { return ui_actions.openLogbookDialog; },
+        get openSnapshotsDialog() { return ui_actions.openSnapshotsDialog; },
+        get openWateringDialog() { return ui_actions.openWateringDialog; },
+        get openIPMDialog() { return ui_actions.openIPMDialog; },
+        get openNutrientsDialog() { return ui_actions.openNutrientsDialog; },
+        get openECRampDialog() { return ui_actions.openECRampDialog; },
+        get openGrowReportDialog() { return ui_actions.openGrowReportDialog; },
+        get toggleEnvGraph() { return ui_actions.toggleEnvGraph; },
+        actions: { ui: ui_actions },
+        handleDeviceChange: vi.fn(),
+        history: {
+            $historyCache: atom({}),
+            linkGraphs: vi.fn(),
+            unlinkGraphGroup: vi.fn(),
+            loadHistoryOnDemand: vi.fn(),
+            startAutoRefresh: vi.fn(),
+            getRange: vi.fn().mockReturnValue('24h'),
+        },
+        ui: {
+            setEditMode: vi.fn(),
+            setViewMode: vi.fn(),
+            $selectedPlants: { get: vi.fn().mockReturnValue(new Set<string>()) },
+            $viewMode: { get: vi.fn().mockReturnValue('standard') },
+            $isEditMode: { get: vi.fn().mockReturnValue(false) },
+        },
+        $headerState: atom<any>(null),
+        $headerActionsState: atom({ viewMode: 'standard', isEditMode: false, selectedPlants: new Set() }),
     };
 };
 
@@ -111,6 +111,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any).store = mockStore;
         (element as any).device = mockDevice;
         (element as any).hass = { states: {} };
+        (element as any)._initControllers();
         element.requestUpdate();
         await element.updateComplete;
     });
@@ -184,9 +185,9 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._headerController = existingHeader;
         (element as any)._actionsController = existingActions;
         (element as any)._historyCacheController = existingCache;
-        
+
         (element as any)._initControllers();
-        
+
         expect((element as any)._headerController).toBe(existingHeader);
         expect((element as any)._actionsController).toBe(existingActions);
         expect((element as any)._historyCacheController).toBe(existingCache);
@@ -222,6 +223,7 @@ describe('GrowspaceHeaderContainer', () => {
                 isLightsOn: true,
                 hasLightSensor: true,
                 dli: null,
+                optimalConditions: null,
             }],
         ]));
 
@@ -519,130 +521,130 @@ describe('GrowspaceHeaderContainer', () => {
     });
 
     it('ai action with no deviceId falls back to empty string', () => {
-      element.device = {} as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ai' } }));
-      expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('');
+        element.device = {} as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ai' } }));
+        expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('');
     });
 
     it('training action with no device passes undefined', () => {
-      element.device = undefined as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'training' } }));
-      expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], undefined);
+        element.device = undefined as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'training' } }));
+        expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], undefined);
     });
 
     it('ec_ramp action with no device passes undefined', () => {
-      element.device = undefined as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ec_ramp' } }));
-      expect(mockStore.openECRampDialog).toHaveBeenCalledWith(undefined);
+        element.device = undefined as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ec_ramp' } }));
+        expect(mockStore.openECRampDialog).toHaveBeenCalledWith(undefined);
     });
 
     it('report action with no device passes undefined', () => {
-      element.device = undefined as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'report' } }));
-      expect(mockStore.openGrowReportDialog).toHaveBeenCalledWith(undefined);
+        element.device = undefined as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'report' } }));
+        expect(mockStore.openGrowReportDialog).toHaveBeenCalledWith(undefined);
     });
 
     it('snapshots action with no device passes undefined', () => {
-      element.device = undefined as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'snapshots' } }));
-      expect(mockStore.openSnapshotsDialog).toHaveBeenCalledWith(undefined);
+        element.device = undefined as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'snapshots' } }));
+        expect(mockStore.openSnapshotsDialog).toHaveBeenCalledWith(undefined);
     });
 
     it('water action with no deviceId passes undefined', () => {
-      element.device = {} as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'water' } }));
-      expect(mockStore.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
-        growspaceId: undefined
-      }));
+        element.device = {} as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'water' } }));
+        expect(mockStore.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
+            growspaceId: undefined
+        }));
     });
 
     it('ipm action with no deviceId falls back to empty string', () => {
-      element.device = {} as any;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ipm' } }));
-      expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({
-        growspaceId: ''
-      }));
+        element.device = {} as any;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ipm' } }));
+        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({
+            growspaceId: ''
+        }));
     });
 
     it('unknown action logs a warning and does not throw', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'unknown_action' } }));
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'unknown_action' } }));
+        expect(consoleSpy).toHaveBeenCalled();
+        consoleSpy.mockRestore();
     });
 
     it('action does nothing when store is not set', () => {
-      (element as any).store = undefined;
-      (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'add_plant' } }));
-      expect(mockStore.openAddPlantDialog).not.toHaveBeenCalled();
+        (element as any).store = undefined;
+        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'add_plant' } }));
+        expect(mockStore.openAddPlantDialog).not.toHaveBeenCalled();
     });
 
-  describe('Getters Null Safety', () => {
-    it('_problemPlants returns empty array if device is missing', () => {
-      element.device = undefined as any;
-      expect((element as any)._problemPlants).toEqual([]);
-    });
-
-    it('_problemPlants returns empty array if plants are missing', () => {
-      element.device = { deviceId: '1' } as any;
-      expect((element as any)._problemPlants).toEqual([]);
-    });
-
-    it('_problemPlants falls back to friendly_name then Unknown', () => {
-      element.device = {
-        plants: [
-          { attributes: { problem: true, friendly_name: 'Friendly' } },
-          { attributes: { problem: true } }
-        ]
-      } as any;
-      expect((element as any)._problemPlants).toEqual(['Friendly', 'Unknown']);
-    });
-  });
-
-  describe('Drag and Drop', () => {
-
-    it('_handleChipDrop calls dragController.handleDrop and invokes linkGraphs callback', () => {
-        const e = new CustomEvent('chip-drop', {
-            detail: { event: new MouseEvent('drop'), targetMetric: 'humidity' },
-        });
-        
-        // Setup handleDrop to immediately call the callback
-        (element as any)._dragController.handleDrop.mockImplementation((event: any, target: any, callback: any) => {
-            callback('temp', 'hum');
+    describe('Getters Null Safety', () => {
+        it('_problemPlants returns empty array if device is missing', () => {
+            element.device = undefined as any;
+            expect((element as any)._problemPlants).toEqual([]);
         });
 
-        (element as any)._handleChipDrop(e);
-        
-        expect((element as any)._dragController.handleDrop).toHaveBeenCalled();
-        expect(mockStore.history.linkGraphs).toHaveBeenCalledWith('temp', 'hum');
+        it('_problemPlants returns empty array if plants are missing', () => {
+            element.device = { deviceId: '1' } as any;
+            expect((element as any)._problemPlants).toEqual([]);
+        });
+
+        it('_problemPlants falls back to friendly_name then Unknown', () => {
+            element.device = {
+                plants: [
+                    { attributes: { problem: true, friendly_name: 'Friendly' } },
+                    { attributes: { problem: true } }
+                ]
+            } as any;
+            expect((element as any)._problemPlants).toEqual(['Friendly', 'Unknown']);
+        });
     });
 
-    it('_handleChipDragStart calls dragController.handleDragStart', () => {
-        const e = new CustomEvent('chip-drag-start', {
-            detail: { event: new MouseEvent('dragstart'), metric: 'temp' },
-        });
-        (element as any)._handleChipDragStart(e);
-        expect((element as any)._dragController.handleDragStart).toHaveBeenCalledWith(e.detail.event, 'temp');
-    });
+    describe('Drag and Drop', () => {
 
-    it('_handleChipDrop does nothing if store.history is missing', () => {
-        const linkSpy = mockStore.history.linkGraphs;
-        const e = new CustomEvent('chip-drop', {
-            detail: { event: new MouseEvent('drop'), targetMetric: 'humidity' },
-        });
-        (element as any).store.history = undefined;
-        (element as any)._dragController.handleDrop.mockImplementation((event: any, target: any, callback: any) => {
-            callback('temp', 'hum');
-        });
-        (element as any)._handleChipDrop(e);
-        expect(linkSpy).not.toHaveBeenCalled();
-    });
+        it('_handleChipDrop calls dragController.handleDrop and invokes linkGraphs callback', () => {
+            const e = new CustomEvent('chip-drop', {
+                detail: { event: new MouseEvent('drop'), targetMetric: 'humidity' },
+            });
 
-    it('_handleUnlinkGraphs does nothing if store.history is missing', () => {
-        const unlinkSpy = mockStore.history.unlinkGraphGroup;
-        (element as any).store.history = undefined;
-        (element as any)._handleUnlinkGraphs(new CustomEvent('unlink', { detail: { groupIndex: 0 } }));
-        expect(unlinkSpy).not.toHaveBeenCalled();
+            // Setup handleDrop to immediately call the callback
+            (element as any)._dragController.handleDrop.mockImplementation((event: any, target: any, callback: any) => {
+                callback('temp', 'hum');
+            });
+
+            (element as any)._handleChipDrop(e);
+
+            expect((element as any)._dragController.handleDrop).toHaveBeenCalled();
+            expect(mockStore.history.linkGraphs).toHaveBeenCalledWith('temp', 'hum');
+        });
+
+        it('_handleChipDragStart calls dragController.handleDragStart', () => {
+            const e = new CustomEvent('chip-drag-start', {
+                detail: { event: new MouseEvent('dragstart'), metric: 'temp' },
+            });
+            (element as any)._handleChipDragStart(e);
+            expect((element as any)._dragController.handleDragStart).toHaveBeenCalledWith(e.detail.event, 'temp');
+        });
+
+        it('_handleChipDrop does nothing if store.history is missing', () => {
+            const linkSpy = mockStore.history.linkGraphs;
+            const e = new CustomEvent('chip-drop', {
+                detail: { event: new MouseEvent('drop'), targetMetric: 'humidity' },
+            });
+            (element as any).store.history = undefined;
+            (element as any)._dragController.handleDrop.mockImplementation((event: any, target: any, callback: any) => {
+                callback('temp', 'hum');
+            });
+            (element as any)._handleChipDrop(e);
+            expect(linkSpy).not.toHaveBeenCalled();
+        });
+
+        it('_handleUnlinkGraphs does nothing if store.history is missing', () => {
+            const unlinkSpy = mockStore.history.unlinkGraphGroup;
+            (element as any).store.history = undefined;
+            (element as any)._handleUnlinkGraphs(new CustomEvent('unlink', { detail: { groupIndex: 0 } }));
+            expect(unlinkSpy).not.toHaveBeenCalled();
+        });
     });
-});
 });

@@ -377,6 +377,27 @@ describe('printLabel', () => {
       expect.objectContaining({ preview: true })
     );
   });
+
+  it('includes breeder, lineage, breederLogo, and deviceId when provided', async () => {
+    await printLabel({
+      strain: 'OG Kush',
+      breeder: 'Serious Seeds',
+      lineage: 'Skunk x Afghani',
+      breederLogo: 'https://example.com/logo.png',
+      deviceId: 'printer-1',
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'print_label',
+      expect.objectContaining({
+        breeder: 'Serious Seeds',
+        lineage: 'Skunk x Afghani',
+        breeder_logo: 'https://example.com/logo.png',
+        device_id: 'printer-1',
+      })
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -463,6 +484,16 @@ describe('logMoistureReading', () => {
       expect.objectContaining({ plant_id: 'abc', moisture_percent: 65.0 })
     );
   });
+
+  it('includes date in the payload when provided', async () => {
+    await logMoistureReading('abc', 65.0, '2026-05-25');
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'log_moisture_reading',
+      expect.objectContaining({ date: '2026-05-25' })
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -502,5 +533,108 @@ describe('waterPlant (pilot regression)', () => {
       'water_plant',
       expect.objectContaining({ plant_id: 'abc', amount: 250 })
     );
+  });
+
+  it('includes nutrients in the payload when provided and non-empty', async () => {
+    await waterPlant('abc', 300, { 'cal-mag': 2.5, 'bloom-a': 1.0 });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'water_plant',
+      expect.objectContaining({ nutrients: { 'cal-mag': 2.5, 'bloom-a': 1.0 } })
+    );
+  });
+
+  it('omits nutrients from the payload when the nutrients map is empty', async () => {
+    await waterPlant('abc', 300, {});
+
+    const call = vi.mocked(hassCall.callService).mock.calls[0][2] as Record<string, unknown>;
+    expect(call).not.toHaveProperty('nutrients');
+  });
+
+  it('includes preset_id in the payload when provided', async () => {
+    await waterPlant('abc', 300, undefined, 'feed-week-4');
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'water_plant',
+      expect.objectContaining({ preset_id: 'feed-week-4' })
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// harvestPlant — full metric set
+// ---------------------------------------------------------------------------
+
+describe('harvestPlant (all metrics)', () => {
+  it('includes all supported metric fields when provided', async () => {
+    await harvestPlant('abc', 'dry', {
+      wet_weight: 100,
+      dry_weight: 25,
+      trim_weight: 5,
+      thc_percentage: 22,
+      cbd_percentage: 1,
+      terpene_profile: 'earthy',
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'harvest_plant',
+      expect.objectContaining({
+        wet_weight: 100,
+        dry_weight: 25,
+        trim_weight: 5,
+        thc_percentage: 22,
+        cbd_percentage: 1,
+        terpene_profile: 'earthy',
+      })
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// movePlantToGrowspace — transition_date and rollback
+// ---------------------------------------------------------------------------
+
+describe('movePlantToGrowspace (extended)', () => {
+  it('includes transition_date in the payload when provided', async () => {
+    const plant = makePlant({ plant_id: 'abc', stage: 'veg' });
+
+    await movePlantToGrowspace(plant, 'flower-room', '2026-06-01');
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'move_plant',
+      expect.objectContaining({ transition_date: '2026-06-01' })
+    );
+  });
+
+  it('removes the optimistic delete marker when the service call fails', async () => {
+    const plant = makePlant({ plant_id: 'abc', stage: 'veg' });
+    setPlants([plant]);
+
+    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('network'));
+
+    await expect(movePlantToGrowspace(plant, 'flower-room')).rejects.toThrow('network');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// swapPlants — third plant stays put
+// ---------------------------------------------------------------------------
+
+describe('swapPlants (with bystander plant)', () => {
+  it('leaves a third plant untouched during the swap', async () => {
+    const p1 = makePlant({ plant_id: 'abc', row: 0, col: 0 });
+    const p2 = makePlant({ plant_id: 'xyz', row: 1, col: 2 });
+    const p3 = makePlant({ plant_id: 'bystander', row: 2, col: 2 });
+    setPlants([p1, p2, p3]);
+
+    await swapPlants('abc', 'xyz');
+
+    const after = plants$.get().find((p) => p.attributes.plant_id === 'bystander')!;
+    expect(after.attributes.row).toBe(2);
+    expect(after.attributes.col).toBe(2);
   });
 });

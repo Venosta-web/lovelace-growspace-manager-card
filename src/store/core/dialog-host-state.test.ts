@@ -1,6 +1,4 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GrowspaceDataStore } from './data-store';
-import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 import { GrowspaceStore } from './growspace-store';
 

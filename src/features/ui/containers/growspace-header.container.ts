@@ -60,11 +60,13 @@ export class GrowspaceHeaderContainer extends LitElement {
       if (!this._actionsController) {
         this._actionsController = new StoreController(this, this.store.$headerActionsState);
       }
-      if (!this._historyCacheController) {
-        this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
+      if (this.store.history) {
+        if (!this._historyCacheController) {
+          this._historyCacheController = new StoreController(this, this.store.history.$historyCache);
+        }
+        this.store.history.loadHistoryOnDemand();
+        this.store.history.startAutoRefresh();
       }
-      this.store.history.loadHistoryOnDemand();
-      this.store.history.startAutoRefresh();
     }
     if (!this._envSnapshotsController) {
       this._envSnapshotsController = new StoreController(this, envSnapshots$);
@@ -301,7 +303,7 @@ export class GrowspaceHeaderContainer extends LitElement {
         .config=${this.config}
         .compact=${this.compact}
         .historyCache=${this._historyCacheController?.value || {}}
-        .timeRange=${this.store.history.getRange()}
+        .timeRange=${this.store?.history?.getRange() ?? '24h'}
         .viewMode=${this._actionsController?.value?.viewMode || 'standard'}
         .isEditMode=${this._actionsController?.value?.isEditMode || false}
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
