@@ -5,6 +5,8 @@ import { provide } from '@lit/context';
 import { hassContext, configContext, strainLibraryContext, storeContext } from './lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { setHass } from './services/hass-call';
+import { setMutateListener, undo, canUndo } from './services/mutate';
+import { selectedDeviceId$ } from './slices/grid';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
@@ -106,6 +108,20 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    window.addEventListener('keydown', this._handleGlobalKeydown);
+    setMutateListener((info, growspaceId) => {
+      const label = info.label ?? info.type;
+      this.store.ui.showToast(`${label}`, 'success', {
+        label: 'Undo',
+        callback: () => {
+          undo(growspaceId)
+            .then(() => {
+              this.store.ui.showToast('Action undone', 'info');
+            })
+            .catch((err: unknown) => console.error('[Undo failed]', err));
+        },
+      });
+    });
     if (!this._dialogPortal) {
       const portal = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
       portal.store = this.store;
@@ -118,6 +134,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    window.removeEventListener('keydown', this._handleGlobalKeydown);
+    setMutateListener(null);
     if (this._dialogPortal) {
       document.body.removeChild(this._dialogPortal);
       this._dialogPortal = null;
@@ -201,6 +219,19 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   private _handleKeyboardNav(e: KeyboardEvent) {
     this.store.actions.ui.handleKeyboardNavigation(e.key);
   }
+
+  private _handleGlobalKeydown = (e: KeyboardEvent) => {
+    const isUndo = (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
+    if (!isUndo) return;
+    const growspaceId = selectedDeviceId$.get();
+    if (!growspaceId || !canUndo(growspaceId)) return;
+    e.preventDefault();
+    undo(growspaceId)
+      .then(() => {
+        this.store.ui.showToast('Action undone', 'info');
+      })
+      .catch((err: unknown) => console.error('[Undo failed]', err));
+  };
 
   private _downloadFile(url: string) {
     const a = document.createElement('a');

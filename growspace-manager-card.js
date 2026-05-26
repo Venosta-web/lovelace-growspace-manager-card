@@ -7941,6 +7941,114 @@ const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
 
 /**
+ * mutate primitive — owns optimistic updates, undo stack, and sync trigger.
+ *
+ * Replaces undo-redo-manager.ts + sync-service.ts for migrated mutators.
+ * Each slice builds its domain mutators on top of this primitive.
+ *
+ * The undo stack is scoped per growspace so that undoing on Tent B cannot
+ * silently roll back an action taken on Tent A.
+ *
+ * After each successful commit the module fires an optional listener registered
+ * via `setMutateListener`.  The root card component wires this up once at boot
+ * to surface undo affordances (toast notification with Undo button, Ctrl+Z).
+ */
+const _undoStack = new Map();
+const MAX_UNDO = 10;
+let _listener = null;
+/**
+ * Register a callback that fires after every successful `mutate()` commit.
+ * Pass `null` to remove the listener.  Only one listener is supported at a
+ * time; calling this again replaces the previous registration.
+ *
+ * The root card component uses this to show undo toast notifications without
+ * coupling the service layer to UI atoms.
+ */
+function setMutateListener(fn) {
+    _listener = fn;
+}
+function _stackFor(growspaceId) {
+    let stack = _undoStack.get(growspaceId);
+    if (!stack) {
+        stack = [];
+        _undoStack.set(growspaceId, stack);
+    }
+    return stack;
+}
+/**
+ * Execute an action: optimistic → apply → record undo.
+ * On apply failure: run inverse (rollback) and re-throw.
+ *
+ * @param growspaceId  The growspace this action belongs to. Undo entries
+ *                     never cross growspace boundaries.
+ */
+async function mutate(action, growspaceId) {
+    action.optimistic();
+    try {
+        await action.apply();
+    }
+    catch (err) {
+        action.inverse();
+        throw err;
+    }
+    const entry = { type: action.type, inverse: action.inverse };
+    const stack = _stackFor(growspaceId);
+    stack.push(entry);
+    if (stack.length > MAX_UNDO) {
+        stack.shift();
+    }
+    _listener?.({ type: action.type, label: action.label }, growspaceId);
+}
+/** Whether there is an action on the undo stack for the given growspace. */
+function canUndo(growspaceId) {
+    return (_undoStack.get(growspaceId)?.length ?? 0) > 0;
+}
+/** Undo the most recent successful action for the given growspace. */
+async function undo(growspaceId) {
+    const entry = _undoStack.get(growspaceId)?.pop();
+    if (!entry)
+        return;
+    entry.inverse();
+}
+
+/**
+ * Grid slice — atoms, computed state, and sibling setters for the Grid domain.
+ *
+ * Public API (atoms):
+ *   devices$                  — read: all growspace devices (bootstrapped by SyncService)
+ *   selectedDeviceId$         — read/write: the currently selected device ID
+ *   optimisticDeletedPlantIds$ — read: plant IDs optimistically removed from the grid
+ *   activeDevices$            — read: devices with optimistically deleted plants filtered out
+ *   growspaceOptions$         — read: device_id → device name map for selectors
+ *   gridLayout$               — read: computed grid layout for the selected device
+ *
+ * Public API (bootstrap writes):
+ *   setDevices()              — replace the devices array (called by SyncService)
+ *   setSelectedDeviceId()     — set the active device (called by cards / handleDeviceChange)
+ *
+ * Public API (sibling setters — called by Plant slice cross-slice mutations):
+ *   addOptimisticDeletedPlantId()    — mark a plant as optimistically removed from the grid
+ *   removeOptimisticDeletedPlantId() — restore a plant after a failed mutation inverse
+ *   clearOptimisticDeletedPlantIds() — reset all optimistic deletes (called after a sync)
+ *
+ * GridSliceRef / gridSlice:
+ *   A stable facade object compatible with the legacy ActionContext.grid interface.
+ *   Cards and action modules may use `ctx.grid.$selectedDevice` / `ctx.grid.setSelectedDevice()`
+ *   through this facade without knowing about the underlying atoms.
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ * Cross-slice side-effects from the Plant slice are accepted via the sibling setters above.
+ */
+/**
+ * The currently selected growspace device ID.
+ *
+ * NOTE: this is a module-level singleton.  Multiple card instances on the same
+ * dashboard share this state.  Per-card selection isolation is deferred to a
+ * later refactor step.
+ */
+const selectedDeviceId$ = atom(null);
+
+/**
  * @license
  * Copyright 2020 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
@@ -9731,48 +9839,6 @@ __decorate([
 GrowspaceEnvChart = __decorate([
     t$2('growspace-env-chart')
 ], GrowspaceEnvChart);
-
-/**
- * mutate primitive — owns optimistic updates, undo stack, and sync trigger.
- *
- * Replaces undo-redo-manager.ts + sync-service.ts for migrated mutators.
- * Each slice builds its domain mutators on top of this primitive.
- *
- * The undo stack is scoped per growspace so that undoing on Tent B cannot
- * silently roll back an action taken on Tent A.
- */
-const _undoStack = new Map();
-const MAX_UNDO = 10;
-function _stackFor(growspaceId) {
-    let stack = _undoStack.get(growspaceId);
-    if (!stack) {
-        stack = [];
-        _undoStack.set(growspaceId, stack);
-    }
-    return stack;
-}
-/**
- * Execute an action: optimistic → apply → record undo.
- * On apply failure: run inverse (rollback) and re-throw.
- *
- * @param growspaceId  The growspace this action belongs to. Undo entries
- *                     never cross growspace boundaries.
- */
-async function mutate(action, growspaceId) {
-    action.optimistic();
-    try {
-        await action.apply();
-    }
-    catch (err) {
-        action.inverse();
-        throw err;
-    }
-    const stack = _stackFor(growspaceId);
-    stack.push({ type: action.type, inverse: action.inverse });
-    if (stack.length > MAX_UNDO) {
-        stack.shift();
-    }
-}
 
 /**
  * Plant slice — atoms and mutators for Plant domain data.
@@ -120396,6 +120462,20 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         this._handleLibraryExportReady = (e) => {
             this._downloadFile(e.detail.url);
         };
+        this._handleGlobalKeydown = (e) => {
+            const isUndo = (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
+            if (!isUndo)
+                return;
+            const growspaceId = selectedDeviceId$.get();
+            if (!growspaceId || !canUndo(growspaceId))
+                return;
+            e.preventDefault();
+            undo(growspaceId)
+                .then(() => {
+                this.store.ui.showToast('Action undone', 'info');
+            })
+                .catch((err) => console.error('[Undo failed]', err));
+        };
         this._handleDeleteSelected = () => {
             void this.store.actions.ui.deleteSelectedPlants();
         };
@@ -120456,6 +120536,20 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     connectedCallback() {
         super.connectedCallback();
         this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        window.addEventListener('keydown', this._handleGlobalKeydown);
+        setMutateListener((info, growspaceId) => {
+            const label = info.label ?? info.type;
+            this.store.ui.showToast(`${label}`, 'success', {
+                label: 'Undo',
+                callback: () => {
+                    undo(growspaceId)
+                        .then(() => {
+                        this.store.ui.showToast('Action undone', 'info');
+                    })
+                        .catch((err) => console.error('[Undo failed]', err));
+                },
+            });
+        });
         if (!this._dialogPortal) {
             const portal = document.createElement('growspace-dialog-host');
             portal.store = this.store;
@@ -120468,6 +120562,8 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
     disconnectedCallback() {
         super.disconnectedCallback();
         this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+        window.removeEventListener('keydown', this._handleGlobalKeydown);
+        setMutateListener(null);
         if (this._dialogPortal) {
             document.body.removeChild(this._dialogPortal);
             this._dialogPortal = null;
