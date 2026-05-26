@@ -32,7 +32,6 @@ import '../../../dialogs/config-dialog';
 import '../../../dialogs/crop-steering-dialog';
 import '../../../dialogs/ec-ramp-editor-dialog';
 import '../../../dialogs/grow-master-dialog';
-import '../../../dialogs/grow-report-dialog';
 import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
 import '../../../dialogs/logbook-dialog';
@@ -201,8 +200,6 @@ export class GrowspaceDialogHost extends LitElement {
             return this._renderCropSteeringDialog(active, effectiveDeviceData);
           case 'EC_RAMP_EDITOR':
             return this._renderECRampEditorDialog(active, effectiveDeviceData);
-          case 'GROW_REPORT':
-            return this._renderGrowReportDialog(active, effectiveDeviceData);
           default:
             return html``;
         }
@@ -694,11 +691,6 @@ export class GrowspaceDialogHost extends LitElement {
         @configure-environment-submit=${(e: CustomEvent) => this._handleEnvironmentConfig(e.detail)}
         @vision-checkup-config-submit=${(e: CustomEvent) =>
         this._handleVisionCheckupConfig(e.detail)}
-        @generate-grow-report=${(e: CustomEvent) =>
-        this.store?.actions.ui.setActiveDialog({
-          type: 'GROW_REPORT',
-          payload: { growspaceId: e.detail.growspace_id },
-        })}
       ></config-dialog>
     `;
   }
@@ -1233,21 +1225,6 @@ export class GrowspaceDialogHost extends LitElement {
     `;
   }
 
-  private _renderGrowReportDialog(
-    active: ActiveDialogState,
-    _selectedDeviceData?: GrowspaceDevice
-  ): TemplateResult {
-    if (active.type !== 'GROW_REPORT') return html``;
-    return html`
-      <grow-report-dialog
-        .open=${true}
-        .store=${this.store}
-        .state=${active.payload}
-        @close=${() => this._closeDialogIfActive('GROW_REPORT')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></grow-report-dialog>
-    `;
-  }
 
   private _renderEnvironmentConfigDialog(active: ActiveDialogState): TemplateResult {
     if (active.type !== 'ENVIRONMENT_CONFIG') return html``;

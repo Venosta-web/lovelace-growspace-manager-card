@@ -246,5 +246,180 @@ describe('LogbookDialog', () => {
             querySpy.mockRestore();
         });
     });
+
+    describe('Report Tab', () => {
+        let mockReportActions: { fetch: any; export: any };
+        let mockStore: any;
+
+        beforeEach(async () => {
+            mockReportActions = {
+                fetch: vi.fn(),
+                export: vi.fn(),
+            };
+            mockStore = {
+                actions: {
+                    report: mockReportActions
+                }
+            };
+            element.store = mockStore as any;
+            element.growspaceId = 'test-growspace';
+            element.open = true;
+            await element.updateComplete;
+        });
+
+        it('should fetch report data when report tab is selected', async () => {
+            const mockReportData = {
+                summary: { plant_count: 5, strains: ['Amnesia Haze', 'Super Lemon Haze'] },
+                environment: { temperature_avg: 24.5, humidity_avg: 60.2, vpd_avg: 1.15 },
+                harvest: { total_wet_weight: 500, total_dry_weight: 120, total_trim_weight: 50 }
+            };
+            mockReportActions.fetch.mockResolvedValue(mockReportData);
+
+            const tabs = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.tab')) : [];
+            const reportTab = tabs.find(t => t.textContent?.includes('Report'));
+            expect(reportTab).toBeTruthy();
+
+            (reportTab as HTMLElement).click();
+            
+            // Check loading state is rendered
+            await element.updateComplete;
+            const loadingState = element.shadowRoot?.querySelector('.loading-state');
+            expect(loadingState).toBeTruthy();
+            expect(loadingState?.textContent).toContain('Generating report data...');
+
+            // Wait for fetch to complete
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await element.updateComplete;
+
+            expect(mockReportActions.fetch).toHaveBeenCalledWith('test-growspace');
+            expect((element as any)._reportData).toEqual(mockReportData);
+
+            // Check rendered data
+            const summarySection = element.shadowRoot?.querySelector('.summary-section');
+            expect(summarySection).toBeTruthy();
+            expect(summarySection?.textContent).toContain('Overview');
+            expect(summarySection?.textContent).toContain('Total Plants');
+            expect(summarySection?.textContent).toContain('5');
+            expect(summarySection?.textContent).toContain('Amnesia Haze');
+
+            const envValue = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.stat-value')) : [];
+            const values = envValue.map(v => v.textContent);
+            expect(values).toContain('24.5°C');
+            expect(values).toContain('60.2%');
+            expect(values).toContain('1.15 kPa');
+
+            const harvestSection = element.shadowRoot?.querySelector('.report-container');
+            expect(harvestSection?.textContent).toContain('Harvest Metrics');
+            expect(harvestSection?.textContent).toContain('500g');
+            expect(harvestSection?.textContent).toContain('120g');
+            expect(harvestSection?.textContent).toContain('50g');
+        });
+
+        it('should show error state and allow retry when fetching fails', async () => {
+            mockReportActions.fetch.mockRejectedValue(new Error('Network Error'));
+
+            // Click Report tab
+            const tabs = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.tab')) : [];
+            const reportTab = tabs.find(t => t.textContent?.includes('Report'));
+            expect(reportTab).toBeTruthy();
+            (reportTab as HTMLElement).click();
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await element.updateComplete;
+
+            expect((element as any)._error).toBe('Network Error');
+            const alert = element.shadowRoot?.querySelector('ha-alert');
+            expect(alert).toBeTruthy();
+            expect(alert?.textContent).toContain('Network Error');
+
+            const retryBtn = element.shadowRoot?.querySelector('button.primary');
+            expect(retryBtn).toBeTruthy();
+            expect(retryBtn?.textContent).toContain('Retry');
+
+            // Set up successful resolve for retry
+            const mockReportData = {
+                summary: { plant_count: 3, strains: [] },
+                environment: {},
+                harvest: {}
+            };
+            mockReportActions.fetch.mockResolvedValue(mockReportData);
+
+            (retryBtn as HTMLElement).click();
+            await element.updateComplete;
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await element.updateComplete;
+
+            expect(mockReportActions.fetch).toHaveBeenCalledTimes(2);
+            expect((element as any)._error).toBeNull();
+            expect((element as any)._reportData).toEqual(mockReportData);
+        });
+
+        it('should handle export actions', async () => {
+            const mockReportData = {
+                summary: { plant_count: 3, strains: [] },
+                environment: {},
+                harvest: {}
+            };
+            mockReportActions.fetch.mockResolvedValue(mockReportData);
+
+            // Open report tab
+            (element as any)._activeTab = 'report';
+            await element.updateComplete;
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await element.updateComplete;
+
+            const buttons = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.md3-button')) : [];
+            const exportPdfBtn = buttons.find(b => b.textContent?.includes('Export PDF')) as HTMLElement;
+            expect(exportPdfBtn).toBeTruthy();
+
+            exportPdfBtn.click();
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(mockReportActions.export).toHaveBeenCalledWith('test-growspace', 'pdf');
+
+            mockReportActions.export.mockClear();
+
+            const exportJsonBtn = buttons.find(b => b.textContent?.includes('Export JSON')) as HTMLElement;
+            expect(exportJsonBtn).toBeTruthy();
+
+            exportJsonBtn.click();
+            await new Promise(resolve => setTimeout(resolve, 0));
+            expect(mockReportActions.export).toHaveBeenCalledWith('test-growspace', 'json');
+        });
+
+        it('should show "No report data available." when report fetch returns null', async () => {
+            mockReportActions.fetch.mockResolvedValue(null);
+
+            // Click Report tab
+            const tabs = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.tab')) : [];
+            const reportTab = tabs.find(t => t.textContent?.includes('Report'));
+            expect(reportTab).toBeTruthy();
+            (reportTab as HTMLElement).click();
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await element.updateComplete;
+
+            const noDataMessage = element.shadowRoot?.querySelector('.report-container p');
+            expect(noDataMessage).toBeTruthy();
+            expect(noDataMessage?.textContent).toContain('No report data available.');
+        });
+
+        it('should handle partial report data / missing sections', async () => {
+            const mockReportData = {};
+            mockReportActions.fetch.mockResolvedValue(mockReportData);
+
+            // Open report tab
+            (element as any)._activeTab = 'report';
+            await element.updateComplete;
+            await new Promise(resolve => setTimeout(resolve, 0));
+            await element.updateComplete;
+
+            // Confirm no crashes occurred and report container is rendered
+            const container = element.shadowRoot?.querySelector('.report-container');
+            expect(container).toBeTruthy();
+            expect(container?.querySelector('.summary-section')).toBeFalsy();
+            expect(container?.querySelector('.report-actions')).toBeTruthy();
+        });
+    });
 });
 

@@ -129,12 +129,6 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSelectedId = 'gs1';
         await element.updateComplete;
 
-        // _generateGrowReport
-        const reportSpy = vi.fn();
-        element.addEventListener('generate-grow-report', reportSpy);
-        (element as any)._generateGrowReport();
-        expect(reportSpy).toHaveBeenCalled();
-
         // _submitDeleteGrowspace -> _cancelDeleteGrowspace
         (element as any)._submitDeleteGrowspace();
         expect((element as any)._showDeleteConfirm).to.be.true;
@@ -481,10 +475,10 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         expect(element.shadowRoot?.textContent).toContain('Main Tank');
 
         // Click the edit tank button (arrow fn at line 1667)
-        const editTankBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? [])
-            .find((b) => !b.style.minWidth || b.style.padding === '6px') as HTMLElement | undefined
-            ?? Array.from(element.shadowRoot?.querySelectorAll('button') ?? [])
-                .find((b) => b.style.padding === '6px' && !b.classList.contains('error')) as HTMLElement | undefined;
+        const editTankBtn = (Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.text:not(.error)') ?? []) as HTMLElement[])
+            .find((b) => !b.style.minWidth || b.style.padding === '6px')
+            ?? (Array.from(element.shadowRoot?.querySelectorAll('button') ?? []) as HTMLElement[])
+                .find((b) => b.style.padding === '6px' && !b.classList.contains('error'));
 
         // Fall back to direct method call if DOM lookup is ambiguous, but also open the form via button
         const allBtns = Array.from(element.shadowRoot?.querySelectorAll('button') ?? []);

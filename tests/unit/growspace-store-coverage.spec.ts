@@ -831,10 +831,6 @@ describe('GrowspaceStore Branch Coverage', () => {
             expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'CROP_STEERING' }));
         });
 
-        it('should cover openGrowReportDialog', () => {
-            store.actions.ui.openGrowReportDialog('gs1');
-            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'GROW_REPORT' }));
-        });
 
         it('should cover openECRampDialog', () => {
             store.actions.ui.openECRampDialog('gs1');

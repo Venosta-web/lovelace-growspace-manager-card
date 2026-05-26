@@ -921,16 +921,6 @@ export class ConfigDialog extends LitElement {
     this._showDeleteConfirm = false;
   }
 
-  private _generateGrowReport() {
-    if (!this.editSelectedId) return;
-    this.dispatchEvent(
-      new CustomEvent('generate-grow-report', {
-        detail: { growspace_id: this.editSelectedId },
-        bubbles: true,
-        composed: true,
-      })
-    );
-  }
 
   private async _handleRemoveEnvironment() {
     if (!this.envSelectedId) return;
@@ -2700,13 +2690,6 @@ export class ConfigDialog extends LitElement {
                     ?disabled=${!this.editSelectedId}
                   >
                     ${this._icon(mdiDelete, 18)} Delete
-                  </button>
-                  <button
-                    class="md3-button tonal"
-                    @click=${this._generateGrowReport}
-                    ?disabled=${!this.editSelectedId}
-                  >
-                    Grow Report
                   </button>
                   <button
                     class="md3-button primary"

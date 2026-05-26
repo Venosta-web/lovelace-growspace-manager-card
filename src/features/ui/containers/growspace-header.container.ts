@@ -239,9 +239,6 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'ec_ramp':
         this.store.actions.ui.openECRampDialog(this.device?.deviceId || undefined);
         break;
-      case 'report':
-        this.store.actions.ui.openGrowReportDialog(this.device?.deviceId || undefined);
-        break;
       case 'edit': {
         const newEditMode = !this.store.ui.$isEditMode.get();
         this.store.ui.setEditMode(newEditMode);

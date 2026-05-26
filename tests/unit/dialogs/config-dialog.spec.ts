@@ -1137,23 +1137,6 @@ describe('ConfigDialog', () => {
     });
 
     describe('Environment Management', () => {
-        it('should dispatch generate-grow-report event', () => {
-            const spy = vi.fn();
-            element.addEventListener('generate-grow-report', spy);
-            (element as any).editSelectedId = 'gs1';
-            (element as any)._generateGrowReport();
-            
-            expect(spy).toHaveBeenCalled();
-            expect(spy.mock.calls[0][0].detail).toEqual({ growspace_id: 'gs1' });
-        });
-
-        it('should return early in _generateGrowReport if no id selected', () => {
-            const spy = vi.fn();
-            element.addEventListener('generate-grow-report', spy);
-            (element as any).editSelectedId = '';
-            (element as any)._generateGrowReport();
-            expect(spy).not.toHaveBeenCalled();
-        });
 
         it('should handle environment removal with confirmation', () => {
             const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);

@@ -241,8 +241,7 @@ export class ActionDispatcher {
     openCropSteeringDialog: (growspaceId?: string) =>
       uiActions.openCropSteeringDialog(this.ctx, growspaceId),
     openECRampDialog: (growspaceId?: string) => uiActions.openECRampDialog(this.ctx, growspaceId),
-    openGrowReportDialog: (growspaceId?: string) =>
-      uiActions.openGrowReportDialog(this.ctx, growspaceId),
+
     openBatchWateringDialog: (growspaceId?: string) =>
       uiActions.openBatchWateringDialog(this.ctx, growspaceId),
     openBatchTrainingDialog: (growspaceId?: string) =>

@@ -25,7 +25,6 @@ import {
   mdiCube,
   mdiCamera,
   mdiChartLine,
-  mdiFileChart,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions-ui')
@@ -467,10 +466,6 @@ export class GrowspaceHeaderActionsUI extends LitElement {
         <div class="menu-item" @click=${() => this._triggerAction('logbook')}>
           <svg viewBox="0 0 24 24"><path d="${mdiClipboardTextClock}"></path></svg>
           <span class="menu-item-label">Logbook</span>
-        </div>
-        <div class="menu-item" @click=${() => this._triggerAction('report')}>
-          <svg viewBox="0 0 24 24"><path d="${mdiFileChart}"></path></svg>
-          <span class="menu-item-label">Generate Report</span>
         </div>
         <div class="menu-item" @click=${() => this._triggerAction('snapshots')}>
           <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>

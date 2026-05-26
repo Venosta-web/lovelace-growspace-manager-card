@@ -338,7 +338,7 @@ describe('GrowspaceHeaderActionsUI', () => {
     const actions = [
       'add_plant', 'water', 'ipm', 'training', 
       'irrigation', 'nutrients', 'ec_ramp', 'strains', 
-      'logbook', 'report', 'snapshots', 'ai'
+      'logbook', 'snapshots', 'ai'
     ];
 
     actions.forEach(action => {

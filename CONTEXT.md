@@ -126,6 +126,9 @@ The four daily phases that structure a Crop Steering day, all derived from the g
 **Drain Schedule**
 Time-based drain events that run regardless of Irrigation Mode. Always editable in the Schedules tab.
 
+**EC Ramp Curves**
+Named, reusable curves that define how the target EC value should ramp over time (e.g. across a grow week range). Each curve is a list of `ECRampPoint` entries (week + target EC). Curves are stored globally (not per-growspace) and managed in the EC Ramp tab of the Irrigation Dialog. The tab is only visible when the growspace has a pump, an irrigation schedule, and at least one EC sensor. Saves are per-curve and immediate — curves do not participate in the Irrigation Dialog's unified footer Save.
+
 **Irrigation Dialog SM**
 A single root state machine that owns the Irrigation Dialog's interaction state. Tab (`schedules | steering | logs | ...`) is the top-level state; each tab has substates for editing rows and pending confirmations (e.g. Phase Window changes). Tab switches are guarded by per-tab "dirty" predicates. The dialog component renders the SM; data writes go through the Irrigation slice's mutators. Replaces the 35 sibling `@state()` flags in `irrigation-dialog.ts`. The same shape applies to the Config, Strain Editor, and Strain Library dialogs — a `DialogStateMachine` helper is to be extracted on the second use, not the first.
 

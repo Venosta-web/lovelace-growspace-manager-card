@@ -469,11 +469,3 @@ export function openECRampDialog(ctx: ActionContext, growspaceId?: string) {
   });
 }
 
-export function openGrowReportDialog(ctx: ActionContext, growspaceId?: string) {
-  ctx.ui.setActiveDialog({
-    type: 'GROW_REPORT',
-    payload: {
-      growspaceId: growspaceId || '',
-    },
-  });
-}

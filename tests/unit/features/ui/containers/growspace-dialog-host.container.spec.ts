@@ -99,7 +99,6 @@ describe('GrowspaceDialogHostContainer', () => {
                 openSnapshotsDialog: vi.fn(),
                 openCropSteeringDialog: vi.fn(),
                 openECRampDialog: vi.fn(),
-                openGrowReportDialog: vi.fn(),
                 exportStrainLibrary: vi.fn(),
             },
             grid: {
@@ -646,12 +645,6 @@ describe('GrowspaceDialogHostContainer', () => {
         expect(element.shadowRoot?.querySelector('ec-ramp-editor-dialog')).toBeTruthy();
     });
 
-    it('should render grow-report-dialog for GROW_REPORT type', async () => {
-        mockStore.ui.$activeDialog.set({ type: 'GROW_REPORT', payload: { growspaceId: 'g1' } });
-        await element.updateComplete;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('grow-report-dialog')).toBeTruthy();
-    });
 
     it('should return empty template for unknown dialog type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'UNKNOWN_TYPE' as any, payload: {} });
@@ -858,9 +851,8 @@ describe('GrowspaceDialogHostContainer', () => {
             throw error;
         });
 
-        // @ts-ignore
         try {
-            await element._handleEnvironmentConfig({
+            await (element as any)._handleEnvironmentConfig({
                 selectedGrowspaceId: 'g1',
                 temperatureSensors: ['t1'],
                 humiditySensors: ['h1']
@@ -881,9 +873,8 @@ describe('GrowspaceDialogHostContainer', () => {
             throw error;
         });
 
-        // @ts-ignore
         try {
-            await element._handleVisionCheckupConfig({
+            await (element as any)._handleVisionCheckupConfig({
                 detail: {
                     growspaceId: 'g1',
                     visionCheckupConfig: {
@@ -1114,14 +1105,6 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useRealTimers();
         });
 
-        it('should handle @data-changed on GROW_REPORT', async () => {
-            vi.useFakeTimers();
-            const refreshSpy = vi.spyOn(mockStore, 'refreshData');
-            await testDialogEvent('GROW_REPORT', 'grow-report-dialog', 'data-changed', () => {});
-            vi.runAllTimers();
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
 
         it('should handle @data-changed on WATERING', async () => {
             vi.useFakeTimers();
@@ -1177,9 +1160,6 @@ describe('GrowspaceDialogHostContainer', () => {
             expect(spy).toHaveBeenCalled();
         });
 
-        it('should handle @close on GROW_REPORT', () => 
-            testDialogEvent('GROW_REPORT', 'grow-report-dialog', 'close', () => 
-                expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
         it('should handle @close on ENVIRONMENT_CONFIG', () => 
             testDialogEvent('ENVIRONMENT_CONFIG', 'growspace-environment-config-dialog', 'close', () => 
@@ -1404,8 +1384,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 { type: 'HARVEST_SCORING', selector: 'harvest-scoring-dialog' },
                 { type: 'SNAPSHOTS', selector: 'snapshots-dialog' },
                 { type: 'CROP_STEERING', selector: 'crop-steering-dialog' },
-                { type: 'EC_RAMP_EDITOR', selector: 'ec-ramp-editor-dialog' },
-                { type: 'GROW_REPORT', selector: 'grow-report-dialog' }
+                { type: 'EC_RAMP_EDITOR', selector: 'ec-ramp-editor-dialog' }
             ];
 
             for (const { type, selector } of dialogTypes) {
@@ -1930,17 +1909,6 @@ describe('GrowspaceDialogHostContainer', () => {
             });
         });
 
-        it('should handle @generate-grow-report on CONFIG dialog', async () => {
-            await openDialog('CONFIG', {});
-            const dialog = element.shadowRoot?.querySelector('config-dialog');
-            dialog?.dispatchEvent(new CustomEvent('generate-grow-report', {
-                detail: { growspace_id: 'g1' }
-            }));
-            expect(mockStore.actions.ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({
-                type: 'GROW_REPORT',
-                payload: { growspaceId: 'g1' }
-            }));
-        });
 
         it('should handle @analyze-growspace on GROW_MASTER dialog', async () => {
             await openDialog('GROW_MASTER', {});

@@ -53,7 +53,6 @@ const buildMockStore = () => {
         openTrainingDialog: vi.fn(),
         openNutrientsDialog: vi.fn(),
         openECRampDialog: vi.fn(),
-        openGrowReportDialog: vi.fn(),
         toggleEnvGraph: vi.fn(),
         showToast: vi.fn(),
     };
@@ -70,7 +69,6 @@ const buildMockStore = () => {
         get openIPMDialog() { return ui_actions.openIPMDialog; },
         get openNutrientsDialog() { return ui_actions.openNutrientsDialog; },
         get openECRampDialog() { return ui_actions.openECRampDialog; },
-        get openGrowReportDialog() { return ui_actions.openGrowReportDialog; },
         get toggleEnvGraph() { return ui_actions.toggleEnvGraph; },
         actions: { ui: ui_actions },
         handleDeviceChange: vi.fn(),
@@ -472,13 +470,6 @@ describe('GrowspaceHeaderContainer', () => {
         expect(mockStore.openECRampDialog).toHaveBeenCalledWith('grow1');
     });
 
-    it('report action calls store.openGrowReportDialog with deviceId', () => {
-        (element as any)._handleActionTriggered(
-            new CustomEvent('action-triggered', { detail: { action: 'report' } })
-        );
-        expect(mockStore.openGrowReportDialog).toHaveBeenCalledWith('grow1');
-    });
-
     it('edit action toggles edit mode', () => {
         mockStore.ui.$isEditMode.get.mockReturnValue(false);
         (element as any)._handleActionTriggered(
@@ -536,12 +527,6 @@ describe('GrowspaceHeaderContainer', () => {
         element.device = undefined as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ec_ramp' } }));
         expect(mockStore.openECRampDialog).toHaveBeenCalledWith(undefined);
-    });
-
-    it('report action with no device passes undefined', () => {
-        element.device = undefined as any;
-        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'report' } }));
-        expect(mockStore.openGrowReportDialog).toHaveBeenCalledWith(undefined);
     });
 
     it('snapshots action with no device passes undefined', () => {
