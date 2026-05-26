@@ -97,6 +97,15 @@ export class IrrigationDialog extends LitElement {
   /** Single reactive state atom. All 35 former @state() flags live here. */
   @state() private _sm: DialogSM = createInitialSM();
 
+  // ─── Tanks tab state ────────────────────────────────────────────────────
+  @state() private _editingTankIndex: number | null = null;
+  @state() private _tankDraft: {
+    sensorEntity: string;
+    name: string;
+    volumeLiters: number | null;
+    warningLevel: number;
+  } | null = null;
+
   // ─── EC Ramp tab state ──────────────────────────────────────────────────
   @state() private _ecRampView: 'LIST' | 'EDIT' = 'LIST';
   @state() private _ecRampEditingCurve: Partial<ECRampCurve> | null = null;
@@ -2957,13 +2966,101 @@ export class IrrigationDialog extends LitElement {
           <span style="font-size:11px;opacity:0.45;">Updates every 30 s</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
-          ${tanks.map((tank: any) => this._renderTankRow(tank))}
+          ${tanks.map((tank: any, i: number) => this._renderTankRow(tank, i))}
+        </div>
+        ${this._editingTankIndex !== null && this._tankDraft !== null
+          ? this._renderTankEditForm()
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _renderTankEditForm() {
+    const draft = this._tankDraft!;
+    const entities = this._getEntities(['sensor', 'input_number']);
+    return html`
+      <div
+        class="tank-edit-form"
+        style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
+      >
+        <div class="md3-input-group">
+          <label class="md3-label">Sensor Entity *</label>
+          <input
+            class="md3-input"
+            list="tank-edit-sensor-datalist"
+            .value=${draft.sensorEntity}
+            @input=${(e: Event) => {
+              this._tankDraft = {
+                ...this._tankDraft!,
+                sensorEntity: (e.target as HTMLInputElement).value,
+              };
+            }}
+            placeholder="Search entity..."
+          />
+          <datalist id="tank-edit-sensor-datalist">
+            ${entities.map((s) => html`<option value="${s.entity_id}"></option>`)}
+          </datalist>
+        </div>
+        <div class="md3-input-group">
+          <label class="md3-label">Name</label>
+          <input
+            class="md3-input"
+            type="text"
+            .value=${draft.name}
+            @input=${(e: Event) => {
+              this._tankDraft = {
+                ...this._tankDraft!,
+                name: (e.target as HTMLInputElement).value,
+              };
+            }}
+            placeholder="e.g. Main Tank"
+          />
+        </div>
+        <div class="row-col-grid">
+          <div class="md3-input-group">
+            <label class="md3-label">Volume (L, optional)</label>
+            <input
+              class="md3-input"
+              type="number"
+              min="0"
+              .value=${draft.volumeLiters !== null ? String(draft.volumeLiters) : ''}
+              @input=${(e: Event) => {
+                const v = parseFloat((e.target as HTMLInputElement).value);
+                this._tankDraft = {
+                  ...this._tankDraft!,
+                  volumeLiters: isNaN(v) ? null : v,
+                };
+              }}
+              placeholder="e.g. 200"
+            />
+          </div>
+          <div class="md3-input-group">
+            <label class="md3-label">Warning Level (%)</label>
+            <input
+              class="md3-input"
+              type="number"
+              min="0"
+              max="100"
+              .value=${String(draft.warningLevel)}
+              @input=${(e: Event) => {
+                const v = parseInt((e.target as HTMLInputElement).value, 10);
+                this._tankDraft = {
+                  ...this._tankDraft!,
+                  warningLevel: isNaN(v) ? 30 : v,
+                };
+              }}
+            />
+          </div>
+        </div>
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._cancelTankEdit}>Cancel</button>
+          <button class="md3-button primary" @click=${this._saveTankEdit}>Save</button>
         </div>
       </div>
     `;
   }
 
-  private _renderTankRow(tank: any) {
+  private _renderTankRow(tank: any, index: number) {
     const pct = tank.fillLevel ?? 0;
     const isWarning = tank.isWarning;
     const color = isWarning ? '#f44336' : (tank.hoursRemaining ?? 999) < 24 ? '#FF9800' : '#4caf50';
@@ -3008,6 +3105,14 @@ export class IrrigationDialog extends LitElement {
                 </div>
               `
             : nothing}
+          <button
+            class="md3-button text tank-edit-btn"
+            style="padding:4px;min-width:auto;margin-top:4px;"
+            title="Edit tank"
+            @click=${() => this._openTankEdit(index)}
+          >
+            <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+          </button>
         </div>
       </div>
     `;
@@ -4088,6 +4193,40 @@ export class IrrigationDialog extends LitElement {
         </table>
       </div>
     `;
+  }
+
+  // ─── Tanks tab methods ────────────────────────────────────────────────────
+
+  private _openTankEdit(index: number) {
+    const tank = (this.device?.environmentAttributes?.irrigationTanks ?? [])[index];
+    if (!tank) return;
+    this._tankDraft = {
+      sensorEntity: tank.sensorEntity,
+      name: tank.name,
+      volumeLiters: tank.volumeLiters ?? null,
+      warningLevel: tank.warningLevel,
+    };
+    this._editingTankIndex = index;
+  }
+
+  private _cancelTankEdit() {
+    this._editingTankIndex = null;
+    this._tankDraft = null;
+  }
+
+  private async _saveTankEdit() {
+    if (this._editingTankIndex === null || !this._tankDraft || !this.device) return;
+    const tanks = [...(this.device.environmentAttributes?.irrigationTanks ?? [])];
+    tanks[this._editingTankIndex] = {
+      ...tanks[this._editingTankIndex],
+      ...this._tankDraft,
+    };
+    await this._dataService?.configureEnvironment({
+      growspaceId: this.device.deviceId,
+      irrigationTanks: tanks,
+    });
+    this._editingTankIndex = null;
+    this._tankDraft = null;
   }
 
   // ─── EC Ramp tab ──────────────────────────────────────────────────────────
