@@ -10,6 +10,7 @@ import {
     saveECRampCurve,
     removeECRampCurve,
     saveNutrientPreset,
+    saveIPMPreset,
     removeNutrientPreset,
     removeIPMPreset,
 } from '../../src/store/plant/library-actions';
@@ -53,6 +54,7 @@ describe('LibraryActions', () => {
             saveECRampCurve: vi.fn(),
             removeECRampCurve: vi.fn(),
             saveNutrientPreset: vi.fn(),
+            saveIPMPreset: vi.fn(),
             removeNutrientPreset: vi.fn(),
             removeIPMPreset: vi.fn(),
         };
@@ -523,6 +525,72 @@ describe('LibraryActions', () => {
             mockDataService.removeNutrientStock.mockRejectedValue('string error');
             await removeNutrientStock(ctx, 'n1');
             expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+        });
+    });
+
+    describe('saveIPMPreset', () => {
+        const preset = {
+            name: 'Spider Mites Protocol',
+            type: 'pesticide',
+            items: [{ name: 'Neem Oil', dose_amount: 2, dose_unit: 'ml/l', phi_days: 3 }],
+            stage: 'veg',
+            min_days_in_stage: 7,
+        };
+
+        it('saves IPM preset via dataService and shows success toast', async () => {
+            mockDataService.saveIPMPreset.mockResolvedValue(undefined);
+            mockDataService.fetchIPMPresets.mockResolvedValue(null);
+
+            await saveIPMPreset(ctx, preset);
+
+            expect(mockDataService.saveIPMPreset).toHaveBeenCalledWith(
+                expect.objectContaining({ name: preset.name, type: preset.type })
+            );
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(
+                `Saved IPM preset: ${preset.name}`,
+                'success'
+            );
+        });
+
+        it('refreshes IPM presets after saving', async () => {
+            mockDataService.saveIPMPreset.mockResolvedValue(undefined);
+            mockDataService.fetchIPMPresets.mockResolvedValue(null);
+
+            await saveIPMPreset(ctx, preset);
+
+            expect(mockDataService.fetchIPMPresets).toHaveBeenCalled();
+        });
+
+        it('normalises preset_id from id field when preset_id is absent', async () => {
+            mockDataService.saveIPMPreset.mockResolvedValue(undefined);
+            mockDataService.fetchIPMPresets.mockResolvedValue(null);
+            const presetWithId = { ...preset, id: 'existing-id' };
+
+            await saveIPMPreset(ctx, presetWithId);
+
+            expect(mockDataService.saveIPMPreset).toHaveBeenCalledWith(
+                expect.objectContaining({ preset_id: 'existing-id' })
+            );
+        });
+
+        it('shows error toast with message and rethrows when save fails (Error)', async () => {
+            mockDataService.saveIPMPreset.mockRejectedValue(new Error('server error'));
+
+            await expect(saveIPMPreset(ctx, preset)).rejects.toThrow('server error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(
+                `Failed to save IPM preset: server error`,
+                'error'
+            );
+        });
+
+        it('shows "Unknown error" toast and rethrows when save fails (non-Error)', async () => {
+            mockDataService.saveIPMPreset.mockRejectedValue('string failure');
+
+            await expect(saveIPMPreset(ctx, preset)).rejects.toBe('string failure');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith(
+                'Failed to save IPM preset: Unknown error',
+                'error'
+            );
         });
     });
 });

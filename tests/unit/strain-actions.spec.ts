@@ -164,6 +164,40 @@ describe('strain-actions', () => {
             });
         });
 
+        describe('addStrain with parent lineage tree', () => {
+            it('imports lineage tree when parents.parents is non-empty', async () => {
+                const strainData: Partial<StrainEntry> & { parents?: any } = {
+                    strain: 'Hybrid Child',
+                    parents: { parents: [{ strain: 'Mom' }, { strain: 'Dad' }] },
+                };
+
+                const result = await addStrain(ctx, strainData);
+
+                expect(result).toBe(true);
+                expect(ctx.dataService.importStrainLineageTree).toHaveBeenCalledWith(
+                    'Hybrid Child',
+                    strainData.parents
+                );
+            });
+
+            it('skips lineage import when parents.parents is empty', async () => {
+                const strainData: Partial<StrainEntry> & { parents?: any } = {
+                    strain: 'Solo Strain',
+                    parents: { parents: [] },
+                };
+
+                await addStrain(ctx, strainData);
+
+                expect(ctx.dataService.importStrainLineageTree).not.toHaveBeenCalled();
+            });
+
+            it('skips lineage import when parents field is absent', async () => {
+                await addStrain(ctx, { strain: 'No Parents' });
+
+                expect(ctx.dataService.importStrainLineageTree).not.toHaveBeenCalled();
+            });
+        });
+
         describe('updateStrain', () => {
             it('should update strain with full data', async () => {
                 const strainData: Partial<StrainEntry> = {
@@ -201,6 +235,34 @@ describe('strain-actions', () => {
 
                 expect(result).toBe(false);
                 expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to update strain: Update failed', 'error');
+            });
+        });
+
+        describe('updateStrain with parent lineage tree', () => {
+            it('imports lineage tree when parents.parents is non-empty', async () => {
+                const strainData: Partial<StrainEntry> & { parents?: any } = {
+                    strain: 'Updated Hybrid',
+                    parents: { parents: [{ strain: 'Mom v2' }, { strain: 'Dad v2' }] },
+                };
+
+                const result = await updateStrain(ctx, strainData);
+
+                expect(result).toBe(true);
+                expect(ctx.dataService.importStrainLineageTree).toHaveBeenCalledWith(
+                    'Updated Hybrid',
+                    strainData.parents
+                );
+            });
+
+            it('skips lineage import when parents.parents is empty', async () => {
+                const strainData: Partial<StrainEntry> & { parents?: any } = {
+                    strain: 'No Tree Strain',
+                    parents: { parents: [] },
+                };
+
+                await updateStrain(ctx, strainData);
+
+                expect(ctx.dataService.importStrainLineageTree).not.toHaveBeenCalled();
             });
         });
     });

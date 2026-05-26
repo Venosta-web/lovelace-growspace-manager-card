@@ -1186,3 +1186,56 @@ describe('plant-actions', () => {
         });
     });
 }); // End plant-actions
+
+// printLabel lives in plant-actions but uses window.location — test in isolation
+import { printLabel } from '../../src/store/plant/plant-actions';
+
+describe('printLabel', () => {
+    let ctx: ActionContext;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        ctx = {
+            dataService: {
+                printLabel: vi.fn().mockResolvedValue({ url: 'http://label' }),
+            },
+            ui: { showToast: vi.fn() },
+        } as any;
+    });
+
+    it('calls dataService.printLabel with resolved params and shows toast when not preview', async () => {
+        const result = await printLabel(ctx, { plantId: 'p1', strain: 'BD', preview: false });
+
+        expect((ctx.dataService as any).printLabel).toHaveBeenCalledWith(
+            expect.objectContaining({ plant_id: 'p1', strain: 'BD', preview: false })
+        );
+        expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Label printing command sent', 'success');
+        expect(result).toEqual({ url: 'http://label' });
+    });
+
+    it('skips toast when preview is true', async () => {
+        await printLabel(ctx, { strain: 'OG', preview: true });
+
+        expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
+    });
+
+    it('shows error toast and rethrows when dataService throws Error', async () => {
+        (ctx.dataService as any).printLabel.mockRejectedValue(new Error('printer-offline'));
+
+        await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toThrow('printer-offline');
+        expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+            'Failed to print label: printer-offline',
+            'error'
+        );
+    });
+
+    it('shows generic error toast and rethrows for non-Error rejections', async () => {
+        (ctx.dataService as any).printLabel.mockRejectedValue('unknown-printer-error');
+
+        await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toBe('unknown-printer-error');
+        expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+            'Failed to print label: Unknown error',
+            'error'
+        );
+    });
+});
