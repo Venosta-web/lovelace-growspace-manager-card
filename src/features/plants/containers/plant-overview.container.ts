@@ -26,7 +26,14 @@ import {
 } from '@mdi/js';
 import { hassContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
-import { PlantStage, type PlantEntity, type PlantOverviewEditedAttributes, type GrowspaceEvent, type PlantTimelineEvent, type StrainEntry } from '../../../types';
+import {
+  PlantStage,
+  type PlantEntity,
+  type PlantOverviewEditedAttributes,
+  type GrowspaceEvent,
+  type PlantTimelineEvent,
+  type StrainEntry,
+} from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
@@ -68,11 +75,11 @@ export class PlantOverviewContainer extends LitElement {
   @state() private _showDeleteConfirmation = false;
   @state() private _logbookEvents: GrowspaceEvent[] = [];
 
-
-
   // ViewModel state managed via atoms
   private _plantAtom = atom<PlantEntity | null>(null);
-  private _editedAttributesAtom = atom<PlantOverviewEditedAttributes>({} as PlantOverviewEditedAttributes);
+  private _editedAttributesAtom = atom<PlantOverviewEditedAttributes>(
+    {} as PlantOverviewEditedAttributes
+  );
   private _uiStateAtom = atom<{
     activeTab: 'dashboard' | 'actions' | 'timeline' | 'harvest';
     isEditing: boolean;
@@ -188,7 +195,9 @@ export class PlantOverviewContainer extends LitElement {
         font-size: 0.78rem;
         font-weight: 500;
         cursor: pointer;
-        transition: background 0.15s ease, border-color 0.15s ease;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease;
         white-space: nowrap;
         flex-shrink: 0;
       }
@@ -302,7 +311,7 @@ export class PlantOverviewContainer extends LitElement {
       const events = plantId
         ? await fetchPlantEvents(plantId, growspaceId)
         : await fetchGrowspaceEvents(growspaceId);
-      
+
       this._logbookEvents = events;
       this._logbookEventsAtom.set(events);
     } catch (_e) {
@@ -447,36 +456,50 @@ export class PlantOverviewContainer extends LitElement {
 
     return html`
       <div class="quickbar">
-        ${canWater ? html`
-          <button class="quickbar-btn" @click=${this._openWatering} title="Log watering">
-            <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
-            Water
-          </button>
-        ` : nothing}
-        ${canFeed ? html`
-          <button class="quickbar-btn" @click=${this._openNutrients} title="Log feeding">
-            <svg viewBox="0 0 24 24"><path d="${mdiFlask}"></path></svg>
-            Feed
-          </button>
-        ` : nothing}
-        ${canTrain ? html`
-          <button class="quickbar-btn" @click=${this._openTraining} title="Log training">
-            <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
-            Train
-          </button>
-        ` : nothing}
-        ${canPhoto ? html`
-          <button class="quickbar-btn" @click=${this._openSnapshots} title="Take or view snapshots">
-            <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
-            Photo
-          </button>
-        ` : nothing}
-        ${canNote ? html`
-          <button class="quickbar-btn" @click=${this._openLogbook} title="Add a note">
-            <svg viewBox="0 0 24 24"><path d="${mdiNoteOutline}"></path></svg>
-            Note
-          </button>
-        ` : nothing}
+        ${canWater
+          ? html`
+              <button class="quickbar-btn" @click=${this._openWatering} title="Log watering">
+                <svg viewBox="0 0 24 24"><path d="${mdiWater}"></path></svg>
+                Water
+              </button>
+            `
+          : nothing}
+        ${canFeed
+          ? html`
+              <button class="quickbar-btn" @click=${this._openNutrients} title="Log feeding">
+                <svg viewBox="0 0 24 24"><path d="${mdiFlask}"></path></svg>
+                Feed
+              </button>
+            `
+          : nothing}
+        ${canTrain
+          ? html`
+              <button class="quickbar-btn" @click=${this._openTraining} title="Log training">
+                <svg viewBox="0 0 24 24"><path d="${mdiDumbbell}"></path></svg>
+                Train
+              </button>
+            `
+          : nothing}
+        ${canPhoto
+          ? html`
+              <button
+                class="quickbar-btn"
+                @click=${this._openSnapshots}
+                title="Take or view snapshots"
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
+                Photo
+              </button>
+            `
+          : nothing}
+        ${canNote
+          ? html`
+              <button class="quickbar-btn" @click=${this._openLogbook} title="Add a note">
+                <svg viewBox="0 0 24 24"><path d="${mdiNoteOutline}"></path></svg>
+                Note
+              </button>
+            `
+          : nothing}
       </div>
     `;
   }
@@ -492,9 +515,7 @@ export class PlantOverviewContainer extends LitElement {
           @click=${() => (this._activeTab = 'dashboard')}
         >
           <svg viewBox="0 0 24 24">
-            <path
-              d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"
-            ></path>
+            <path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"></path>
           </svg>
           Overview
         </button>
@@ -503,9 +524,7 @@ export class PlantOverviewContainer extends LitElement {
           @click=${() => (this._activeTab = 'actions')}
         >
           <svg viewBox="0 0 24 24">
-            <path
-              d="M7,2V13H10V22L17,10H13L17,2H7Z"
-            ></path>
+            <path d="M7,2V13H10V22L17,10H13L17,2H7Z"></path>
           </svg>
           Actions
           ${enabledActionCount > 0
@@ -523,17 +542,21 @@ export class PlantOverviewContainer extends LitElement {
           </svg>
           Timeline
         </button>
-        ${showHarvestTab ? html`
-          <button
-            class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
-            @click=${() => { this._activeTab = 'harvest'; }}
-          >
-            <svg viewBox="0 0 24 24">
-              <path d="${mdiCannabis}"></path>
-            </svg>
-            Harvest
-          </button>
-        ` : nothing}
+        ${showHarvestTab
+          ? html`
+              <button
+                class="tab-btn ${this._activeTab === 'harvest' ? 'active' : ''}"
+                @click=${() => {
+                  this._activeTab = 'harvest';
+                }}
+              >
+                <svg viewBox="0 0 24 24">
+                  <path d="${mdiCannabis}"></path>
+                </svg>
+                Harvest
+              </button>
+            `
+          : nothing}
       </div>
     `;
   }
@@ -563,12 +586,12 @@ export class PlantOverviewContainer extends LitElement {
 
     const stages: Array<{ key: string; label: string; daysAttr: string }> = [
       { key: 'seedling', label: 'Seed', daysAttr: 'seedling_days' },
-      { key: 'clone',    label: 'Clone', daysAttr: 'clone_days' },
-      { key: 'veg',      label: 'Veg', daysAttr: 'veg_days' },
-      { key: 'mother',   label: 'Mother', daysAttr: 'mother_days' },
-      { key: 'flower',   label: 'Flower', daysAttr: 'flower_days' },
-      { key: 'dry',      label: 'Dry', daysAttr: 'dry_days' },
-      { key: 'cure',     label: 'Cure', daysAttr: 'cure_days' },
+      { key: 'clone', label: 'Clone', daysAttr: 'clone_days' },
+      { key: 'veg', label: 'Veg', daysAttr: 'veg_days' },
+      { key: 'mother', label: 'Mother', daysAttr: 'mother_days' },
+      { key: 'flower', label: 'Flower', daysAttr: 'flower_days' },
+      { key: 'dry', label: 'Dry', daysAttr: 'dry_days' },
+      { key: 'cure', label: 'Cure', daysAttr: 'cure_days' },
     ];
 
     // Only show stages that have been entered or are next
@@ -582,7 +605,8 @@ export class PlantOverviewContainer extends LitElement {
     if (visible.length < 2) return nothing;
 
     return html`
-      <div style="
+      <div
+        style="
         display: flex; align-items: stretch; gap: 0;
         background: rgba(0,0,0,0.2);
         border: 1px solid rgba(255,255,255,0.06);
@@ -590,10 +614,12 @@ export class PlantOverviewContainer extends LitElement {
         padding: 4px;
         margin-bottom: 16px;
         overflow: hidden;
-      ">
+      "
+      >
         ${visible.map((s) => {
           const days = (attrs as any)[s.daysAttr];
-          const isCurrentStage = s.key === currentStage ||
+          const isCurrentStage =
+            s.key === currentStage ||
             (currentStage === 'vegetative' && s.key === 'veg') ||
             (currentStage === 'flowering' && s.key === 'flower') ||
             (currentStage === 'drying' && s.key === 'dry') ||
@@ -601,13 +627,19 @@ export class PlantOverviewContainer extends LitElement {
           const isDone = days !== undefined && days !== null && !isCurrentStage;
 
           return html`
-            <div style="
+            <div
+              style="
               flex: 1; text-align: center; padding: 6px 4px; border-radius: 7px;
               font-size: 0.7rem; line-height: 1.3;
               background: ${isCurrentStage ? 'rgba(255,152,0,0.15)' : 'transparent'};
-              color: ${isCurrentStage ? '#ffb74d' : isDone ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)'};
+              color: ${isCurrentStage
+                ? '#ffb74d'
+                : isDone
+                  ? 'rgba(255,255,255,0.6)'
+                  : 'rgba(255,255,255,0.25)'};
               font-weight: ${isCurrentStage ? '600' : '400'};
-            ">
+            "
+            >
               <div>${s.label}</div>
               <div style="font-variant-numeric: tabular-nums; font-size: 0.85rem; margin-top: 1px;">
                 ${days !== undefined && days !== null ? `D${days}` : '—'}
@@ -667,7 +699,15 @@ export class PlantOverviewContainer extends LitElement {
 
     // Logbook events — same filtering logic as plant-overview-dialog
     const normalize = (s?: string) => s?.toLowerCase().trim() || '';
-    const trainingTechniques = ['topping', 'fim', 'lst', 'super_cropping', 'scrog', 'defoliating', 'lollipopping'];
+    const trainingTechniques = [
+      'topping',
+      'fim',
+      'lst',
+      'super_cropping',
+      'scrog',
+      'defoliating',
+      'lollipopping',
+    ];
 
     const logbookEvents: PlantTimelineEvent[] = this._logbookEvents
       .filter((e) => {
@@ -697,7 +737,10 @@ export class PlantOverviewContainer extends LitElement {
 
         return reasons.some((r) => {
           const rLower = r.toLowerCase();
-          return rLower.startsWith('plant_id:') && rLower.replace('plant_id:', '').trim() === plantId.toLowerCase();
+          return (
+            rLower.startsWith('plant_id:') &&
+            rLower.replace('plant_id:', '').trim() === plantId.toLowerCase()
+          );
         });
       })
       .map((e) => {
@@ -725,11 +768,17 @@ export class PlantOverviewContainer extends LitElement {
           type: 'action',
           date: e.start_time,
           action:
-            e.category === 'watering' || e.category === 'irrigation' ? 'water' : e.category || e.sensor_type,
+            e.category === 'watering' || e.category === 'irrigation'
+              ? 'water'
+              : e.category || e.sensor_type,
           details: (e.reasons || [])
             .filter((r) => {
               const rLower = r.toLowerCase();
-              return !rLower.startsWith('plant_id:') && !rLower.startsWith('plants:') && !rLower.startsWith('plant:');
+              return (
+                !rLower.startsWith('plant_id:') &&
+                !rLower.startsWith('plants:') &&
+                !rLower.startsWith('plant:')
+              );
             })
             .join(', '),
           event_id: (e as GrowspaceEvent & { event_id?: string }).event_id,
@@ -743,13 +792,19 @@ export class PlantOverviewContainer extends LitElement {
     const stage = (this.plant?.state || '').toLowerCase();
     const isDrying = stage === 'dry' || stage === 'drying';
     return html`
-      ${isDrying ? html`
-        <plant-drying-tab .plant=${this.plant}></plant-drying-tab>
-        <hr style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0 24px;" />
-      ` : nothing}
+      ${isDrying
+        ? html`
+            <plant-drying-tab .plant=${this.plant}></plant-drying-tab>
+            <hr
+              style="border:none; border-top:1px solid var(--divider-color, rgba(255,255,255,0.1)); margin:0 24px;"
+            />
+          `
+        : nothing}
       <plant-harvest-tab
         .plant=${this.plant}
-        @harvest-saved=${() => { this._activeTab = 'dashboard'; }}
+        @harvest-saved=${() => {
+          this._activeTab = 'dashboard';
+        }}
         @harvest-advance=${this._handleHarvestAdvance}
       ></plant-harvest-tab>
     `;
@@ -777,65 +832,85 @@ export class PlantOverviewContainer extends LitElement {
         </div>
 
         <!-- CENTER: Dynamic Actions -->
-        ${this._activeTab === 'dashboard' ? html`
-          <div class="dynamic-actions" style="display:flex; gap:12px; align-items:center; justify-content:center; flex:1;">
-            <!-- Mother/Veg/Flower: Take Clone with count -->
-            ${['mother', 'veg', 'flower'].includes(stage || '') ? html`
-              <div style="display:flex; align-items:center; gap:8px;">
-                <md3-number-input
-                  id="clone-count-input"
-                  .value=${1}
-                  .min=${1}
-                  .max=${10}
-                  style="width: 80px;"
-                ></md3-number-input>
-                <button
-                  class="md3-button primary"
-                  @click=${(e: MouseEvent) => {
-                    const container = (e.currentTarget as HTMLElement).closest('.dynamic-actions');
-                    const input = container?.querySelector('#clone-count-input') as HTMLInputElement;
-                    const val = input ? parseInt(input.value, 10) : 1;
-                    this._handleTakeClone(isNaN(val) ? 1 : val);
-                  }}
-                >
-                  <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                    <path d="${mdiContentCopy}"></path>
-                  </svg>
-                  Take Clone
-                </button>
+        ${this._activeTab === 'dashboard'
+          ? html`
+              <div
+                class="dynamic-actions"
+                style="display:flex; gap:12px; align-items:center; justify-content:center; flex:1;"
+              >
+                <!-- Mother/Veg/Flower: Take Clone with count -->
+                ${['mother', 'veg', 'flower'].includes(stage || '')
+                  ? html`
+                      <div style="display:flex; align-items:center; gap:8px;">
+                        <md3-number-input
+                          id="clone-count-input"
+                          .value=${1}
+                          .min=${1}
+                          .max=${10}
+                          style="width: 80px;"
+                        ></md3-number-input>
+                        <button
+                          class="md3-button primary"
+                          @click=${(e: MouseEvent) => {
+                            const container = (e.currentTarget as HTMLElement).closest(
+                              '.dynamic-actions'
+                            );
+                            const input = container?.querySelector(
+                              '#clone-count-input'
+                            ) as HTMLInputElement;
+                            const val = input ? parseInt(input.value, 10) : 1;
+                            this._handleTakeClone(isNaN(val) ? 1 : val);
+                          }}
+                        >
+                          <svg
+                            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiContentCopy}"></path>
+                          </svg>
+                          Take Clone
+                        </button>
+                      </div>
+                    `
+                  : nothing}
+
+                <!-- Flower: Harvest -->
+                ${stage === 'flower' || stage === 'flowering'
+                  ? html`
+                      <button class="md3-button primary" @click=${this._handleHarvest}>
+                        <svg
+                          style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="${mdiFlower}"></path>
+                        </svg>
+                        Harvest
+                      </button>
+                    `
+                  : nothing}
+
+                <!-- Dry: Finish Drying -->
+                ${stage === 'dry' || stage === 'drying'
+                  ? html`
+                      <button class="md3-button primary" @click=${this._handleFinishDrying}>
+                        <svg
+                          style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                          viewBox="0 0 24 24"
+                        >
+                          <path d="${mdiCannabis}"></path>
+                        </svg>
+                        Finish Drying
+                      </button>
+                    `
+                  : nothing}
               </div>
-            ` : nothing}
-
-            <!-- Flower: Harvest -->
-            ${stage === 'flower' || stage === 'flowering' ? html`
-              <button class="md3-button primary" @click=${this._handleHarvest}>
-                <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                  <path d="${mdiFlower}"></path>
-                </svg>
-                Harvest
-              </button>
-            ` : nothing}
-
-            <!-- Dry: Finish Drying -->
-            ${stage === 'dry' || stage === 'drying' ? html`
-              <button class="md3-button primary" @click=${this._handleFinishDrying}>
-                <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
-                  <path d="${mdiCannabis}"></path>
-                </svg>
-                Finish Drying
-              </button>
-            ` : nothing}
-          </div>
-        ` : html`<div style="flex:1;"></div>`}
+            `
+          : html`<div style="flex:1;"></div>`}
 
         <!-- RIGHT: Primary Actions -->
         <div class="primary-actions" style="display:flex; gap:12px;">
           <button class="md3-button outlined" @click=${this._handleClose}>Cancel</button>
-          <button
-            class="md3-button filled"
-            @click=${this._handleSave}
-            ?disabled=${!vm.canSave}
-          >
+          <button class="md3-button filled" @click=${this._handleSave} ?disabled=${!vm.canSave}>
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
               viewBox="0 0 24 24"
@@ -995,8 +1070,7 @@ export class PlantOverviewContainer extends LitElement {
   }
 
   private _openPrintLabel(): void {
-    const plantId =
-      this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
+    const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
     this.store.ui.setActiveDialog({
       type: 'PRINT_LABEL',
       payload: {
@@ -1101,7 +1175,6 @@ export class PlantOverviewContainer extends LitElement {
       payload: { editingStrain: strainEntry },
     });
   }
-
 }
 
 declare global {

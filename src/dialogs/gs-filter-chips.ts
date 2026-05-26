@@ -22,7 +22,9 @@ export class GsFilterChips extends LitElement {
       color: var(--primary-text-color);
       font-size: 13px;
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      transition:
+        background 0.15s,
+        color 0.15s;
     }
 
     .filter-chip.active {
@@ -41,12 +43,19 @@ export class GsFilterChips extends LitElement {
   render() {
     return html`
       <div class="library-filter-chips">
-        ${GsFilterChips.OPTS.map((o) => html`
-          <button
-            class="filter-chip ${this.filter === o.key ? 'active' : ''}"
-            @click=${() => this.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: o.key } }))}
-          >${o.label}</button>
-        `)}
+        ${GsFilterChips.OPTS.map(
+          (o) => html`
+            <button
+              class="filter-chip ${this.filter === o.key ? 'active' : ''}"
+              @click=${() =>
+                this.dispatchEvent(
+                  new CustomEvent('filter-changed', { detail: { filter: o.key } })
+                )}
+            >
+              ${o.label}
+            </button>
+          `
+        )}
       </div>
     `;
   }

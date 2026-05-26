@@ -20,7 +20,12 @@ import {
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, IrrigationTime, SerializedEnvironmentAttributes, EnvironmentAttributes } from '../types';
+import {
+  GrowspaceDevice,
+  IrrigationTime,
+  SerializedEnvironmentAttributes,
+  EnvironmentAttributes,
+} from '../types';
 import { MetricKey, EntityState, StatusLevel } from '../constants';
 import { PlantUtils } from './plant-utils';
 
@@ -270,7 +275,10 @@ export class MetricsUtils {
           const sVal = String(fallbackValue);
           const fVal = parseFloat(sVal);
           const isValid =
-            !isNaN(fVal) || sVal === EntityState.UNKNOWN || sVal === EntityState.UNAVAILABLE || sVal === '';
+            !isNaN(fVal) ||
+            sVal === EntityState.UNKNOWN ||
+            sVal === EntityState.UNAVAILABLE ||
+            sVal === '';
 
           if (isValid) {
             return { value: fallbackValue + unit, entityIds: [] };
@@ -310,7 +318,10 @@ export class MetricsUtils {
         const sVal = String(fallbackValue);
         const fVal = parseFloat(sVal);
         const isValid =
-          !isNaN(fVal) || sVal === EntityState.UNKNOWN || sVal === EntityState.UNAVAILABLE || sVal === '';
+          !isNaN(fVal) ||
+          sVal === EntityState.UNKNOWN ||
+          sVal === EntityState.UNAVAILABLE ||
+          sVal === '';
 
         if (isValid) {
           singleValue = sVal + unit;
@@ -362,23 +373,29 @@ export class MetricsUtils {
     // New metrics: DLI, Crop Steering, Substrate Temp, Energy, Water
     const dliEntityId = `sensor.${slug}_dli`;
     const dliState = hass.states[dliEntityId];
-    const dliValue = dliState && dliState.state !== EntityState.UNKNOWN && dliState.state !== EntityState.UNAVAILABLE
-      ? dliState.state
-      : undefined;
+    const dliValue =
+      dliState &&
+      dliState.state !== EntityState.UNKNOWN &&
+      dliState.state !== EntityState.UNAVAILABLE
+        ? dliState.state
+        : undefined;
 
     const cropSteeringEntityId = `sensor.${slug}_crop_steering`;
     const cropSteeringState = hass.states[cropSteeringEntityId];
-    const cropSteeringValue = cropSteeringState && cropSteeringState.state !== EntityState.UNKNOWN && cropSteeringState.state !== EntityState.UNAVAILABLE
-      ? cropSteeringState.state
-      : undefined;
+    const cropSteeringValue =
+      cropSteeringState &&
+      cropSteeringState.state !== EntityState.UNKNOWN &&
+      cropSteeringState.state !== EntityState.UNAVAILABLE
+        ? cropSteeringState.state
+        : undefined;
 
-    const energyValue = device.energyTracking?.dailyKwh != null
-      ? device.energyTracking.dailyKwh.toFixed(2)
-      : undefined;
+    const energyValue =
+      device.energyTracking?.dailyKwh != null
+        ? device.energyTracking.dailyKwh.toFixed(2)
+        : undefined;
 
-    const waterValue = device.waterUsage?.litersToday != null
-      ? device.waterUsage.litersToday.toFixed(1)
-      : undefined;
+    const waterValue =
+      device.waterUsage?.litersToday != null ? device.waterUsage.litersToday.toFixed(1) : undefined;
 
     const substrateTempAgg = getAggregateSensorState(
       undefined,
@@ -387,7 +404,7 @@ export class MetricsUtils {
     );
 
     if (tanks.length > 0) {
-      tankEntityIds = tanks.map(t => t.sensorEntity).filter(Boolean);
+      tankEntityIds = tanks.map((t) => t.sensorEntity).filter(Boolean);
 
       // Helper: Format hours remaining as "Xh" or "Xd"
       const formatTimeRemaining = (hours: number | null | undefined): string => {
@@ -406,7 +423,8 @@ export class MetricsUtils {
       ): string | undefined => {
         // No color if no data or not depleting
         if (depletionStatus === 'insufficient_data' || depletionStatus === null) return undefined;
-        if (depletionStatus === 'static' || depletionStatus === 'refilling') return StatusLevel.OPTIMAL;
+        if (depletionStatus === 'static' || depletionStatus === 'refilling')
+          return StatusLevel.OPTIMAL;
 
         if (hoursRemaining === null || hoursRemaining === undefined) return undefined;
 
@@ -432,9 +450,9 @@ export class MetricsUtils {
         }
       } else {
         // Multiple tanks - compute average and show individual values
-        const validLevels = tanks.filter(t => t.fillLevel !== null && t.fillLevel !== undefined);
+        const validLevels = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
         if (validLevels.length > 0) {
-          tankMultiValues = validLevels.map(t => {
+          tankMultiValues = validLevels.map((t) => {
             const fillPct = Math.round(t.fillLevel!);
             const timeStr = formatTimeRemaining(t.hoursRemaining);
             return `${fillPct}%${timeStr}`;
@@ -445,7 +463,7 @@ export class MetricsUtils {
 
           // Use most urgent status
           const statuses = tanks
-            .map(t => getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
+            .map((t) => getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
             .filter(Boolean);
 
           if (statuses.includes(StatusLevel.DANGER)) {
@@ -563,19 +581,25 @@ export class MetricsUtils {
         soilAgg.entityIds,
         'Moisture'
       ),
-      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
+      createChipData(
+        MetricKey.SUBSTRATE_TEMPERATURE,
+        mdiThermometer,
+        substrateTempAgg.value,
+        substrateTempAgg.multiValues,
+        substrateTempAgg.entityIds
+      ),
       createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
       createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
       envEntity
         ? createChipData(
-          MetricKey.OPTIMAL,
-          envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
-          optimalLabel,
-          undefined,
-          undefined,
-          undefined,
-          envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
-        )
+            MetricKey.OPTIMAL,
+            envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
+            optimalLabel,
+            undefined,
+            undefined,
+            undefined,
+            envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
+          )
         : null,
       createChipData(
         MetricKey.DLI,
@@ -829,12 +853,14 @@ export class MetricsUtils {
       const nameSuffix = index !== null ? ` ${index + 1}` : '';
       const uuidSuffix = index !== null ? `_${index}` : '';
 
-      const calculatedId = growspaceName && subareaName
-        ? `sensor.${slugify(`${growspaceName} ${subareaName} Calculated VPD${nameSuffix}`)}`
-        : '';
-      const uuidId = growspaceId && subareaId
-        ? `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`
-        : '';
+      const calculatedId =
+        growspaceName && subareaName
+          ? `sensor.${slugify(`${growspaceName} ${subareaName} Calculated VPD${nameSuffix}`)}`
+          : '';
+      const uuidId =
+        growspaceId && subareaId
+          ? `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`
+          : '';
 
       if (calculatedId && hass.states[calculatedId]) {
         const s = hass.states[calculatedId];
@@ -902,10 +928,38 @@ export class MetricsUtils {
     const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
 
     const heroChips = [
-      createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, 'Temperature'),
-      createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds, 'Humidity'),
-      createChipData(MetricKey.VPD, mdiCloudOutline, vpdAgg.value, vpdAgg.multiValues, vpdAgg.entityIds, 'VPD'),
-      createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, 'CO2'),
+      createChipData(
+        MetricKey.TEMPERATURE,
+        mdiThermometer,
+        tempAgg.value,
+        tempAgg.multiValues,
+        tempAgg.entityIds,
+        'Temperature'
+      ),
+      createChipData(
+        MetricKey.HUMIDITY,
+        mdiWaterPercent,
+        humAgg.value,
+        humAgg.multiValues,
+        humAgg.entityIds,
+        'Humidity'
+      ),
+      createChipData(
+        MetricKey.VPD,
+        mdiCloudOutline,
+        vpdAgg.value,
+        vpdAgg.multiValues,
+        vpdAgg.entityIds,
+        'VPD'
+      ),
+      createChipData(
+        MetricKey.CO2,
+        mdiWeatherCloudy,
+        co2Agg.value,
+        co2Agg.multiValues,
+        co2Agg.entityIds,
+        'CO2'
+      ),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
@@ -914,10 +968,31 @@ export class MetricsUtils {
     const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
 
     const secondaryChips = [
-      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, '', subTempAgg.value, subTempAgg.multiValues, subTempAgg.entityIds, 'Substrate Temp'),
+      createChipData(
+        MetricKey.SUBSTRATE_TEMPERATURE,
+        '',
+        subTempAgg.value,
+        subTempAgg.multiValues,
+        subTempAgg.entityIds,
+        'Substrate Temp'
+      ),
       createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
-      createChipData('feed_ec', '', feedEcAgg.value, feedEcAgg.multiValues, feedEcAgg.entityIds, 'Feed EC'),
-      createChipData('substrate_ec', '', subEcAgg.value, subEcAgg.multiValues, subEcAgg.entityIds, 'Substrate EC'),
+      createChipData(
+        'feed_ec',
+        '',
+        feedEcAgg.value,
+        feedEcAgg.multiValues,
+        feedEcAgg.entityIds,
+        'Feed EC'
+      ),
+      createChipData(
+        'substrate_ec',
+        '',
+        subEcAgg.value,
+        subEcAgg.multiValues,
+        subEcAgg.entityIds,
+        'Substrate EC'
+      ),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     const getAggregateDeviceState = (
@@ -931,11 +1006,25 @@ export class MetricsUtils {
       const entityIds: string[] = Array.from(ids);
       ids.forEach((id) => {
         const s = hass.states[id];
-        states.push(s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN ? s.state : '-');
+        states.push(
+          s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN
+            ? s.state
+            : '-'
+        );
       });
 
       if (ids.size > 1) return { value: 'Multiple', multiValues: states, entityIds };
-      return { value: states[0] !== '-' ? (states[0] === 'on' ? 'On' : states[0] === 'off' ? 'Off' : states[0]) : undefined, entityIds };
+      return {
+        value:
+          states[0] !== '-'
+            ? states[0] === 'on'
+              ? 'On'
+              : states[0] === 'off'
+                ? 'Off'
+                : states[0]
+            : undefined,
+        entityIds,
+      };
     };
 
     const lightState = getAggregateDeviceState(ec.light_sensors);
@@ -958,11 +1047,46 @@ export class MetricsUtils {
     }
 
     const deviceChips = [
-      createChipData(MetricKey.LIGHT, subareaLightIcon, subareaLightValue, lightState.multiValues, lightState.entityIds, 'Lights'),
-      createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
-      createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circFanState.value, circFanState.multiValues, circFanState.entityIds, 'Fan'),
-      createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humState.value, humState.multiValues, humState.entityIds, 'Humidifier'),
-      createChipData(MetricKey.DEHUMIDIFIER, mdiAirHumidifierOff, dehumState.value, dehumState.multiValues, dehumState.entityIds, 'Dehumidifier'),
+      createChipData(
+        MetricKey.LIGHT,
+        subareaLightIcon,
+        subareaLightValue,
+        lightState.multiValues,
+        lightState.entityIds,
+        'Lights'
+      ),
+      createChipData(
+        MetricKey.EXHAUST,
+        mdiFan,
+        exhaustState.value,
+        exhaustState.multiValues,
+        exhaustState.entityIds,
+        'Exhaust'
+      ),
+      createChipData(
+        MetricKey.CIRCULATION_FAN,
+        mdiFan,
+        circFanState.value,
+        circFanState.multiValues,
+        circFanState.entityIds,
+        'Fan'
+      ),
+      createChipData(
+        MetricKey.HUMIDIFIER,
+        mdiAirHumidifier,
+        humState.value,
+        humState.multiValues,
+        humState.entityIds,
+        'Humidifier'
+      ),
+      createChipData(
+        MetricKey.DEHUMIDIFIER,
+        mdiAirHumidifierOff,
+        dehumState.value,
+        dehumState.multiValues,
+        dehumState.entityIds,
+        'Dehumidifier'
+      ),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     return { heroChips, secondaryChips, deviceChips };

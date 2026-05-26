@@ -114,33 +114,48 @@ describe('PlantCardViewModel', () => {
   });
 
   it('should detect training status', () => {
-    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_training_technique: 'LST' } });
+    $plant.set({
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, last_training_technique: 'LST' },
+    });
     const viewModel = createPlantCardViewModel($plant, deps);
     expect(viewModel.get()!.statusIndicators.hasTraining).toBe(true);
   });
 
   it('should detect IPM status', () => {
-    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_ipm: '2024-01-01', last_ipm_type: 'Neem Oil' } });
+    $plant.set({
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, last_ipm: '2024-01-01', last_ipm_type: 'Neem Oil' },
+    });
     const viewModel = createPlantCardViewModel($plant, deps);
     expect(viewModel.get()!.statusIndicators.hasIPM).toBe(true);
   });
 
   it('should detect problem status', () => {
-    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, problem: 'Nutrient deficiency' } });
+    $plant.set({
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, problem: 'Nutrient deficiency' },
+    });
     const viewModel = createPlantCardViewModel($plant, deps);
     expect(viewModel.get()!.statusIndicators.hasProblem).toBe(true);
   });
 
   it('should detect recent watering', () => {
     const recentWatering = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
-    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_watered: recentWatering } });
+    $plant.set({
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, last_watered: recentWatering },
+    });
     const viewModel = createPlantCardViewModel($plant, deps);
     expect(viewModel.get()!.statusIndicators.isRecentlyWatered).toBe(true);
   });
 
   it('should not detect old watering as recent', () => {
     const oldWatering = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    $plant.set({ ...mockPlant, attributes: { ...mockPlant.attributes, last_watered: oldWatering } });
+    $plant.set({
+      ...mockPlant,
+      attributes: { ...mockPlant.attributes, last_watered: oldWatering },
+    });
     const viewModel = createPlantCardViewModel($plant, deps);
     expect(viewModel.get()!.statusIndicators.isRecentlyWatered).toBe(false);
   });

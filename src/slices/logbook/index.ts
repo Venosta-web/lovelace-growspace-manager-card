@@ -42,7 +42,7 @@ export type { LogbookEntry, NotePayload };
 // ---------------------------------------------------------------------------
 
 export const growspaceEvents$ = atom<LogbookEntry[]>([]);
-export const plantEvents$     = atom<LogbookEntry[]>([]);
+export const plantEvents$ = atom<LogbookEntry[]>([]);
 
 // ---------------------------------------------------------------------------
 // Bootstrap / sibling writes (public)
@@ -83,18 +83,14 @@ function _merge(logs: LogbookEntry[], alerts: LogbookEntry[]): LogbookEntry[] {
  */
 export async function fetchGrowspaceEvents(
   growspaceId: string,
-  limit = 50,
+  limit = 50
 ): Promise<LogbookEntry[]> {
   const [logsResp, alertsResp] = await Promise.all([
-    hassCall(
-      'growspace_manager/get_log',
-      { growspace_id: growspaceId, limit },
-      LogResponseSchema,
-    ),
+    hassCall('growspace_manager/get_log', { growspace_id: growspaceId, limit }, LogResponseSchema),
     hassCall(
       'growspace_manager/get_alerts',
       { growspace_id: growspaceId, limit: limit * 6 },
-      LogResponseSchema,
+      LogResponseSchema
     ),
   ]);
 
@@ -115,18 +111,18 @@ export async function fetchGrowspaceEvents(
 export async function fetchPlantEvents(
   plantId: string,
   growspaceId: string,
-  limit = 50,
+  limit = 50
 ): Promise<LogbookEntry[]> {
   const [logsResp, alertsResp] = await Promise.all([
     hassCall(
       'growspace_manager/get_log',
       { plant_id: plantId, growspace_id: growspaceId, limit },
-      LogResponseSchema,
+      LogResponseSchema
     ),
     hassCall(
       'growspace_manager/get_alerts',
       { plant_id: plantId, growspace_id: growspaceId, limit: limit * 6 },
-      LogResponseSchema,
+      LogResponseSchema
     ),
   ]);
 
@@ -151,7 +147,7 @@ export async function addPlantNote(plantId: string, payload: NotePayload): Promi
       tags: payload.tags ?? [],
       transition_date: payload.transitionDate ?? new Date().toISOString(),
     },
-    AddNoteResponseSchema,
+    AddNoteResponseSchema
   );
 }
 
@@ -169,7 +165,7 @@ export async function addGrowspaceNote(growspaceId: string, payload: NotePayload
       notes: payload.notes,
       images: payload.images ?? [],
     },
-    AddNoteResponseSchema,
+    AddNoteResponseSchema
   );
 }
 
@@ -186,12 +182,11 @@ export async function deleteEvent(eventId: string | number): Promise<void> {
   const originalGrowspace = growspaceEvents$.get();
   const originalPlant = plantEvents$.get();
 
-  const filtered = (entries: LogbookEntry[]) =>
-    entries.filter((e) => e.event_id !== eventId);
+  const filtered = (entries: LogbookEntry[]) => entries.filter((e) => e.event_id !== eventId);
 
   const growspaceId =
-    [...originalGrowspace, ...originalPlant].find((e) => e.event_id === eventId)
-      ?.growspace_id ?? '';
+    [...originalGrowspace, ...originalPlant].find((e) => e.event_id === eventId)?.growspace_id ??
+    '';
 
   await mutate(
     {
@@ -208,9 +203,9 @@ export async function deleteEvent(eventId: string | number): Promise<void> {
         hassCall(
           'growspace_manager/remove_timeline_event',
           { event_id: eventId },
-          DeleteEventResponseSchema,
+          DeleteEventResponseSchema
         ).then(() => undefined),
     },
-    growspaceId,
+    growspaceId
   );
 }

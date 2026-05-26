@@ -7,10 +7,7 @@ const emptyCell = { plant: null, row: 1, col: 1, overlayColor: '', isSelected: f
 
 async function renderWithPrimaryColor(color: string): Promise<HTMLElement> {
   const el = await fixture<GrowspaceGridUI>(html`
-    <growspace-grid-ui
-      .cells=${[emptyCell]}
-      style="--primary-color: ${color}"
-    ></growspace-grid-ui>
+    <growspace-grid-ui .cells=${[emptyCell]} style="--primary-color: ${color}"></growspace-grid-ui>
   `);
   return el.shadowRoot!.querySelector('.plant-card-empty') as HTMLElement;
 }

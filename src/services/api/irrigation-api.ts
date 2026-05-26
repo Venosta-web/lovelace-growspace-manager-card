@@ -149,16 +149,22 @@ export class IrrigationAPI extends BaseAPI {
       irrigation_duration: params.irrigationDuration,
       drain_duration: params.drainDuration,
     };
-    if (params.soilTriggerPercent !== undefined) result.soil_trigger_percent = params.soilTriggerPercent;
-    if (params.dailyVolumeCapLiters !== undefined) result.daily_volume_cap_liters = params.dailyVolumeCapLiters;
+    if (params.soilTriggerPercent !== undefined)
+      result.soil_trigger_percent = params.soilTriggerPercent;
+    if (params.dailyVolumeCapLiters !== undefined)
+      result.daily_volume_cap_liters = params.dailyVolumeCapLiters;
     if (params.maxCyclesPerDay !== undefined) result.max_cycles_per_day = params.maxCyclesPerDay;
     if (params.skipDuringDark !== undefined) result.skip_during_dark = params.skipDuringDark;
     if (params.pauseOnLowTank !== undefined) result.pause_on_low_tank = params.pauseOnLowTank;
     if (params.logToLogbook !== undefined) result.log_to_logbook = params.logToLogbook;
-    if (params.autoAdvanceP1ToP2 !== undefined) result.auto_advance_p1_to_p2 = params.autoAdvanceP1ToP2;
-    if (params.autoAdvanceP2ToP3 !== undefined) result.auto_advance_p2_to_p3 = params.autoAdvanceP2ToP3;
-    if (params.haltOnRunoffEcThreshold !== undefined) result.halt_on_runoff_ec_threshold = params.haltOnRunoffEcThreshold;
-    if (params.activeSteeringPhase !== undefined) result.active_steering_phase = params.activeSteeringPhase;
+    if (params.autoAdvanceP1ToP2 !== undefined)
+      result.auto_advance_p1_to_p2 = params.autoAdvanceP1ToP2;
+    if (params.autoAdvanceP2ToP3 !== undefined)
+      result.auto_advance_p2_to_p3 = params.autoAdvanceP2ToP3;
+    if (params.haltOnRunoffEcThreshold !== undefined)
+      result.halt_on_runoff_ec_threshold = params.haltOnRunoffEcThreshold;
+    if (params.activeSteeringPhase !== undefined)
+      result.active_steering_phase = params.activeSteeringPhase;
     return result;
   }
 
@@ -213,7 +219,8 @@ export class IrrigationAPI extends BaseAPI {
     const payload: Record<string, unknown> = { growspace_id: growspaceId };
     if (params.enabled !== undefined) payload.enabled = params.enabled;
     if (params.maxEcDelta !== undefined) payload.max_ec_delta = params.maxEcDelta;
-    if (params.targetRunoffPercent !== undefined) payload.target_runoff_percent = params.targetRunoffPercent;
+    if (params.targetRunoffPercent !== undefined)
+      payload.target_runoff_percent = params.targetRunoffPercent;
     await this.callService(DOMAIN, SERVICES.CONFIGURE_DRAIN_MONITORING, payload);
   }
 

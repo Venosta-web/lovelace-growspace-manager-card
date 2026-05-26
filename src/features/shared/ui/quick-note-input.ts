@@ -281,10 +281,10 @@ export class QuickNoteInput extends LitElement {
         </div>
 
         ${this._images.length > 0
-        ? html`
+          ? html`
               <div class="image-previews">
                 ${this._images.map(
-          (img, i) => html`
+                  (img, i) => html`
                     <div class="preview-item">
                       <img src=${img} alt="Preview ${i + 1}" />
                       <button
@@ -299,22 +299,22 @@ export class QuickNoteInput extends LitElement {
                       </button>
                     </div>
                   `
-        )}
+                )}
               </div>
             `
-        : nothing}
+          : nothing}
 
         <div class="actions">
           <div class="action-buttons">
             ${this.allowImages
-        ? html`
-                    <input
-                      type="file"
-                      id="fileInput"
-                      @change=${this._handleFileSelect}
-                      multiple
-                      accept="image/*"
-                    />
+              ? html`
+                  <input
+                    type="file"
+                    id="fileInput"
+                    @change=${this._handleFileSelect}
+                    multiple
+                    accept="image/*"
+                  />
                   <button
                     @click=${() => this.shadowRoot?.getElementById('fileInput')?.click()}
                     ?disabled=${this.disabled || this._isSaving}
@@ -326,7 +326,7 @@ export class QuickNoteInput extends LitElement {
                     </svg>
                   </button>
                 `
-        : nothing}
+              : nothing}
           </div>
           <button
             class="submit-btn"

@@ -174,7 +174,7 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
 
     // Draft should be reset to device values (empty string since device default)
     expect(next.tabs.schedules.draft.irrigationPumpEntity).toBe(
-      device.irrigationConfig?.irrigationPumpEntity ?? '',
+      device.irrigationConfig?.irrigationPumpEntity ?? ''
     );
   });
 

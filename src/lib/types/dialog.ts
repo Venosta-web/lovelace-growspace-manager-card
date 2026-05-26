@@ -1,8 +1,4 @@
-import type {
-  PlantEntity,
-  PlantAttributes,
-  StrainEntry,
-} from '../../features/plants/types';
+import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
 
 export interface AddPlantDialogState {
@@ -187,7 +183,16 @@ export interface EnvironmentConfigEventDetail {
 }
 
 export interface ConfigDialogState {
-  currentTab: 'growspaces' | 'sensors' | 'climate' | 'humidity' | 'irrigation' | 'tanks' | 'vision' | 'heatmap' | 'subareas';
+  currentTab:
+    | 'growspaces'
+    | 'sensors'
+    | 'climate'
+    | 'humidity'
+    | 'irrigation'
+    | 'tanks'
+    | 'vision'
+    | 'heatmap'
+    | 'subareas';
   environmentData: EnvironmentConfigData;
 }
 
@@ -258,7 +263,6 @@ export interface HarvestScoringDialogState {
 export interface SnapshotsDialogState {
   growspaceId: string;
 }
-
 
 export interface CropSteeringDialogState {
   growspaceId: string;

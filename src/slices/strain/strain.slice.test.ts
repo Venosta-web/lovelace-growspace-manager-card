@@ -65,7 +65,11 @@ describe('strainLibrary$', () => {
 
 describe('setStrainLibrary', () => {
   it('replaces strainLibrary$ with the provided array', () => {
-    const entry: StrainEntry = { strain: 'Blue Dream', phenotype: 'default', key: 'Blue Dream|default' };
+    const entry: StrainEntry = {
+      strain: 'Blue Dream',
+      phenotype: 'default',
+      key: 'Blue Dream|default',
+    };
     setStrainLibrary([entry]);
     expect(strainLibrary$.get()).toEqual([entry]);
   });
@@ -86,7 +90,7 @@ describe('fetchStrainLibrary', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_strain_library',
       {},
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -165,7 +169,7 @@ describe('addStrain', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_strain',
-      expect.objectContaining({ strain: 'Gelato', phenotype: 'pheno1', breeder: 'Cookies' }),
+      expect.objectContaining({ strain: 'Gelato', phenotype: 'pheno1', breeder: 'Cookies' })
     );
   });
 
@@ -176,7 +180,7 @@ describe('addStrain', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_strain',
-      expect.objectContaining({ images }),
+      expect.objectContaining({ images })
     );
     const call = vi.mocked(hassCallModule.callService).mock.calls[0][2];
     expect(call).not.toHaveProperty('image');
@@ -224,7 +228,7 @@ describe('removeStrain', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'remove_strain',
-      expect.objectContaining({ strain: 'Blue Dream' }),
+      expect.objectContaining({ strain: 'Blue Dream' })
     );
     // 'default' phenotype is omitted (treated as no phenotype)
     const call = vi.mocked(hassCallModule.callService).mock.calls[0][2];
@@ -234,11 +238,10 @@ describe('removeStrain', () => {
   it('includes phenotype in payload for non-default phenotypes', async () => {
     await removeStrain('Gelato|pheno1');
 
-    expect(hassCallModule.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'remove_strain',
-      { strain: 'Gelato', phenotype: 'pheno1' },
-    );
+    expect(hassCallModule.callService).toHaveBeenCalledWith('growspace_manager', 'remove_strain', {
+      strain: 'Gelato',
+      phenotype: 'pheno1',
+    });
   });
 
   it('re-throws when callService fails', async () => {
@@ -259,7 +262,7 @@ describe('updateStrainMeta', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'update_strain_meta',
-      expect.objectContaining({ strain: 'OG', description: 'Nice' }),
+      expect.objectContaining({ strain: 'OG', description: 'Nice' })
     );
   });
 
@@ -283,7 +286,7 @@ describe('exportStrainLibrary', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'export_strain_library',
-      {},
+      {}
     );
   });
 
@@ -310,7 +313,7 @@ describe('importStrainLibrary', () => {
 
     expect(hassCallModule.callFetch).toHaveBeenCalledWith(
       '/api/growspace_manager/import_strains',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ method: 'POST' })
     );
     expect(result.success).toBe(true);
   });
@@ -348,7 +351,7 @@ describe('clearStrainLibrary', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'clear_strain_library',
-      {},
+      {}
     );
   });
 
@@ -372,7 +375,7 @@ describe('updateBreeder', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/update_breeder',
       expect.objectContaining({ original_name: 'Old Name', new_name: 'New Name' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -405,7 +408,7 @@ describe('deleteBreeder', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/delete_breeder',
       { breeder_name: 'DJ Short' },
-      expect.anything(),
+      expect.anything()
     );
   });
 

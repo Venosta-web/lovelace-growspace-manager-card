@@ -200,7 +200,9 @@ export class ErrorBoundary extends LitElement {
       try {
         this.onRetry();
       } catch (error: unknown) {
-        this._catchError(error instanceof Error ? error : new Error(String(error)), { context: 'retry' });
+        this._catchError(error instanceof Error ? error : new Error(String(error)), {
+          context: 'retry',
+        });
       }
     } else {
       this.requestUpdate();
@@ -218,7 +220,9 @@ export class ErrorBoundary extends LitElement {
       try {
         this.onReset();
       } catch (error: unknown) {
-        this._catchError(error instanceof Error ? error : new Error(String(error)), { context: 'reset' });
+        this._catchError(error instanceof Error ? error : new Error(String(error)), {
+          context: 'reset',
+        });
       }
     } else {
       this.requestUpdate();
@@ -279,13 +283,13 @@ export class ErrorBoundary extends LitElement {
           <p class="error-message">${this._error.message || 'An unexpected error occurred'}</p>
 
           ${isDev && this._error.stack
-          ? html`
+            ? html`
                 <details ?open=${this.showDetails}>
                   <summary>${this.showDetails ? 'Hide' : 'Show'} technical details</summary>
                   <div class="error-details">${this._error.stack}</div>
                 </details>
               `
-          : nothing}
+            : nothing}
 
           <div class="error-actions">
             <button class="error-button" @click=${this._handleRetry}>
@@ -293,13 +297,13 @@ export class ErrorBoundary extends LitElement {
               Retry
             </button>
             ${this.onReset
-          ? html`
+              ? html`
                   <button class="error-button" @click=${this._handleReset}>
                     <ha-svg-icon .path=${mdiRestart}></ha-svg-icon>
                     Reset
                   </button>
                 `
-          : nothing}
+              : nothing}
           </div>
         </div>
       `;

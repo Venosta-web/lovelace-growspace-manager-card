@@ -198,7 +198,7 @@ export class BaseDialogLayout extends LitElement {
       border: none;
       color: var(--secondary-text-color, rgba(255, 255, 255, 0.7));
       cursor: pointer;
-      padding: 12px;  /* Was 8px — 20px icon + 24px padding = 44px total (WCAG minimum) */
+      padding: 12px; /* Was 8px — 20px icon + 24px padding = 44px total (WCAG minimum) */
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -355,10 +355,8 @@ export class BaseDialogLayout extends LitElement {
           aria-labelledby="base-dialog-title"
           @click=${(e: Event) => e.stopPropagation()}
         >
-          ${this._renderHeader()}
-          ${this.tabs ? this._renderTabs() : nothing}
-          ${this._renderContent()}
-          ${this._renderActions()}
+          ${this._renderHeader()} ${this.tabs ? this._renderTabs() : nothing}
+          ${this._renderContent()} ${this._renderActions()}
         </div>
       </div>
     `;
@@ -369,9 +367,7 @@ export class BaseDialogLayout extends LitElement {
       <div class="dialog-header">
         <div class="dialog-header-text">
           <h2 class="dialog-title" id="base-dialog-title">${this.title}</h2>
-          ${this.subtitle
-            ? html`<div class="dialog-subtitle">${this.subtitle}</div>`
-            : nothing}
+          ${this.subtitle ? html`<div class="dialog-subtitle">${this.subtitle}</div>` : nothing}
         </div>
         ${!this.hideCloseButton
           ? html`

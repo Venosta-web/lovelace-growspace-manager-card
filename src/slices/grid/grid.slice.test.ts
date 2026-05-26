@@ -32,14 +32,14 @@ const makePlant = (id: string, row: number, col: number): PlantEntity =>
     entity_id: `sensor.${id}`,
     state: 'vegetative',
     attributes: { plant_id: id, row, col, growspace_id: 'gs1', strain: 'Test' },
-  } as unknown as PlantEntity);
+  }) as unknown as PlantEntity;
 
 const makeDevice = (
   id: string,
   name: string,
   plants: PlantEntity[],
   plantsPerRow = 2,
-  rows = 2,
+  rows = 2
 ): GrowspaceDevice =>
   ({
     deviceId: id,
@@ -48,7 +48,7 @@ const makeDevice = (
     rows,
     type: 'normal',
     plants,
-  } as unknown as GrowspaceDevice);
+  }) as unknown as GrowspaceDevice;
 
 // ---------------------------------------------------------------------------
 // State reset before each test
@@ -142,10 +142,7 @@ describe('growspaceOptions$', () => {
   });
 
   it('maps deviceId to name for each active device', () => {
-    setDevices([
-      makeDevice('gs1', 'Veg Room', []),
-      makeDevice('gs2', 'Flower Room', []),
-    ]);
+    setDevices([makeDevice('gs1', 'Veg Room', []), makeDevice('gs2', 'Flower Room', [])]);
 
     expect(growspaceOptions$.get()).toEqual({ gs1: 'Veg Room', gs2: 'Flower Room' });
   });

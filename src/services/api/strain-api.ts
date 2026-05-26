@@ -129,7 +129,6 @@ export class StrainAPI extends BaseAPI {
         type: 'growspace_manager/get_strain_library',
       });
 
-
       // Remove legacy or wrapper 'response' key if present
       if (rawResponse && typeof rawResponse === 'object' && 'response' in rawResponse) {
         delete (rawResponse as Record<string, unknown>).response;

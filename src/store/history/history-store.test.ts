@@ -92,6 +92,8 @@ describe('GrowspaceHistoryStore.$headerHistoryState', () => {
 
   it('updates when linkedGraphGroups changes', () => {
     store.$linkedGraphGroups.set([['temperature', 'humidity']]);
-    expect(store.$headerHistoryState.get().linkedGraphGroups).toEqual([['temperature', 'humidity']]);
+    expect(store.$headerHistoryState.get().linkedGraphGroups).toEqual([
+      ['temperature', 'humidity'],
+    ]);
   });
 });

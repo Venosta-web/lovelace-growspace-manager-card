@@ -57,12 +57,12 @@ export function setSnapshots(snapshots: Snapshot[]): void {
 export async function getSnapshots(
   growspaceId: string,
   limit: number = 50,
-  offset: number = 0,
+  offset: number = 0
 ): Promise<GetSnapshotsResponse> {
   const response = await hassCall(
     'growspace_manager/get_snapshots',
     { growspace_id: growspaceId, limit, offset },
-    GetSnapshotsResponseSchema,
+    GetSnapshotsResponseSchema
   );
   snapshots$.set(response.snapshots);
   return response;
@@ -80,6 +80,6 @@ export async function captureSnapshot(growspaceId: string): Promise<CaptureSnaps
   return hassCall(
     'growspace_manager/capture_snapshot',
     { growspace_id: growspaceId },
-    CaptureSnapshotResponseSchema,
+    CaptureSnapshotResponseSchema
   );
 }

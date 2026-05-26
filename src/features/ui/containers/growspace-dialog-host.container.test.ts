@@ -52,7 +52,12 @@ function createElement(): GrowspaceDialogHost {
 
 function makeSubmitEvent(detail: Record<string, unknown> = {}): CustomEvent {
   return new CustomEvent('submit-watering', {
-    detail: { volume: 2.0, nutrients: [{ name: 'CalMag', concentration: 1.5 }], presetId: '', ...detail },
+    detail: {
+      volume: 2.0,
+      nutrients: [{ name: 'CalMag', concentration: 1.5 }],
+      presetId: '',
+      ...detail,
+    },
   });
 }
 

@@ -284,12 +284,16 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Created 4 clone(s) successfully', 'success');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
+      'Created 4 clone(s) successfully',
+      'success'
+    );
   });
 
   it('shows error toast when some clones fail', async () => {
     const mockStore = makeMockStore(['plant-1', 'plant-2']);
-    mockStore.actions.plant.takeClone = vi.fn()
+    mockStore.actions.plant.takeClone = vi
+      .fn()
       .mockResolvedValueOnce(true)
       .mockRejectedValueOnce(new Error('clone error'));
     const el = createElement(mockStore);
@@ -422,7 +426,10 @@ describe('BatchCloneDialog – render', () => {
 
   it('triggers change and input events correctly', async () => {
     const el = await fixture<BatchCloneDialog>(html`
-      <batch-clone-dialog .open=${true} .growspaceOptions=${{ 'gs-1': 'Tent 1', 'gs-2': 'Tent 2' }}></batch-clone-dialog>
+      <batch-clone-dialog
+        .open=${true}
+        .growspaceOptions=${{ 'gs-1': 'Tent 1', 'gs-2': 'Tent 2' }}
+      ></batch-clone-dialog>
     `);
     await el.updateComplete;
 
@@ -435,16 +442,16 @@ describe('BatchCloneDialog – render', () => {
     input.dispatchEvent(new Event('input'));
     expect((el as any)._numClones).toBe(5);
   });
-  
+
   it('ignores invalid input for numClones', async () => {
     const el = await fixture<BatchCloneDialog>(html`
       <batch-clone-dialog .open=${true}></batch-clone-dialog>
     `);
     await el.updateComplete;
-    
+
     (el as any)._numClones = 1;
     const input = el.shadowRoot!.querySelector('input.clones-input') as HTMLInputElement;
-    
+
     input.value = 'abc';
     input.dispatchEvent(new Event('input'));
     expect((el as any)._numClones).toBe(1);

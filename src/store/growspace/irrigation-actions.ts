@@ -27,7 +27,10 @@ function getIrrigationConfig(ctx: ActionContext, growspaceId: string): Irrigatio
   return device ? { ...device.irrigationConfig } : { irrigationTimes: [], drainTimes: [] };
 }
 
-export async function addIrrigationTime(ctx: ActionContext, params: IrrigationTimeParams): Promise<void> {
+export async function addIrrigationTime(
+  ctx: ActionContext,
+  params: IrrigationTimeParams
+): Promise<void> {
   const { growspaceId, time, duration } = params;
   const prev = getIrrigationConfig(ctx, growspaceId);
   const newTime = { time, duration: duration ?? 60 };
@@ -39,7 +42,8 @@ export async function addIrrigationTime(ctx: ActionContext, params: IrrigationTi
     'update',
     params,
     () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }),
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
+    () =>
+      ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
   );
 
   try {
@@ -55,7 +59,10 @@ export async function addIrrigationTime(ctx: ActionContext, params: IrrigationTi
   }
 }
 
-export async function removeIrrigationTime(ctx: ActionContext, params: RemoveTimeParams): Promise<void> {
+export async function removeIrrigationTime(
+  ctx: ActionContext,
+  params: RemoveTimeParams
+): Promise<void> {
   const { growspaceId, time } = params;
   const prev = getIrrigationConfig(ctx, growspaceId);
   const next = prev.irrigationTimes.filter((t) => t.time !== time);
@@ -64,7 +71,8 @@ export async function removeIrrigationTime(ctx: ActionContext, params: RemoveTim
     'delete',
     params,
     () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }),
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
+    () =>
+      ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
   );
 
   try {
@@ -80,7 +88,10 @@ export async function removeIrrigationTime(ctx: ActionContext, params: RemoveTim
   }
 }
 
-export async function addDrainTime(ctx: ActionContext, params: IrrigationTimeParams): Promise<void> {
+export async function addDrainTime(
+  ctx: ActionContext,
+  params: IrrigationTimeParams
+): Promise<void> {
   const { growspaceId, time, duration } = params;
   const prev = getIrrigationConfig(ctx, growspaceId);
   const newTime = { time, duration: duration ?? 60 };

@@ -96,10 +96,7 @@ export class GrowspaceToastUI extends LitElement {
         <span class="toast-message">${this.notification?.message || ''}</span>
         ${this.notification?.action
           ? html`
-              <button
-                class="toast-action"
-                @click=${this._handleActionClick}
-              >
+              <button class="toast-action" @click=${this._handleActionClick}>
                 ${this.notification.action.label}
               </button>
             `

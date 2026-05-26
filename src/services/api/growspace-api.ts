@@ -6,7 +6,12 @@ import {
   GrowspaceAPICollectionSchema,
 } from '../../schemas/api-schema';
 import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
-import { DOMAIN, SERVICES, WS_TYPE_GET_DATA, WS_TYPE_UPDATE_SENSOR_COORDINATES } from '../../constants';
+import {
+  DOMAIN,
+  SERVICES,
+  WS_TYPE_GET_DATA,
+  WS_TYPE_UPDATE_SENSOR_COORDINATES,
+} from '../../constants';
 
 /**
  * API service for growspace operations.
@@ -69,11 +74,11 @@ export class GrowspaceAPI extends BaseAPI {
             `[GrowspaceAPI] API Validation Failed for ${growspaceId}: `,
             parsed.error.format()
           );
-          const data = (result as unknown) as GrowspaceAPIResponse;
+          const data = result as unknown as GrowspaceAPIResponse;
           this._cache.set(cacheKey, { data, timestamp: Date.now() });
           return data;
         }
-        const data = (parsed.data as unknown) as GrowspaceAPIResponse;
+        const data = parsed.data as unknown as GrowspaceAPIResponse;
         this._cache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       } else {
@@ -98,11 +103,11 @@ export class GrowspaceAPI extends BaseAPI {
             }
           }
 
-          const data = (result as unknown) as GrowspaceAPICollection;
+          const data = result as unknown as GrowspaceAPICollection;
           this._cache.set(cacheKey, { data, timestamp: Date.now() });
           return data;
         }
-        const data = (parsed.data as unknown) as GrowspaceAPICollection;
+        const data = parsed.data as unknown as GrowspaceAPICollection;
         this._cache.set(cacheKey, { data, timestamp: Date.now() });
         return data;
       }
@@ -130,7 +135,6 @@ export class GrowspaceAPI extends BaseAPI {
     plantsPerRow: number;
     notificationService?: string;
   }): Promise<void> {
-
     try {
       const payload = {
         name: data.name,
@@ -139,7 +143,6 @@ export class GrowspaceAPI extends BaseAPI {
         notification_target: data.notificationService, // Map to backend field
       };
       await this.callService(DOMAIN, SERVICES.ADD_GROWSPACE, payload);
-
     } catch (err) {
       console.error('[GrowspaceAPI:addGrowspace] Error:', err);
       throw err;
@@ -153,7 +156,6 @@ export class GrowspaceAPI extends BaseAPI {
     plantsPerRow?: number;
     notificationService?: string;
   }): Promise<void> {
-
     try {
       const payload: Record<string, unknown> = {
         growspace_id: data.growspaceId,
@@ -164,7 +166,6 @@ export class GrowspaceAPI extends BaseAPI {
       if (data.notificationService) payload.notification_target = data.notificationService;
 
       await this.callService(DOMAIN, SERVICES.UPDATE_GROWSPACE, payload);
-
     } catch (err) {
       console.error('[GrowspaceAPI:updateGrowspace] Error:', err);
       throw err;
@@ -172,12 +173,10 @@ export class GrowspaceAPI extends BaseAPI {
   }
 
   async removeGrowspace(growspaceId: string): Promise<void> {
-
     try {
       await this.callService(DOMAIN, SERVICES.REMOVE_GROWSPACE, {
         growspace_id: growspaceId,
       });
-
     } catch (err) {
       console.error('[GrowspaceAPI:removeGrowspace] Error:', err);
       throw err;
@@ -227,7 +226,6 @@ export class GrowspaceAPI extends BaseAPI {
     powerSensors?: string[];
     energySensors?: string[];
   }): Promise<void> {
-
     try {
       // Map camelCase to snake_case for API
       const payload: Record<string, unknown> = {
@@ -289,7 +287,6 @@ export class GrowspaceAPI extends BaseAPI {
       if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
 
       await this.callService(DOMAIN, SERVICES.CONFIGURE_ENVIRONMENT, payload);
-
     } catch (err) {
       console.error('[GrowspaceAPI:configureEnvironment] Error:', err);
       throw err;
@@ -297,13 +294,11 @@ export class GrowspaceAPI extends BaseAPI {
   }
 
   async setDehumidifierControl(growspaceId: string, enabled: boolean): Promise<void> {
-
     try {
       await this.callService(DOMAIN, SERVICES.SET_DEHUMIDIFIER_CONTROL, {
         growspace_id: growspaceId,
         enabled,
       });
-
     } catch (err) {
       console.error('[GrowspaceAPI:setDehumidifierControl] Error:', err);
       throw err;
@@ -311,12 +306,10 @@ export class GrowspaceAPI extends BaseAPI {
   }
 
   async removeEnvironment(growspaceId: string): Promise<void> {
-
     try {
       await this.callService(DOMAIN, SERVICES.REMOVE_ENVIRONMENT, {
         growspace_id: growspaceId,
       });
-
     } catch (err) {
       console.error('[GrowspaceAPI:removeEnvironment] Error:', err);
       throw err;
@@ -324,12 +317,10 @@ export class GrowspaceAPI extends BaseAPI {
   }
 
   async resetWaterTracking(growspaceId: string): Promise<void> {
-
     try {
       await this.callService(DOMAIN, SERVICES.RESET_WATER_TRACKING, {
         growspace_id: growspaceId,
       });
-
     } catch (err) {
       console.error('[GrowspaceAPI:resetWaterTracking] Error:', err);
       throw err;

@@ -17,7 +17,7 @@ export interface NotePayload {
  * Centralizes all backend API calls related to timelines
  */
 export class TimelineService {
-  constructor(public readonly hass: HomeAssistant) { }
+  constructor(public readonly hass: HomeAssistant) {}
 
   /**
    * Fetch growspace event log
@@ -64,7 +64,11 @@ export class TimelineService {
    * @param growspaceId - The plant's current growspace (for shared/irrigation events)
    * @param limit - Maximum number of events to fetch (default: 50)
    */
-  async fetchPlantEvents(plantId: string, growspaceId: string, limit = 50): Promise<GrowspaceEvent[]> {
+  async fetchPlantEvents(
+    plantId: string,
+    growspaceId: string,
+    limit = 50
+  ): Promise<GrowspaceEvent[]> {
     try {
       const [logsResponse, alertsResponse] = await Promise.all([
         this.hass.callWS<Record<string, GrowspaceEvent[]>>({

@@ -1,12 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import {
-  mdiBottleTonicPlus,
-  mdiPlus,
-  mdiDelete,
-  mdiCheck,
-  mdiAlertCircle,
-} from '@mdi/js';
+import { mdiBottleTonicPlus, mdiPlus, mdiDelete, mdiCheck, mdiAlertCircle } from '@mdi/js';
 import { NutrientInventory, NutrientStock } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import '../../shared/ui'; // Ensure MD3 components are registered
@@ -167,19 +161,17 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
       ${this.isLoading
         ? html`<ha-circular-progress active></ha-circular-progress>`
         : this.error
-        ? html`<div class="error-banner">
-            <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-            ${this.error}
-          </div>`
-        : this._renderContent()}
+          ? html`<div class="error-banner">
+              <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
+              ${this.error}
+            </div>`
+          : this._renderContent()}
     `;
 
     if (this.embedded) {
       return html`
         <div class="glass-dialog-container" style="background: none; border: none; padding: 0;">
-          <div class="dialog-content-grid" style="padding: 0;">
-            ${innerContent}
-          </div>
+          <div class="dialog-content-grid" style="padding: 0;">${innerContent}</div>
         </div>
       `;
     }
@@ -193,9 +185,7 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         stageColor="var(--primary-color, #4caf50)"
         .submitting=${this.isSaving}
       >
-        <div class="dialog-content-grid">
-          ${innerContent}
-        </div>
+        <div class="dialog-content-grid">${innerContent}</div>
       </gs-dialog>
     `;
   }
@@ -285,7 +275,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
 
           <div class="form-row" style="justify-content: flex-end; margin-top: 8px;">
             <button class="md3-button text" @click=${this._cancelEdit}>Cancel</button>
-            <button class="md3-button primary" @click=${this._handleSave} ?disabled=${this.isSaving}>
+            <button
+              class="md3-button primary"
+              @click=${this._handleSave}
+              ?disabled=${this.isSaving}
+            >
               <ha-svg-icon .path=${mdiCheck} style="margin-right:8px"></ha-svg-icon>
               ${this.isSaving ? 'Saving...' : 'Save'}
             </button>

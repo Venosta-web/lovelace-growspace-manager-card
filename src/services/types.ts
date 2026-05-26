@@ -171,7 +171,6 @@ export interface DrainConfig {
   readings: DrainECReading[];
 }
 
-
 export interface SerializedEnergyTracking {
   cycle_start_date?: string | null;
   cycle_start_kwh?: number | null;
@@ -314,7 +313,10 @@ export interface GrowspaceAPIResponse {
     grid: Record<string, RawPlantData | null>;
   };
   /** Environment attributes with sensor_types/coordinates/groups extracted into `sensors`. */
-  environment: Omit<SerializedEnvironmentAttributes, 'sensor_types' | 'sensor_coordinates' | 'sensor_groups'>;
+  environment: Omit<
+    SerializedEnvironmentAttributes,
+    'sensor_types' | 'sensor_coordinates' | 'sensor_groups'
+  >;
   sensors: {
     sensor_types: Record<string, string>;
     sensor_coordinates: Record<string, { x: number; y: number; z: number; rotation?: number }>;

@@ -96,7 +96,10 @@ describe('addIrrigationTime', () => {
       addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00', duration: 60 })
     ).rejects.toThrow();
 
-    expect(ctx.ui.showToast as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(expect.any(String), 'error');
+    expect(ctx.ui.showToast as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
+      expect.any(String),
+      'error'
+    );
   });
 
   it('executes redo callback successfully', async () => {
@@ -119,7 +122,7 @@ describe('addIrrigationTime', () => {
 
   it('uses default duration of 60 when duration is not provided', async () => {
     await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00' });
-    
+
     expect(ctx.dataService.addIrrigationTime).toHaveBeenCalledWith({
       growspaceId: 'gs1',
       time: '06:00:00',
@@ -347,9 +350,7 @@ describe('removeDrainTime', () => {
   it('restores the drain time when backend fails', async () => {
     vi.mocked(ctx.dataService.removeDrainTime).mockRejectedValue(new Error('fail'));
 
-    await expect(
-      removeDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00' })
-    ).rejects.toThrow();
+    await expect(removeDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00' })).rejects.toThrow();
 
     const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toContainEqual(
@@ -542,15 +543,16 @@ describe('runIrrigationCycle', () => {
   it('calls dataService.runIrrigationCycle with optional duration', async () => {
     await runIrrigationCycle(ctx, { growspaceId: 'gs1', duration: 90 });
 
-    expect(ctx.dataService.runIrrigationCycle).toHaveBeenCalledWith({ growspaceId: 'gs1', duration: 90 });
+    expect(ctx.dataService.runIrrigationCycle).toHaveBeenCalledWith({
+      growspaceId: 'gs1',
+      duration: 90,
+    });
   });
 
   it('shows error toast when backend fails', async () => {
     vi.mocked(ctx.dataService.runIrrigationCycle).mockRejectedValue(new Error('pump error'));
 
-    await expect(
-      runIrrigationCycle(ctx, { growspaceId: 'gs1' })
-    ).rejects.toThrow();
+    await expect(runIrrigationCycle(ctx, { growspaceId: 'gs1' })).rejects.toThrow();
 
     expect(ctx.ui.showToast as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
       expect.any(String),

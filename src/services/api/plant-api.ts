@@ -58,7 +58,7 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async updatePlant(params: { plant_id: string;[key: string]: unknown }): Promise<void> {
+  async updatePlant(params: { plant_id: string; [key: string]: unknown }): Promise<void> {
     try {
       await this.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
     } catch (err) {
@@ -226,8 +226,10 @@ export class PlantAPI extends BaseAPI {
     if (params.aroma !== undefined) payload.aroma = params.aroma;
     if (params.resin !== undefined) payload.resin = params.resin;
     if (params.pest_resistance !== undefined) payload.pest_resistance = params.pest_resistance;
-    if (params.internodal_spacing !== undefined) payload.internodal_spacing = params.internodal_spacing;
-    if (params.terpene_intensity !== undefined) payload.terpene_intensity = params.terpene_intensity;
+    if (params.internodal_spacing !== undefined)
+      payload.internodal_spacing = params.internodal_spacing;
+    if (params.terpene_intensity !== undefined)
+      payload.terpene_intensity = params.terpene_intensity;
     if (params.mold_resistance !== undefined) payload.mold_resistance = params.mold_resistance;
     if (params.yield_potential !== undefined) payload.yield_potential = params.yield_potential;
     if (params.keeper !== undefined) payload.keeper = params.keeper;
@@ -268,8 +270,15 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async logDryingWeight(params: { plant_id: string; weight_grams: number; date?: string }): Promise<void> {
-    const payload: Record<string, unknown> = { plant_id: params.plant_id, weight_grams: params.weight_grams };
+  async logDryingWeight(params: {
+    plant_id: string;
+    weight_grams: number;
+    date?: string;
+  }): Promise<void> {
+    const payload: Record<string, unknown> = {
+      plant_id: params.plant_id,
+      weight_grams: params.weight_grams,
+    };
     if (params.date) payload.date = params.date;
     try {
       await this.callService(DOMAIN, SERVICES.LOG_DRYING_WEIGHT, payload);
@@ -279,8 +288,15 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async logMoistureReading(params: { plant_id: string; moisture_percent: number; date?: string }): Promise<void> {
-    const payload: Record<string, unknown> = { plant_id: params.plant_id, moisture_percent: params.moisture_percent };
+  async logMoistureReading(params: {
+    plant_id: string;
+    moisture_percent: number;
+    date?: string;
+  }): Promise<void> {
+    const payload: Record<string, unknown> = {
+      plant_id: params.plant_id,
+      moisture_percent: params.moisture_percent,
+    };
     if (params.date) payload.date = params.date;
     try {
       await this.callService(DOMAIN, SERVICES.LOG_MOISTURE_READING, payload);
@@ -292,14 +308,21 @@ export class PlantAPI extends BaseAPI {
 
   async setVisualTag(params: { plant_id: string; visual_tag: string | null }): Promise<void> {
     try {
-      await this.callService(DOMAIN, SERVICES.SET_VISUAL_TAG, { plant_id: params.plant_id, visual_tag: params.visual_tag ?? null });
+      await this.callService(DOMAIN, SERVICES.SET_VISUAL_TAG, {
+        plant_id: params.plant_id,
+        visual_tag: params.visual_tag ?? null,
+      });
     } catch (err) {
       console.error('[PlantAPI:setVisualTag] Error:', err);
       throw err;
     }
   }
 
-  async movePlant(plantId: string, targetGrowspaceId: string, transitionDate?: string): Promise<void> {
+  async movePlant(
+    plantId: string,
+    targetGrowspaceId: string,
+    transitionDate?: string
+  ): Promise<void> {
     const payload: Record<string, unknown> = {
       plant_id: plantId,
       target_growspace_id: targetGrowspaceId,

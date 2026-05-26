@@ -83,10 +83,7 @@ export function buildIndex(plants: TreeNode[]): {
 // Rank computation — longest path from root with parent-lift pass
 // ---------------------------------------------------------------------------
 
-function computeRanks(
-  plants: TreeNode[],
-  byId: Record<string, TreeNode>,
-): Record<string, number> {
+function computeRanks(plants: TreeNode[], byId: Record<string, TreeNode>): Record<string, number> {
   const rankCache: Record<string, number> = {};
   const visiting: Record<string, boolean> = {};
 
@@ -141,10 +138,7 @@ function computeRanks(
 
 type Sortable = TreeNode & { __bary?: number };
 
-function orderByBarycenter(
-  byRank: Record<number, Sortable[]>,
-  ranks: number[],
-): void {
+function orderByBarycenter(byRank: Record<number, Sortable[]>, ranks: number[]): void {
   // Initial pass: family-key sort
   for (const r of ranks) {
     byRank[r].sort((a, b) => {
@@ -159,7 +153,9 @@ function orderByBarycenter(
   for (let pass = 0; pass < 4; pass++) {
     const posInRank: Record<string, number> = {};
     for (const r of ranks) {
-      byRank[r].forEach((n, i) => { posInRank[n.id] = i; });
+      byRank[r].forEach((n, i) => {
+        posInRank[n.id] = i;
+      });
     }
 
     const goingDown = pass % 2 === 0;
@@ -171,14 +167,16 @@ function orderByBarycenter(
         let neighbors: string[];
         if (goingDown) {
           neighbors = [n.parents.mother, n.parents.father].filter(
-            (p): p is string => p != null && posInRank[p] != null,
+            (p): p is string => p != null && posInRank[p] != null
           );
         } else {
           neighbors = [];
           for (const list of Object.values(byRank)) {
             for (const m of list) {
-              if ((m.parents.mother === n.id || m.parents.father === n.id) &&
-                  posInRank[m.id] != null) {
+              if (
+                (m.parents.mother === n.id || m.parents.father === n.id) &&
+                posInRank[m.id] != null
+              ) {
                 neighbors.push(m.id);
               }
             }
@@ -195,7 +193,10 @@ function orderByBarycenter(
     }
   }
 
-  for (const r of ranks) byRank[r].forEach((n) => { delete n.__bary; });
+  for (const r of ranks)
+    byRank[r].forEach((n) => {
+      delete n.__bary;
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -221,14 +222,16 @@ export function layoutTopDown(plants: TreeNode[]): LayoutResult {
     byRank[r].push(p);
   }
 
-  const ranks = Object.keys(byRank).map(Number).sort((a, b) => a - b);
+  const ranks = Object.keys(byRank)
+    .map(Number)
+    .sort((a, b) => a - b);
   orderByBarycenter(byRank, ranks);
 
   const maxRowWidth = Math.max(
     ...ranks.map((r) => {
       const count = byRank[r].length;
       return count * NODE_W + (count - 1) * COL_GAP;
-    }),
+    })
   );
 
   const maxRank = Math.max(...ranks);
@@ -300,7 +303,7 @@ export function layoutSubgraph(plants: TreeNode[], focalId: string): LayoutResul
   })(focalId);
 
   const subset = plants.filter(
-    (n) => n.id === focalId || ancestors.has(n.id) || descendants.has(n.id),
+    (n) => n.id === focalId || ancestors.has(n.id) || descendants.has(n.id)
   );
 
   const result = layoutTopDown(subset);
@@ -315,7 +318,9 @@ export function layoutSubgraph(plants: TreeNode[], focalId: string): LayoutResul
       result.nodes[id].y += dy;
     }
     if (result.bands) {
-      result.bands.forEach((b) => { b.y += dy; });
+      result.bands.forEach((b) => {
+        b.y += dy;
+      });
     }
     result.bounds = _computeBounds(result.nodes, 100);
   }
@@ -329,7 +334,7 @@ export function layoutSubgraph(plants: TreeNode[], focalId: string): LayoutResul
 
 export function layoutBreederGrouped(plants: TreeNode[]): LayoutResult {
   const PAD_X = 20;
-  const PAD_Y = 48;  // room for band header
+  const PAD_Y = 48; // room for band header
   const COL_G = 12;
   const ROW_G = 12;
   const GROUP_GAP = 32;
@@ -417,7 +422,7 @@ function _buildEdges(plants: TreeNode[], nodes: Record<string, LayoutNode>): Tre
 
 function _computeBounds(
   nodes: Record<string, LayoutNode>,
-  pad: number,
+  pad: number
 ): { minX: number; maxX: number; minY: number; maxY: number } {
   const arr = Object.values(nodes);
   if (arr.length === 0) return { minX: 0, maxX: 800, minY: 0, maxY: 500 };

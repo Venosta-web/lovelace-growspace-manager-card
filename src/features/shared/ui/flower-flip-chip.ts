@@ -20,7 +20,8 @@ export class FlowerFlipChip extends LitElement {
     const names = plantNames.join(', ');
     let tip = `Flower flip today (${flowerStart}): ${names}\nPhotoperiod: ${vegDayHours}h → ${flowerDayHours}h`;
     if (autoLightTracking) {
-      tip += '\nAuto-light tracking is active — the schedule adapts automatically, but set your hardware timer to 12h.';
+      tip +=
+        '\nAuto-light tracking is active — the schedule adapts automatically, but set your hardware timer to 12h.';
     }
     return tip;
   }

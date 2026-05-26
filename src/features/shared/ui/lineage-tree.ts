@@ -43,10 +43,17 @@ export class LineageTree extends LitElement {
       background: var(--divider-color, #e0e0e0);
       animation: pulse 1.4s ease-in-out infinite;
     }
-    .skeleton.narrow { width: 60%; }
+    .skeleton.narrow {
+      width: 60%;
+    }
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.4;
+      }
     }
     .tree-level {
       display: flex;
@@ -87,9 +94,16 @@ export class LineageTree extends LitElement {
       min-width: 80px;
       text-align: center;
     }
-    .node-card.plant { border-color: var(--primary-color); }
-    .node-card.seed_batch { border-color: #8bc34a; }
-    .node-card.strain { border-color: #9c27b0; border-style: dashed; }
+    .node-card.plant {
+      border-color: var(--primary-color);
+    }
+    .node-card.seed_batch {
+      border-color: #8bc34a;
+    }
+    .node-card.strain {
+      border-color: #9c27b0;
+      border-style: dashed;
+    }
     .node-label {
       font-weight: 500;
       color: var(--primary-text-color);
@@ -145,16 +159,18 @@ export class LineageTree extends LitElement {
     }
     :host([clickable]) .node-card.ancestor:hover {
       border-color: var(--primary-color);
-      background: var(--primary-color-light, rgba(var(--rgb-primary-color, 3,169,244),0.08));
+      background: var(--primary-color-light, rgba(var(--rgb-primary-color, 3, 169, 244), 0.08));
     }
   `;
 
   private _emitNodeClick(name: string) {
-    this.dispatchEvent(new CustomEvent('node-click', {
-      detail: { name },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('node-click', {
+        detail: { name },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _renderNode(node: LineageNode, depth = 0): TemplateResult {
@@ -167,31 +183,37 @@ export class LineageTree extends LitElement {
       <div class="tree-level">
         <div
           class="node-card ${node.type} ${isAncestor ? 'ancestor' : ''}"
-          @click=${() => { if (this.clickable && isAncestor) this._emitNodeClick(node.name); }}
+          @click=${() => {
+            if (this.clickable && isAncestor) this._emitNodeClick(node.name);
+          }}
         >
           <div class="node-label">${node.name}</div>
           ${phenotype ? html`<div class="node-phenotype">${phenotype}</div>` : nothing}
           <div class="node-meta">
-            ${sexSymbol ? html`<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>` : nothing}
+            ${sexSymbol
+              ? html`<span class="sex-badge" style="color:${sexColor}">${sexSymbol}</span>`
+              : nothing}
             ${node.generation ? html`<span class="gen-badge">${node.generation}</span>` : nothing}
           </div>
         </div>
 
-        ${node.parents && node.parents.length > 0 && depth < 4 ? html`
-          <div class="v-line"></div>
-          ${node.parents.length === 1 ? html`
-            ${this._renderNode(node.parents[0], depth + 1)}
-          ` : html`
-            <div class="cross-label">${node.parents.map(p => p.name).join(' × ')}</div>
-            <div class="parents-row">
-              ${node.parents.map(p => html`
-                <div class="parent-connector">
-                  ${this._renderNode(p, depth + 1)}
-                </div>
-              `)}
-            </div>
-          `}
-        ` : nothing}
+        ${node.parents && node.parents.length > 0 && depth < 4
+          ? html`
+              <div class="v-line"></div>
+              ${node.parents.length === 1
+                ? html` ${this._renderNode(node.parents[0], depth + 1)} `
+                : html`
+                    <div class="cross-label">${node.parents.map((p) => p.name).join(' × ')}</div>
+                    <div class="parents-row">
+                      ${node.parents.map(
+                        (p) => html`
+                          <div class="parent-connector">${this._renderNode(p, depth + 1)}</div>
+                        `
+                      )}
+                    </div>
+                  `}
+            `
+          : nothing}
       </div>
     `;
   }
@@ -238,65 +260,148 @@ export class LineageTreeEditor extends LitElement {
   @state() private _query: [string, string] = ['', ''];
 
   static override styles = css`
-    :host { display: block; font-size: 13px; }
-    .lte-root { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    :host {
+      display: block;
+      font-size: 13px;
+    }
+    .lte-root {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
     .lte-root-label {
-      font-weight: 600; font-size: 14px; padding: 8px 16px;
-      border-radius: 8px; background: var(--primary-color);
+      font-weight: 600;
+      font-size: 14px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: var(--primary-color);
       color: var(--text-primary-color, #fff);
     }
-    .lte-v-line { width: 2px; height: 16px; background: var(--divider-color, #ccc); }
-    .lte-parents-row { display: flex; gap: 12px; justify-content: center; }
+    .lte-v-line {
+      width: 2px;
+      height: 16px;
+      background: var(--divider-color, #ccc);
+    }
+    .lte-parents-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
     .lte-parent-node {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 8px 12px; border-radius: 8px;
-      border: 1px solid var(--divider-color); position: relative; min-width: 100px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color);
+      position: relative;
+      min-width: 100px;
     }
-    .lte-parent-name { font-weight: 500; font-size: 12px; }
-    .lte-parent-name.library { color: var(--primary-color); }
-    .lte-parent-name.manual { color: var(--secondary-text-color); font-style: italic; }
+    .lte-parent-name {
+      font-weight: 500;
+      font-size: 12px;
+    }
+    .lte-parent-name.library {
+      color: var(--primary-color);
+    }
+    .lte-parent-name.manual {
+      color: var(--secondary-text-color);
+      font-style: italic;
+    }
     .lte-remove {
-      position: absolute; top: 2px; right: 4px;
-      background: none; border: none; cursor: pointer;
-      font-size: 14px; color: var(--error-color, #e53935); padding: 0;
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--error-color, #e53935);
+      padding: 0;
     }
-    .lte-add-slot { display: flex; flex-direction: column; align-items: center; }
+    .lte-add-slot {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
     .lte-add-btn {
-      padding: 6px 12px; border-radius: 6px; border: 1px dashed var(--divider-color);
-      background: transparent; cursor: pointer; font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px dashed var(--divider-color);
+      background: transparent;
+      cursor: pointer;
+      font-size: 12px;
       color: var(--secondary-text-color);
     }
-    .lte-add-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-    .lte-autocomplete { position: relative; width: 200px; }
+    .lte-add-btn:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+    .lte-autocomplete {
+      position: relative;
+      width: 200px;
+    }
     .lte-search {
-      width: 100%; padding: 6px 8px; border-radius: 6px;
-      border: 1px solid var(--primary-color); font-size: 12px; box-sizing: border-box;
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--primary-color);
+      font-size: 12px;
+      box-sizing: border-box;
     }
     .lte-suggestions {
-      position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 100;
       background: var(--card-background-color, #fff);
-      border: 1px solid var(--divider-color); border-radius: 6px;
-      max-height: 200px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     }
-    .lte-suggestion { padding: 8px 12px; cursor: pointer; font-size: 12px; }
-    .lte-suggestion:hover { background: var(--primary-color); color: var(--text-primary-color, #fff); }
-    .lte-suggestion.manual { font-style: italic; color: var(--secondary-text-color); }
-    .lte-preview { margin-top: 4px; opacity: 0.45; pointer-events: none; font-size: 11px; }
+    .lte-suggestion {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .lte-suggestion:hover {
+      background: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+    }
+    .lte-suggestion.manual {
+      font-style: italic;
+      color: var(--secondary-text-color);
+    }
+    .lte-preview {
+      margin-top: 4px;
+      opacity: 0.45;
+      pointer-events: none;
+      font-size: 11px;
+    }
   `;
 
   private _fireChange(parents: LineageParent[]) {
-    this.dispatchEvent(new CustomEvent('lineage-change', {
-      detail: { parents },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('lineage-change', {
+        detail: { parents },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _currentParents(): LineageParent[] {
-    return (this.node?.parents ?? []).map(p => ({
+    return (this.node?.parents ?? []).map((p) => ({
       name: p.name,
       phenotype: p.phenotype,
-      source: (((p as unknown as Record<string, unknown>)['source']) ?? 'manual') as 'library' | 'manual',
+      source: ((p as unknown as Record<string, unknown>)['source'] ?? 'manual') as
+        | 'library'
+        | 'manual',
     }));
   }
 
@@ -321,7 +426,7 @@ export class LineageTreeEditor extends LitElement {
     const q = (this._query[index] ?? '').toLowerCase().trim();
     if (!q) return this.strainEntries.slice(0, 8);
     return this.strainEntries
-      .filter(e => this._displayLabel(e).toLowerCase().includes(q))
+      .filter((e) => this._displayLabel(e).toLowerCase().includes(q))
       .slice(0, 8);
   }
 
@@ -331,25 +436,27 @@ export class LineageTreeEditor extends LitElement {
     const isOpen = this._activeSlot === index;
 
     if (existing) {
-      const parentLabel = existing.phenotype ? `${existing.name} (${existing.phenotype})` : existing.name;
-      return html`
-        <div class="lte-parent-node">
-          <span class="lte-parent-name ${existing.source}">${parentLabel}</span>
-          <button class="lte-remove" @click=${() => this._removeParent(index)}>×</button>
-          ${existing.source === 'library' && this.node?.parents?.[index]?.parents?.length
-            ? html`<div class="lte-preview"><lineage-tree .node=${this.node.parents[index]}></lineage-tree></div>`
-            : nothing}
-        </div>`;
+      const parentLabel = existing.phenotype
+        ? `${existing.name} (${existing.phenotype})`
+        : existing.name;
+      return html` <div class="lte-parent-node">
+        <span class="lte-parent-name ${existing.source}">${parentLabel}</span>
+        <button class="lte-remove" @click=${() => this._removeParent(index)}>×</button>
+        ${existing.source === 'library' && this.node?.parents?.[index]?.parents?.length
+          ? html`<div class="lte-preview">
+              <lineage-tree .node=${this.node.parents[index]}></lineage-tree>
+            </div>`
+          : nothing}
+      </div>`;
     }
 
     const suggestions = this._getSuggestions(index);
     const query = this._query[index] ?? '';
-    const queryMatchesEntry = this.strainEntries.some(e => this._displayLabel(e) === query);
+    const queryMatchesEntry = this.strainEntries.some((e) => this._displayLabel(e) === query);
 
-    return html`
-      <div class="lte-add-slot">
-        ${isOpen ? html`
-          <div class="lte-autocomplete">
+    return html` <div class="lte-add-slot">
+      ${isOpen
+        ? html` <div class="lte-autocomplete">
             <input
               class="lte-search"
               placeholder="Type strain name…"
@@ -360,37 +467,53 @@ export class LineageTreeEditor extends LitElement {
                 this._query = q;
               }}
               @keydown=${(e: KeyboardEvent) => {
-                if (e.key === 'Escape') { this._activeSlot = null; }
+                if (e.key === 'Escape') {
+                  this._activeSlot = null;
+                }
               }}
             />
             <div class="lte-suggestions">
-              ${suggestions.map(entry => html`
-                <div class="lte-suggestion" @click=${() => this._selectEntry(index, entry, 'library')}>
-                  ${this._displayLabel(entry)}
-                </div>
-              `)}
-              ${query && !queryMatchesEntry ? html`
-                <div class="lte-suggestion manual" @click=${() => this._selectEntry(index, { name: query }, 'manual')}>
-                  Use "${query}" (not in library)
-                </div>` : nothing}
+              ${suggestions.map(
+                (entry) => html`
+                  <div
+                    class="lte-suggestion"
+                    @click=${() => this._selectEntry(index, entry, 'library')}
+                  >
+                    ${this._displayLabel(entry)}
+                  </div>
+                `
+              )}
+              ${query && !queryMatchesEntry
+                ? html` <div
+                    class="lte-suggestion manual"
+                    @click=${() => this._selectEntry(index, { name: query }, 'manual')}
+                  >
+                    Use "${query}" (not in library)
+                  </div>`
+                : nothing}
             </div>
-          </div>` : html`
-          <button class="lte-add-btn" @click=${() => { this._activeSlot = index; }}>＋ Add parent</button>`}
-      </div>`;
+          </div>`
+        : html` <button
+            class="lte-add-btn"
+            @click=${() => {
+              this._activeSlot = index;
+            }}
+          >
+            ＋ Add parent
+          </button>`}
+    </div>`;
   }
 
   override render(): TemplateResult {
     const name = this.node?.name ?? '—';
     const parents = this._currentParents();
-    return html`
-      <div class="lte-root">
-        <div class="lte-root-label">${name}</div>
-        <div class="lte-v-line"></div>
-        <div class="lte-parents-row">
-          ${this._renderSlot(0)}
-          ${parents[0] ? this._renderSlot(1) : nothing}
-        </div>
-      </div>`;
+    return html` <div class="lte-root">
+      <div class="lte-root-label">${name}</div>
+      <div class="lte-v-line"></div>
+      <div class="lte-parents-row">
+        ${this._renderSlot(0)} ${parents[0] ? this._renderSlot(1) : nothing}
+      </div>
+    </div>`;
   }
 }
 

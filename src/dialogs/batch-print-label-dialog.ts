@@ -172,15 +172,25 @@ export class BatchPrintLabelDialog extends LitElement {
               label="Niimbot Printer"
               .value=${this._selectedDeviceId || ''}
               .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
-              @change=${(e: CustomEvent) => { this._selectedDeviceId = e.detail; }}
+              @change=${(e: CustomEvent) => {
+                this._selectedDeviceId = e.detail;
+              }}
             ></md3-select>
 
-            ${printers.length === 0 ? html`
-              <div style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;">
-                <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 16px;"></ha-svg-icon>
-                No Niimbot printers discovered. You can still try printing if you have a default printer configured.
-              </div>
-            ` : nothing}
+            ${printers.length === 0
+              ? html`
+                  <div
+                    style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;"
+                  >
+                    <ha-svg-icon
+                      .path=${mdiInformation}
+                      style="--mdc-icon-size: 16px;"
+                    ></ha-svg-icon>
+                    No Niimbot printers discovered. You can still try printing if you have a default
+                    printer configured.
+                  </div>
+                `
+              : nothing}
 
             <div class="copies-row">
               <label>Copies per plant</label>
@@ -198,11 +208,13 @@ export class BatchPrintLabelDialog extends LitElement {
             </div>
           </div>
 
-          ${this._isSubmitting ? html`
-            <div class="progress-bar-wrap">
-              <div class="progress-bar" style="width: ${this._progress}%"></div>
-            </div>
-          ` : nothing}
+          ${this._isSubmitting
+            ? html`
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" style="width: ${this._progress}%"></div>
+                </div>
+              `
+            : nothing}
         </div>
 
         <div class="button-group">
@@ -216,7 +228,9 @@ export class BatchPrintLabelDialog extends LitElement {
             ?disabled=${this._isSubmitting}
           >
             <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-            ${this._isSubmitting ? `Printing... ${this._progress}%` : `Print ${plantIds.length * this._copies} Label(s)`}
+            ${this._isSubmitting
+              ? `Printing... ${this._progress}%`
+              : `Print ${plantIds.length * this._copies} Label(s)`}
           </button>
         </div>
       </gs-dialog>

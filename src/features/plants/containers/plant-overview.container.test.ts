@@ -25,7 +25,7 @@ const mockElements = [
 ];
 for (const tag of mockElements) {
   if (!customElements.get(tag)) {
-    class MockEl extends HTMLElement { }
+    class MockEl extends HTMLElement {}
     customElements.define(tag, MockEl);
   }
 }
@@ -62,13 +62,18 @@ function makeMockStore(overrides: Record<string, unknown> = {}) {
       $growspaceOptions: atom<Record<string, string>>({}),
     },
     data: {
-      $strainLibrary: atom<{ strain: string; phenotype?: string; key?: string;[k: string]: unknown }[]>([]),
+      $strainLibrary: atom<
+        { strain: string; phenotype?: string; key?: string; [k: string]: unknown }[]
+      >([]),
     },
     ...overrides,
   };
 }
 
-function makeMockPlant(overrides: Partial<PlantEntity['attributes']> = {}, state = 'veg'): PlantEntity {
+function makeMockPlant(
+  overrides: Partial<PlantEntity['attributes']> = {},
+  state = 'veg'
+): PlantEntity {
   return {
     entity_id: 'sensor.test_plant',
     state,
@@ -137,35 +142,45 @@ describe('PlantOverviewContainer – private method logic', () => {
   // ── _handleActionClick ────────────────────────────────────────────────────
   describe('_handleActionClick', () => {
     it('opens watering dialog for "water" action', () => {
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'water' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'water' } })
+      );
       expect(store.ui.setActiveDialog).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'WATERING' })
       );
     });
 
     it('opens training dialog for "training" action', () => {
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'training' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'training' } })
+      );
       expect(store.ui.setActiveDialog).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'TRAINING' })
       );
     });
 
     it('opens IPM dialog for "ipm" action', () => {
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'ipm' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'ipm' } })
+      );
       expect(store.ui.setActiveDialog).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'IPM' })
       );
     });
 
     it('opens clone dialog for "clone" action', () => {
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'clone' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'clone' } })
+      );
       expect(store.ui.setActiveDialog).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'TAKE_CLONE' })
       );
     });
 
     it('opens print label dialog for "print_label" action', () => {
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'print_label' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'print_label' } })
+      );
       expect(store.ui.setActiveDialog).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'PRINT_LABEL' })
       );
@@ -174,12 +189,16 @@ describe('PlantOverviewContainer – private method logic', () => {
     it('opens pollination dialog for "pollinate" action', () => {
       const fired: Event[] = [];
       el.addEventListener('open-log-pollination', (e) => fired.push(e));
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'pollinate' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'pollinate' } })
+      );
       expect(fired.length).toBe(1);
     });
 
     it('does nothing for unknown action', () => {
-      (el as any)._handleActionClick(new CustomEvent('action-click', { detail: { actionId: 'unknown' } }));
+      (el as any)._handleActionClick(
+        new CustomEvent('action-click', { detail: { actionId: 'unknown' } })
+      );
       expect(store.ui.setActiveDialog).not.toHaveBeenCalled();
     });
   });
@@ -198,7 +217,9 @@ describe('PlantOverviewContainer – private method logic', () => {
 
   // ── _handleMovePlantEvent ─────────────────────────────────────────────
   it('_handleMovePlantEvent moves plant and closes dialog when target selected', () => {
-    (el as any)._handleMovePlantEvent(new CustomEvent('move-plant', { detail: { targetId: 'gs-2' } }));
+    (el as any)._handleMovePlantEvent(
+      new CustomEvent('move-plant', { detail: { targetId: 'gs-2' } })
+    );
     expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
     expect(store.ui.closeDialog).toHaveBeenCalled();
   });
@@ -231,7 +252,13 @@ describe('PlantOverviewContainer – private method logic', () => {
   // ── _openStrainEditor ─────────────────────────────────────────────────────
   it('_openStrainEditor finds existing entry from library', () => {
     store.data.$strainLibrary.set([
-      { strain: 'Test Strain', phenotype: 'Pheno A', key: 'ts_pa', flowering_days_min: 60, flowering_days_max: 70 },
+      {
+        strain: 'Test Strain',
+        phenotype: 'Pheno A',
+        key: 'ts_pa',
+        flowering_days_min: 60,
+        flowering_days_max: 70,
+      },
     ]);
     (el as any)._openStrainEditor();
     const call = store.ui.setActiveDialog.mock.calls[0][0];
@@ -260,12 +287,16 @@ describe('PlantOverviewContainer – private method logic', () => {
 
   // ── _handleHarvestAdvance ─────────────────────────────────────────────────
   it('_handleHarvestAdvance calls finishDrying for finish-drying action', () => {
-    (el as any)._handleHarvestAdvance(new CustomEvent('harvest-advance', { detail: { action: 'finish-drying' } }));
+    (el as any)._handleHarvestAdvance(
+      new CustomEvent('harvest-advance', { detail: { action: 'finish-drying' } })
+    );
     expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
   });
 
   it('_handleHarvestAdvance calls harvest for harvest action', () => {
-    (el as any)._handleHarvestAdvance(new CustomEvent('harvest-advance', { detail: { action: 'harvest' } }));
+    (el as any)._handleHarvestAdvance(
+      new CustomEvent('harvest-advance', { detail: { action: 'harvest' } })
+    );
     expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
   });
 });
@@ -291,11 +322,15 @@ describe('PlantOverviewContainer – rendering branches', () => {
 
   // ── Harvest tab button ────────────────────────────────────────────────────
   it('clicking harvest tab button sets _activeTab to dashboard', async () => {
-    const plant = makeMockPlant({ harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } }, 'dry');
+    const plant = makeMockPlant(
+      { harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } },
+      'dry'
+    );
     await attachElement(plant);
 
-    const harvestBtn = Array.from(el.shadowRoot?.querySelectorAll('.tab-btn') ?? [])
-      .find(btn => btn.textContent?.includes('Scoring')) as HTMLButtonElement;
+    const harvestBtn = Array.from(el.shadowRoot?.querySelectorAll('.tab-btn') ?? []).find((btn) =>
+      btn.textContent?.includes('Scoring')
+    ) as HTMLButtonElement;
     harvestBtn?.click();
     await el.updateComplete;
 
@@ -317,8 +352,8 @@ describe('PlantOverviewContainer – rendering branches', () => {
     const shadow = el.shadowRoot!;
     expect(shadow.innerHTML).toContain('Harvest');
 
-    const btn = [...shadow.querySelectorAll('button')].find(
-      (b) => b.textContent?.includes('Harvest')
+    const btn = [...shadow.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Harvest')
     ) as HTMLButtonElement | undefined;
     btn?.click();
     expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith(
@@ -339,13 +374,12 @@ describe('PlantOverviewContainer – rendering branches', () => {
     const shadow = el.shadowRoot!;
     expect(shadow.innerHTML).toContain('Finish Drying');
 
-    const btn = [...shadow.querySelectorAll('button')].find(
-      (b) => b.textContent?.includes('Finish Drying')
+    const btn = [...shadow.querySelectorAll('button')].find((b) =>
+      b.textContent?.includes('Finish Drying')
     ) as HTMLButtonElement | undefined;
     btn?.click();
     expect(store.actions.plant.finishDrying).toHaveBeenCalled();
   });
-
 
   // ── Harvest tab renders plant-harvest-tab component ─────────────────────
   it('renders plant-harvest-tab when _activeTab is harvest', async () => {
@@ -376,11 +410,13 @@ describe('PlantOverviewContainer – rendering branches', () => {
     await attachElement(plant);
 
     const dashboard = el.shadowRoot!.querySelector('plant-dashboard-tab');
-    dashboard?.dispatchEvent(new CustomEvent('move-plant', {
-      detail: { targetId: 'gs-2' },
-      bubbles: true,
-      composed: true
-    }));
+    dashboard?.dispatchEvent(
+      new CustomEvent('move-plant', {
+        detail: { targetId: 'gs-2' },
+        bubbles: true,
+        composed: true,
+      })
+    );
 
     expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
   });
@@ -397,5 +433,4 @@ describe('PlantOverviewContainer – rendering branches', () => {
 
     expect((el as any)._activeTab).toBe('dashboard');
   });
-
 });

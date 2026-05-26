@@ -94,7 +94,11 @@ export class VPDHeatmap extends LitElement {
   }
 
   protected updated(changedProps: Map<string, any>) {
-    if (changedProps.has('stage') || changedProps.has('temperature') || changedProps.has('humidity')) {
+    if (
+      changedProps.has('stage') ||
+      changedProps.has('temperature') ||
+      changedProps.has('humidity')
+    ) {
       this._drawHeatmap();
     }
   }
@@ -117,7 +121,7 @@ export class VPDHeatmap extends LitElement {
         max = 1.0;
         break;
       case 'vegetative': // Early/Late veg
-      case 'mother':     // Mother plants — VEG-equivalent targets
+      case 'mother': // Mother plants — VEG-equivalent targets
         optMin = 0.8;
         optMax = 1.1;
         min = 0.4;
@@ -255,13 +259,13 @@ export class VPDHeatmap extends LitElement {
       <div style="position: relative;">
         <canvas id="vpdCanvas"></canvas>
         ${hasPoint
-        ? html`
+          ? html`
               <div class="current-point" style="left: ${dotX}%; top: ${dotY}%"></div>
               <div class="current-tooltip" style="left: ${dotX}%; top: ${dotY}%">
                 ${currentVpd} kPa
               </div>
             `
-        : ''}
+          : ''}
       </div>
       <div class="legend">
         <div class="legend-item">

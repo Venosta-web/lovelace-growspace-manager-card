@@ -212,8 +212,8 @@ export class GrowspaceIPMDialogUI extends LitElement {
           ${this._view === 'APPLY'
             ? this._renderApply()
             : this._view === 'LIST'
-            ? this._renderList()
-            : this._renderEdit()}
+              ? this._renderList()
+              : this._renderEdit()}
         </div>
 
         <div class="button-group">${this._renderFooterButtons()}</div>
@@ -249,7 +249,11 @@ export class GrowspaceIPMDialogUI extends LitElement {
     } else {
       return html`
         <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>Cancel</button>
-        <button class="md3-button primary" @click=${this._handleSavePreset} ?disabled=${this.isSubmitting}>
+        <button
+          class="md3-button primary"
+          @click=${this._handleSavePreset}
+          ?disabled=${this.isSubmitting}
+        >
           <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
           ${this.isSubmitting ? 'Saving...' : 'Save Preset'}
         </button>
@@ -304,7 +308,7 @@ export class GrowspaceIPMDialogUI extends LitElement {
           ></ha-svg-icon>
           <p>No IPM presets defined yet.</p>
           <p style="font-size: 0.9rem;">
-            Create presets for common treatments (e.g. \"Weekly Foliar\", \"Root Drench\").
+            Create presets for common treatments (e.g. "Weekly Foliar", "Root Drench").
           </p>
         </div>
       `;
@@ -395,12 +399,12 @@ export class GrowspaceIPMDialogUI extends LitElement {
                   };
                 }}
               >
-                <option value=\"\">Any Stage</option>
-                <option value=\"seedling\">Seedling</option>
-                <option value=\"veg\">Veg</option>
-                <option value=\"flower\">Flower</option>
-                <option value=\"dry\">Dry</option>
-                <option value=\"cure\">Cure</option>
+                <option value="">Any Stage</option>
+                <option value="seedling">Seedling</option>
+                <option value="veg">Veg</option>
+                <option value="flower">Flower</option>
+                <option value="dry">Dry</option>
+                <option value="cure">Cure</option>
               </select>
             </div>
             <md3-number-input

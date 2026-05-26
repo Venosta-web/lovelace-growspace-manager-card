@@ -396,56 +396,100 @@ export class StrainBrowseView extends LitElement {
           </div>
         </div>
 
-        <div class="sd-grid">
-          ${paged.map((strain) => this._renderStrainCard(strain))}
-        </div>
+        <div class="sd-grid">${paged.map((strain) => this._renderStrainCard(strain))}</div>
 
-        ${filteredStrains.length === 0 ? html`
-          <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
-            <svg style="width:48px;height:48px;fill:currentColor; opacity:0.5;" viewBox="0 0 24 24">
-              <path d="${mdiMagnify}"></path>
-            </svg>
-            <p>No strains found matching "${query}"</p>
-          </div>
-        ` : nothing}
-
-        ${totalPages > 1 ? html`
-          <div class="pagination-container">
-            <button class="pagination-btn" ?disabled=${this._currentPage === 1} @click=${() => this._currentPage--}>
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiChevronLeft}"></path>
-              </svg>
-            </button>
-            <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
-            <button class="pagination-btn" ?disabled=${this._currentPage === totalPages} @click=${() => this._currentPage++}>
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiChevronRight}"></path>
-              </svg>
-            </button>
-          </div>
-        ` : nothing}
+        ${filteredStrains.length === 0
+          ? html`
+              <div style="text-align:center; padding: 40px; color: var(--secondary-text-color);">
+                <svg
+                  style="width:48px;height:48px;fill:currentColor; opacity:0.5;"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="${mdiMagnify}"></path>
+                </svg>
+                <p>No strains found matching "${query}"</p>
+              </div>
+            `
+          : nothing}
+        ${totalPages > 1
+          ? html`
+              <div class="pagination-container">
+                <button
+                  class="pagination-btn"
+                  ?disabled=${this._currentPage === 1}
+                  @click=${() => this._currentPage--}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiChevronLeft}"></path>
+                  </svg>
+                </button>
+                <span class="pagination-text">Page ${this._currentPage} of ${totalPages}</span>
+                <button
+                  class="pagination-btn"
+                  ?disabled=${this._currentPage === totalPages}
+                  @click=${() => this._currentPage++}
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiChevronRight}"></path>
+                  </svg>
+                </button>
+              </div>
+            `
+          : nothing}
       </div>
 
-      ${this._mobileMenuOpen ? html`
-        <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
-        <div class="mobile-menu">
-          <div class="mobile-menu-item" @click=${() => { this._emit('new-strain'); this._mobileMenuOpen = false; }}>
-            <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg> New Strain
-          </div>
-          <div class="mobile-menu-item" @click=${() => { this._emit('get-recommendation'); this._mobileMenuOpen = false; }}>
-            <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
-          </div>
-          <div class="mobile-menu-item" @click=${() => { this._emit('import-requested'); this._mobileMenuOpen = false; }}>
-            <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
-          </div>
-          <div class="mobile-menu-item" @click=${() => { this._emit('export-library'); this._mobileMenuOpen = false; }}>
-            <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
-          </div>
-          <div class="mobile-menu-item" @click=${() => { this._emit('manage-breeders-requested'); this._mobileMenuOpen = false; }}>
-            <svg viewBox="0 0 24 24"><path d="${mdiAccountGroup}"></path></svg> Manage Breeders
-          </div>
-        </div>
-      ` : nothing}
+      ${this._mobileMenuOpen
+        ? html`
+            <div class="menu-overlay" @click=${() => (this._mobileMenuOpen = false)}></div>
+            <div class="mobile-menu">
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                  this._emit('new-strain');
+                  this._mobileMenuOpen = false;
+                }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg> New Strain
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                  this._emit('get-recommendation');
+                  this._mobileMenuOpen = false;
+                }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiBrain}"></path></svg> Get Recommendation
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                  this._emit('import-requested');
+                  this._mobileMenuOpen = false;
+                }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg> Import Strains
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                  this._emit('export-library');
+                  this._mobileMenuOpen = false;
+                }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiDownload}"></path></svg> Export Strains
+              </div>
+              <div
+                class="mobile-menu-item"
+                @click=${() => {
+                  this._emit('manage-breeders-requested');
+                  this._mobileMenuOpen = false;
+                }}
+              >
+                <svg viewBox="0 0 24 24"><path d="${mdiAccountGroup}"></path></svg> Manage Breeders
+              </div>
+            </div>
+          `
+        : nothing}
 
       <button class="fab-btn" @click=${() => this._emit('new-strain')}>
         <svg style="fill:currentColor; width: 24px; height: 24px;" viewBox="0 0 24 24">
@@ -504,7 +548,11 @@ export class StrainBrowseView extends LitElement {
     const avgFlowerDays = analytics?.avg_flower_days;
 
     return html`
-      <div class="strain-card" @click=${() => this.dispatchEvent(new CustomEvent('strain-selected', { detail: { strain } }))}>
+      <div
+        class="strain-card"
+        @click=${() =>
+          this.dispatchEvent(new CustomEvent('strain-selected', { detail: { strain } }))}
+      >
         <div class="sc-thumb">
           ${strain.image
             ? html`<img
@@ -515,20 +563,35 @@ export class StrainBrowseView extends LitElement {
                   ? `width: 100%; height: 100%; object-fit: cover; object-position: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%; transform: scale(${strain.image_crop_meta.scale}); transform-origin: ${strain.image_crop_meta.x}% ${strain.image_crop_meta.y}%;`
                   : 'width: 100%; height: 100%; object-fit: cover;'}"
               />`
-            : html`<svg style="width:48px;height:48px;opacity:0.2;fill:currentColor;" viewBox="0 0 24 24">
+            : html`<svg
+                style="width:48px;height:48px;opacity:0.2;fill:currentColor;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiLeaf}"></path>
               </svg>`}
-          ${activePlants > 0 ? html`
-            <div style="
+          ${activePlants > 0
+            ? html`
+                <div
+                  style="
               position: absolute; top: 8px; right: 8px;
               background: rgba(76,175,80,0.85); color: #fff;
               border-radius: 999px; padding: 2px 8px;
               font-size: 0.65rem; font-weight: 600;
               backdrop-filter: blur(4px);
-            ">${activePlants} active</div>
-          ` : nothing}
+            "
+                >
+                  ${activePlants} active
+                </div>
+              `
+            : nothing}
           <div class="sc-actions">
-            <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._pendingDeleteKey = strain.key; }}>
+            <button
+              class="sc-action-btn"
+              @click=${(e: Event) => {
+                e.stopPropagation();
+                this._pendingDeleteKey = strain.key;
+              }}
+            >
               <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiDelete}"></path>
               </svg>
@@ -547,18 +610,30 @@ export class StrainBrowseView extends LitElement {
           </div>
           <div class="sc-meta">
             ${strain.flowering_days_min
-              ? html`<span>Flower: ${strain.flowering_days_min}–${strain.flowering_days_max || '?'} days</span>`
+              ? html`<span
+                  >Flower: ${strain.flowering_days_min}–${strain.flowering_days_max || '?'}
+                  days</span
+                >`
               : nothing}
             ${avgFlowerDays ? html`<span>Avg: ${Math.round(avgFlowerDays)}d</span>` : nothing}
-            ${strain.breeder ? html`
-              <div style="display: flex; align-items: center; gap: 6px;">
-                ${strain.breeder_logo
-                  ? html`<img src="${strain.breeder_logo}" style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;" />`
-                  : nothing}
-                <span>${strain.breeder}</span>
-              </div>
-            ` : nothing}
-            ${totalHarvests > 0 ? html`<span style="color: var(--secondary-text-color);">${totalHarvests} harvest${totalHarvests !== 1 ? 's' : ''}</span>` : nothing}
+            ${strain.breeder
+              ? html`
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    ${strain.breeder_logo
+                      ? html`<img
+                          src="${strain.breeder_logo}"
+                          style="width: 20px; height: 20px; object-fit: contain; border-radius: 2px; background: rgba(255,255,255,0.05); padding: 2px;"
+                        />`
+                      : nothing}
+                    <span>${strain.breeder}</span>
+                  </div>
+                `
+              : nothing}
+            ${totalHarvests > 0
+              ? html`<span style="color: var(--secondary-text-color);"
+                  >${totalHarvests} harvest${totalHarvests !== 1 ? 's' : ''}</span
+                >`
+              : nothing}
           </div>
         </div>
       </div>
@@ -568,15 +643,34 @@ export class StrainBrowseView extends LitElement {
   private _renderDeleteConfirmation(): TemplateResult {
     return html`
       <div class="crop-overlay">
-        <div class="glass-dialog-container" style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div
+          class="glass-dialog-container"
+          style="width: 400px; height: auto; padding: 24px; display: flex; flex-direction: column;"
+        >
           <h2 class="dialog-title">Delete Strain?</h2>
-          <p style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;">
+          <p
+            style="color: var(--secondary-text-color); margin: 16px 0; font-size: 1rem; line-height: 1.5;"
+          >
             Are you sure you want to delete this strain? This action cannot be undone.
           </p>
           <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-            <button class="md3-button tonal" @click=${() => { this._pendingDeleteKey = null; }}>Cancel</button>
-            <button class="md3-button text" style="color: #f44336;" @click=${() => this._confirmDelete()}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
+            <button
+              class="md3-button tonal"
+              @click=${() => {
+                this._pendingDeleteKey = null;
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              class="md3-button text"
+              style="color: #f44336;"
+              @click=${() => this._confirmDelete()}
+            >
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiDelete}"></path>
               </svg>
               Delete
@@ -599,7 +693,9 @@ export class StrainBrowseView extends LitElement {
 
   private _confirmDelete() {
     if (this._pendingDeleteKey) {
-      this.dispatchEvent(new CustomEvent('strain-delete-confirmed', { detail: { key: this._pendingDeleteKey } }));
+      this.dispatchEvent(
+        new CustomEvent('strain-delete-confirmed', { detail: { key: this._pendingDeleteKey } })
+      );
       this._pendingDeleteKey = null;
     }
   }

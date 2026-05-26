@@ -16,7 +16,6 @@ export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = fa
   const CACHE_KEY = 'growspace_strain_library_v2';
   const CACHE_VALIDITY_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-
   const cachedRaw = localStorage.getItem(CACHE_KEY);
   let usedCache = false;
 
@@ -59,7 +58,6 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
   const CACHE_KEY = 'growspace_nutrient_presets';
   const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
 
-
   const cachedRaw = localStorage.getItem(CACHE_KEY);
   if (!force && cachedRaw) {
     try {
@@ -99,7 +97,6 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
   const CACHE_KEY = 'growspace_ipm_presets';
   const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
 
-
   const cachedRaw = localStorage.getItem(CACHE_KEY);
   if (!force && cachedRaw) {
     try {
@@ -138,7 +135,6 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
 export async function fetchNutrientInventory(ctx: ActionContext, force: boolean = false) {
   const CACHE_KEY = 'growspace_nutrient_inventory';
   const CACHE_VALIDITY_MS = 5 * 60 * 1000; // 5 minutes
-
 
   const cachedRaw = localStorage.getItem(CACHE_KEY);
   if (!force && cachedRaw) {
@@ -203,7 +199,6 @@ export async function fetchECRampCurves(ctx: ActionContext, force: boolean = fal
   const CACHE_KEY = 'growspace_ec_ramp_curves';
   const CACHE_VALIDITY_MS = 30 * 60 * 1000; // 30 minutes
 
-
   const cachedRaw = localStorage.getItem(CACHE_KEY);
   if (!force && cachedRaw) {
     try {
@@ -241,7 +236,12 @@ export async function fetchECRampCurves(ctx: ActionContext, force: boolean = fal
 
 export async function saveECRampCurve(
   ctx: ActionContext,
-  data: { curve_id?: string; name: string; stage?: string; points: { day: number; target_ec: number }[] }
+  data: {
+    curve_id?: string;
+    name: string;
+    stage?: string;
+    points: { day: number; target_ec: number }[];
+  }
 ) {
   await withAction(
     ctx,

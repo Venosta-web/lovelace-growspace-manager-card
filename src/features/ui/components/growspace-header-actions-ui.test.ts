@@ -280,7 +280,10 @@ describe('GrowspaceHeaderActionsUI – mobile render', () => {
 describe('GrowspaceHeaderActionsUI – mobile-link button active state', () => {
   it('applies active class when mobileLink is true', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true} .mobileLink=${true}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${true}
+        .mobileLink=${true}
+      ></growspace-header-actions-ui>
     `);
     const btn = el.shadowRoot!.querySelector('.mobile-link');
     expect(btn?.classList.contains('active')).toBe(true);
@@ -288,7 +291,10 @@ describe('GrowspaceHeaderActionsUI – mobile-link button active state', () => {
 
   it('does not apply active class when mobileLink is false', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${true} .mobileLink=${false}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${true}
+        .mobileLink=${false}
+      ></growspace-header-actions-ui>
     `);
     const btn = el.shadowRoot!.querySelector('.mobile-link');
     expect(btn?.classList.contains('active')).toBe(false);
@@ -333,7 +339,10 @@ describe('GrowspaceHeaderActionsUI – events', () => {
 
   it('edit button has active class when isEditMode is true', async () => {
     const el = await fixture<GrowspaceHeaderActionsUI>(html`
-      <growspace-header-actions-ui .isMobile=${false} .isEditMode=${true}></growspace-header-actions-ui>
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .isEditMode=${true}
+      ></growspace-header-actions-ui>
     `);
     const editBtn = Array.from(el.shadowRoot!.querySelectorAll('.icon-button')).find(
       (b) => (b as HTMLElement).title === 'Edit Mode'
@@ -348,8 +357,8 @@ describe('GrowspaceHeaderActionsUI – events', () => {
         .selectedPlants=${new Set(['p1', 'p2'])}
       ></growspace-header-actions-ui>
     `);
-    const waterItem = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).find(
-      (i) => i.textContent?.includes('Water Selected')
+    const waterItem = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).find((i) =>
+      i.textContent?.includes('Water Selected')
     );
     expect(waterItem).not.toBeNull();
   });
@@ -361,8 +370,8 @@ describe('GrowspaceHeaderActionsUI – events', () => {
         .selectedPlants=${new Set()}
       ></growspace-header-actions-ui>
     `);
-    const waterItem = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).find(
-      (i) => i.textContent?.includes('Water Growspace')
+    const waterItem = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).find((i) =>
+      i.textContent?.includes('Water Growspace')
     );
     expect(waterItem).not.toBeNull();
   });

@@ -23,7 +23,11 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
   }
 
   static styles = css`
-    .card-config { display: flex; flex-direction: column; gap: 16px; }
+    .card-config {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
     .info-box {
       background: rgba(var(--rgb-primary-color), 0.1);
       color: var(--primary-text-color);
@@ -42,7 +46,7 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
           select: {
             options: [
               { label: 'Select a growspace...', value: '' },
-              ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
+              ...this._gsController.options.map((gs) => ({ label: gs.name, value: gs.id })),
             ],
           },
         },
@@ -56,8 +60,8 @@ export class GrowspaceGridCardEditor extends LitElement implements LovelaceCardE
     return html`
       <div class="card-config">
         <div class="info-box">
-          The Grid Card is a localized view locked to the Standard tracking interface.
-          Environment headers and charts are removed.
+          The Grid Card is a localized view locked to the Standard tracking interface. Environment
+          headers and charts are removed.
         </div>
         <ha-form
           .hass=${this.hass}

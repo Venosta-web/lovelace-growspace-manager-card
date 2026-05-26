@@ -103,7 +103,7 @@ export const cardViewState$ = computed(
     notification,
     focusedPlantIndex,
     selectedPlants,
-    overlayMode,
+    overlayMode
   ) => ({
     viewMode,
     isLoading,
@@ -114,7 +114,7 @@ export const cardViewState$ = computed(
     focusedPlantIndex,
     selectedPlants,
     overlayMode,
-  }),
+  })
 );
 
 // ---------------------------------------------------------------------------
@@ -216,7 +216,7 @@ export function setMenuOpen(isOpen: boolean): void {
 export function showToast(
   message: string,
   type: 'info' | 'error' | 'success' = 'info',
-  action?: { label: string; callback: () => void },
+  action?: { label: string; callback: () => void }
 ): void {
   notification$.set({ message, type, ...(action ? { action } : {}) });
 }

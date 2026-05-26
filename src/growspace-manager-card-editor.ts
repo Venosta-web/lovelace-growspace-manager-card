@@ -34,7 +34,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
           select: {
             options: [
               { label: l('editor.select_growspace'), value: '' },
-              ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
+              ...this._gsController.options.map((gs) => ({ label: gs.name, value: gs.id })),
             ],
           },
         },

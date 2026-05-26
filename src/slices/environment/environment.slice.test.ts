@@ -9,6 +9,7 @@ import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
 import { createGrowspaceDevice } from '../../services/types';
 import { computeEnvSnapshot, envSnapshots$, setEnvSnapshot } from './index';
+import { EnvSnapshotSchema } from './schema';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,7 +20,7 @@ type HassStates = Record<string, HassEntity>;
 function makeHassEntity(
   entityId: string,
   state: string,
-  attributes: Record<string, unknown> = {},
+  attributes: Record<string, unknown> = {}
 ): HassEntity {
   return {
     entity_id: entityId,
@@ -144,7 +145,7 @@ describe('computeEnvSnapshot — VPD fallback to calculated entity', () => {
       'sensor.tent_1_calculated_vpd': makeHassEntity(
         'sensor.tent_1_calculated_vpd',
         'unavailable',
-        {},
+        {}
       ),
       'sensor.gs1_calculated_vpd': makeHassEntity('sensor.gs1_calculated_vpd', '0.85', {}),
     };
@@ -186,7 +187,7 @@ describe('computeEnvSnapshot — vpdStatus', () => {
       'binary_sensor.gs1_optimal_conditions': makeHassEntity(
         'binary_sensor.gs1_optimal_conditions',
         'on',
-        { vpd: 1.1 },
+        { vpd: 1.1 }
       ),
       'sensor.gs1_overview': makeHassEntity('sensor.gs1_overview', 'on', {
         // no vpd_status, but targets provided
@@ -208,7 +209,7 @@ describe('computeEnvSnapshot — vpdStatus', () => {
       'binary_sensor.gs1_optimal_conditions': makeHassEntity(
         'binary_sensor.gs1_optimal_conditions',
         'on',
-        { vpd: 1.6 },
+        { vpd: 1.6 }
       ),
       'sensor.gs1_overview': makeHassEntity('sensor.gs1_overview', 'on', {
         vpd_target_min: 0.8,
@@ -229,7 +230,7 @@ describe('computeEnvSnapshot — vpdStatus', () => {
       'binary_sensor.gs1_optimal_conditions': makeHassEntity(
         'binary_sensor.gs1_optimal_conditions',
         'on',
-        { vpd: 2.1 },
+        { vpd: 2.1 }
       ),
       'sensor.gs1_overview': makeHassEntity('sensor.gs1_overview', 'on', {
         vpd_target_min: 0.8,
@@ -272,7 +273,7 @@ describe('computeEnvSnapshot — co2', () => {
       'binary_sensor.cure_optimal_curing': makeHassEntity(
         'binary_sensor.cure_optimal_curing',
         'on',
-        { co2: 800 },
+        { co2: 800 }
       ),
     };
 
@@ -284,11 +285,9 @@ describe('computeEnvSnapshot — co2', () => {
   it('returns null co2 for a dry growspace', () => {
     const device = makeDevice({ type: 'dry' as GrowspaceDevice['type'] });
     const hassStates: HassStates = {
-      'binary_sensor.dry_optimal_drying': makeHassEntity(
-        'binary_sensor.dry_optimal_drying',
-        'on',
-        { co2: 800 },
-      ),
+      'binary_sensor.dry_optimal_drying': makeHassEntity('binary_sensor.dry_optimal_drying', 'on', {
+        co2: 800,
+      }),
     };
 
     const snapshot = computeEnvSnapshot(device, hassStates);
@@ -448,7 +447,7 @@ describe('computeEnvSnapshot — co2 sensor fallback', () => {
       'binary_sensor.cure_optimal_curing': makeHassEntity(
         'binary_sensor.cure_optimal_curing',
         'on',
-        {},
+        {}
       ),
       'sensor.cure_co2': makeHassEntity('sensor.cure_co2', '800', {}),
     };
@@ -574,14 +573,14 @@ describe('envSnapshots$ atom and setEnvSnapshot', () => {
       'binary_sensor.tent_1_optimal_conditions': makeHassEntity(
         'binary_sensor.tent_1_optimal_conditions',
         'on',
-        { temperature: 22 },
+        { temperature: 22 }
       ),
     };
     const states2: HassStates = {
       'binary_sensor.tent_2_optimal_conditions': makeHassEntity(
         'binary_sensor.tent_2_optimal_conditions',
         'on',
-        { temperature: 27 },
+        { temperature: 27 }
       ),
     };
 
@@ -590,5 +589,131 @@ describe('envSnapshots$ atom and setEnvSnapshot', () => {
 
     expect(envSnapshots$.get().get('gs1')!.temperature).toBe(22);
     expect(envSnapshots$.get().get('gs2')!.temperature).toBe(27);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Additional coverage tests
+// ---------------------------------------------------------------------------
+
+describe('computeEnvSnapshot — additional branch coverage', () => {
+  it('returns null for temperature when the attribute is NaN', () => {
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        temperature: 'not-a-number',
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+    expect(snapshot.temperature).toBeNull();
+  });
+
+  it('returns null for dli when the DLI sensor state is NaN', () => {
+    const hassStates: HassStates = {
+      'sensor.tent_1_dli': makeHassEntity('sensor.tent_1_dli', 'not-a-number', {}),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+    expect(snapshot.dli).toBeNull();
+  });
+
+  it('falls through when vpd_status attribute is invalid', () => {
+    const device = makeDevice({ overviewEntityId: 'sensor.gs1_overview' });
+    const hassStates: HassStates = {
+      'binary_sensor.gs1_optimal_conditions': makeHassEntity(
+        'binary_sensor.gs1_optimal_conditions',
+        'on',
+        { vpd: 1.1 }
+      ),
+      'sensor.gs1_overview': makeHassEntity('sensor.gs1_overview', 'on', {
+        vpd_status: 'invalid-status',
+        vpd_target_min: 0.8,
+        vpd_target_max: 1.4,
+        vpd_danger_min: 0.4,
+        vpd_danger_max: 1.8,
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+    expect(snapshot.vpdStatus).toBe('optimal');
+  });
+
+  it('returns empty array for reasons when the reasons attribute is not an array', () => {
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        reasons: 'not-an-array',
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+    expect(snapshot.optimalConditions).not.toBeNull();
+    expect(snapshot.optimalConditions!.reasons).toEqual([]);
+  });
+
+  it('returns optimalConditions with reasons array when reasons attribute is an array', () => {
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', {
+        reasons: ['too hot', 'too humid'],
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+    expect(snapshot.optimalConditions).toEqual({
+      isOptimal: true,
+      reasons: ['too hot', 'too humid'],
+    });
+  });
+});
+
+describe('EnvSnapshotSchema', () => {
+  it('validates a valid EnvSnapshot payload', () => {
+    const validPayload = {
+      temperature: 24.5,
+      humidity: 58,
+      vpd: 1.2,
+      vpdStatus: 'optimal',
+      co2: 800,
+      isLightsOn: true,
+      hasLightSensor: true,
+      dli: 22.4,
+      optimalConditions: {
+        isOptimal: true,
+        reasons: ['optimal temperature'],
+      },
+    };
+    const parsed = EnvSnapshotSchema.parse(validPayload);
+    expect(parsed).toEqual(validPayload);
+  });
+
+  it('allows nullable and optional fields', () => {
+    const minimalPayload = {
+      temperature: null,
+      humidity: null,
+      vpd: null,
+      vpdStatus: null,
+      co2: null,
+      isLightsOn: null,
+      hasLightSensor: false,
+      dli: null,
+      optimalConditions: null,
+    };
+    const parsed = EnvSnapshotSchema.parse(minimalPayload);
+    expect(parsed).toEqual(minimalPayload);
+  });
+
+  it('fails validation on invalid payloads', () => {
+    const invalidPayload = {
+      temperature: 'invalid',
+      humidity: null,
+      vpd: null,
+      vpdStatus: 'invalid_status',
+      co2: null,
+      isLightsOn: null,
+      hasLightSensor: false,
+      dli: null,
+      optimalConditions: null,
+    };
+    const result = EnvSnapshotSchema.safeParse(invalidPayload);
+    expect(result.success).toBe(false);
   });
 });

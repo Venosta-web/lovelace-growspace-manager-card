@@ -60,6 +60,9 @@ describe('saveIPMPreset', () => {
     });
 
     await expect(saveIPMPreset(ctx, validPreset)).rejects.toThrow('network error');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('network error'), 'error');
+    expect(ctx.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('network error'),
+      'error'
+    );
   });
 });

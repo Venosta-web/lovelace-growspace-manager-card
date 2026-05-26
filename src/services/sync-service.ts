@@ -32,7 +32,7 @@ export class SyncService {
     private dataStore: GrowspaceDataStore,
     private uiStore: GrowspaceUIStore,
     private gridStore: GridSliceRef
-  ) { }
+  ) {}
 
   /**
    * Updates the Home Assistant reference and triggers data refresh if necessary.
@@ -96,7 +96,9 @@ export class SyncService {
 
     try {
       const data = await this.dataService.fetchGrowspaceData();
-      this.dataStore.setWsDataCache((data as unknown as Record<string, GrowspaceAPIResponse>) || {});
+      this.dataStore.setWsDataCache(
+        (data as unknown as Record<string, GrowspaceAPIResponse>) || {}
+      );
       this.updateDevicesState();
     } catch (e) {
       console.error('Failed to fetch growspace data', e);

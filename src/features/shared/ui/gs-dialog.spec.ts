@@ -9,14 +9,16 @@ for (const tag of mockTags) {
   }
 }
 
-function createElement(props: Partial<{
-  open: boolean;
-  heading: string;
-  subtitle: string;
-  iconPath: string;
-  stageColor: string;
-  submitting: boolean;
-}> = {}): GsDialog {
+function createElement(
+  props: Partial<{
+    open: boolean;
+    heading: string;
+    subtitle: string;
+    iconPath: string;
+    stageColor: string;
+    submitting: boolean;
+  }> = {}
+): GsDialog {
   const el = document.createElement('gs-dialog') as GsDialog;
   Object.assign(el, { heading: '', ...props });
   document.body.appendChild(el);

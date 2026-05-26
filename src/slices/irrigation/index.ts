@@ -91,7 +91,7 @@ export function computeIrrigationMode(strategy: IrrigationStrategy | undefined):
  */
 export function computePhaseWindows(
   strategy: IrrigationStrategy | undefined,
-  vegDayHours = 18,
+  vegDayHours = 18
 ): PhaseWindows | null {
   if (!strategy?.enabled) return null;
 
@@ -201,7 +201,7 @@ export async function toggleIrrigationMode(growspaceId: string): Promise<void> {
           enabled: nextEnabled,
         }),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -215,7 +215,7 @@ export async function toggleIrrigationMode(growspaceId: string): Promise<void> {
 export async function addIrrigationTime(
   growspaceId: string,
   time: string,
-  duration = 60,
+  duration = 60
 ): Promise<void> {
   const prev = _getConfig(growspaceId);
   const next = _sortByTime([...prev.irrigationTimes, { time, duration }]);
@@ -232,7 +232,7 @@ export async function addIrrigationTime(
           duration,
         }),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -258,7 +258,7 @@ export async function removeIrrigationTime(growspaceId: string, time: string): P
           time,
         }),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -272,7 +272,7 @@ export async function removeIrrigationTime(growspaceId: string, time: string): P
 export async function addDrainTime(
   growspaceId: string,
   time: string,
-  duration = 60,
+  duration = 60
 ): Promise<void> {
   const prev = _getConfig(growspaceId);
   const next = _sortByTime([...prev.drainTimes, { time, duration }]);
@@ -289,7 +289,7 @@ export async function addDrainTime(
           duration,
         }),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -315,7 +315,7 @@ export async function removeDrainTime(growspaceId: string, time: string): Promis
           time,
         }),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -328,22 +328,26 @@ export async function removeDrainTime(growspaceId: string, time: string): Promis
  */
 export async function updateIrrigationStrategy(
   growspaceId: string,
-  updates: Partial<IrrigationStrategy>,
+  updates: Partial<IrrigationStrategy>
 ): Promise<void> {
   const prev = _getStrategy(growspaceId);
 
   const payload: Record<string, unknown> = { growspace_id: growspaceId };
   if (updates.enabled !== undefined) payload.enabled = updates.enabled;
   if (updates.lightsOnTime !== undefined) payload.lights_on_time = updates.lightsOnTime;
-  if (updates.p0DurationMinutes !== undefined) payload.p0_duration_minutes = updates.p0DurationMinutes;
+  if (updates.p0DurationMinutes !== undefined)
+    payload.p0_duration_minutes = updates.p0DurationMinutes;
   if (updates.p2StopBeforeLightsOffMinutes !== undefined)
     payload.p2_stop_before_lights_off_minutes = updates.p2StopBeforeLightsOffMinutes;
   if (updates.targetVwcPercent !== undefined) payload.target_vwc_percent = updates.targetVwcPercent;
   if (updates.maintenanceDrybackPercent !== undefined)
     payload.maintenance_dryback_percent = updates.maintenanceDrybackPercent;
-  if (updates.shotDurationSeconds !== undefined) payload.shot_duration_seconds = updates.shotDurationSeconds;
-  if (updates.shotIntervalMinutes !== undefined) payload.shot_interval_minutes = updates.shotIntervalMinutes;
-  if (updates.autoLightTracking !== undefined) payload.auto_light_tracking = updates.autoLightTracking;
+  if (updates.shotDurationSeconds !== undefined)
+    payload.shot_duration_seconds = updates.shotDurationSeconds;
+  if (updates.shotIntervalMinutes !== undefined)
+    payload.shot_interval_minutes = updates.shotIntervalMinutes;
+  if (updates.autoLightTracking !== undefined)
+    payload.auto_light_tracking = updates.autoLightTracking;
 
   await mutate(
     {
@@ -352,7 +356,7 @@ export async function updateIrrigationStrategy(
       inverse: () => _patchStrategy(growspaceId, prev),
       apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -380,7 +384,7 @@ export async function saveIrrigationSettings(
     autoAdvanceP2ToP3?: boolean;
     haltOnRunoffEcThreshold?: number | null;
     activeSteeringPhase?: 'p1' | 'p2' | 'p3';
-  },
+  }
 ): Promise<void> {
   const prev = _getConfig(growspaceId);
 
@@ -408,14 +412,18 @@ export async function saveIrrigationSettings(
     irrigation_duration: settings.irrigationDuration,
     drain_duration: settings.drainDuration,
   };
-  if (settings.soilTriggerPercent !== undefined) payload.soil_trigger_percent = settings.soilTriggerPercent;
-  if (settings.dailyVolumeCapLiters !== undefined) payload.daily_volume_cap_liters = settings.dailyVolumeCapLiters;
+  if (settings.soilTriggerPercent !== undefined)
+    payload.soil_trigger_percent = settings.soilTriggerPercent;
+  if (settings.dailyVolumeCapLiters !== undefined)
+    payload.daily_volume_cap_liters = settings.dailyVolumeCapLiters;
   if (settings.maxCyclesPerDay !== undefined) payload.max_cycles_per_day = settings.maxCyclesPerDay;
   if (settings.skipDuringDark !== undefined) payload.skip_during_dark = settings.skipDuringDark;
   if (settings.pauseOnLowTank !== undefined) payload.pause_on_low_tank = settings.pauseOnLowTank;
   if (settings.logToLogbook !== undefined) payload.log_to_logbook = settings.logToLogbook;
-  if (settings.autoAdvanceP1ToP2 !== undefined) payload.auto_advance_p1_to_p2 = settings.autoAdvanceP1ToP2;
-  if (settings.autoAdvanceP2ToP3 !== undefined) payload.auto_advance_p2_to_p3 = settings.autoAdvanceP2ToP3;
+  if (settings.autoAdvanceP1ToP2 !== undefined)
+    payload.auto_advance_p1_to_p2 = settings.autoAdvanceP1ToP2;
+  if (settings.autoAdvanceP2ToP3 !== undefined)
+    payload.auto_advance_p2_to_p3 = settings.autoAdvanceP2ToP3;
   if (settings.haltOnRunoffEcThreshold !== undefined)
     payload.halt_on_runoff_ec_threshold = settings.haltOnRunoffEcThreshold;
   if (settings.activeSteeringPhase !== undefined)
@@ -432,7 +440,7 @@ export async function saveIrrigationSettings(
       },
       apply: () => callService('growspace_manager', 'set_irrigation_settings', payload),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -443,7 +451,7 @@ export async function saveIrrigationSettings(
  */
 export async function logDrainReading(
   growspaceId: string,
-  params: { feedEc: number; drainEc: number; feedVolumeMl?: number; drainVolumeMl?: number },
+  params: { feedEc: number; drainEc: number; feedVolumeMl?: number; drainVolumeMl?: number }
 ): Promise<void> {
   const payload: Record<string, unknown> = {
     growspace_id: growspaceId,
@@ -463,12 +471,13 @@ export async function logDrainReading(
  */
 export async function configureDrainMonitoring(
   growspaceId: string,
-  params: { enabled?: boolean; maxEcDelta?: number; targetRunoffPercent?: number },
+  params: { enabled?: boolean; maxEcDelta?: number; targetRunoffPercent?: number }
 ): Promise<void> {
   const payload: Record<string, unknown> = { growspace_id: growspaceId };
   if (params.enabled !== undefined) payload.enabled = params.enabled;
   if (params.maxEcDelta !== undefined) payload.max_ec_delta = params.maxEcDelta;
-  if (params.targetRunoffPercent !== undefined) payload.target_runoff_percent = params.targetRunoffPercent;
+  if (params.targetRunoffPercent !== undefined)
+    payload.target_runoff_percent = params.targetRunoffPercent;
 
   await callService('growspace_manager', 'configure_drain_monitoring', payload);
 }

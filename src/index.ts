@@ -41,7 +41,8 @@ window.customCards.push(
   {
     type: 'growspace-manager-card',
     name: 'Growspace Manager',
-    description: 'Full growspace management dashboard with environment monitoring, plant tracking, and irrigation control.',
+    description:
+      'Full growspace management dashboard with environment monitoring, plant tracking, and irrigation control.',
     preview: false,
   },
   {
@@ -65,7 +66,8 @@ window.customCards.push(
   {
     type: 'growspace-tank-card',
     name: 'Growspace Tank',
-    description: 'Live irrigation tank levels with fill visualization, depletion status, and time remaining.',
+    description:
+      'Live irrigation tank levels with fill visualization, depletion status, and time remaining.',
     preview: false,
   },
   {
@@ -85,5 +87,5 @@ window.customCards.push(
     name: 'Growspace Carousel',
     description: 'Automatically cycles through multiple selected growspaces.',
     preview: false,
-  },
+  }
 );

@@ -1,7 +1,11 @@
 import { ActionContext } from '../core/action-context';
 import { GrowAdviceResponse } from '../../types';
 
-export async function analyzeGrowspace(ctx: ActionContext, query: string, all: boolean): Promise<string | undefined> {
+export async function analyzeGrowspace(
+  ctx: ActionContext,
+  query: string,
+  all: boolean
+): Promise<string | undefined> {
   const currentDialog = ctx.ui.$activeDialog.get();
   if (currentDialog.type === 'GROW_MASTER') {
     ctx.ui.setActiveDialog({

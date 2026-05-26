@@ -100,8 +100,7 @@ export const activeDevices$ = computed(
 /** device_id → device name map for growspace selector dropdowns. */
 export const growspaceOptions$ = computed(
   activeDevices$,
-  (devices): Record<string, string> =>
-    Object.fromEntries(devices.map((d) => [d.deviceId, d.name]))
+  (devices): Record<string, string> => Object.fromEntries(devices.map((d) => [d.deviceId, d.name]))
 );
 
 /** Grid layout for the currently selected device. */

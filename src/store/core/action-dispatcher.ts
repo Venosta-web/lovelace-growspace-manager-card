@@ -12,7 +12,13 @@ import * as geneticsActions from '../plant/genetics-actions';
 import * as ipmActions from '../plant/ipm-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
-import { PlantEntity, StrainEntry, PlantOverviewDialogState, AddPlantsDialogState, AddPlantDialogState } from '../../types';
+import {
+  PlantEntity,
+  StrainEntry,
+  PlantOverviewDialogState,
+  AddPlantsDialogState,
+  AddPlantDialogState,
+} from '../../types';
 import { ActionContext } from './action-context';
 import { ViewMode } from '../../constants';
 import type { VisionCheckupConfig } from '../../lib/types/dialog';
@@ -29,7 +35,7 @@ interface IGrowspaceStore {
 }
 
 export class ActionDispatcher {
-  constructor(private store: IGrowspaceStore) { }
+  constructor(private store: IGrowspaceStore) {}
 
   private get ctx(): ActionContext {
     return this.store.context;
@@ -55,7 +61,12 @@ export class ActionDispatcher {
     takeClone: (mother: PlantEntity, num?: number, targetGrowspaceId?: string) =>
       plantActions.takeClone(this.ctx, mother, num, targetGrowspaceId),
 
-    updateFromDialog: (state: Pick<PlantOverviewDialogState, 'plant' | 'editedAttributes' | 'selectedPlantIds' | 'activeTab'>) => plantActions.updatePlantFromDialog(this.ctx, state),
+    updateFromDialog: (
+      state: Pick<
+        PlantOverviewDialogState,
+        'plant' | 'editedAttributes' | 'selectedPlantIds' | 'activeTab'
+      >
+    ) => plantActions.updatePlantFromDialog(this.ctx, state),
 
     finishDrying: (plant: PlantEntity) => plantActions.movePlantToNextStage(this.ctx, plant),
 
@@ -107,7 +118,10 @@ export class ActionDispatcher {
           action,
           data: data || {},
         });
-        this.ctx.ui.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+        this.ctx.ui.showToast(
+          `Batch ${action} completed for ${entityIds.length} plant(s)`,
+          'success'
+        );
         this.ctx.ui.clearPlantSelection();
         this.ctx.ui.setEditMode(false);
         await this.ctx.refreshData();
@@ -136,12 +150,7 @@ export class ActionDispatcher {
         detail.plantsPerRow,
         detail.notificationService
       ),
-    update: (detail: {
-      growspaceId: string;
-      name: string;
-      rows: number;
-      plantsPerRow: number;
-    }) =>
+    update: (detail: { growspaceId: string; name: string; rows: number; plantsPerRow: number }) =>
       growspaceActions.updateGrowspace(
         this.ctx,
         detail.growspaceId,
@@ -181,22 +190,17 @@ export class ActionDispatcher {
       uiActions.openPlantOverviewDialog(this.ctx, plant, selectedIds),
 
     /** Select all plants in current growspace */
-    selectAllPlants: () =>
-      uiActions.selectAllPlants(this.ctx),
+    selectAllPlants: () => uiActions.selectAllPlants(this.ctx),
 
     /** Open strain recommendation dialog */
-    openStrainRecommendationDialog: () =>
-      uiActions.openStrainRecommendationDialog(this.ctx),
+    openStrainRecommendationDialog: () => uiActions.openStrainRecommendationDialog(this.ctx),
 
     /** Export strain library as JSON */
-    exportStrainLibrary: () =>
-      uiActions.exportStrainLibrary(this.ctx),
+    exportStrainLibrary: () => uiActions.exportStrainLibrary(this.ctx),
 
-    setIsCompactView: (value: boolean) =>
-      uiActions.setIsCompactView(this.ctx, value),
+    setIsCompactView: (value: boolean) => uiActions.setIsCompactView(this.ctx, value),
 
-    toggleHeaderExpansion: () =>
-      uiActions.toggleHeaderExpansion(this.ctx),
+    toggleHeaderExpansion: () => uiActions.toggleHeaderExpansion(this.ctx),
 
     showToast: (message: string, type: 'success' | 'error' | 'info' = 'info') =>
       uiActions.showToast(this.ctx, message, type),
@@ -222,24 +226,34 @@ export class ActionDispatcher {
     openStrainLibraryDialog: () => uiActions.openStrainLibraryDialog(this.ctx),
     openIrrigationDialog: (options?: { initialTab?: string; scrollToField?: string }) =>
       uiActions.openIrrigationDialog(this.ctx, options),
-    openGrowMasterDialog: (growspaceId: string) => uiActions.openGrowMasterDialog(this.ctx, growspaceId),
-    openWateringDialog: (options: { plantIds?: string[]; growspaceId?: string; mode?: 'plant' | 'growspace' }) =>
-      uiActions.openWateringDialog(this.ctx, options),
+    openGrowMasterDialog: (growspaceId: string) =>
+      uiActions.openGrowMasterDialog(this.ctx, growspaceId),
+    openWateringDialog: (options: {
+      plantIds?: string[];
+      growspaceId?: string;
+      mode?: 'plant' | 'growspace';
+    }) => uiActions.openWateringDialog(this.ctx, options),
     openTrainingDialog: (plantIds: string[], growspaceId?: string) =>
       uiActions.openTrainingDialog(this.ctx, plantIds, growspaceId),
     openNutrientsDialog: () => uiActions.openNutrientsDialog(this.ctx),
-    openSnapshotsDialog: (growspaceId?: string) => uiActions.openSnapshotsDialog(this.ctx, growspaceId),
-    openCropSteeringDialog: (growspaceId?: string) => uiActions.openCropSteeringDialog(this.ctx, growspaceId),
+    openSnapshotsDialog: (growspaceId?: string) =>
+      uiActions.openSnapshotsDialog(this.ctx, growspaceId),
+    openCropSteeringDialog: (growspaceId?: string) =>
+      uiActions.openCropSteeringDialog(this.ctx, growspaceId),
     openECRampDialog: (growspaceId?: string) => uiActions.openECRampDialog(this.ctx, growspaceId),
-    openGrowReportDialog: (growspaceId?: string) => uiActions.openGrowReportDialog(this.ctx, growspaceId),
-    openBatchWateringDialog: (growspaceId?: string) => uiActions.openBatchWateringDialog(this.ctx, growspaceId),
-    openBatchTrainingDialog: (growspaceId?: string) => uiActions.openBatchTrainingDialog(this.ctx, growspaceId),
+    openGrowReportDialog: (growspaceId?: string) =>
+      uiActions.openGrowReportDialog(this.ctx, growspaceId),
+    openBatchWateringDialog: (growspaceId?: string) =>
+      uiActions.openBatchWateringDialog(this.ctx, growspaceId),
+    openBatchTrainingDialog: (growspaceId?: string) =>
+      uiActions.openBatchTrainingDialog(this.ctx, growspaceId),
     openBatchCloneDialog: () => uiActions.openBatchCloneDialog(this.ctx),
     openBatchPrintLabelsDialog: () => uiActions.openBatchPrintLabelsDialog(this.ctx),
     clearPlantSelection: () => uiActions.clearPlantSelection(this.ctx),
     exitEditMode: () => uiActions.exitEditMode(this.ctx),
     handleDeepLink: (plantId: string) => uiActions.handleDeepLink(this.ctx, plantId),
-    handleKeyboardNavigation: (key: string) => keyboardActions.handleKeyboardNavigation(this.ctx, key),
+    handleKeyboardNavigation: (key: string) =>
+      keyboardActions.handleKeyboardNavigation(this.ctx, key),
     deleteSelectedPlants: async () => {
       const ids = Array.from(this.ctx.ui.$selectedPlants.get());
       if (!ids.length) return;
@@ -263,7 +277,8 @@ export class ActionDispatcher {
     fetchStrains: (force = false) => libraryActions.fetchStrainLibrary(this.ctx, force),
     fetchNutrientPresets: (force = false) => libraryActions.fetchNutrientPresets(this.ctx, force),
     fetchIPMPresets: (force = false) => libraryActions.fetchIPMPresets(this.ctx, force),
-    fetchNutrientInventory: (force = false) => libraryActions.fetchNutrientInventory(this.ctx, force),
+    fetchNutrientInventory: (force = false) =>
+      libraryActions.fetchNutrientInventory(this.ctx, force),
     updateNutrientStock: (id: string, name: string, currentMl: number, initialMl: number) =>
       libraryActions.updateNutrientStock(this.ctx, id, name, currentMl, initialMl),
     removeNutrientStock: (id: string) => libraryActions.removeNutrientStock(this.ctx, id),
@@ -299,7 +314,8 @@ export class ActionDispatcher {
     list: (growspaceId: string) => snapshotActions.getSnapshots(this.ctx, growspaceId),
     capture: (growspaceId: string) => snapshotActions.captureSnapshot(this.ctx, growspaceId),
     visionHistory: (growspaceId: string) => snapshotActions.getVisionHistory(this.ctx, growspaceId),
-    triggerCheckup: (growspaceId: string) => snapshotActions.triggerVisionCheckup(this.ctx, growspaceId),
+    triggerCheckup: (growspaceId: string) =>
+      snapshotActions.triggerVisionCheckup(this.ctx, growspaceId),
     updateCheckupConfig: (growspaceId: string, config: VisionCheckupConfig) =>
       snapshotActions.updateVisionCheckupConfig(this.ctx, growspaceId, config),
   };
@@ -325,10 +341,18 @@ export class ActionDispatcher {
     remove: (growspaceId: string) => environmentActions.removeEnvironment(this.ctx, growspaceId),
     resetWaterTracking: (growspaceId: string) =>
       environmentActions.resetWaterTracking(this.ctx, growspaceId),
-    waterPlant: (plantId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
-      environmentActions.waterPlant(this.ctx, plantId, amount, nutrients, presetId),
-    waterGrowspace: (growspaceId: string, amount: number, nutrients?: Record<string, number>, presetId?: string) =>
-      environmentActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
+    waterPlant: (
+      plantId: string,
+      amount: number,
+      nutrients?: Record<string, number>,
+      presetId?: string
+    ) => environmentActions.waterPlant(this.ctx, plantId, amount, nutrients, presetId),
+    waterGrowspace: (
+      growspaceId: string,
+      amount: number,
+      nutrients?: Record<string, number>,
+      presetId?: string
+    ) => environmentActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
   };
 
   public readonly breeder = {
@@ -346,19 +370,16 @@ export class ActionDispatcher {
       geneticsActions.logPollination(this.ctx, data),
     updatePollination: (data: Parameters<typeof geneticsActions.updatePollination>[1]) =>
       geneticsActions.updatePollination(this.ctx, data),
-    deletePollination: (eventId: string) =>
-      geneticsActions.deletePollination(this.ctx, eventId),
+    deletePollination: (eventId: string) => geneticsActions.deletePollination(this.ctx, eventId),
     fetchData: () => geneticsActions.fetchGeneticsData(this.ctx),
     harvestSeeds: (data: Parameters<typeof geneticsActions.harvestSeeds>[1]) =>
       geneticsActions.harvestSeeds(this.ctx, data),
-    deleteSeedBatch: (batchId: string) =>
-      geneticsActions.deleteSeedBatch(this.ctx, batchId),
+    deleteSeedBatch: (batchId: string) => geneticsActions.deleteSeedBatch(this.ctx, batchId),
     setPlantSex: (plantId: string, sex: string) =>
       geneticsActions.setPlantSex(this.ctx, plantId, sex),
     sowSeed: (batchId: string, plantId: string) =>
       geneticsActions.sowSeed(this.ctx, batchId, plantId),
-    getLineageTree: (plantId: string) =>
-      geneticsActions.getLineageTree(this.ctx, plantId),
+    getLineageTree: (plantId: string) => geneticsActions.getLineageTree(this.ctx, plantId),
     getStrainLineageTree: (strainName: string) =>
       geneticsActions.getStrainLineageTree(this.ctx, strainName),
     updateStrainLineageTree: (
@@ -372,7 +393,6 @@ export class ActionDispatcher {
       ipmActions.applyIPM(this.ctx, detail),
     savePreset: (preset: Parameters<typeof libraryActions.saveIPMPreset>[1]) =>
       libraryActions.saveIPMPreset(this.ctx, preset),
-    removePreset: (presetId: string) =>
-      libraryActions.removeIPMPreset(this.ctx, presetId),
+    removePreset: (presetId: string) => libraryActions.removeIPMPreset(this.ctx, presetId),
   };
 }

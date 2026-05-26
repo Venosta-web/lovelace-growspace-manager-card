@@ -95,7 +95,7 @@ function _parseState(entity: HassEntity | undefined): number | null {
 function _resolveFromSensor(
   attrValue: number | null,
   sensorId: string | undefined,
-  hassStates: HassStates,
+  hassStates: HassStates
 ): number | null {
   if (attrValue !== null) return attrValue;
   if (sensorId) {
@@ -110,7 +110,7 @@ function _resolveVpd(
   envEntity: HassEntity | undefined,
   device: GrowspaceDevice,
   slug: string,
-  hassStates: HassStates,
+  hassStates: HassStates
 ): number | null {
   // 1. From env entity attributes
   const fromAttrs = _numAttr(envEntity, 'vpd');
@@ -140,7 +140,7 @@ function _resolveVpd(
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(
   vpd: number | null,
-  overviewEntity: HassEntity | undefined,
+  overviewEntity: HassEntity | undefined
 ): EnvSnapshot['vpdStatus'] {
   // 1. Prefer the backend-computed status from the overview entity
   const fromEntity = overviewEntity?.attributes?.vpd_status;
@@ -189,31 +189,25 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
   const envEntityId = _envEntityId(slug, device.type);
   const envEntity = hassStates[envEntityId];
 
-  const overviewEntity = device.overviewEntityId
-    ? hassStates[device.overviewEntityId]
-    : undefined;
+  const overviewEntity = device.overviewEntityId ? hassStates[device.overviewEntityId] : undefined;
 
   // Core readings
   const envAttrs = device.environmentAttributes;
   const temperature = _resolveFromSensor(
     _numAttr(envEntity, 'temperature'),
     envAttrs?.temperatureSensor,
-    hassStates,
+    hassStates
   );
   const humidity = _resolveFromSensor(
     _numAttr(envEntity, 'humidity'),
     envAttrs?.humiditySensor,
-    hassStates,
+    hassStates
   );
   const vpd = _resolveVpd(envEntity, device, slug, hassStates);
   const vpdStatus = _resolveVpdStatus(vpd, overviewEntity);
 
   // co2 — absent for cure/dry spaces; falls back to co2Sensor when attribute is missing
-  const co2Raw = _resolveFromSensor(
-    _numAttr(envEntity, 'co2'),
-    envAttrs?.co2Sensor,
-    hassStates,
-  );
+  const co2Raw = _resolveFromSensor(_numAttr(envEntity, 'co2'), envAttrs?.co2Sensor, hassStates);
   const co2 = isSpecial ? null : co2Raw;
 
   // Lights
@@ -264,7 +258,7 @@ export const envSnapshots$ = atom<Map<string, EnvSnapshot>>(new Map());
 export function setEnvSnapshot(
   growspaceId: string,
   device: GrowspaceDevice,
-  hassStates: HassStates,
+  hassStates: HassStates
 ): void {
   const snapshot = computeEnvSnapshot(device, hassStates);
   const updated = new Map(envSnapshots$.get());

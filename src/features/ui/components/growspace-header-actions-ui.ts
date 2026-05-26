@@ -113,13 +113,7 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     );
   }
 
-  private _iconButton(
-    icon: string,
-    action: string,
-    label: string,
-    help: string,
-    active = false
-  ) {
+  private _iconButton(icon: string, action: string, label: string, help: string, active = false) {
     return html`
       <div style="position:relative;display:inline-flex;align-items:center;">
         <button
@@ -313,43 +307,44 @@ export class GrowspaceHeaderActionsUI extends LitElement {
 
   render() {
     return html`
-      ${!this.isMobile ? html`
-        <div class="gs-device-chips-container">
-          <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
-            <div class="chips-wrapper">
-              ${this.deviceChips.map(
-                (chip) => html`
-                  <growspace-chip
-                    .icon=${chip.icon}
-                    .label=${chip.label}
-                    .value=${chip.value}
-                    .multiValues=${chip.multiValues}
-                    .status=${chip.status}
-                    .active=${chip.active}
-                    .linked=${chip.linked}
-                    .tooltip=${chip.tooltip}
-                    draggable="${this._chipDraggable}"
-                    @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
-                    @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
-                    @dragover=${this._handleDragOver}
-                    @click=${() => this._toggleEnvGraph(chip.key)}
-                    @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
-                  ></growspace-chip>
-                `
-              )}
+      ${!this.isMobile
+        ? html`
+            <div class="gs-device-chips-container">
+              <scroll-container .scrollAmount=${150} containerClass="device-chips-scroll">
+                <div class="chips-wrapper">
+                  ${this.deviceChips.map(
+                    (chip) => html`
+                      <growspace-chip
+                        .icon=${chip.icon}
+                        .label=${chip.label}
+                        .value=${chip.value}
+                        .multiValues=${chip.multiValues}
+                        .status=${chip.status}
+                        .active=${chip.active}
+                        .linked=${chip.linked}
+                        .tooltip=${chip.tooltip}
+                        draggable="${this._chipDraggable}"
+                        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+                        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+                        @dragover=${this._handleDragOver}
+                        @click=${() => this._toggleEnvGraph(chip.key)}
+                        @unlink=${() => this._unlinkGraphs(chip.groupIndex)}
+                      ></growspace-chip>
+                    `
+                  )}
+                </div>
+              </scroll-container>
             </div>
-          </scroll-container>
-        </div>
-      ` : nothing}
-
+          `
+        : nothing}
       ${this.isMobile
         ? html`
             <button
               class="icon-button mobile-link ${this.mobileLink ? 'active' : ''}"
               @click=${() =>
-            this.dispatchEvent(
-              new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
-            )}
+                this.dispatchEvent(
+                  new CustomEvent('toggle-mobile-link', { bubbles: true, composed: true })
+                )}
               title="Toggle Link Mode"
               aria-label="Toggle Link Mode"
               aria-pressed="${this.mobileLink}"
@@ -359,27 +354,39 @@ export class GrowspaceHeaderActionsUI extends LitElement {
             </button>
           `
         : ''}
-
       ${this._iconButton(
-        mdiPencil, 'edit', 'Edit Mode',
+        mdiPencil,
+        'edit',
+        'Edit Mode',
         'Edit mode lets you reorder plants, remove them from the growspace, or drag metric chips to rearrange the header.',
         this.isEditMode
       )}
-
-      ${!this.isMobile ? html`
-        ${this._iconButton(
-          mdiCube, 'heatmap', '3D Heatmap',
-          'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.',
-          this.viewMode === ViewMode.HEATMAP
-        )}
-        ${this._iconButton(
-          mdiCog, 'config', 'Settings',
-          'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.'
-        )}
-      ` : nothing}
+      ${!this.isMobile
+        ? html`
+            ${this._iconButton(
+              mdiCube,
+              'heatmap',
+              '3D Heatmap',
+              'Switch to 3D VPD heatmap view — visualizes temperature and humidity distribution across your canopy as a 3D surface.',
+              this.viewMode === ViewMode.HEATMAP
+            )}
+            ${this._iconButton(
+              mdiCog,
+              'config',
+              'Settings',
+              'Open growspace settings — configure sensor assignments, irrigation strategy, and integration options.'
+            )}
+          `
+        : nothing}
 
       <div class="menu-container">
-        <button class="icon-button" id="menu-trigger" style="anchor-name: --menu-trigger" popovertarget="header-menu" title="Open Menu">
+        <button
+          class="icon-button"
+          id="menu-trigger"
+          style="anchor-name: --menu-trigger"
+          popovertarget="header-menu"
+          title="Open Menu"
+        >
           <svg viewBox="0 0 24 24"><path d="${mdiDotsVertical}"></path></svg>
         </button>
         ${this._renderMenu()}
@@ -392,18 +399,20 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     return html`
       <div id="header-menu" popover="auto" class="menu-dropdown">
         <div class="drag-handle"></div>
-        ${this.isMobile ? html`
-          <div class="menu-header">Growspace</div>
-          <div class="menu-item" @click=${() => this._triggerAction('config')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-            <span class="menu-item-label">Settings</span>
-          </div>
-          <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
-            <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
-            <span class="menu-item-label">3D Heatmap</span>
-          </div>
-          <div class="menu-divider"></div>
-        ` : nothing}
+        ${this.isMobile
+          ? html`
+              <div class="menu-header">Growspace</div>
+              <div class="menu-item" @click=${() => this._triggerAction('config')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                <span class="menu-item-label">Settings</span>
+              </div>
+              <div class="menu-item" @click=${() => this._triggerAction('heatmap')}>
+                <svg viewBox="0 0 24 24"><path d="${mdiCube}"></path></svg>
+                <span class="menu-item-label">3D Heatmap</span>
+              </div>
+              <div class="menu-divider"></div>
+            `
+          : nothing}
         <div class="menu-header">Plant Actions</div>
         <div class="menu-item" @click=${() => this._triggerAction('add_plant')}>
           <svg viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>

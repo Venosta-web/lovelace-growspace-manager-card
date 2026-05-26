@@ -1,19 +1,13 @@
 import { computed, ReadableAtom } from 'nanostores';
 import { HomeAssistant } from 'custom-card-helpers';
-import {
-  PlantEntity,
-  GrowspaceManagerCardConfig,
-} from '../../types';
+import { PlantEntity, GrowspaceManagerCardConfig } from '../../types';
 import { DataService } from '../../services/data-service';
 
 // Sub-stores
 import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
-import {
-  type GridSliceRef,
-  type GridViewState,
-} from '../../slices/grid';
+import { type GridSliceRef, type GridViewState } from '../../slices/grid';
 import { GrowspaceGridStore } from '../grid/grid-store';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 
@@ -40,7 +34,9 @@ export class GrowspaceStore {
   hass!: HomeAssistant;
 
   // Shared sub-stores (delegated to shared store)
-  public get data(): GrowspaceDataStore { return this._shared.data; }
+  public get data(): GrowspaceDataStore {
+    return this._shared.data;
+  }
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;
@@ -77,7 +73,9 @@ export class GrowspaceStore {
   /** Combined atom for card rendering — one subscription replaces grid + ui modules. */
   public readonly $sharedCardViewState!: ReadableAtom<{
     grid: GridViewState;
-    ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T> ? T : any;
+    ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T>
+      ? T
+      : any;
   }>;
 
   /** Combined atom for individual plant-card rendering. */
@@ -108,7 +106,9 @@ export class GrowspaceStore {
   /** Combined atom for growspace-manager-card — extends $sharedCardViewState with strainLibrary. */
   public readonly $mainCardState!: ReadableAtom<{
     grid: GridViewState;
-    ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T> ? T : any;
+    ui: import('../ui/ui-store').GrowspaceUIStore['$cardViewState'] extends ReadableAtom<infer T>
+      ? T
+      : any;
     strainLibrary: import('../../types').StrainEntry[];
   }>;
 
@@ -138,7 +138,11 @@ export class GrowspaceStore {
     // Per-card stores
     this.ui = new GrowspaceUIStore();
     this.grid = new GrowspaceGridStore(shared.data);
-    this.history = new GrowspaceHistoryStore(shared.dataService, shared.data, this.grid.$selectedDevice);
+    this.history = new GrowspaceHistoryStore(
+      shared.dataService,
+      shared.data,
+      this.grid.$selectedDevice
+    );
 
     // Cross-store computed atoms
     this.$dialogHostState = computed(
@@ -186,7 +190,12 @@ export class GrowspaceStore {
     );
 
     this.$plantCardViewState = computed(
-      [this.ui.$isEditMode, this.ui.$selectedPlants, this.data.$devices, this.data.$nutrientPresets],
+      [
+        this.ui.$isEditMode,
+        this.ui.$selectedPlants,
+        this.data.$devices,
+        this.data.$nutrientPresets,
+      ],
       (isEditMode, selectedPlants, devices, nutrientPresets) => ({
         isEditMode,
         selectedPlants,
@@ -195,10 +204,7 @@ export class GrowspaceStore {
       })
     );
 
-    this.$viewStandardState = computed(
-      [this.data.$devices],
-      (devices) => ({ devices })
-    );
+    this.$viewStandardState = computed([this.data.$devices], (devices) => ({ devices }));
 
     this.$headerState = computed(
       [this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState],

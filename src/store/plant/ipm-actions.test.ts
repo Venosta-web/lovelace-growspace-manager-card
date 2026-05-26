@@ -17,7 +17,12 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
   } as any;
 }
 
-const detail = { preset_id: 'preset-1', growspace_id: 'grow-1', plant_ids: ['plant-1'], notes: 'test' };
+const detail = {
+  preset_id: 'preset-1',
+  growspace_id: 'grow-1',
+  plant_ids: ['plant-1'],
+  notes: 'test',
+};
 
 describe('applyIPM', () => {
   it('calls dataService.applyIPM with the given detail', async () => {
@@ -43,7 +48,7 @@ describe('applyIPM', () => {
 
     expect(ctx.ui.showToast).toHaveBeenCalledWith(
       expect.stringContaining('IPM treatment applied successfully'),
-      'success',
+      'success'
     );
   });
 
@@ -56,6 +61,9 @@ describe('applyIPM', () => {
     });
 
     await expect(applyIPM(ctx, detail)).rejects.toThrow('service error');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('service error'), 'error');
+    expect(ctx.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('service error'),
+      'error'
+    );
   });
 });

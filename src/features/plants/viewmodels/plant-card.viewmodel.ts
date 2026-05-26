@@ -6,7 +6,13 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import type { PlantEntity, PlantDisplayData, StrainEntry, NutrientPreset, GrowspaceDevice } from '../../../types';
+import type {
+  PlantEntity,
+  PlantDisplayData,
+  StrainEntry,
+  NutrientPreset,
+  GrowspaceDevice,
+} from '../../../types';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { calculateGrowthDeviation } from '../../../utils/analytics-utils';
 

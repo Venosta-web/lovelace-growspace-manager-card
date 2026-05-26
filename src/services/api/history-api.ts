@@ -61,8 +61,6 @@ export class HistoryAPI extends BaseAPI {
       url += `&end_time=${endTime.toISOString()}`;
     }
 
-
-
     try {
       // HA returns an array of arrays (one array per entity)
       const res = await this.hass.callApi<HistorySensorState[][]>('GET', url);

@@ -30,7 +30,10 @@ describe('GrowspaceNutrientPresetsEditorUI – save-preset returns to list', () 
     const el = document.createElement(
       'growspace-nutrient-presets-editor-ui'
     ) as GrowspaceNutrientPresetsEditorUI;
-    (el as any)._editingPreset = { name: 'My Preset', nutrients: [{ name: 'Cal-Mag', dose_ml_l: 2 }] };
+    (el as any)._editingPreset = {
+      name: 'My Preset',
+      nutrients: [{ name: 'Cal-Mag', dose_ml_l: 2 }],
+    };
     const events: CustomEvent[] = [];
     el.addEventListener('save-preset', (e) => events.push(e as CustomEvent));
 

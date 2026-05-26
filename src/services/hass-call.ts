@@ -11,7 +11,7 @@ let _hass: HomeAssistant | undefined;
 export async function callService(
   domain: string,
   service: string,
-  serviceData: Record<string, unknown> = {},
+  serviceData: Record<string, unknown> = {}
 ): Promise<void> {
   if (!_hass) {
     throw new WSError('internal_error', 'callService: hass is not set — call setHass() first');
@@ -58,12 +58,12 @@ export async function callServiceReturning<T>(
   domain: string,
   service: string,
   serviceData: Record<string, unknown>,
-  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>
 ): Promise<T> {
   if (!_hass) {
     throw new WSError(
       'internal_error',
-      'callServiceReturning: hass is not set — call setHass() first',
+      'callServiceReturning: hass is not set — call setHass() first'
     );
   }
 
@@ -77,17 +77,14 @@ export async function callServiceReturning<T>(
       return_response: true,
     });
   } catch (err) {
-    throw new WSError(
-      'internal_error',
-      err instanceof Error ? err.message : String(err),
-    );
+    throw new WSError('internal_error', err instanceof Error ? err.message : String(err));
   }
 
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
     throw new WSError(
       'internal_error',
-      `callServiceReturning: response schema mismatch for "${domain}.${service}": ${parsed.error.message}`,
+      `callServiceReturning: response schema mismatch for "${domain}.${service}": ${parsed.error.message}`
     );
   }
 
@@ -108,7 +105,7 @@ export async function callServiceReturning<T>(
 export async function hassCall<T>(
   command: string,
   params: Record<string, unknown>,
-  schema: z.ZodType<T, z.ZodTypeDef, unknown>,
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>
 ): Promise<T> {
   if (!_hass) {
     throw new WSError('internal_error', 'hassCall: hass is not set — call setHass() first');
@@ -127,23 +124,25 @@ export async function hassCall<T>(
     ) {
       const { code, message } = error as { code: string; message: string };
       throw new WSError(
-        (['coordinator_not_ready', 'entity_not_found', 'validation_failed', 'internal_error'].includes(code)
+        ([
+          'coordinator_not_ready',
+          'entity_not_found',
+          'validation_failed',
+          'internal_error',
+        ].includes(code)
           ? code
           : 'internal_error') as ConstructorParameters<typeof WSError>[0],
-        message,
+        message
       );
     }
-    throw new WSError(
-      'internal_error',
-      error instanceof Error ? error.message : String(error),
-    );
+    throw new WSError('internal_error', error instanceof Error ? error.message : String(error));
   }
 
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
     throw new WSError(
       'internal_error',
-      `hassCall: response schema mismatch for "${command}": ${parsed.error.message}`,
+      `hassCall: response schema mismatch for "${command}": ${parsed.error.message}`
     );
   }
 

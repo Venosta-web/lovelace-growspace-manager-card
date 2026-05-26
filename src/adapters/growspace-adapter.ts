@@ -16,7 +16,7 @@ import type { ECTargetStage } from '../services/types';
 export class GrowspaceAdapter {
   static transformGrowspace(
     overview: GrowspaceOverviewEntity | null,
-    wsData: GrowspaceAPIResponse | null = null,
+    wsData: GrowspaceAPIResponse | null = null
   ): GrowspaceDevice | null {
     if (!wsData && !overview) return null;
 
@@ -28,10 +28,8 @@ export class GrowspaceAdapter {
     const irrigation = wsData?.irrigation;
     const metrics = wsData?.metrics;
 
-    const growspaceId =
-      identity?.growspace_id || overview?.attributes.growspace_id || 'unknown';
-    const name =
-      identity?.name || overview?.attributes.friendly_name || `Growspace ${growspaceId}`;
+    const growspaceId = identity?.growspace_id || overview?.attributes.growspace_id || 'unknown';
+    const name = identity?.name || overview?.attributes.friendly_name || `Growspace ${growspaceId}`;
     const overviewEntityId = identity?.overview_entity_id || overview?.entity_id || '';
 
     // 1. Loading State
@@ -77,8 +75,7 @@ export class GrowspaceAdapter {
 
     // Backfill defaults for known sensors that have no coordinate
     const midX = (gridData?.dimensions?.width ?? 120) / 2;
-    const midY =
-      (gridData?.dimensions?.length ?? (gridData?.dimensions as any)?.depth ?? 120) / 2;
+    const midY = (gridData?.dimensions?.length ?? (gridData?.dimensions as any)?.depth ?? 120) / 2;
     const defaultCoords = { x: midX, y: midY, z: 0 };
 
     const ensureCoord = (id: string | null | undefined) => {
@@ -218,13 +215,13 @@ export class GrowspaceAdapter {
       autoAdvanceP2ToP3: (irrigationConfigRaw as any).auto_advance_p2_to_p3,
       haltOnRunoffEcThreshold: (irrigationConfigRaw as any).halt_on_runoff_ec_threshold,
       activeSteeringPhase: (irrigationConfigRaw as any).active_steering_phase,
-      ecTargetRanges: (
-        (irrigationConfigRaw as any).ec_target_ranges ?? []
-      ).map((r: { stage: string; feed_ec_min: number; feed_ec_max: number }) => ({
-        stage: r.stage as ECTargetStage,
-        minEc: r.feed_ec_min,
-        maxEc: r.feed_ec_max,
-      })),
+      ecTargetRanges: ((irrigationConfigRaw as any).ec_target_ranges ?? []).map(
+        (r: { stage: string; feed_ec_min: number; feed_ec_max: number }) => ({
+          stage: r.stage as ECTargetStage,
+          minEc: r.feed_ec_min,
+          maxEc: r.feed_ec_max,
+        })
+      ),
     };
 
     const irrigationStrategyRaw = irrigation?.irrigation_strategy;
@@ -289,10 +286,7 @@ export class GrowspaceAdapter {
         ? {
             width: gridData.dimensions.width ?? 120,
             height: gridData.dimensions.height ?? 200,
-            length:
-              gridData.dimensions.length ??
-              (gridData.dimensions as any)?.depth ??
-              120,
+            length: gridData.dimensions.length ?? (gridData.dimensions as any)?.depth ?? 120,
             unit: gridData.dimensions.unit ?? 'cm',
           }
         : undefined,

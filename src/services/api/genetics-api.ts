@@ -17,9 +17,7 @@ export class GeneticsAPI extends BaseAPI {
   }
 
   async fetchGeneticsData(): Promise<GeneticsData> {
-    const result = await this.sendWebSocketSafe<GeneticsData>(
-      `${DOMAIN}/get_genetics_data`
-    );
+    const result = await this.sendWebSocketSafe<GeneticsData>(`${DOMAIN}/get_genetics_data`);
     return result ?? { seed_batches: {}, pollination_events: {} };
   }
 
@@ -78,11 +76,7 @@ export class GeneticsAPI extends BaseAPI {
     await this.callService(DOMAIN, 'delete_pollination', { event_id });
   }
 
-  async harvestSeeds(data: {
-    event_id: string;
-    quantity: number;
-    notes?: string;
-  }): Promise<void> {
+  async harvestSeeds(data: { event_id: string; quantity: number; notes?: string }): Promise<void> {
     await this.callService(DOMAIN, 'harvest_seeds', data as Record<string, unknown>);
   }
 
@@ -99,37 +93,26 @@ export class GeneticsAPI extends BaseAPI {
   }
 
   async getLineageTree(plant_id: string): Promise<LineageNode | null> {
-    return this.sendWebSocketSafe<LineageNode>(
-      `${DOMAIN}/get_lineage_tree`,
-      { plant_id }
-    );
+    return this.sendWebSocketSafe<LineageNode>(`${DOMAIN}/get_lineage_tree`, { plant_id });
   }
 
   async getStrainLineageTree(strain_name: string): Promise<LineageNode | null> {
-    return this.sendWebSocketSafe<LineageNode>(
-      `${DOMAIN}/get_strain_lineage_tree`,
-      { strain_name }
-    );
+    return this.sendWebSocketSafe<LineageNode>(`${DOMAIN}/get_strain_lineage_tree`, {
+      strain_name,
+    });
   }
 
   async updateStrainLineageTree(
     strain_name: string,
     parents: Array<{ name: string; source: 'library' | 'manual' }>
   ): Promise<{ lineage: string }> {
-    return this.sendWebSocket<{ lineage: string }>(
-      `${DOMAIN}/update_strain_lineage_tree`,
-      { strain_name, parents }
-    );
+    return this.sendWebSocket<{ lineage: string }>(`${DOMAIN}/update_strain_lineage_tree`, {
+      strain_name,
+      parents,
+    });
   }
 
-  async importStrainLineageTree(
-    strain_name: string,
-    tree: Record<string, unknown>
-  ): Promise<void> {
-    await this.sendWebSocket(
-      `${DOMAIN}/import_strain_lineage_tree`,
-      { strain_name, tree }
-    );
+  async importStrainLineageTree(strain_name: string, tree: Record<string, unknown>): Promise<void> {
+    await this.sendWebSocket(`${DOMAIN}/import_strain_lineage_tree`, { strain_name, tree });
   }
-
 }

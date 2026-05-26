@@ -181,7 +181,11 @@ export class PlantIdentityCard extends LitElement {
           .value=${this.editedAttributes.strain || ''}
           @change=${(e: CustomEvent) => this._emitAttributeChange('strain', e.detail)}
         ></md3-text-input>
-        <button class="input-action-btn" @click=${this._handleOpenStrainEditor} title="Open Strain Library Editor">
+        <button
+          class="input-action-btn"
+          @click=${this._handleOpenStrainEditor}
+          title="Open Strain Library Editor"
+        >
           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
         </button>
       </div>
@@ -191,7 +195,9 @@ export class PlantIdentityCard extends LitElement {
         @change=${(e: CustomEvent) => this._emitAttributeChange('phenotype', e.detail)}
       ></md3-text-input>
 
-      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));">
+      <div
+        style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));"
+      >
         <div class="location-header">
           <h4>Location</h4>
         </div>
@@ -200,7 +206,10 @@ export class PlantIdentityCard extends LitElement {
           <md3-select
             label="Move to Growspace"
             .value=${this.plant.attributes?.growspace_id || ''}
-            .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({ label: name, value: id }))}
+            .options=${Object.entries(this.growspaceOptions).map(([id, name]) => ({
+              label: name,
+              value: id,
+            }))}
             style="flex: 1;"
             @change=${this._handleMovePlant}
           ></md3-select>
@@ -227,9 +236,15 @@ export class PlantIdentityCard extends LitElement {
   private _renderViewMode(): TemplateResult {
     return html`
       <div class="stat-grid">
-        <div class="stat-item actionable" @click=${this._handleOpenStrainEditor} title="Click to open Strain Library Entry">
+        <div
+          class="stat-item actionable"
+          @click=${this._handleOpenStrainEditor}
+          title="Click to open Strain Library Entry"
+        >
           <div class="stat-row">
-            <span class="stat-value" style="flex:1;">${this.plant.attributes?.strain || 'Unknown'}</span>
+            <span class="stat-value" style="flex:1;"
+              >${this.plant.attributes?.strain || 'Unknown'}</span
+            >
             <div class="edit-btn">
               <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
             </div>
@@ -241,7 +256,9 @@ export class PlantIdentityCard extends LitElement {
           <span class="stat-label">Phenotype</span>
         </div>
         <div class="stat-item">
-          <span class="stat-value">${this.growspaceOptions[this.plant.attributes?.growspace_id || ''] || 'Unknown'}</span>
+          <span class="stat-value"
+            >${this.growspaceOptions[this.plant.attributes?.growspace_id || ''] || 'Unknown'}</span
+          >
           <span class="stat-label">Growspace</span>
         </div>
         <div class="stat-item">
@@ -268,7 +285,9 @@ export class PlantIdentityCard extends LitElement {
 
   private _handleOpenStrainEditor(): void {
     const strain = this.isEditing ? this.editedAttributes.strain : this.plant.attributes?.strain;
-    const phenotype = this.isEditing ? this.editedAttributes.phenotype : this.plant.attributes?.phenotype;
+    const phenotype = this.isEditing
+      ? this.editedAttributes.phenotype
+      : this.plant.attributes?.phenotype;
     this.dispatchEvent(
       new CustomEvent('open-strain-editor', {
         detail: { strain: strain || '', phenotype: phenotype || '' },
@@ -281,7 +300,7 @@ export class PlantIdentityCard extends LitElement {
   private _handleMovePlant(e: CustomEvent): void {
     const targetId = e.detail;
     if (targetId === this.plant.attributes?.growspace_id) return;
-    
+
     this.dispatchEvent(
       new CustomEvent('move-plant', {
         detail: { targetId },

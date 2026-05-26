@@ -165,7 +165,9 @@ describe('BatchPrintLabelDialog – _getPrinters', () => {
     const printers = (el as any)._getPrinters();
     expect(printers).toHaveLength(2);
     expect(printers.every((p: { value: string }) => p.value.startsWith('image.'))).toBe(true);
-    expect(printers.every((p: { value: string }) => p.value.includes('_last_label_made'))).toBe(true);
+    expect(printers.every((p: { value: string }) => p.value.includes('_last_label_made'))).toBe(
+      true
+    );
   });
 
   it('strips " Last Label Made" suffix from friendly name', () => {
@@ -300,9 +302,15 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
   it('continues batch even when warm-up fails', async () => {
     const mockStore = makeMockStore({
-      actions: { ui: { toast: vi.fn() }, plant: { printLabel: vi.fn()
-        .mockRejectedValueOnce(new Error('warm-up error'))
-        .mockResolvedValue(undefined) } },
+      actions: {
+        ui: { toast: vi.fn() },
+        plant: {
+          printLabel: vi
+            .fn()
+            .mockRejectedValueOnce(new Error('warm-up error'))
+            .mockResolvedValue(undefined),
+        },
+      },
     });
     const el = createElement(mockStore);
     (el as any).dialogState = { plantIds: ['plant-1'] };
@@ -311,7 +319,10 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     // warm-up + 1 batch call
     expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(2);
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('1 label'), 'success');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
+      expect.stringContaining('1 label'),
+      'success'
+    );
   });
 
   it('prints each plant for each copy', async () => {
@@ -334,25 +345,36 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Printed 4 label(s) successfully', 'success');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
+      'Printed 4 label(s) successfully',
+      'success'
+    );
   });
 
   it('shows error toast when some prints fail', async () => {
     let callCount = 0;
     const mockStore = makeMockStore({
-      actions: { ui: { toast: vi.fn() }, plant: { printLabel: vi.fn().mockImplementation(() => {
-        callCount++;
-        // warm-up succeeds, first batch print fails
-        if (callCount === 2) return Promise.reject(new Error('print error'));
-        return Promise.resolve(undefined);
-      }) } },
+      actions: {
+        ui: { toast: vi.fn() },
+        plant: {
+          printLabel: vi.fn().mockImplementation(() => {
+            callCount++;
+            // warm-up succeeds, first batch print fails
+            if (callCount === 2) return Promise.reject(new Error('print error'));
+            return Promise.resolve(undefined);
+          }),
+        },
+      },
     });
     const el = createElement(mockStore);
     (el as any).dialogState = { plantIds: ['p1', 'p2'] };
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('1 error'), 'error');
+    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
+      expect.stringContaining('1 error'),
+      'error'
+    );
   });
 
   it('reaches 100% progress after all labels are printed', async () => {
@@ -421,12 +443,17 @@ describe('BatchPrintLabelDialog – render', () => {
 
   it('renders dialog when open', async () => {
     const el = await fixture<BatchPrintLabelDialog>(html`
-      <batch-print-label-dialog .open=${true} .dialogState=${{ plantIds: ['p1'] }}></batch-print-label-dialog>
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['p1'] }}
+      ></batch-print-label-dialog>
     `);
     expect(el.shadowRoot!.querySelector('gs-dialog')).not.toBeNull();
     const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
     await gsDialog?.updateComplete;
-    expect(gsDialog?.shadowRoot?.querySelector('.dialog-subtitle')?.textContent).toContain('1 plant(s) selected');
+    expect(gsDialog?.shadowRoot?.querySelector('.dialog-subtitle')?.textContent).toContain(
+      '1 plant(s) selected'
+    );
   });
 
   it('renders submission progress bar', async () => {
@@ -444,7 +471,11 @@ describe('BatchPrintLabelDialog – render', () => {
   it('handles printer selection and copies input', async () => {
     const hass = makeHass();
     const el = await fixture<BatchPrintLabelDialog>(html`
-      <batch-print-label-dialog .open=${true} .hass=${hass} .growspaceOptions=${{ 'gs-1': 'Tent 1' }}></batch-print-label-dialog>
+      <batch-print-label-dialog
+        .open=${true}
+        .hass=${hass}
+        .growspaceOptions=${{ 'gs-1': 'Tent 1' }}
+      ></batch-print-label-dialog>
     `);
     await el.updateComplete;
 
@@ -464,7 +495,9 @@ describe('BatchPrintLabelDialog – render', () => {
       <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
     `);
     await el.updateComplete;
-    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).toContain('No Niimbot printers discovered');
+    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).toContain(
+      'No Niimbot printers discovered'
+    );
   });
 
   it('ignores invalid copies input', async () => {
@@ -472,14 +505,14 @@ describe('BatchPrintLabelDialog – render', () => {
       <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
     `);
     await el.updateComplete;
-    
+
     (el as any)._copies = 1;
     const input = el.shadowRoot!.querySelector('input.copies-input') as HTMLInputElement;
-    
+
     input.value = 'abc';
     input.dispatchEvent(new Event('input'));
     expect((el as any)._copies).toBe(1);
-    
+
     input.value = '0';
     input.dispatchEvent(new Event('input'));
     expect((el as any)._copies).toBe(1);
@@ -491,12 +524,17 @@ describe('BatchPrintLabelDialog – render', () => {
     `);
     const gsDialog = el.shadowRoot!.querySelector('gs-dialog') as any;
     await gsDialog?.updateComplete;
-    expect(gsDialog?.shadowRoot?.querySelector('.dialog-subtitle')?.textContent).toContain('0 plant(s) selected');
+    expect(gsDialog?.shadowRoot?.querySelector('.dialog-subtitle')?.textContent).toContain(
+      '0 plant(s) selected'
+    );
   });
 
   it('renders printing label text during submission', async () => {
     const el = await fixture<BatchPrintLabelDialog>(html`
-      <batch-print-label-dialog .open=${true} .dialogState=${{ plantIds: ['p1'] }}></batch-print-label-dialog>
+      <batch-print-label-dialog
+        .open=${true}
+        .dialogState=${{ plantIds: ['p1'] }}
+      ></batch-print-label-dialog>
     `);
     (el as any)._isSubmitting = true;
     (el as any)._progress = 75;

@@ -76,7 +76,7 @@ describe('addPlant', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_plant',
-      expect.objectContaining({ growspace_id: 'gs1', row: 0, col: 0, strain: 'AK47' }),
+      expect.objectContaining({ growspace_id: 'gs1', row: 0, col: 0, strain: 'AK47' })
     );
   });
 
@@ -93,14 +93,16 @@ describe('addPlant', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_plant',
-      expect.objectContaining({ phenotype: 'P1', veg_start: '2026-01-01' }),
+      expect.objectContaining({ phenotype: 'P1', veg_start: '2026-01-01' })
     );
   });
 
   it('rethrows when the service call fails', async () => {
     vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('network'));
 
-    await expect(addPlant({ growspace_id: 'gs1', row: 0, col: 0, strain: 'AK47' })).rejects.toThrow('network');
+    await expect(addPlant({ growspace_id: 'gs1', row: 0, col: 0, strain: 'AK47' })).rejects.toThrow(
+      'network'
+    );
   });
 });
 
@@ -115,7 +117,7 @@ describe('addPlants', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_plants',
-      expect.objectContaining({ growspace_id: 'gs1', strain: 'Blue Dream', amount: 3 }),
+      expect.objectContaining({ growspace_id: 'gs1', strain: 'Blue Dream', amount: 3 })
     );
   });
 });
@@ -131,7 +133,7 @@ describe('updatePlant', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'update_plant',
-      expect.objectContaining({ plant_id: 'abc', strain: 'White Widow' }),
+      expect.objectContaining({ plant_id: 'abc', strain: 'White Widow' })
     );
   });
 
@@ -176,11 +178,9 @@ describe('deletePlant', () => {
   it('calls remove_plant service with the plant_id', async () => {
     await deletePlant('abc');
 
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'remove_plant',
-      { plant_id: 'abc' },
-    );
+    expect(hassCall.callService).toHaveBeenCalledWith('growspace_manager', 'remove_plant', {
+      plant_id: 'abc',
+    });
   });
 
   it('optimistically removes the plant from plants$ before the service call', async () => {
@@ -221,7 +221,7 @@ describe('harvestPlant', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'harvest_plant',
-      expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'dry' }),
+      expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'dry' })
     );
   });
 
@@ -231,7 +231,7 @@ describe('harvestPlant', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'harvest_plant',
-      expect.objectContaining({ wet_weight: 120 }),
+      expect.objectContaining({ wet_weight: 120 })
     );
   });
 });
@@ -249,7 +249,7 @@ describe('movePlantToGrowspace', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'move_plant',
-      expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'dry-room' }),
+      expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'dry-room' })
     );
   });
 
@@ -261,7 +261,7 @@ describe('movePlantToGrowspace', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'move_clone',
-      expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'veg-room' }),
+      expect.objectContaining({ plant_id: 'abc', target_growspace_id: 'veg-room' })
     );
   });
 });
@@ -274,11 +274,10 @@ describe('swapPlants', () => {
   it('calls switch_plants service with both plant IDs', async () => {
     await swapPlants('abc', 'xyz');
 
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'switch_plants',
-      { plant1_id: 'abc', plant2_id: 'xyz' },
-    );
+    expect(hassCall.callService).toHaveBeenCalledWith('growspace_manager', 'switch_plants', {
+      plant1_id: 'abc',
+      plant2_id: 'xyz',
+    });
   });
 
   it('optimistically swaps row/col for both plants in plants$', async () => {
@@ -333,7 +332,7 @@ describe('takeClone', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'take_clone',
-      expect.objectContaining({ mother_plant_id: 'mom' }),
+      expect.objectContaining({ mother_plant_id: 'mom' })
     );
   });
 
@@ -345,7 +344,11 @@ describe('takeClone', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'take_clone',
-      expect.objectContaining({ mother_plant_id: 'mom', num_clones: 4, target_growspace_id: 'clone-room' }),
+      expect.objectContaining({
+        mother_plant_id: 'mom',
+        num_clones: 4,
+        target_growspace_id: 'clone-room',
+      })
     );
   });
 });
@@ -361,7 +364,7 @@ describe('printLabel', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'print_label',
-      expect.objectContaining({ plant_id: 'abc', strain: 'AK47', phenotype: 'P1' }),
+      expect.objectContaining({ plant_id: 'abc', strain: 'AK47', phenotype: 'P1' })
     );
   });
 
@@ -371,7 +374,7 @@ describe('printLabel', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'print_label',
-      expect.objectContaining({ preview: true }),
+      expect.objectContaining({ preview: true })
     );
   });
 });
@@ -387,7 +390,7 @@ describe('saveHarvestMetrics', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'update_harvest_metrics',
-      expect.objectContaining({ plant_id: 'abc', wet_weight: 200, dry_weight: 50 }),
+      expect.objectContaining({ plant_id: 'abc', wet_weight: 200, dry_weight: 50 })
     );
   });
 
@@ -409,7 +412,7 @@ describe('scorePlant', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'score_plant',
-      expect.objectContaining({ plant_id: 'abc', vigor: 4, aroma: 5 }),
+      expect.objectContaining({ plant_id: 'abc', vigor: 4, aroma: 5 })
     );
   });
 
@@ -431,7 +434,7 @@ describe('logDryingWeight', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'log_drying_weight',
-      expect.objectContaining({ plant_id: 'abc', weight_grams: 150.5 }),
+      expect.objectContaining({ plant_id: 'abc', weight_grams: 150.5 })
     );
   });
 
@@ -441,7 +444,7 @@ describe('logDryingWeight', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'log_drying_weight',
-      expect.objectContaining({ date: '2026-05-20' }),
+      expect.objectContaining({ date: '2026-05-20' })
     );
   });
 });
@@ -457,7 +460,7 @@ describe('logMoistureReading', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'log_moisture_reading',
-      expect.objectContaining({ plant_id: 'abc', moisture_percent: 65.0 }),
+      expect.objectContaining({ plant_id: 'abc', moisture_percent: 65.0 })
     );
   });
 });
@@ -470,21 +473,19 @@ describe('setVisualTag', () => {
   it('calls set_visual_tag service with plant_id and tag', async () => {
     await setVisualTag('abc', 'keeper');
 
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_visual_tag',
-      { plant_id: 'abc', visual_tag: 'keeper' },
-    );
+    expect(hassCall.callService).toHaveBeenCalledWith('growspace_manager', 'set_visual_tag', {
+      plant_id: 'abc',
+      visual_tag: 'keeper',
+    });
   });
 
   it('passes null to clear the visual tag', async () => {
     await setVisualTag('abc', null);
 
-    expect(hassCall.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'set_visual_tag',
-      { plant_id: 'abc', visual_tag: null },
-    );
+    expect(hassCall.callService).toHaveBeenCalledWith('growspace_manager', 'set_visual_tag', {
+      plant_id: 'abc',
+      visual_tag: null,
+    });
   });
 });
 
@@ -499,7 +500,7 @@ describe('waterPlant (pilot regression)', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'water_plant',
-      expect.objectContaining({ plant_id: 'abc', amount: 250 }),
+      expect.objectContaining({ plant_id: 'abc', amount: 250 })
     );
   });
 });

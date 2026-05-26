@@ -1,61 +1,60 @@
-
 import * as THREE from 'three';
 import { BaseRenderer } from './base-renderer';
 import { SensorTypeUtils } from '../../sensor-type-utils';
 
 export class VpdCloudRenderer extends BaseRenderer {
-    public render() {
-        const { device, volatileGroup, visibility, selectedMetric } = this.context;
-        if (!selectedMetric || selectedMetric === 'lights') {
-            this.dispose();
-            return;
-        }
-
-        if (!visibility.heatmap) {
-            this.dispose();
-            return;
-        }
-
-        const width = device.dimensions?.width ?? 120;
-        const height = device.dimensions?.height ?? 200;
-        const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
-
-        let volMesh = this.cache.get('vpdCloud') as THREE.Mesh;
-        const dimensionsKey = `${width}_${height}_${depth}`;
-
-        if (volMesh) {
-            if (volMesh.userData.dimensions !== dimensionsKey) {
-                volatileGroup.remove(volMesh);
-                this.disposeObject(volMesh);
-                volMesh = this.createCloudMesh(width, height, depth);
-                this.cache.set('vpdCloud', volMesh);
-                volatileGroup.add(volMesh);
-            }
-        } else {
-            volMesh = this.createCloudMesh(width, height, depth);
-            this.cache.set('vpdCloud', volMesh);
-            volatileGroup.add(volMesh);
-        }
-
-        this.updateUniforms();
+  public render() {
+    const { device, volatileGroup, visibility, selectedMetric } = this.context;
+    if (!selectedMetric || selectedMetric === 'lights') {
+      this.dispose();
+      return;
     }
 
-    private createCloudMesh(width: number, height: number, depth: number): THREE.Mesh {
-        const volGeometry = this.getSharedGeometry('vpdCloudGeo', () => new THREE.BoxGeometry(1, 1, 1));
-        const volMaterial = new THREE.ShaderMaterial({
-            transparent: true,
-            side: THREE.BackSide,
-            uniforms: {
-                u_sensorPositions: { value: Array.from({ length: 16 }, () => new THREE.Vector3()) },
-                u_sensorValues: { value: Array(16).fill(0) },
-                u_sensorCount: { value: 0 },
-                u_boxSize: { value: new THREE.Vector3(width, height, depth) },
-                u_opacity: { value: 0.7 },
-                u_thresholds: { value: new THREE.Vector4(0, 0, 0, 0) },
-                u_time: { value: 0 },
-                u_localCameraPos: { value: new THREE.Vector3() }
-            },
-            vertexShader: `
+    if (!visibility.heatmap) {
+      this.dispose();
+      return;
+    }
+
+    const width = device.dimensions?.width ?? 120;
+    const height = device.dimensions?.height ?? 200;
+    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+
+    let volMesh = this.cache.get('vpdCloud') as THREE.Mesh;
+    const dimensionsKey = `${width}_${height}_${depth}`;
+
+    if (volMesh) {
+      if (volMesh.userData.dimensions !== dimensionsKey) {
+        volatileGroup.remove(volMesh);
+        this.disposeObject(volMesh);
+        volMesh = this.createCloudMesh(width, height, depth);
+        this.cache.set('vpdCloud', volMesh);
+        volatileGroup.add(volMesh);
+      }
+    } else {
+      volMesh = this.createCloudMesh(width, height, depth);
+      this.cache.set('vpdCloud', volMesh);
+      volatileGroup.add(volMesh);
+    }
+
+    this.updateUniforms();
+  }
+
+  private createCloudMesh(width: number, height: number, depth: number): THREE.Mesh {
+    const volGeometry = this.getSharedGeometry('vpdCloudGeo', () => new THREE.BoxGeometry(1, 1, 1));
+    const volMaterial = new THREE.ShaderMaterial({
+      transparent: true,
+      side: THREE.BackSide,
+      uniforms: {
+        u_sensorPositions: { value: Array.from({ length: 16 }, () => new THREE.Vector3()) },
+        u_sensorValues: { value: Array(16).fill(0) },
+        u_sensorCount: { value: 0 },
+        u_boxSize: { value: new THREE.Vector3(width, height, depth) },
+        u_opacity: { value: 0.7 },
+        u_thresholds: { value: new THREE.Vector4(0, 0, 0, 0) },
+        u_time: { value: 0 },
+        u_localCameraPos: { value: new THREE.Vector3() },
+      },
+      vertexShader: `
                 varying vec3 vLocalPos;
                 varying vec3 vWorldPos;
                 void main() {
@@ -64,7 +63,7 @@ export class VpdCloudRenderer extends BaseRenderer {
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `,
-            fragmentShader: `
+      fragmentShader: `
                 precision highp float;
                 precision highp int;
 
@@ -260,164 +259,183 @@ export class VpdCloudRenderer extends BaseRenderer {
                     if (accum.a < 0.01) { discard; }
                     gl_FragColor = accum;
                 }
-            `
-        });
+            `,
+    });
 
-        const volMesh = new THREE.Mesh(volGeometry, volMaterial);
-        volMesh.scale.set(width, height, depth);
-        volMesh.position.y = height / 2;
-        volMesh.userData.isVpdCloud = true;
-        volMesh.userData.dimensions = `${width}_${height}_${depth}`;
-        return volMesh;
+    const volMesh = new THREE.Mesh(volGeometry, volMaterial);
+    volMesh.scale.set(width, height, depth);
+    volMesh.position.y = height / 2;
+    volMesh.userData.isVpdCloud = true;
+    volMesh.userData.dimensions = `${width}_${height}_${depth}`;
+    return volMesh;
+  }
+
+  public animate(deltaTime: number): void {
+    const { volatileGroup } = this.context;
+    const volMesh = volatileGroup.children.find((c) => c.userData?.isVpdCloud) as THREE.Mesh;
+    if (!volMesh) return;
+
+    const material = volMesh.material as THREE.ShaderMaterial;
+    if (material.uniforms.u_time) {
+      material.uniforms.u_time.value += deltaTime;
+    }
+  }
+
+  public updateUniforms() {
+    const { device, volatileGroup, sensorMeshes, selectedMetric } = this.context;
+    // Find mesh
+    const volMesh = volatileGroup.children.find((c) => c.userData?.isVpdCloud);
+    if (!volMesh) return;
+
+    const material = (volMesh as THREE.Mesh).material as THREE.ShaderMaterial;
+    const ranges = {
+      temperature: { min: 18, max: 32 },
+      humidity: { min: 30, max: 85 },
+      vpd: { min: 0.4, max: 2.0 },
+    };
+    const range = ranges[selectedMetric as keyof typeof ranges];
+    if (!range) return; // Hide?
+
+    const width = device.dimensions?.width ?? 120;
+    const height = device.dimensions?.height ?? 200;
+    const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+
+    // Update box size if changed
+    if (material.uniforms.u_boxSize) {
+      material.uniforms.u_boxSize.value.set(width, height, depth);
     }
 
-    public animate(deltaTime: number): void {
-        const { volatileGroup } = this.context;
-        const volMesh = volatileGroup.children.find(c => c.userData?.isVpdCloud) as THREE.Mesh;
-        if (!volMesh) return;
-
-        const material = volMesh.material as THREE.ShaderMaterial;
-        if (material.uniforms.u_time) {
-            material.uniforms.u_time.value += deltaTime;
-        }
+    if (material.uniforms.u_localCameraPos) {
+      const worldInv = new THREE.Matrix4().copy(volMesh.matrixWorld).invert();
+      const localCam = this.context.camera.position.clone().applyMatrix4(worldInv);
+      material.uniforms.u_localCameraPos.value.copy(localCam);
     }
 
-    public updateUniforms() {
-        const { device, volatileGroup, sensorMeshes, selectedMetric } = this.context;
-        // Find mesh
-        const volMesh = volatileGroup.children.find(c => c.userData?.isVpdCloud);
-        if (!volMesh) return;
+    // Collect sensor data
+    // We need 3D positions of active sensors.
+    // We can use this.context.sensorMeshes to find positions!
+    const heatmapPositions: THREE.Vector3[] = [];
+    const heatmapValues: number[] = [];
 
-        const material = (volMesh as THREE.Mesh).material as THREE.ShaderMaterial;
-        const ranges = {
-            temperature: { min: 18, max: 32 },
-            humidity: { min: 30, max: 85 },
-            vpd: { min: 0.4, max: 2.0 }
-        };
-        const range = ranges[selectedMetric as keyof typeof ranges];
-        if (!range) return; // Hide?
+    // This relies on SensorRenderer having run and populated sensorMeshes
+    // Or we re-calculate positions from device.env...
+    // Let's iterate `sensorMeshes` if available, or fall back to device config.
 
-        const width = device.dimensions?.width ?? 120;
-        const height = device.dimensions?.height ?? 200;
-        const depth = device.dimensions?.length ?? (device.dimensions as any)?.depth ?? 120;
+    sensorMeshes.forEach((mesh, entityId) => {
+      // Strict filtering: Only allow sensors that match the selected metric.
+      // We ignore lights, fans, etc. even if they are in sensorMeshes.
+      let isRelevant = false;
 
-        // Update box size if changed
-        if (material.uniforms.u_boxSize) {
-            material.uniforms.u_boxSize.value.set(width, height, depth);
+      // Note: We use the context's 'hass' and 'device' for Utils
+      const { hass, device } = this.context;
+
+      if (selectedMetric === 'temperature')
+        isRelevant = SensorTypeUtils.isTemperature(device, hass, entityId);
+      else if (selectedMetric === 'humidity')
+        isRelevant = SensorTypeUtils.isHumidity(device, hass, entityId);
+      else if (selectedMetric === 'vpd') isRelevant = SensorTypeUtils.isVPD(device, hass, entityId);
+
+      // Double check exclusions
+      if (SensorTypeUtils.isLight(device, hass, entityId)) isRelevant = false;
+      if (SensorTypeUtils.isFan(device, entityId)) isRelevant = false;
+
+      if (!isRelevant) return;
+
+      if (this.context.getSensorValue) {
+        const val = this.context.getSensorValue(entityId, selectedMetric);
+        if (val !== null) {
+          // Normalize value based on range
+          // 0..1 for color mixing?
+          // No, shader uses actual values and compares to thresholds.
+          // IMPORTANT: The shader `getHealthColor` compares `val` to `u_thresholds`.
+          // So we should pass RAW values.
+
+          // Mesh position is World or Local?
+          // They are added to volatileGroup. position is relative to volatileGroup.
+          // Shader calc uses vLocalPos which is vertex pos.
+          // Box is centered? Mesh is at y = height/2.
+          // Box geometry is width, height, depth.
+          // Vertices are -w/2 .. w/2 etc relative to mesh center.
+
+          // Sensor Mesh position:
+          // x - width/2, z, y - depth/2
+          // (See SensorRenderer)
+          // But `z` is height here.
+
+          // The Cloud Mesh is at (0, height/2, 0) relative to volatileGroup.
+          // So Cloud Local (0,0,0) is Volatile (0, height/2, 0).
+          // Sensor Local Pos = Sensor Volatile Pos - Cloud Volatile Pos
+
+          const sensorPos = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z);
+          sensorPos.sub(volMesh.position);
+
+          // The shader uses Z for up?
+          // Shader:
+          // if(abs(p.x) > u_boxSize.x ... p.y ... p.z)
+          // BoxGeometry(w, h, d) -> x=w, y=h, z=d
+          // In ThreeJS Y is Up.
+          // In EquipmentRenderer/SensorRenderer:
+          // position.set(x - W/2, z_height, y - D/2) -> Y is Height.
+
+          // So p.y is height. p.x is width. p.z is depth.
+          // This matches.
+
+          const normalizedVal = val; // Pass raw value
+
+          heatmapPositions.push(sensorPos);
+          heatmapValues.push(normalizedVal);
         }
+      }
+    });
 
-        if (material.uniforms.u_localCameraPos) {
-            const worldInv = new THREE.Matrix4().copy(volMesh.matrixWorld).invert();
-            const localCam = this.context.camera.position.clone().applyMatrix4(worldInv);
-            material.uniforms.u_localCameraPos.value.copy(localCam);
-        }
+    if (
+      material.uniforms.u_sensorPositions &&
+      material.uniforms.u_sensorValues &&
+      material.uniforms.u_sensorCount
+    ) {
+      material.uniforms.u_sensorPositions.value = heatmapPositions.concat(
+        Array.from({ length: 16 - heatmapPositions.length }, () => new THREE.Vector3())
+      );
+      material.uniforms.u_sensorValues.value = heatmapValues.concat(
+        Array(16 - heatmapValues.length).fill(0)
+      );
+      material.uniforms.u_sensorCount.value = heatmapPositions.length;
+    }
 
-        // Collect sensor data
-        // We need 3D positions of active sensors.
-        // We can use this.context.sensorMeshes to find positions!
-        const heatmapPositions: THREE.Vector3[] = [];
-        const heatmapValues: number[] = [];
-
-        // This relies on SensorRenderer having run and populated sensorMeshes
-        // Or we re-calculate positions from device.env...
-        // Let's iterate `sensorMeshes` if available, or fall back to device config.
-
-        sensorMeshes.forEach((mesh, entityId) => {
-            // Strict filtering: Only allow sensors that match the selected metric.
-            // We ignore lights, fans, etc. even if they are in sensorMeshes.
-            let isRelevant = false;
-
-            // Note: We use the context's 'hass' and 'device' for Utils
-            const { hass, device } = this.context;
-
-            if (selectedMetric === 'temperature') isRelevant = SensorTypeUtils.isTemperature(device, hass, entityId);
-            else if (selectedMetric === 'humidity') isRelevant = SensorTypeUtils.isHumidity(device, hass, entityId);
-            else if (selectedMetric === 'vpd') isRelevant = SensorTypeUtils.isVPD(device, hass, entityId);
-
-            // Double check exclusions
-            if (SensorTypeUtils.isLight(device, hass, entityId)) isRelevant = false;
-            if (SensorTypeUtils.isFan(device, entityId)) isRelevant = false;
-
-            if (!isRelevant) return;
-
-            if (this.context.getSensorValue) {
-                const val = this.context.getSensorValue(entityId, selectedMetric);
-                if (val !== null) {
-                    // Normalize value based on range
-                    // 0..1 for color mixing?
-                    // No, shader uses actual values and compares to thresholds.
-                    // IMPORTANT: The shader `getHealthColor` compares `val` to `u_thresholds`.
-                    // So we should pass RAW values.
-
-                    // Mesh position is World or Local?
-                    // They are added to volatileGroup. position is relative to volatileGroup.
-                    // Shader calc uses vLocalPos which is vertex pos.
-                    // Box is centered? Mesh is at y = height/2.
-                    // Box geometry is width, height, depth.
-                    // Vertices are -w/2 .. w/2 etc relative to mesh center.
-
-                    // Sensor Mesh position:
-                    // x - width/2, z, y - depth/2
-                    // (See SensorRenderer)
-                    // But `z` is height here.
-
-                    // The Cloud Mesh is at (0, height/2, 0) relative to volatileGroup.
-                    // So Cloud Local (0,0,0) is Volatile (0, height/2, 0).
-                    // Sensor Local Pos = Sensor Volatile Pos - Cloud Volatile Pos
-
-                    const sensorPos = new THREE.Vector3(mesh.position.x, mesh.position.y, mesh.position.z);
-                    sensorPos.sub(volMesh.position);
-
-                    // The shader uses Z for up?
-                    // Shader:
-                    // if(abs(p.x) > u_boxSize.x ... p.y ... p.z)
-                    // BoxGeometry(w, h, d) -> x=w, y=h, z=d
-                    // In ThreeJS Y is Up.
-                    // In EquipmentRenderer/SensorRenderer:
-                    // position.set(x - W/2, z_height, y - D/2) -> Y is Height.
-
-                    // So p.y is height. p.x is width. p.z is depth.
-                    // This matches.
-
-                    const normalizedVal = val; // Pass raw value
-
-                    heatmapPositions.push(sensorPos);
-                    heatmapValues.push(normalizedVal);
-                }
-            }
-        });
-
-        if (material.uniforms.u_sensorPositions && material.uniforms.u_sensorValues && material.uniforms.u_sensorCount) {
-            material.uniforms.u_sensorPositions.value = heatmapPositions.concat(Array.from({ length: 16 - heatmapPositions.length }, () => new THREE.Vector3()));
-            material.uniforms.u_sensorValues.value = heatmapValues.concat(Array(16 - heatmapValues.length).fill(0));
-            material.uniforms.u_sensorCount.value = heatmapPositions.length;
-        }
-
-        // Thresholds
-        const vpdMetrics = device.biologicalMetrics || {};
-        const thresholds = selectedMetric === 'vpd' ? {
+    // Thresholds
+    const vpdMetrics = device.biologicalMetrics || {};
+    const thresholds =
+      selectedMetric === 'vpd'
+        ? {
             dLow: vpdMetrics.vpdDangerMin || 0.4,
             wLow: vpdMetrics.vpdTargetMin || 0.8,
             wHigh: vpdMetrics.vpdTargetMax || 1.2,
-            dHigh: vpdMetrics.vpdDangerMax || 1.6
-        } : (
-            selectedMetric === 'temperature' ? {
-                dLow: 15, wLow: 18, wHigh: 28, dHigh: 35
-            } : {
-                // Humidity
-                dLow: 30, wLow: 40, wHigh: 70, dHigh: 85
+            dHigh: vpdMetrics.vpdDangerMax || 1.6,
+          }
+        : selectedMetric === 'temperature'
+          ? {
+              dLow: 15,
+              wLow: 18,
+              wHigh: 28,
+              dHigh: 35,
             }
-        );
+          : {
+              // Humidity
+              dLow: 30,
+              wLow: 40,
+              wHigh: 70,
+              dHigh: 85,
+            };
 
-        if (material.uniforms.u_thresholds) {
-            material.uniforms.u_thresholds.value.set(
-                thresholds.dLow,
-                thresholds.wLow,
-                thresholds.wHigh,
-                thresholds.dHigh
-            );
-        } else {
-            // Fallback or init
-        }
+    if (material.uniforms.u_thresholds) {
+      material.uniforms.u_thresholds.value.set(
+        thresholds.dLow,
+        thresholds.wLow,
+        thresholds.wHigh,
+        thresholds.dHigh
+      );
+    } else {
+      // Fallback or init
     }
+  }
 }

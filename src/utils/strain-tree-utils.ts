@@ -34,7 +34,9 @@ export function buildStrainTreeNodes(
     let mother: string | null = null;
     let father: string | null = null;
 
-    const structuredParents = Array.isArray(strain.parents) ? strain.parents as Array<{ name: string }> : null;
+    const structuredParents = Array.isArray(strain.parents)
+      ? (strain.parents as Array<{ name: string }>)
+      : null;
     if (structuredParents && structuredParents.length > 0) {
       mother = resolve(structuredParents[0]?.name);
       father = resolve(structuredParents[1]?.name) ?? null;
@@ -94,7 +96,7 @@ export function buildStrainTreeNodes(
     if (entry) {
       let mother: string | null = null;
       let father: string | null = null;
-      const sp = Array.isArray(entry.parents) ? entry.parents as Array<{ name: string }> : null;
+      const sp = Array.isArray(entry.parents) ? (entry.parents as Array<{ name: string }>) : null;
       if (sp && sp.length > 0) {
         mother = resolve(sp[0]?.name);
         father = resolve(sp[1]?.name) ?? null;

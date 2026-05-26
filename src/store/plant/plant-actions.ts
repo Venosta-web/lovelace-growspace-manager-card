@@ -2,7 +2,12 @@
  * Plant Actions - Unified business logic for plant operations.
  */
 
-import { PlantEntity, PlantOverviewDialogState, PlantAttributes, AddPlantsDialogState } from '../../types';
+import {
+  PlantEntity,
+  PlantOverviewDialogState,
+  PlantAttributes,
+  AddPlantsDialogState,
+} from '../../types';
 import { PlantUtils } from '../../utils/plant-utils';
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
@@ -27,7 +32,10 @@ export async function updatePlant(
  */
 export async function updatePlantFromDialog(
   ctx: ActionContext,
-  dialogState: Pick<PlantOverviewDialogState, 'plant' | 'editedAttributes' | 'selectedPlantIds' | 'activeTab'>
+  dialogState: Pick<
+    PlantOverviewDialogState,
+    'plant' | 'editedAttributes' | 'selectedPlantIds' | 'activeTab'
+  >
 ): Promise<void> {
   const { plant, editedAttributes, selectedPlantIds } = dialogState;
   const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
@@ -41,7 +49,9 @@ export async function updatePlantFromDialog(
     ctx,
     async () => {
       await Promise.all(
-        targetIds.map((id: string) => ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id }))
+        targetIds.map((id: string) =>
+          ctx.dataService.updatePlant({ ...payloadTemplate, plant_id: id })
+        )
       );
       ctx.closeDialog();
       await ctx.refreshData();
@@ -509,7 +519,10 @@ export async function confirmAddPlant(
 /**
  * Batch add plants with Undo/Redo
  */
-export async function confirmAddPlants(ctx: ActionContext, detail: AddPlantsDialogState): Promise<void> {
+export async function confirmAddPlants(
+  ctx: ActionContext,
+  detail: AddPlantsDialogState
+): Promise<void> {
   const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) {
     ctx.ui.showToast('No growspace selected', 'error');
@@ -534,7 +547,9 @@ export async function confirmAddPlants(ctx: ActionContext, detail: AddPlantsDial
               ? `${detail.phenotype} #${currentNumber}`
               : `Strain #${currentNumber}`;
             if (detail.strain) {
-              promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
+              promises.push(
+                ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName })
+              );
             }
           }
           await Promise.all(promises);

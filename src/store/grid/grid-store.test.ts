@@ -9,7 +9,7 @@ const makePlant = (id: string, row: number, col: number): PlantEntity =>
     entity_id: `sensor.${id}`,
     state: 'vegetative',
     attributes: { plant_id: id, row, col, growspace_id: 'gs1', strain: 'Test' },
-  } as unknown as PlantEntity);
+  }) as unknown as PlantEntity;
 
 const makeDevice = (id: string, plants: PlantEntity[]): GrowspaceDevice =>
   ({
@@ -18,13 +18,10 @@ const makeDevice = (id: string, plants: PlantEntity[]): GrowspaceDevice =>
     plantsPerRow: 2,
     rows: 2,
     plants,
-  } as unknown as GrowspaceDevice);
+  }) as unknown as GrowspaceDevice;
 
 describe('GrowspaceGridStore.$gridViewState', () => {
-  let mockDataStore: Pick<
-    GrowspaceDataStore,
-    '$devices' | '$optimisticDeletedPlantIds'
-  >;
+  let mockDataStore: Pick<GrowspaceDataStore, '$devices' | '$optimisticDeletedPlantIds'>;
   let store: GrowspaceGridStore;
 
   beforeEach(() => {

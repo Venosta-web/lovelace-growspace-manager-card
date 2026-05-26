@@ -100,16 +100,12 @@ describe('IrrigationDialog – Run Now button', () => {
     const store = makeMockStore(mockRunCycle);
 
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .store=${store as any}
-      ></irrigation-dialog>
+      <irrigation-dialog .open=${true} .device=${device} .store=${store as any}></irrigation-dialog>
     `);
     await el.updateComplete;
 
     const btn = Array.from(el.shadowRoot!.querySelectorAll('button.md3-button')).find(
-      (b) => b.textContent?.trim() === 'Run Now',
+      (b) => b.textContent?.trim() === 'Run Now'
     ) as HTMLButtonElement | undefined;
 
     expect(btn).toBeTruthy();
@@ -131,8 +127,8 @@ describe('IrrigationDialog – Run Now button', () => {
     (el as any)._sm = transition((el as any)._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
     await el.updateComplete;
 
-    const btn = Array.from(el.shadowRoot!.querySelectorAll('button.md3-button')).find(
-      (b) => b.textContent?.includes('Starting'),
+    const btn = Array.from(el.shadowRoot!.querySelectorAll('button.md3-button')).find((b) =>
+      b.textContent?.includes('Starting')
     ) as HTMLButtonElement | undefined;
 
     expect(btn).toBeTruthy();
@@ -252,7 +248,11 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
   it('does not show auto-track toggle when device has no light sensors', async () => {
     const device = makeSteeringDevice();
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
     `);
     await el.updateComplete;
 
@@ -268,7 +268,11 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
       },
     });
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
     `);
     await el.updateComplete;
 
@@ -284,7 +288,11 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
       },
     });
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
     `);
     await el.updateComplete;
 
@@ -314,7 +322,11 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
       },
     });
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
     `);
     await el.updateComplete;
 
@@ -338,7 +350,11 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
       },
     });
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
     `);
     await el.updateComplete;
 

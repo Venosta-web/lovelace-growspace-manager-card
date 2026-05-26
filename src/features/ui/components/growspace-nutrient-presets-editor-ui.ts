@@ -135,10 +135,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
   private _addNutrient() {
     if (!this._editingPreset) return;
-    const nutrients = [
-      ...(this._editingPreset.nutrients || []),
-      { name: '', dose_ml_l: 0 },
-    ];
+    const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
     this._editingPreset = { ...this._editingPreset, nutrients };
   }
 
@@ -159,9 +156,14 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
   render() {
     if (!this.open) return nothing;
 
-    const title = this._view === 'LIST' ? 'Nutrient Presets' :
-      (this._editingPreset?.id ? 'Edit Preset' : 'New Preset');
-    const subtitle = this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
+    const title =
+      this._view === 'LIST'
+        ? 'Nutrient Presets'
+        : this._editingPreset?.id
+          ? 'Edit Preset'
+          : 'New Preset';
+    const subtitle =
+      this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
 
     return html`
       <gs-dialog
@@ -177,9 +179,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
           ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
         </div>
 
-        <div class="button-group">
-          ${this._renderFooterButtons()}
-        </div>
+        <div class="button-group">${this._renderFooterButtons()}</div>
       </gs-dialog>
     `;
   }
@@ -196,7 +196,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
     } else {
       return html`
         <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>Cancel</button>
-        <button class="md3-button primary" @click=${this._handleSave} ?disabled=${this.isSubmitting}>
+        <button
+          class="md3-button primary"
+          @click=${this._handleSave}
+          ?disabled=${this.isSubmitting}
+        >
           <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
           ${this.isSubmitting ? 'Saving...' : 'Save Preset'}
         </button>
@@ -209,7 +213,10 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
     if (presetEntries.length === 0) {
       return html`
         <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation} style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"></ha-svg-icon>
+          <ha-svg-icon
+            .path=${mdiInformation}
+            style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"
+          ></ha-svg-icon>
           <p>No nutrient presets defined yet.</p>
         </div>
       `;
@@ -217,22 +224,33 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
     return html`
       <div class="presets-list">
-        ${presetEntries.map(preset => html`
-          <div class="preset-item">
-            <div class="preset-info">
-              <div class="preset-name">${preset.name}</div>
-              <div class="preset-details">${preset.nutrients.length} nutrients</div>
+        ${presetEntries.map(
+          (preset) => html`
+            <div class="preset-item">
+              <div class="preset-info">
+                <div class="preset-name">${preset.name}</div>
+                <div class="preset-details">${preset.nutrients.length} nutrients</div>
+              </div>
+              <div class="preset-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._editPreset(preset)}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._handleDelete(preset.id)}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
+              </div>
             </div>
-            <div class="preset-actions">
-              <button class="md3-button icon" @click=${() => this._editPreset(preset)} title="Edit">
-                <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-              </button>
-              <button class="md3-button icon" @click=${() => this._handleDelete(preset.id)} title="Delete" style="color: var(--error-color);">
-                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-              </button>
-            </div>
-          </div>
-        `)}
+          `
+        )}
       </div>
     `;
   }
@@ -248,41 +266,54 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
             label="Preset Name"
             .value=${this._editingPreset.name || ''}
             @change=${(e: CustomEvent) => {
-        this._editingPreset = { ...this._editingPreset!, name: e.detail };
-      }}
+              this._editingPreset = { ...this._editingPreset!, name: e.detail };
+            }}
             placeholder="e.g. Veg Week 1"
           ></md3-text-input>
         </div>
 
         <div class="form-section">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div
+            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
+          >
             <h3 style="margin: 0;">Nutrients</h3>
-            <button class="md3-button text" @click=${this._addNutrient} style="--mdc-button-horizontal-padding: 8px;">
+            <button
+              class="md3-button text"
+              @click=${this._addNutrient}
+              style="--mdc-button-horizontal-padding: 8px;"
+            >
               <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
               Add
             </button>
           </div>
 
-          ${(this._editingPreset.nutrients || []).map((item, index) => html`
-            <div class="nutrient-row">
-              <md3-text-input
-                label="Product"
-                .value=${item.name}
-                @change=${(e: CustomEvent) => this._updateNutrient(index, { name: e.detail })}
-                placeholder="Product Name"
-              ></md3-text-input>
-              <md3-number-input
-                label="Dose (ml/L)"
-                .value=${item.dose_ml_l}
-                @change=${(e: CustomEvent) => this._updateNutrient(index, { dose_ml_l: parseFloat(e.detail) })}
-                min="0"
-                step="0.1"
-              ></md3-number-input>
-              <button class="md3-button icon" @click=${() => this._removeNutrient(index)} style="color: var(--error-color);">
-                <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-              </button>
-            </div>
-          `)}
+          ${(this._editingPreset.nutrients || []).map(
+            (item, index) => html`
+              <div class="nutrient-row">
+                <md3-text-input
+                  label="Product"
+                  .value=${item.name}
+                  @change=${(e: CustomEvent) => this._updateNutrient(index, { name: e.detail })}
+                  placeholder="Product Name"
+                ></md3-text-input>
+                <md3-number-input
+                  label="Dose (ml/L)"
+                  .value=${item.dose_ml_l}
+                  @change=${(e: CustomEvent) =>
+                    this._updateNutrient(index, { dose_ml_l: parseFloat(e.detail) })}
+                  min="0"
+                  step="0.1"
+                ></md3-number-input>
+                <button
+                  class="md3-button icon"
+                  @click=${() => this._removeNutrient(index)}
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
+              </div>
+            `
+          )}
         </div>
       </div>
     `;

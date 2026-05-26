@@ -31,7 +31,9 @@ export const StrainDataSchema = z
         type: z.string().optional(),
         lineage: z.string().optional(),
         lineage_tree: z
-          .array(z.object({ name: z.string(), source: z.string(), phenotype: z.string().optional() }))
+          .array(
+            z.object({ name: z.string(), source: z.string(), phenotype: z.string().optional() })
+          )
           .optional(),
         sex: z.string().optional(),
         sativa_percentage: z.number().optional(),

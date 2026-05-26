@@ -1,5 +1,10 @@
 import { atom, map, computed, WritableAtom, MapStore, ReadableAtom } from 'nanostores';
-import { HistorySensorState, SensorHistories, HistoryTimeRange, GrowspaceDevice } from '../../types';
+import {
+  HistorySensorState,
+  SensorHistories,
+  HistoryTimeRange,
+  GrowspaceDevice,
+} from '../../types';
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
 import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from '../core/data-store';
@@ -96,25 +101,22 @@ export class GrowspaceHistoryStore {
       })
     );
 
-    this.$combinedHistory = computed(
-      this.$historyCache,
-      (cache): SensorHistories => {
-        const result: SensorHistories = { ...cache };
-        const commonMetrics = [
-          'temperature',
-          'humidity',
-          'vpd',
-          'co2',
-          'soil_moisture',
-          'light',
-          'optimal',
-        ];
-        commonMetrics.forEach((m) => {
-          if (!result[m]) result[m] = [];
-        });
-        return result;
-      }
-    );
+    this.$combinedHistory = computed(this.$historyCache, (cache): SensorHistories => {
+      const result: SensorHistories = { ...cache };
+      const commonMetrics = [
+        'temperature',
+        'humidity',
+        'vpd',
+        'co2',
+        'soil_moisture',
+        'light',
+        'optimal',
+      ];
+      commonMetrics.forEach((m) => {
+        if (!result[m]) result[m] = [];
+      });
+      return result;
+    });
 
     this.$analyticsViewState = computed(
       [
@@ -125,7 +127,14 @@ export class GrowspaceHistoryStore {
         this.$combinedHistory,
         this.$graphRanges,
       ],
-      (historyLoading, historyLoaded, activeEnvGraphs, linkedGraphGroups, combinedHistory, graphRanges) => ({
+      (
+        historyLoading,
+        historyLoaded,
+        activeEnvGraphs,
+        linkedGraphGroups,
+        combinedHistory,
+        graphRanges
+      ) => ({
         historyLoading,
         historyLoaded,
         activeEnvGraphs,
@@ -593,7 +602,9 @@ export class GrowspaceHistoryStore {
 
     if (metricKey === 'optimal') {
       let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-      const overviewId = device.overviewEntityId || (device as unknown as Record<string, unknown>).overview_entity_id as string;
+      const overviewId =
+        device.overviewEntityId ||
+        ((device as unknown as Record<string, unknown>).overview_entity_id as string);
 
       if (overviewId) {
         slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
@@ -631,7 +642,10 @@ export class GrowspaceHistoryStore {
     // 2. Fallback to single primary/fallback
     if (mapping.source === 'irrigation') {
       const config = (device.irrigationConfig ||
-        (device as unknown as Record<string, unknown>).irrigation_config) as unknown as Record<string, unknown>;
+        (device as unknown as Record<string, unknown>).irrigation_config) as unknown as Record<
+        string,
+        unknown
+      >;
       if (!config) return ids;
 
       let entityId = config[mapping.primary];
@@ -653,7 +667,14 @@ export class GrowspaceHistoryStore {
       // Special fallback for VPD calculated sensor
       if (!entityId && metricKey === 'vpd' && device.name) {
         const slugify = (text: string) =>
-          text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+          text
+            .toString()
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/--+/g, '_')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
         const calcName = `${device.name} Calculated VPD`;
         const calculatedId = `sensor.${slugify(calcName)}`;
         if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
@@ -665,8 +686,9 @@ export class GrowspaceHistoryStore {
 
     // Special case for irrigation_tank_level - extract sensor entities from tanks array
     if (metricKey === 'irrigation_tank_level') {
-      const tanks = envAttrs['irrigationTanks'] as unknown as Array<{ sensorEntity?: string }> || [];
-      return tanks.map(t => t.sensorEntity).filter(Boolean) as string[];
+      const tanks =
+        (envAttrs['irrigationTanks'] as unknown as Array<{ sensorEntity?: string }>) || [];
+      return tanks.map((t) => t.sensorEntity).filter(Boolean) as string[];
     }
 
     return ids;

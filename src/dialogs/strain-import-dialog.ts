@@ -1,11 +1,11 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
-import { 
-  mdiMagnify, 
-  mdiSeed, 
-  mdiCheck, 
-  mdiWeb, 
+import {
+  mdiMagnify,
+  mdiSeed,
+  mdiCheck,
+  mdiWeb,
   mdiChevronRight,
   mdiInformationOutline,
   mdiChartDonut,
@@ -17,7 +17,7 @@ import {
   mdiImage,
   mdiTrophy,
   mdiChartBar,
-  mdiArrowUp
+  mdiArrowUp,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/md3-text-input';
@@ -62,14 +62,28 @@ export class StrainImportDialog extends LitElement {
   @state() private _error: string | null = null;
 
   @state() private _importFields = new Set<string>([
-    'name', 'breeder', 'type', 'composition', 'flowering', 'description', 'lineage', 'image', 'yield', 'height', 'thc', 'awards'
+    'name',
+    'breeder',
+    'type',
+    'composition',
+    'flowering',
+    'description',
+    'lineage',
+    'image',
+    'yield',
+    'height',
+    'thc',
+    'awards',
   ]);
 
   @state() private _importing = false;
 
   protected willUpdate(changedProps: Map<string, any>) {
     if (changedProps.has('open') && this.open) {
-      const pheno = this.initialPheno && this.initialPheno.toLowerCase() !== 'default' ? ` ${this.initialPheno}` : '';
+      const pheno =
+        this.initialPheno && this.initialPheno.toLowerCase() !== 'default'
+          ? ` ${this.initialPheno}`
+          : '';
       this._searchQuery = this.initialStrain + pheno;
       this._results = [];
       this._selectedUrl = null;
@@ -150,31 +164,42 @@ export class StrainImportDialog extends LitElement {
     if (this._importFields.has('name')) result.name = this._details.name;
     if (this._importFields.has('breeder')) result.breeder = this._details.breeder;
     if (this._importFields.has('type')) result.type = this._details.type;
-    if (this._importFields.has('composition') && this._details.indica_percentage != null && this._details.sativa_percentage != null) {
+    if (
+      this._importFields.has('composition') &&
+      this._details.indica_percentage != null &&
+      this._details.sativa_percentage != null
+    ) {
       result.indica_percentage = this._details.indica_percentage;
       result.sativa_percentage = this._details.sativa_percentage;
     }
-    if (this._importFields.has('flowering') && this._details.flowering_days) result.flowering_days = this._details.flowering_days;
-    if (this._importFields.has('description') && this._details.description) result.description = this._details.description;
+    if (this._importFields.has('flowering') && this._details.flowering_days)
+      result.flowering_days = this._details.flowering_days;
+    if (this._importFields.has('description') && this._details.description)
+      result.description = this._details.description;
     if (this._importFields.has('image')) {
-      result.images = this._details.images && this._details.images.length > 0
-        ? this._details.images
-        : undefined;
+      result.images =
+        this._details.images && this._details.images.length > 0 ? this._details.images : undefined;
       result.image = this._details.image ?? this._details.images?.[0];
     }
-    if (this._importFields.has('yield') && this._details.yield_potential) result.yield_potential = this._details.yield_potential;
-    if (this._importFields.has('height') && this._details.height) (result as any).height = this._details.height;
-    if (this._importFields.has('thc') && this._details.thc != null) (result as any).thc = this._details.thc;
-    if (this._importFields.has('awards') && this._details.awards?.length) (result as any).awards = this._details.awards;
-    if (this._importFields.has('lineage') && this._details.parents) result.parents = this._details.parents;
+    if (this._importFields.has('yield') && this._details.yield_potential)
+      result.yield_potential = this._details.yield_potential;
+    if (this._importFields.has('height') && this._details.height)
+      (result as any).height = this._details.height;
+    if (this._importFields.has('thc') && this._details.thc != null)
+      (result as any).thc = this._details.thc;
+    if (this._importFields.has('awards') && this._details.awards?.length)
+      (result as any).awards = this._details.awards;
+    if (this._importFields.has('lineage') && this._details.parents)
+      result.parents = this._details.parents;
 
     if (this._importFields.has('image') && (result.images?.length || result.image)) {
       this._importing = true;
       try {
         const strainName = result.name ?? this.initialStrain ?? 'unknown';
-        const phenotype = this.initialPheno && this.initialPheno.toLowerCase() !== 'default'
-          ? this.initialPheno
-          : 'default';
+        const phenotype =
+          this.initialPheno && this.initialPheno.toLowerCase() !== 'default'
+            ? this.initialPheno
+            : 'default';
         const imageUrls = result.images ?? (result.image ? [result.image] : []);
         const downloadedUrls: string[] = [];
         for (const url of imageUrls) {
@@ -199,9 +224,11 @@ export class StrainImportDialog extends LitElement {
       if (!this.open) return;
     }
 
-    this.dispatchEvent(new CustomEvent('import', {
-      detail: result
-    }));
+    this.dispatchEvent(
+      new CustomEvent('import', {
+        detail: result,
+      })
+    );
     this._close();
   }
 
@@ -354,7 +381,9 @@ export class StrainImportDialog extends LitElement {
         animation: spin 1s linear infinite;
       }
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
       .error-box {
         padding: 12px 16px;
@@ -396,7 +425,7 @@ export class StrainImportDialog extends LitElement {
         align-items: center;
         gap: 4px;
       }
-    `
+    `,
   ];
 
   render() {
@@ -418,7 +447,9 @@ export class StrainImportDialog extends LitElement {
               style="flex: 1;"
               placeholder="Strain Name..."
               .value=${this._searchQuery}
-              @change=${(e: CustomEvent) => { this._searchQuery = e.detail; }}
+              @change=${(e: CustomEvent) => {
+                this._searchQuery = e.detail;
+              }}
               @keydown=${(e: KeyboardEvent) => e.key === 'Enter' && this._search()}
             ></md3-text-input>
             <button class="md3-button filled" @click=${this._search} ?disabled=${this._searching}>
@@ -431,53 +462,82 @@ export class StrainImportDialog extends LitElement {
 
           ${this._error ? html`<div class="error-box">${this._error}</div>` : nothing}
 
-          ${this._searching 
-            ? html`
-                <div class="loading-spinner">
-                  <div class="spinner"></div>
-                  <span>Searching Seedfinder...</span>
-                </div>
-              `
-            : this._details 
-              ? this._renderDetails()
-              : this._results.length > 0
-                ? html`
-                    <div class="results-list">
-                      <div style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;">Select a match:</div>
-                      ${this._results.map(r => html`
-                        <div class="result-item" @click=${() => this._selectResult(r)}>
-                          <div class="result-info">
-                            <div class="result-name">${r.name}</div>
-                            <div class="result-breeder">${r.breeder}</div>
-                          </div>
-                          <svg style="width:20px;height:20px;fill:var(--secondary-text-color);" viewBox="0 0 24 24">
-                            <path d="${mdiChevronRight}"></path>
-                          </svg>
+          ${
+            this._searching
+              ? html`
+                  <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <span>Searching Seedfinder...</span>
+                  </div>
+                `
+              : this._details
+                ? this._renderDetails()
+                : this._results.length > 0
+                  ? html`
+                      <div class="results-list">
+                        <div
+                          style="font-size:0.8rem; color:var(--secondary-text-color); margin-bottom:4px;"
+                        >
+                          Select a match:
                         </div>
-                      `)}
-                    </div>
-                  `
-                : this._searchQuery && !this._searching 
-                  ? html`<div style="text-align:center; padding:20px; color:var(--secondary-text-color);">No results found for "${this._searchQuery}"</div>`
-                  : nothing
+                        ${this._results.map(
+                          (r) => html`
+                            <div class="result-item" @click=${() => this._selectResult(r)}>
+                              <div class="result-info">
+                                <div class="result-name">${r.name}</div>
+                                <div class="result-breeder">${r.breeder}</div>
+                              </div>
+                              <svg
+                                style="width:20px;height:20px;fill:var(--secondary-text-color);"
+                                viewBox="0 0 24 24"
+                              >
+                                <path d="${mdiChevronRight}"></path>
+                              </svg>
+                            </div>
+                          `
+                        )}
+                      </div>
+                    `
+                  : this._searchQuery && !this._searching
+                    ? html`<div
+                        style="text-align:center; padding:20px; color:var(--secondary-text-color);"
+                      >
+                        No results found for "${this._searchQuery}"
+                      </div>`
+                    : nothing
           }
         </div>
 
         <div class="sd-footer">
           <button class="md3-button tonal" @click=${this._close} ?disabled=${this._importing}>Cancel</button>
-          ${this._details ? html`
-            <button class="md3-button filled" @click=${this._import} ?disabled=${this._importing}>
-              ${this._importing ? html`
-                <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
-                Downloading...
-              ` : html`
-                <svg style="width:20px;height:20px;fill:currentColor; margin-right:8px;" viewBox="0 0 24 24">
-                  <path d="${mdiCheck}"></path>
-                </svg>
-                Import Selected
-              `}
-            </button>
-          ` : nothing}
+          ${
+            this._details
+              ? html`
+                  <button
+                    class="md3-button filled"
+                    @click=${this._import}
+                    ?disabled=${this._importing}
+                  >
+                    ${this._importing
+                      ? html`
+                          <span
+                            style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
+                          ></span>
+                          Downloading...
+                        `
+                      : html`
+                          <svg
+                            style="width:20px;height:20px;fill:currentColor; margin-right:8px;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiCheck}"></path>
+                          </svg>
+                          Import Selected
+                        `}
+                  </button>
+                `
+              : nothing
+          }
       </gs-dialog>
     `;
   }
@@ -496,51 +556,88 @@ export class StrainImportDialog extends LitElement {
         </div>
 
         <div class="preview-grid">
-          ${(d.image || (d.images && d.images.length > 0)) ? html`
-            <div class="field-row full-width" @click=${() => this._toggleField('image')}>
-              <div class="field-checkbox ${this._importFields.has('image') ? 'checked' : ''}">
-                ${this._importFields.has('image') ? html`<svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>` : nothing}
-              </div>
-              <div class="field-content">
-                <div class="field-label">
-                  <svg viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
-                  Image${d.images && d.images.length > 1 ? ` (${d.images.length} available)` : ''}
+          ${d.image || (d.images && d.images.length > 0)
+            ? html`
+                <div class="field-row full-width" @click=${() => this._toggleField('image')}>
+                  <div class="field-checkbox ${this._importFields.has('image') ? 'checked' : ''}">
+                    ${this._importFields.has('image')
+                      ? html`<svg viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>`
+                      : nothing}
+                  </div>
+                  <div class="field-content">
+                    <div class="field-label">
+                      <svg viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+                      Image${d.images && d.images.length > 1
+                        ? ` (${d.images.length} available)`
+                        : ''}
+                    </div>
+                    <img class="preview-image" src="${d.image ?? d.images![0]}" />
+                  </div>
                 </div>
-                <img class="preview-image" src="${d.image ?? d.images![0]}" />
-              </div>
-            </div>
-          ` : nothing}
+              `
+            : nothing}
           ${this._renderFieldRow('name', 'Name', d.name, mdiSeed)}
           ${this._renderFieldRow('breeder', 'Breeder', d.breeder, mdiAccountGroup)}
           ${this._renderFieldRow('type', 'Type', d.type, mdiLeaf)}
-          ${d.indica_percentage != null && d.sativa_percentage != null ? this._renderFieldRow('composition', 'Composition',
-            `${d.indica_percentage}% Indica / ${d.sativa_percentage}% Sativa`,
-            mdiChartDonut) : nothing}
-          ${d.flowering_days ? this._renderFieldRow('flowering', 'Flowering',
-            `${d.flowering_days} days`,
-            mdiClockOutline) : nothing}
-          ${d.thc != null ? this._renderFieldRow('thc', 'THC',
-            `${d.thc}%`,
-            mdiChartBar) : nothing}
-          ${d.yield_potential ? this._renderFieldRow('yield', 'Yield Potential',
-            d.yield_potential,
-            mdiChartBar) : nothing}
-          ${d.height ? this._renderFieldRow('height', 'Height',
-            d.height,
-            mdiArrowUp) : nothing}
-          ${d.awards && d.awards.length > 0 ? this._renderFieldRow('awards', 'Awards',
-            html`
-              <div class="awards-list">
-                ${d.awards.map(a => html`<div class="award-tag"><svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiTrophy}"></path></svg>${a}</div>`)}
-              </div>
-            `,
-            mdiTrophy) : nothing}
-          ${d.description ? this._renderFieldRow('description', 'Description',
-            html`<div class="description-text">${d.description}</div>`,
-            mdiText) : nothing}
-          ${d.parents ? this._renderFieldRow('lineage', 'Genetic Lineage',
-            'Full lineage tree detected',
-            mdiDna) : nothing}
+          ${d.indica_percentage != null && d.sativa_percentage != null
+            ? this._renderFieldRow(
+                'composition',
+                'Composition',
+                `${d.indica_percentage}% Indica / ${d.sativa_percentage}% Sativa`,
+                mdiChartDonut
+              )
+            : nothing}
+          ${d.flowering_days
+            ? this._renderFieldRow(
+                'flowering',
+                'Flowering',
+                `${d.flowering_days} days`,
+                mdiClockOutline
+              )
+            : nothing}
+          ${d.thc != null ? this._renderFieldRow('thc', 'THC', `${d.thc}%`, mdiChartBar) : nothing}
+          ${d.yield_potential
+            ? this._renderFieldRow('yield', 'Yield Potential', d.yield_potential, mdiChartBar)
+            : nothing}
+          ${d.height ? this._renderFieldRow('height', 'Height', d.height, mdiArrowUp) : nothing}
+          ${d.awards && d.awards.length > 0
+            ? this._renderFieldRow(
+                'awards',
+                'Awards',
+                html`
+                  <div class="awards-list">
+                    ${d.awards.map(
+                      (a) =>
+                        html`<div class="award-tag">
+                          <svg
+                            style="width:12px;height:12px;fill:currentColor;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiTrophy}"></path></svg
+                          >${a}
+                        </div>`
+                    )}
+                  </div>
+                `,
+                mdiTrophy
+              )
+            : nothing}
+          ${d.description
+            ? this._renderFieldRow(
+                'description',
+                'Description',
+                html`<div class="description-text">${d.description}</div>`,
+                mdiText
+              )
+            : nothing}
+          ${d.parents
+            ? this._renderFieldRow(
+                'lineage',
+                'Genetic Lineage',
+                'Full lineage tree detected',
+                mdiDna
+              )
+            : nothing}
         </div>
       </div>
     `;
@@ -564,4 +661,3 @@ export class StrainImportDialog extends LitElement {
     `;
   }
 }
-

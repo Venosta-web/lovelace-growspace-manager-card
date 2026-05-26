@@ -8,7 +8,9 @@ describe('computeEditorLabel', () => {
     expect(computeEditorLabel({ name: 'subarea_id' })).toBe('Subarea');
     expect(computeEditorLabel({ name: 'theme' })).toBe('Theme');
     expect(computeEditorLabel({ name: 'initial_view_mode' })).toBe('Initial View Mode');
-    expect(computeEditorLabel({ name: 'keyboard_rotate_enabled' })).toBe('Keyboard Rotation (3D View)');
+    expect(computeEditorLabel({ name: 'keyboard_rotate_enabled' })).toBe(
+      'Keyboard Rotation (3D View)'
+    );
     expect(computeEditorLabel({ name: 'keyboard_rotate_speed' })).toBe('Rotation Speed');
   });
 

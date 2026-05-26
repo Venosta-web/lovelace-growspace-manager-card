@@ -136,8 +136,14 @@ export class GeneticsTreeView extends LitElement {
 
     if (needsRecompute) {
       this._recompute();
-      if (!this._userHasInteracted || changed.has('_viewW') || changed.has('_viewH') ||
-          changed.has('_mode') || changed.has('_focalId') || changed.has('_breederFilter')) {
+      if (
+        !this._userHasInteracted ||
+        changed.has('_viewW') ||
+        changed.has('_viewH') ||
+        changed.has('_mode') ||
+        changed.has('_focalId') ||
+        changed.has('_breederFilter')
+      ) {
         this._fitToScreen();
       }
     }
@@ -307,11 +313,13 @@ export class GeneticsTreeView extends LitElement {
   }
 
   private _openStrainEditor(id: string): void {
-    this.dispatchEvent(new CustomEvent('open-strain-editor', {
-      detail: { id },
-      bubbles: true,
-      composed: true,
-    }));
+    this.dispatchEvent(
+      new CustomEvent('open-strain-editor', {
+        detail: { id },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _isolateLineage(id: string): void {
@@ -376,24 +384,18 @@ export class GeneticsTreeView extends LitElement {
           }
         }}
       >
-        ${this._renderToolbar(visible, breeders)}
-        ${this._renderFilterRow(gens)}
+        ${this._renderToolbar(visible, breeders)} ${this._renderFilterRow(gens)}
         <div class="canvas-wrap">
           <div class="bg-grid"></div>
           <div
             class="canvas"
             style="transform: translate(${this._panX}px, ${this._panY}px) scale(${this._scale})"
           >
-            ${this._renderBreederBands(c)}
-            ${this._renderGenGutterLabels(c)}
-            ${this._renderEdges(c)}
+            ${this._renderBreederBands(c)} ${this._renderGenGutterLabels(c)} ${this._renderEdges(c)}
             ${this._renderNodes(c, visible)}
           </div>
-          ${this._renderFocusBanner()}
-          ${this._renderDetailPanel()}
-          ${this._renderZoomControls()}
-          ${this._renderLegend()}
-          ${this._renderMinimap(c, visible)}
+          ${this._renderFocusBanner()} ${this._renderDetailPanel()} ${this._renderZoomControls()}
+          ${this._renderLegend()} ${this._renderMinimap(c, visible)}
         </div>
       </div>
     `;
@@ -412,11 +414,18 @@ export class GeneticsTreeView extends LitElement {
             type="text"
             placeholder="Search strain or breeder…"
             .value=${this._search}
-            @input=${(e: InputEvent) => { this._search = (e.target as HTMLInputElement).value; }}
+            @input=${(e: InputEvent) => {
+              this._search = (e.target as HTMLInputElement).value;
+            }}
           />
           ${this._search
             ? html`
-                <button class="icon-btn" @click=${() => { this._search = ''; }}>
+                <button
+                  class="icon-btn"
+                  @click=${() => {
+                    this._search = '';
+                  }}
+                >
                   <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
                 </button>
               `
@@ -426,8 +435,14 @@ export class GeneticsTreeView extends LitElement {
         <div class="seg" role="tablist" aria-label="View mode">
           <button
             class="${this._mode === 'tree' ? 'active' : ''}"
-            @click=${() => { this._mode = 'tree'; this._focalId = null; this._userHasInteracted = false; }}
-          >Tree</button>
+            @click=${() => {
+              this._mode = 'tree';
+              this._focalId = null;
+              this._userHasInteracted = false;
+            }}
+          >
+            Tree
+          </button>
           <button
             class="${this._mode === 'lineage' ? 'active' : ''}"
             @click=${() => {
@@ -435,15 +450,22 @@ export class GeneticsTreeView extends LitElement {
               if (this._selectedId) {
                 this._focalId = this._selectedId;
               } else if (!this._focalId && this.nodes.length) {
-                this._focalId = this.nodes.find((n) => n.parents.mother) ?.id ?? this.nodes[0].id;
+                this._focalId = this.nodes.find((n) => n.parents.mother)?.id ?? this.nodes[0].id;
               }
               this._userHasInteracted = false;
             }}
-          >Lineage</button>
+          >
+            Lineage
+          </button>
           <button
             class="${this._mode === 'families' ? 'active' : ''}"
-            @click=${() => { this._mode = 'families'; this._userHasInteracted = false; }}
-          >Families</button>
+            @click=${() => {
+              this._mode = 'families';
+              this._userHasInteracted = false;
+            }}
+          >
+            Families
+          </button>
         </div>
 
         ${breeders.length > 1
@@ -451,7 +473,9 @@ export class GeneticsTreeView extends LitElement {
               <select
                 class="select-pill"
                 .value=${this._breederFilter}
-                @change=${(e: Event) => { this._breederFilter = (e.target as HTMLSelectElement).value; }}
+                @change=${(e: Event) => {
+                  this._breederFilter = (e.target as HTMLSelectElement).value;
+                }}
               >
                 <option value="">All breeders</option>
                 ${breeders.map(([b, c]) => html`<option value="${b}">${b} (${c})</option>`)}
@@ -468,7 +492,8 @@ export class GeneticsTreeView extends LitElement {
         <div class="count-chip">
           ${visible.length === this.nodes.length
             ? `${this.nodes.length}`
-            : `${visible.length} / ${this.nodes.length}`} strains
+            : `${visible.length} / ${this.nodes.length}`}
+          strains
         </div>
       </div>
     `;
@@ -479,20 +504,31 @@ export class GeneticsTreeView extends LitElement {
   // ---------------------------------------------------------------------------
 
   private _renderFilterRow(gens: string[]): TemplateResult {
-    const showClear = this._collapsed.size > 0 || !!this._genFilter || !!this._selectedId || !!this._search;
+    const showClear =
+      this._collapsed.size > 0 || !!this._genFilter || !!this._selectedId || !!this._search;
     return html`
       <div class="filter-row">
         <button
           class="gen-chip ${this._genFilter === null ? 'active' : ''}"
-          @click=${() => { this._genFilter = null; }}
-        >All</button>
-        ${gens.map((g) => html`
-          <button
-            class="gen-chip ${this._genFilter === g ? 'active' : ''}"
-            style="--chip-c:${genColor(g)}"
-            @click=${() => { this._genFilter = this._genFilter === g ? null : g; }}
-          >${g}</button>
-        `)}
+          @click=${() => {
+            this._genFilter = null;
+          }}
+        >
+          All
+        </button>
+        ${gens.map(
+          (g) => html`
+            <button
+              class="gen-chip ${this._genFilter === g ? 'active' : ''}"
+              style="--chip-c:${genColor(g)}"
+              @click=${() => {
+                this._genFilter = this._genFilter === g ? null : g;
+              }}
+            >
+              ${g}
+            </button>
+          `
+        )}
         ${showClear
           ? html`
               <button
@@ -503,7 +539,9 @@ export class GeneticsTreeView extends LitElement {
                   this._selectedId = null;
                   this._search = '';
                 }}
-              >Clear</button>
+              >
+                Clear
+              </button>
             `
           : nothing}
       </div>
@@ -517,13 +555,15 @@ export class GeneticsTreeView extends LitElement {
   private _renderBreederBands(c: LayoutResult): TemplateResult {
     if (this._mode !== 'families' || !c.bands) return html`${nothing}`;
     return html`
-      ${c.bands.map((b) => html`
-        <div class="band" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>
-        <div class="band-header" style="left:${b.x + 18}px;top:${b.y + 12}px">
-          <span class="band-label">${b.label}</span>
-          <span class="band-count">${b.count}</span>
-        </div>
-      `)}
+      ${c.bands.map(
+        (b) => html`
+          <div class="band" style="left:${b.x}px;top:${b.y}px;width:${b.w}px;height:${b.h}px"></div>
+          <div class="band-header" style="left:${b.x + 18}px;top:${b.y + 12}px">
+            <span class="band-label">${b.label}</span>
+            <span class="band-count">${b.count}</span>
+          </div>
+        `
+      )}
     `;
   }
 
@@ -534,12 +574,17 @@ export class GeneticsTreeView extends LitElement {
   private _renderGenGutterLabels(c: LayoutResult): TemplateResult {
     if (this._mode !== 'tree' || !c.bands) return html`${nothing}`;
     return html`
-      ${c.bands.map((b) => html`
-        <div
-          class="gen-gutter"
-          style="top:${b.y + b.h / 2 - 6}px;left:${c.bounds.minX + 8}px;transform:translateX(-100%)"
-        >${b.label}</div>
-      `)}
+      ${c.bands.map(
+        (b) => html`
+          <div
+            class="gen-gutter"
+            style="top:${b.y + b.h / 2 - 6}px;left:${c.bounds.minX +
+            8}px;transform:translateX(-100%)"
+          >
+            ${b.label}
+          </div>
+        `
+      )}
     `;
   }
 
@@ -573,18 +618,15 @@ export class GeneticsTreeView extends LitElement {
           const d = pathFn(fromNode, toNode);
 
           // Determine if this edge should be dim
-          const touchesHighlight =
-            highlightId && (e.from === highlightId || e.to === highlightId);
+          const touchesHighlight = highlightId && (e.from === highlightId || e.to === highlightId);
           const inHighlightGraph =
-            highlightId && (
-              (highlightAnc.has(e.from) && (e.to === highlightId || highlightAnc.has(e.to))) ||
-              (highlightDesc.has(e.to) && (e.from === highlightId || highlightDesc.has(e.from)))
-            );
+            highlightId &&
+            ((highlightAnc.has(e.from) && (e.to === highlightId || highlightAnc.has(e.to))) ||
+              (highlightDesc.has(e.to) && (e.from === highlightId || highlightDesc.has(e.from))));
           const inFocalGraph =
-            focalId && (
-              (e.from === focalId || anc.has(e.from) || desc.has(e.from)) &&
-              (e.to === focalId || anc.has(e.to) || desc.has(e.to))
-            );
+            focalId &&
+            (e.from === focalId || anc.has(e.from) || desc.has(e.from)) &&
+            (e.to === focalId || anc.has(e.to) || desc.has(e.to));
 
           let dim: boolean;
           if (focalId) {
@@ -625,9 +667,9 @@ export class GeneticsTreeView extends LitElement {
         const isFocal = focalId === p.id;
 
         const inFocalGraph = focalId && (isFocal || anc.has(p.id) || desc.has(p.id));
-        const inHighlight = highlightId && (
-          p.id === highlightId || highlightAnc.has(p.id) || highlightDesc.has(p.id)
-        );
+        const inHighlight =
+          highlightId &&
+          (p.id === highlightId || highlightAnc.has(p.id) || highlightDesc.has(p.id));
 
         const searchMatch =
           !searchLc ||
@@ -637,10 +679,7 @@ export class GeneticsTreeView extends LitElement {
         const genMatch = !this._genFilter || p.gen === this._genFilter;
 
         const dim =
-          (focalId && !inFocalGraph) ||
-          (highlightId && !inHighlight) ||
-          !searchMatch ||
-          !genMatch;
+          (focalId && !inFocalGraph) || (highlightId && !inHighlight) || !searchMatch || !genMatch;
 
         const hasChildren = (this._childrenOf[p.id] ?? []).length > 0;
         const isCollapsed = this._collapsed.has(p.id);
@@ -655,7 +694,9 @@ export class GeneticsTreeView extends LitElement {
           isFocal ? 'focal' : '',
           p.id === highlightId ? 'hovered' : '',
           inFocalGraph && !isFocal ? 'in-graph' : '',
-        ].filter(Boolean).join(' ');
+        ]
+          .filter(Boolean)
+          .join(' ');
 
         return html`
           <div
@@ -667,8 +708,12 @@ export class GeneticsTreeView extends LitElement {
               height:${NODE_H}px;
               --stage-c:${stageColor}
             "
-            @mouseenter=${() => { this._hoverId = p.id; }}
-            @mouseleave=${() => { this._hoverId = null; }}
+            @mouseenter=${() => {
+              this._hoverId = p.id;
+            }}
+            @mouseleave=${() => {
+              this._hoverId = null;
+            }}
             @click=${(e: MouseEvent) => this._onNodeClick(p, e)}
           >
             <div class="pn-body">
@@ -685,7 +730,10 @@ export class GeneticsTreeView extends LitElement {
                   <button
                     class="fold-btn ${isCollapsed ? 'collapsed' : ''}"
                     title="${isCollapsed ? 'Expand' : 'Collapse'}"
-                    @click=${(e: Event) => { e.stopPropagation(); this._toggleCollapse(p.id); }}
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._toggleCollapse(p.id);
+                    }}
                   >
                     <svg viewBox="0 0 24 24"><path d="${mdiChevronDown}" /></svg>
                     ${isCollapsed && descCount > 0
@@ -731,8 +779,8 @@ export class GeneticsTreeView extends LitElement {
         <span>
           Lineage of <strong>${focal.name}</strong>
           <span class="banner-counts">
-            · ${anc.size} ancestor${anc.size === 1 ? '' : 's'}
-            · ${desc.size} descendant${desc.size === 1 ? '' : 's'}
+            · ${anc.size} ancestor${anc.size === 1 ? '' : 's'} · ${desc.size}
+            descendant${desc.size === 1 ? '' : 's'}
           </span>
         </span>
         <button @click=${() => this._clearFocus()}>Clear</button>
@@ -754,14 +802,19 @@ export class GeneticsTreeView extends LitElement {
     const selectedAnc = ancestorsOf(this.nodes, n.id);
     const selectedDesc = descendantsOf(this.nodes, n.id);
     const kidsAll = this._childrenOf[n.id] ?? [];
-    const kidsShown = kidsAll.slice(0, 5).map((id) => this._byId[id]).filter(Boolean);
+    const kidsShown = kidsAll
+      .slice(0, 5)
+      .map((id) => this._byId[id])
+      .filter(Boolean);
     const kidsExtra = Math.max(0, kidsAll.length - kidsShown.length);
 
     return html`
       <div class="detail-panel" @click=${(e: Event) => e.stopPropagation()}>
         <button
           class="detail-close"
-          @click=${() => { this._selectedId = null; }}
+          @click=${() => {
+            this._selectedId = null;
+          }}
           aria-label="Close"
         >
           <svg viewBox="0 0 24 24"><path d="${mdiClose}" /></svg>
@@ -811,19 +864,20 @@ export class GeneticsTreeView extends LitElement {
               </div>
             `
           : nothing}
-
         ${kidsShown.length > 0
           ? html`
               <div class="detail-section">
                 <div class="detail-section-label">
                   Offspring${kidsExtra ? ` (+${kidsExtra} more)` : ''}
                 </div>
-                ${kidsShown.map((k) => html`
-                  <div class="detail-parent" @click=${() => this._jumpTo(k.id)}>
-                    <span class="role" style="color:${genColor(k.gen)}">${k.gen}</span>
-                    <span class="pname" title="${k.name}">${k.name}</span>
-                  </div>
-                `)}
+                ${kidsShown.map(
+                  (k) => html`
+                    <div class="detail-parent" @click=${() => this._jumpTo(k.id)}>
+                      <span class="role" style="color:${genColor(k.gen)}">${k.gen}</span>
+                      <span class="pname" title="${k.name}">${k.name}</span>
+                    </div>
+                  `
+                )}
               </div>
             `
           : nothing}
@@ -833,12 +887,14 @@ export class GeneticsTreeView extends LitElement {
             <svg viewBox="0 0 24 24"><path d="${mdiEye}" /></svg>
             Isolate Lineage
           </button>
-          ${this.libraryKeys.has(n.id) ? html`
-            <button class="pill-btn" @click=${() => this._openStrainEditor(n.id)}>
-              <svg viewBox="0 0 24 24"><path d="${mdiBookOpenVariant}" /></svg>
-              Open in Library
-            </button>
-          ` : nothing}
+          ${this.libraryKeys.has(n.id)
+            ? html`
+                <button class="pill-btn" @click=${() => this._openStrainEditor(n.id)}>
+                  <svg viewBox="0 0 24 24"><path d="${mdiBookOpenVariant}" /></svg>
+                  Open in Library
+                </button>
+              `
+            : nothing}
         </div>
       </div>
     `;
@@ -938,7 +994,13 @@ export class GeneticsTreeView extends LitElement {
           const isFocal = p.id === this._focalId || p.id === this._selectedId;
           const isAnc = anc.has(p.id);
           const isDesc = desc.has(p.id);
-          const fill = isFocal ? '#4caf50' : isAnc ? '#ff9800' : isDesc ? '#2196f3' : genColor(p.gen);
+          const fill = isFocal
+            ? '#4caf50'
+            : isAnc
+              ? '#ff9800'
+              : isDesc
+                ? '#2196f3'
+                : genColor(p.gen);
           return svg`<rect
             x="${pos.x - 1.5}" y="${pos.y - 0.7}"
             width="3" height="1.4" rx="0.5"
@@ -1019,7 +1081,9 @@ export class GeneticsTreeView extends LitElement {
       flex-shrink: 0;
       flex-wrap: wrap;
     }
-    .toolbar-spacer { flex: 1; }
+    .toolbar-spacer {
+      flex: 1;
+    }
 
     .search-bar {
       display: flex;
@@ -1052,7 +1116,9 @@ export class GeneticsTreeView extends LitElement {
       flex: 1;
       min-width: 0;
     }
-    .search-bar input::placeholder { color: var(--fg-3); }
+    .search-bar input::placeholder {
+      color: var(--fg-3);
+    }
 
     /* Mode segmented control */
     .seg {
@@ -1070,15 +1136,21 @@ export class GeneticsTreeView extends LitElement {
       padding: 5px 12px;
       font-size: 12px;
       cursor: pointer;
-      transition: background 0.2s, color 0.2s;
+      transition:
+        background 0.2s,
+        color 0.2s;
       white-space: nowrap;
     }
-    .seg button:last-child { border-right: none; }
+    .seg button:last-child {
+      border-right: none;
+    }
     .seg button.active {
       background: linear-gradient(135deg, #4caf50, #45a049);
       color: #fff;
     }
-    .seg button:hover:not(.active) { background: var(--bg-card-elev); }
+    .seg button:hover:not(.active) {
+      background: var(--bg-card-elev);
+    }
 
     .select-pill {
       background: var(--bg-input);
@@ -1090,7 +1162,10 @@ export class GeneticsTreeView extends LitElement {
       cursor: pointer;
       outline: none;
     }
-    .select-pill:hover { border-color: var(--gv-primary); color: var(--fg-1); }
+    .select-pill:hover {
+      border-color: var(--gv-primary);
+      color: var(--fg-1);
+    }
 
     .pill-btn {
       display: inline-flex;
@@ -1104,11 +1179,21 @@ export class GeneticsTreeView extends LitElement {
       font-size: 12px;
       cursor: pointer;
       white-space: nowrap;
-      transition: background 0.2s, color 0.2s, border-color 0.2s;
+      transition:
+        background 0.2s,
+        color 0.2s,
+        border-color 0.2s;
       flex-shrink: 0;
     }
-    .pill-btn svg { width: 14px; height: 14px; fill: currentColor; }
-    .pill-btn:hover { border-color: var(--gv-primary); color: var(--fg-1); }
+    .pill-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: currentColor;
+    }
+    .pill-btn:hover {
+      border-color: var(--gv-primary);
+      color: var(--fg-1);
+    }
     .pill-btn.active {
       background: rgba(76, 175, 80, 0.15);
       border-color: var(--gv-primary);
@@ -1129,8 +1214,15 @@ export class GeneticsTreeView extends LitElement {
       padding: 0;
       flex-shrink: 0;
     }
-    .icon-btn svg { width: 16px; height: 16px; fill: currentColor; }
-    .icon-btn:hover { background: var(--bg-card-elev); color: var(--fg-1); }
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+    .icon-btn:hover {
+      background: var(--bg-card-elev);
+      color: var(--fg-1);
+    }
 
     .count-chip {
       font-size: 11px;
@@ -1157,9 +1249,14 @@ export class GeneticsTreeView extends LitElement {
       padding: 2px 10px;
       font-size: 11px;
       cursor: pointer;
-      transition: background 0.2s, color 0.2s;
+      transition:
+        background 0.2s,
+        color 0.2s;
     }
-    .gen-chip:hover { background: var(--bg-card-elev); color: var(--fg-1); }
+    .gen-chip:hover {
+      background: var(--bg-card-elev);
+      color: var(--fg-1);
+    }
     .gen-chip.active {
       background: var(--chip-c, var(--gv-primary));
       color: #fff;
@@ -1174,7 +1271,9 @@ export class GeneticsTreeView extends LitElement {
       font-size: 11px;
       cursor: pointer;
     }
-    .clear-btn:hover { background: rgba(229, 57, 53, 0.2); }
+    .clear-btn:hover {
+      background: rgba(229, 57, 53, 0.2);
+    }
 
     /* ---- Canvas area ---- */
     .canvas-wrap {
@@ -1183,12 +1282,14 @@ export class GeneticsTreeView extends LitElement {
       overflow: hidden;
       cursor: grab;
     }
-    .canvas-wrap:active { cursor: grabbing; }
+    .canvas-wrap:active {
+      cursor: grabbing;
+    }
 
     .bg-grid {
       position: absolute;
       inset: 0;
-      background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
       background-size: 28px 28px;
       pointer-events: none;
     }
@@ -1204,9 +1305,9 @@ export class GeneticsTreeView extends LitElement {
     /* ---- Breeder bands (families mode) ---- */
     .band {
       position: absolute;
-      border: 1px solid rgba(255,255,255,0.07);
+      border: 1px solid rgba(255, 255, 255, 0.07);
       border-radius: 12px;
-      background: rgba(255,255,255,0.02);
+      background: rgba(255, 255, 255, 0.02);
       pointer-events: none;
     }
     .band-header {
@@ -1224,7 +1325,7 @@ export class GeneticsTreeView extends LitElement {
     .band-count {
       font-size: 11px;
       color: var(--fg-4);
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border-radius: 999px;
       padding: 1px 6px;
     }
@@ -1251,21 +1352,34 @@ export class GeneticsTreeView extends LitElement {
       stroke-width: 1.5;
       transition: opacity 0.12s;
     }
-    .edge-mother { stroke: var(--gv-primary); }
-    .edge-father { stroke: var(--gv-secondary); stroke-dasharray: 5 3; }
-    .edge-clone { stroke: rgba(233,30,99,0.7); stroke-dasharray: 2 2; }
-    .edge.dim { opacity: 0.06; }
+    .edge-mother {
+      stroke: var(--gv-primary);
+    }
+    .edge-father {
+      stroke: var(--gv-secondary);
+      stroke-dasharray: 5 3;
+    }
+    .edge-clone {
+      stroke: rgba(233, 30, 99, 0.7);
+      stroke-dasharray: 2 2;
+    }
+    .edge.dim {
+      opacity: 0.06;
+    }
 
     /* ---- Tree nodes ---- */
     .tree-node {
       position: absolute;
       background: var(--bg-card-elev);
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid rgba(255, 255, 255, 0.06);
       border-radius: 8px;
       overflow: hidden;
       cursor: pointer;
       box-sizing: border-box;
-      transition: opacity 0.15s, box-shadow 0.15s, border-color 0.15s;
+      transition:
+        opacity 0.15s,
+        box-shadow 0.15s,
+        border-color 0.15s;
     }
     .tree-node::before {
       content: '';
@@ -1278,21 +1392,27 @@ export class GeneticsTreeView extends LitElement {
       border-radius: 8px 0 0 8px;
     }
     .tree-node:hover {
-      border-color: rgba(255,255,255,0.2);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     }
-    .tree-node.dim { opacity: 0.2; }
+    .tree-node.dim {
+      opacity: 0.2;
+    }
     .tree-node.hovered {
-      border-color: rgba(255,255,255,0.3);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     }
     .tree-node.selected {
       border-color: var(--gv-secondary);
-      box-shadow: 0 0 0 2px var(--gv-secondary), var(--elev-glass);
+      box-shadow:
+        0 0 0 2px var(--gv-secondary),
+        var(--elev-glass);
     }
     .tree-node.focal {
       border-color: var(--gv-primary);
-      box-shadow: 0 0 0 2px var(--gv-primary), var(--elev-glass);
+      box-shadow:
+        0 0 0 2px var(--gv-primary),
+        var(--elev-glass);
     }
     .tree-node.in-graph {
       border-color: rgba(76, 175, 80, 0.4);
@@ -1352,18 +1472,31 @@ export class GeneticsTreeView extends LitElement {
       display: inline-flex;
       align-items: center;
       gap: 2px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 5px;
       padding: 1px 3px;
       cursor: pointer;
       color: var(--fg-3);
       font-size: 9px;
     }
-    .fold-btn svg { width: 11px; height: 11px; fill: currentColor; }
-    .fold-btn:hover { color: var(--fg-1); background: rgba(255,255,255,0.12); }
-    .fold-btn.collapsed { color: var(--gv-primary); border-color: var(--gv-primary); }
-    .desc-count { font-size: 9px; font-weight: 600; }
+    .fold-btn svg {
+      width: 11px;
+      height: 11px;
+      fill: currentColor;
+    }
+    .fold-btn:hover {
+      color: var(--fg-1);
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .fold-btn.collapsed {
+      color: var(--gv-primary);
+      border-color: var(--gv-primary);
+    }
+    .desc-count {
+      font-size: 9px;
+      font-weight: 600;
+    }
 
     /* ---- Focus banner ---- */
     .focus-banner {
@@ -1375,7 +1508,7 @@ export class GeneticsTreeView extends LitElement {
       align-items: center;
       gap: 8px;
       background: var(--bg-glass);
-      border: 1px solid rgba(76,175,80,0.3);
+      border: 1px solid rgba(76, 175, 80, 0.3);
       border-radius: 999px;
       padding: 6px 14px 6px 10px;
       font-size: 12px;
@@ -1385,12 +1518,21 @@ export class GeneticsTreeView extends LitElement {
       white-space: nowrap;
       z-index: 10;
     }
-    .focus-banner .icon { width: 14px; height: 14px; fill: var(--gv-primary); flex-shrink: 0; }
-    .focus-banner strong { color: var(--gv-primary); }
-    .banner-counts { color: var(--fg-3); }
+    .focus-banner .icon {
+      width: 14px;
+      height: 14px;
+      fill: var(--gv-primary);
+      flex-shrink: 0;
+    }
+    .focus-banner strong {
+      color: var(--gv-primary);
+    }
+    .banner-counts {
+      color: var(--fg-3);
+    }
     .focus-banner button {
-      background: rgba(76,175,80,0.15);
-      border: 1px solid rgba(76,175,80,0.3);
+      background: rgba(76, 175, 80, 0.15);
+      border: 1px solid rgba(76, 175, 80, 0.3);
       border-radius: 999px;
       color: var(--gv-primary);
       font-size: 11px;
@@ -1398,7 +1540,9 @@ export class GeneticsTreeView extends LitElement {
       cursor: pointer;
       margin-left: 4px;
     }
-    .focus-banner button:hover { background: rgba(76,175,80,0.25); }
+    .focus-banner button:hover {
+      background: rgba(76, 175, 80, 0.25);
+    }
 
     /* ---- Side detail panel ---- */
     .detail-panel {
@@ -1407,7 +1551,7 @@ export class GeneticsTreeView extends LitElement {
       right: 16px;
       width: 220px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 12px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(12px);
@@ -1424,7 +1568,7 @@ export class GeneticsTreeView extends LitElement {
       width: 22px;
       height: 22px;
       border-radius: 50%;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255, 255, 255, 0.06);
       border: none;
       cursor: pointer;
       color: var(--fg-3);
@@ -1433,8 +1577,15 @@ export class GeneticsTreeView extends LitElement {
       justify-content: center;
       padding: 0;
     }
-    .detail-close svg { width: 12px; height: 12px; fill: currentColor; }
-    .detail-close:hover { color: var(--fg-1); background: rgba(255,255,255,0.12); }
+    .detail-close svg {
+      width: 12px;
+      height: 12px;
+      fill: currentColor;
+    }
+    .detail-close:hover {
+      color: var(--fg-1);
+      background: rgba(255, 255, 255, 0.12);
+    }
     .detail-eyebrow {
       padding: 12px 14px 0;
       font-size: 10px;
@@ -1469,9 +1620,20 @@ export class GeneticsTreeView extends LitElement {
       padding: 8px 4px;
       gap: 2px;
     }
-    .detail-stat:not(:last-child) { border-right: 1px solid var(--divider-faint); }
-    .detail-stat .v { font-size: 18px; font-weight: 600; color: var(--fg-1); line-height: 1; }
-    .detail-stat .l { font-size: 9px; color: var(--fg-3); text-align: center; }
+    .detail-stat:not(:last-child) {
+      border-right: 1px solid var(--divider-faint);
+    }
+    .detail-stat .v {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--fg-1);
+      line-height: 1;
+    }
+    .detail-stat .l {
+      font-size: 9px;
+      color: var(--fg-3);
+      text-align: center;
+    }
     .detail-section {
       padding: 8px 14px 4px;
       border-bottom: 1px solid var(--divider-faint);
@@ -1492,7 +1654,11 @@ export class GeneticsTreeView extends LitElement {
       cursor: pointer;
       border-radius: 4px;
     }
-    .detail-parent:hover { background: rgba(255,255,255,0.04); margin: 0 -4px; padding: 3px 4px; }
+    .detail-parent:hover {
+      background: rgba(255, 255, 255, 0.04);
+      margin: 0 -4px;
+      padding: 3px 4px;
+    }
     .role {
       font-size: 9px;
       font-weight: 700;
@@ -1501,8 +1667,12 @@ export class GeneticsTreeView extends LitElement {
       flex-shrink: 0;
       min-width: 36px;
     }
-    .role.mother { color: var(--gv-mother); }
-    .role.father { color: var(--gv-secondary); }
+    .role.mother {
+      color: var(--gv-mother);
+    }
+    .role.father {
+      color: var(--gv-secondary);
+    }
     .pname {
       font-size: 11px;
       color: var(--fg-2);
@@ -1517,7 +1687,10 @@ export class GeneticsTreeView extends LitElement {
       flex-direction: column;
       gap: 6px;
     }
-    .detail-actions .pill-btn { width: 100%; justify-content: center; }
+    .detail-actions .pill-btn {
+      width: 100%;
+      justify-content: center;
+    }
 
     /* ---- Zoom controls ---- */
     .zoom-controls {
@@ -1528,7 +1701,7 @@ export class GeneticsTreeView extends LitElement {
       align-items: center;
       gap: 2px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 999px;
       padding: 4px 6px;
       box-shadow: var(--elev-glass);
@@ -1564,7 +1737,9 @@ export class GeneticsTreeView extends LitElement {
       height: 2px;
       border-radius: 1px;
     }
-    .legend-line.mother { background: var(--gv-primary); }
+    .legend-line.mother {
+      background: var(--gv-primary);
+    }
     .legend-line.father {
       background: repeating-linear-gradient(
         90deg,
@@ -1574,7 +1749,10 @@ export class GeneticsTreeView extends LitElement {
         transparent 8px
       );
     }
-    .legend-hint { color: var(--fg-4); font-style: italic; }
+    .legend-hint {
+      color: var(--fg-4);
+      font-style: italic;
+    }
 
     /* ---- Minimap ---- */
     .minimap {
@@ -1582,7 +1760,7 @@ export class GeneticsTreeView extends LitElement {
       bottom: 12px;
       right: 14px;
       background: var(--bg-glass);
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 8px;
       box-shadow: var(--elev-glass);
       backdrop-filter: blur(8px);

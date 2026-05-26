@@ -168,139 +168,139 @@ export class GrowspaceWateringDialogUI extends LitElement {
         .submitting=${this.isSubmitting}
       >
         <div class="dialog-content-grid">
-            ${this.hasPhiWarning
-              ? html`
-                  <div class=\"error-bar\">
-                    <ha-svg-icon .path=${mdiInformation} style=\"margin-right: 8px;\"></ha-svg-icon>
-                    ${this.phiWarningText}
-                  </div>
-                `
-              : nothing}
+          ${this.hasPhiWarning
+            ? html`
+                <div class="error-bar">
+                  <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
+                  ${this.phiWarningText}
+                </div>
+              `
+            : nothing}
 
-            <div class="form-section">
-              <h3>Watering Settings</h3>
-              <md3-number-input
-                label="Volume (Liters)"
-                .value=${this._volume}
-                .min=${0.1}
-                .step=${0.1}
-                @change=${(e: CustomEvent) => (this._volume = parseFloat(e.detail) || 0)}
-              ></md3-number-input>
+          <div class="form-section">
+            <h3>Watering Settings</h3>
+            <md3-number-input
+              label="Volume (Liters)"
+              .value=${this._volume}
+              .min=${0.1}
+              .step=${0.1}
+              @change=${(e: CustomEvent) => (this._volume = parseFloat(e.detail) || 0)}
+            ></md3-number-input>
 
-              <div style="margin-top: 12px;">
-                <md3-select
-                  label="Nutrient Preset"
-                  .value=${this._selectedPresetId || ''}
-                  .options=${this.presetOptions}
-                  @change=${this._handlePresetChange}
-                ></md3-select>
-              </div>
-
-              <div class="apply-summary">
-                Targeting: <span class="apply-target">${this.targetText}</span>
-              </div>
+            <div style="margin-top: 12px;">
+              <md3-select
+                label="Nutrient Preset"
+                .value=${this._selectedPresetId || ''}
+                .options=${this.presetOptions}
+                @change=${this._handlePresetChange}
+              ></md3-select>
             </div>
 
-            <div class="form-section">
-              <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-              >
-                <h3 style="margin: 0;">Nutrients</h3>
-                <button class="md3-button text" @click=${this._addNutrient}>
-                  <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                  Add
-                </button>
-              </div>
-
-              ${this._nutrients.length === 0
-                ? html`
-                    <div style="text-align: center; opacity: 0.6; padding: 20px;">
-                      <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
-                      <div>No nutrients added</div>
-                    </div>
-                  `
-                : nothing}
-              ${this._nutrients.map(
-                (nutrient, index) => html`
-                  <div class="product-row">
-                    <md3-text-input
-                      label="Nutrient Name"
-                      .value=${nutrient.name}
-                      .suggestions=${this.nutrientSuggestions}
-                      @change=${(e: CustomEvent) =>
-                        this._updateNutrient(
-                          index,
-                          'name',
-                          (e.target as HTMLInputElement).value || e.detail
-                        )}
-                      placeholder="e.g. CalMag"
-                    ></md3-text-input>
-                    <md3-number-input
-                      label="ml/L"
-                      .value=${nutrient.concentration}
-                      min="0"
-                      step="0.1"
-                      @change=${(e: CustomEvent) =>
-                        this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0)}
-                    ></md3-number-input>
-                    <button
-                      class="md3-button icon"
-                      @click=${() => this._removeNutrient(index)}
-                      style="color: var(--error-color);"
-                    >
-                      <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                    </button>
-                  </div>
-                `
-              )}
+            <div class="apply-summary">
+              Targeting: <span class="apply-target">${this.targetText}</span>
             </div>
-
-            ${this._nutrients.length > 0
-              ? html`
-                  <div class="form-section">
-                    <h3>Summary</h3>
-                    <div class="calculation-preview">
-                      ${this._nutrients
-                        .filter((n) => n.name && n.concentration > 0)
-                        .map(
-                          (nutrient) => html`
-                            <div class="calculation-row">
-                              <span class="calculation-label">${nutrient.name}</span>
-                              <span class="calculation-value">
-                                ${this._volume}L × ${nutrient.concentration} ml/L =
-                                <strong>
-                                  ${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml
-                                </strong>
-                              </span>
-                            </div>
-                          `
-                        )}
-                      <div class="calculation-row">
-                        <span class="calculation-label">Total Nutrients</span>
-                        <span class="calculation-value">
-                          <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                `
-              : nothing}
           </div>
 
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this.isSubmitting}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
-              @click=${this._handleSubmit}
-              ?disabled=${this.isSubmitting || this._volume <= 0}
+          <div class="form-section">
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
             >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-              ${this.isSubmitting ? 'Recording...' : 'Record Watering'}
-            </button>
+              <h3 style="margin: 0;">Nutrients</h3>
+              <button class="md3-button text" @click=${this._addNutrient}>
+                <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+                Add
+              </button>
+            </div>
+
+            ${this._nutrients.length === 0
+              ? html`
+                  <div style="text-align: center; opacity: 0.6; padding: 20px;">
+                    <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
+                    <div>No nutrients added</div>
+                  </div>
+                `
+              : nothing}
+            ${this._nutrients.map(
+              (nutrient, index) => html`
+                <div class="product-row">
+                  <md3-text-input
+                    label="Nutrient Name"
+                    .value=${nutrient.name}
+                    .suggestions=${this.nutrientSuggestions}
+                    @change=${(e: CustomEvent) =>
+                      this._updateNutrient(
+                        index,
+                        'name',
+                        (e.target as HTMLInputElement).value || e.detail
+                      )}
+                    placeholder="e.g. CalMag"
+                  ></md3-text-input>
+                  <md3-number-input
+                    label="ml/L"
+                    .value=${nutrient.concentration}
+                    min="0"
+                    step="0.1"
+                    @change=${(e: CustomEvent) =>
+                      this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0)}
+                  ></md3-number-input>
+                  <button
+                    class="md3-button icon"
+                    @click=${() => this._removeNutrient(index)}
+                    style="color: var(--error-color);"
+                  >
+                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                  </button>
+                </div>
+              `
+            )}
           </div>
+
+          ${this._nutrients.length > 0
+            ? html`
+                <div class="form-section">
+                  <h3>Summary</h3>
+                  <div class="calculation-preview">
+                    ${this._nutrients
+                      .filter((n) => n.name && n.concentration > 0)
+                      .map(
+                        (nutrient) => html`
+                          <div class="calculation-row">
+                            <span class="calculation-label">${nutrient.name}</span>
+                            <span class="calculation-value">
+                              ${this._volume}L × ${nutrient.concentration} ml/L =
+                              <strong>
+                                ${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml
+                              </strong>
+                            </span>
+                          </div>
+                        `
+                      )}
+                    <div class="calculation-row">
+                      <span class="calculation-label">Total Nutrients</span>
+                      <span class="calculation-value">
+                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              `
+            : nothing}
+        </div>
+
+        <div class="button-group">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this.isSubmitting}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
+            @click=${this._handleSubmit}
+            ?disabled=${this.isSubmitting || this._volume <= 0}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
+            ${this.isSubmitting ? 'Recording...' : 'Record Watering'}
+          </button>
+        </div>
       </gs-dialog>
     `;
   }

@@ -67,14 +67,11 @@ export class GrowspaceHeaderStagesUI extends LitElement {
                 </div>
               `
             : nothing}
-
-          ${this.problemPlants.slice(0, 2).map(
-            (name) => html`
-              <div class="gs-stage-pill alert">
-                ⚠ ${name}: needs attention
-              </div>
-            `
-          )}
+          ${this.problemPlants
+            .slice(0, 2)
+            .map(
+              (name) => html` <div class="gs-stage-pill alert">⚠ ${name}: needs attention</div> `
+            )}
         </div>
       </scroll-container>
     `;

@@ -4,9 +4,7 @@ import { GrowspaceOptionsController } from './growspace-options-controller';
 
 const makeHass = (growspaces: Record<string, string> | null) => ({
   states: {
-    'sensor.growspaces_list': growspaces
-      ? { attributes: { growspaces } }
-      : undefined,
+    'sensor.growspaces_list': growspaces ? { attributes: { growspaces } } : undefined,
   },
   connection: {
     subscribeEvents: vi.fn().mockResolvedValue(() => {}),

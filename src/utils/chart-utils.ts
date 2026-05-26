@@ -529,7 +529,10 @@ export class ChartUtils {
     for (const h of sorted) {
       const val = ChartUtils.normalizeSensorValue(h, metricKey);
       if (val === undefined) continue;
-      const point: NormalizedHistoryPoint = { time: new Date(h.last_changed).getTime(), value: val };
+      const point: NormalizedHistoryPoint = {
+        time: new Date(h.last_changed).getTime(),
+        value: val,
+      };
       if (h.attributes) point.meta = h.attributes;
       points.push(point);
     }

@@ -96,20 +96,22 @@ export class GrowspaceHeaderContainer extends LitElement {
 
     const growspaceId = this.device.deviceId;
     const envSnapshot = envSnapshots$.get().get(growspaceId) ?? null;
-    const growspacePlants = plants$.get().filter(
-      (p) => p.attributes.growspace_id === growspaceId,
-    );
+    const growspacePlants = plants$.get().filter((p) => p.attributes.growspace_id === growspaceId);
     const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
     const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
 
-    const { hero: heroChips, chips: secondaryChips, dominant } = computeHeaderMetrics(
+    const {
+      hero: heroChips,
+      chips: secondaryChips,
+      dominant,
+    } = computeHeaderMetrics(
       envSnapshot,
       growspacePlants,
       irrigationConfig,
       growspaceTanks,
       'main',
       activeEnvGraphs,
-      linkedGraphGroups,
+      linkedGraphGroups
     );
 
     // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
@@ -118,7 +120,7 @@ export class GrowspaceHeaderContainer extends LitElement {
       this.hass,
       this.device,
       activeEnvGraphs,
-      linkedGraphGroups,
+      linkedGraphGroups
     );
 
     return { heroChips, secondaryChips, deviceChips, dominant };
@@ -138,11 +140,13 @@ export class GrowspaceHeaderContainer extends LitElement {
     const value = e.detail.value;
     this.store?.handleDeviceChange(value);
     // Redispatch for compatibility with views that bubble it up to main card
-    this.dispatchEvent(new CustomEvent('growspace-changed', {
-      detail: value,
-      bubbles: true,
-      composed: true
-    }));
+    this.dispatchEvent(
+      new CustomEvent('growspace-changed', {
+        detail: value,
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   private _handleToggleGraph(e: CustomEvent) {
@@ -246,7 +250,9 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'heatmap': {
         const currentMode = this.store.ui.$viewMode.get();
-        this.store.ui.setViewMode(currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP);
+        this.store.ui.setViewMode(
+          currentMode === ViewMode.HEATMAP ? ViewMode.STANDARD : ViewMode.HEATMAP
+        );
         break;
       }
       default:
@@ -270,7 +276,10 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _handleFlowerFlipClick(e: CustomEvent) {
     const { growspaceId, flowerStart } = e.detail;
     this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
-    this.store?.actions.ui.openIrrigationDialog({ initialTab: 'steering', scrollToField: 'lightsOnTime' });
+    this.store?.actions.ui.openIrrigationDialog({
+      initialTab: 'steering',
+      scrollToField: 'lightsOnTime',
+    });
   }
 
   render() {

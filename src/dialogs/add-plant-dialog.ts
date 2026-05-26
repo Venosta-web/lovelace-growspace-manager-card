@@ -366,9 +366,9 @@ export class AddPlantDialog extends LitElement {
         phenotype: this.phenotype,
         veg_start: this.veg_start,
         flower_start: this.flower_start,
-        seedling_start: this._sourceType === 'seed' ? (this.seedling_start || today) : '',
+        seedling_start: this._sourceType === 'seed' ? this.seedling_start || today : '',
         mother_start: this.mother_start,
-        clone_start: this._sourceType === 'clone' ? (this.clone_start || today) : '',
+        clone_start: this._sourceType === 'clone' ? this.clone_start || today : '',
         dry_start: this.dry_start,
         cure_start: this.cure_start,
         addToLibrary: this.addToLibrary,
@@ -421,12 +421,12 @@ export class AddPlantDialog extends LitElement {
     // Filter phenotypes based on selected strain
     const relevantPhenotypes = this.strain
       ? [
-        ...new Set(
-          this.strainLibrary
-            .filter((s) => s.strain === this.strain && s.phenotype)
-            .map((s) => s.phenotype)
-        ),
-      ].sort()
+          ...new Set(
+            this.strainLibrary
+              .filter((s) => s.strain === this.strain && s.phenotype)
+              .map((s) => s.phenotype)
+          ),
+        ].sort()
       : [];
 
     const dialogTitle =
@@ -488,21 +488,31 @@ export class AddPlantDialog extends LitElement {
           <div class="tab-bar">
             <button
               class="tab ${this._activeTab === 'add' ? 'active' : ''}"
-              @click=${() => { this._activeTab = 'add'; this._selectedTransplantPlant = null; this._wizardStep = 1; }}
+              @click=${() => {
+                this._activeTab = 'add';
+                this._selectedTransplantPlant = null;
+                this._wizardStep = 1;
+              }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               New Plant
             </button>
             <button
               class="tab ${this._activeTab === 'clone' ? 'active' : ''}"
-              @click=${() => { this._activeTab = 'clone'; this._selectedTransplantPlant = null; }}
+              @click=${() => {
+                this._activeTab = 'clone';
+                this._selectedTransplantPlant = null;
+              }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
               Transplant Clone
             </button>
             <button
               class="tab ${this._activeTab === 'seedling' ? 'active' : ''}"
-              @click=${() => { this._activeTab = 'seedling'; this._selectedTransplantPlant = null; }}
+              @click=${() => {
+                this._activeTab = 'seedling';
+                this._selectedTransplantPlant = null;
+              }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               Transplant Seedling
@@ -536,14 +546,20 @@ export class AddPlantDialog extends LitElement {
                           ?disabled=${this._wizardStep === 1 && !this.strain}
                         >
                           Continue
-                          <svg style="width:16px;height:16px;fill:currentColor;margin-left:4px;" viewBox="0 0 24 24">
+                          <svg
+                            style="width:16px;height:16px;fill:currentColor;margin-left:4px;"
+                            viewBox="0 0 24 24"
+                          >
                             <path d="${mdiChevronRight}"></path>
                           </svg>
                         </button>
                       `
                     : html`
                         <button class="md3-button primary" @click=${this._confirm}>
-                          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                          <svg
+                            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                            viewBox="0 0 24 24"
+                          >
                             <path d="${mdiSprout}"></path>
                           </svg>
                           Add Plant
@@ -557,7 +573,10 @@ export class AddPlantDialog extends LitElement {
                     @click=${this._confirm}
                     ?disabled=${isButtonDisabled}
                   >
-                    <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="${mdiSprout}"></path>
                     </svg>
                     Transplant
@@ -594,7 +613,9 @@ export class AddPlantDialog extends LitElement {
             <div class="wizard-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}">
               <div class="wizard-step-num">
                 ${isDone
-                  ? html`<svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>`
+                  ? html`<svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiCheck}"></path>
+                    </svg>`
                   : stepNum}
               </div>
               ${label}
@@ -637,38 +658,45 @@ export class AddPlantDialog extends LitElement {
               if (e.detail !== this.strain) this.strain = '';
             }}
           ></md3-text-input>
-          ${showDropdown ? html`
-            <div class="strain-dropdown">
-              ${filtered.map((s) => {
-                const entry = this.strainLibrary.find((e) => e.strain === s);
-                return html`
-                  <div
-                    class="strain-option"
-                    @click=${() => {
-                      this.strain = s;
-                      this._strainQuery = s;
-                    }}
-                  >
-                    <span>${s}</span>
-                    ${entry?.breeder ? html`<span class="strain-option-meta">${entry.breeder}</span>` : nothing}
-                  </div>
-                `;
-              })}
-            </div>
-          ` : nothing}
+          ${showDropdown
+            ? html`
+                <div class="strain-dropdown">
+                  ${filtered.map((s) => {
+                    const entry = this.strainLibrary.find((e) => e.strain === s);
+                    return html`
+                      <div
+                        class="strain-option"
+                        @click=${() => {
+                          this.strain = s;
+                          this._strainQuery = s;
+                        }}
+                      >
+                        <span>${s}</span>
+                        ${entry?.breeder
+                          ? html`<span class="strain-option-meta">${entry.breeder}</span>`
+                          : nothing}
+                      </div>
+                    `;
+                  })}
+                </div>
+              `
+            : nothing}
         </div>
 
-        ${this.strain ? html`
-          <md3-text-input
-            label="Phenotype"
-            .value=${this.phenotype}
-            .suggestions=${relevantPhenotypes}
-            @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
-          ></md3-text-input>
-        ` : nothing}
-
-        ${selectedEntry ? html`
-          <div style="
+        ${this.strain
+          ? html`
+              <md3-text-input
+                label="Phenotype"
+                .value=${this.phenotype}
+                .suggestions=${relevantPhenotypes}
+                @change=${(e: CustomEvent) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+            `
+          : nothing}
+        ${selectedEntry
+          ? html`
+              <div
+                style="
             margin-top: 10px;
             padding: 10px 12px;
             border-radius: 8px;
@@ -677,18 +705,30 @@ export class AddPlantDialog extends LitElement {
             font-size: 0.8rem;
             color: rgba(255,255,255,0.7);
             display: flex; gap: 16px;
-          ">
-            ${selectedEntry.breeder ? html`<span><b style="color:#fff">${selectedEntry.breeder}</b></span>` : nothing}
-            ${selectedEntry.type ? html`<span>${selectedEntry.type}</span>` : nothing}
-            ${selectedEntry.flowering_days_min ? html`<span>~${selectedEntry.flowering_days_min}–${selectedEntry.flowering_days_max || '?'} days flower</span>` : nothing}
-          </div>
-        ` : nothing}
+          "
+              >
+                ${selectedEntry.breeder
+                  ? html`<span><b style="color:#fff">${selectedEntry.breeder}</b></span>`
+                  : nothing}
+                ${selectedEntry.type ? html`<span>${selectedEntry.type}</span>` : nothing}
+                ${selectedEntry.flowering_days_min
+                  ? html`<span
+                      >~${selectedEntry.flowering_days_min}–${selectedEntry.flowering_days_max ||
+                      '?'}
+                      days flower</span
+                    >`
+                  : nothing}
+              </div>
+            `
+          : nothing}
 
         <div
           class="toggle-container"
           style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
         >
-          <span style="font-size: 0.9rem; color: var(--secondary-text-color);">Add to Strain Library</span>
+          <span style="font-size: 0.9rem; color: var(--secondary-text-color);"
+            >Add to Strain Library</span
+          >
           <md3-switch
             .checked=${this.addToLibrary}
             @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
@@ -698,12 +738,11 @@ export class AddPlantDialog extends LitElement {
       </div>
 
       <div style="padding-top: 4px;">
-        <button
-          class="md3-button tonal"
-          style="width: 100%;"
-          @click=${this._openStrainCreator}
-        >
-          <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+        <button class="md3-button tonal" style="width: 100%;" @click=${this._openStrainCreator}>
+          <svg
+            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiDna}"></path>
           </svg>
           Create New Strain
@@ -726,7 +765,10 @@ export class AddPlantDialog extends LitElement {
         <div class="source-toggle">
           <button
             class="source-btn ${this._sourceType === 'seed' ? 'active' : ''}"
-            @click=${() => { this._sourceType = 'seed'; this._siblingPlant = null; }}
+            @click=${() => {
+              this._sourceType = 'seed';
+              this._siblingPlant = null;
+            }}
           >
             🌱 Seed
           </button>
@@ -739,50 +781,66 @@ export class AddPlantDialog extends LitElement {
           </button>
         </div>
 
-        ${this._sourceType === 'clone' && clonable.length > 0 ? html`
-          <div style="font-size: 0.82rem; color: var(--secondary-text-color); margin-bottom: 8px;">
-            Select mother plant to clone settings from:
-          </div>
-          <div class="sibling-list">
-            ${clonable.map((p) => {
-              const isSelected = this._siblingPlant?.attributes.plant_id === p.attributes.plant_id;
-              const stage = p.state || p.attributes?.stage || 'unknown';
-              const days = p.attributes?.days_in_stage;
-              return html`
-                <div
-                  class="sibling-item ${isSelected ? 'selected' : ''}"
-                  @click=${() => {
-                    this._siblingPlant = isSelected ? null : p;
-                    if (!isSelected) {
-                      // Pre-fill identity from mother
-                      this.strain = p.attributes.strain || this.strain;
-                      this._strainQuery = this.strain;
-                      this.phenotype = p.attributes.phenotype || this.phenotype;
-                      // Set clone_start to today
-                      this.clone_start = new Date().toISOString().split('T')[0];
-                    }
-                  }}
-                >
-                  <div>
-                    <div style="font-weight: 500;">${p.attributes.strain || 'Unknown'}${p.attributes.phenotype ? ` · ${p.attributes.phenotype}` : ''}</div>
-                    <div class="sibling-meta">${stage}${days !== undefined ? ` · D${days}` : ''}</div>
-                  </div>
-                  ${isSelected ? html`
-                    <svg style="width:18px;height:18px;fill:#69f0ae;" viewBox="0 0 24 24">
-                      <path d="${mdiCheck}"></path>
-                    </svg>
-                  ` : nothing}
-                </div>
-              `;
-            })}
-          </div>
-        ` : nothing}
-
-        ${this._sourceType === 'clone' && clonable.length === 0 ? html`
-          <p style="font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic;">
-            No clonable plants found in this growspace.
-          </p>
-        ` : nothing}
+        ${this._sourceType === 'clone' && clonable.length > 0
+          ? html`
+              <div
+                style="font-size: 0.82rem; color: var(--secondary-text-color); margin-bottom: 8px;"
+              >
+                Select mother plant to clone settings from:
+              </div>
+              <div class="sibling-list">
+                ${clonable.map((p) => {
+                  const isSelected =
+                    this._siblingPlant?.attributes.plant_id === p.attributes.plant_id;
+                  const stage = p.state || p.attributes?.stage || 'unknown';
+                  const days = p.attributes?.days_in_stage;
+                  return html`
+                    <div
+                      class="sibling-item ${isSelected ? 'selected' : ''}"
+                      @click=${() => {
+                        this._siblingPlant = isSelected ? null : p;
+                        if (!isSelected) {
+                          // Pre-fill identity from mother
+                          this.strain = p.attributes.strain || this.strain;
+                          this._strainQuery = this.strain;
+                          this.phenotype = p.attributes.phenotype || this.phenotype;
+                          // Set clone_start to today
+                          this.clone_start = new Date().toISOString().split('T')[0];
+                        }
+                      }}
+                    >
+                      <div>
+                        <div style="font-weight: 500;">
+                          ${p.attributes.strain || 'Unknown'}${p.attributes.phenotype
+                            ? ` · ${p.attributes.phenotype}`
+                            : ''}
+                        </div>
+                        <div class="sibling-meta">
+                          ${stage}${days !== undefined ? ` · D${days}` : ''}
+                        </div>
+                      </div>
+                      ${isSelected
+                        ? html`
+                            <svg style="width:18px;height:18px;fill:#69f0ae;" viewBox="0 0 24 24">
+                              <path d="${mdiCheck}"></path>
+                            </svg>
+                          `
+                        : nothing}
+                    </div>
+                  `;
+                })}
+              </div>
+            `
+          : nothing}
+        ${this._sourceType === 'clone' && clonable.length === 0
+          ? html`
+              <p
+                style="font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic;"
+              >
+                No clonable plants found in this growspace.
+              </p>
+            `
+          : nothing}
       </div>
 
       <div class="detail-card">
@@ -860,8 +918,6 @@ export class AddPlantDialog extends LitElement {
     }
   }
 
-
-
   private _renderTransplantForm(stage: 'clone' | 'seedling') {
     const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
     const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
@@ -871,7 +927,8 @@ export class AddPlantDialog extends LitElement {
     const options = plants.map((p) => {
       const strain = p.attributes.strain || 'Unknown';
       const pheno = p.attributes.phenotype || '-';
-      const growspace = (p as PlantEntity & { _growspaceName?: string })._growspaceName || 'Unknown';
+      const growspace =
+        (p as PlantEntity & { _growspaceName?: string })._growspaceName || 'Unknown';
       const col = p.attributes.col;
       const row = p.attributes.row;
       const days = p.attributes[daysField] || 0;
@@ -889,23 +946,23 @@ export class AddPlantDialog extends LitElement {
       <div class="detail-card">
         <h3>Select ${stageLabel} to Transplant</h3>
         ${plants.length === 0
-        ? html`<p style="color: var(--secondary-text-color); font-style: italic;">
+          ? html`<p style="color: var(--secondary-text-color); font-style: italic;">
               No ${stageLabel.toLowerCase()}s available for transplant
             </p>`
-        : html`
+          : html`
               <md3-select
                 label="Select Plant"
                 .value=${selectedPlant?.attributes.plant_id || ''}
                 .options=${options}
                 @change=${(e: CustomEvent) => {
-            const plantId = e.detail;
-            this._selectedTransplantPlant =
-              plants.find((p) => p.attributes.plant_id === plantId) || null;
-          }}
+                  const plantId = e.detail;
+                  this._selectedTransplantPlant =
+                    plants.find((p) => p.attributes.plant_id === plantId) || null;
+                }}
               ></md3-select>
             `}
         ${selectedPlant
-        ? html`
+          ? html`
               <div class="plant-info-grid">
                 <span class="info-label">Strain:</span>
                 <span class="info-value">${selectedPlant.attributes.strain}</span>
@@ -924,12 +981,12 @@ export class AddPlantDialog extends LitElement {
                 <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
                 <span class="info-value"
                   >${selectedPlant.attributes[
-          stage === 'clone' ? 'clone_start' : 'seedling_start'
-          ] || 'N/A'}</span
+                    stage === 'clone' ? 'clone_start' : 'seedling_start'
+                  ] || 'N/A'}</span
                 >
               </div>
             `
-        : nothing}
+          : nothing}
       </div>
 
       <!-- NEW LOCATION CARD -->

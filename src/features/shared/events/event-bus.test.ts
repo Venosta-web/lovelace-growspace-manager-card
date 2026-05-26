@@ -158,9 +158,7 @@ describe('EventBus (additional coverage)', () => {
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       eventBus.setDebug(true);
       eventBus.on('debug-event', () => {});
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Subscribed')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Subscribed'));
       consoleSpy.mockRestore();
     });
 

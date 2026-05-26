@@ -108,15 +108,20 @@ describe('computePhaseWindows', () => {
   });
 
   it('derives lightsOnMin from lightsOnTime', () => {
-    const windows = computePhaseWindows(makeStrategy({ lightsOnTime: '06:00', p0DurationMinutes: 60 }));
+    const windows = computePhaseWindows(
+      makeStrategy({ lightsOnTime: '06:00', p0DurationMinutes: 60 })
+    );
     expect(windows?.lightsOnMin).toBe(360); // 6 * 60
   });
 
   it('derives p1 window starting at lightsOnMin', () => {
-    const windows = computePhaseWindows(makeStrategy({
-      lightsOnTime: '06:00',
-      p0DurationMinutes: 60,
-    }), 18);
+    const windows = computePhaseWindows(
+      makeStrategy({
+        lightsOnTime: '06:00',
+        p0DurationMinutes: 60,
+      }),
+      18
+    );
     // P1 (Saturation): lightsOnMin to lightsOnMin + p0DurationMinutes
     expect(windows?.phases[0].id).toBe('p1');
     expect(windows?.phases[0].start).toBe(360);
@@ -124,11 +129,14 @@ describe('computePhaseWindows', () => {
   });
 
   it('derives p3 window ending at lightsOffMin', () => {
-    const windows = computePhaseWindows(makeStrategy({
-      lightsOnTime: '06:00',
-      p0DurationMinutes: 60,
-      p2StopBeforeLightsOffMinutes: 120,
-    }), 18);
+    const windows = computePhaseWindows(
+      makeStrategy({
+        lightsOnTime: '06:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+      }),
+      18
+    );
     // lightsOffMin = 360 + 18*60 = 1440
     const lightsOffMin = 360 + 18 * 60;
     expect(windows?.phases[2].id).toBe('p3');
@@ -174,7 +182,13 @@ describe('setIrrigationStrategy', () => {
 describe('setTankLevels', () => {
   it('stores tanks keyed by growspaceId', () => {
     const tanks: IrrigationTank[] = [
-      { sensorEntity: 'sensor.tank1', name: 'Tank 1', warningLevel: 20, fillLevel: 80, isWarning: false },
+      {
+        sensorEntity: 'sensor.tank1',
+        name: 'Tank 1',
+        warningLevel: 20,
+        fillLevel: 80,
+        isWarning: false,
+      },
     ];
     setTankLevels('gs1', tanks);
 
@@ -211,7 +225,7 @@ describe('toggleIrrigationMode', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'set_irrigation_strategy',
-      expect.objectContaining({ growspace_id: 'gs1', enabled: true }),
+      expect.objectContaining({ growspace_id: 'gs1', enabled: true })
     );
   });
 
@@ -236,7 +250,7 @@ describe('addIrrigationTime', () => {
     await addIrrigationTime('gs1', '08:00', 60);
 
     expect(irrigationConfigs$.get().get('gs1')?.irrigationTimes).toContainEqual(
-      expect.objectContaining({ time: '08:00', duration: 60 }),
+      expect.objectContaining({ time: '08:00', duration: 60 })
     );
   });
 
@@ -248,7 +262,7 @@ describe('addIrrigationTime', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_irrigation_time',
-      expect.objectContaining({ growspace_id: 'gs1', time: '08:00', duration: 60 }),
+      expect.objectContaining({ growspace_id: 'gs1', time: '08:00', duration: 60 })
     );
   });
 
@@ -277,7 +291,7 @@ describe('addIrrigationTime', () => {
     await addIrrigationTime('gs1', '08:00');
 
     expect(irrigationConfigs$.get().get('gs1')?.irrigationTimes).toContainEqual(
-      expect.objectContaining({ duration: 60 }),
+      expect.objectContaining({ duration: 60 })
     );
   });
 });
@@ -288,9 +302,15 @@ describe('addIrrigationTime', () => {
 
 describe('removeIrrigationTime', () => {
   beforeEach(() => {
-    setIrrigationConfig('gs1', makeConfig({
-      irrigationTimes: [{ time: '08:00', duration: 60 }, { time: '14:00', duration: 60 }],
-    }));
+    setIrrigationConfig(
+      'gs1',
+      makeConfig({
+        irrigationTimes: [
+          { time: '08:00', duration: 60 },
+          { time: '14:00', duration: 60 },
+        ],
+      })
+    );
   });
 
   it('removes the matching time immediately (optimistic)', async () => {
@@ -307,7 +327,7 @@ describe('removeIrrigationTime', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'remove_irrigation_time',
-      expect.objectContaining({ growspace_id: 'gs1', time: '08:00' }),
+      expect.objectContaining({ growspace_id: 'gs1', time: '08:00' })
     );
   });
 
@@ -332,7 +352,7 @@ describe('addDrainTime', () => {
     await addDrainTime('gs1', '18:00', 30);
 
     expect(irrigationConfigs$.get().get('gs1')?.drainTimes).toContainEqual(
-      expect.objectContaining({ time: '18:00', duration: 30 }),
+      expect.objectContaining({ time: '18:00', duration: 30 })
     );
   });
 
@@ -344,7 +364,7 @@ describe('addDrainTime', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'add_drain_time',
-      expect.objectContaining({ growspace_id: 'gs1', time: '18:00', duration: 30 }),
+      expect.objectContaining({ growspace_id: 'gs1', time: '18:00', duration: 30 })
     );
   });
 
@@ -364,9 +384,12 @@ describe('addDrainTime', () => {
 
 describe('removeDrainTime', () => {
   beforeEach(() => {
-    setIrrigationConfig('gs1', makeConfig({
-      drainTimes: [{ time: '18:00', duration: 30 }],
-    }));
+    setIrrigationConfig(
+      'gs1',
+      makeConfig({
+        drainTimes: [{ time: '18:00', duration: 30 }],
+      })
+    );
   });
 
   it('removes drain time immediately (optimistic)', async () => {
@@ -381,7 +404,7 @@ describe('removeDrainTime', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'remove_drain_time',
-      expect.objectContaining({ growspace_id: 'gs1', time: '18:00' }),
+      expect.objectContaining({ growspace_id: 'gs1', time: '18:00' })
     );
   });
 
@@ -391,7 +414,7 @@ describe('removeDrainTime', () => {
     await expect(removeDrainTime('gs1', '18:00')).rejects.toThrow();
 
     expect(irrigationConfigs$.get().get('gs1')?.drainTimes).toContainEqual(
-      expect.objectContaining({ time: '18:00' }),
+      expect.objectContaining({ time: '18:00' })
     );
   });
 });
@@ -421,7 +444,7 @@ describe('updateIrrigationStrategy', () => {
         growspace_id: 'gs1',
         lights_on_time: '07:00',
         p0_duration_minutes: 90,
-      }),
+      })
     );
   });
 
@@ -472,7 +495,7 @@ describe('saveIrrigationSettings', () => {
         drain_pump_entity: 'switch.drain',
         irrigation_duration: 60,
         drain_duration: 30,
-      }),
+      })
     );
   });
 
@@ -486,7 +509,7 @@ describe('saveIrrigationSettings', () => {
         drainPumpEntity: '',
         irrigationDuration: 60,
         drainDuration: 30,
-      }),
+      })
     ).rejects.toThrow();
 
     expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.old');
@@ -504,24 +527,33 @@ describe('logDrainReading', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'log_drain_reading',
-      expect.objectContaining({ growspace_id: 'gs1', feed_ec: 2.0, drain_ec: 2.4 }),
+      expect.objectContaining({ growspace_id: 'gs1', feed_ec: 2.0, drain_ec: 2.4 })
     );
   });
 
   it('includes optional volume fields when provided', async () => {
-    await logDrainReading('gs1', { feedEc: 2.0, drainEc: 2.4, feedVolumeMl: 500, drainVolumeMl: 150 });
+    await logDrainReading('gs1', {
+      feedEc: 2.0,
+      drainEc: 2.4,
+      feedVolumeMl: 500,
+      drainVolumeMl: 150,
+    });
 
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'log_drain_reading',
-      expect.objectContaining({ feed_volume_ml: 500, drain_volume_ml: 150 }),
+      expect.objectContaining({ feed_volume_ml: 500, drain_volume_ml: 150 })
     );
   });
 });
 
 describe('configureDrainMonitoring', () => {
   it('calls configure_drain_monitoring service with correct payload', async () => {
-    await configureDrainMonitoring('gs1', { enabled: true, maxEcDelta: 0.5, targetRunoffPercent: 10 });
+    await configureDrainMonitoring('gs1', {
+      enabled: true,
+      maxEcDelta: 0.5,
+      targetRunoffPercent: 10,
+    });
 
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
@@ -531,7 +563,7 @@ describe('configureDrainMonitoring', () => {
         enabled: true,
         max_ec_delta: 0.5,
         target_runoff_percent: 10,
-      }),
+      })
     );
   });
 });
@@ -543,7 +575,7 @@ describe('runIrrigationCycle', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'run_irrigation_cycle',
-      expect.objectContaining({ growspace_id: 'gs1' }),
+      expect.objectContaining({ growspace_id: 'gs1' })
     );
   });
 
@@ -553,7 +585,7 @@ describe('runIrrigationCycle', () => {
     expect(hassCall.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'run_irrigation_cycle',
-      expect.objectContaining({ growspace_id: 'gs1', duration: 90 }),
+      expect.objectContaining({ growspace_id: 'gs1', duration: 90 })
     );
   });
 });

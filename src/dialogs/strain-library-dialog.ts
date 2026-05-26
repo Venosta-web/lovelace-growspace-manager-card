@@ -76,17 +76,32 @@ export class StrainLibraryDialog extends LitElement {
     notes?: string;
   }) => Promise<void>;
   @property({ attribute: false }) onLogPollination?: (data: {
-    date: string; donor_plant_id: string; receiver_plant_id: string; notes?: string;
+    date: string;
+    donor_plant_id: string;
+    receiver_plant_id: string;
+    notes?: string;
   }) => Promise<void>;
   @property({ attribute: false }) onHarvestSeeds?: (data: {
-    event_id: string; quantity: number; notes?: string;
+    event_id: string;
+    quantity: number;
+    notes?: string;
   }) => Promise<void>;
   @property({ attribute: false }) onUpdatePollination?: (data: {
-    event_id: string; date?: string; donor_plant_id?: string; receiver_plant_id?: string; notes?: string;
+    event_id: string;
+    date?: string;
+    donor_plant_id?: string;
+    receiver_plant_id?: string;
+    notes?: string;
   }) => Promise<void>;
   @property({ attribute: false }) onDeletePollination?: (event_id: string) => Promise<void>;
   @property({ attribute: false }) onDeleteSeedBatch?: (batch_id: string) => Promise<void>;
-  @property({ attribute: false }) onSowSeeds?: (data: { growspace_id: string; strain: string; amount: number; seed_batch_id: string; generation?: string }) => Promise<void>;
+  @property({ attribute: false }) onSowSeeds?: (data: {
+    growspace_id: string;
+    strain: string;
+    amount: number;
+    seed_batch_id: string;
+    generation?: string;
+  }) => Promise<void>;
 
   @state() private _activeMainTab: 'strains' | 'seeds' | 'tree' = 'strains';
   @state() private _libraryFilter: 'library' | 'active' | 'all' = 'library';
@@ -107,7 +122,11 @@ export class StrainLibraryDialog extends LitElement {
       this._editingStrain = this.editingStrain;
       this._view = 'editor';
     }
-    if (changedProps.has('strains') || changedProps.has('seedBatches') || changedProps.has('_libraryFilter')) {
+    if (
+      changedProps.has('strains') ||
+      changedProps.has('seedBatches') ||
+      changedProps.has('_libraryFilter')
+    ) {
       const filteredStrains = this._applyLibraryFilter(this.strains);
       this._treeNodes = buildStrainTreeNodes(this.strains, this.seedBatches, filteredStrains);
     }
@@ -153,8 +172,6 @@ export class StrainLibraryDialog extends LitElement {
         border-color: var(--accent-green, #4caf50);
         box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
       }
-
-
 
       /* Additional specific styles */
 
@@ -770,8 +787,8 @@ export class StrainLibraryDialog extends LitElement {
       /* Main tab bar */
       .main-tab-bar {
         display: flex;
-        border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
-        background: var(--secondary-background-color, rgba(0,0,0,0.2));
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
         flex-shrink: 0;
         align-items: center;
       }
@@ -785,7 +802,9 @@ export class StrainLibraryDialog extends LitElement {
         font-size: 0.9rem;
         font-weight: 500;
         cursor: pointer;
-        transition: color 0.2s, border-color 0.2s;
+        transition:
+          color 0.2s,
+          border-color 0.2s;
         font-family: inherit;
       }
       .tab-btn.active {
@@ -812,7 +831,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .tab-maximize-btn:hover {
         color: var(--primary-text-color);
-        background: rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.06);
       }
 
       /* Maximized tree view — ha-dialog width="full" handles dialog sizing;
@@ -859,8 +878,8 @@ export class StrainLibraryDialog extends LitElement {
         color: var(--primary-text-color);
       }
       .seed-batch-card {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
         border-radius: 10px;
         padding: 14px 16px;
         margin-bottom: 10px;
@@ -890,10 +909,12 @@ export class StrainLibraryDialog extends LitElement {
         color: var(--secondary-text-color);
         cursor: pointer;
         padding: 0;
-        transition: background 0.15s, color 0.15s;
+        transition:
+          background 0.15s,
+          color 0.15s;
       }
       .seed-batch-edit-btn:hover {
-        background: var(--divider-color, rgba(255,255,255,0.1));
+        background: var(--divider-color, rgba(255, 255, 255, 0.1));
         color: var(--primary-text-color);
       }
       .seed-batch-edit-btn svg {
@@ -914,7 +935,7 @@ export class StrainLibraryDialog extends LitElement {
       .seed-batch-parent-chip {
         font-size: 0.78rem;
         color: var(--primary-text-color);
-        background: var(--divider-color, rgba(255,255,255,0.08));
+        background: var(--divider-color, rgba(255, 255, 255, 0.08));
         border-radius: 6px;
         padding: 2px 7px;
       }
@@ -947,7 +968,7 @@ export class StrainLibraryDialog extends LitElement {
         flex-wrap: wrap;
         margin-top: 8px;
         padding: 10px 12px;
-        background: var(--secondary-background-color, rgba(0,0,0,0.04));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.04));
         border-radius: 8px;
       }
       .sow-select {
@@ -971,8 +992,8 @@ export class StrainLibraryDialog extends LitElement {
         text-align: center;
       }
       .pollination-card {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
         border-radius: 10px;
         padding: 14px 16px;
         margin-bottom: 10px;
@@ -1015,7 +1036,7 @@ export class StrainLibraryDialog extends LitElement {
       }
       .icon-btn:hover {
         color: var(--primary-text-color);
-        background: var(--divider-color, rgba(255,255,255,0.08));
+        background: var(--divider-color, rgba(255, 255, 255, 0.08));
       }
       .icon-btn.danger:hover {
         color: var(--error-color, #f44336);
@@ -1073,8 +1094,8 @@ export class StrainLibraryDialog extends LitElement {
         color: var(--secondary-text-color);
       }
       .form-view input {
-        background: var(--secondary-background-color, rgba(255,255,255,0.05));
-        border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
         border-radius: 8px;
         padding: 10px 14px;
         color: var(--primary-text-color, #fff);
@@ -1109,7 +1130,9 @@ export class StrainLibraryDialog extends LitElement {
         color: var(--primary-text-color);
         font-size: 13px;
         cursor: pointer;
-        transition: background 0.15s, color 0.15s;
+        transition:
+          background 0.15s,
+          color 0.15s;
       }
       .filter-chip.active {
         background: var(--primary-color);
@@ -1135,9 +1158,9 @@ export class StrainLibraryDialog extends LitElement {
         <div class="glass-dialog-container">
           ${this._renderTabBar()}
           ${this._activeMainTab === 'tree'
-        ? this._renderTreeViewTab()
-        : this._activeMainTab === 'seeds'
-          ? html`
+            ? this._renderTreeViewTab()
+            : this._activeMainTab === 'seeds'
+              ? html`
                   <seeds-genetics-tab
                     .strains=${this.strains}
                     .seedBatches=${this.seedBatches}
@@ -1157,72 +1180,102 @@ export class StrainLibraryDialog extends LitElement {
                     @close=${() => this.dispatchEvent(new CustomEvent('close'))}
                   ></seeds-genetics-tab>
                 `
-          : (this._view === 'browse' ? html`
-              <strain-browse-view
-                .hass=${this.hass}
-                .strains=${this.strains}
-                .activePlantCounts=${this.activePlantCounts}
-                .libraryFilter=${this._libraryFilter}
-                @strain-selected=${(e: CustomEvent) => { this._editingStrain = e.detail.strain; this._view = 'editor'; }}
-                @new-strain=${() => { this._editingStrain = undefined; this._view = 'editor'; }}
-                @filter-changed=${(e: CustomEvent) => { this._libraryFilter = e.detail.filter; }}
-                @manage-breeders-requested=${() => { this._breederDialogOpen = true; }}
-                @import-requested=${() => { this._importDialogOpen = true; }}
-                @get-recommendation=${() => this.dispatchEvent(new CustomEvent('get-recommendation'))}
-                @export-library=${() => this.dispatchEvent(new CustomEvent('export-library'))}
-                @strain-delete-confirmed=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }))}
-                @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-              ></strain-browse-view>
-            ` : html`
-              <strain-editor-view
-                .editingStrain=${this._editingStrain}
-                .strains=${this.strains}
-                .store=${this.store}
-                .hass=${this.hass}
-                .source=${this.source}
-                .returnPayload=${this.returnPayload}
-                .onSave=${async (strain: import('../types').StrainEntry) => {
-                  await this.store?.actions.strain.update(strain);
-                  this._view = 'browse';
-                  this._editingStrain = undefined;
-                  this.dispatchEvent(new CustomEvent('data-changed'));
-                }}
-                @view-lineage=${(e: CustomEvent) => {
-                  this.focusLineage = true;
-                  this._cameFromEditor = true;
-                  this._activeMainTab = 'tree';
-                }}
-                @editing-strain-changed=${(e: CustomEvent) => {
-                  this._editingStrain = e.detail.strain;
-                }}
-                @editor-back=${() => { this._view = 'browse'; this._editingStrain = undefined; }}
-                @delete-strain=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
-              this._view = 'browse';
-              this._editingStrain = undefined;
-            }}
-                @strain-created-at-source=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('strain-created-at-source', { detail: e.detail, bubbles: true, composed: true }));
-            }}
-                @open-print-label=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('open-print-label', { detail: e.detail, bubbles: true, composed: true }));
-            }}
-                @import-library=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
-            }}
-                @update-breeder=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
-            }}
-                @save-breeder=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
-            }}
-                @delete-breeder=${(e: CustomEvent) => {
-              this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
-            }}
-                @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-              ></strain-editor-view>
-            `)
-      }
+              : this._view === 'browse'
+                ? html`
+                    <strain-browse-view
+                      .hass=${this.hass}
+                      .strains=${this.strains}
+                      .activePlantCounts=${this.activePlantCounts}
+                      .libraryFilter=${this._libraryFilter}
+                      @strain-selected=${(e: CustomEvent) => {
+                        this._editingStrain = e.detail.strain;
+                        this._view = 'editor';
+                      }}
+                      @new-strain=${() => {
+                        this._editingStrain = undefined;
+                        this._view = 'editor';
+                      }}
+                      @filter-changed=${(e: CustomEvent) => {
+                        this._libraryFilter = e.detail.filter;
+                      }}
+                      @manage-breeders-requested=${() => {
+                        this._breederDialogOpen = true;
+                      }}
+                      @import-requested=${() => {
+                        this._importDialogOpen = true;
+                      }}
+                      @get-recommendation=${() =>
+                        this.dispatchEvent(new CustomEvent('get-recommendation'))}
+                      @export-library=${() => this.dispatchEvent(new CustomEvent('export-library'))}
+                      @strain-delete-confirmed=${(e: CustomEvent) =>
+                        this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }))}
+                      @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                    ></strain-browse-view>
+                  `
+                : html`
+                    <strain-editor-view
+                      .editingStrain=${this._editingStrain}
+                      .strains=${this.strains}
+                      .store=${this.store}
+                      .hass=${this.hass}
+                      .source=${this.source}
+                      .returnPayload=${this.returnPayload}
+                      .onSave=${async (strain: import('../types').StrainEntry) => {
+                        await this.store?.actions.strain.update(strain);
+                        this._view = 'browse';
+                        this._editingStrain = undefined;
+                        this.dispatchEvent(new CustomEvent('data-changed'));
+                      }}
+                      @view-lineage=${(e: CustomEvent) => {
+                        this.focusLineage = true;
+                        this._cameFromEditor = true;
+                        this._activeMainTab = 'tree';
+                      }}
+                      @editing-strain-changed=${(e: CustomEvent) => {
+                        this._editingStrain = e.detail.strain;
+                      }}
+                      @editor-back=${() => {
+                        this._view = 'browse';
+                        this._editingStrain = undefined;
+                      }}
+                      @delete-strain=${(e: CustomEvent) => {
+                        this.dispatchEvent(new CustomEvent('delete-strain', { detail: e.detail }));
+                        this._view = 'browse';
+                        this._editingStrain = undefined;
+                      }}
+                      @strain-created-at-source=${(e: CustomEvent) => {
+                        this.dispatchEvent(
+                          new CustomEvent('strain-created-at-source', {
+                            detail: e.detail,
+                            bubbles: true,
+                            composed: true,
+                          })
+                        );
+                      }}
+                      @open-print-label=${(e: CustomEvent) => {
+                        this.dispatchEvent(
+                          new CustomEvent('open-print-label', {
+                            detail: e.detail,
+                            bubbles: true,
+                            composed: true,
+                          })
+                        );
+                      }}
+                      @import-library=${(e: CustomEvent) => {
+                        this.dispatchEvent(new CustomEvent('import-library', { detail: e.detail }));
+                      }}
+                      @update-breeder=${(e: CustomEvent) => {
+                        this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }));
+                      }}
+                      @save-breeder=${(e: CustomEvent) => {
+                        this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }));
+                      }}
+                      @delete-breeder=${(e: CustomEvent) => {
+                        this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }));
+                      }}
+                      @close=${() => this.dispatchEvent(new CustomEvent('close'))}
+                    ></strain-editor-view>
+                  `}
         </div>
       </ha-dialog>
 
@@ -1230,17 +1283,23 @@ export class StrainLibraryDialog extends LitElement {
       <gs-breeder-manager
         .strains=${this.strains}
         .open=${this._breederDialogOpen}
-        @save-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }))}
-        @update-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }))}
-        @delete-breeder=${(e: CustomEvent) => this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }))}
-        @close=${() => { this._breederDialogOpen = false; }}
+        @save-breeder=${(e: CustomEvent) =>
+          this.dispatchEvent(new CustomEvent('save-breeder', { detail: e.detail }))}
+        @update-breeder=${(e: CustomEvent) =>
+          this.dispatchEvent(new CustomEvent('update-breeder', { detail: e.detail }))}
+        @delete-breeder=${(e: CustomEvent) =>
+          this.dispatchEvent(new CustomEvent('delete-breeder', { detail: e.detail }))}
+        @close=${() => {
+          this._breederDialogOpen = false;
+        }}
       ></gs-breeder-manager>
     `;
   }
 
-
   private renderImportDialog(): TemplateResult {
-    const close = () => { this._importDialogOpen = false; };
+    const close = () => {
+      this._importDialogOpen = false;
+    };
     return html`
       <ha-dialog
         open
@@ -1317,22 +1376,27 @@ export class StrainLibraryDialog extends LitElement {
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-              <button class="md3-button tonal" @click=${close}>
-                Cancel
-              </button>
-              <button class="md3-button primary" @click=${() => {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.zip';
-        input.onchange = (e) => {
-          const file = (e.target as HTMLInputElement).files?.[0];
-          if (file) {
-            this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace: this._importReplace } }));
-            this._importDialogOpen = false;
-          }
-        };
-        input.click();
-      }}>
+              <button class="md3-button tonal" @click=${close}>Cancel</button>
+              <button
+                class="md3-button primary"
+                @click=${() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.zip';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      this.dispatchEvent(
+                        new CustomEvent('import-library', {
+                          detail: { file, replace: this._importReplace },
+                        })
+                      );
+                      this._importDialogOpen = false;
+                    }
+                  };
+                  input.click();
+                }}
+              >
                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiCloudUpload}"></path>
                 </svg>
@@ -1345,7 +1409,6 @@ export class StrainLibraryDialog extends LitElement {
     `;
   }
 
-
   private _renderTabBar(): TemplateResult {
     return html`
       <div class="main-tab-bar">
@@ -1356,7 +1419,9 @@ export class StrainLibraryDialog extends LitElement {
             this.focusLineage = false;
             this._cameFromEditor = false;
           }}
-        >Strains</button>
+        >
+          Strains
+        </button>
         <button
           class="tab-btn ${this._activeMainTab === 'seeds' ? 'active' : ''}"
           @click=${() => {
@@ -1364,7 +1429,9 @@ export class StrainLibraryDialog extends LitElement {
             this.focusLineage = false;
             this._cameFromEditor = false;
           }}
-        >Seeds &amp; Genetics</button>
+        >
+          Seeds &amp; Genetics
+        </button>
         <button
           class="tab-btn ${this._activeMainTab === 'tree' ? 'active' : ''}"
           @click=${() => {
@@ -1372,20 +1439,24 @@ export class StrainLibraryDialog extends LitElement {
             this.focusLineage = false;
             this._cameFromEditor = false;
           }}
-        >Tree View</button>
+        >
+          Tree View
+        </button>
         ${this._activeMainTab === 'tree'
-        ? html`
+          ? html`
               <button
                 class="tab-maximize-btn"
                 title="${this._treeMaximized ? 'Restore' : 'Maximize'}"
-                @click=${() => { this._treeMaximized = !this._treeMaximized; }}
+                @click=${() => {
+                  this._treeMaximized = !this._treeMaximized;
+                }}
               >
                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${this._treeMaximized ? mdiArrowCollapse : mdiArrowExpand}"></path>
                 </svg>
               </button>
             `
-        : nothing}
+          : nothing}
       </div>
     `;
   }
@@ -1403,10 +1474,14 @@ export class StrainLibraryDialog extends LitElement {
   private _renderTreeViewTab(): TemplateResult {
     return html`
       <div class="tab-content-tree">
-        <div style="padding: 8px 16px 0; display: flex; justify-content: space-between; align-items: center;">
+        <div
+          style="padding: 8px 16px 0; display: flex; justify-content: space-between; align-items: center;"
+        >
           <gs-filter-chips
             .filter=${this._libraryFilter}
-            @filter-changed=${(e: CustomEvent) => { this._libraryFilter = e.detail.filter; }}
+            @filter-changed=${(e: CustomEvent) => {
+              this._libraryFilter = e.detail.filter;
+            }}
           ></gs-filter-chips>
           <div style="display: flex; align-items: center; gap: 12px;">
             ${this._cameFromEditor
@@ -1431,7 +1506,9 @@ export class StrainLibraryDialog extends LitElement {
               : nothing}
             <button
               class="btn-close-tree"
-              @click=${() => { this.dispatchEvent(new CustomEvent('close')); }}
+              @click=${() => {
+                this.dispatchEvent(new CustomEvent('close'));
+              }}
             >
               <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
@@ -1441,7 +1518,9 @@ export class StrainLibraryDialog extends LitElement {
         </div>
         <genetics-tree-view
           .nodes=${this._treeNodes}
-          .focalId=${this.focusLineage && (this._editingStrain || this.editingStrain) ? (this._editingStrain?.key || this.editingStrain?.key) : null}
+          .focalId=${this.focusLineage && (this._editingStrain || this.editingStrain)
+            ? this._editingStrain?.key || this.editingStrain?.key
+            : null}
           .libraryKeys=${new Set(this.strains.map((s) => s.key))}
           @open-strain-editor=${(e: CustomEvent<{ id: string }>) => {
             const strain = this.strains.find((s) => s.key === e.detail.id);
@@ -1455,5 +1534,4 @@ export class StrainLibraryDialog extends LitElement {
       </div>
     `;
   }
-
 }

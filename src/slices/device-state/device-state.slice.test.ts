@@ -20,7 +20,7 @@ type HassStates = Record<string, HassEntity>;
 function makeHassEntity(
   entityId: string,
   state: string,
-  attributes: Record<string, unknown> = {},
+  attributes: Record<string, unknown> = {}
 ): HassEntity {
   return {
     entity_id: entityId,
@@ -133,7 +133,7 @@ describe('computeDeviceSnapshot — light sensor unavailable state', () => {
       const snapshot = computeDeviceSnapshot(device, hassStates);
 
       expect(snapshot.lightSensors!.value).toBeUndefined();
-    },
+    }
   );
 
   it('returns undefined value when light sensor entity is absent from hass states', () => {
@@ -218,7 +218,7 @@ describe('computeDeviceSnapshot — on/off device types (single entity)', () => 
       expect(snapshot[deviceType]).not.toBeNull();
       expect(snapshot[deviceType]!.value).toBe('On');
       expect(snapshot[deviceType]!.entityIds).toEqual([entityId]);
-    },
+    }
   );
 
   it.each(ON_OFF_DEVICES)(
@@ -234,7 +234,7 @@ describe('computeDeviceSnapshot — on/off device types (single entity)', () => 
       const snapshot = computeDeviceSnapshot(device, hassStates);
 
       expect(snapshot[deviceType]!.value).toBe('Off');
-    },
+    }
   );
 
   it.each(ON_OFF_DEVICES)(
@@ -250,14 +250,19 @@ describe('computeDeviceSnapshot — on/off device types (single entity)', () => 
       const snapshot = computeDeviceSnapshot(device, hassStates);
 
       expect(snapshot[deviceType]!.value).toBeUndefined();
-    },
+    }
   );
 
   it.each(ON_OFF_DEVICES)(
     '$deviceType: resolves singular entity field (e.g. exhaustEntity) as single-entity list',
     ({ deviceType, entityId }) => {
       // Use singular field names where they exist
-      const singularAttrMap: Partial<Record<OnOffDeviceConfig['deviceType'], keyof import('../../services/types').EnvironmentAttributes>> = {
+      const singularAttrMap: Partial<
+        Record<
+          OnOffDeviceConfig['deviceType'],
+          keyof import('../../services/types').EnvironmentAttributes
+        >
+      > = {
         exhaustFans: 'exhaustEntity',
         circulationFans: 'circulationFanEntity',
         humidifiers: 'humidifierEntity',
@@ -276,7 +281,7 @@ describe('computeDeviceSnapshot — on/off device types (single entity)', () => 
       const snapshot = computeDeviceSnapshot(device, hassStates);
 
       expect(snapshot[deviceType]!.value).toBe('On');
-    },
+    }
   );
 });
 
@@ -319,7 +324,7 @@ describe('computeDeviceSnapshot — multiple entities', () => {
 
       expect(snapshot[deviceType]!.value).toBe('Multiple');
       expect(snapshot[deviceType]!.multiValues).toEqual(['On', 'Off']);
-    },
+    }
   );
 
   it('excludes unavailable entities from multiValues but still returns "Multiple" value', () => {
@@ -351,18 +356,15 @@ describe('computeDeviceSnapshot — icon field', () => {
     ['circulationFans', { circulationFanEntities: ['switch.circ'] }],
     ['humidifiers', { humidifierEntities: ['switch.humi'] }],
     ['dehumidifiers', { dehumidifierEntities: ['switch.dehumi'] }],
-  ])(
-    '%s entry has a non-empty icon string',
-    (deviceType, attrs) => {
-      const device = makeDevice({ environmentAttributes: attrs });
-      const hassStates: HassStates = {};
+  ])('%s entry has a non-empty icon string', (deviceType, attrs) => {
+    const device = makeDevice({ environmentAttributes: attrs });
+    const hassStates: HassStates = {};
 
-      const snapshot = computeDeviceSnapshot(device, hassStates);
+    const snapshot = computeDeviceSnapshot(device, hassStates);
 
-      expect(typeof snapshot[deviceType]!.icon).toBe('string');
-      expect(snapshot[deviceType]!.icon.length).toBeGreaterThan(0);
-    },
-  );
+    expect(typeof snapshot[deviceType]!.icon).toBe('string');
+    expect(snapshot[deviceType]!.icon.length).toBeGreaterThan(0);
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -75,7 +75,11 @@ export class GrowspaceAnalyticsContainer extends LitElement {
     linkedGraphGroups.forEach((group) => {
       const active = group.filter((m) => activeEnvGraphs.has(m));
       if (active.length > 0) {
-        items.push({ type: 'group', metrics: active, sortIndex: Math.min(...active.map(getSortIndex)) });
+        items.push({
+          type: 'group',
+          metrics: active,
+          sortIndex: Math.min(...active.map(getSortIndex)),
+        });
         active.forEach((m) => processed.add(m));
       }
     });

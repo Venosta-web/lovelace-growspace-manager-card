@@ -16,8 +16,15 @@ import type { ReadableAtom } from 'nanostores';
 import type { PlantEntity } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { storeContext } from '../../../context';
-import { createGrowspaceGridViewModel, type GrowspaceGridViewModel } from '../viewmodels/growspace-grid.viewmodel';
-import type { GridCellClickEvent, GridDropEvent, GridMobileDropEvent } from '../components/growspace-grid-ui';
+import {
+  createGrowspaceGridViewModel,
+  type GrowspaceGridViewModel,
+} from '../viewmodels/growspace-grid.viewmodel';
+import type {
+  GridCellClickEvent,
+  GridDropEvent,
+  GridMobileDropEvent,
+} from '../components/growspace-grid-ui';
 import { GrowspaceGridUI } from '../components/growspace-grid-ui';
 import { gridInteraction$, select } from '../../../slices/grid-interaction';
 import '../components/growspace-grid-ui';
@@ -68,7 +75,12 @@ export class GrowspaceGridContainer extends LitElement {
     // Recreate ViewModel if grid layout or plants change
     if (changedProps.has('plants') || changedProps.has('rows') || changedProps.has('cols')) {
       if (this.store) {
-        this.viewModel = createGrowspaceGridViewModel(this.plants, this.rows, this.cols, this.store);
+        this.viewModel = createGrowspaceGridViewModel(
+          this.plants,
+          this.rows,
+          this.cols,
+          this.store
+        );
         this.viewModelController = new StoreController(this, this.viewModel);
       }
     }
@@ -128,7 +140,10 @@ export class GrowspaceGridContainer extends LitElement {
       if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
         this.store.actions.ui.togglePlantSelection(plantId);
       }
-      this.store.actions.ui.openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
+      this.store.actions.ui.openPlantOverviewDialog(
+        plant,
+        Array.from(this.store.ui.$selectedPlants.get())
+      );
     } else {
       this.store.actions.ui.openPlantOverviewDialog(plant);
     }

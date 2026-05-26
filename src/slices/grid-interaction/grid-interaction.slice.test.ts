@@ -75,7 +75,10 @@ describe('select()', () => {
     select('plant-1');
     startTransplant();
     select('plant-2');
-    const state = gridInteraction$.get() as Extract<GridInteractionState, { status: 'transplanting' }>;
+    const state = gridInteraction$.get() as Extract<
+      GridInteractionState,
+      { status: 'transplanting' }
+    >;
     expect(state.status).toBe('transplanting');
     expect(state.sourcePlantId).toBe('plant-1');
   });
@@ -89,7 +92,10 @@ describe('confirmWater()', () => {
   it('transitions from selected to confirming-water, carrying the plant ID', () => {
     select('plant-1');
     confirmWater();
-    const state = gridInteraction$.get() as Extract<GridInteractionState, { status: 'confirming-water' }>;
+    const state = gridInteraction$.get() as Extract<
+      GridInteractionState,
+      { status: 'confirming-water' }
+    >;
     expect(state.status).toBe('confirming-water');
     expect(state.plantId).toBe('plant-1');
   });
@@ -103,7 +109,10 @@ describe('confirmWater()', () => {
     select('plant-1');
     confirmWater();
     confirmWater();
-    const state = gridInteraction$.get() as Extract<GridInteractionState, { status: 'confirming-water' }>;
+    const state = gridInteraction$.get() as Extract<
+      GridInteractionState,
+      { status: 'confirming-water' }
+    >;
     expect(state.status).toBe('confirming-water');
     expect(state.plantId).toBe('plant-1');
   });
@@ -155,7 +164,10 @@ describe('startTransplant()', () => {
   it('transitions from selected to transplanting, recording the source plant', () => {
     select('plant-1');
     startTransplant();
-    const state = gridInteraction$.get() as Extract<GridInteractionState, { status: 'transplanting' }>;
+    const state = gridInteraction$.get() as Extract<
+      GridInteractionState,
+      { status: 'transplanting' }
+    >;
     expect(state.status).toBe('transplanting');
     expect(state.sourcePlantId).toBe('plant-1');
   });
@@ -176,7 +188,10 @@ describe('startTransplant()', () => {
     select('plant-1');
     startTransplant();
     startTransplant();
-    const state = gridInteraction$.get() as Extract<GridInteractionState, { status: 'transplanting' }>;
+    const state = gridInteraction$.get() as Extract<
+      GridInteractionState,
+      { status: 'transplanting' }
+    >;
     expect(state.status).toBe('transplanting');
     expect(state.sourcePlantId).toBe('plant-1');
   });

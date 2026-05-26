@@ -89,9 +89,7 @@ export class PlantCardUI extends LitElement {
         @keydown=${this._handleKeyDown}
       >
         ${this._renderBackground(safeImageUrl, srcset, strainName, imageCropMeta)}
-        ${this._renderAgePill()}
-        ${this._renderCheckbox()}
-        ${this._renderStatusIcons()}
+        ${this._renderAgePill()} ${this._renderCheckbox()} ${this._renderStatusIcons()}
         ${this._renderContent(strainName, pheno, stages)}
       </div>
     `;
@@ -161,11 +159,8 @@ export class PlantCardUI extends LitElement {
   private _renderStatusIcons(): TemplateResult {
     return html`
       <div class="status-icons">
-        ${this._renderSexBadge()}
-        ${this._renderTrainingIcon()}
-        ${this._renderIPMIcon()}
-        ${this._renderWateringIcon()}
-        ${this._renderProblemIcon()}
+        ${this._renderSexBadge()} ${this._renderTrainingIcon()} ${this._renderIPMIcon()}
+        ${this._renderWateringIcon()} ${this._renderProblemIcon()}
         ${this._renderGrowthDeviationIcon()}
       </div>
     `;
@@ -175,7 +170,11 @@ export class PlantCardUI extends LitElement {
     const sex = this.plant?.attributes?.sex;
     if (!sex || sex === 'unknown') return nothing;
     const symbols: Record<string, string> = { female: '♀', male: '♂', hermaphrodite: '⚥' };
-    const colors: Record<string, string> = { female: '#4caf50', male: '#2196f3', hermaphrodite: '#ff9800' };
+    const colors: Record<string, string> = {
+      female: '#4caf50',
+      male: '#2196f3',
+      hermaphrodite: '#ff9800',
+    };
     const symbol = symbols[sex];
     const color = colors[sex];
     if (!symbol) return nothing;
@@ -186,7 +185,8 @@ export class PlantCardUI extends LitElement {
         title="Sex: ${sex}"
         role="img"
         aria-label="Sex: ${sex}"
-      >${symbol}</span>
+        >${symbol}</span
+      >
     `;
   }
 
@@ -230,7 +230,12 @@ export class PlantCardUI extends LitElement {
     }
 
     return html`
-      <div class="status-icon watering" role="img" aria-label="Recently watered" title="Recently watered">
+      <div
+        class="status-icon watering"
+        role="img"
+        aria-label="Recently watered"
+        title="Recently watered"
+      >
         <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
       </div>
     `;

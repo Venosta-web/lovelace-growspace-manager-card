@@ -177,11 +177,7 @@ export class GsBreederManager extends LitElement {
     if (!this.open) return nothing;
 
     return html`
-      <gs-dialog
-        .open=${true}
-        .heading=${'Breeder Manager'}
-        .iconPath=${mdiAccountGroup}
-      >
+      <gs-dialog .open=${true} .heading=${'Breeder Manager'} .iconPath=${mdiAccountGroup}>
         <slot name="header-extra" slot="header-extra">
           <gs-help-tooltip
             content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
@@ -194,14 +190,18 @@ export class GsBreederManager extends LitElement {
           ${this._editorState ? this._renderEditor() : this._renderList()}
         </div>
 
-        ${!this._editorState ? html`
-          <div class="sd-footer">
-            <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px; flex:1;">
-              Breeders appear automatically when strains with breeder info are saved.
-            </span>
-            <button class="md3-button tonal" @click=${this._close}>Close</button>
-          </div>
-        ` : nothing}
+        ${!this._editorState
+          ? html`
+              <div class="sd-footer">
+                <span
+                  style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px; flex:1;"
+                >
+                  Breeders appear automatically when strains with breeder info are saved.
+                </span>
+                <button class="md3-button tonal" @click=${this._close}>Close</button>
+              </div>
+            `
+          : nothing}
       </gs-dialog>
 
       ${this._pendingDelete ? this._renderDeleteConfirmation() : nothing}
@@ -243,33 +243,50 @@ export class GsBreederManager extends LitElement {
 
     return html`
       <div class="breeder-list">
-        ${breeders.map((b) => html`
-          <div class="breeder-card" @click=${() => this._startEdit(b.name, b.logo)}>
-            ${b.logo
-        ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
-        : html`<div class="breeder-logo-placeholder">
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiImage}"></path>
+        ${breeders.map(
+          (b) => html`
+            <div class="breeder-card" @click=${() => this._startEdit(b.name, b.logo)}>
+              ${b.logo
+                ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
+                : html`<div class="breeder-logo-placeholder">
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiImage}"></path>
+                    </svg>
+                  </div>`}
+              <div class="breeder-info">
+                <div class="breeder-name">${b.name}</div>
+                <div class="breeder-strain-count">
+                  ${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <div class="breeder-actions">
+                <button
+                  class="action-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._startEdit(b.name, b.logo);
+                  }}
+                >
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiPencil}"></path>
                   </svg>
-                </div>`}
-            <div class="breeder-info">
-              <div class="breeder-name">${b.name}</div>
-              <div class="breeder-strain-count">${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}</div>
+                </button>
+                <button
+                  class="action-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._pendingDelete = b.name;
+                  }}
+                  style="color:var(--error-color, #f44336);"
+                >
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDelete}"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div class="breeder-actions">
-              <button class="action-btn" @click=${(e: Event) => { e.stopPropagation(); this._startEdit(b.name, b.logo); }}>
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiPencil}"></path>
-                </svg>
-              </button>
-              <button class="action-btn" @click=${(e: Event) => { e.stopPropagation(); this._pendingDelete = b.name; }} style="color:var(--error-color, #f44336);">
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiDelete}"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-        `)}
+          `
+        )}
       </div>
     `;
   }
@@ -295,13 +312,22 @@ export class GsBreederManager extends LitElement {
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-          <button class="md3-button tonal" style="padding:0 12px; height:32px;" @click=${() => (this._editorState = null)}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+          <button
+            class="md3-button tonal"
+            style="padding:0 12px; height:32px;"
+            @click=${() => (this._editorState = null)}
+          >
+            <svg
+              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
               <path d="${mdiArrowLeft}"></path>
             </svg>
             Back
           </button>
-          <h3 style="margin:0; color:var(--primary-text-color);">${isEdit ? 'Edit Breeder' : 'New Breeder'}</h3>
+          <h3 style="margin:0; color:var(--primary-text-color);">
+            ${isEdit ? 'Edit Breeder' : 'New Breeder'}
+          </h3>
         </div>
 
         <div class="sd-form-group">
@@ -312,8 +338,11 @@ export class GsBreederManager extends LitElement {
             placeholder="e.g. Royal Queen Seeds"
             .value=${state.name}
             @input=${(e: InputEvent) => {
-        this._editorState = { ...this._editorState!, name: (e.target as HTMLInputElement).value };
-      }}
+              this._editorState = {
+                ...this._editorState!,
+                name: (e.target as HTMLInputElement).value,
+              };
+            }}
           />
         </div>
 
@@ -321,42 +350,92 @@ export class GsBreederManager extends LitElement {
           <label class="sd-label">Breeder Logo</label>
           <div style="display:flex; align-items:center; gap:16px;">
             ${state.logo
-        ? html`<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
-        : html`<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+              ? html`<img
+                  src="${state.logo}"
+                  style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;"
+                />`
+              : html`<div
+                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiImage}"></path>
+                  </svg>
                 </div>`}
             <div style="display:flex; gap:8px;">
-              <button class="md3-button tonal" style="height:36px; padding:0 16px; font-size:0.85rem;" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
-                <svg style="width:16px;height:16px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+              <button
+                class="md3-button tonal"
+                style="height:36px; padding:0 16px; font-size:0.85rem;"
+                @click=${(e: Event) =>
+                  ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}
+              >
+                <svg
+                  style="width:16px;height:16px;fill:currentColor;margin-right:6px;"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="${mdiCloudUpload}"></path>
+                </svg>
                 ${state.logo ? 'Change Logo' : 'Upload Logo'}
               </button>
-              <input type="file" accept="image/*" style="display:none" @change=${handleLogoUpload} />
-              ${state.logo ? html`
-                <button class="md3-button text" style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);" @click=${() => { this._editorState = { ...this._editorState!, logo: '' }; }}>
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-                </button>
-              ` : nothing}
+              <input
+                type="file"
+                accept="image/*"
+                style="display:none"
+                @change=${handleLogoUpload}
+              />
+              ${state.logo
+                ? html`
+                    <button
+                      class="md3-button text"
+                      style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
+                      @click=${() => {
+                        this._editorState = { ...this._editorState!, logo: '' };
+                      }}
+                    >
+                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiDelete}"></path>
+                      </svg>
+                    </button>
+                  `
+                : nothing}
             </div>
           </div>
         </div>
 
-        ${isEdit && affectedStrains.length > 0 ? html`
-          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;">
-            <label class="sd-label" style="margin-bottom:8px;">Strains using this breeder (${affectedStrains.length})</label>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              ${affectedStrains.map((s) => html`
-                <span style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;">
-                  ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
-                </span>
-              `)}
-            </div>
-          </div>
-        ` : nothing}
+        ${isEdit && affectedStrains.length > 0
+          ? html`
+              <div
+                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;"
+              >
+                <label class="sd-label" style="margin-bottom:8px;"
+                  >Strains using this breeder (${affectedStrains.length})</label
+                >
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  ${affectedStrains.map(
+                    (s) => html`
+                      <span
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;"
+                      >
+                        ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
+                      </span>
+                    `
+                  )}
+                </div>
+              </div>
+            `
+          : nothing}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => (this._editorState = null)}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSave()} ?disabled=${!state.name.trim()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+          <button class="md3-button tonal" @click=${() => (this._editorState = null)}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            @click=${() => this._handleSave()}
+            ?disabled=${!state.name.trim()}
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiCheck}"></path>
+            </svg>
             ${isEdit ? 'Save Changes' : 'Create Breeder'}
           </button>
         </div>
@@ -371,22 +450,44 @@ export class GsBreederManager extends LitElement {
     return html`
       <ha-dialog
         open
-        @closed=${() => { this._pendingDelete = null; }}
+        @closed=${() => {
+          this._pendingDelete = null;
+        }}
         hideActions
         without-header
         width="large"
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div
+          class="glass-dialog-container"
+          style="height: auto; padding: 24px; display: flex; flex-direction: column;"
+        >
           <h2 class="dialog-title">Remove Breeder?</h2>
-          <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
-            This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
+          <p
+            style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;"
+          >
+            This will remove <strong>"${breederName}"</strong> from ${affectedCount}
+            strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
           </p>
           <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-            <button class="md3-button tonal" @click=${() => { this._pendingDelete = null; }}>Cancel</button>
-            <button class="md3-button text" style="color:#f44336;" @click=${() => this._confirmDelete()}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
+            <button
+              class="md3-button tonal"
+              @click=${() => {
+                this._pendingDelete = null;
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              class="md3-button text"
+              style="color:#f44336;"
+              @click=${() => this._confirmDelete()}
+            >
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiDelete}"></path>
               </svg>
               Remove
@@ -409,13 +510,17 @@ export class GsBreederManager extends LitElement {
     const isEdit = !!state.originalName;
 
     if (isEdit) {
-      this.dispatchEvent(new CustomEvent('update-breeder', {
-        detail: { oldName: state.originalName, newName, logo: state.logo },
-      }));
+      this.dispatchEvent(
+        new CustomEvent('update-breeder', {
+          detail: { oldName: state.originalName, newName, logo: state.logo },
+        })
+      );
     } else {
-      this.dispatchEvent(new CustomEvent('save-breeder', {
-        detail: { name: newName, logo: state.logo },
-      }));
+      this.dispatchEvent(
+        new CustomEvent('save-breeder', {
+          detail: { name: newName, logo: state.logo },
+        })
+      );
     }
 
     this._editorState = null;
@@ -423,9 +528,11 @@ export class GsBreederManager extends LitElement {
 
   private _confirmDelete() {
     if (this._pendingDelete) {
-      this.dispatchEvent(new CustomEvent('delete-breeder', {
-        detail: { name: this._pendingDelete },
-      }));
+      this.dispatchEvent(
+        new CustomEvent('delete-breeder', {
+          detail: { name: this._pendingDelete },
+        })
+      );
       this._pendingDelete = null;
     }
   }

@@ -6,11 +6,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import type {
-  PlantEntity,
-  PlantOverviewEditedAttributes,
-  GrowspaceEvent,
-} from '../../../types';
+import type { PlantEntity, PlantOverviewEditedAttributes, GrowspaceEvent } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import { PlantUtils } from '../../../utils/plant-utils';
 
@@ -147,7 +143,9 @@ function processTimelineEvents(
   // Add logbook events for this plant
   const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
   logbookEvents
-    .filter((evt) => evt.plant_id === plantId || evt.growspace_id === plant.attributes?.growspace_id)
+    .filter(
+      (evt) => evt.plant_id === plantId || evt.growspace_id === plant.attributes?.growspace_id
+    )
     .forEach((evt) => {
       events.push({
         type: evt.category === 'note' ? 'note' : 'action',
@@ -266,7 +264,10 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       label: 'Take Clone',
       icon: 'mdiContentCopy',
       enabled: stage === 'mother' || stage === 'veg' || stage === 'flower',
-      tooltip: stage !== 'mother' && stage !== 'veg' && stage !== 'flower' ? 'Clone from mother or veg and flower plants' : undefined,
+      tooltip:
+        stage !== 'mother' && stage !== 'veg' && stage !== 'flower'
+          ? 'Clone from mother or veg and flower plants'
+          : undefined,
     },
     {
       id: 'print_label',
@@ -280,7 +281,8 @@ function getAvailableActions(plant: PlantEntity): ActionConfig[] {
       label: 'Log Pollination',
       icon: 'mdiDna',
       enabled: stage === 'flower' || stage === 'flowering',
-      tooltip: stage !== 'flower' && stage !== 'flowering' ? 'Only available in flower stage' : undefined,
+      tooltip:
+        stage !== 'flower' && stage !== 'flowering' ? 'Only available in flower stage' : undefined,
     },
   ];
 
@@ -350,13 +352,7 @@ export function createStablePlantOverviewViewModel(
   $logbookEvents: ReadableAtom<GrowspaceEvent[]>
 ): ReadableAtom<PlantOverviewViewModel> {
   return computed(
-    [
-      $plant,
-      $editedAttributes,
-      $uiState,
-      $logbookEvents,
-      store.grid.$growspaceOptions,
-    ],
+    [$plant, $editedAttributes, $uiState, $logbookEvents, store.grid.$growspaceOptions],
     (plant, editedAttributes, uiState, logbookEvents, growspaceOptions) => {
       // Fallback for null plant (initial state)
       if (!plant) {
@@ -389,8 +385,9 @@ export function createStablePlantOverviewViewModel(
       const displayName = typeof strainValue === 'string' ? strainValue : 'Unknown Strain';
 
       const phenoValue = editedAttributes?.phenotype;
-      const displaySubtitle = `${plant.state} Stage • ${typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
-        }`;
+      const displaySubtitle = `${plant.state} Stage • ${
+        typeof phenoValue === 'string' ? phenoValue : 'No Phenotype'
+      }`;
 
       const timelineEvents = processTimelineEvents(plant, logbookEvents);
       const plantStats = calculatePlantStats(plant);

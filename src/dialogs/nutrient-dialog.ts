@@ -133,51 +133,63 @@ export class NutrientDialog extends LitElement {
         .iconPath=${mdiBottleTonicPlus}
         @close=${this._close}
       >
-          <div class="tab-bar">
-            <div
-              class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
-              @click=${() => this._setTab('inventory')}
-            >
-              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClipboardList}"></path>
-              </svg>
-              Inventory
-              <gs-help-tooltip
-                content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
-                placement="bottom"
-                label="Inventory"
-              ></gs-help-tooltip>
-            </div>
-            <div
-              class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
-              @click=${() => this._setTab('presets')}
-            >
-              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiFormatListBulleted}"></path>
-              </svg>
-              Presets
-              <gs-help-tooltip
-                content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
-                placement="bottom"
-                label="Presets"
-              ></gs-help-tooltip>
-            </div>
+        <div class="tab-bar">
+          <div
+            class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
+            @click=${() => this._setTab('inventory')}
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClipboardList}"></path>
+            </svg>
+            Inventory
+            <gs-help-tooltip
+              content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
+              placement="bottom"
+              label="Inventory"
+            ></gs-help-tooltip>
           </div>
+          <div
+            class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
+            @click=${() => this._setTab('presets')}
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiFormatListBulleted}"></path>
+            </svg>
+            Presets
+            <gs-help-tooltip
+              content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
+              placement="bottom"
+              label="Presets"
+            ></gs-help-tooltip>
+          </div>
+        </div>
 
-          <div class="content-area">
-            ${this._activeTab === 'inventory'
-              ? html`<growspace-nutrient-inventory-dialog-ui
-                  .open=${true}
-                  .embedded=${true}
-                  .inventory=${this._inventoryController?.value ?? null}
-                  @update-stock=${(e: CustomEvent) => this.store.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-                  @add-stock=${(e: CustomEvent) => this.store.actions.library.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-                ></growspace-nutrient-inventory-dialog-ui>`
-              : html`<growspace-nutrient-presets-editor
-                  .open=${true}
-                  .embedded=${true}
-                ></growspace-nutrient-presets-editor>`}
-          </div>
+        <div class="content-area">
+          ${this._activeTab === 'inventory'
+            ? html`<growspace-nutrient-inventory-dialog-ui
+                .open=${true}
+                .embedded=${true}
+                .inventory=${this._inventoryController?.value ?? null}
+                @update-stock=${(e: CustomEvent) =>
+                  this.store.actions.library.updateNutrientStock(
+                    e.detail.id,
+                    e.detail.name,
+                    e.detail.current_ml,
+                    e.detail.initial_ml
+                  )}
+                @add-stock=${(e: CustomEvent) =>
+                  this.store.actions.library.updateNutrientStock(
+                    e.detail.id || `nutrient_${Date.now()}`,
+                    e.detail.name,
+                    e.detail.current_ml,
+                    e.detail.initial_ml
+                  )}
+              ></growspace-nutrient-inventory-dialog-ui>`
+            : html`<growspace-nutrient-presets-editor
+                .open=${true}
+                .embedded=${true}
+              ></growspace-nutrient-presets-editor>`}
+        </div>
       </gs-dialog>
     `;
   }

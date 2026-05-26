@@ -112,7 +112,11 @@ export class BatchCloneDialog extends LitElement {
       }
 
       try {
-        await this.store.actions.plant.takeClone(motherPlant, this._numClones, this._targetGrowspaceId);
+        await this.store.actions.plant.takeClone(
+          motherPlant,
+          this._numClones,
+          this._targetGrowspaceId
+        );
       } catch (_e) {
         errors.push(plantId);
       }
@@ -158,7 +162,9 @@ export class BatchCloneDialog extends LitElement {
               label="Destination"
               .value=${this._targetGrowspaceId}
               .options=${growspaceEntries.map(([id, name]) => ({ value: id, label: name }))}
-              @change=${(e: CustomEvent) => { this._targetGrowspaceId = e.detail; }}
+              @change=${(e: CustomEvent) => {
+                this._targetGrowspaceId = e.detail;
+              }}
             ></md3-select>
 
             <div class="clones-row">
@@ -177,11 +183,13 @@ export class BatchCloneDialog extends LitElement {
             </div>
           </div>
 
-          ${this._isSubmitting ? html`
-            <div class="progress-bar-wrap">
-              <div class="progress-bar" style="width: ${this._progress}%"></div>
-            </div>
-          ` : nothing}
+          ${this._isSubmitting
+            ? html`
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar" style="width: ${this._progress}%"></div>
+                </div>
+              `
+            : nothing}
         </div>
 
         <div class="button-group">

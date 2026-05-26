@@ -10,7 +10,7 @@ export class HassSubscriptionController implements ReactiveController {
     host.addController(this);
   }
 
-  hostConnected() { }
+  hostConnected() {}
 
   hostDisconnected() {
     this.unsubscribeAll();

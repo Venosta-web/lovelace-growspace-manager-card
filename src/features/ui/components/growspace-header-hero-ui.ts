@@ -39,13 +39,17 @@ export class GrowspaceHeaderHeroUI extends LitElement {
           (chip) => html`<div class="deck-item">${this._renderHeroCard(chip)}</div>`
         )}
       </div>
-      ${this.chips.length > 1 ? html`
-        <div class="deck-dots">
-          ${this.chips.map((_, i) => html`
-            <span class="deck-dot ${i === this._deckIndex ? 'active' : ''}"></span>
-          `)}
-        </div>
-      ` : nothing}
+      ${this.chips.length > 1
+        ? html`
+            <div class="deck-dots">
+              ${this.chips.map(
+                (_, i) => html`
+                  <span class="deck-dot ${i === this._deckIndex ? 'active' : ''}"></span>
+                `
+              )}
+            </div>
+          `
+        : nothing}
     `;
   }
 
@@ -55,7 +59,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       e.dataTransfer.setData('text/plain', metric);
     }
     this.dispatchEvent(
-      new CustomEvent('chip-drag-start', { detail: { metric, event: e }, bubbles: true, composed: true })
+      new CustomEvent('chip-drag-start', {
+        detail: { metric, event: e },
+        bubbles: true,
+        composed: true,
+      })
     );
   }
 
@@ -308,7 +316,11 @@ export class GrowspaceHeaderHeroUI extends LitElement {
       return this._renderDeck();
     }
     return html`
-      ${repeat(this.chips, (chip) => chip.key, (chip) => this._renderHeroCard(chip))}
+      ${repeat(
+        this.chips,
+        (chip) => chip.key,
+        (chip) => this._renderHeroCard(chip)
+      )}
     `;
   }
 
@@ -325,8 +337,8 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     let vpdSegments: Array<{ path: string; color: string }> = [];
 
     if (isVpd && this.device) {
-    const historyData = (this.historyCache as any)?.vpd;
-    const lightHistory = (this.historyCache as any)?.light || [];
+      const historyData = (this.historyCache as any)?.vpd;
+      const lightHistory = (this.historyCache as any)?.light || [];
 
       const overviewEntity = this.device.overviewEntityId
         ? this.hass?.states[this.device.overviewEntityId]
@@ -394,8 +406,8 @@ export class GrowspaceHeaderHeroUI extends LitElement {
     return html`
       <div
         class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active
-        ? 'active'
-        : ''} ${chip.linked ? 'linked' : ''}"
+          ? 'active'
+          : ''} ${chip.linked ? 'linked' : ''}"
         draggable="${!this.isMobile || this.mobileLink}"
         @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
         @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
@@ -404,7 +416,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         title="${chip.tooltip || ''}"
       >
         ${useVpdSegments
-        ? html`
+          ? html`
               <svg
                 class="hero-sparkline"
                 viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
@@ -419,14 +431,14 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                   fill="transparent"
                 />
                 ${vpdSegments.map(
-          (seg) => svg`
+                  (seg) => svg`
                       <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
                     `
-        )}
+                )}
               </svg>
             `
-        : sparklinePaths.length > 0
-          ? html`
+          : sparklinePaths.length > 0
+            ? html`
                 <svg
                   class="hero-sparkline"
                   viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
@@ -445,7 +457,7 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                     </linearGradient>
                   </defs>
                   ${sparklinePaths.map(
-            (p) => svg`
+                    (p) => svg`
                     <path
                       d="${p.d}"
                       fill="none"
@@ -456,14 +468,14 @@ export class GrowspaceHeaderHeroUI extends LitElement {
                       style="opacity: ${p.color === sparklineColor ? 1 : 0.6}"
                     />
                   `
-          )}
+                  )}
                   <path
                     d="${sparklinePaths[0].d} V ${sparklineHeight} H 0 Z"
                     fill="url(#sparkline-grad-${chip.key})"
                   />
                 </svg>
               `
-          : ''}
+            : ''}
 
         <div class="hero-header">
           <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
@@ -475,17 +487,17 @@ export class GrowspaceHeaderHeroUI extends LitElement {
 
         <div class="hero-value-group">
           ${chip.multiValues && chip.multiValues.length > 0
-        ? html`
+            ? html`
                 <div class="hero-multi-values">
                   ${chip.multiValues.map(
-          (v, i) => html`
-                       ${i > 0 ? html`<div class="hero-multi-divider"></div>` : ''}
+                    (v, i) => html`
+                      ${i > 0 ? html`<div class="hero-multi-divider"></div>` : ''}
                       <span>${v}</span>
                     `
-        )}
+                  )}
                 </div>
               `
-        : html`
+            : html`
                 <span class="hero-value">${val}</span>
                 <span class="hero-unit">${unit}</span>
               `}

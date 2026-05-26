@@ -134,46 +134,44 @@ export class GrowReportDialog extends LitElement {
                 label="Grow Report"
               ></gs-help-tooltip>
             </div>
-            <div class="dialog-subtitle">${this.state?.growspaceId ? this.store.data.$devices.get().find(d => d.deviceId === this.state.growspaceId)?.name : ''}</div>
+            <div class="dialog-subtitle">
+              ${this.state?.growspaceId
+                ? this.store.data.$devices.get().find((d) => d.deviceId === this.state.growspaceId)
+                    ?.name
+                : ''}
+            </div>
           </div>
-          <ha-icon-button
-            .path=${mdiClose}
-            @click=${this._close}
-            title="Close"
-          ></ha-icon-button>
+          <ha-icon-button .path=${mdiClose} @click=${this._close} title="Close"></ha-icon-button>
         </div>
         <div class="content">
-
           ${this._loading
             ? html`<div class="loading-state">
                 <ha-circular-progress active></ha-circular-progress>
                 <span>Generating report data...</span>
               </div>`
             : this._renderReportContent()}
-          
         </div>
-        
+
         <div slot="primaryAction" class="actions">
-          <mwc-button
-            label="Close"
-            @click=${this._close}
-          ></mwc-button>
-          ${this._reportData ? html`
-            <mwc-button
-              outlined
-              label="Export JSON"
-              icon="mdi:code-json"
-              ?disabled=${this._exporting}
-              @click=${() => this._exportReport('json')}
-            ></mwc-button>
-            <mwc-button
-              raised
-              label="Export PDF"
-              icon="mdi:file-pdf-box"
-              ?disabled=${this._exporting}
-              @click=${() => this._exportReport('pdf')}
-            ></mwc-button>
-          ` : ''}
+          <mwc-button label="Close" @click=${this._close}></mwc-button>
+          ${this._reportData
+            ? html`
+                <mwc-button
+                  outlined
+                  label="Export JSON"
+                  icon="mdi:code-json"
+                  ?disabled=${this._exporting}
+                  @click=${() => this._exportReport('json')}
+                ></mwc-button>
+                <mwc-button
+                  raised
+                  label="Export PDF"
+                  icon="mdi:file-pdf-box"
+                  ?disabled=${this._exporting}
+                  @click=${() => this._exportReport('pdf')}
+                ></mwc-button>
+              `
+            : ''}
         </div>
       </ha-dialog>
     `;
@@ -182,9 +180,7 @@ export class GrowReportDialog extends LitElement {
   private _renderReportContent() {
     if (this._error) {
       return html`
-        <ha-alert alert-type="error">
-          ${this._error}
-        </ha-alert>
+        <ha-alert alert-type="error"> ${this._error} </ha-alert>
         <mwc-button label="Retry" @click=${() => this._loadReport()}></mwc-button>
       `;
     }
@@ -194,8 +190,7 @@ export class GrowReportDialog extends LitElement {
     }
 
     return html`
-      ${this._renderSummarySection()}
-      ${this._renderEnvironmentSection()}
+      ${this._renderSummarySection()} ${this._renderEnvironmentSection()}
       ${this._renderHarvestSection()}
     `;
   }
@@ -217,14 +212,16 @@ export class GrowReportDialog extends LitElement {
             <span class="stat-value">${summary.strains?.length || 0}</span>
           </div>
         </div>
-        ${summary.strains?.length ? html`
-          <div style="margin-top: 12px;">
-            <span class="stat-label">Cultivated Strains:</span>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
-              ${summary.strains.map((s: string) => html`<ha-chip>${s}</ha-chip>`)}
-            </div>
-          </div>
-        ` : ''}
+        ${summary.strains?.length
+          ? html`
+              <div style="margin-top: 12px;">
+                <span class="stat-label">Cultivated Strains:</span>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                  ${summary.strains.map((s: string) => html`<ha-chip>${s}</ha-chip>`)}
+                </div>
+              </div>
+            `
+          : ''}
       </div>
     `;
   }
@@ -239,11 +236,15 @@ export class GrowReportDialog extends LitElement {
         <div class="grid-stats">
           <div class="stat-item">
             <span class="stat-label">Temperature</span>
-            <span class="stat-value">${env.temperature_avg ? `${env.temperature_avg.toFixed(1)}°C` : 'N/A'}</span>
+            <span class="stat-value"
+              >${env.temperature_avg ? `${env.temperature_avg.toFixed(1)}°C` : 'N/A'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">Humidity</span>
-            <span class="stat-value">${env.humidity_avg ? `${env.humidity_avg.toFixed(1)}%` : 'N/A'}</span>
+            <span class="stat-value"
+              >${env.humidity_avg ? `${env.humidity_avg.toFixed(1)}%` : 'N/A'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">VPD</span>
@@ -264,15 +265,21 @@ export class GrowReportDialog extends LitElement {
         <div class="grid-stats">
           <div class="stat-item">
             <span class="stat-label">Total Wet Weight</span>
-            <span class="stat-value">${harvest.total_wet_weight ? `${harvest.total_wet_weight}g` : '0g'}</span>
+            <span class="stat-value"
+              >${harvest.total_wet_weight ? `${harvest.total_wet_weight}g` : '0g'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">Total Dry Weight</span>
-            <span class="stat-value">${harvest.total_dry_weight ? `${harvest.total_dry_weight}g` : '0g'}</span>
+            <span class="stat-value"
+              >${harvest.total_dry_weight ? `${harvest.total_dry_weight}g` : '0g'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">Total Trim</span>
-            <span class="stat-value">${harvest.total_trim_weight ? `${harvest.total_trim_weight}g` : '0g'}</span>
+            <span class="stat-value"
+              >${harvest.total_trim_weight ? `${harvest.total_trim_weight}g` : '0g'}</span
+            >
           </div>
         </div>
       </div>

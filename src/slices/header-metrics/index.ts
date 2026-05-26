@@ -25,7 +25,11 @@ import {
 import { DateTime } from 'luxon';
 import type { EnvSnapshot } from '../environment';
 import type { PlantEntity } from '../../features/plants/types';
-import type { IrrigationConfig, IrrigationScheduleItem, IrrigationTank } from '../../services/types';
+import type {
+  IrrigationConfig,
+  IrrigationScheduleItem,
+  IrrigationTank,
+} from '../../services/types';
 import { MetricKey } from '../../features/environment/constants';
 import { PlantUtils } from '../../utils/plant-utils';
 
@@ -86,10 +90,7 @@ const STAGE_COLORS: Record<string, string> = {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-function _isMetricLinked(
-  key: string,
-  groups: string[][],
-): { linked: boolean; groupIndex: number } {
+function _isMetricLinked(key: string, groups: string[][]): { linked: boolean; groupIndex: number } {
   for (let i = 0; i < groups.length; i++) {
     if (groups[i].includes(key)) return { linked: true, groupIndex: i };
   }
@@ -110,7 +111,7 @@ function _makeChip(
   value: string,
   opts: ChipOpts = {},
   activeEnvGraphs: Set<string>,
-  linkedGraphGroups: string[][],
+  linkedGraphGroups: string[][]
 ): HeaderChip {
   const { linked, groupIndex } = _isMetricLinked(key, linkedGraphGroups);
   const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
@@ -157,7 +158,7 @@ type TankStatus = 'optimal' | 'warning' | 'danger' | undefined;
 
 function _getTankDepletionStatus(
   hoursRemaining: number | null | undefined,
-  depletionStatus: IrrigationTank['depletionStatus'],
+  depletionStatus: IrrigationTank['depletionStatus']
 ): TankStatus {
   if (depletionStatus === 'insufficient_data' || depletionStatus == null) return undefined;
   if (depletionStatus === 'static' || depletionStatus === 'refilling') return 'optimal';
@@ -177,7 +178,7 @@ function _formatTimeRemaining(hours: number | null | undefined): string {
 function _buildTankChip(
   tanks: IrrigationTank[],
   activeEnvGraphs: Set<string>,
-  linkedGraphGroups: string[][],
+  linkedGraphGroups: string[][]
 ): HeaderChip | null {
   if (tanks.length === 0) return null;
 
@@ -197,7 +198,7 @@ function _buildTankChip(
       `${fillPct}%${timeStr}`,
       { label: 'Tank', status, tooltip, entityIds: [tank.sensorEntity] },
       activeEnvGraphs,
-      linkedGraphGroups,
+      linkedGraphGroups
     );
   }
 
@@ -206,7 +207,7 @@ function _buildTankChip(
   if (validLevels.length === 0) return null;
 
   const multiValues = validLevels.map(
-    (t) => `${Math.round(t.fillLevel!)}%${_formatTimeRemaining(t.hoursRemaining)}`,
+    (t) => `${Math.round(t.fillLevel!)}%${_formatTimeRemaining(t.hoursRemaining)}`
   );
   const avg = validLevels.reduce((sum, t) => sum + t.fillLevel!, 0) / validLevels.length;
 
@@ -231,7 +232,7 @@ function _buildTankChip(
       tooltip: `${tanks.length} tanks`,
     },
     activeEnvGraphs,
-    linkedGraphGroups,
+    linkedGraphGroups
   );
 }
 
@@ -254,7 +255,7 @@ export function computeHeaderMetrics(
   tankLevels: IrrigationTank[],
   viewContext: ViewContext,
   activeEnvGraphs: Set<string> = new Set(),
-  linkedGraphGroups: string[][] = [],
+  linkedGraphGroups: string[][] = []
 ): HeaderMetricsResult {
   // --- Dominant stage ---
   let dominant: DominantStageInfo | undefined;
@@ -285,8 +286,8 @@ export function computeHeaderMetrics(
               'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.',
           },
           activeEnvGraphs,
-          linkedGraphGroups,
-        ),
+          linkedGraphGroups
+        )
       );
     }
 
@@ -301,8 +302,8 @@ export function computeHeaderMetrics(
               'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.',
           },
           activeEnvGraphs,
-          linkedGraphGroups,
-        ),
+          linkedGraphGroups
+        )
       );
     }
 
@@ -318,8 +319,8 @@ export function computeHeaderMetrics(
               'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.',
           },
           activeEnvGraphs,
-          linkedGraphGroups,
-        ),
+          linkedGraphGroups
+        )
       );
     }
 
@@ -334,8 +335,8 @@ export function computeHeaderMetrics(
               'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.',
           },
           activeEnvGraphs,
-          linkedGraphGroups,
-        ),
+          linkedGraphGroups
+        )
       );
     }
   }
@@ -358,8 +359,8 @@ export function computeHeaderMetrics(
           nextIrrigation,
           { label: 'Next' },
           activeEnvGraphs,
-          linkedGraphGroups,
-        ),
+          linkedGraphGroups
+        )
       );
     }
 
@@ -372,8 +373,8 @@ export function computeHeaderMetrics(
           nextDrain,
           { label: 'Next' },
           activeEnvGraphs,
-          linkedGraphGroups,
-        ),
+          linkedGraphGroups
+        )
       );
     }
   }
@@ -390,8 +391,8 @@ export function computeHeaderMetrics(
             'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.',
         },
         activeEnvGraphs,
-        linkedGraphGroups,
-      ),
+        linkedGraphGroups
+      )
     );
   }
 
@@ -400,8 +401,7 @@ export function computeHeaderMetrics(
     const { isOptimal, reasons } = envSnapshot.optimalConditions;
     let optimalLabel = 'Optimal Conditions';
     if (!isOptimal) {
-      optimalLabel =
-        reasons.length > 0 ? `Not Optimal: ${reasons.join(', ')}` : 'Not Optimal';
+      optimalLabel = reasons.length > 0 ? `Not Optimal: ${reasons.join(', ')}` : 'Not Optimal';
     }
     chips.push(
       _makeChip(
@@ -410,8 +410,8 @@ export function computeHeaderMetrics(
         optimalLabel,
         { status: isOptimal ? 'optimal' : 'warning' },
         activeEnvGraphs,
-        linkedGraphGroups,
-      ),
+        linkedGraphGroups
+      )
     );
   }
 

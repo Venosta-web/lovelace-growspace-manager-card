@@ -6,7 +6,7 @@
 
 // Re-export everything for backwards compatibility
 export * from './lib/constants';
-export * from './lib/types/hass';  // For EntityState, BINARY_ON_STATES
+export * from './lib/types/hass'; // For EntityState, BINARY_ON_STATES
 export * from './features/environment/constants';
 export * from './features/plants/constants';
-export * from './features/plants/types';  // For GrowspaceType enum
+export * from './features/plants/types'; // For GrowspaceType enum

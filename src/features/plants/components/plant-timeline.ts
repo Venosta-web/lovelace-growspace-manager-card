@@ -497,7 +497,9 @@ export class PlantTimeline extends LitElement {
       (e) => e.type === 'stage_change' || e.type === 'milestone'
     );
     const currentStage = latestStageEvent
-      ? latestStageEvent.type === 'stage_change' ? latestStageEvent.to : latestStageEvent.label
+      ? latestStageEvent.type === 'stage_change'
+        ? latestStageEvent.to
+        : latestStageEvent.label
       : undefined;
     const stageColor = this._getStageColor(currentStage);
 
@@ -515,21 +517,21 @@ export class PlantTimeline extends LitElement {
         <quick-note-input @submit=${this._handleNoteSubmit}></quick-note-input>
 
         ${sortedEvents.length === 0
-        ? html`
+          ? html`
               <div style="text-align: center; color: var(--secondary-text-color); padding: 20px;">
                 No entries for this plant yet.
               </div>
             `
-        : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
-          const alerts = dayEvents.filter((e) => e.type === 'alert');
-          const others = dayEvents.filter((e) => e.type !== 'alert');
+          : Array.from(groupedByDay.entries()).map(([_, dayEvents]) => {
+              const alerts = dayEvents.filter((e) => e.type === 'alert');
+              const others = dayEvents.filter((e) => e.type !== 'alert');
 
-          return html`
+              return html`
                 <div class="day-group">
                   <div class="day-header">${formatRelativeDay(new Date(dayEvents[0].date))}</div>
 
                   ${alerts.length > 2
-              ? html`
+                    ? html`
                         <div class="day-summary glass-surface">
                           <svg
                             viewBox="0 0 24 24"
@@ -543,11 +545,11 @@ export class PlantTimeline extends LitElement {
                           >
                         </div>
                       `
-              : alerts.map((event) => this._renderEvent(event, sortedEvents))}
+                    : alerts.map((event) => this._renderEvent(event, sortedEvents))}
                   ${others.map((event) => this._renderEvent(event, sortedEvents))}
                 </div>
               `;
-        })}
+            })}
       </div>
     `;
   }
@@ -557,13 +559,13 @@ export class PlantTimeline extends LitElement {
 
     return html`
       <div
-        class="event type-${event.type} ${event.type === 'action' && event.action ? 'action-' + event.action : ''
-      } ${event.type === 'environmental_report'
-        ? event.sensor_type === 'night_report'
-          ? 'is-night'
-          : 'is-day'
-        : ''
-      } glass-surface"
+        class="event type-${event.type} ${event.type === 'action' && event.action
+          ? 'action-' + event.action
+          : ''} ${event.type === 'environmental_report'
+          ? event.sensor_type === 'night_report'
+            ? 'is-night'
+            : 'is-day'
+          : ''} glass-surface"
       >
         <div class="icon-wrapper">
           <svg viewBox="0 0 24 24">
@@ -571,7 +573,7 @@ export class PlantTimeline extends LitElement {
           </svg>
         </div>
         ${event.event_id
-        ? html`
+          ? html`
               <button
                 class="delete-btn"
                 @click=${(e: Event) => this._deleteEvent(e, event.event_id!)}
@@ -581,7 +583,7 @@ export class PlantTimeline extends LitElement {
                 </svg>
               </button>
             `
-        : nothing}
+          : nothing}
         <div class="date">
           ${formatTime(new Date(event.date))}
           ${isCorrelated ? html`<span class="correlated-badge">System Correlated</span>` : nothing}
@@ -631,12 +633,12 @@ export class PlantTimeline extends LitElement {
           </div>
           <div class="details">
             ${event.reasons?.map(
-          (r: string) =>
-            html`<span
+              (r: string) =>
+                html`<span
                   style="margin-right: 8px; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;"
                   >${r}</span
                 >`
-        )}
+            )}
           </div>
           ${(() => {
             // Robust Data Extraction: Prefer metadata, fallback to parsing 'reasons'
@@ -645,7 +647,7 @@ export class PlantTimeline extends LitElement {
             return temperature !== undefined && humidity !== undefined
               ? html`
                   <div
-                  style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
+                    style="margin-top: 12px; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 12px; border: 1px solid var(--divider-color);"
                   >
                     <vpd-heatmap
                       .temperature=${temperature}
@@ -681,31 +683,31 @@ export class PlantTimeline extends LitElement {
     ];
 
     return html`
-              <div class="metadata-chips" >
-                ${items.map((item) => {
-      const val = metadata[item.key as keyof TimelineEventMetadata];
-      if (val === undefined || val === null) return nothing;
-      const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
-      return html`
+      <div class="metadata-chips">
+        ${items.map((item) => {
+          const val = metadata[item.key as keyof TimelineEventMetadata];
+          if (val === undefined || val === null) return nothing;
+          const display = item.prefix ? `${item.label}${val}` : `${val}${item.label}`;
+          return html`
             <div class="chip ${item.key === 'ph' || item.key === 'ec' ? 'action-stat' : 'sensor'}">
               <svg viewBox="0 0 24 24" style="fill: currentColor;"><path d="${item.icon}" /></svg>
               <span>${display}</span>
             </div>
           `;
-    })}
-        </div>
-          `;
+        })}
+      </div>
+    `;
   }
 
   private _renderImages(images?: string[]) {
     if (!images || images.length === 0) return nothing;
 
     return html`
-          <div class="image-grid" >
-            ${images.map((img) => {
-      // If it's a relative path, prefix with /api/growspace_manager/v1/images/
-      const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
-      return html`
+      <div class="image-grid">
+        ${images.map((img) => {
+          // If it's a relative path, prefix with /api/growspace_manager/v1/images/
+          const src = img.startsWith('data:') ? img : `/api/growspace_manager/v1/images/${img}`;
+          return html`
             <img
               src=${src}
               @click=${() => this._openImage(src)}
@@ -713,17 +715,17 @@ export class PlantTimeline extends LitElement {
               @mouseleave=${() => (this._hoveredImage = null)}
             />
           `;
-    })}
-        </div>
-          `;
+        })}
+      </div>
+    `;
   }
 
   private _renderTags(tags?: string[]) {
     if (!tags || tags.length === 0) return nothing;
     return html`
-          <div class="tags" >
-            ${tags.map(
-      (tag) => html`
+      <div class="tags">
+        ${tags.map(
+          (tag) => html`
             <div class="tag">
               <svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:currentColor;">
                 <path d="${mdiTag}" />
@@ -731,9 +733,9 @@ export class PlantTimeline extends LitElement {
               ${tag}
             </div>
           `
-    )}
-        </div>
-          `;
+        )}
+      </div>
+    `;
   }
 
   private _openImage(src: string) {
@@ -754,9 +756,10 @@ export class PlantTimeline extends LitElement {
 
     if (!latestStageEvent) return 'vegetative';
 
-    const stage = latestStageEvent.type === 'stage_change'
-      ? latestStageEvent.to?.toLowerCase()
-      : latestStageEvent.label?.toLowerCase();
+    const stage =
+      latestStageEvent.type === 'stage_change'
+        ? latestStageEvent.to?.toLowerCase()
+        : latestStageEvent.label?.toLowerCase();
 
     if (stage === 'seedling' || stage === 'clone') return 'seedling';
     if (stage === 'veg' || stage === 'vegetative' || stage === 'mother') return 'vegetative';

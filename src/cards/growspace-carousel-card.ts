@@ -17,12 +17,12 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
 
   public setConfig(config: GrowspaceCarouselCardConfig): void {
     if (!config.growspaces || config.growspaces.length === 0) {
-      throw new Error("You need to define at least one growspace");
+      throw new Error('You need to define at least one growspace');
     }
 
     this._config = {
       interval: 15,
-      ...config
+      ...config,
     };
   }
 
@@ -47,7 +47,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     return {
       type: 'custom:growspace-carousel-card',
       growspaces: [],
-      interval: 15
+      interval: 15,
     };
   }
 
@@ -78,7 +78,10 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
   private _startTimer() {
     this._stopTimer();
     if (this._config && this._activeGrowspaces.length > 1) {
-      this._timer = window.setInterval(() => this._nextSlide(), (this._config.interval || 15) * 1000);
+      this._timer = window.setInterval(
+        () => this._nextSlide(),
+        (this._config.interval || 15) * 1000
+      );
     }
   }
 
@@ -107,7 +110,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     this._wrapper.classList.add('slide-out');
 
     // Wait for slide out animation (matches CSS transition duration)
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     // Advance the index; re-render will propagate the new default_growspace via config.
     this._currentIndex = (this._currentIndex + 1) % active.length;
@@ -124,7 +127,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     this._wrapper.classList.remove('slide-in-prepare');
 
     // Wait for slide in animation
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     this._isAnimating = false;
   }
@@ -143,7 +146,7 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
     };
 
     return html`
-      <div 
+      <div
         class="carousel-container"
         @mouseenter=${this._handleMouseEnter}
         @mouseleave=${this._handleMouseLeave}
@@ -167,11 +170,13 @@ export class GrowspaceCarouselCard extends LitElement implements LovelaceCard {
       position: relative;
       width: 100%;
       /* Avoid layout jumps during animation */
-      min-height: 200px; 
+      min-height: 200px;
     }
     .carousel-wrapper {
       width: 100%;
-      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition:
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       transform: translateX(0);
       opacity: 1;
     }

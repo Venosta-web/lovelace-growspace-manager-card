@@ -101,7 +101,7 @@ describe('getSubareas', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_subareas',
       { growspace_id: 'gs1' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -150,7 +150,7 @@ describe('addSubarea', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/add_subarea',
       { growspace_id: 'gs1', name: 'Veg Corner' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -204,7 +204,7 @@ describe('updateSubarea', () => {
         subarea_id: 'sa-1',
         environment_config: { temperature_sensor: 'sensor.new_temp' },
       },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -231,7 +231,7 @@ describe('updateSubarea', () => {
     vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('apply failed'));
 
     await expect(
-      updateSubarea('gs1', 'sa-1', { temperature_sensor: 'sensor.bad' }),
+      updateSubarea('gs1', 'sa-1', { temperature_sensor: 'sensor.bad' })
     ).rejects.toThrow();
 
     expect(subareas$.get()).toEqual([SUBAREA_A, SUBAREA_B]);
@@ -255,7 +255,7 @@ describe('removeSubarea', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/remove_subarea',
       { growspace_id: 'gs1', subarea_id: 'sa-1' },
-      expect.anything(),
+      expect.anything()
     );
   });
 

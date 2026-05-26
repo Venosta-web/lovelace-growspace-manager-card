@@ -120,7 +120,12 @@ describe('Cycle 2 — hero contains only temperature, humidity, vpd, co2', () =>
 
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
 
-    const heroKeys = new Set([MetricKey.TEMPERATURE, MetricKey.HUMIDITY, MetricKey.VPD, MetricKey.CO2]);
+    const heroKeys = new Set([
+      MetricKey.TEMPERATURE,
+      MetricKey.HUMIDITY,
+      MetricKey.VPD,
+      MetricKey.CO2,
+    ]);
     chips.forEach((c) => expect(heroKeys.has(c.key as MetricKey)).toBe(false));
   });
 

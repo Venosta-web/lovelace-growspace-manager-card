@@ -18,8 +18,14 @@ export async function fetchGrowReport(ctx: ActionContext, growspaceId: string) {
 /**
  * Export the grow report in a given format.
  */
-export async function exportGrowReport(ctx: ActionContext, growspaceId: string, format: string): Promise<void> {
+export async function exportGrowReport(
+  ctx: ActionContext,
+  growspaceId: string,
+  format: string
+): Promise<void> {
   await withAction(ctx, () => ctx.dataService.exportGrowReport(growspaceId, format), {
-    success: 'Grow report exported', errorPrefix: 'Failed to export report', rethrow: true,
+    success: 'Grow report exported',
+    errorPrefix: 'Failed to export report',
+    rethrow: true,
   });
 }

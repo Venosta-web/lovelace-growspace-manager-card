@@ -31,7 +31,7 @@ export class GrowspaceLogbookCardEditor extends LitElement implements LovelaceCa
           select: {
             options: [
               { label: 'Select a growspace...', value: '' },
-              ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
+              ...this._gsController.options.map((gs) => ({ label: gs.name, value: gs.id })),
             ],
           },
         },
@@ -65,8 +65,17 @@ export class GrowspaceLogbookCardEditor extends LitElement implements LovelaceCa
   static styles: CSSResultGroup = [
     sharedStyles,
     css`
-      .card-config { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-      .info-text { font-size: 0.9em; color: var(--secondary-text-color); margin-top: 8px; }
+      .card-config {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .info-text {
+        font-size: 0.9em;
+        color: var(--secondary-text-color);
+        margin-top: 8px;
+      }
     `,
   ];
 

@@ -35,9 +35,10 @@ export class GrowspaceOptionsController implements ReactiveController {
     if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
       this.options = Object.entries(raw as Record<string, unknown>).map(([id, value]) => ({
         id,
-        name: typeof value === 'object' && value !== null
-          ? String((value as Record<string, unknown>).name ?? id)
-          : String(value),
+        name:
+          typeof value === 'object' && value !== null
+            ? String((value as Record<string, unknown>).name ?? id)
+            : String(value),
       }));
     } else {
       this.options = [];

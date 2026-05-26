@@ -9,7 +9,9 @@ for (const tag of mockTags) {
   }
 }
 
-function createElement(props: Partial<{ open: boolean; strains: unknown[] }> = {}): GsBreederManager {
+function createElement(
+  props: Partial<{ open: boolean; strains: unknown[] }> = {}
+): GsBreederManager {
   const el = document.createElement('gs-breeder-manager') as GsBreederManager;
   Object.assign(el, { strains: [], open: false, ...props });
   document.body.appendChild(el);

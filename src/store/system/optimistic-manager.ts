@@ -15,7 +15,7 @@ export class OptimisticManager {
   constructor(
     private data: GrowspaceDataStore,
     private undoRedoManager: UndoRedoManager
-  ) { }
+  ) {}
 
   /**
    * Apply an optimistic update immediately.

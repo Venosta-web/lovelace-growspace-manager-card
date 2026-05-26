@@ -61,7 +61,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
         /* Remove default margins/padding to fit nicely in nested cards */
         margin: 0;
       }
-    `
+    `,
   ];
 
   protected firstUpdated() {
@@ -71,7 +71,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
     const forcedConfig = {
       ...this._config,
       compact: true,
-      initial_view_mode: ViewMode.STANDARD as unknown as string
+      initial_view_mode: ViewMode.STANDARD as unknown as string,
     };
     this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
     this.store.ui.setViewMode(ViewMode.STANDARD);
@@ -111,7 +111,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
     const forcedConfig = {
       ...this._config,
       compact: true,
-      initial_view_mode: ViewMode.STANDARD as unknown as string
+      initial_view_mode: ViewMode.STANDARD as unknown as string,
     };
     this.store.initializeSelectedDevice(forcedConfig as GrowspaceManagerCardConfig);
     this.store.ui.setViewMode(ViewMode.STANDARD);
@@ -140,11 +140,12 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   private _handleExitEditMode = () => this.store.ui.setEditMode(false);
   private _handleIPMSelected = () => this.store.actions.ui.openIPMDialog();
   private _handleTrainingSelected = () => this.store.actions.ui.openBatchTrainingDialog();
-  private _handleBatchAddPlants = () => this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
+  private _handleBatchAddPlants = () =>
+    this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
   private _handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
   private _handleTransplantMode = () => startTransplant();
 
-  // We ignore growspace changes and view mode changes as this card is dedicated 
+  // We ignore growspace changes and view mode changes as this card is dedicated
   // to a specific view. Growspace changes are handled contextually if needed.
   private _handleGrowspaceChanged(e: CustomEvent) {
     this.store.handleDeviceChange(e.detail);
@@ -155,7 +156,8 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+    const { devices, selectedDevice, growspaceOptions, gridLayout } =
+      this._viewController.value.grid;
     const { effectiveRows, grid } = gridLayout;
 
     if (this._viewController.value.ui.isLoading) {
@@ -174,7 +176,9 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
 
     const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
     if (!selectedDeviceData) {
-      return html`<ha-card><div class="error">No valid growspace selected. Please configure the card.</div></ha-card>`;
+      return html`<ha-card
+        ><div class="error">No valid growspace selected. Please configure the card.</div></ha-card
+      >`;
     }
 
     const isWide = selectedDeviceData.plantsPerRow > 7;

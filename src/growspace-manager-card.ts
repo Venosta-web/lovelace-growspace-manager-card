@@ -273,7 +273,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    const { devices, selectedDevice, growspaceOptions, gridLayout } = this._viewController.value.grid;
+    const { devices, selectedDevice, growspaceOptions, gridLayout } =
+      this._viewController.value.grid;
     const { effectiveRows, grid } = gridLayout;
 
     if (this._viewController.value.ui.isLoading) {

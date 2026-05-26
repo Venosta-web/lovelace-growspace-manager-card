@@ -143,19 +143,19 @@ describe('fetchGrowspaceEvents', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_log',
       expect.objectContaining({ growspace_id: 'gs1' }),
-      expect.anything(),
+      expect.anything()
     );
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_alerts',
       expect.objectContaining({ growspace_id: 'gs1' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('merges log and alert entries and sorts newest-first', async () => {
     vi.mocked(hassCallModule.hassCall)
-      .mockResolvedValueOnce({ gs1: [LOG_ENTRY_A] })   // get_log
-      .mockResolvedValueOnce({ gs1: [LOG_ENTRY_B] });  // get_alerts
+      .mockResolvedValueOnce({ gs1: [LOG_ENTRY_A] }) // get_log
+      .mockResolvedValueOnce({ gs1: [LOG_ENTRY_B] }); // get_alerts
 
     await fetchGrowspaceEvents('gs1');
 
@@ -193,20 +193,20 @@ describe('fetchGrowspaceEvents', () => {
 
     await fetchGrowspaceEvents('gs1', 25);
 
-    const logCall = vi.mocked(hassCallModule.hassCall).mock.calls.find(
-      (c) => c[0] === 'growspace_manager/get_log',
-    );
-    const alertsCall = vi.mocked(hassCallModule.hassCall).mock.calls.find(
-      (c) => c[0] === 'growspace_manager/get_alerts',
-    );
+    const logCall = vi
+      .mocked(hassCallModule.hassCall)
+      .mock.calls.find((c) => c[0] === 'growspace_manager/get_log');
+    const alertsCall = vi
+      .mocked(hassCallModule.hassCall)
+      .mock.calls.find((c) => c[0] === 'growspace_manager/get_alerts');
     expect((logCall![1] as Record<string, unknown>).limit).toBe(25);
     expect((alertsCall![1] as Record<string, unknown>).limit).toBeGreaterThan(25);
   });
 
   it('handles missing growspaceId key in response gracefully (empty arrays)', async () => {
     vi.mocked(hassCallModule.hassCall)
-      .mockResolvedValueOnce({})   // no gs1 key
-      .mockResolvedValueOnce({});  // no gs1 key
+      .mockResolvedValueOnce({}) // no gs1 key
+      .mockResolvedValueOnce({}); // no gs1 key
 
     await fetchGrowspaceEvents('gs1');
     expect(growspaceEvents$.get()).toEqual([]);
@@ -228,27 +228,27 @@ describe('fetchGrowspaceEvents', () => {
 describe('fetchPlantEvents', () => {
   it('calls hassCall twice with plant_id and growspace_id', async () => {
     vi.mocked(hassCallModule.hassCall)
-      .mockResolvedValueOnce({ 'p1': [] })
-      .mockResolvedValueOnce({ 'p1': [] });
+      .mockResolvedValueOnce({ p1: [] })
+      .mockResolvedValueOnce({ p1: [] });
 
     await fetchPlantEvents('p1', 'gs1');
 
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_log',
       expect.objectContaining({ plant_id: 'p1', growspace_id: 'gs1' }),
-      expect.anything(),
+      expect.anything()
     );
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_alerts',
       expect.objectContaining({ plant_id: 'p1', growspace_id: 'gs1' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('updates plantEvents$ with merged results', async () => {
     vi.mocked(hassCallModule.hassCall)
-      .mockResolvedValueOnce({ 'p1': [LOG_ENTRY_A] })
-      .mockResolvedValueOnce({ 'p1': [] });
+      .mockResolvedValueOnce({ p1: [LOG_ENTRY_A] })
+      .mockResolvedValueOnce({ p1: [] });
 
     await fetchPlantEvents('p1', 'gs1');
 
@@ -277,7 +277,7 @@ describe('addPlantNote', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/add_timeline_note',
       expect.objectContaining({ plant_id: 'p1', notes: 'looking healthy' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -315,7 +315,7 @@ describe('addGrowspaceNote', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/add_growspace_note',
       expect.objectContaining({ growspace_id: 'gs1', notes: 'foliar spray day' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -343,7 +343,7 @@ describe('deleteEvent', () => {
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/remove_timeline_event',
       { event_id: 'evt-1' },
-      expect.anything(),
+      expect.anything()
     );
   });
 

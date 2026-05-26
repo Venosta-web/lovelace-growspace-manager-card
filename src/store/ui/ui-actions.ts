@@ -11,11 +11,18 @@ export function setIsCompactView(ctx: ActionContext, value: boolean) {
   }
 }
 
-export function showToast(ctx: ActionContext, message: string, type: 'success' | 'error' | 'info' = 'info') {
+export function showToast(
+  ctx: ActionContext,
+  message: string,
+  type: 'success' | 'error' | 'info' = 'info'
+) {
   ctx.ui.showToast(message, type);
 }
 
-export function setActiveDialog(ctx: ActionContext, dialog: import('../../ui-state').ActiveDialogState) {
+export function setActiveDialog(
+  ctx: ActionContext,
+  dialog: import('../../ui-state').ActiveDialogState
+) {
   ctx.ui.setActiveDialog(dialog);
 }
 
@@ -365,7 +372,8 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
         cameraEntities: device?.environmentAttributes?.cameraEntities || [],
         visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
-        substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
+        substrateTemperatureSensors:
+          device?.environmentAttributes?.substrateTemperatureSensors || [],
         phSensors: device?.environmentAttributes?.phSensors || [],
         feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
         substrateEcSensors: device?.environmentAttributes?.substrateEcSensors || [],
@@ -379,10 +387,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
   });
 }
 
-export function openStrainLibraryDialog(
-  ctx: ActionContext,
-  initialTab?: 'strains' | 'seeds'
-) {
+export function openStrainLibraryDialog(ctx: ActionContext, initialTab?: 'strains' | 'seeds') {
   ctx.ui.setActiveDialog({
     type: 'STRAIN_LIBRARY',
     payload: { initialTab },

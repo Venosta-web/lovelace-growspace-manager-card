@@ -276,106 +276,103 @@ export class SubareaConfigDialog extends LitElement {
           label="Subarea Config"
         ></gs-help-tooltip>
 
-          <!-- Content -->
-          <div class="config-content" style="padding: 20px; overflow-y: auto; max-height: calc(90vh - 140px);">
-            <div class="form-section">
+        <!-- Content -->
+        <div
+          class="config-content"
+          style="padding: 20px; overflow-y: auto; max-height: calc(90vh - 140px);"
+        >
+          <div class="form-section">
+            <div class="section-header">Monitoring Sensors</div>
 
-              <div class="section-header">Monitoring Sensors</div>
+            ${this._renderMultiEntitySelect(
+              'Temperature Sensors',
+              this._temperatureSensors,
+              ['sensor', 'input_number'],
+              'temperature',
+              (v) => (this._temperatureSensors = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'Humidity Sensors',
+              this._humiditySensors,
+              ['sensor', 'input_number'],
+              'humidity',
+              (v) => (this._humiditySensors = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'VPD Sensors',
+              this._vpdSensors,
+              ['sensor', 'input_number'],
+              'pressure',
+              (v) => (this._vpdSensors = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'Substrate Temperature Sensors',
+              this._substrateTemperatureSensors,
+              ['sensor', 'input_number'],
+              'temperature',
+              (v) => (this._substrateTemperatureSensors = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'Light Source / Sensor',
+              this._lightSensors,
+              ['switch', 'light', 'input_boolean', 'sensor'],
+              null,
+              (v) => (this._lightSensors = v)
+            )}
 
-              ${this._renderMultiEntitySelect(
-                'Temperature Sensors',
-                this._temperatureSensors,
-                ['sensor', 'input_number'],
-                'temperature',
-                (v) => (this._temperatureSensors = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'Humidity Sensors',
-                this._humiditySensors,
-                ['sensor', 'input_number'],
-                'humidity',
-                (v) => (this._humiditySensors = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'VPD Sensors',
-                this._vpdSensors,
-                ['sensor', 'input_number'],
-                'pressure',
-                (v) => (this._vpdSensors = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'Substrate Temperature Sensors',
-                this._substrateTemperatureSensors,
-                ['sensor', 'input_number'],
-                'temperature',
-                (v) => (this._substrateTemperatureSensors = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'Light Source / Sensor',
-                this._lightSensors,
-                ['switch', 'light', 'input_boolean', 'sensor'],
-                null,
-                (v) => (this._lightSensors = v)
-              )}
+            <div class="section-header" style="margin-top: 8px;">Climate Control</div>
 
-              <div class="section-header" style="margin-top: 8px;">Climate Control</div>
+            ${this._renderMultiEntitySelect(
+              'Exhaust Fan / Switch',
+              this._exhaustFanEntities,
+              ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
+              null,
+              (v) => (this._exhaustFanEntities = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'Circulation Fan / Switch',
+              this._circulationFanEntities,
+              ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
+              null,
+              (v) => (this._circulationFanEntities = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'Humidifier',
+              this._humidifierEntities,
+              ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
+              null,
+              (v) => (this._humidifierEntities = v)
+            )}
+            ${this._renderMultiEntitySelect(
+              'Dehumidifier',
+              this._dehumidifierEntities,
+              ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
+              null,
+              (v) => (this._dehumidifierEntities = v)
+            )}
 
-              ${this._renderMultiEntitySelect(
-                'Exhaust Fan / Switch',
-                this._exhaustFanEntities,
-                ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
-                null,
-                (v) => (this._exhaustFanEntities = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'Circulation Fan / Switch',
-                this._circulationFanEntities,
-                ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'],
-                null,
-                (v) => (this._circulationFanEntities = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'Humidifier',
-                this._humidifierEntities,
-                ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'],
-                null,
-                (v) => (this._humidifierEntities = v)
-              )}
-              ${this._renderMultiEntitySelect(
-                'Dehumidifier',
-                this._dehumidifierEntities,
-                ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'],
-                null,
-                (v) => (this._dehumidifierEntities = v)
-              )}
+            <div class="section-header" style="margin-top: 8px;">Cameras</div>
 
-              <div class="section-header" style="margin-top: 8px;">Cameras</div>
-
-              ${this._renderMultiEntitySelect(
-                'Camera Entities',
-                this._cameraEntities,
-                ['camera'],
-                null,
-                (v) => (this._cameraEntities = v)
-              )}
-
-              ${this._error ? html`<div class="error-message">${this._error}</div>` : nothing}
-            </div>
+            ${this._renderMultiEntitySelect(
+              'Camera Entities',
+              this._cameraEntities,
+              ['camera'],
+              null,
+              (v) => (this._cameraEntities = v)
+            )}
+            ${this._error ? html`<div class="error-message">${this._error}</div>` : nothing}
           </div>
+        </div>
 
-          <!-- Actions -->
-          <div class="button-group" style="padding: 16px;">
-            <button class="md3-button tonal" @click=${this._close} ?disabled=${this._saving}>
-              Cancel
-            </button>
-            <button
-              class="md3-button primary"
-              @click=${this._save}
-              ?disabled=${this._saving}
-            >
-              ${this._saving ? 'Saving...' : 'Save Configuration'}
-            </button>
-          </div>
+        <!-- Actions -->
+        <div class="button-group" style="padding: 16px;">
+          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._saving}>
+            Cancel
+          </button>
+          <button class="md3-button primary" @click=${this._save} ?disabled=${this._saving}>
+            ${this._saving ? 'Saving...' : 'Save Configuration'}
+          </button>
+        </div>
       </gs-dialog>
     `;
   }

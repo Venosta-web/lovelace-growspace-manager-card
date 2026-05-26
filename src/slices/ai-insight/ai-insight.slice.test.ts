@@ -104,12 +104,14 @@ describe('askGrowAdvice', () => {
       'growspace_manager',
       'ask_grow_advice',
       { growspace_id: 'gs1', user_query: 'what is the VPD?' },
-      expect.anything(),
+      expect.anything()
     );
   });
 
   it('sets aiInsight$ to the response text on success', async () => {
-    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce({ response: 'Your VPD is fine.' });
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce({
+      response: 'Your VPD is fine.',
+    });
 
     await askGrowAdvice('gs1', 'VPD question');
 
@@ -155,7 +157,7 @@ describe('analyzeAllGrowspaces', () => {
       'growspace_manager',
       'analyze_all_growspaces',
       {},
-      expect.anything(),
+      expect.anything()
     );
   });
 

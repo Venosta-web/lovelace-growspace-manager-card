@@ -16,9 +16,7 @@ export const EnvSnapshotSchema = z.object({
   isLightsOn: z.boolean().nullable(),
   hasLightSensor: z.boolean(),
   dli: z.number().nullable(),
-  optimalConditions: z
-    .object({ isOptimal: z.boolean(), reasons: z.array(z.string()) })
-    .nullable(),
+  optimalConditions: z.object({ isOptimal: z.boolean(), reasons: z.array(z.string()) }).nullable(),
 });
 
 export type EnvSnapshotSchema = z.infer<typeof EnvSnapshotSchema>;

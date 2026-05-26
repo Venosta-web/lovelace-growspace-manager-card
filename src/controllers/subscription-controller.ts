@@ -9,7 +9,11 @@ export class SubscriptionController implements ReactiveController {
   private _onUpdate?: (refresh?: boolean) => void;
   private dataStore: GrowspaceDataStore;
 
-  constructor(host: ReactiveControllerHost, dataStore: GrowspaceDataStore, onUpdate?: (refresh?: boolean) => void) {
+  constructor(
+    host: ReactiveControllerHost,
+    dataStore: GrowspaceDataStore,
+    onUpdate?: (refresh?: boolean) => void
+  ) {
     this.host = host;
     this.dataStore = dataStore;
     this._onUpdate = onUpdate;
@@ -61,7 +65,11 @@ export class SubscriptionController implements ReactiveController {
     // Type guard for event structure
     const haEvent = event as { data?: { event_type?: string; data?: Record<string, unknown> } };
 
-    if (!haEvent.data || typeof haEvent.data.event_type !== 'string' || typeof haEvent.data.data !== 'object') {
+    if (
+      !haEvent.data ||
+      typeof haEvent.data.event_type !== 'string' ||
+      typeof haEvent.data.data !== 'object'
+    ) {
       console.warn('Received malformed growspace event', event);
       return;
     }
@@ -85,7 +93,13 @@ export class SubscriptionController implements ReactiveController {
 
   // Logic moved from GrowspaceStore, adapted to use dataStore actions
   private _handlePlantUpdate(plantData: unknown) {
-    const data = plantData as { plant_id?: string; growspace_id?: string; attributes?: { growspace_id?: string }; row?: number; col?: number };
+    const data = plantData as {
+      plant_id?: string;
+      growspace_id?: string;
+      attributes?: { growspace_id?: string };
+      row?: number;
+      col?: number;
+    };
     const plantId = data?.plant_id;
 
     if (!plantId) {

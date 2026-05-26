@@ -19,7 +19,9 @@ export class GrowspaceNutrientPresetsEditorContainer extends LitElement {
   @property({ type: Boolean }) open = false;
   @property({ type: String }) growspaceId?: string;
 
-  private _nutrientDataController!: StoreController<import('../../../store/core/data-store').NutrientDataState>;
+  private _nutrientDataController!: StoreController<
+    import('../../../store/core/data-store').NutrientDataState
+  >;
 
   connectedCallback() {
     super.connectedCallback();
@@ -33,10 +35,11 @@ export class GrowspaceNutrientPresetsEditorContainer extends LitElement {
     void this.store.actions.nutrient.savePreset({
       preset_id: preset.id,
       name: preset.name || 'Unnamed Preset',
-      nutrients: preset.nutrients?.map((n: import('../../../services/types').NutrientItem) => ({
-        name: n.name,
-        dose_ml_l: n.dose_ml_l
-      })) || [],
+      nutrients:
+        preset.nutrients?.map((n: import('../../../services/types').NutrientItem) => ({
+          name: n.name,
+          dose_ml_l: n.dose_ml_l,
+        })) || [],
     });
   }
 

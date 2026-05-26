@@ -68,7 +68,7 @@ export async function askGrowAdvice(growspaceId: string, userQuery: string): Pro
       'growspace_manager',
       'ask_grow_advice',
       { growspace_id: growspaceId, user_query: userQuery },
-      GrowAdviceResponseSchema,
+      GrowAdviceResponseSchema
     );
     aiInsight$.set(_extractText(raw));
   } catch (err) {
@@ -95,7 +95,7 @@ export async function analyzeAllGrowspaces(): Promise<void> {
       'growspace_manager',
       'analyze_all_growspaces',
       {},
-      GrowAdviceResponseSchema,
+      GrowAdviceResponseSchema
     );
     aiInsight$.set(_extractText(raw));
   } catch (err) {

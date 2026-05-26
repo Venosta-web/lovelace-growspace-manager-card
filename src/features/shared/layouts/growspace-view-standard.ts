@@ -34,7 +34,9 @@ export class GrowspaceViewStandard extends LitElement {
   @property({ attribute: false }) config: GrowspaceManagerCardConfig | undefined;
 
   private _viewStandardController!: StoreController<{ devices: GrowspaceDevice[] }>;
-  private _gridInteractionController!: StoreController<typeof gridInteraction$ extends import('nanostores').ReadableAtom<infer T> ? T : never>;
+  private _gridInteractionController!: StoreController<
+    typeof gridInteraction$ extends import('nanostores').ReadableAtom<infer T> ? T : never
+  >;
 
   private _initControllers() {
     if (this.store && !this._viewStandardController) {

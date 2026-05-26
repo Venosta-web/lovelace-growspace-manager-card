@@ -15,12 +15,7 @@
  */
 
 import { atom } from 'nanostores';
-import {
-  mdiLightbulbOn,
-  mdiFan,
-  mdiAirHumidifier,
-  mdiAirHumidifierOff,
-} from '@mdi/js';
+import { mdiLightbulbOn, mdiFan, mdiAirHumidifier, mdiAirHumidifierOff } from '@mdi/js';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
 
@@ -100,7 +95,7 @@ function _buildEntry(
   entityIds: string[],
   hassStates: HassStates,
   icon: string,
-  normalizer: (entity: HassEntity | undefined) => string | undefined,
+  normalizer: (entity: HassEntity | undefined) => string | undefined
 ): DeviceEntry | null {
   if (entityIds.length === 0) return null;
 
@@ -133,14 +128,20 @@ function _buildEntry(
  * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
  * instead of calling this directly.
  */
-export function computeDeviceSnapshot(device: GrowspaceDevice, hassStates: HassStates): DeviceSnapshot {
+export function computeDeviceSnapshot(
+  device: GrowspaceDevice,
+  hassStates: HassStates
+): DeviceSnapshot {
   const env = device.environmentAttributes ?? {};
 
   const lightIds = env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []);
   const exhaustIds = env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []);
-  const circulationIds = env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []);
-  const humidifierIds = env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []);
-  const dehumidifierIds = env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
+  const circulationIds =
+    env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []);
+  const humidifierIds =
+    env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []);
+  const dehumidifierIds =
+    env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
 
   return {
     lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
@@ -169,7 +170,7 @@ export const deviceSnapshots$ = atom<Map<string, DeviceSnapshot>>(new Map());
 export function setDeviceSnapshot(
   growspaceId: string,
   device: GrowspaceDevice,
-  hassStates: HassStates,
+  hassStates: HassStates
 ): void {
   const snapshot = computeDeviceSnapshot(device, hassStates);
   const updated = new Map(deviceSnapshots$.get());

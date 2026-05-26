@@ -53,11 +53,13 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
     const subareaOptions = [
       {
         label: this._config?.growspace_id
-          ? (this._subareas.length ? 'Select a subarea...' : 'No subareas found')
+          ? this._subareas.length
+            ? 'Select a subarea...'
+            : 'No subareas found'
           : 'Select a growspace first',
         value: '',
       },
-      ...this._subareas.map(sa => ({ label: sa.name, value: sa.id })),
+      ...this._subareas.map((sa) => ({ label: sa.name, value: sa.id })),
     ];
 
     return [
@@ -67,7 +69,7 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
           select: {
             options: [
               { label: 'Select a growspace...', value: '' },
-              ...this._gsController.options.map(gs => ({ label: gs.name, value: gs.id })),
+              ...this._gsController.options.map((gs) => ({ label: gs.name, value: gs.id })),
             ],
           },
         },
@@ -98,9 +100,22 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
   static styles: CSSResultGroup = [
     sharedStyles,
     css`
-      .card-config { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
-      .info-text { font-size: 0.85rem; color: var(--secondary-text-color); line-height: 1.4; }
-      .loading-text { font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic; }
+      .card-config {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .info-text {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        line-height: 1.4;
+      }
+      .loading-text {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        font-style: italic;
+      }
     `,
   ];
 
@@ -118,7 +133,8 @@ export class GrowspaceSubareaCardEditor extends LitElement implements LovelaceCa
           @value-changed=${this._valueChanged}
         ></ha-form>
         <div class="info-text">
-          Displays environment sensors and device status for the selected subarea within a growspace.
+          Displays environment sensors and device status for the selected subarea within a
+          growspace.
         </div>
       </div>
     `;

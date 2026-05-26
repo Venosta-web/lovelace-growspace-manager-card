@@ -142,7 +142,9 @@ export class GsDialog extends LitElement {
     const containerStyle = [
       this.stageColor ? `--stage-color: ${this.stageColor}` : '',
       this.containerStyle,
-    ].filter(Boolean).join('; ');
+    ]
+      .filter(Boolean)
+      .join('; ');
 
     return html`
       <ha-dialog
@@ -163,9 +165,7 @@ export class GsDialog extends LitElement {
               : nothing}
             <div class="dialog-title-group">
               <h2 class="dialog-title">${this.heading}</h2>
-              ${this.subtitle
-                ? html`<div class="dialog-subtitle">${this.subtitle}</div>`
-                : nothing}
+              ${this.subtitle ? html`<div class="dialog-subtitle">${this.subtitle}</div>` : nothing}
             </div>
             <slot name="header-extra"></slot>
             <button

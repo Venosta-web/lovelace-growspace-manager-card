@@ -51,7 +51,9 @@ export async function addStrain(
   const ok = await withAction(
     ctx,
     async () => {
-      await strainSliceAdd(_createStrainPayload(strainData) as Parameters<typeof strainSliceAdd>[0]);
+      await strainSliceAdd(
+        _createStrainPayload(strainData) as Parameters<typeof strainSliceAdd>[0]
+      );
       const tree = (strainData as any).parents;
       if (tree?.parents?.length) {
         await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
@@ -76,7 +78,9 @@ export async function updateStrain(
   const ok = await withAction(
     ctx,
     async () => {
-      await strainSliceUpdateMeta(_createStrainPayload(strainData) as Parameters<typeof strainSliceUpdateMeta>[0]);
+      await strainSliceUpdateMeta(
+        _createStrainPayload(strainData) as Parameters<typeof strainSliceUpdateMeta>[0]
+      );
       const tree = (strainData as any).parents;
       if (tree?.parents?.length) {
         await ctx.dataService.importStrainLineageTree(strainData.strain!, tree);
@@ -106,4 +110,3 @@ export async function removeStrain(ctx: ActionContext, strainKey: string): Promi
     return false;
   }
 }
-

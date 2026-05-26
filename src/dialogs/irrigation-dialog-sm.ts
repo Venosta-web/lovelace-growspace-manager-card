@@ -40,9 +40,21 @@ export interface SchedulesDraft {
 export type SchedulesSubState =
   | { kind: 'idle' }
   | { kind: 'adding-irrigation'; time: string; duration: number }
-  | { kind: 'editing-irrigation'; originalTime: string; originalDuration: number; time: string; duration: number }
+  | {
+      kind: 'editing-irrigation';
+      originalTime: string;
+      originalDuration: number;
+      time: string;
+      duration: number;
+    }
   | { kind: 'adding-drain'; time: string; duration: number }
-  | { kind: 'editing-drain'; originalTime: string; originalDuration: number; time: string; duration: number };
+  | {
+      kind: 'editing-drain';
+      originalTime: string;
+      originalDuration: number;
+      time: string;
+      duration: number;
+    };
 
 export interface SchedulesTabState {
   draft: SchedulesDraft;
@@ -51,9 +63,7 @@ export interface SchedulesTabState {
 
 // ─── Steering tab ──────────────────────────────────────────────────────────────
 
-export type SteeringSubState =
-  | { kind: 'idle' }
-  | { kind: 'confirm-phase'; pending: Phase };
+export type SteeringSubState = { kind: 'idle' } | { kind: 'confirm-phase'; pending: Phase };
 
 export interface SteeringTabState {
   draft: Partial<IrrigationStrategy>;
@@ -105,10 +115,7 @@ export interface DrainEcDraft {
   logDrainVolume: number;
 }
 
-export type DrainEcSubState =
-  | { kind: 'idle' }
-  | { kind: 'saving' }
-  | { kind: 'logging' };
+export type DrainEcSubState = { kind: 'idle' } | { kind: 'saving' } | { kind: 'logging' };
 
 export interface DrainEcTabState {
   draft: DrainEcDraft;
@@ -167,8 +174,20 @@ export type DialogEvent =
   // ── Schedules ──
   | { type: 'BEGIN_ADD_IRRIGATION'; time: string; duration: number }
   | { type: 'BEGIN_ADD_DRAIN'; time: string; duration: number }
-  | { type: 'BEGIN_EDIT_IRRIGATION'; originalTime: string; originalDuration: number; time: string; duration: number }
-  | { type: 'BEGIN_EDIT_DRAIN'; originalTime: string; originalDuration: number; time: string; duration: number }
+  | {
+      type: 'BEGIN_EDIT_IRRIGATION';
+      originalTime: string;
+      originalDuration: number;
+      time: string;
+      duration: number;
+    }
+  | {
+      type: 'BEGIN_EDIT_DRAIN';
+      originalTime: string;
+      originalDuration: number;
+      time: string;
+      duration: number;
+    }
   | { type: 'CANCEL_INLINE' }
   | { type: 'UPDATE_ADD_IRRIGATION'; time?: string; duration?: number }
   | { type: 'UPDATE_ADD_DRAIN'; time?: string; duration?: number }
@@ -437,12 +456,18 @@ export function isEcTargetsDirty(sm: DialogSM, device: GrowspaceDevice): boolean
  */
 export function isActiveTabDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
   switch (sm.activeTab) {
-    case 'schedules':       return isSchedulesDirty(sm, device);
-    case 'steering':        return isSteeringDirty(sm, device);
-    case 'config':          return isConfigDirty(sm, device);
-    case 'drain_ec':        return isDrainEcDirty(sm, device);
-    case 'ec_targets':      return isEcTargetsDirty(sm, device);
-    default:                return false;
+    case 'schedules':
+      return isSchedulesDirty(sm, device);
+    case 'steering':
+      return isSteeringDirty(sm, device);
+    case 'config':
+      return isConfigDirty(sm, device);
+    case 'drain_ec':
+      return isDrainEcDirty(sm, device);
+    case 'ec_targets':
+      return isEcTargetsDirty(sm, device);
+    default:
+      return false;
   }
 }
 

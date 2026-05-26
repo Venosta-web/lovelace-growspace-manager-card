@@ -25,9 +25,19 @@ export class GrowspaceAnalyticsUI extends LitElement {
     growspaceCardStyles,
     sharedStyles,
     css`
-      :host { display: block; }
-      .graphs-container { display: flex; flex-direction: column; gap: 12px; }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      :host {
+        display: block;
+      }
+      .graphs-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     `,
   ];
 
@@ -38,8 +48,13 @@ export class GrowspaceAnalyticsUI extends LitElement {
       return html`
         <div class="graphs-container">
           ${this._renderTimeRangeSelector()}
-          <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);">
-            <div class="loading-spinner" style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <div
+            style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--secondary-text-color,#666);"
+          >
+            <div
+              class="loading-spinner"
+              style="width:24px;height:24px;border:2px solid var(--primary-color,#03a9f4);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"
+            ></div>
             <span style="margin-left:12px;">Loading history data...</span>
           </div>
         </div>
@@ -50,10 +65,11 @@ export class GrowspaceAnalyticsUI extends LitElement {
       <div class="graphs-container">
         ${this._renderTimeRangeSelector()}
         ${repeat<AnalyticsItem>(
-      this.items,
-      (item: AnalyticsItem) => (item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`),
-      (item: AnalyticsItem) => this._renderItem(item)
-    )}
+          this.items,
+          (item: AnalyticsItem) =>
+            item.type === 'group' ? `group-${item.metrics.join('-')}` : `single-${item.metrics[0]}`,
+          (item: AnalyticsItem) => this._renderItem(item)
+        )}
       </div>
     `;
   }
@@ -62,12 +78,16 @@ export class GrowspaceAnalyticsUI extends LitElement {
     const ranges: HistoryTimeRange[] = ['1h', '6h', '24h', '7d'];
     return html`
       <div class="time-range-selector">
-        ${ranges.map((r) => html`
-          <button
-            class="range-btn ${this.range === r ? 'active' : ''}"
-            @click=${() => this._emitSetRange(r)}
-          >${r}</button>
-        `)}
+        ${ranges.map(
+          (r) => html`
+            <button
+              class="range-btn ${this.range === r ? 'active' : ''}"
+              @click=${() => this._emitSetRange(r)}
+            >
+              ${r}
+            </button>
+          `
+        )}
       </div>
     `;
   }
@@ -102,7 +122,9 @@ export class GrowspaceAnalyticsUI extends LitElement {
   }
 
   private _emitSetRange(range: HistoryTimeRange) {
-    this.dispatchEvent(new CustomEvent('set-range', { detail: range, bubbles: true, composed: true }));
+    this.dispatchEvent(
+      new CustomEvent('set-range', { detail: range, bubbles: true, composed: true })
+    );
   }
 
   private _redispatch(type: string, detail: unknown) {

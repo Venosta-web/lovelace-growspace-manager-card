@@ -70,7 +70,8 @@ function _parseLibrary(rawStrains: z.output<typeof StrainLibrarySchema>): Strain
         is_stub: meta.is_stub,
         description: phenoData.description,
         image: (thumbnail as any)?.path ?? phenoData.image_path,
-        image_crop_meta: (thumbnail as any)?.crop_meta ?? (phenoData.image_crop_meta as CropMeta | undefined),
+        image_crop_meta:
+          (thumbnail as any)?.crop_meta ?? (phenoData.image_crop_meta as CropMeta | undefined),
         images: gallery,
         flowering_days_min: phenoData.flower_days_min,
         flowering_days_max: phenoData.flower_days_max,
@@ -91,10 +92,12 @@ function _parseLibrary(rawStrains: z.output<typeof StrainLibrarySchema>): Strain
  *   - data: URL        → send `image_base64`, omit `image`
  *   - path/remote URL  → send `image_path`, omit `image`
  */
-function _buildStrainPayload(data: Partial<StrainEntry> & {
-  image_crop_meta?: CropMeta;
-  images?: StrainGalleryImage[];
-}): Record<string, unknown> {
+function _buildStrainPayload(
+  data: Partial<StrainEntry> & {
+    image_crop_meta?: CropMeta;
+    images?: StrainGalleryImage[];
+  }
+): Record<string, unknown> {
   const payload: Record<string, unknown> = { ...data };
 
   // Remove undefined keys
@@ -129,7 +132,7 @@ export async function fetchStrainLibrary(): Promise<StrainEntry[]> {
   const response = await hassCall(
     'growspace_manager/get_strain_library',
     {},
-    StrainLibraryWrapperSchema,
+    StrainLibraryWrapperSchema
   );
   const entries = _parseLibrary(response.strains);
   strainLibrary$.set(entries);
@@ -144,7 +147,7 @@ export async function addStrain(
     strain?: string;
     image_crop_meta?: CropMeta;
     images?: StrainGalleryImage[];
-  },
+  }
 ): Promise<void> {
   await callService('growspace_manager', 'add_strain', _buildStrainPayload(data));
 }
@@ -158,7 +161,10 @@ export async function removeStrain(key: string): Promise<void> {
   const parts = key.split('|');
   const strain = parts[0];
   const phenotype = parts.length > 1 && parts[1] !== 'default' ? parts[1] : undefined;
-  await callService('growspace_manager', 'remove_strain', { strain, ...(phenotype ? { phenotype } : {}) });
+  await callService('growspace_manager', 'remove_strain', {
+    strain,
+    ...(phenotype ? { phenotype } : {}),
+  });
 }
 
 /**
@@ -169,7 +175,7 @@ export async function updateStrainMeta(
     strain?: string;
     image_crop_meta?: CropMeta;
     images?: StrainGalleryImage[];
-  },
+  }
 ): Promise<void> {
   await callService('growspace_manager', 'update_strain_meta', _buildStrainPayload(data));
 }
@@ -189,7 +195,7 @@ export async function exportStrainLibrary(): Promise<void> {
  */
 export async function importStrainLibrary(
   file: File,
-  replace: boolean,
+  replace: boolean
 ): Promise<{ success: boolean; error?: string }> {
   const formData = new FormData();
   formData.append('file', file);
@@ -227,7 +233,7 @@ export async function clearStrainLibrary(): Promise<void> {
 export async function updateBreeder(
   oldName: string,
   newName: string,
-  logo?: string,
+  logo?: string
 ): Promise<void> {
   await hassCall(
     'growspace_manager/update_breeder',
@@ -236,7 +242,7 @@ export async function updateBreeder(
       new_name: newName,
       ...(logo !== undefined ? { logo } : {}),
     },
-    z.unknown(),
+    z.unknown()
   );
 }
 
@@ -244,9 +250,5 @@ export async function updateBreeder(
  * Delete a breeder and disassociate it from strains.
  */
 export async function deleteBreeder(name: string): Promise<void> {
-  await hassCall(
-    'growspace_manager/delete_breeder',
-    { breeder_name: name },
-    z.unknown(),
-  );
+  await hassCall('growspace_manager/delete_breeder', { breeder_name: name }, z.unknown());
 }

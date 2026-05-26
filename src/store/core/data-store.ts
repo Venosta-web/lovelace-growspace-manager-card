@@ -27,7 +27,9 @@ export class GrowspaceDataStore {
   public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
   public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
   public readonly $nutrientInventory: WritableAtom<import('../../types').NutrientInventory | null>;
-  public readonly $ecRampCurves: WritableAtom<Record<string, import('../../schemas/api-schema').ECRampCurve>>;
+  public readonly $ecRampCurves: WritableAtom<
+    Record<string, import('../../schemas/api-schema').ECRampCurve>
+  >;
   public readonly $nutrientDataState: ReadableAtom<NutrientDataState>;
   /** Incremented by GrowspaceSharedStore when a push event requires a full data refresh. */
   public readonly $staleCounter: WritableAtom<number>;
@@ -136,9 +138,7 @@ export class GrowspaceDataStore {
     const idx = devices.findIndex((d) => d.deviceId === growspaceId);
     if (idx === -1) return;
     const updated = devices.map((d, i) =>
-      i === idx
-        ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } }
-        : d
+      i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d
     );
     this.$devices.set(updated);
   }

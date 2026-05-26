@@ -188,7 +188,10 @@ describe('Command Pattern', () => {
 
       await executeBatchCommand(command, mockContext);
 
-      expect(onError).toHaveBeenCalledWith(mockContext, expect.objectContaining({ message: 'Failed' }));
+      expect(onError).toHaveBeenCalledWith(
+        mockContext,
+        expect.objectContaining({ message: 'Failed' })
+      );
     });
 
     it('should handle non-Error exceptions in executeBatchCommand', async () => {
@@ -204,7 +207,10 @@ describe('Command Pattern', () => {
 
       await executeBatchCommand(command, mockContext);
 
-      expect(onError).toHaveBeenCalledWith(mockContext, expect.objectContaining({ message: 'Unknown error' }));
+      expect(onError).toHaveBeenCalledWith(
+        mockContext,
+        expect.objectContaining({ message: 'Unknown error' })
+      );
     });
 
     it('should handle all success without onSuccess', async () => {
@@ -258,7 +264,10 @@ describe('Command Pattern', () => {
 
       await executeCommand(command, mockContext);
 
-      expect(onError).toHaveBeenCalledWith(mockContext, expect.objectContaining({ message: 'Unknown error' }));
+      expect(onError).toHaveBeenCalledWith(
+        mockContext,
+        expect.objectContaining({ message: 'Unknown error' })
+      );
     });
   });
 

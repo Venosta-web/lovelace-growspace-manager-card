@@ -24,7 +24,9 @@ export async function getSnapshots(ctx: ActionContext, growspaceId: string) {
  */
 export async function captureSnapshot(ctx: ActionContext, growspaceId: string): Promise<void> {
   await withAction(ctx, () => ctx.dataService.captureSnapshot(growspaceId), {
-    success: 'Snapshot captured', errorPrefix: 'Failed to capture snapshot', rethrow: true,
+    success: 'Snapshot captured',
+    errorPrefix: 'Failed to capture snapshot',
+    rethrow: true,
   });
 }
 
@@ -39,16 +41,38 @@ export async function getVisionHistory(ctx: ActionContext, growspaceId: string) 
  * Trigger a vision checkup for a growspace.
  */
 export async function triggerVisionCheckup(ctx: ActionContext, growspaceId: string): Promise<void> {
-  await withAction(ctx, async () => { await ctx.dataService.triggerVisionCheckup(growspaceId); await ctx.refreshData(); }, {
-    success: 'Vision checkup triggered', errorPrefix: 'Failed to trigger checkup', rethrow: true,
-  });
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.triggerVisionCheckup(growspaceId);
+      await ctx.refreshData();
+    },
+    {
+      success: 'Vision checkup triggered',
+      errorPrefix: 'Failed to trigger checkup',
+      rethrow: true,
+    }
+  );
 }
 
 /**
  * Update the vision checkup configuration for a growspace.
  */
-export async function updateVisionCheckupConfig(ctx: ActionContext, growspaceId: string, config: VisionCheckupConfig): Promise<void> {
-  await withAction(ctx, async () => { await ctx.dataService.updateVisionCheckupConfig(growspaceId, config); await ctx.refreshData(); }, {
-    success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true,
-  });
+export async function updateVisionCheckupConfig(
+  ctx: ActionContext,
+  growspaceId: string,
+  config: VisionCheckupConfig
+): Promise<void> {
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
+      await ctx.refreshData();
+    },
+    {
+      success: 'Vision config saved',
+      errorPrefix: 'Failed to save vision config',
+      rethrow: true,
+    }
+  );
 }

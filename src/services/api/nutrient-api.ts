@@ -204,17 +204,16 @@ export class NutrientAPI extends BaseAPI {
     stage?: string;
     points: { day: number; target_ec: number }[];
   }): Promise<void> {
-
     // Transform points to backend format
     const backendData = {
       curve_id: data.curve_id,
       name: data.name,
       stage: data.stage || 'flower',
-      points: data.points.map(p => ({
+      points: data.points.map((p) => ({
         week: Math.floor((p.day - 1) / 7) + 1,
         ec_min: p.target_ec,
-        ec_max: p.target_ec + 0.4
-      }))
+        ec_max: p.target_ec + 0.4,
+      })),
     };
 
     try {

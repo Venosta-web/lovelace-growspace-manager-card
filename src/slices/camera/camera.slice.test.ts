@@ -10,12 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
-import {
-  snapshots$,
-  setSnapshots,
-  getSnapshots,
-  captureSnapshot,
-} from './index';
+import { snapshots$, setSnapshots, getSnapshots, captureSnapshot } from './index';
 
 vi.mock('../../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -72,7 +67,7 @@ describe('getSnapshots', () => {
     expect(hassCall.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_snapshots',
       expect.objectContaining({ growspace_id: 'gs1' }),
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -88,7 +83,7 @@ describe('getSnapshots', () => {
     expect(hassCall.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_snapshots',
       { growspace_id: 'gs1', limit: 10, offset: 20 },
-      expect.anything(),
+      expect.anything()
     );
   });
 
@@ -126,12 +121,16 @@ describe('getSnapshots', () => {
   });
 
   it('does not update snapshots$ when hassCall fails', async () => {
-    setSnapshots([{ path: '/img/prev.jpg', filename: 'prev.jpg', timestamp: '2026-01-01T00:00:00Z' }]);
+    setSnapshots([
+      { path: '/img/prev.jpg', filename: 'prev.jpg', timestamp: '2026-01-01T00:00:00Z' },
+    ]);
     vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('fail'));
 
     await expect(getSnapshots('gs1')).rejects.toThrow();
 
-    expect(snapshots$.get()).toEqual([{ path: '/img/prev.jpg', filename: 'prev.jpg', timestamp: '2026-01-01T00:00:00Z' }]);
+    expect(snapshots$.get()).toEqual([
+      { path: '/img/prev.jpg', filename: 'prev.jpg', timestamp: '2026-01-01T00:00:00Z' },
+    ]);
   });
 });
 
@@ -152,7 +151,7 @@ describe('captureSnapshot', () => {
     expect(hassCall.hassCall).toHaveBeenCalledWith(
       'growspace_manager/capture_snapshot',
       { growspace_id: 'gs1' },
-      expect.anything(),
+      expect.anything()
     );
   });
 

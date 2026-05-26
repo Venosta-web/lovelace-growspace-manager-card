@@ -86,7 +86,7 @@ export const plantCardStyles = css`
     z-index: 10;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 50%;
-    padding: 10px;  /* Increased from 4px — 24px icon + 20px padding = 44px touch target */
+    padding: 10px; /* Increased from 4px — 24px icon + 20px padding = 44px touch target */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -191,9 +191,15 @@ export const plantCardStyles = css`
   }
 
   @keyframes pulse-alert {
-    0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.5); }
-    70% { box-shadow: 0 0 0 6px rgba(244, 67, 54, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+    0% {
+      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.5);
+    }
+    70% {
+      box-shadow: 0 0 0 6px rgba(244, 67, 54, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+    }
   }
 
   .status-icons {

@@ -298,7 +298,6 @@ export const uiStyles = css`
     min-height: 200px;
   }
 
-
   /* Respect user motion preferences (WCAG 2.3.3) */
   @media (prefers-reduced-motion: reduce) {
     *,

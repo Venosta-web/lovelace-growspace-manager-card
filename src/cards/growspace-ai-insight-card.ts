@@ -1,4 +1,12 @@
-import { LitElement, html, CSSResultGroup, PropertyValues, css, TemplateResult, nothing } from 'lit';
+import {
+  LitElement,
+  html,
+  CSSResultGroup,
+  PropertyValues,
+  css,
+  TemplateResult,
+  nothing,
+} from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
@@ -80,7 +88,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .ai-icon svg {
         width: 32px;
         height: 32px;
-        fill: #4CAF50;
+        fill: #4caf50;
       }
       .ai-title {
         margin: 0;
@@ -95,7 +103,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       }
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border: 2px solid #4CAF50;
+        border: 2px solid #4caf50;
         border-radius: 12px;
         padding: 20px;
         line-height: 1.6;
@@ -113,7 +121,9 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         gap: 12px;
       }
       @keyframes spin {
-        100% { transform: rotate(360deg); }
+        100% {
+          transform: rotate(360deg);
+        }
       }
       .spinner {
         animation: spin 1s linear infinite;
@@ -137,7 +147,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .sd-textarea:focus {
         outline: none;
         background: rgba(255, 255, 255, 0.08);
-        border-color: #4CAF50;
+        border-color: #4caf50;
       }
       .button-group {
         display: flex;
@@ -151,7 +161,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         border-radius: 8px;
         margin-top: 20px;
       }
-    `
+    `,
   ];
 
   protected firstUpdated() {
@@ -177,7 +187,9 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
     await import('./editors/growspace-ai-insight-card-editor.js');
-    return document.createElement('growspace-ai-insight-card-editor') as unknown as LovelaceCardEditor;
+    return document.createElement(
+      'growspace-ai-insight-card-editor'
+    ) as unknown as LovelaceCardEditor;
   }
 
   public static getStubConfig() {
@@ -245,7 +257,9 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       `;
     }
 
-    const selectedDeviceData = devices.find((d: { deviceId: string; name: string }) => d.deviceId === selectedDevice);
+    const selectedDeviceData = devices.find(
+      (d: { deviceId: string; name: string }) => d.deviceId === selectedDevice
+    );
     const targetName = selectedDeviceData ? selectedDeviceData.name : 'Unknown Growspace';
     const isLoading = this._aiLoadingController.value;
     const response = this._aiInsightController.value;
@@ -258,24 +272,24 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       >
         <ha-card>
           <div class="unified-growspace-card glass-surface glass-panel" style="padding: 24px;">
-
             <div class="ai-header">
-                <div class="ai-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="${mdiBrain}"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="ai-title">Grow Master AI</h2>
-                    <p class="ai-subtitle">Target: ${targetName}</p>
-                </div>
+              <div class="ai-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="${mdiBrain}"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="ai-title">Grow Master AI</h2>
+                <p class="ai-subtitle">Target: ${targetName}</p>
+              </div>
             </div>
 
             <textarea
-                class="sd-textarea"
-                placeholder="Ask advice about your environment, plants, or VPD history..."
-                .value=${this._userQuery}
-                @input=${(e: InputEvent) => (this._userQuery = (e.target as HTMLTextAreaElement).value)}
+              class="sd-textarea"
+              placeholder="Ask advice about your environment, plants, or VPD history..."
+              .value=${this._userQuery}
+              @input=${(e: InputEvent) =>
+                (this._userQuery = (e.target as HTMLTextAreaElement).value)}
             ></textarea>
 
             <div class="button-group">
@@ -297,27 +311,20 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
               </button>
             </div>
 
-            ${isLoading ? html`
-              <div class="gm-loading">
-                <svg class="spinner" viewBox="0 0 24 24">
-                  <path d="${mdiLoading}" fill="currentColor"></path>
-                </svg>
-                <span>Consulting the archives...</span>
-              </div>
-            ` : nothing}
-
-            ${!isLoading && response ? html`
-              <div class="gm-response-box">
-                ${response}
-              </div>
-            ` : nothing}
-
-            ${error ? html`
-              <div class="error-state">
-                Error: ${error}
-              </div>
-            ` : nothing}
-
+            ${isLoading
+              ? html`
+                  <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24">
+                      <path d="${mdiLoading}" fill="currentColor"></path>
+                    </svg>
+                    <span>Consulting the archives...</span>
+                  </div>
+                `
+              : nothing}
+            ${!isLoading && response
+              ? html` <div class="gm-response-box">${response}</div> `
+              : nothing}
+            ${error ? html` <div class="error-state">Error: ${error}</div> ` : nothing}
           </div>
         </ha-card>
       </error-boundary>

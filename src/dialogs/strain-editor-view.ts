@@ -54,7 +54,11 @@ export class StrainEditorView extends LitElement {
   @state() private _importReplace = false;
   @state() private _seedfinderDialogOpen = false;
   @state() private _breederDialogOpen = false;
-  @state() private _breederEditorState: { name: string; logo: string; originalName: string } | null = null;
+  @state() private _breederEditorState: {
+    name: string;
+    logo: string;
+    originalName: string;
+  } | null = null;
   @state() private _pendingDeleteBreeder: string | null = null;
   @state() private _showAddPhotoMenu = false;
 
@@ -143,7 +147,11 @@ export class StrainEditorView extends LitElement {
         this._editorState = { ...this._editorState, images: downloaded };
         const thumb = downloaded.find((img) => img.is_thumbnail);
         if (thumb) {
-          this._editorState = { ...this._editorState, image: thumb.path, image_crop_meta: thumb.crop_meta };
+          this._editorState = {
+            ...this._editorState,
+            image: thumb.path,
+            image_crop_meta: thumb.crop_meta,
+          };
         } else if (downloaded.length > 0) {
           const promoted = downloaded.map((img, i) => ({ ...img, is_thumbnail: i === 0 }));
           this._editorState = {
@@ -286,7 +294,6 @@ export class StrainEditorView extends LitElement {
     return `background-image: url('${safeUrl}');`;
   }
 
-
   private _handleImportFile() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -418,7 +425,10 @@ export class StrainEditorView extends LitElement {
         phenotype,
         image_base64: base64,
       });
-      const gallery = [...this._gallery(), { path: response.path, is_thumbnail: this._gallery().length === 0 }];
+      const gallery = [
+        ...this._gallery(),
+        { path: response.path, is_thumbnail: this._gallery().length === 0 },
+      ];
       this._editorState = { ...this._editorState, images: gallery };
       if (gallery.length === 1) {
         this._editorState = { ...this._editorState, image: response.path };
@@ -462,8 +472,7 @@ export class StrainEditorView extends LitElement {
 
   render() {
     return html`
-      ${this.renderEditorView()}
-      ${this._isCropping ? this.renderCropOverlay() : nothing}
+      ${this.renderEditorView()} ${this._isCropping ? this.renderCropOverlay() : nothing}
       ${this._importDialogOpen ? this.renderImportDialog() : nothing}
       ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
       ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : nothing}
@@ -502,13 +511,17 @@ export class StrainEditorView extends LitElement {
             >
               <path d="${mdiArrowLeft}"></path>
             </svg>
-            ${this._editorHistory.length > 0 ? (this._editorHistory[this._editorHistory.length - 1] as StrainEntry).strain ?? 'Back' : 'Back'}
+            ${this._editorHistory.length > 0
+              ? ((this._editorHistory[this._editorHistory.length - 1] as StrainEntry).strain ??
+                'Back')
+              : 'Back'}
           </button>
           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
         </div>
         <button
           class="md3-button text close"
-          @click=${() => this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
+          @click=${() =>
+            this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))}
           style="min-width:auto; padding:8px; margin-left: auto;"
         >
           <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
@@ -524,7 +537,9 @@ export class StrainEditorView extends LitElement {
             ${this._renderGallery()}
 
             <div class="sd-form-group">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+              <div
+                style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;"
+              >
                 <label class="sd-label" style="margin-bottom:0;">Strain Name *</label>
                 <button
                   class="md3-button text"
@@ -546,7 +561,7 @@ export class StrainEditorView extends LitElement {
                 list="strain-suggestions"
                 .value=${s.strain || ''}
                 @input=${(e: InputEvent) =>
-        this._handleEditorChange('strain', (e.target as HTMLInputElement).value)}
+                  this._handleEditorChange('strain', (e.target as HTMLInputElement).value)}
               />
             </div>
 
@@ -557,7 +572,8 @@ export class StrainEditorView extends LitElement {
                 class="sd-input"
                 placeholder="e.g. #1 (Optional)"
                 .value=${s.phenotype || ''}
-                @input=${(e: InputEvent) => this._handleEditorChange('phenotype', (e.target as HTMLInputElement).value)}
+                @input=${(e: InputEvent) =>
+                  this._handleEditorChange('phenotype', (e.target as HTMLInputElement).value)}
               />
             </div>
 
@@ -569,7 +585,7 @@ export class StrainEditorView extends LitElement {
                 list="breeder-suggestions"
                 .value=${s.breeder || ''}
                 @input=${(e: InputEvent) =>
-        this._handleEditorChange('breeder', (e.target as HTMLInputElement).value)}
+                  this._handleEditorChange('breeder', (e.target as HTMLInputElement).value)}
               />
 
               <!-- Breeder Logo Upload -->
@@ -578,13 +594,13 @@ export class StrainEditorView extends LitElement {
                 style="margin-top: 12px; display: flex; align-items: center; gap: 12px;"
               >
                 ${s.breeder_logo
-        ? html`
+                  ? html`
                       <img
                         src="${s.breeder_logo}"
                         style="width: 48px; height: 48px; object-fit: contain; border-radius: 4px; background: rgba(255,255,255,0.05); padding: 4px;"
                       />
                     `
-        : html`
+                  : html`
                       <div
                         style="width: 48px; height: 48px; border: 1px dashed var(--divider-color); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: var(--secondary-text-color);"
                       >
@@ -597,7 +613,9 @@ export class StrainEditorView extends LitElement {
                   class="md3-button tonal"
                   style="height: 32px; padding: 0 12px; font-size: 0.8rem;"
                   @click=${(e: Event) =>
-        ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}
+                    (
+                      (e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement
+                    ).click()}
                 >
                   <svg
                     style="width:16px;height:16px;fill:currentColor; margin-right:6px;"
@@ -612,16 +630,16 @@ export class StrainEditorView extends LitElement {
                   accept="image/*"
                   style="display:none"
                   @change=${(e: Event) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-          PlantUtils.compressImage(file)
-            .then((base64) => this._handleEditorChange('breeder_logo', base64))
-            .catch((err) => console.error('Error compressing logo:', err));
-        }
-      }}
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) {
+                      PlantUtils.compressImage(file)
+                        .then((base64) => this._handleEditorChange('breeder_logo', base64))
+                        .catch((err) => console.error('Error compressing logo:', err));
+                    }
+                  }}
                 />
                 ${s.breeder_logo
-        ? html`
+                  ? html`
                       <button
                         class="md3-button text"
                         style="height: 32px; padding: 0 8px; color: var(--error-color, #ff5252);"
@@ -632,7 +650,7 @@ export class StrainEditorView extends LitElement {
                         </svg>
                       </button>
                     `
-        : nothing}
+                  : nothing}
               </div>
             </div>
           </div>
@@ -643,13 +661,13 @@ export class StrainEditorView extends LitElement {
               <label class="sd-label">Type *</label>
               <div class="type-selector-grid">
                 ${['Indica', 'Sativa', 'Hybrid', 'Ruderalis'].map((t) => {
-          let icon = mdiLeaf;
-          if (t === 'Indica') icon = mdiWeatherNight;
-          if (t === 'Sativa') icon = mdiWeatherSunny;
-          if (t === 'Hybrid') icon = mdiTuneVariant;
+                  let icon = mdiLeaf;
+                  if (t === 'Indica') icon = mdiWeatherNight;
+                  if (t === 'Sativa') icon = mdiWeatherSunny;
+                  if (t === 'Hybrid') icon = mdiTuneVariant;
 
-          const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
-          return html`
+                  const isActive = (s.type || '').toLowerCase() === t.toLowerCase();
+                  return html`
                     <div
                       class="type-option ${isActive ? 'active' : ''}"
                       @click=${() => this._handleEditorChange('type', t)}
@@ -660,12 +678,12 @@ export class StrainEditorView extends LitElement {
                       >
                     </div>
                   `;
-        })}
+                })}
               </div>
             </div>
 
             ${(s.type || '').toLowerCase() === 'hybrid'
-        ? html`
+              ? html`
                   <div style="margin-bottom: 20px;">
                     <label class="sd-label">Hybrid Composition (%)</label>
                     <div
@@ -685,12 +703,13 @@ export class StrainEditorView extends LitElement {
                             max="100"
                             .value=${s.indica_percentage || 0}
                             @input=${(e: InputEvent) => {
-            let val = Math.floor(parseFloat((e.target as HTMLInputElement).value)) || 0;
-            if (val < 0) val = 0;
-            if (val > 100) val = 100;
-            this._handleEditorChange('indica_percentage', val);
-            this._handleEditorChange('sativa_percentage', 100 - val);
-          }}
+                              let val =
+                                Math.floor(parseFloat((e.target as HTMLInputElement).value)) || 0;
+                              if (val < 0) val = 0;
+                              if (val > 100) val = 100;
+                              this._handleEditorChange('indica_percentage', val);
+                              this._handleEditorChange('sativa_percentage', 100 - val);
+                            }}
                           />
                           <span>%</span>
                         </div>
@@ -706,12 +725,13 @@ export class StrainEditorView extends LitElement {
                             max="100"
                             .value=${s.sativa_percentage || 0}
                             @input=${(e: InputEvent) => {
-            let val = Math.floor(parseFloat((e.target as HTMLInputElement).value)) || 0;
-            if (val < 0) val = 0;
-            if (val > 100) val = 100;
-            this._handleEditorChange('sativa_percentage', val);
-            this._handleEditorChange('indica_percentage', 100 - val);
-          }}
+                              let val =
+                                Math.floor(parseFloat((e.target as HTMLInputElement).value)) || 0;
+                              if (val < 0) val = 0;
+                              if (val > 100) val = 100;
+                              this._handleEditorChange('sativa_percentage', val);
+                              this._handleEditorChange('indica_percentage', 100 - val);
+                            }}
                           />
                           <span>%</span>
                         </div>
@@ -720,14 +740,14 @@ export class StrainEditorView extends LitElement {
                       <div
                         class="hg-bar-track"
                         @click=${(e: MouseEvent) => {
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            let percent = Math.round((x / rect.width) * 100);
-            if (percent < 0) percent = 0;
-            if (percent > 100) percent = 100;
-            this._handleEditorChange('indica_percentage', percent);
-            this._handleEditorChange('sativa_percentage', 100 - percent);
-          }}
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const x = e.clientX - rect.left;
+                          let percent = Math.round((x / rect.width) * 100);
+                          if (percent < 0) percent = 0;
+                          if (percent > 100) percent = 100;
+                          this._handleEditorChange('indica_percentage', percent);
+                          this._handleEditorChange('sativa_percentage', 100 - percent);
+                        }}
                       >
                         <div
                           class="hg-bar-indica"
@@ -741,7 +761,7 @@ export class StrainEditorView extends LitElement {
                     </div>
                   </div>
                 `
-        : nothing}
+              : nothing}
 
             <div class="sd-form-group">
               <label class="sd-label">Flowering Time (Days)</label>
@@ -752,7 +772,10 @@ export class StrainEditorView extends LitElement {
                   placeholder="Min"
                   .value=${s.flowering_days_min || ''}
                   @input=${(e: InputEvent) =>
-        this._handleEditorChange('flowering_days_min', (e.target as HTMLInputElement).value)}
+                    this._handleEditorChange(
+                      'flowering_days_min',
+                      (e.target as HTMLInputElement).value
+                    )}
                 />
                 <input
                   type="number"
@@ -760,54 +783,82 @@ export class StrainEditorView extends LitElement {
                   placeholder="Max"
                   .value=${s.flowering_days_max || ''}
                   @input=${(e: InputEvent) =>
-        this._handleEditorChange('flowering_days_max', (e.target as HTMLInputElement).value)}
+                    this._handleEditorChange(
+                      'flowering_days_max',
+                      (e.target as HTMLInputElement).value
+                    )}
                 />
               </div>
             </div>
 
             <div class="sd-form-group">
-              <label class="sd-label" style="display:flex;align-items:center;justify-content:space-between;">
+              <label
+                class="sd-label"
+                style="display:flex;align-items:center;justify-content:space-between;"
+              >
                 Lineage
                 <div style="display:flex; gap:8px;">
-                  <button class="sd-btn-text" type="button" @click=${() => this._viewLineageInTree()}>
+                  <button
+                    class="sd-btn-text"
+                    type="button"
+                    @click=${() => this._viewLineageInTree()}
+                  >
                     View lineage
                   </button>
-                  <button class="sd-btn-text" type="button" @click=${async () => {
-        this._lineageEditMode = !this._lineageEditMode;
-        if (this._lineageEditMode && s.strain) {
-          await this._loadStrainLineageTree(s.strain);
-        }
-      }}>
+                  <button
+                    class="sd-btn-text"
+                    type="button"
+                    @click=${async () => {
+                      this._lineageEditMode = !this._lineageEditMode;
+                      if (this._lineageEditMode && s.strain) {
+                        await this._loadStrainLineageTree(s.strain);
+                      }
+                    }}
+                  >
                     ${this._lineageEditMode ? 'View' : 'Edit tree'}
                   </button>
                 </div>
               </label>
               ${this._lineageEditMode
-        ? html`<lineage-tree-editor
+                ? html`<lineage-tree-editor
                     .node=${this._lineageTree}
-                    .strainEntries=${(this.strains ?? []).map((st: StrainEntry) => ({
-          name: st.strain || (st as unknown as Record<string, string>)['strain_name'] || '',
-          phenotype: st.phenotype && st.phenotype !== 'default' ? st.phenotype : undefined,
-        })).filter(e => !!e.name)}
+                    .strainEntries=${(this.strains ?? [])
+                      .map((st: StrainEntry) => ({
+                        name:
+                          st.strain ||
+                          (st as unknown as Record<string, string>)['strain_name'] ||
+                          '',
+                        phenotype:
+                          st.phenotype && st.phenotype !== 'default' ? st.phenotype : undefined,
+                      }))
+                      .filter((e) => !!e.name)}
                     @lineage-change=${async (e: CustomEvent) => {
-            const { parents } = e.detail;
-            if (!s.strain || !this.store) return;
-            const result = await this.store.actions.genetics.updateStrainLineageTree(s.strain, parents);
-            this._handleEditorChange('lineage', result.lineage);
-            await this._loadStrainLineageTree(s.strain);
-          }}
+                      const { parents } = e.detail;
+                      if (!s.strain || !this.store) return;
+                      const result = await this.store.actions.genetics.updateStrainLineageTree(
+                        s.strain,
+                        parents
+                      );
+                      this._handleEditorChange('lineage', result.lineage);
+                      await this._loadStrainLineageTree(s.strain);
+                    }}
                   ></lineage-tree-editor>`
-        : html`
+                : html`
                     ${this._lineageTree?.parents?.length
-            ? html`<lineage-tree
+                      ? html`<lineage-tree
                           .node=${this._lineageTree}
                           .clickable=${true}
                           @node-click=${(e: CustomEvent<{ name: string }>) => {
-                const match = (this.strains ?? []).find((st: StrainEntry) => st.strain === e.detail.name);
-                if (match) this._navigateToAncestor(match);
-              }}
+                            const match = (this.strains ?? []).find(
+                              (st: StrainEntry) => st.strain === e.detail.name
+                            );
+                            if (match) this._navigateToAncestor(match);
+                          }}
                         ></lineage-tree>`
-            : html`<span style="color:var(--secondary-text-color);font-size:12px;font-style:italic;">${s.lineage || 'No lineage recorded'}</span>`}
+                      : html`<span
+                          style="color:var(--secondary-text-color);font-size:12px;font-style:italic;"
+                          >${s.lineage || 'No lineage recorded'}</span
+                        >`}
                   `}
             </div>
 
@@ -815,7 +866,7 @@ export class StrainEditorView extends LitElement {
               <label class="sd-label">Sex</label>
               <div style="display:flex; gap:20px; padding: 8px 0;">
                 ${['Feminized', 'Regular'].map(
-              (sex) => html`
+                  (sex) => html`
                     <label
                       style="display:flex; align-items:center; gap:8px; cursor:pointer; color:var(, white);"
                     >
@@ -829,7 +880,7 @@ export class StrainEditorView extends LitElement {
                       ${sex}
                     </label>
                   `
-            )}
+                )}
               </div>
             </div>
 
@@ -838,7 +889,8 @@ export class StrainEditorView extends LitElement {
               <textarea
                 class="sd-textarea"
                 .value=${s.description || ''}
-                @input=${(e: InputEvent) => this._handleEditorChange('description', (e.target as HTMLTextAreaElement).value)}
+                @input=${(e: InputEvent) =>
+                  this._handleEditorChange('description', (e.target as HTMLTextAreaElement).value)}
               ></textarea>
             </div>
           </div>
@@ -847,7 +899,7 @@ export class StrainEditorView extends LitElement {
 
       <div class="sd-footer" style="justify-content: space-between;">
         ${s.key
-        ? html`
+          ? html`
               <button
                 class="md3-button text"
                 style="color: var(--error-color, #f44336);"
@@ -859,28 +911,47 @@ export class StrainEditorView extends LitElement {
                 Delete
               </button>
             `
-        : html`<div></div>`}
+          : html`<div></div>`}
 
         <div style="display:flex; gap:12px;">
-          ${s.strain ? html`
-            <button class="md3-button outlined" @click=${this._handlePrintLabel}>
-              <svg style="width:18px;height:18px;fill:currentColor; margin-right:4px;" viewBox="0 0 24 24">
-                <path d="${mdiDownload}"></path>
-              </svg>
-              Print Label
-            </button>
-          ` : nothing}
-          <button class="md3-button tonal" ?disabled=${this._saving || this._uploadingImage} @click=${() => this._goBack()}>Cancel</button>
-          <button class="md3-button primary" ?disabled=${this._saving || this._uploadingImage} @click=${() => this._handleSave()}>
-            ${this._saving || this._uploadingImage ? html`
-              <span style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"></span>
-              ${this._uploadingImage ? 'Uploading...' : 'Saving...'}
-            ` : html`
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiCheck}"></path>
-              </svg>
-              Save Strain
-            `}
+          ${s.strain
+            ? html`
+                <button class="md3-button outlined" @click=${this._handlePrintLabel}>
+                  <svg
+                    style="width:18px;height:18px;fill:currentColor; margin-right:4px;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiDownload}"></path>
+                  </svg>
+                  Print Label
+                </button>
+              `
+            : nothing}
+          <button
+            class="md3-button tonal"
+            ?disabled=${this._saving || this._uploadingImage}
+            @click=${() => this._goBack()}
+          >
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            ?disabled=${this._saving || this._uploadingImage}
+            @click=${() => this._handleSave()}
+          >
+            ${this._saving || this._uploadingImage
+              ? html`
+                  <span
+                    style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
+                  ></span>
+                  ${this._uploadingImage ? 'Uploading...' : 'Saving...'}
+                `
+              : html`
+                  <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiCheck}"></path>
+                  </svg>
+                  Save Strain
+                `}
           </button>
         </div>
       </div>
@@ -954,10 +1025,10 @@ export class StrainEditorView extends LitElement {
             step="0.1"
             .value=${meta.scale.toString()}
             @input=${(e: Event) =>
-        this._handleEditorChange('image_crop_meta', {
-          ...meta,
-          scale: parseFloat((e.target as HTMLInputElement).value),
-        })}
+              this._handleEditorChange('image_crop_meta', {
+                ...meta,
+                scale: parseFloat((e.target as HTMLInputElement).value),
+              })}
           />
 
           <div style="display:flex; gap:12px; margin-top:12px;">
@@ -1001,101 +1072,184 @@ export class StrainEditorView extends LitElement {
         <div
           class="gallery-drop-area"
           style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; margin-bottom: 8px;"
-          @dragover=${(e: DragEvent) => { e.preventDefault(); e.dataTransfer!.dropEffect = 'copy'; }}
+          @dragover=${(e: DragEvent) => {
+            e.preventDefault();
+            e.dataTransfer!.dropEffect = 'copy';
+          }}
           @drop=${handleDrop}
         >
-          ${gallery.map((img, i) => html`
-            <div style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_thumbnail ? 'var(--accent-green, #4caf50)' : 'rgba(255,255,255,0.1)'};">
-              <img src="${PlantUtils.encodeLocalPath(img.path)}" style="width:100%; height:100%; object-fit:cover;" />
-              <div style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:4px;">
-                <button
-                  title="${img.is_thumbnail ? 'Thumbnail' : 'Set as thumbnail'}"
-                  style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:${img.is_thumbnail ? '#ffc107' : 'white'};"
-                  @click=${(e: Event) => { e.stopPropagation(); this._handleSetThumbnail(i); }}
+          ${gallery.map(
+            (img, i) => html`
+              <div
+                style="position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; border: 2px solid ${img.is_thumbnail
+                  ? 'var(--accent-green, #4caf50)'
+                  : 'rgba(255,255,255,0.1)'};"
+              >
+                <img
+                  src="${PlantUtils.encodeLocalPath(img.path)}"
+                  style="width:100%; height:100%; object-fit:cover;"
+                />
+                <div
+                  style="position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:4px;"
                 >
-                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${img.is_thumbnail ? mdiStar : mdiStarOutline}"></path>
-                  </svg>
-                </button>
-                <button
-                  title="Remove"
-                  style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:white;"
-                  @click=${(e: Event) => { e.stopPropagation(); this._handleRemoveGalleryImage(i); }}
-                >
-                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiClose}"></path>
-                  </svg>
-                </button>
+                  <button
+                    title="${img.is_thumbnail ? 'Thumbnail' : 'Set as thumbnail'}"
+                    style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:${img.is_thumbnail
+                      ? '#ffc107'
+                      : 'white'};"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._handleSetThumbnail(i);
+                    }}
+                  >
+                    <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${img.is_thumbnail ? mdiStar : mdiStarOutline}"></path>
+                    </svg>
+                  </button>
+                  <button
+                    title="Remove"
+                    style="background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:white;"
+                    @click=${(e: Event) => {
+                      e.stopPropagation();
+                      this._handleRemoveGalleryImage(i);
+                    }}
+                  >
+                    <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiClose}"></path>
+                    </svg>
+                  </button>
+                </div>
+                ${img.is_thumbnail
+                  ? html`
+                      <button
+                        title="Adjust crop"
+                        style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:white;"
+                        @click=${(e: Event) => {
+                          e.stopPropagation();
+                          this._toggleCropMode(true);
+                        }}
+                      >
+                        <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
+                          <path d="${mdiContentCopy}"></path>
+                        </svg>
+                      </button>
+                    `
+                  : nothing}
               </div>
-              ${img.is_thumbnail ? html`
-                <button
-                  title="Adjust crop"
-                  style="position:absolute; bottom:4px; right:4px; background:rgba(0,0,0,0.6); border:none; padding:3px; border-radius:50%; cursor:pointer; color:white;"
-                  @click=${(e: Event) => { e.stopPropagation(); this._toggleCropMode(true); }}
-                >
-                  <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiContentCopy}"></path>
-                  </svg>
-                </button>
-              ` : nothing}
-            </div>
-          `)}
+            `
+          )}
 
           <!-- Add button — opens choice menu -->
           <button
-            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._uploadingImage ? 'wait' : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
+            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this
+              ._uploadingImage
+              ? 'wait'
+              : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
             ?disabled=${this._uploadingImage}
-            @click=${() => { if (!this._uploadingImage) this._showAddPhotoMenu = true; }}
+            @click=${() => {
+              if (!this._uploadingImage) this._showAddPhotoMenu = true;
+            }}
           >
             ${this._uploadingImage
-              ? html`<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent-green);border-radius:50%;animation:spin 1s linear infinite;"></div>`
+              ? html`<div
+                  style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent-green);border-radius:50%;animation:spin 1s linear infinite;"
+                ></div>`
               : html`
-                <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiPlus}"></path></svg>
-                Add
-              `}
+                  <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiPlus}"></path>
+                  </svg>
+                  Add
+                `}
           </button>
 
           <!-- Hidden inputs: one for camera, one for file picker -->
-          <input id="gallery-camera-input" type="file" accept="image/*" capture="environment" style="display:none" @change=${handleFileChange} />
-          <input id="gallery-library-input" type="file" accept="image/*" style="display:none" @change=${handleFileChange} />
+          <input
+            id="gallery-camera-input"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style="display:none"
+            @change=${handleFileChange}
+          />
+          <input
+            id="gallery-library-input"
+            type="file"
+            accept="image/*"
+            style="display:none"
+            @change=${handleFileChange}
+          />
         </div>
 
-        ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta ? html`
-          <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px;">
-            Thumbnail crop applied · click ✂ to adjust
-          </div>
-        ` : nothing}
+        ${thumbIndex >= 0 && gallery[thumbIndex]?.crop_meta
+          ? html`
+              <div style="font-size:0.75rem; color:var(--secondary-text-color); margin-top:4px;">
+                Thumbnail crop applied · click ✂ to adjust
+              </div>
+            `
+          : nothing}
 
         <!-- Add-photo choice menu -->
-        ${this._showAddPhotoMenu ? html`
-          <div
-            style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
-            @click=${() => { this._showAddPhotoMenu = false; }}
-          ></div>
-          <div style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;">
-            <div style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 8px;"></div>
-            <button
-              style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
-              @click=${(e: Event) => { e.stopPropagation(); this._showAddPhotoMenu = false; (this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement)?.click(); }}
-            >
-              <svg style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;" viewBox="0 0 24 24"><path d="${mdiCamera}"></path></svg>
-              Take Photo
-            </button>
-            <button
-              style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
-              @click=${(e: Event) => { e.stopPropagation(); this._showAddPhotoMenu = false; (this.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement)?.click(); }}
-            >
-              <svg style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;" viewBox="0 0 24 24"><path d="${mdiImageMultiple}"></path></svg>
-              Choose from Library
-            </button>
-          </div>
-        ` : nothing}
+        ${this._showAddPhotoMenu
+          ? html`
+              <div
+                style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
+                @click=${() => {
+                  this._showAddPhotoMenu = false;
+                }}
+              ></div>
+              <div
+                style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;"
+              >
+                <div
+                  style="width:40px; height:4px; border-radius:2px; background:rgba(255,255,255,0.2); margin:0 auto 8px;"
+                ></div>
+                <button
+                  style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._showAddPhotoMenu = false;
+                    (
+                      this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement
+                    )?.click();
+                  }}
+                >
+                  <svg
+                    style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiCamera}"></path>
+                  </svg>
+                  Take Photo
+                </button>
+                <button
+                  style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._showAddPhotoMenu = false;
+                    (
+                      this.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement
+                    )?.click();
+                  }}
+                >
+                  <svg
+                    style="width:24px;height:24px;fill:var(--accent-green,#4caf50);flex-shrink:0;"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="${mdiImageMultiple}"></path>
+                  </svg>
+                  Choose from Library
+                </button>
+              </div>
+            `
+          : nothing}
       </div>
     `;
   }
 
   private renderImportDialog(): TemplateResult {
-    const close = () => { this._importDialogOpen = false; };
+    const close = () => {
+      this._importDialogOpen = false;
+    };
     return html`
       <ha-dialog
         open
@@ -1172,9 +1326,7 @@ export class StrainEditorView extends LitElement {
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px;">
-              <button class="md3-button tonal" @click=${close}>
-                Cancel
-              </button>
+              <button class="md3-button tonal" @click=${close}>Cancel</button>
               <button class="md3-button primary" @click=${() => this._handleImportFile()}>
                 <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
                   <path d="${mdiCloudUpload}"></path>
@@ -1190,7 +1342,10 @@ export class StrainEditorView extends LitElement {
 
   private renderBreederDialog(): TemplateResult {
     const breeders = this._getUniqueBreeders();
-    const close = () => { this._breederDialogOpen = false; this._breederEditorState = null; };
+    const close = () => {
+      this._breederDialogOpen = false;
+      this._breederEditorState = null;
+    };
 
     return html`
       <ha-dialog
@@ -1210,14 +1365,14 @@ export class StrainEditorView extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <h2 class="dialog-title">Breeder Manager</h2>
-                  <gs-help-tooltip
-                    content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
-                    placement="bottom"
-                    label="Breeders"
-                  ></gs-help-tooltip>
-                </div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Breeder Manager</h2>
+                <gs-help-tooltip
+                  content="Manage your breeder database and logos. Breeders can be assigned to strains to track genetics."
+                  placement="bottom"
+                  label="Breeders"
+                ></gs-help-tooltip>
+              </div>
             </div>
             <button
               class="md3-button text close"
@@ -1232,23 +1387,29 @@ export class StrainEditorView extends LitElement {
 
           <div class="sd-content">
             ${this._breederEditorState
-        ? this.renderBreederEditor()
-        : this.renderBreederList(breeders)}
+              ? this.renderBreederEditor()
+              : this.renderBreederList(breeders)}
           </div>
 
-          ${!this._breederEditorState ? html`
-            <div class="sd-footer">
-              <span style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;">
-                Breeders appear automatically when strains with breeder info are saved.
-              </span>
-            </div>
-          ` : nothing}
+          ${!this._breederEditorState
+            ? html`
+                <div class="sd-footer">
+                  <span
+                    style="font-size:0.8rem; color:var(--secondary-text-color); padding: 0 8px;"
+                  >
+                    Breeders appear automatically when strains with breeder info are saved.
+                  </span>
+                </div>
+              `
+            : nothing}
         </div>
       </ha-dialog>
     `;
   }
 
-  private renderBreederList(breeders: Array<{ name: string; logo: string; strainCount: number }>): TemplateResult {
+  private renderBreederList(
+    breeders: Array<{ name: string; logo: string; strainCount: number }>
+  ): TemplateResult {
     if (breeders.length === 0) {
       return html`
         <div style="text-align:center; padding:40px; color:var(--secondary-text-color);">
@@ -1262,33 +1423,50 @@ export class StrainEditorView extends LitElement {
 
     return html`
       <div class="breeder-list">
-        ${breeders.map((b) => html`
-          <div class="breeder-card" @click=${() => this._startBreederEdit(b.name, b.logo)}>
-            ${b.logo
-        ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
-        : html`<div class="breeder-logo-placeholder">
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiImage}"></path>
+        ${breeders.map(
+          (b) => html`
+            <div class="breeder-card" @click=${() => this._startBreederEdit(b.name, b.logo)}>
+              ${b.logo
+                ? html`<img class="breeder-logo-preview" src="${b.logo}" alt="${b.name}" />`
+                : html`<div class="breeder-logo-placeholder">
+                    <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiImage}"></path>
+                    </svg>
+                  </div>`}
+              <div class="breeder-info">
+                <div class="breeder-name">${b.name}</div>
+                <div class="breeder-strain-count">
+                  ${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}
+                </div>
+              </div>
+              <div class="breeder-actions">
+                <button
+                  class="sc-action-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._startBreederEdit(b.name, b.logo);
+                  }}
+                >
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiPencil}"></path>
                   </svg>
-                </div>`}
-            <div class="breeder-info">
-              <div class="breeder-name">${b.name}</div>
-              <div class="breeder-strain-count">${b.strainCount} strain${b.strainCount !== 1 ? 's' : ''}</div>
+                </button>
+                <button
+                  class="sc-action-btn"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._handleDeleteBreeder(b.name);
+                  }}
+                  style="color:var(--error-color, #f44336);"
+                >
+                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDelete}"></path>
+                  </svg>
+                </button>
+              </div>
             </div>
-            <div class="breeder-actions">
-              <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._startBreederEdit(b.name, b.logo); }}>
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiPencil}"></path>
-                </svg>
-              </button>
-              <button class="sc-action-btn" @click=${(e: Event) => { e.stopPropagation(); this._handleDeleteBreeder(b.name); }} style="color:var(--error-color, #f44336);">
-                <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
-                  <path d="${mdiDelete}"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-        `)}
+          `
+        )}
       </div>
     `;
   }
@@ -1314,13 +1492,22 @@ export class StrainEditorView extends LitElement {
     return html`
       <div style="display:flex; flex-direction:column; gap:20px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
-          <button class="md3-button tonal" style="padding:0 12px; height:32px;" @click=${() => (this._breederEditorState = null)}>
-            <svg style="width:18px;height:18px;fill:currentColor;margin-right:4px;" viewBox="0 0 24 24">
+          <button
+            class="md3-button tonal"
+            style="padding:0 12px; height:32px;"
+            @click=${() => (this._breederEditorState = null)}
+          >
+            <svg
+              style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+              viewBox="0 0 24 24"
+            >
               <path d="${mdiArrowLeft}"></path>
             </svg>
             Back
           </button>
-          <h3 style="margin:0; color:var(--primary-text-color);">${isEdit ? 'Edit Breeder' : 'New Breeder'}</h3>
+          <h3 style="margin:0; color:var(--primary-text-color);">
+            ${isEdit ? 'Edit Breeder' : 'New Breeder'}
+          </h3>
         </div>
 
         <div class="sd-form-group">
@@ -1331,8 +1518,11 @@ export class StrainEditorView extends LitElement {
             placeholder="e.g. Royal Queen Seeds"
             .value=${state.name}
             @input=${(e: InputEvent) => {
-        this._breederEditorState = { ...this._breederEditorState!, name: (e.target as HTMLInputElement).value };
-      }}
+              this._breederEditorState = {
+                ...this._breederEditorState!,
+                name: (e.target as HTMLInputElement).value,
+              };
+            }}
           />
         </div>
 
@@ -1340,42 +1530,92 @@ export class StrainEditorView extends LitElement {
           <label class="sd-label">Breeder Logo</label>
           <div style="display:flex; align-items:center; gap:16px;">
             ${state.logo
-        ? html`<img src="${state.logo}" style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;" />`
-        : html`<div style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);">
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiImage}"></path></svg>
+              ? html`<img
+                  src="${state.logo}"
+                  style="width:64px; height:64px; object-fit:contain; border-radius:8px; background:rgba(255,255,255,0.05); padding:4px;"
+                />`
+              : html`<div
+                  style="width:64px; height:64px; border:1px dashed var(--divider-color); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--secondary-text-color);"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiImage}"></path>
+                  </svg>
                 </div>`}
             <div style="display:flex; gap:8px;">
-              <button class="md3-button tonal" style="height:36px; padding:0 16px; font-size:0.85rem;" @click=${(e: Event) => ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}>
-                <svg style="width:16px;height:16px;fill:currentColor;margin-right:6px;" viewBox="0 0 24 24"><path d="${mdiCloudUpload}"></path></svg>
+              <button
+                class="md3-button tonal"
+                style="height:36px; padding:0 16px; font-size:0.85rem;"
+                @click=${(e: Event) =>
+                  ((e.currentTarget as HTMLElement).nextElementSibling as HTMLInputElement).click()}
+              >
+                <svg
+                  style="width:16px;height:16px;fill:currentColor;margin-right:6px;"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="${mdiCloudUpload}"></path>
+                </svg>
                 ${state.logo ? 'Change Logo' : 'Upload Logo'}
               </button>
-              <input type="file" accept="image/*" style="display:none" @change=${handleLogoUpload} />
-              ${state.logo ? html`
-                <button class="md3-button text" style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);" @click=${() => { this._breederEditorState = { ...this._breederEditorState!, logo: '' }; }}>
-                  <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiDelete}"></path></svg>
-                </button>
-              ` : nothing}
+              <input
+                type="file"
+                accept="image/*"
+                style="display:none"
+                @change=${handleLogoUpload}
+              />
+              ${state.logo
+                ? html`
+                    <button
+                      class="md3-button text"
+                      style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
+                      @click=${() => {
+                        this._breederEditorState = { ...this._breederEditorState!, logo: '' };
+                      }}
+                    >
+                      <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
+                        <path d="${mdiDelete}"></path>
+                      </svg>
+                    </button>
+                  `
+                : nothing}
             </div>
           </div>
         </div>
 
-        ${isEdit && affectedStrains.length > 0 ? html`
-          <div style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;">
-            <label class="sd-label" style="margin-bottom:8px;">Strains using this breeder (${affectedStrains.length})</label>
-            <div style="display:flex; flex-wrap:wrap; gap:8px;">
-              ${affectedStrains.map((s) => html`
-                <span style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;">
-                  ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
-                </span>
-              `)}
-            </div>
-          </div>
-        ` : nothing}
+        ${isEdit && affectedStrains.length > 0
+          ? html`
+              <div
+                style="background:rgba(255,255,255,0.03); border:1px solid var(--divider-color); border-radius:8px; padding:16px;"
+              >
+                <label class="sd-label" style="margin-bottom:8px;"
+                  >Strains using this breeder (${affectedStrains.length})</label
+                >
+                <div style="display:flex; flex-wrap:wrap; gap:8px;">
+                  ${affectedStrains.map(
+                    (s) => html`
+                      <span
+                        style="background:rgba(76,175,80,0.15); color:var(--accent-green); padding:4px 10px; border-radius:16px; font-size:0.8rem; font-weight:500;"
+                      >
+                        ${s.strain}${s.phenotype ? ` (${s.phenotype})` : ''}
+                      </span>
+                    `
+                  )}
+                </div>
+              </div>
+            `
+          : nothing}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>Cancel</button>
-          <button class="md3-button primary" @click=${() => this._handleSaveBreeder()} ?disabled=${!state.name.trim()}>
-            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiCheck}"></path></svg>
+          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>
+            Cancel
+          </button>
+          <button
+            class="md3-button primary"
+            @click=${() => this._handleSaveBreeder()}
+            ?disabled=${!state.name.trim()}
+          >
+            <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiCheck}"></path>
+            </svg>
             ${isEdit ? 'Save Changes' : 'Create Breeder'}
           </button>
         </div>
@@ -1397,15 +1637,28 @@ export class StrainEditorView extends LitElement {
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="height: auto; padding: 24px; display: flex; flex-direction: column;">
+        <div
+          class="glass-dialog-container"
+          style="height: auto; padding: 24px; display: flex; flex-direction: column;"
+        >
           <h2 class="dialog-title">Remove Breeder?</h2>
-          <p style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;">
-            This will remove <strong>"${breederName}"</strong> from ${affectedCount} strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
+          <p
+            style="color:var(--secondary-text-color); margin:16px 0; font-size:1rem; line-height:1.5;"
+          >
+            This will remove <strong>"${breederName}"</strong> from ${affectedCount}
+            strain${affectedCount !== 1 ? 's' : ''}. The strains themselves will not be deleted.
           </p>
           <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
             <button class="md3-button tonal" @click=${this._cancelDeleteBreeder}>Cancel</button>
-            <button class="md3-button text" style="color:#f44336;" @click=${this._confirmDeleteBreeder}>
-              <svg style="width:18px;height:18px;fill:currentColor;margin-right:8px;" viewBox="0 0 24 24">
+            <button
+              class="md3-button text"
+              style="color:#f44336;"
+              @click=${this._confirmDeleteBreeder}
+            >
+              <svg
+                style="width:18px;height:18px;fill:currentColor;margin-right:8px;"
+                viewBox="0 0 24 24"
+              >
                 <path d="${mdiDelete}"></path>
               </svg>
               Remove
@@ -1438,7 +1691,9 @@ export class StrainEditorView extends LitElement {
       }
 
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       .sd-content {

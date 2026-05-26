@@ -57,7 +57,7 @@ export async function getSubareas(growspaceId: string): Promise<Subarea[]> {
   const result = await hassCall(
     'growspace_manager/get_subareas',
     { growspace_id: growspaceId },
-    GetSubareasResponseSchema,
+    GetSubareasResponseSchema
   );
   subareas$.set(result);
   return result;
@@ -77,7 +77,7 @@ export async function addSubarea(growspaceId: string, name: string): Promise<Sub
   const created = await hassCall(
     'growspace_manager/add_subarea',
     { growspace_id: growspaceId, name },
-    SubareaResponseSchema,
+    SubareaResponseSchema
   );
   subareas$.set([...subareas$.get(), created]);
   return created;
@@ -97,7 +97,7 @@ export async function addSubarea(growspaceId: string, name: string): Promise<Sub
 export async function updateSubarea(
   growspaceId: string,
   subareaId: string,
-  environmentConfig: Partial<EnvironmentConfig>,
+  environmentConfig: Partial<EnvironmentConfig>
 ): Promise<void> {
   const originalList = subareas$.get();
   const patched = originalList.map((s) => {
@@ -113,11 +113,15 @@ export async function updateSubarea(
       apply: () =>
         hassCall(
           'growspace_manager/update_subarea',
-          { growspace_id: growspaceId, subarea_id: subareaId, environment_config: environmentConfig },
-          SubareaResponseSchema,
+          {
+            growspace_id: growspaceId,
+            subarea_id: subareaId,
+            environment_config: environmentConfig,
+          },
+          SubareaResponseSchema
         ).then(() => undefined),
     },
-    growspaceId,
+    growspaceId
   );
 }
 
@@ -144,9 +148,9 @@ export async function removeSubarea(growspaceId: string, subareaId: string): Pro
         hassCall(
           'growspace_manager/remove_subarea',
           { growspace_id: growspaceId, subarea_id: subareaId },
-          RemoveSubareaResponseSchema,
+          RemoveSubareaResponseSchema
         ).then(() => undefined),
     },
-    growspaceId,
+    growspaceId
   );
 }

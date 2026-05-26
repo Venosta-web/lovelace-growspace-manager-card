@@ -165,7 +165,7 @@ export class LogbookDialog extends LitElement {
           label="Events Logbook"
         ></gs-help-tooltip>
 
-          <div class="content-wrapper">
+        <div class="content-wrapper">
           <!-- Tab Switcher -->
           <div class="tab-bar">
             <button
@@ -186,7 +186,7 @@ export class LogbookDialog extends LitElement {
 
           <!-- Content -->
           ${this._activeTab === 'list'
-        ? html`
+            ? html`
                 <div class="list-view-container">
                   <growspace-logbook
                     .hass=${this.hass}
@@ -198,15 +198,15 @@ export class LogbookDialog extends LitElement {
                   ></quick-note-input>
                 </div>
               `
-        : this._activeTab === 'timeline'
-          ? html`
+            : this._activeTab === 'timeline'
+              ? html`
                   <growspace-timeline
                     .hass=${this.hass}
                     .growspaceId=${this.growspaceId}
                   ></growspace-timeline>
                 `
-          : nothing}
-          </div>
+              : nothing}
+        </div>
       </gs-dialog>
     `;
   }

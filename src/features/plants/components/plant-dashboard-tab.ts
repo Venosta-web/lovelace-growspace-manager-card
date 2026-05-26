@@ -94,7 +94,6 @@ export class PlantDashboardTab extends LitElement {
       })
     );
   }
-
 }
 
 declare global {

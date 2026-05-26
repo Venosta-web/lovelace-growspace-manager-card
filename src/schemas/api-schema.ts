@@ -10,9 +10,9 @@ const IrrigationScheduleItemSchema = z
   })
   .transform((data) => ({
     time: data.time || data.start_time || '',
-    duration: (data.duration ?? data.duration_seconds) ?? undefined,
+    duration: data.duration ?? data.duration_seconds ?? undefined,
   }))
-  .refine((data) => data.time !== '', { message: "Time is required" });
+  .refine((data) => data.time !== '', { message: 'Time is required' });
 
 const IrrigationStrategySchema = z.object({
   enabled: z.boolean(),
@@ -60,7 +60,7 @@ const DrainConfigSchema = z
           drain_ec: z.number(),
           drain_volume_ml: z.number().nullable().optional(),
           feed_volume_ml: z.number().nullable().optional(),
-        }),
+        })
       )
       .optional()
       .default([]),
@@ -132,7 +132,12 @@ export const GrowspaceAPIResponseSchema = z
         sensor_coordinates: z
           .record(
             z.string(),
-            z.object({ x: z.number(), y: z.number(), z: z.number(), rotation: z.number().optional() }),
+            z.object({
+              x: z.number(),
+              y: z.number(),
+              z: z.number(),
+              rotation: z.number().optional(),
+            })
           )
           .optional()
           .default({}),
@@ -205,11 +210,31 @@ export type GrowspaceAPICollection = z.infer<typeof GrowspaceAPICollectionSchema
 
 export const StrainPhenotypeSchema = z
   .object({
-    description: z.string().nullable().optional().transform(v => v ?? undefined),
-    image_path: z.string().nullable().optional().transform(v => v ?? undefined),
-    image_crop_meta: z.object({ x: z.number(), y: z.number(), scale: z.number() }).nullable().optional().transform(v => v ?? undefined),
-    flower_days_min: z.number().nullable().optional().transform(v => v ?? undefined),
-    flower_days_max: z.number().nullable().optional().transform(v => v ?? undefined),
+    description: z
+      .string()
+      .nullable()
+      .optional()
+      .transform((v) => v ?? undefined),
+    image_path: z
+      .string()
+      .nullable()
+      .optional()
+      .transform((v) => v ?? undefined),
+    image_crop_meta: z
+      .object({ x: z.number(), y: z.number(), scale: z.number() })
+      .nullable()
+      .optional()
+      .transform((v) => v ?? undefined),
+    flower_days_min: z
+      .number()
+      .nullable()
+      .optional()
+      .transform((v) => v ?? undefined),
+    flower_days_max: z
+      .number()
+      .nullable()
+      .optional()
+      .transform((v) => v ?? undefined),
   })
   .catchall(z.unknown());
 
@@ -217,13 +242,41 @@ export const StrainDataSchema = z
   .object({
     meta: z
       .object({
-        breeder: z.string().nullable().optional().transform(v => v ?? undefined),
-        breeder_logo: z.string().nullable().optional().transform(v => v ?? undefined),
-        type: z.string().nullable().optional().transform(v => v ?? undefined),
-        lineage: z.string().nullable().optional().transform(v => v ?? undefined),
-        sex: z.string().nullable().optional().transform(v => v ?? undefined),
-        sativa_percentage: z.number().nullable().optional().transform(v => v ?? undefined),
-        indica_percentage: z.number().nullable().optional().transform(v => v ?? undefined),
+        breeder: z
+          .string()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
+        breeder_logo: z
+          .string()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
+        type: z
+          .string()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
+        lineage: z
+          .string()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
+        sex: z
+          .string()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
+        sativa_percentage: z
+          .number()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
+        indica_percentage: z
+          .number()
+          .nullable()
+          .optional()
+          .transform((v) => v ?? undefined),
         is_stub: z.boolean().optional(),
       })
       .passthrough()

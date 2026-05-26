@@ -85,10 +85,7 @@ export abstract class BaseAPI {
    * @param data - Additional data to include in the message
    * @throws WSError with a typed code when the backend returns an error response
    */
-  protected async sendWebSocket<T>(
-    type: string,
-    data?: Record<string, unknown>
-  ): Promise<T> {
+  protected async sendWebSocket<T>(type: string, data?: Record<string, unknown>): Promise<T> {
     try {
       return await this.hass.callWS<T>({ type, ...data });
     } catch (error: unknown) {
