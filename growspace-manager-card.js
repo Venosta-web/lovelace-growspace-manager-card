@@ -155,6 +155,7 @@ var mdiInformationOutline = "M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.5
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
 var mdiLightbulbOff = "M12,2C9.76,2 7.78,3.05 6.5,4.68L16.31,14.5C17.94,13.21 19,11.24 19,9A7,7 0 0,0 12,2M3.28,4L2,5.27L5.04,8.3C5,8.53 5,8.76 5,9C5,11.38 6.19,13.47 8,14.74V17A1,1 0 0,0 9,18H14.73L18.73,22L20,20.72L3.28,4M9,20V21A1,1 0 0,0 10,22H14A1,1 0 0,0 15,21V20H9Z";
 var mdiLightbulbOn = "M12,6A6,6 0 0,1 18,12C18,14.22 16.79,16.16 15,17.2V19A1,1 0 0,1 14,20H10A1,1 0 0,1 9,19V17.2C7.21,16.16 6,14.22 6,12A6,6 0 0,1 12,6M14,21V22A1,1 0 0,1 13,23H11A1,1 0 0,1 10,22V21H14M20,11H23V13H20V11M1,11H4V13H1V11M13,1V4H11V1H13M4.92,3.5L7.05,5.64L5.63,7.05L3.5,4.93L4.92,3.5M16.95,5.63L19.07,3.5L20.5,4.93L18.37,7.05L16.95,5.63Z";
+var mdiLightningBolt = "M11 15H6L13 1V9H18L11 23V15Z";
 var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
@@ -162,6 +163,7 @@ var mdiMinus = "M19,13H5V11H19V13Z";
 var mdiNoteOutline = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
+var mdiPh = "M13 7V17H15V13H17V17H19V7H17V11H15V7H13M11 15V13C11 11.9 10.11 11 9 11H5V21H7V17H9C10.11 17 11 16.11 11 15M9 15H7V13H9V15Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiPlusBoxMultiple = "M19,11H15V15H13V11H9V9H13V5H15V9H19M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z";
 var mdiPrinter = "M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z";
@@ -190,6 +192,7 @@ var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6
 var mdiWaterMinus = "M22 17V19H14V17H22M17.62 12C16.31 8.1 12 3.25 12 3.25S6 10 6 14C6 17.31 8.69 20 12 20C12.12 20 12.23 20 12.34 20C12.12 19.36 12 18.7 12 18C12 14.82 14.5 12.22 17.62 12Z";
 var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z";
 var mdiWaterPlus = "M12 18C12 18.7 12.12 19.36 12.34 20C12.23 20 12.12 20 12 20C8.69 20 6 17.31 6 14C6 10 12 3.25 12 3.25S16.31 8.1 17.62 12C14.5 12.22 12 14.82 12 18M19 17V14H17V17H14V19H17V22H19V19H22V17H19Z";
+var mdiWaterPump = "M19,14.5C19,14.5 21,16.67 21,18A2,2 0 0,1 19,20A2,2 0 0,1 17,18C17,16.67 19,14.5 19,14.5M5,18V9A2,2 0 0,1 3,7A2,2 0 0,1 5,5V4A2,2 0 0,1 7,2H9A2,2 0 0,1 11,4V5H19A2,2 0 0,1 21,7V9L21,11A1,1 0 0,1 22,12A1,1 0 0,1 21,13H17A1,1 0 0,1 16,12A1,1 0 0,1 17,11V9H11V18H12A2,2 0 0,1 14,20V22H2V20A2,2 0 0,1 4,18H5Z";
 var mdiWeatherCloudy = "M6,19A5,5 0 0,1 1,14A5,5 0 0,1 6,9C7,6.65 9.3,5 12,5C15.43,5 18.24,7.66 18.5,11.03L19,11A4,4 0 0,1 23,15A4,4 0 0,1 19,19H6M19,13H17V12A5,5 0 0,0 12,7C9.5,7 7.45,8.82 7.06,11.19C6.73,11.07 6.37,11 6,11A3,3 0 0,0 3,14A3,3 0 0,0 6,17H19A2,2 0 0,0 21,15A2,2 0 0,0 19,13Z";
 var mdiWeatherNight = "M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.64 6.35,17.66C9.37,20.67 14.19,20.78 17.33,17.97Z";
 var mdiWeatherSunny = "M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,2L14.39,5.42C13.65,5.15 12.84,5 12,5C11.16,5 10.35,5.15 9.61,5.42L12,2M3.34,7L7.5,6.65C6.9,7.16 6.36,7.78 5.94,8.5C5.5,9.24 5.25,10 5.11,10.79L3.34,7M3.36,17L5.12,13.23C5.26,14 5.53,14.78 5.95,15.5C6.37,16.24 6.91,16.86 7.5,17.37L3.36,17M20.65,7L18.88,10.79C18.74,10 18.47,9.23 18.05,8.5C17.63,7.78 17.1,7.15 16.5,6.64L20.65,7M20.64,17L16.5,17.36C17.09,16.85 17.62,16.22 18.04,15.5C18.46,14.77 18.73,14 18.87,13.21L20.64,17M12,22L9.59,18.56C10.33,18.83 11.14,19 12,19C12.82,19 13.63,18.83 14.37,18.56L12,22Z";
@@ -233,6 +236,13 @@ var MetricKey;
     MetricKey["CROP_STEERING"] = "crop_steering";
     MetricKey["ENERGY"] = "energy";
     MetricKey["WATER"] = "water";
+    MetricKey["PH"] = "ph";
+    MetricKey["FEED_EC"] = "feed_ec";
+    MetricKey["SUBSTRATE_EC"] = "substrate_ec";
+    MetricKey["RUNOFF_EC"] = "runoff_ec";
+    MetricKey["DRAIN_VOLUME"] = "drain_volume";
+    MetricKey["IRRIGATION_FLOW"] = "irrigation_flow";
+    MetricKey["POWER"] = "power";
 })(MetricKey || (MetricKey = {}));
 const METRIC_SORT_ORDER = [
     MetricKey.TEMPERATURE,
@@ -254,6 +264,13 @@ const METRIC_SORT_ORDER = [
     MetricKey.CROP_STEERING,
     MetricKey.ENERGY,
     MetricKey.WATER,
+    MetricKey.PH,
+    MetricKey.FEED_EC,
+    MetricKey.SUBSTRATE_EC,
+    MetricKey.RUNOFF_EC,
+    MetricKey.DRAIN_VOLUME,
+    MetricKey.IRRIGATION_FLOW,
+    MetricKey.POWER,
 ];
 var ChartType;
 (function (ChartType) {
@@ -357,6 +374,38 @@ const METRIC_CONFIG = {
     },
     [MetricKey.ENERGY]: { color: '#fbc02d', title: 'Energy', unit: 'kWh', icon: mdiFlash },
     [MetricKey.WATER]: { color: '#03a9f4', title: 'Water Usage', unit: 'L/d', icon: mdiWaterMinus },
+    [MetricKey.PH]: { color: '#ab47bc', title: 'pH', unit: '', icon: mdiPh },
+    [MetricKey.FEED_EC]: {
+        color: '#ffa726',
+        title: 'Feed EC',
+        unit: 'mS/cm',
+        icon: mdiLightningBolt,
+    },
+    [MetricKey.SUBSTRATE_EC]: {
+        color: '#ff7043',
+        title: 'Substrate EC',
+        unit: 'mS/cm',
+        icon: mdiLightningBolt,
+    },
+    [MetricKey.RUNOFF_EC]: {
+        color: '#ef5350',
+        title: 'Runoff EC',
+        unit: 'mS/cm',
+        icon: mdiLightningBolt,
+    },
+    [MetricKey.DRAIN_VOLUME]: {
+        color: '#29b6f6',
+        title: 'Drain Volume',
+        unit: 'L',
+        icon: mdiWaterMinus,
+    },
+    [MetricKey.IRRIGATION_FLOW]: {
+        color: '#26c6da',
+        title: 'Flow Rate',
+        unit: 'L/h',
+        icon: mdiWaterPump,
+    },
+    [MetricKey.POWER]: { color: '#ffee58', title: 'Power', unit: 'W', icon: mdiFlash },
 };
 var StatusLevel;
 (function (StatusLevel) {
@@ -52598,6 +52647,31 @@ function _makeChip(key, icon, value, opts = {}, activeEnvGraphs, linkedGraphGrou
         groupIndex,
     };
 }
+/**
+ * Build a secondary chip from a SensorReadings object.
+ *
+ * Returns null when readings is null (not configured) or all sensors are
+ * unavailable (avg === null with no successful per-sensor readings).
+ *
+ * Follows the "Multiple + per-sensor" pattern: when more than one sensor ID is
+ * configured the chip shows "Multiple" and carries the individual formatted
+ * values in multiValues so the chip component can render them side-by-side.
+ */
+function _makeSensorReadingChip(key, icon, readings, unit, opts, activeEnvGraphs, linkedGraphGroups) {
+    if (readings === null)
+        return null;
+    if (readings.avg === null && readings.perSensor.every((v) => v === null))
+        return null;
+    const { entityIds, perSensor } = readings;
+    if (entityIds.length > 1) {
+        const multiValues = perSensor.map((v) => (v !== null ? `${v.toFixed(1)}${unit}` : '-'));
+        return _makeChip(key, icon, 'Multiple', { ...opts, multiValues, entityIds }, activeEnvGraphs, linkedGraphGroups);
+    }
+    const value = readings.avg !== null ? `${readings.avg.toFixed(1)}${unit}` : undefined;
+    if (!value)
+        return null;
+    return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
+}
 /** Return the next upcoming HH:MM from a schedule list, wrapping to tomorrow if past. */
 function _getNextEvent(times) {
     if (!times.length)
@@ -52761,6 +52835,38 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
         }
         chips.push(_makeChip(MetricKey.OPTIMAL, isOptimal ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, { status: isOptimal ? 'optimal' : 'warning' }, activeEnvGraphs, linkedGraphGroups));
     }
+    // Substrate / medium sensors (Monitoring tab)
+    const soilChip = _makeSensorReadingChip(MetricKey.SOIL_MOISTURE, mdiWaterPercent, envSnapshot?.soilMoisture ?? null, '%', { label: 'Moisture', tooltip: 'Volumetric water content of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
+    if (soilChip)
+        chips.push(soilChip);
+    const subTempChip = _makeSensorReadingChip(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, envSnapshot?.substrateTemperature ?? null, '°C', { label: 'Sub Temp', tooltip: 'Temperature inside the substrate / growing medium.' }, activeEnvGraphs, linkedGraphGroups);
+    if (subTempChip)
+        chips.push(subTempChip);
+    // Irrigation monitoring sensors (Irrigation tab)
+    const phChip = _makeSensorReadingChip(MetricKey.PH, mdiPh, envSnapshot?.ph ?? null, '', { label: 'pH', tooltip: 'pH of the irrigation feed solution.' }, activeEnvGraphs, linkedGraphGroups);
+    if (phChip)
+        chips.push(phChip);
+    const feedEcChip = _makeSensorReadingChip(MetricKey.FEED_EC, mdiLightningBolt, envSnapshot?.feedEc ?? null, ' mS/cm', { label: 'Feed EC', tooltip: 'Electrical conductivity of the irrigation feed solution.' }, activeEnvGraphs, linkedGraphGroups);
+    if (feedEcChip)
+        chips.push(feedEcChip);
+    const subEcChip = _makeSensorReadingChip(MetricKey.SUBSTRATE_EC, mdiLightningBolt, envSnapshot?.substrateEc ?? null, ' mS/cm', { label: 'Sub EC', tooltip: 'Electrical conductivity inside the substrate.' }, activeEnvGraphs, linkedGraphGroups);
+    if (subEcChip)
+        chips.push(subEcChip);
+    const runoffEcChip = _makeSensorReadingChip(MetricKey.RUNOFF_EC, mdiLightningBolt, envSnapshot?.runoffEc ?? null, ' mS/cm', { label: 'Runoff EC', tooltip: 'Electrical conductivity of drain / runoff water.' }, activeEnvGraphs, linkedGraphGroups);
+    if (runoffEcChip)
+        chips.push(runoffEcChip);
+    const drainVolChip = _makeSensorReadingChip(MetricKey.DRAIN_VOLUME, mdiWaterMinus, envSnapshot?.drainVolume ?? null, ' L', { label: 'Drain Vol', tooltip: 'Drain / runoff volume collected.' }, activeEnvGraphs, linkedGraphGroups);
+    if (drainVolChip)
+        chips.push(drainVolChip);
+    const flowChip = _makeSensorReadingChip(MetricKey.IRRIGATION_FLOW, mdiWaterPump, envSnapshot?.irrigationFlow ?? null, ' L/h', { label: 'Flow', tooltip: 'Irrigation flow rate.' }, activeEnvGraphs, linkedGraphGroups);
+    if (flowChip)
+        chips.push(flowChip);
+    const powerChip = _makeSensorReadingChip(MetricKey.POWER, mdiFlash, envSnapshot?.power ?? null, ' W', { label: 'Power', tooltip: 'Current power draw.' }, activeEnvGraphs, linkedGraphGroups);
+    if (powerChip)
+        chips.push(powerChip);
+    const energyChip = _makeSensorReadingChip(MetricKey.ENERGY, mdiFlash, envSnapshot?.energy ?? null, ' kWh', { label: 'Energy', tooltip: 'Energy consumed.' }, activeEnvGraphs, linkedGraphGroups);
+    if (energyChip)
+        chips.push(energyChip);
     return { hero, chips, dominant };
 }
 
@@ -52869,6 +52975,23 @@ function _resolveVpd(envEntity, device, slug, hassStates) {
         return fromUuid;
     return null;
 }
+/**
+ * Read a list of sensor entity IDs and return a SensorReadings object.
+ * Returns null when no IDs are configured (metric not set up by the user).
+ */
+function _resolveSensors(single, multi, hassStates) {
+    const ids = [];
+    if (multi && multi.length > 0)
+        ids.push(...multi);
+    else if (single)
+        ids.push(single);
+    if (ids.length === 0)
+        return null;
+    const perSensor = ids.map((id) => _parseState(hassStates[id]));
+    const defined = perSensor.filter((v) => v !== null);
+    const avg = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) / defined.length : null;
+    return { avg, perSensor, entityIds: ids };
+}
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(vpd, overviewEntity) {
     // 1. Prefer the backend-computed status from the overview entity
@@ -52936,6 +53059,18 @@ function computeEnvSnapshot(device, hassStates) {
             reasons: Array.isArray(envEntity.attributes.reasons) ? envEntity.attributes.reasons : [],
         }
         : null;
+    // Substrate / medium sensors
+    const soilMoisture = _resolveSensors(envAttrs?.soilMoistureSensor, envAttrs?.soilMoistureSensors, hassStates);
+    const substrateTemperature = _resolveSensors(undefined, envAttrs?.substrateTemperatureSensors, hassStates);
+    // Irrigation monitoring sensors
+    const ph = _resolveSensors(undefined, envAttrs?.phSensors, hassStates);
+    const feedEc = _resolveSensors(undefined, envAttrs?.feedEcSensors, hassStates);
+    const substrateEc = _resolveSensors(undefined, envAttrs?.substrateEcSensors, hassStates);
+    const runoffEc = _resolveSensors(undefined, envAttrs?.runoffEcSensors, hassStates);
+    const drainVolume = _resolveSensors(undefined, envAttrs?.drainVolumeSensors, hassStates);
+    const irrigationFlow = _resolveSensors(undefined, envAttrs?.irrigationFlowSensors, hassStates);
+    const power = _resolveSensors(undefined, envAttrs?.powerSensors, hassStates);
+    const energy = _resolveSensors(undefined, envAttrs?.energySensors, hassStates);
     return {
         temperature,
         humidity,
@@ -52946,6 +53081,16 @@ function computeEnvSnapshot(device, hassStates) {
         hasLightSensor,
         dli,
         optimalConditions,
+        soilMoisture,
+        substrateTemperature,
+        ph,
+        feedEc,
+        substrateEc,
+        runoffEc,
+        drainVolume,
+        irrigationFlow,
+        power,
+        energy,
     };
 }
 // ---------------------------------------------------------------------------

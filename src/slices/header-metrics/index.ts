@@ -21,9 +21,13 @@ import {
   mdiBarrel,
   mdiRadioboxMarked,
   mdiRadioboxBlank,
+  mdiPh,
+  mdiLightningBolt,
+  mdiWaterPump,
+  mdiFlash,
 } from '@mdi/js';
 import { DateTime } from 'luxon';
-import type { EnvSnapshot } from '../environment';
+import type { EnvSnapshot, SensorReadings } from '../environment';
 import type { PlantEntity } from '../../features/plants/types';
 import type {
   IrrigationConfig,
@@ -129,6 +133,47 @@ function _makeChip(
     linked,
     groupIndex,
   };
+}
+
+/**
+ * Build a secondary chip from a SensorReadings object.
+ *
+ * Returns null when readings is null (not configured) or all sensors are
+ * unavailable (avg === null with no successful per-sensor readings).
+ *
+ * Follows the "Multiple + per-sensor" pattern: when more than one sensor ID is
+ * configured the chip shows "Multiple" and carries the individual formatted
+ * values in multiValues so the chip component can render them side-by-side.
+ */
+function _makeSensorReadingChip(
+  key: string,
+  icon: string,
+  readings: SensorReadings | null,
+  unit: string,
+  opts: Omit<ChipOpts, 'multiValues' | 'entityIds'>,
+  activeEnvGraphs: Set<string>,
+  linkedGraphGroups: string[][]
+): HeaderChip | null {
+  if (readings === null) return null;
+  if (readings.avg === null && readings.perSensor.every((v) => v === null)) return null;
+
+  const { entityIds, perSensor } = readings;
+
+  if (entityIds.length > 1) {
+    const multiValues = perSensor.map((v) => (v !== null ? `${v.toFixed(1)}${unit}` : '-'));
+    return _makeChip(
+      key,
+      icon,
+      'Multiple',
+      { ...opts, multiValues, entityIds },
+      activeEnvGraphs,
+      linkedGraphGroups
+    );
+  }
+
+  const value = readings.avg !== null ? `${readings.avg.toFixed(1)}${unit}` : undefined;
+  if (!value) return null;
+  return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
 }
 
 /** Return the next upcoming HH:MM from a schedule list, wrapping to tomorrow if past. */
@@ -414,6 +459,118 @@ export function computeHeaderMetrics(
       )
     );
   }
+
+  // Substrate / medium sensors (Monitoring tab)
+  const soilChip = _makeSensorReadingChip(
+    MetricKey.SOIL_MOISTURE,
+    mdiWaterPercent,
+    envSnapshot?.soilMoisture ?? null,
+    '%',
+    { label: 'Moisture', tooltip: 'Volumetric water content of the substrate.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (soilChip) chips.push(soilChip);
+
+  const subTempChip = _makeSensorReadingChip(
+    MetricKey.SUBSTRATE_TEMPERATURE,
+    mdiThermometer,
+    envSnapshot?.substrateTemperature ?? null,
+    '°C',
+    { label: 'Sub Temp', tooltip: 'Temperature inside the substrate / growing medium.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (subTempChip) chips.push(subTempChip);
+
+  // Irrigation monitoring sensors (Irrigation tab)
+  const phChip = _makeSensorReadingChip(
+    MetricKey.PH,
+    mdiPh,
+    envSnapshot?.ph ?? null,
+    '',
+    { label: 'pH', tooltip: 'pH of the irrigation feed solution.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (phChip) chips.push(phChip);
+
+  const feedEcChip = _makeSensorReadingChip(
+    MetricKey.FEED_EC,
+    mdiLightningBolt,
+    envSnapshot?.feedEc ?? null,
+    ' mS/cm',
+    { label: 'Feed EC', tooltip: 'Electrical conductivity of the irrigation feed solution.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (feedEcChip) chips.push(feedEcChip);
+
+  const subEcChip = _makeSensorReadingChip(
+    MetricKey.SUBSTRATE_EC,
+    mdiLightningBolt,
+    envSnapshot?.substrateEc ?? null,
+    ' mS/cm',
+    { label: 'Sub EC', tooltip: 'Electrical conductivity inside the substrate.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (subEcChip) chips.push(subEcChip);
+
+  const runoffEcChip = _makeSensorReadingChip(
+    MetricKey.RUNOFF_EC,
+    mdiLightningBolt,
+    envSnapshot?.runoffEc ?? null,
+    ' mS/cm',
+    { label: 'Runoff EC', tooltip: 'Electrical conductivity of drain / runoff water.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (runoffEcChip) chips.push(runoffEcChip);
+
+  const drainVolChip = _makeSensorReadingChip(
+    MetricKey.DRAIN_VOLUME,
+    mdiWaterMinus,
+    envSnapshot?.drainVolume ?? null,
+    ' L',
+    { label: 'Drain Vol', tooltip: 'Drain / runoff volume collected.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (drainVolChip) chips.push(drainVolChip);
+
+  const flowChip = _makeSensorReadingChip(
+    MetricKey.IRRIGATION_FLOW,
+    mdiWaterPump,
+    envSnapshot?.irrigationFlow ?? null,
+    ' L/h',
+    { label: 'Flow', tooltip: 'Irrigation flow rate.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (flowChip) chips.push(flowChip);
+
+  const powerChip = _makeSensorReadingChip(
+    MetricKey.POWER,
+    mdiFlash,
+    envSnapshot?.power ?? null,
+    ' W',
+    { label: 'Power', tooltip: 'Current power draw.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (powerChip) chips.push(powerChip);
+
+  const energyChip = _makeSensorReadingChip(
+    MetricKey.ENERGY,
+    mdiFlash,
+    envSnapshot?.energy ?? null,
+    ' kWh',
+    { label: 'Energy', tooltip: 'Energy consumed.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (energyChip) chips.push(energyChip);
 
   return { hero, chips, dominant };
 }

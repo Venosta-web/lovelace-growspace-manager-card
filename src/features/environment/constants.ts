@@ -17,6 +17,9 @@ import {
   mdiSprout,
   mdiWeatherSunny,
   mdiWaterMinus,
+  mdiPh,
+  mdiLightningBolt,
+  mdiWaterPump,
 } from '@mdi/js';
 
 export enum MetricKey {
@@ -41,6 +44,13 @@ export enum MetricKey {
   CROP_STEERING = 'crop_steering',
   ENERGY = 'energy',
   WATER = 'water',
+  PH = 'ph',
+  FEED_EC = 'feed_ec',
+  SUBSTRATE_EC = 'substrate_ec',
+  RUNOFF_EC = 'runoff_ec',
+  DRAIN_VOLUME = 'drain_volume',
+  IRRIGATION_FLOW = 'irrigation_flow',
+  POWER = 'power',
 }
 
 export const METRIC_SORT_ORDER = [
@@ -63,6 +73,13 @@ export const METRIC_SORT_ORDER = [
   MetricKey.CROP_STEERING,
   MetricKey.ENERGY,
   MetricKey.WATER,
+  MetricKey.PH,
+  MetricKey.FEED_EC,
+  MetricKey.SUBSTRATE_EC,
+  MetricKey.RUNOFF_EC,
+  MetricKey.DRAIN_VOLUME,
+  MetricKey.IRRIGATION_FLOW,
+  MetricKey.POWER,
 ];
 
 export enum ChartType {
@@ -175,6 +192,38 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
   },
   [MetricKey.ENERGY]: { color: '#fbc02d', title: 'Energy', unit: 'kWh', icon: mdiFlash },
   [MetricKey.WATER]: { color: '#03a9f4', title: 'Water Usage', unit: 'L/d', icon: mdiWaterMinus },
+  [MetricKey.PH]: { color: '#ab47bc', title: 'pH', unit: '', icon: mdiPh },
+  [MetricKey.FEED_EC]: {
+    color: '#ffa726',
+    title: 'Feed EC',
+    unit: 'mS/cm',
+    icon: mdiLightningBolt,
+  },
+  [MetricKey.SUBSTRATE_EC]: {
+    color: '#ff7043',
+    title: 'Substrate EC',
+    unit: 'mS/cm',
+    icon: mdiLightningBolt,
+  },
+  [MetricKey.RUNOFF_EC]: {
+    color: '#ef5350',
+    title: 'Runoff EC',
+    unit: 'mS/cm',
+    icon: mdiLightningBolt,
+  },
+  [MetricKey.DRAIN_VOLUME]: {
+    color: '#29b6f6',
+    title: 'Drain Volume',
+    unit: 'L',
+    icon: mdiWaterMinus,
+  },
+  [MetricKey.IRRIGATION_FLOW]: {
+    color: '#26c6da',
+    title: 'Flow Rate',
+    unit: 'L/h',
+    icon: mdiWaterPump,
+  },
+  [MetricKey.POWER]: { color: '#ffee58', title: 'Power', unit: 'W', icon: mdiFlash },
 };
 
 export enum StatusLevel {

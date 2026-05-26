@@ -41,7 +41,7 @@ A single plant slot in the grid. Interactions (watering, selecting, transplantin
 An inline historical chart that appears when a Hero Card or Chip is clicked, showing sensor data over time for that metric. Toggled via `_toggleEnvGraph` / `_toggleMetricGraph`.
 
 **EnvSnapshot**
-A normalized point-in-time view of a growspace's sensor values (temperature, humidity, vpd, light, etc.), exposed as an atom by the Environment slice. The single place that reads `hass.states` for environmental sensors. Cards and derived modules subscribe to it instead of reaching into `hass`.
+A normalized point-in-time view of a growspace's sensor values, exposed as an atom by the Environment slice. The single place that reads `hass.states` for environmental sensors. Covers the full sensor set from the config dialog: air metrics (temperature, humidity, VPD, CO₂, DLI, optimal conditions), substrate/medium metrics (soil moisture, substrate temperature), and irrigation monitoring metrics (pH, feed EC, substrate EC, runoff EC, drain volume, irrigation flow, power, energy). Multi-sensor fields carry a `SensorReadings` object (`avg`, `perSensor`, `entityIds`) to support the "Multiple + per-sensor" chip display pattern. Cards and derived modules subscribe to it instead of reaching into `hass`.
 
 **HeaderMetrics module**
 Pure derived module that, given a `(growspaceId, viewContext)`, returns `{ hero, chips }` for rendering. `viewContext` is `'main' | 'subarea' | 'analytics'` — the main and subarea cards get both hero and chips; the analytics card gets chips only. Inputs are `EnvSnapshot`, plant state, and irrigation state — all atom-sourced. Replaces `MetricsUtils.computeHeaderMetrics()` and the per-card header wiring.

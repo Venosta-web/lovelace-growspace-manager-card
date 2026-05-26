@@ -24,6 +24,19 @@ import type { GrowspaceDevice } from '../../services/types';
 // Types
 // ---------------------------------------------------------------------------
 
+/**
+ * Per-sensor readings for a multi-entity metric.
+ *
+ * null top-level means "not configured" (no sensor IDs defined for this metric).
+ * avg === null with non-empty entityIds means all configured sensors are unavailable.
+ * perSensor is parallel to entityIds; null entries mark individual unavailable sensors.
+ */
+export interface SensorReadings {
+  avg: number | null;
+  perSensor: (number | null)[];
+  entityIds: string[];
+}
+
 export interface EnvSnapshot {
   temperature: number | null;
   humidity: number | null;
@@ -34,6 +47,18 @@ export interface EnvSnapshot {
   hasLightSensor: boolean;
   dli: number | null;
   optimalConditions: { isOptimal: boolean; reasons: string[] } | null;
+  // Substrate / medium sensors (Monitoring tab)
+  soilMoisture: SensorReadings | null;
+  substrateTemperature: SensorReadings | null;
+  // Irrigation monitoring sensors (Irrigation tab)
+  ph: SensorReadings | null;
+  feedEc: SensorReadings | null;
+  substrateEc: SensorReadings | null;
+  runoffEc: SensorReadings | null;
+  drainVolume: SensorReadings | null;
+  irrigationFlow: SensorReadings | null;
+  power: SensorReadings | null;
+  energy: SensorReadings | null;
 }
 
 type HassStates = Record<string, HassEntity>;
@@ -137,6 +162,27 @@ function _resolveVpd(
   return null;
 }
 
+/**
+ * Read a list of sensor entity IDs and return a SensorReadings object.
+ * Returns null when no IDs are configured (metric not set up by the user).
+ */
+function _resolveSensors(
+  single: string | undefined,
+  multi: string[] | undefined,
+  hassStates: HassStates
+): SensorReadings | null {
+  const ids: string[] = [];
+  if (multi && multi.length > 0) ids.push(...multi);
+  else if (single) ids.push(single);
+  if (ids.length === 0) return null;
+
+  const perSensor: (number | null)[] = ids.map((id) => _parseState(hassStates[id]));
+  const defined = perSensor.filter((v): v is number => v !== null);
+  const avg = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) / defined.length : null;
+
+  return { avg, perSensor, entityIds: ids };
+}
+
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(
   vpd: number | null,
@@ -227,6 +273,28 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
       }
     : null;
 
+  // Substrate / medium sensors
+  const soilMoisture = _resolveSensors(
+    envAttrs?.soilMoistureSensor,
+    envAttrs?.soilMoistureSensors,
+    hassStates
+  );
+  const substrateTemperature = _resolveSensors(
+    undefined,
+    envAttrs?.substrateTemperatureSensors,
+    hassStates
+  );
+
+  // Irrigation monitoring sensors
+  const ph = _resolveSensors(undefined, envAttrs?.phSensors, hassStates);
+  const feedEc = _resolveSensors(undefined, envAttrs?.feedEcSensors, hassStates);
+  const substrateEc = _resolveSensors(undefined, envAttrs?.substrateEcSensors, hassStates);
+  const runoffEc = _resolveSensors(undefined, envAttrs?.runoffEcSensors, hassStates);
+  const drainVolume = _resolveSensors(undefined, envAttrs?.drainVolumeSensors, hassStates);
+  const irrigationFlow = _resolveSensors(undefined, envAttrs?.irrigationFlowSensors, hassStates);
+  const power = _resolveSensors(undefined, envAttrs?.powerSensors, hassStates);
+  const energy = _resolveSensors(undefined, envAttrs?.energySensors, hassStates);
+
   return {
     temperature,
     humidity,
@@ -237,6 +305,16 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
     hasLightSensor,
     dli,
     optimalConditions,
+    soilMoisture,
+    substrateTemperature,
+    ph,
+    feedEc,
+    substrateEc,
+    runoffEc,
+    drainVolume,
+    irrigationFlow,
+    power,
+    energy,
   };
 }
 

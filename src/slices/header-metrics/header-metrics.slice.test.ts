@@ -27,6 +27,16 @@ function makeEnvSnapshot(overrides: Partial<EnvSnapshot> = {}): EnvSnapshot {
     hasLightSensor: false,
     dli: null,
     optimalConditions: null,
+    soilMoisture: null,
+    substrateTemperature: null,
+    ph: null,
+    feedEc: null,
+    substrateEc: null,
+    runoffEc: null,
+    drainVolume: null,
+    irrigationFlow: null,
+    power: null,
+    energy: null,
     ...overrides,
   };
 }
@@ -482,5 +492,134 @@ describe('Cycle 10 — optimal conditions chip', () => {
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
 
     expect(chips.find((c) => c.key === MetricKey.OPTIMAL)).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle N — substrate / medium sensor chips
+// ---------------------------------------------------------------------------
+
+describe('Cycle N — soil moisture chip', () => {
+  it('omits the soil moisture chip when soilMoisture is null', () => {
+    const env = makeEnvSnapshot({ soilMoisture: null });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    expect(chips.find((c) => c.key === MetricKey.SOIL_MOISTURE)).toBeUndefined();
+  });
+
+  it('omits the soil moisture chip when all sensors are unavailable', () => {
+    const env = makeEnvSnapshot({
+      soilMoisture: { avg: null, perSensor: [null], entityIds: ['sensor.sm_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    expect(chips.find((c) => c.key === MetricKey.SOIL_MOISTURE)).toBeUndefined();
+  });
+
+  it('emits a soil moisture chip with formatted value for a single sensor', () => {
+    const env = makeEnvSnapshot({
+      soilMoisture: { avg: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.SOIL_MOISTURE);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('42.5%');
+    expect(chip!.label).toBe('Moisture');
+  });
+
+  it('emits "Multiple" with per-sensor values when more than one sensor is configured', () => {
+    const env = makeEnvSnapshot({
+      soilMoisture: {
+        avg: 50,
+        perSensor: [40, 60],
+        entityIds: ['sensor.sm_1', 'sensor.sm_2'],
+      },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.SOIL_MOISTURE);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('Multiple');
+    expect(chip!.multiValues).toEqual(['40.0%', '60.0%']);
+    expect(chip!.entityIds).toEqual(['sensor.sm_1', 'sensor.sm_2']);
+  });
+});
+
+describe('Cycle N — substrate temperature chip', () => {
+  it('omits the substrate temperature chip when substrateTemperature is null', () => {
+    const env = makeEnvSnapshot({ substrateTemperature: null });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    expect(chips.find((c) => c.key === MetricKey.SUBSTRATE_TEMPERATURE)).toBeUndefined();
+  });
+
+  it('emits a substrate temperature chip with formatted value', () => {
+    const env = makeEnvSnapshot({
+      substrateTemperature: { avg: 20.5, perSensor: [20.5], entityIds: ['sensor.st_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.SUBSTRATE_TEMPERATURE);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('20.5°C');
+    expect(chip!.label).toBe('Sub Temp');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle N — irrigation monitoring sensor chips
+// ---------------------------------------------------------------------------
+
+describe('Cycle N — irrigation monitoring chips', () => {
+  it('omits all irrigation monitoring chips when snapshot has no sensor data', () => {
+    const env = makeEnvSnapshot();
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    expect(chips.find((c) => c.key === MetricKey.PH)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.FEED_EC)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.SUBSTRATE_EC)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.RUNOFF_EC)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.DRAIN_VOLUME)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.IRRIGATION_FLOW)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.POWER)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.ENERGY)).toBeUndefined();
+  });
+
+  it('emits ph chip with formatted value', () => {
+    const env = makeEnvSnapshot({
+      ph: { avg: 6.2, perSensor: [6.2], entityIds: ['sensor.ph_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.PH);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('6.2');
+    expect(chip!.label).toBe('pH');
+  });
+
+  it('emits feed EC chip with unit', () => {
+    const env = makeEnvSnapshot({
+      feedEc: { avg: 2.1, perSensor: [2.1], entityIds: ['sensor.ec_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.FEED_EC);
+    expect(chip!.value).toBe('2.1 mS/cm');
+    expect(chip!.label).toBe('Feed EC');
+  });
+
+  it('emits power chip with W unit', () => {
+    const env = makeEnvSnapshot({
+      power: { avg: 450, perSensor: [450], entityIds: ['sensor.pwr_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.POWER);
+    expect(chip!.value).toBe('450.0 W');
+  });
+
+  it('emits "Multiple" for runoff EC with two sensors', () => {
+    const env = makeEnvSnapshot({
+      runoffEc: {
+        avg: 2.25,
+        perSensor: [2.1, 2.4],
+        entityIds: ['sensor.runoff_1', 'sensor.runoff_2'],
+      },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.RUNOFF_EC);
+    expect(chip!.value).toBe('Multiple');
+    expect(chip!.multiValues).toEqual(['2.1 mS/cm', '2.4 mS/cm']);
   });
 });
