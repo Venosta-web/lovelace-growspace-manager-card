@@ -184,6 +184,139 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
     const next = discardAndSwitch(sm, device);
     expect(next).toBe(sm); // same reference
   });
+
+  it('resets steering draft to device values', () => {
+    const device = makeDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        targetVwcPercent: 45.0,
+        maintenanceDrybackPercent: 3.0,
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 15,
+        autoLightTracking: false,
+        detectedLightsOnTime: null,
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'steering' });
+    sm = transition(sm, {
+      type: 'UPDATE_STEERING_DRAFT',
+      partial: { lightsOnTime: '08:00:00' },
+    });
+    sm = transition(sm, { type: 'REQUEST_TAB', tab: 'schedules' });
+
+    const next = discardAndSwitch(sm, device);
+    expect(next.activeTab).toBe('schedules');
+    expect(next.tabs.steering.draft.lightsOnTime).toBe('06:00:00');
+  });
+
+  it('resets config draft to device values', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        skipDuringDark: false,
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+    sm = transition(sm, {
+      type: 'UPDATE_CONFIG_DRAFT',
+      partial: { skipDuringDark: true },
+    });
+    sm = transition(sm, { type: 'REQUEST_TAB', tab: 'schedules' });
+
+    const next = discardAndSwitch(sm, device);
+    expect(next.activeTab).toBe('schedules');
+    expect(next.tabs.config.draft.skipDuringDark).toBe(false);
+  });
+
+  it('resets drain_ec draft to device values', () => {
+    const device = makeDevice({
+      drainConfig: {
+        enabled: true,
+        maxEcDelta: 1.5,
+        targetRunoffPercent: 25,
+        readings: [],
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'drain_ec' });
+    sm = transition(sm, {
+      type: 'UPDATE_DRAIN_EC_DRAFT',
+      partial: { maxEcDelta: 3.0 },
+    });
+    sm = transition(sm, { type: 'REQUEST_TAB', tab: 'schedules' });
+
+    const next = discardAndSwitch(sm, device);
+    expect(next.activeTab).toBe('schedules');
+    expect(next.tabs.drain_ec.draft.maxEcDelta).toBe(1.5);
+  });
+
+  it('resets ec_targets draft to device values (when device has ranges)', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        ecTargetRanges: [
+          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+          { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+          { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+          { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+        ],
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    sm = transition(sm, {
+      type: 'UPDATE_EC_TARGETS_DRAFT',
+      ranges: [
+        { stage: 'seedling', minEc: 9.9, maxEc: 9.9 },
+        { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+        { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+        { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+        { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+      ],
+    });
+    sm = transition(sm, { type: 'REQUEST_TAB', tab: 'schedules' });
+
+    const next = discardAndSwitch(sm, device);
+    expect(next.activeTab).toBe('schedules');
+    expect(next.tabs.ec_targets.draft[0].minEc).toBe(1.0);
+  });
+
+  it('resets ec_targets draft to default values (when device has no ranges)', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    sm = transition(sm, {
+      type: 'UPDATE_EC_TARGETS_DRAFT',
+      ranges: [
+        { stage: 'seedling', minEc: 9.9, maxEc: 9.9 },
+        { stage: 'veg', minEc: 0, maxEc: 0 },
+        { stage: 'flower_early', minEc: 0, maxEc: 0 },
+        { stage: 'flower_mid', minEc: 0, maxEc: 0 },
+        { stage: 'flower_late', minEc: 0, maxEc: 0 },
+      ],
+    });
+    sm = transition(sm, { type: 'REQUEST_TAB', tab: 'schedules' });
+
+    const next = discardAndSwitch(sm, device);
+    expect(next.activeTab).toBe('schedules');
+    expect(next.tabs.ec_targets.draft[0].minEc).toBe(0);
+  });
+
+  it('resetActiveTabDraft returns current tabs when activeTab is unknown/default', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = { ...sm, activeTab: 'invalid_tab' as any, status: { kind: 'confirm-discard', pendingTab: 'schedules' } };
+    const next = discardAndSwitch(sm, device);
+    expect(next.tabs).toBe(sm.tabs);
+  });
 });
 
 describe('requestTabSwitch helper', () => {
@@ -313,6 +446,36 @@ describe('UPDATE_ADD_IRRIGATION', () => {
     }
   });
 
+  it('updates duration on the adding-irrigation sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_ADD_IRRIGATION',
+      time: '08:00:00',
+      duration: 30,
+    });
+    const next = transition(sm, { type: 'UPDATE_ADD_IRRIGATION', duration: 45 });
+    if (next.tabs.schedules.sub.kind === 'adding-irrigation') {
+      expect(next.tabs.schedules.sub.time).toBe('08:00:00');
+      expect(next.tabs.schedules.sub.duration).toBe(45);
+    } else {
+      throw new Error('Expected adding-irrigation sub-state');
+    }
+  });
+
+  it('updates both time and duration on the adding-irrigation sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_ADD_IRRIGATION',
+      time: '08:00:00',
+      duration: 30,
+    });
+    const next = transition(sm, { type: 'UPDATE_ADD_IRRIGATION', time: '09:00:00', duration: 45 });
+    if (next.tabs.schedules.sub.kind === 'adding-irrigation') {
+      expect(next.tabs.schedules.sub.time).toBe('09:00:00');
+      expect(next.tabs.schedules.sub.duration).toBe(45);
+    } else {
+      throw new Error('Expected adding-irrigation sub-state');
+    }
+  });
+
   it('is a no-op when not in adding-irrigation state', () => {
     const sm = createInitialSM();
     const next = transition(sm, { type: 'UPDATE_ADD_IRRIGATION', time: '09:00:00' });
@@ -330,9 +493,46 @@ describe('UPDATE_ADD_DRAIN', () => {
     const next = transition(sm, { type: 'UPDATE_ADD_DRAIN', duration: 60 });
     if (next.tabs.schedules.sub.kind === 'adding-drain') {
       expect(next.tabs.schedules.sub.duration).toBe(60);
+      expect(next.tabs.schedules.sub.time).toBe('10:00:00');
     } else {
       throw new Error('Expected adding-drain sub-state');
     }
+  });
+
+  it('updates time on the adding-drain sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_ADD_DRAIN',
+      time: '10:00:00',
+      duration: 45,
+    });
+    const next = transition(sm, { type: 'UPDATE_ADD_DRAIN', time: '11:00:00' });
+    if (next.tabs.schedules.sub.kind === 'adding-drain') {
+      expect(next.tabs.schedules.sub.duration).toBe(45);
+      expect(next.tabs.schedules.sub.time).toBe('11:00:00');
+    } else {
+      throw new Error('Expected adding-drain sub-state');
+    }
+  });
+
+  it('updates both time and duration on the adding-drain sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_ADD_DRAIN',
+      time: '10:00:00',
+      duration: 45,
+    });
+    const next = transition(sm, { type: 'UPDATE_ADD_DRAIN', time: '11:00:00', duration: 60 });
+    if (next.tabs.schedules.sub.kind === 'adding-drain') {
+      expect(next.tabs.schedules.sub.duration).toBe(60);
+      expect(next.tabs.schedules.sub.time).toBe('11:00:00');
+    } else {
+      throw new Error('Expected adding-drain sub-state');
+    }
+  });
+
+  it('is a no-op when not in adding-drain state', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'UPDATE_ADD_DRAIN', time: '11:00:00' });
+    expect(next).toBe(sm);
   });
 });
 
@@ -348,10 +548,53 @@ describe('UPDATE_EDIT_IRRIGATION', () => {
     const next = transition(sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '07:00:00' });
     if (next.tabs.schedules.sub.kind === 'editing-irrigation') {
       expect(next.tabs.schedules.sub.time).toBe('07:00:00');
+      expect(next.tabs.schedules.sub.duration).toBe(60);
       expect(next.tabs.schedules.sub.originalTime).toBe('06:00:00');
     } else {
       throw new Error('Expected editing-irrigation sub-state');
     }
+  });
+
+  it('updates duration on the editing-irrigation sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_EDIT_IRRIGATION',
+      originalTime: '06:00:00',
+      originalDuration: 60,
+      time: '06:00:00',
+      duration: 60,
+    });
+    const next = transition(sm, { type: 'UPDATE_EDIT_IRRIGATION', duration: 90 });
+    if (next.tabs.schedules.sub.kind === 'editing-irrigation') {
+      expect(next.tabs.schedules.sub.time).toBe('06:00:00');
+      expect(next.tabs.schedules.sub.duration).toBe(90);
+      expect(next.tabs.schedules.sub.originalTime).toBe('06:00:00');
+    } else {
+      throw new Error('Expected editing-irrigation sub-state');
+    }
+  });
+
+  it('updates both time and duration on the editing-irrigation sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_EDIT_IRRIGATION',
+      originalTime: '06:00:00',
+      originalDuration: 60,
+      time: '06:00:00',
+      duration: 60,
+    });
+    const next = transition(sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '07:00:00', duration: 90 });
+    if (next.tabs.schedules.sub.kind === 'editing-irrigation') {
+      expect(next.tabs.schedules.sub.time).toBe('07:00:00');
+      expect(next.tabs.schedules.sub.duration).toBe(90);
+      expect(next.tabs.schedules.sub.originalTime).toBe('06:00:00');
+    } else {
+      throw new Error('Expected editing-irrigation sub-state');
+    }
+  });
+
+  it('is a no-op when not in editing-irrigation state', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '07:00:00' });
+    expect(next).toBe(sm);
   });
 });
 
@@ -367,10 +610,53 @@ describe('UPDATE_EDIT_DRAIN', () => {
     const next = transition(sm, { type: 'UPDATE_EDIT_DRAIN', duration: 45 });
     if (next.tabs.schedules.sub.kind === 'editing-drain') {
       expect(next.tabs.schedules.sub.duration).toBe(45);
+      expect(next.tabs.schedules.sub.time).toBe('09:00:00');
       expect(next.tabs.schedules.sub.originalDuration).toBe(30);
     } else {
       throw new Error('Expected editing-drain sub-state');
     }
+  });
+
+  it('updates time on the editing-drain sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_EDIT_DRAIN',
+      originalTime: '09:00:00',
+      originalDuration: 30,
+      time: '09:00:00',
+      duration: 30,
+    });
+    const next = transition(sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00:00' });
+    if (next.tabs.schedules.sub.kind === 'editing-drain') {
+      expect(next.tabs.schedules.sub.duration).toBe(30);
+      expect(next.tabs.schedules.sub.time).toBe('10:00:00');
+      expect(next.tabs.schedules.sub.originalDuration).toBe(30);
+    } else {
+      throw new Error('Expected editing-drain sub-state');
+    }
+  });
+
+  it('updates both time and duration on the editing-drain sub-state', () => {
+    const sm = transition(createInitialSM(), {
+      type: 'BEGIN_EDIT_DRAIN',
+      originalTime: '09:00:00',
+      originalDuration: 30,
+      time: '09:00:00',
+      duration: 30,
+    });
+    const next = transition(sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00:00', duration: 45 });
+    if (next.tabs.schedules.sub.kind === 'editing-drain') {
+      expect(next.tabs.schedules.sub.duration).toBe(45);
+      expect(next.tabs.schedules.sub.time).toBe('10:00:00');
+      expect(next.tabs.schedules.sub.originalDuration).toBe(30);
+    } else {
+      throw new Error('Expected editing-drain sub-state');
+    }
+  });
+
+  it('is a no-op when not in editing-drain state', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00:00' });
+    expect(next).toBe(sm);
   });
 });
 
@@ -622,23 +908,67 @@ describe('isSchedulesDirty', () => {
 });
 
 describe('isSteeringDirty', () => {
-  it('returns false when draft matches device strategy', () => {
+  it('returns false when device has no strategy', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
-    // Device has no irrigationStrategy by default, so no dirty
     expect(isSteeringDirty(sm, device)).toBe(false);
   });
 
-  it('returns true when lightsOnTime changes', () => {
-    const device = makeDevice();
-    let sm = createInitialSM(device);
-    sm = transition(sm, {
-      type: 'UPDATE_STEERING_DRAFT',
-      partial: { lightsOnTime: '05:00:00' },
+  it('returns false when draft matches device strategy', () => {
+    const device = makeDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        targetVwcPercent: 45.0,
+        maintenanceDrybackPercent: 3.0,
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 15,
+        autoLightTracking: false,
+        detectedLightsOnTime: null,
+      },
     });
-    // Only dirty if device has a strategy (without strategy, predicate returns false)
-    // This test establishes baseline behavior
-    expect(typeof isSteeringDirty(sm, device)).toBe('boolean');
+    const sm = createInitialSM(device);
+    expect(isSteeringDirty(sm, device)).toBe(false);
+  });
+
+  it('returns true when steering draft properties change', () => {
+    const strategy = {
+      enabled: true,
+      lightsOnTime: '06:00:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+      targetVwcPercent: 45.0,
+      maintenanceDrybackPercent: 3.0,
+      shotDurationSeconds: 15,
+      shotIntervalMinutes: 15,
+      autoLightTracking: false,
+      detectedLightsOnTime: null,
+    };
+    const device = makeDevice({ irrigationStrategy: strategy });
+
+    const fieldsToTest: Array<{ partial: any; desc: string }> = [
+      { partial: { enabled: false }, desc: 'enabled' },
+      { partial: { lightsOnTime: '07:00:00' }, desc: 'lightsOnTime' },
+      { partial: { p0DurationMinutes: 45 }, desc: 'p0DurationMinutes' },
+      { partial: { p2StopBeforeLightsOffMinutes: 90 }, desc: 'p2StopBeforeLightsOffMinutes' },
+      { partial: { targetVwcPercent: 50.0 }, desc: 'targetVwcPercent' },
+      { partial: { maintenanceDrybackPercent: 4.0 }, desc: 'maintenanceDrybackPercent' },
+      { partial: { shotDurationSeconds: 10 }, desc: 'shotDurationSeconds' },
+      { partial: { shotIntervalMinutes: 10 }, desc: 'shotIntervalMinutes' },
+      { partial: { autoLightTracking: true }, desc: 'autoLightTracking' },
+      { partial: { detectedLightsOnTime: '08:00:00' }, desc: 'detectedLightsOnTime' },
+    ];
+
+    for (const { partial, desc } of fieldsToTest) {
+      let sm = createInitialSM(device);
+      sm = transition(sm, {
+        type: 'UPDATE_STEERING_DRAFT',
+        partial,
+      });
+      expect(isSteeringDirty(sm, device), `Expected dirty for field: ${desc}`).toBe(true);
+    }
   });
 });
 
@@ -676,23 +1006,255 @@ describe('isDrainEcDirty', () => {
     const sm = createInitialSM(device);
     expect(isDrainEcDirty(sm, device)).toBe(false);
   });
+
+  it('returns false when draft matches device drainConfig', () => {
+    const device = makeDevice({
+      drainConfig: {
+        enabled: true,
+        maxEcDelta: 1.5,
+        targetRunoffPercent: 25,
+        readings: [],
+      },
+    });
+    const sm = createInitialSM(device);
+    expect(isDrainEcDirty(sm, device)).toBe(false);
+  });
+
+  it('returns true when drainConfig properties change', () => {
+    const drainConfig = {
+      enabled: true,
+      maxEcDelta: 1.5,
+      targetRunoffPercent: 25,
+      readings: [],
+    };
+    const device = makeDevice({ drainConfig });
+
+    const fieldsToTest = [
+      { partial: { enabled: false }, desc: 'enabled' },
+      { partial: { maxEcDelta: 2.0 }, desc: 'maxEcDelta' },
+      { partial: { targetRunoffPercent: 30 }, desc: 'targetRunoffPercent' },
+    ];
+
+    for (const { partial, desc } of fieldsToTest) {
+      let sm = createInitialSM(device);
+      sm = transition(sm, {
+        type: 'UPDATE_DRAIN_EC_DRAFT',
+        partial,
+      });
+      expect(isDrainEcDirty(sm, device), `Expected dirty for field: ${desc}`).toBe(true);
+    }
+  });
 });
 
 describe('isEcTargetsDirty', () => {
-  it('returns false when device has no ecTargetRanges (both use defaults)', () => {
+  it('returns false when device has no ecTargetRanges and draft has all-zero range values', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
     expect(isEcTargetsDirty(sm, device)).toBe(false);
   });
-});
 
-describe('isActiveTabDirty', () => {
-  it('delegates to the active tab predicate', () => {
+  it('returns true when device has no ecTargetRanges, but draft has non-zero range values', () => {
     const device = makeDevice();
     let sm = createInitialSM(device);
     sm = transition(sm, {
+      type: 'UPDATE_EC_TARGETS_DRAFT',
+      ranges: [
+        { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+      ],
+    });
+    expect(isEcTargetsDirty(sm, device)).toBe(true);
+  });
+
+  it('returns false when draft matches device ranges exactly', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        ecTargetRanges: [
+          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+          { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+          { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+          { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+        ],
+      },
+    });
+    const sm = createInitialSM(device);
+    expect(isEcTargetsDirty(sm, device)).toBe(false);
+  });
+
+  it('returns true when ranges length differs', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        ecTargetRanges: [
+          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+        ],
+      },
+    });
+    const sm = createInitialSM(device);
+    expect(isEcTargetsDirty(sm, device)).toBe(true);
+  });
+
+  it('returns true when a draft stage range has modified minEc or maxEc value', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        ecTargetRanges: [
+          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+          { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+          { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+          { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+        ],
+      },
+    });
+
+    // Modified minEc
+    let sm1 = createInitialSM(device);
+    sm1 = transition(sm1, {
+      type: 'UPDATE_EC_TARGETS_DRAFT',
+      ranges: [
+        { stage: 'seedling', minEc: 1.1, maxEc: 1.5 },
+        { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+        { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+        { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+        { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+      ],
+    });
+    expect(isEcTargetsDirty(sm1, device)).toBe(true);
+
+    // Modified maxEc
+    let sm2 = createInitialSM(device);
+    sm2 = transition(sm2, {
+      type: 'UPDATE_EC_TARGETS_DRAFT',
+      ranges: [
+        { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+        { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+        { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+        { stage: 'flower_mid', minEc: 2.5, maxEc: 3.1 },
+        { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+      ],
+    });
+    expect(isEcTargetsDirty(sm2, device)).toBe(true);
+  });
+
+  it('returns true when a stage range is missing in device or draft contains mismatching stage names', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        ecTargetRanges: [
+          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+          { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+          { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+          // missing flower_late, replace with invalid stage
+          { stage: 'invalid_stage' as any, minEc: 2.0, maxEc: 2.5 },
+        ],
+      },
+    });
+    const sm = createInitialSM(device);
+    expect(isEcTargetsDirty(sm, device)).toBe(true);
+  });
+});
+
+describe('isActiveTabDirty', () => {
+  it('delegates to the active tab predicate (schedules)', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+    sm = transition(sm, {
       type: 'UPDATE_SCHEDULES_DRAFT',
       partial: { irrigationPumpEntity: 'switch.dirty' },
+    });
+    expect(isActiveTabDirty(sm, device)).toBe(true);
+  });
+
+  it('delegates to the active tab predicate (steering)', () => {
+    const device = makeDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        targetVwcPercent: 45.0,
+        maintenanceDrybackPercent: 3.0,
+        shotDurationSeconds: 15,
+        shotIntervalMinutes: 15,
+        autoLightTracking: false,
+        detectedLightsOnTime: null,
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'steering' });
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+    sm = transition(sm, {
+      type: 'UPDATE_STEERING_DRAFT',
+      partial: { enabled: false },
+    });
+    expect(isActiveTabDirty(sm, device)).toBe(true);
+  });
+
+  it('delegates to the active tab predicate (config)', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+    sm = transition(sm, {
+      type: 'UPDATE_CONFIG_DRAFT',
+      partial: { skipDuringDark: true },
+    });
+    expect(isActiveTabDirty(sm, device)).toBe(true);
+  });
+
+  it('delegates to the active tab predicate (drain_ec)', () => {
+    const device = makeDevice({
+      drainConfig: {
+        enabled: true,
+        maxEcDelta: 1.5,
+        targetRunoffPercent: 25,
+        readings: [],
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'drain_ec' });
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+    sm = transition(sm, {
+      type: 'UPDATE_DRAIN_EC_DRAFT',
+      partial: { enabled: false },
+    });
+    expect(isActiveTabDirty(sm, device)).toBe(true);
+  });
+
+  it('delegates to the active tab predicate (ec_targets)', () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationTimes: [],
+        drainTimes: [],
+        ecTargetRanges: [
+          { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
+          { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+          { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+          { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+          { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+        ],
+      },
+    });
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+    sm = transition(sm, {
+      type: 'UPDATE_EC_TARGETS_DRAFT',
+      ranges: [
+        { stage: 'seedling', minEc: 1.1, maxEc: 1.5 },
+        { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+        { stage: 'flower_early', minEc: 2.0, maxEc: 2.5 },
+        { stage: 'flower_mid', minEc: 2.5, maxEc: 3.0 },
+        { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
+      ],
     });
     expect(isActiveTabDirty(sm, device)).toBe(true);
   });
@@ -702,6 +1264,55 @@ describe('isActiveTabDirty', () => {
     let sm = createInitialSM(device);
     sm = transition(sm, { type: 'SWITCH_TAB', tab: 'tanks' });
     expect(isActiveTabDirty(sm, device)).toBe(false);
+
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'water_analytics' });
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+  });
+});
+
+// ─── EC Ramp tab ──────────────────────────────────────────────────────────────
+
+describe('ec_ramp tab slot', () => {
+  it('createInitialSM initializes tabs.ec_ramp as an empty object', () => {
+    const sm = createInitialSM();
+    expect(sm.tabs.ec_ramp).toBeDefined();
+    expect(sm.tabs.ec_ramp).toEqual({});
+  });
+
+  it('SWITCH_TAB can navigate to ec_ramp', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_ramp' });
+    expect(next.activeTab).toBe('ec_ramp');
+    expect(next.status.kind).toBe('idle');
+  });
+
+  it('SWITCH_TAB can navigate away from ec_ramp', () => {
+    const sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'ec_ramp' });
+    const next = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    expect(next.activeTab).toBe('ec_targets');
+  });
+
+  it('requestTabSwitch to ec_ramp switches directly (no dirty state)', () => {
+    const device = makeDevice();
+    const sm = createInitialSM(device);
+    const next = requestTabSwitch(sm, 'ec_ramp', device);
+    expect(next.activeTab).toBe('ec_ramp');
+    expect(next.status.kind).toBe('idle');
+  });
+
+  it('isActiveTabDirty returns false when ec_ramp is active', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_ramp' });
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+  });
+
+  it('RESET_FROM_DEVICE preserves the ec_ramp tab slot unchanged', () => {
+    const device = makeDevice();
+    let sm = createInitialSM();
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_ramp' });
+    const next = transition(sm, { type: 'RESET_FROM_DEVICE', device });
+    expect(next.tabs.ec_ramp).toEqual({});
   });
 });
 
@@ -720,5 +1331,32 @@ describe('immutability', () => {
       const next = transition(sm, event);
       expect(next).not.toBe(sm);
     }
+  });
+});
+
+describe('DISCARD_AND_SWITCH pure transition', () => {
+  it('returns sm unmodified when status is not confirm-discard', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'DISCARD_AND_SWITCH' });
+    expect(next).toBe(sm);
+  });
+
+  it('switches tab and clears inline editing state when status is confirm-discard', () => {
+    let sm: DialogSM = {
+      ...createInitialSM(),
+      status: { kind: 'confirm-discard', pendingTab: 'config' },
+    };
+    const next = transition(sm, { type: 'DISCARD_AND_SWITCH' });
+    expect(next.activeTab).toBe('config');
+    expect(next.status.kind).toBe('idle');
+    expect(next.tabs.schedules.sub.kind).toBe('idle');
+  });
+});
+
+describe('default transition case', () => {
+  it('returns sm unmodified for unknown event types', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'UNKNOWN_EVENT' } as any);
+    expect(next).toBe(sm);
   });
 });

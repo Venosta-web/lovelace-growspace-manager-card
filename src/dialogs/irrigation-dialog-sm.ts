@@ -26,7 +26,8 @@ export type TabId =
   | 'tanks'
   | 'water_analytics'
   | 'drain_ec'
-  | 'ec_targets';
+  | 'ec_targets'
+  | 'ec_ramp';
 
 // ─── Schedules tab ─────────────────────────────────────────────────────────────
 
@@ -129,6 +130,11 @@ export interface EcTargetsTabState {
   sub: { kind: 'idle' };
 }
 
+// ─── EC Ramp tab ───────────────────────────────────────────────────────────────
+
+/** EC Ramp changes save immediately per curve — no draft or sub-state needed. */
+export type EcRampTabState = Record<string, never>;
+
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
 export interface TabStates {
@@ -139,6 +145,7 @@ export interface TabStates {
   water_analytics: WaterAnalyticsTabState;
   drain_ec: DrainEcTabState;
   ec_targets: EcTargetsTabState;
+  ec_ramp: EcRampTabState;
 }
 
 /** Root-level overlays (not scoped to a tab). */
@@ -285,6 +292,7 @@ function defaultTabs(): TabStates {
     water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
     drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
     ec_targets: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
+    ec_ramp: {},
   };
 }
 
@@ -401,7 +409,9 @@ export function isSteeringDirty(sm: DialogSM, device: GrowspaceDevice): boolean 
     d.targetVwcPercent !== s.targetVwcPercent ||
     d.maintenanceDrybackPercent !== s.maintenanceDrybackPercent ||
     d.shotDurationSeconds !== s.shotDurationSeconds ||
-    d.shotIntervalMinutes !== s.shotIntervalMinutes
+    d.shotIntervalMinutes !== s.shotIntervalMinutes ||
+    (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
+    (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null)
   );
 }
 

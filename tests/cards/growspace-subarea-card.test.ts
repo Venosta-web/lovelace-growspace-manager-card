@@ -628,6 +628,140 @@ describe('GrowspaceSubareaCard', () => {
         expect(heroUI?.chips[2].value).toBe('1.0 kPa');
     });
 
+    test.each([
+        ['1h' as const, 1 * 60 * 60 * 1000],
+        ['6h' as const, 6 * 60 * 60 * 1000],
+        ['7d' as const, 7 * 24 * 60 * 60 * 1000],
+        ['24h' as const, 24 * 60 * 60 * 1000],
+    ])('_calculateHistoryStart returns correct start date for %s range', (range, expectedOffsetMs) => {
+        const before = Date.now();
+        const result = (element as any)._calculateHistoryStart(range) as Date;
+        const after = Date.now();
+        expect(result.getTime()).toBeGreaterThanOrEqual(before - expectedOffsetMs - 50);
+        expect(result.getTime()).toBeLessThanOrEqual(after - expectedOffsetMs + 50);
+    });
+
+    test('desktop secondary chips fire toggle-graph on growspace-header-secondary-ui', async () => {
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensors: ['sensor.veg_temp'],
+                substrate_temperature_sensors: ['sensor.substrate_temp'],
+            }
+        }]);
+        mockHass.states['sensor.substrate_temp'] = { state: '21.0', attributes: { unit_of_measurement: '°C' } };
+        element.hass = mockHass;
+        await (element as any)._loadSubarea();
+        await element.updateComplete;
+
+        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const secondaryUI = element.shadowRoot?.querySelector('growspace-header-secondary-ui') as HTMLElement;
+        expect(secondaryUI).not.toBeNull();
+        secondaryUI.dispatchEvent(
+            new CustomEvent('toggle-graph', { detail: { metric: 'substrate_temperature' }, bubbles: true, composed: true })
+        );
+        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature');
+    });
+
+    test('mobile secondary chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensors: ['sensor.veg_temp'],
+                substrate_temperature_sensors: ['sensor.substrate_temp'],
+            }
+        }]);
+        mockHass.states['sensor.substrate_temp'] = { state: '21.0', attributes: { unit_of_measurement: '°C' } };
+        element.hass = mockHass;
+        await (element as any)._loadSubarea();
+        (element as any)._resizeController.isMobile = true;
+        element.requestUpdate();
+        await element.updateComplete;
+
+        // On mobile, secondary chips use growspace-header-hero-ui, not growspace-header-secondary-ui
+        expect(element.shadowRoot?.querySelector('growspace-header-secondary-ui')).toBeNull();
+
+        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        const heroUIs = element.shadowRoot?.querySelectorAll('growspace-header-hero-ui');
+        // Last hero UI is the secondary chips (mobile renders hero for secondary chips)
+        const lastHeroUI = heroUIs![heroUIs!.length - 1] as HTMLElement;
+        lastHeroUI.dispatchEvent(
+            new CustomEvent('toggle-graph', { detail: { metric: 'substrate_temperature' }, bubbles: true, composed: true })
+        );
+        expect(toggleSpy).toHaveBeenCalledWith('substrate_temperature');
+    });
+
+    test('mobile device chips render via growspace-header-hero-ui and fire toggle-graph', async () => {
+        (element as any)._resizeController.isMobile = true;
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+        // The first growspace-header-hero-ui rendered at the top is for device chips (mobile path)
+        const heroUIs = element.shadowRoot?.querySelectorAll('growspace-header-hero-ui');
+        expect(heroUIs?.length).toBeGreaterThan(0);
+        (heroUIs![0] as HTMLElement).dispatchEvent(
+            new CustomEvent('toggle-graph', { detail: { metric: 'light' }, bubbles: true, composed: true })
+        );
+        expect(toggleSpy).toHaveBeenCalledWith('light');
+    });
+
+    test('updated handles undefined devices via the ?? [] fallback without throwing', () => {
+        // Call updated() directly so no render cycle fires; exercises the `?? []` branch on line 268
+        (element as any)._viewController = { value: { grid: {} } }; // devices key absent → ?? []
+        (element as any).updated(new Map());
+        // No error thrown and parentGrowspaceName remains unchanged (devices.length === 0)
+        expect((element as any)._parentGrowspaceName).toBeDefined();
+    });
+
+    test('_renderHeaderMetrics uses activeEnvGraphs from analyticsStateController when set', async () => {
+        (element as any)._analyticsStateController = {
+            value: { activeEnvGraphs: new Set(['temperature']), timeRange: '12h' }
+        };
+        element.requestUpdate();
+        await element.updateComplete;
+        const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as any;
+        const tempChip = heroUI?.chips?.find((c: any) => c.key === 'temperature');
+        expect(tempChip?.active).toBe(true);
+    });
+
+    test('firstUpdated skips store and dataService init when hass is not yet set', async () => {
+        (element as any).hass = undefined;
+        (element as any)._dataService = null;
+        const updateSpy = vi.spyOn(element.store, 'updateHass');
+        await (element as any).firstUpdated();
+        expect(updateSpy).not.toHaveBeenCalled();
+        expect((element as any)._dataService).toBeNull();
+    });
+
+    test('_loadHistory returns early when _dataService is null', async () => {
+        (element as any)._dataService = null;
+        mockDataService.getBatchHistory.mockClear();
+        await (element as any)._loadHistory(mockSubarea);
+        expect(mockDataService.getBatchHistory).not.toHaveBeenCalled();
+    });
+
+    test('_handleSubareaRangeChange does not call _loadHistory when subarea is null', async () => {
+        (element as any)._subarea = null;
+        const loadSpy = vi.spyOn(element as any, '_loadHistory');
+        (element as any)._handleSubareaRangeChange(new CustomEvent('set-range', { detail: '6h' }));
+        expect(loadSpy).not.toHaveBeenCalled();
+    });
+
+    test('_handleSubareaRangeChange calls _loadHistory with range from event when subarea is loaded', async () => {
+        const loadSpy = vi.spyOn(element as any, '_loadHistory').mockResolvedValue(undefined);
+        const event = new CustomEvent('set-range', { detail: '6h' });
+        (element as any)._handleSubareaRangeChange(event);
+        expect(loadSpy).toHaveBeenCalledWith((element as any)._subarea, '6h');
+    });
+
+    test('getLayoutOptions returns expected grid config', () => {
+        const opts = element.getLayoutOptions();
+        expect(opts).toEqual({ grid_columns: 12, grid_min_columns: 6, grid_min_rows: 4 });
+    });
+
     test('resolves multiple calculated VPD fallback sensors when multiple T/H pairs are configured', async () => {
         const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
         (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };

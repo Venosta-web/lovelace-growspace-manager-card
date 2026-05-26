@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
 
 afterEach(() => {
@@ -366,5 +367,193 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
     const badge = el.shadowRoot!.querySelector('.auto-lights-badge');
     expect(badge).not.toBeNull();
     expect(badge!.textContent?.trim()).toBe('auto: 07:30');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// EC Ramp tab
+// ---------------------------------------------------------------------------
+
+function makeEcRampStore(fetchFn = vi.fn().mockResolvedValue(undefined)) {
+  return {
+    context: {
+      dataService: {},
+      ui: { showToast: vi.fn() },
+      data: {},
+      undoRedoManager: {},
+      optimisticManager: {},
+      grid: {},
+      closeDialog: vi.fn(),
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    },
+    actions: {
+      library: {
+        fetchECRampCurves: fetchFn,
+        saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+        removeECRampCurve: vi.fn().mockResolvedValue(undefined),
+      },
+    },
+    data: {
+      $ecRampCurves: atom<Record<string, unknown>>({}),
+    },
+    ui: { showToast: vi.fn() },
+  };
+}
+
+function makeEcRampDevice() {
+  return makeDevice({
+    irrigationConfig: {
+      irrigationPumpEntity: 'switch.pump',
+      irrigationTimes: [{ time: '08:00:00', duration: 60 }],
+      drainTimes: [],
+    },
+    environmentAttributes: {
+      feedEcSensors: ['sensor.ec1'],
+    },
+  });
+}
+
+describe('IrrigationDialog – EC Ramp tab visibility', () => {
+  it('shows ec_ramp nav item when pump, schedule, and EC sensor are all present', async () => {
+    const device = makeEcRampDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const tabIds = [...el.shadowRoot!.querySelectorAll('[data-tab]')].map((n) =>
+      n.getAttribute('data-tab')
+    );
+    expect(tabIds).toContain('ec_ramp');
+  });
+
+  it('hides ec_ramp nav item when pump is missing', async () => {
+    const device = makeDevice({
+      irrigationConfig: { irrigationTimes: [{ time: '08:00:00', duration: 60 }], drainTimes: [] },
+      environmentAttributes: { feedEcSensors: ['sensor.ec1'] },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const tabIds = [...el.shadowRoot!.querySelectorAll('[data-tab]')].map((n) =>
+      n.getAttribute('data-tab')
+    );
+    expect(tabIds).not.toContain('ec_ramp');
+  });
+
+  it('hides ec_ramp nav item when there are no irrigation schedules', async () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        irrigationTimes: [],
+        drainTimes: [],
+      },
+      environmentAttributes: { feedEcSensors: ['sensor.ec1'] },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const tabIds = [...el.shadowRoot!.querySelectorAll('[data-tab]')].map((n) =>
+      n.getAttribute('data-tab')
+    );
+    expect(tabIds).not.toContain('ec_ramp');
+  });
+
+  it('hides ec_ramp nav item when no EC sensors are configured', async () => {
+    const device = makeDevice({
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        irrigationTimes: [{ time: '08:00:00', duration: 60 }],
+        drainTimes: [],
+      },
+      environmentAttributes: {},
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const tabIds = [...el.shadowRoot!.querySelectorAll('[data-tab]')].map((n) =>
+      n.getAttribute('data-tab')
+    );
+    expect(tabIds).not.toContain('ec_ramp');
+  });
+});
+
+describe('IrrigationDialog – EC Ramp tab content', () => {
+  it('renders list view with empty-state message when no curves exist', async () => {
+    const store = makeEcRampStore();
+    const device = makeEcRampDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'ec_ramp'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const content = el.shadowRoot!.querySelector('.v1-content');
+    expect(content?.textContent).toMatch(/no ec ramp curves/i);
+  });
+
+  it('lazily fetches curves on first navigation to ec_ramp tab', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(undefined);
+    const store = makeEcRampStore(fetchFn);
+    const device = makeEcRampDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect(fetchFn).not.toHaveBeenCalled();
+
+    // Navigate to ec_ramp tab
+    const ecRampNavItem = el.shadowRoot!.querySelector('[data-tab="ec_ramp"]') as HTMLElement;
+    ecRampNavItem.click();
+    await el.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchFn).toHaveBeenCalledOnce();
+  });
+
+  it('resets view to LIST when navigating away and back to ec_ramp tab', async () => {
+    const store = makeEcRampStore();
+    const device = makeEcRampDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'ec_ramp'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    // Simulate entering EDIT view
+    (el as any)._ecRampView = 'EDIT';
+    await el.updateComplete;
+
+    // Navigate away then back
+    const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
+    schedulesNav.click();
+    await el.updateComplete;
+
+    const ecRampNav = el.shadowRoot!.querySelector('[data-tab="ec_ramp"]') as HTMLElement;
+    ecRampNav.click();
+    await el.updateComplete;
+
+    expect((el as any)._ecRampView).toBe('LIST');
   });
 });

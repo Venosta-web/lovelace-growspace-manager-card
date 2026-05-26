@@ -2,8 +2,26 @@ import { LitElement, html, css, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
+import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../context';
-import { mdiWater, mdiPlus, mdiAlert } from '@mdi/js';
+import {
+  mdiWater,
+  mdiPlus,
+  mdiAlert,
+  mdiPencil,
+  mdiDelete,
+  mdiContentSave,
+  mdiInformation,
+  mdiArrowLeft,
+  mdiCalendarClock,
+  mdiLeaf,
+  mdiCog,
+  mdiChartBar,
+  mdiArrowDownCircle,
+  mdiBullseyeArrow,
+  mdiTrendingUp,
+} from '@mdi/js';
+import type { ECRampCurve, ECRampPoint } from '../schemas/api-schema';
 import {
   IrrigationTime,
   IrrigationStrategy,
@@ -49,12 +67,14 @@ type TabId =
   | 'tanks'
   | 'water_analytics'
   | 'drain_ec'
-  | 'ec_targets';
+  | 'ec_targets'
+  | 'ec_ramp';
 
 interface NavDef {
   id: TabId;
   label: string;
   group: string;
+  icon: string;
   badge?: number;
 }
 
@@ -76,6 +96,13 @@ export class IrrigationDialog extends LitElement {
 
   /** Single reactive state atom. All 35 former @state() flags live here. */
   @state() private _sm: DialogSM = createInitialSM();
+
+  // ─── EC Ramp tab state ──────────────────────────────────────────────────
+  @state() private _ecRampView: 'LIST' | 'EDIT' = 'LIST';
+  @state() private _ecRampEditingCurve: Partial<ECRampCurve> | null = null;
+  @state() private _ecRampError: string | null = null;
+  private _ecRampFetched = false;
+  private _ecRampCurvesController?: StoreController<Record<string, ECRampCurve>>;
 
   private _dataService?: DataService;
 
@@ -906,6 +933,32 @@ export class IrrigationDialog extends LitElement {
       .field-pulse {
         animation: field-pulse-anim 3s ease-out 1;
       }
+
+      @media (max-width: 500px) {
+        .glass-dialog-container {
+          width: 100vw;
+          max-width: 100%;
+          height: 100vh;
+          border-radius: 0;
+        }
+        .v1-rail {
+          width: 44px;
+          flex: 0 0 44px;
+        }
+        .v1-nav-item span {
+          display: none;
+        }
+        .v1-rail-caps {
+          display: none;
+        }
+        .nav-badge {
+          display: none;
+        }
+        .v1-nav-item {
+          padding: 9px 0;
+          justify-content: center;
+        }
+      }
     `,
   ];
 
@@ -946,6 +999,14 @@ export class IrrigationDialog extends LitElement {
 
     // EC Targets: always visible (stub — backend support coming)
     tabs.push('ec_targets');
+
+    // EC Ramp: visible when pump + at least one schedule + at least one EC sensor
+    const hasEcSensorsForRamp =
+      (env?.feedEcSensors?.length ?? 0) > 0 ||
+      (env?.runoffEcSensors?.length ?? 0) > 0 ||
+      (env?.substrateEcSensors?.length ?? 0) > 0;
+    const hasSchedules = (this.device?.irrigationConfig?.irrigationTimes?.length ?? 0) > 0;
+    if (hasPump && hasSchedules && hasEcSensorsForRamp) tabs.push('ec_ramp');
 
     return tabs;
   }
@@ -993,6 +1054,7 @@ export class IrrigationDialog extends LitElement {
     if (changedProps.has('open') && this.open) {
       this._initializeState();
       this._fetchStageAnalytics();
+      this._ecRampFetched = false;
       if (this.initialTab) {
         this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
       }
@@ -1002,6 +1064,28 @@ export class IrrigationDialog extends LitElement {
     }
     if (!this._visibleTabs.includes(this._sm.activeTab)) {
       this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'schedules' });
+    }
+
+    // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
+    if (changedProps.has('_sm')) {
+      const prev = changedProps.get('_sm') as DialogSM | undefined;
+      const prevTab = prev?.activeTab;
+      const nextTab = this._sm.activeTab;
+      if (nextTab === 'ec_ramp' && prevTab !== 'ec_ramp') {
+        this._ecRampView = 'LIST';
+        this._ecRampEditingCurve = null;
+        this._ecRampError = null;
+        if (!this._ecRampFetched && this.store) {
+          this._ecRampFetched = true;
+          if (!this._ecRampCurvesController) {
+            this._ecRampCurvesController = new StoreController(
+              this,
+              this.store.data.$ecRampCurves
+            );
+          }
+          this.store.actions.library.fetchECRampCurves().catch(() => undefined);
+        }
+      }
     }
   }
 
@@ -1385,13 +1469,14 @@ export class IrrigationDialog extends LitElement {
     const tankCount = this.device?.environmentAttributes?.irrigationTanks?.length ?? 0;
 
     const NAV: NavDef[] = [
-      { id: 'schedules', label: 'Schedules', group: 'Daily Cycle' },
-      { id: 'steering', label: 'Crop Steering', group: 'Daily Cycle' },
-      { id: 'config', label: 'Configuration', group: 'Equipment' },
-      { id: 'tanks', label: 'Tanks', group: 'Equipment', badge: tankCount || undefined },
-      { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry' },
-      { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry' },
-      { id: 'ec_targets', label: 'EC Targets', group: 'Telemetry' },
+      { id: 'schedules', label: 'Schedules', group: 'Daily Cycle', icon: mdiCalendarClock },
+      { id: 'steering', label: 'Crop Steering', group: 'Daily Cycle', icon: mdiLeaf },
+      { id: 'config', label: 'Configuration', group: 'Equipment', icon: mdiCog },
+      { id: 'tanks', label: 'Tanks', group: 'Equipment', icon: mdiWater, badge: tankCount || undefined },
+      { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
+      { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
+      { id: 'ec_targets', label: 'EC Targets', group: 'Telemetry', icon: mdiBullseyeArrow },
+      { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
     ];
     const visibleNav = NAV.filter((n) => visible.includes(n.id));
     const currentLabel = visibleNav.find((n) => n.id === this._sm.activeTab)?.label ?? '';
@@ -1555,6 +1640,9 @@ export class IrrigationDialog extends LitElement {
               this._sm = requestTabSwitch(this._sm, item.id as TabId, this.device!);
             }}
           >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="flex-shrink:0;">
+              <path d="${item.icon}" />
+            </svg>
             <span style="flex:1;">${item.label}</span>
             ${item.badge != null ? html`<span class="nav-badge">${item.badge}</span>` : nothing}
           </div>
@@ -1579,6 +1667,8 @@ export class IrrigationDialog extends LitElement {
         return this._renderDrainECTab();
       case 'ec_targets':
         return this._renderEcTargetsTab();
+      case 'ec_ramp':
+        return this._renderEcRampTab();
       default:
         return nothing;
     }
@@ -3899,5 +3989,268 @@ export class IrrigationDialog extends LitElement {
         </table>
       </div>
     `;
+  }
+
+  // ─── EC Ramp tab ──────────────────────────────────────────────────────────
+
+  private _renderEcRampTab() {
+    return html`
+      <div class="tab-section">
+        ${this._ecRampError
+          ? html`<div class="error-bar">${this._ecRampError}</div>`
+          : nothing}
+        ${this._ecRampView === 'LIST'
+          ? this._renderEcRampList()
+          : this._renderEcRampEdit()}
+      </div>
+    `;
+  }
+
+  private _renderEcRampList() {
+    const curves = this._ecRampCurvesController?.value ?? {};
+    const curveList = Object.values(curves) as ECRampCurve[];
+
+    if (curveList.length === 0) {
+      return html`
+        <div class="empty-state">
+          <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
+          <p>No EC ramp curves defined yet.</p>
+          <p style="font-size: 0.9rem;">
+            Create curves to schedule EC targets across your grow cycle.
+          </p>
+        </div>
+        <div class="button-group" style="margin-top: 16px;">
+          <button class="md3-button primary" @click=${this._ecRampStartNew}>
+            <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+            New Curve
+          </button>
+        </div>
+      `;
+    }
+
+    return html`
+      <div class="curves-list">
+        ${curveList.map(
+          (curve) => html`
+            <div class="curve-item" @click=${() => this._ecRampEditCurve(curve)}>
+              <div class="curve-info">
+                <div class="curve-name">${curve.name}</div>
+                <div class="curve-details">
+                  ${curve.points.length} point${curve.points.length !== 1 ? 's' : ''} • Day
+                  ${Math.min(...curve.points.map((p) => p.day))}–${Math.max(
+                    ...curve.points.map((p) => p.day)
+                  )}
+                </div>
+              </div>
+              <div class="curve-actions">
+                <button
+                  class="md3-button icon"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._ecRampEditCurve(curve);
+                  }}
+                  title="Edit"
+                >
+                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
+                </button>
+                <button
+                  class="md3-button icon"
+                  @click=${(e: Event) => {
+                    e.stopPropagation();
+                    this._ecRampDeleteCurve(curve.id).catch(() => undefined);
+                  }}
+                  title="Delete"
+                  style="color: var(--error-color);"
+                >
+                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                </button>
+              </div>
+            </div>
+          `
+        )}
+      </div>
+      <div class="button-group" style="margin-top: 16px;">
+        <button class="md3-button primary" @click=${this._ecRampStartNew}>
+          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
+          New Curve
+        </button>
+      </div>
+    `;
+  }
+
+  private _renderEcRampEdit() {
+    const curve = this._ecRampEditingCurve;
+    if (!curve) return nothing;
+    const points = curve.points ?? [];
+
+    return html`
+      <div class="preset-form">
+        <div class="form-section">
+          <h3>Curve Info</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <md3-text-input
+              label="Curve Name"
+              .value=${curve.name ?? ''}
+              @change=${(e: CustomEvent) =>
+                (this._ecRampEditingCurve = { ...curve, name: e.detail })}
+              placeholder="e.g. Veg Ramp, Bloom Progression"
+            ></md3-text-input>
+            <md3-select
+              label="Growth Stage"
+              .value=${curve.stage ?? 'flower'}
+              .options=${[
+                { label: 'Seedling', value: 'seedling' },
+                { label: 'Mother', value: 'mother' },
+                { label: 'Vegetative', value: 'veg' },
+                { label: 'Flower', value: 'flower' },
+                { label: 'Cure', value: 'cure' },
+              ]}
+              @change=${(e: CustomEvent) =>
+                (this._ecRampEditingCurve = { ...curve, stage: e.detail })}
+            ></md3-select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="points-header">
+            <h3>Ramp Points</h3>
+            <button class="md3-button text" @click=${this._ecRampAddPoint}>
+              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
+              Add Point
+            </button>
+          </div>
+          <div class="points-list">
+            ${points.map(
+              (point: ECRampPoint, index: number) => html`
+                <div class="point-row">
+                  <md3-number-input
+                    label="Day"
+                    .value=${point.day}
+                    @change=${(e: CustomEvent) =>
+                      this._ecRampUpdatePoint(index, { day: parseInt(e.detail) || 0 })}
+                    min="0"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Target EC (mS/cm)"
+                    .value=${point.target_ec}
+                    @change=${(e: CustomEvent) =>
+                      this._ecRampUpdatePoint(index, {
+                        target_ec: parseFloat(e.detail) || 0,
+                      })}
+                    min="0"
+                    step="0.1"
+                  ></md3-number-input>
+                  <button
+                    class="md3-button icon"
+                    @click=${() => this._ecRampRemovePoint(index)}
+                    style="color: var(--error-color);"
+                    ?disabled=${points.length <= 1}
+                  >
+                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
+                  </button>
+                </div>
+              `
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div class="button-group" style="margin-top: 16px;">
+        <button
+          class="md3-button tonal"
+          @click=${() => {
+            this._ecRampView = 'LIST';
+            this._ecRampEditingCurve = null;
+            this._ecRampError = null;
+          }}
+        >
+          <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
+          Back
+        </button>
+        <button class="md3-button primary" @click=${this._ecRampSaveCurve}>
+          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
+          Save Curve
+        </button>
+      </div>
+    `;
+  }
+
+  private _ecRampStartNew() {
+    this._ecRampEditingCurve = {
+      name: '',
+      stage: 'flower',
+      points: [{ day: 1, target_ec: 1.0 }],
+    };
+    this._ecRampView = 'EDIT';
+    this._ecRampError = null;
+  }
+
+  private _ecRampEditCurve(curve: ECRampCurve) {
+    this._ecRampEditingCurve = JSON.parse(JSON.stringify(curve));
+    this._ecRampView = 'EDIT';
+    this._ecRampError = null;
+  }
+
+  private async _ecRampDeleteCurve(curveId: string) {
+    if (!confirm('Are you sure you want to delete this EC ramp curve?')) return;
+    try {
+      await this.store.actions.library.removeECRampCurve(curveId);
+    } catch (err: unknown) {
+      this._ecRampError = err instanceof Error ? err.message : 'Unknown error';
+    }
+  }
+
+  private _ecRampAddPoint() {
+    const curve = this._ecRampEditingCurve;
+    if (!curve) return;
+    const points = [...(curve.points ?? [])];
+    const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
+    const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
+    this._ecRampEditingCurve = {
+      ...curve,
+      points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }],
+    };
+  }
+
+  private _ecRampRemovePoint(index: number) {
+    const curve = this._ecRampEditingCurve;
+    if (!curve) return;
+    const points = [...(curve.points ?? [])];
+    points.splice(index, 1);
+    this._ecRampEditingCurve = { ...curve, points };
+  }
+
+  private _ecRampUpdatePoint(index: number, updates: Partial<ECRampPoint>) {
+    const curve = this._ecRampEditingCurve;
+    if (!curve) return;
+    const points = [...(curve.points ?? [])];
+    points[index] = { ...points[index], ...updates };
+    this._ecRampEditingCurve = { ...curve, points };
+  }
+
+  private async _ecRampSaveCurve() {
+    const curve = this._ecRampEditingCurve;
+    if (!curve?.name?.trim()) {
+      this._ecRampError = 'Curve name is required';
+      return;
+    }
+    const points = (curve.points ?? []).filter((p) => p.day >= 0 && p.target_ec > 0);
+    if (points.length === 0) {
+      this._ecRampError = 'At least one valid EC point is required';
+      return;
+    }
+    try {
+      await this.store.actions.library.saveECRampCurve({
+        curve_id: curve.id,
+        name: curve.name.trim(),
+        stage: curve.stage ?? 'flower',
+        points: [...points].sort((a, b) => a.day - b.day),
+      });
+      this._ecRampView = 'LIST';
+      this._ecRampEditingCurve = null;
+      this._ecRampError = null;
+    } catch (err: unknown) {
+      this._ecRampError = err instanceof Error ? err.message : 'Unknown error';
+    }
   }
 }
