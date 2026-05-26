@@ -52758,6 +52758,40 @@ function _getNextEvent(times) {
         .sort((a, b) => a.toMillis() - b.toMillis())[0];
     return upcoming?.toFormat('HH:mm');
 }
+// ---------------------------------------------------------------------------
+// Crop steering phase chip helpers
+// ---------------------------------------------------------------------------
+/**
+ * Format HH:MM from minutes-since-midnight, handling wrap past midnight.
+ */
+function _minutesToHHMM(minutes) {
+    const wrapped = ((minutes % 1440) + 1440) % 1440;
+    const h = Math.floor(wrapped / 60);
+    const m = wrapped % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+/**
+ * Build the chip value and label for a crop-steering phase.
+ *
+ * P1 — ramp-up ends at targetVwcPercent (VWC-triggered, no time) → show VWC target.
+ * P2 — ends when P3 starts (lights-off minus p2StopBeforeLightsOffMinutes) → show that time.
+ * P3 — ends at next lights-on → show lightsOnTime.
+ */
+function _steeringChipValue(phase, strategy, isFlower) {
+    const lightHours = isFlower ? 12 : 18;
+    const lightsOnParts = strategy.lightsOnTime.split(':');
+    const lightsOnMin = Number(lightsOnParts[0]) * 60 + Number(lightsOnParts[1]);
+    if (phase === 'p1') {
+        return `P1 · ${strategy.targetVwcPercent}%`;
+    }
+    if (phase === 'p2') {
+        const lightsOffMin = lightsOnMin + lightHours * 60;
+        const p3StartMin = lightsOffMin - strategy.p2StopBeforeLightsOffMinutes;
+        return `P2 · ${_minutesToHHMM(p3StartMin)}`;
+    }
+    // p3 — next lights-on
+    return `P3 · ${_minutesToHHMM(lightsOnMin)}`;
+}
 function _getTankDepletionStatus(hoursRemaining, depletionStatus) {
     if (depletionStatus === 'insufficient_data' || depletionStatus == null)
         return undefined;
@@ -52830,7 +52864,7 @@ function _buildTankChip(tanks, activeEnvGraphs, linkedGraphGroups) {
  *  - Device chips (exhaust, fan, humidifier, dehumidifier) are excluded — they
  *    require the future DeviceState slice (issue #144).
  */
-function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = []) {
+function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = [], irrigationStrategy = null) {
     // --- Dominant stage ---
     let dominant;
     const dominantRaw = PlantUtils.getDominantStage(plants);
@@ -52877,9 +52911,23 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
         chips.push(tankChip);
     // Irrigation / drain timing
     if (irrigationConfig) {
-        const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes);
-        if (nextIrrigation != null) {
-            chips.push(_makeChip(MetricKey.IRRIGATION, mdiWater, nextIrrigation, { label: 'Next' }, activeEnvGraphs, linkedGraphGroups));
+        const steeringActive = irrigationStrategy?.enabled === true;
+        if (steeringActive) {
+            // Crop steering mode: show current phase + next phase-transition time (where calculable).
+            // Drain schedule runs regardless of irrigation mode, so the drain chip is unaffected.
+            const phase = irrigationConfig.activeSteeringPhase;
+            if (phase != null) {
+                const isFlower = dominantRaw?.stage === 'flower';
+                chips.push(_makeChip(MetricKey.IRRIGATION, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups));
+            }
+            // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
+            // than fall back to the stale manual schedule.
+        }
+        else {
+            const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes);
+            if (nextIrrigation != null) {
+                chips.push(_makeChip(MetricKey.IRRIGATION, mdiWater, nextIrrigation, { label: 'Next' }, activeEnvGraphs, linkedGraphGroups));
+            }
         }
         const nextDrain = _getNextEvent(irrigationConfig.drainTimes);
         if (nextDrain != null) {
@@ -53215,6 +53263,7 @@ function setEnvSnapshot(growspaceId, device, hassStates) {
 // Atoms (public read)
 // ---------------------------------------------------------------------------
 const irrigationConfigs$ = atom(new Map());
+const irrigationStrategies$ = atom(new Map());
 const tankLevels$ = atom(new Map());
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -55134,8 +55183,9 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         const envSnapshot = envSnapshots$.get().get(growspaceId) ?? null;
         const growspacePlants = plants$.get().filter((p) => p.attributes.growspace_id === growspaceId);
         const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
+        const irrigationStrategy = irrigationStrategies$.get().get(growspaceId) ?? null;
         const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
-        const { hero: heroChips, chips: secondaryChips, dominant, } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups);
+        const { hero: heroChips, chips: secondaryChips, dominant, } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups, irrigationStrategy);
         // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
         // MetricsUtils until the DeviceState slice is implemented (issue #144).
         const { deviceChips } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);

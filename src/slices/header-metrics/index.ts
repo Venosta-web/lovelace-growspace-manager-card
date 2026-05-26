@@ -32,6 +32,7 @@ import type { PlantEntity } from '../../features/plants/types';
 import type {
   IrrigationConfig,
   IrrigationScheduleItem,
+  IrrigationStrategy,
   IrrigationTank,
 } from '../../services/types';
 import { MetricKey } from '../../features/environment/constants';
@@ -196,6 +197,50 @@ function _getNextEvent(times: IrrigationScheduleItem[]): string | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// Crop steering phase chip helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Format HH:MM from minutes-since-midnight, handling wrap past midnight.
+ */
+function _minutesToHHMM(minutes: number): string {
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(wrapped / 60);
+  const m = wrapped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+/**
+ * Build the chip value and label for a crop-steering phase.
+ *
+ * P1 — ramp-up ends at targetVwcPercent (VWC-triggered, no time) → show VWC target.
+ * P2 — ends when P3 starts (lights-off minus p2StopBeforeLightsOffMinutes) → show that time.
+ * P3 — ends at next lights-on → show lightsOnTime.
+ */
+function _steeringChipValue(
+  phase: 'p1' | 'p2' | 'p3',
+  strategy: IrrigationStrategy,
+  isFlower: boolean
+): string {
+  const lightHours = isFlower ? 12 : 18;
+  const lightsOnParts = strategy.lightsOnTime.split(':');
+  const lightsOnMin = Number(lightsOnParts[0]) * 60 + Number(lightsOnParts[1]);
+
+  if (phase === 'p1') {
+    return `P1 · ${strategy.targetVwcPercent}%`;
+  }
+
+  if (phase === 'p2') {
+    const lightsOffMin = lightsOnMin + lightHours * 60;
+    const p3StartMin = lightsOffMin - strategy.p2StopBeforeLightsOffMinutes;
+    return `P2 · ${_minutesToHHMM(p3StartMin)}`;
+  }
+
+  // p3 — next lights-on
+  return `P3 · ${_minutesToHHMM(lightsOnMin)}`;
+}
+
+// ---------------------------------------------------------------------------
 // Tank level chip builder
 // ---------------------------------------------------------------------------
 
@@ -300,7 +345,8 @@ export function computeHeaderMetrics(
   tankLevels: IrrigationTank[],
   viewContext: ViewContext,
   activeEnvGraphs: Set<string> = new Set(),
-  linkedGraphGroups: string[][] = []
+  linkedGraphGroups: string[][] = [],
+  irrigationStrategy: IrrigationStrategy | null = null
 ): HeaderMetricsResult {
   // --- Dominant stage ---
   let dominant: DominantStageInfo | undefined;
@@ -395,18 +441,41 @@ export function computeHeaderMetrics(
 
   // Irrigation / drain timing
   if (irrigationConfig) {
-    const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes);
-    if (nextIrrigation != null) {
-      chips.push(
-        _makeChip(
-          MetricKey.IRRIGATION,
-          mdiWater,
-          nextIrrigation,
-          { label: 'Next' },
-          activeEnvGraphs,
-          linkedGraphGroups
-        )
-      );
+    const steeringActive = irrigationStrategy?.enabled === true;
+
+    if (steeringActive) {
+      // Crop steering mode: show current phase + next phase-transition time (where calculable).
+      // Drain schedule runs regardless of irrigation mode, so the drain chip is unaffected.
+      const phase = irrigationConfig.activeSteeringPhase;
+      if (phase != null) {
+        const isFlower = dominantRaw?.stage === 'flower';
+        chips.push(
+          _makeChip(
+            MetricKey.IRRIGATION,
+            mdiWater,
+            _steeringChipValue(phase, irrigationStrategy!, isFlower),
+            { label: 'Phase' },
+            activeEnvGraphs,
+            linkedGraphGroups
+          )
+        );
+      }
+      // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
+      // than fall back to the stale manual schedule.
+    } else {
+      const nextIrrigation = _getNextEvent(irrigationConfig.irrigationTimes);
+      if (nextIrrigation != null) {
+        chips.push(
+          _makeChip(
+            MetricKey.IRRIGATION,
+            mdiWater,
+            nextIrrigation,
+            { label: 'Next' },
+            activeEnvGraphs,
+            linkedGraphGroups
+          )
+        );
+      }
     }
 
     const nextDrain = _getNextEvent(irrigationConfig.drainTimes);

@@ -8,7 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import type { EnvSnapshot } from '../environment';
 import type { PlantEntity } from '../../features/plants/types';
-import type { IrrigationConfig, IrrigationTank } from '../../services/types';
+import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
 import { MetricKey } from '../../features/environment/constants';
 import { computeHeaderMetrics } from './index';
 
@@ -76,6 +76,20 @@ function makeTank(overrides: Partial<IrrigationTank> = {}): IrrigationTank {
     warningLevel: 20,
     fillLevel: 75,
     isWarning: false,
+    ...overrides,
+  };
+}
+
+function makeIrrigationStrategy(overrides: Partial<IrrigationStrategy> = {}): IrrigationStrategy {
+  return {
+    enabled: true,
+    lightsOnTime: '06:00',
+    p0DurationMinutes: 5,
+    p2StopBeforeLightsOffMinutes: 120,
+    targetVwcPercent: 80,
+    maintenanceDrybackPercent: 5,
+    shotDurationSeconds: 30,
+    shotIntervalMinutes: 60,
     ...overrides,
   };
 }
@@ -621,5 +635,128 @@ describe('Cycle N — irrigation monitoring chips', () => {
     const chip = chips.find((c) => c.key === MetricKey.RUNOFF_EC);
     expect(chip!.value).toBe('Multiple');
     expect(chip!.multiValues).toEqual(['2.1 mS/cm', '2.4 mS/cm']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 11 — Crop steering phase chip
+// ---------------------------------------------------------------------------
+
+describe('Cycle 11 — crop steering phase chip', () => {
+  // Strategy: lightsOnTime 06:00, p2StopBeforeLightsOffMinutes 120, targetVwcPercent 80
+  // Veg photoperiod = 18h → lights-off 00:00, P3 start = 22:00
+  // Flower photoperiod = 12h → lights-off 18:00, P3 start = 16:00
+
+  it('shows P1 chip with VWC target when crop steering is enabled and phase is p1', () => {
+    const config = makeIrrigationConfig({
+      irrigationTimes: [{ time: '08:00' }],
+      activeSteeringPhase: 'p1',
+    });
+    const strategy = makeIrrigationStrategy({ enabled: true, targetVwcPercent: 75 });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Phase');
+    expect(chip!.value).toBe('P1 · 75%');
+  });
+
+  it('shows P2 chip with P3-start time (non-flower / 18h photoperiod) when phase is p2', () => {
+    const config = makeIrrigationConfig({ activeSteeringPhase: 'p2' });
+    // No flower plants → isFlower = false → 18h photoperiod
+    // Lights-on 06:00, 18h → lights-off 00:00 next day (1440 min), p2Stop 120 → P3 at 22:00
+    const strategy = makeIrrigationStrategy({
+      enabled: true,
+      lightsOnTime: '06:00',
+      p2StopBeforeLightsOffMinutes: 120,
+    });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Phase');
+    expect(chip!.value).toBe('P2 · 22:00');
+  });
+
+  it('shows P2 chip with P3-start time (flower, 12h photoperiod) when phase is p2', () => {
+    const config = makeIrrigationConfig({ activeSteeringPhase: 'p2' });
+    // Lights-on 06:00, 12h photoperiod → lights-off 18:00, p2Stop 120min → P3 at 16:00
+    const strategy = makeIrrigationStrategy({
+      enabled: true,
+      lightsOnTime: '06:00',
+      p2StopBeforeLightsOffMinutes: 120,
+    });
+    const flowerPlant = makePlantEntity({ stage: 'flower' });
+
+    const { chips } = computeHeaderMetrics(
+      null,
+      [flowerPlant],
+      config,
+      [],
+      'main',
+      new Set(),
+      [],
+      strategy
+    );
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Phase');
+    expect(chip!.value).toBe('P2 · 16:00');
+  });
+
+  it('shows P3 chip with lights-on time when phase is p3', () => {
+    const config = makeIrrigationConfig({ activeSteeringPhase: 'p3' });
+    const strategy = makeIrrigationStrategy({ enabled: true, lightsOnTime: '07:30' });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Phase');
+    expect(chip!.value).toBe('P3 · 07:30');
+  });
+
+  it('omits the IRRIGATION chip when crop steering is enabled but activeSteeringPhase is not set', () => {
+    const config = makeIrrigationConfig({
+      irrigationTimes: [{ time: '08:00' }],
+      activeSteeringPhase: undefined,
+    });
+    const strategy = makeIrrigationStrategy({ enabled: true });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+
+    expect(chips.find((c) => c.key === MetricKey.IRRIGATION)).toBeUndefined();
+  });
+
+  it('falls back to manual schedule chip when strategy.enabled is false', () => {
+    const config = makeIrrigationConfig({
+      irrigationTimes: [{ time: '23:59' }],
+      activeSteeringPhase: 'p2',
+    });
+    const strategy = makeIrrigationStrategy({ enabled: false });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Next');
+    expect(chip!.value).toMatch(/^\d{2}:\d{2}$/);
+  });
+
+  it('drain chip is always present regardless of irrigation mode', () => {
+    const config = makeIrrigationConfig({
+      drainTimes: [{ time: '23:59' }],
+      activeSteeringPhase: 'p1',
+    });
+    const strategy = makeIrrigationStrategy({ enabled: true });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+
+    const drainChip = chips.find((c) => c.key === MetricKey.DRAIN);
+    expect(drainChip).toBeDefined();
+    expect(drainChip!.label).toBe('Next');
   });
 });

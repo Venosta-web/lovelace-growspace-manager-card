@@ -12,7 +12,7 @@ import { MetricsUtils, HeaderChip, DominantStageInfo } from '../../../utils/metr
 import { computeHeaderMetrics } from '../../../slices/header-metrics';
 import { envSnapshots$ } from '../../../slices/environment';
 import { plants$ } from '../../../slices/plant';
-import { irrigationConfigs$, tankLevels$ } from '../../../slices/irrigation';
+import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ViewMode } from '../../../constants';
 import { DateTime } from 'luxon';
@@ -100,6 +100,7 @@ export class GrowspaceHeaderContainer extends LitElement {
     const envSnapshot = envSnapshots$.get().get(growspaceId) ?? null;
     const growspacePlants = plants$.get().filter((p) => p.attributes.growspace_id === growspaceId);
     const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
+    const irrigationStrategy = irrigationStrategies$.get().get(growspaceId) ?? null;
     const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
 
     const {
@@ -113,7 +114,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       growspaceTanks,
       'main',
       activeEnvGraphs,
-      linkedGraphGroups
+      linkedGraphGroups,
+      irrigationStrategy
     );
 
     // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
