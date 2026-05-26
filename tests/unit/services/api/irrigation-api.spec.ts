@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DataService } from '../../../../src/services/data-service';
+import { IrrigationAPI } from '../../../../src/services/api/irrigation-api';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService - IrrigationAPI', () => {
@@ -216,6 +217,28 @@ describe('DataService - IrrigationAPI', () => {
             });
         });
 
+        describe('runIrrigationCycle', () => {
+            it('should run irrigation cycle without duration', async () => {
+                await service.runIrrigationCycle({ growspaceId: 'g1' });
+                expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'run_irrigation_cycle', {
+                    growspace_id: 'g1',
+                });
+            });
+
+            it('should run irrigation cycle with explicit duration', async () => {
+                await service.runIrrigationCycle({ growspaceId: 'g1', duration: 30 });
+                expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'run_irrigation_cycle', {
+                    growspace_id: 'g1',
+                    duration: 30,
+                });
+            });
+
+            it('should propagate error from runIrrigationCycle', async () => {
+                callServiceMock.mockRejectedValue(new Error('cycle failed'));
+                await expect(service.runIrrigationCycle({ growspaceId: 'g1' })).rejects.toThrow('cycle failed');
+            });
+        });
+
         describe('Drain Monitoring & Readings', () => {
             it('should configure drain monitoring', async () => {
                 const params = { enabled: true, maxEcDelta: 0.5, targetRunoffPercent: 15 };
@@ -259,5 +282,144 @@ describe('DataService - IrrigationAPI', () => {
                 });
             });
         });
+    });
+
+    describe('setIrrigationSettings optional fields', () => {
+        it('should include soilTriggerPercent and dailyVolumeCapLiters when provided', async () => {
+            await service.setIrrigationSettings({
+                growspaceId: 'g1',
+                irrigationPumpEntity: 'switch.p',
+                drainPumpEntity: 'switch.d',
+                irrigationDuration: 10,
+                drainDuration: 5,
+                soilTriggerPercent: 60,
+                dailyVolumeCapLiters: 20,
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', expect.objectContaining({
+                soil_trigger_percent: 60,
+                daily_volume_cap_liters: 20,
+            }));
+        });
+
+        it('should include autoAdvanceP1ToP2 and autoAdvanceP2ToP3 when provided', async () => {
+            await service.setIrrigationSettings({
+                growspaceId: 'g1',
+                irrigationPumpEntity: 'switch.p',
+                drainPumpEntity: 'switch.d',
+                irrigationDuration: 10,
+                drainDuration: 5,
+                autoAdvanceP1ToP2: true,
+                autoAdvanceP2ToP3: false,
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', expect.objectContaining({
+                auto_advance_p1_to_p2: true,
+                auto_advance_p2_to_p3: false,
+            }));
+        });
+
+        it('should include haltOnRunoffEcThreshold and activeSteeringPhase when provided', async () => {
+            await service.setIrrigationSettings({
+                growspaceId: 'g1',
+                irrigationPumpEntity: 'switch.p',
+                drainPumpEntity: 'switch.d',
+                irrigationDuration: 10,
+                drainDuration: 5,
+                haltOnRunoffEcThreshold: 3.5,
+                activeSteeringPhase: 'p2',
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', expect.objectContaining({
+                halt_on_runoff_ec_threshold: 3.5,
+                active_steering_phase: 'p2',
+            }));
+        });
+
+        it('should pass null through for nullable optional fields', async () => {
+            await service.setIrrigationSettings({
+                growspaceId: 'g1',
+                irrigationPumpEntity: 'switch.p',
+                drainPumpEntity: 'switch.d',
+                irrigationDuration: 10,
+                drainDuration: 5,
+                soilTriggerPercent: null,
+                dailyVolumeCapLiters: null,
+                haltOnRunoffEcThreshold: null,
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', expect.objectContaining({
+                soil_trigger_percent: null,
+                daily_volume_cap_liters: null,
+                halt_on_runoff_ec_threshold: null,
+            }));
+        });
+    });
+
+    describe('setIrrigationStrategy autoLightTracking', () => {
+        it('should include autoLightTracking when provided', async () => {
+            await service.setIrrigationStrategy('g1', { autoLightTracking: true });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_strategy', {
+                growspace_id: 'g1',
+                auto_light_tracking: true,
+            });
+        });
+    });
+
+    describe('getIrrigationAnalytics', () => {
+        it('should return analytics data on success', async () => {
+            const mockHassWs = mockHass as any;
+            mockHassWs.callWS.mockResolvedValue({ growspace_id: 'g1', stage_aggregates: { seedling: 12.5 } });
+            const result = await service.getIrrigationAnalytics('g1');
+            expect(result).toEqual({ growspace_id: 'g1', stage_aggregates: { seedling: 12.5 } });
+            expect(mockHassWs.callWS).toHaveBeenCalledWith(expect.objectContaining({
+                type: 'growspace_manager/irrigation_analytics',
+                growspace_id: 'g1',
+            }));
+        });
+
+        it('should return null when getIrrigationAnalytics fails', async () => {
+            const mockHassWs = mockHass as any;
+            mockHassWs.callWS.mockRejectedValue({ code: 'coordinator_not_ready', message: 'not ready' });
+            const result = await service.getIrrigationAnalytics('g1');
+            expect(result).toBeNull();
+        });
+    });
+});
+
+describe('IrrigationAPI direct', () => {
+    let api: IrrigationAPI;
+    let callServiceMock: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+        callServiceMock = vi.fn().mockResolvedValue({});
+        const mockHass = {
+            callService: callServiceMock,
+            callWS: vi.fn().mockResolvedValue({}),
+        } as unknown as HomeAssistant;
+        api = new IrrigationAPI(mockHass);
+    });
+
+    it('setIrrigationSettings: builds and dispatches the service payload', async () => {
+        await api.setIrrigationSettings({
+            growspaceId: 'g1',
+            irrigationPumpEntity: 'switch.pump',
+            drainPumpEntity: 'switch.drain',
+            irrigationDuration: 10,
+            drainDuration: 5,
+        });
+        expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_irrigation_settings', expect.objectContaining({
+            growspace_id: 'g1',
+            irrigation_pump_entity: 'switch.pump',
+        }));
+    });
+
+    it('setIrrigationSettings: propagates callService errors', async () => {
+        callServiceMock.mockRejectedValue(new Error('direct fail'));
+        await expect(
+            api.setIrrigationSettings({
+                growspaceId: 'g1',
+                irrigationPumpEntity: 'switch.pump',
+                drainPumpEntity: 'switch.drain',
+                irrigationDuration: 10,
+                drainDuration: 5,
+            })
+        ).rejects.toThrow('direct fail');
     });
 });
