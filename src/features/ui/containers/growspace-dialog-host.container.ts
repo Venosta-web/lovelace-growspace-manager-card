@@ -863,39 +863,7 @@ export class GrowspaceDialogHost extends LitElement {
         .nutrientPresets=${nutrientPresets}
         .nutrientInventory=${nutrientInventory}
         @close=${() => this._closeDialogIfActive('WATERING')}
-        @submit-watering=${async (e: CustomEvent) => {
-        try {
-          const { volume, nutrients, presetId } = e.detail;
-          const nutrientRecord: Record<string, number> = {};
-          if (Array.isArray(nutrients)) {
-            for (const n of (nutrients as Array<{ name: string; concentration: number }>)) {
-              if (n.name && n.concentration > 0) nutrientRecord[n.name] = n.concentration;
-            }
-          } else if (nutrients && typeof nutrients === 'object') {
-            Object.assign(nutrientRecord, nutrients);
-          }
-          if (payload?.mode === 'plant') {
-            const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
-            const promises = plantIds.map((pid: string) =>
-              sliceWaterPlant(pid, volume, nutrientRecord, presetId)
-            );
-            await Promise.all(promises);
-          } else {
-            const growspaceId = payload?.growspace_id || selectedDeviceData?.deviceId;
-            if (growspaceId) {
-              await this.store?.actions.environment.waterGrowspace(
-                growspaceId,
-                volume,
-                nutrientRecord,
-                presetId
-              );
-            }
-          }
-          await this._handleDataChanged();
-        } catch (e: any) {
-          console.error('[DialogHost] Watering failed:', e);
-        }
-      }}
+        @submit-watering=${(e: CustomEvent) => this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
         @save-preset=${(e: CustomEvent) => this.store?.actions.nutrient.savePreset(e.detail)}
         @update-stock=${(e: CustomEvent) =>
         this.store?.actions.library.updateNutrientStock(
@@ -907,6 +875,46 @@ export class GrowspaceDialogHost extends LitElement {
         @data-changed=${() => this._handleDataChanged()}
       ></growspace-watering-dialog-ui>
     `;
+  }
+
+  private async _handleWateringSubmit(
+    e: CustomEvent,
+    payload: any,
+    fallbackGrowspaceId?: string
+  ): Promise<void> {
+    try {
+      const { volume, nutrients, presetId } = e.detail;
+      const nutrientRecord: Record<string, number> = {};
+      if (Array.isArray(nutrients)) {
+        for (const n of (nutrients as Array<{ name: string; concentration: number }>)) {
+          if (n.name && n.concentration > 0) nutrientRecord[n.name] = n.concentration;
+        }
+      } else if (nutrients && typeof nutrients === 'object') {
+        Object.assign(nutrientRecord, nutrients);
+      }
+      if (payload?.mode === 'plant') {
+        const plantIds = payload?.plantIds || (payload?.plant_id ? [payload.plant_id] : []);
+        const promises = plantIds.map((pid: string) =>
+          sliceWaterPlant(pid, volume, nutrientRecord, presetId)
+        );
+        await Promise.all(promises);
+      } else {
+        const growspaceId = payload?.growspace_id || fallbackGrowspaceId;
+        if (growspaceId) {
+          await this.store?.actions.environment.waterGrowspace(
+            growspaceId,
+            volume,
+            nutrientRecord,
+            presetId
+          );
+        }
+      }
+      this.store?.ui.closeDialog();
+      this.store?.actions.ui.showToast('Watering recorded', 'success');
+      await this._handleDataChanged();
+    } catch (err: any) {
+      this.store?.actions.ui.showToast(`Watering failed: ${err.message || err}`, 'error');
+    }
   }
 
   private _renderNutrientPresetsDialog(
@@ -949,26 +957,16 @@ export class GrowspaceDialogHost extends LitElement {
   ): TemplateResult {
     if (active.type !== 'IPM') return html``;
     const payload = active.payload as any;
+    const growspaceId = effectiveDeviceData?.deviceId || '';
+    const plantIds: string[] = payload?.selectedPlantIds || [];
     return html`
       <growspace-ipm-dialog-ui
         .open=${true}
-        .growspaceId=${effectiveDeviceData?.deviceId || ''}
-        .plantIds=${payload?.selectedPlantIds || []}
+        .growspaceId=${growspaceId}
+        .plantIds=${plantIds}
         .presets=${ipmPresets}
         @close=${() => this._closeDialogIfActive('IPM')}
-        @submit-ipm=${async (e: CustomEvent) => {
-        try {
-          await this.store?.actions.ipm.apply({
-            preset_id: e.detail.preset_id,
-            growspace_id: e.detail.growspace_id,
-            plant_ids: e.detail.plant_ids,
-            notes: e.detail.notes,
-          });
-          await this._handleDataChanged();
-        } catch (e: any) {
-          console.error('[DialogHost] IPM failed:', e);
-        }
-      }}
+        @apply-ipm=${(e: CustomEvent) => this._handleApplyIPM(e, growspaceId, plantIds)}
         @save-preset=${async (e: CustomEvent) => {
         try {
           await this.store?.actions.ipm.savePreset(e.detail);
@@ -987,6 +985,26 @@ export class GrowspaceDialogHost extends LitElement {
       }}
       ></growspace-ipm-dialog-ui>
     `;
+  }
+
+  private async _handleApplyIPM(
+    e: CustomEvent,
+    growspaceId: string,
+    plantIds: string[]
+  ): Promise<void> {
+    try {
+      await this.store?.actions.ipm.apply({
+        preset_id: e.detail.presetId,
+        growspace_id: growspaceId,
+        plant_ids: plantIds,
+        notes: e.detail.notes,
+      });
+      this.store?.ui.closeDialog();
+      this.store?.actions.ui.showToast('IPM treatment applied', 'success');
+      await this._handleDataChanged();
+    } catch (err: any) {
+      this.store?.actions.ui.showToast(`IPM failed: ${err.message || err}`, 'error');
+    }
   }
 
   private _renderSnapshotsDialog(

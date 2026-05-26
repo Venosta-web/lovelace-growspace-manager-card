@@ -2052,32 +2052,32 @@ describe('GrowspaceDialogHostContainer', () => {
             expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
         });
 
-        it('should handle @submit-ipm on IPM dialog', async () => {
+        it('should handle @apply-ipm on IPM dialog', async () => {
             await openDialog('IPM', { selectedPlantIds: ['p1'] });
             const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
-            dialog?.dispatchEvent(new CustomEvent('submit-ipm', {
-                detail: { preset_id: 'pr1', growspace_id: 'g1', plant_ids: ['p1'], notes: 'test' }
+            dialog?.dispatchEvent(new CustomEvent('apply-ipm', {
+                detail: { presetId: 'pr1', notes: 'test' }
             }));
             await vi.waitFor(() => {
                 expect(mockStore.actions.ipm.apply).toHaveBeenCalledWith(expect.objectContaining({
                     preset_id: 'pr1',
-                    growspace_id: 'g1',
                 }));
             });
         });
 
-        it('should handle @submit-ipm failure on IPM dialog', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        it('should show error toast on @apply-ipm failure', async () => {
             mockStore.actions.ipm.apply.mockRejectedValue(new Error('IPM failed'));
             await openDialog('IPM', { selectedPlantIds: ['p1'] });
             const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
-            dialog?.dispatchEvent(new CustomEvent('submit-ipm', {
-                detail: { preset_id: 'pr1', growspace_id: 'g1', plant_ids: ['p1'], notes: '' }
+            dialog?.dispatchEvent(new CustomEvent('apply-ipm', {
+                detail: { presetId: 'pr1', notes: '' }
             }));
             await vi.waitFor(() => {
-                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] IPM failed:', expect.any(Error));
+                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
+                    expect.stringContaining('IPM failed'),
+                    'error'
+                );
             });
-            consoleSpy.mockRestore();
         });
 
         it('should handle @submit-watering with array nutrients', async () => {
@@ -2098,7 +2098,6 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @submit-watering failure', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             vi.mocked(sliceWaterPlant).mockRejectedValueOnce(new Error('Water failed'));
             await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
             const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
@@ -2106,9 +2105,11 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { volume: 100, nutrients: {}, presetId: null }
             }));
             await vi.waitFor(() => {
-                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] Watering failed:', expect.any(Error));
+                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
+                    expect.stringContaining('Water failed'),
+                    'error'
+                );
             });
-            consoleSpy.mockRestore();
         });
 
         it('should handle @submit-watering growspace mode with no growspaceId (skips call)', async () => {
