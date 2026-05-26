@@ -10,6 +10,7 @@ vi.mock('../../src/slices/device-state', () => ({ setDeviceSnapshot: vi.fn() }))
 vi.mock('../../src/slices/environment', () => ({ setEnvSnapshot: vi.fn() }));
 vi.mock('../../src/slices/irrigation', () => ({
     setIrrigationConfig: vi.fn(),
+    setIrrigationStrategy: vi.fn(),
     setTankLevels: vi.fn(),
 }));
 

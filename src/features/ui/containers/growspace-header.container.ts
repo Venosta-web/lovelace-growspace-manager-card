@@ -40,6 +40,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _envSnapshotsController!: StoreController<any>;
   private _plantsController!: StoreController<any>;
   private _irrigationConfigsController!: StoreController<any>;
+  private _irrigationStrategiesController!: StoreController<any>;
   private _tankLevelsController!: StoreController<any>;
   private _dragController = new HeaderDragController(this);
 
@@ -76,6 +77,9 @@ export class GrowspaceHeaderContainer extends LitElement {
     }
     if (!this._irrigationConfigsController) {
       this._irrigationConfigsController = new StoreController(this, irrigationConfigs$);
+    }
+    if (!this._irrigationStrategiesController) {
+      this._irrigationStrategiesController = new StoreController(this, irrigationStrategies$);
     }
     if (!this._tankLevelsController) {
       this._tankLevelsController = new StoreController(this, tankLevels$);

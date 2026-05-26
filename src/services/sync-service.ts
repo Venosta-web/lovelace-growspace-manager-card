@@ -6,7 +6,7 @@ import type { GridSliceRef } from '../slices/grid';
 import { setDeviceSnapshot } from '../slices/device-state';
 import { setEnvSnapshot } from '../slices/environment';
 import { setPlants } from '../slices/plant';
-import { setIrrigationConfig, setTankLevels } from '../slices/irrigation';
+import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../slices/irrigation';
 import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 
 /**
@@ -132,9 +132,12 @@ export class SyncService {
       // Environment slice (hero chips: temperature, humidity, VPD, CO2)
       if (d.name) setEnvSnapshot(d.deviceId, d, hassStates);
 
-      // Irrigation slice (tank level chip, next irrigation/drain chips)
+      // Irrigation slice (tank level chip, next irrigation/drain chips, crop steering phase)
       if (d.irrigationConfig) {
         setIrrigationConfig(d.deviceId, d.irrigationConfig);
+      }
+      if (d.irrigationStrategy) {
+        setIrrigationStrategy(d.deviceId, d.irrigationStrategy);
       }
       setTankLevels(d.deviceId, d.environmentAttributes?.irrigationTanks ?? []);
 

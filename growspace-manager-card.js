@@ -53273,6 +53273,11 @@ function setIrrigationConfig(growspaceId, config) {
     updated.set(growspaceId, config);
     irrigationConfigs$.set(updated);
 }
+function setIrrigationStrategy(growspaceId, strategy) {
+    const updated = new Map(irrigationStrategies$.get());
+    updated.set(growspaceId, strategy);
+    irrigationStrategies$.set(updated);
+}
 function setTankLevels(growspaceId, tanks) {
     const updated = new Map(tankLevels$.get());
     updated.set(growspaceId, tanks);
@@ -55163,6 +55168,9 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         }
         if (!this._irrigationConfigsController) {
             this._irrigationConfigsController = new libExports.StoreController(this, irrigationConfigs$);
+        }
+        if (!this._irrigationStrategiesController) {
+            this._irrigationStrategiesController = new libExports.StoreController(this, irrigationStrategies$);
         }
         if (!this._tankLevelsController) {
             this._tankLevelsController = new libExports.StoreController(this, tankLevels$);
@@ -119635,9 +119643,12 @@ class SyncService {
             // Environment slice (hero chips: temperature, humidity, VPD, CO2)
             if (d.name)
                 setEnvSnapshot(d.deviceId, d, hassStates);
-            // Irrigation slice (tank level chip, next irrigation/drain chips)
+            // Irrigation slice (tank level chip, next irrigation/drain chips, crop steering phase)
             if (d.irrigationConfig) {
                 setIrrigationConfig(d.deviceId, d.irrigationConfig);
+            }
+            if (d.irrigationStrategy) {
+                setIrrigationStrategy(d.deviceId, d.irrigationStrategy);
             }
             setTankLevels(d.deviceId, d.environmentAttributes?.irrigationTanks ?? []);
             // Plants
