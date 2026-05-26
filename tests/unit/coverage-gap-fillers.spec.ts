@@ -9,10 +9,12 @@ import { GrowspaceDevice, PlantEntity } from '../../src/types';
 import { DateTime } from 'luxon';
 import { MetricKey, EntityState, StatusLevel } from '../../src/constants';
 
-// Mocks
-vi.mock('../../src/services/data-service');
-vi.mock('../../src/store/core/data-store');
-vi.mock('../../src/store/ui/ui-store');
+// Explicit factories required in browser mode — auto-mocking (vi.mock without factory) calls
+// resolveManualMock via birpc, which fails when the Playwright RPC channel is closed between
+// test files and leaves subsequent test files stuck in the queue.
+vi.mock('../../src/services/data-service', () => ({ DataService: vi.fn() }));
+vi.mock('../../src/store/core/data-store', () => ({ GrowspaceDataStore: vi.fn() }));
+vi.mock('../../src/store/ui/ui-store', () => ({ GrowspaceUIStore: vi.fn() }));
 
 // Mock PlantUtils to avoid dependency issues if needed, or use real one if it's pure
 // MetricsUtils uses PlantUtils static methods. Ideally we let it run.

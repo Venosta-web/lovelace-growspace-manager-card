@@ -1,12 +1,70 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock all API classes BEFORE imports that use them
-vi.mock('../../../src/services/api/growspace-api');
-vi.mock('../../../src/services/api/nutrient-api');
-vi.mock('../../../src/services/api/history-api');
-vi.mock('../../../src/services/api/plant-api');
-vi.mock('../../../src/services/api/irrigation-api');
-vi.mock('../../../src/services/api/ai-api');
+// Mock all API classes BEFORE imports that use them.
+// Explicit factories are required in browser mode — auto-mocking (vi.mock without factory)
+// calls resolveManualMock via birpc, which fails when the Playwright page closes between
+// test files and the RPC channel is already gone.
+vi.mock('../../../src/services/api/growspace-api', () => ({
+  GrowspaceAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.invalidateCache = vi.fn();
+    this.fetchGrowspaceData = vi.fn();
+    this.getGrowspaceDevices = vi.fn(() => []);
+    this.addGrowspace = vi.fn();
+    this.updateGrowspace = vi.fn();
+    this.removeGrowspace = vi.fn();
+    this.configureEnvironment = vi.fn();
+    this.removeEnvironment = vi.fn();
+    this.setDehumidifierControl = vi.fn();
+    this.resetWaterTracking = vi.fn();
+    this.logDrainReading = vi.fn();
+    this.configureDrainMonitoring = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/nutrient-api', () => ({
+  NutrientAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.fetchNutrientPresets = vi.fn();
+    this.fetchNutrientInventory = vi.fn();
+    this.updateNutrientStock = vi.fn();
+    this.addNutrientPreset = vi.fn();
+    this.updateNutrientPreset = vi.fn();
+    this.deleteNutrientPreset = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/history-api', () => ({
+  HistoryAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.getHistory = vi.fn();
+    this.getHistoryStats = vi.fn();
+    this.getBatchHistory = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/plant-api', () => ({
+  PlantAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.addPlant = vi.fn();
+    this.removePlant = vi.fn();
+    this.updatePlant = vi.fn();
+    this.waterPlant = vi.fn();
+    this.applyIPMPreset = vi.fn();
+    this.removeIPMPreset = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/irrigation-api', () => ({
+  IrrigationAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.setIrrigationStrategy = vi.fn();
+    this.runIrrigationCycle = vi.fn();
+    this.getIrrigationAnalytics = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/ai-api', () => ({
+  AIAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.askGrowAdvice = vi.fn();
+  }),
+}));
 vi.mock('../../../src/slices/camera', () => ({
   captureSnapshot: vi.fn().mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] }),
   getSnapshots: vi.fn().mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 }),
@@ -26,9 +84,40 @@ vi.mock('../../../src/slices/strain', () => ({
   setStrainLibrary: vi.fn(),
   strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
-vi.mock('../../../src/services/api/vision-api');
-vi.mock('../../../src/services/api/report-api');
-vi.mock('../../../src/services/api/genetics-api');
+vi.mock('../../../src/services/api/vision-api', () => ({
+  VisionAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.triggerVisionCheckup = vi.fn();
+    this.getVisionHistory = vi.fn();
+    this.updateVisionCheckupConfig = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/report-api', () => ({
+  ReportAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.exportGrowReport = vi.fn();
+    this.fetchGrowReport = vi.fn();
+  }),
+}));
+vi.mock('../../../src/services/api/genetics-api', () => ({
+  GeneticsAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
+    this.updateHass = vi.fn();
+    this.fetchGeneticsData = vi.fn();
+    this.addSeedBatch = vi.fn();
+    this.updateSeedBatch = vi.fn();
+    this.deleteSeedBatch = vi.fn();
+    this.logPollination = vi.fn();
+    this.updatePollination = vi.fn();
+    this.deletePollination = vi.fn();
+    this.harvestSeeds = vi.fn();
+    this.sowSeed = vi.fn();
+    this.setPlantSex = vi.fn();
+    this.getLineageTree = vi.fn();
+    this.getStrainLineageTree = vi.fn();
+    this.updateStrainLineageTree = vi.fn();
+    this.importStrainLineageTree = vi.fn();
+  }),
+}));
 
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceAPI } from '../../../src/services/api/growspace-api';
