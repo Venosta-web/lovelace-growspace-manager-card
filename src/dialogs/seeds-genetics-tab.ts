@@ -59,6 +59,11 @@ export class SeedsGeneticsTab extends LitElement {
     growspace_id: string; strain: string; amount: number; seed_batch_id: string; generation?: string;
   }) => Promise<void>;
 
+  /** When set, the tab opens directly on this sub-view instead of the list. */
+  @property({ type: String }) initialSubView?: 'list' | 'log-pollination';
+  /** Pre-fills the receiver plant field in the log-pollination form. */
+  @property({ type: String }) prefilledReceiverId?: string;
+
   @state() private _seedSubView: 'list' | 'add-batch' | 'log-pollination' | 'harvest' = 'list';
   @state() private _editingBatchId: string | null = null;
   @state() private _editingEventId: string | null = null;
@@ -84,6 +89,16 @@ export class SeedsGeneticsTab extends LitElement {
     date: '', donor_plant_id: '', receiver_plant_id: '', notes: ''
   };
   @state() private _harvestForm = { quantity: 1, notes: '' };
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    if (this.initialSubView === 'log-pollination') {
+      this._seedSubView = 'log-pollination';
+      if (this.prefilledReceiverId) {
+        this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: this.prefilledReceiverId };
+      }
+    }
+  }
 
   static styles = [
     ...dialogStyles,

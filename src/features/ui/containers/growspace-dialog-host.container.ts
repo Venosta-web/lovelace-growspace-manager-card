@@ -464,6 +464,7 @@ export class GrowspaceDialogHost extends LitElement {
           payload: e.detail,
         })}
         @open-strain-editor=${(e: CustomEvent) => this._handleOpenStrainEditor(e)}
+        @open-log-pollination=${(e: CustomEvent) => this._handleOpenLogPollination(e)}
       ></plant-overview-container>
     `;
   }
@@ -515,6 +516,8 @@ export class GrowspaceDialogHost extends LitElement {
         .pollinationEvents=${Object.values(this._pollinationEvents)}
         .plants=${this._dialogHostController.value.devices ?? []}
         .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
+        .initialSubView=${(active.payload as StrainLibraryDialogState).initialSubView}
+        .prefilledReceiverId=${(active.payload as StrainLibraryDialogState).prefilledReceiverId}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data: Parameters<typeof this.store.actions.genetics.addSeedBatch>[0]) => this.store?.actions.genetics.addSeedBatch(data)}
         .onUpdateSeedBatch=${(data: Parameters<typeof this.store.actions.genetics.updateSeedBatch>[0]) => this.store?.actions.genetics.updateSeedBatch(data)}
@@ -1222,6 +1225,18 @@ export class GrowspaceDialogHost extends LitElement {
     } catch (err: any) {
       console.error('[DialogHost] configureEnvironment failed:', err);
     }
+  }
+
+  private _handleOpenLogPollination(e: CustomEvent): void {
+    const plantId: string = (e.detail as { plantId?: string })?.plantId ?? '';
+    this.store?.actions.ui.setActiveDialog({
+      type: 'STRAIN_LIBRARY',
+      payload: {
+        initialTab: 'seeds',
+        initialSubView: 'log-pollination',
+        prefilledReceiverId: plantId,
+      },
+    });
   }
 
   protected _handleDataChanged() {

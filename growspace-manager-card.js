@@ -27560,6 +27560,15 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         };
         this._harvestForm = { quantity: 1, notes: '' };
     }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.initialSubView === 'log-pollination') {
+            this._seedSubView = 'log-pollination';
+            if (this.prefilledReceiverId) {
+                this._pollinationForm = { ...this._pollinationForm, receiver_plant_id: this.prefilledReceiverId };
+            }
+        }
+    }
     get _flowerVegPlants() {
         const ELIGIBLE_STAGES = ['flower', 'veg'];
         return this.plants.flatMap((device) => device.plants
@@ -28377,6 +28386,12 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], SeedsGeneticsTab.prototype, "onSowSeeds", void 0);
+__decorate([
+    n$5({ type: String })
+], SeedsGeneticsTab.prototype, "initialSubView", void 0);
+__decorate([
+    n$5({ type: String })
+], SeedsGeneticsTab.prototype, "prefilledReceiverId", void 0);
 __decorate([
     r$3()
 ], SeedsGeneticsTab.prototype, "_seedSubView", void 0);
@@ -32725,6 +32740,8 @@ let StrainLibraryDialog = class StrainLibraryDialog extends i$3 {
                     .onDeletePollination=${this.onDeletePollination}
                     .onDeleteSeedBatch=${this.onDeleteSeedBatch}
                     .onSowSeeds=${this.onSowSeeds}
+                    .initialSubView=${this.initialSubView}
+                    .prefilledReceiverId=${this.prefilledReceiverId}
                     @close=${() => this.dispatchEvent(new CustomEvent('close'))}
                   ></seeds-genetics-tab>
                 `
@@ -34058,6 +34075,12 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], StrainLibraryDialog.prototype, "initialTab", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainLibraryDialog.prototype, "initialSubView", void 0);
+__decorate([
+    n$5({ type: String })
+], StrainLibraryDialog.prototype, "prefilledReceiverId", void 0);
 __decorate([
     n$5({ type: Function })
 ], StrainLibraryDialog.prototype, "onSeedDataChanged", void 0);
@@ -39544,6 +39567,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             payload: e.detail,
         })}
         @open-strain-editor=${(e) => this._handleOpenStrainEditor(e)}
+        @open-log-pollination=${(e) => this._handleOpenLogPollination(e)}
       ></plant-overview-container>
     `;
     }
@@ -39586,6 +39610,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .pollinationEvents=${Object.values(this._pollinationEvents)}
         .plants=${this._dialogHostController.value.devices ?? []}
         .initialTab=${active.payload.initialTab ?? 'strains'}
+        .initialSubView=${active.payload.initialSubView}
+        .prefilledReceiverId=${active.payload.prefilledReceiverId}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
         .onAddSeedBatch=${(data) => this.store?.actions.genetics.addSeedBatch(data)}
         .onUpdateSeedBatch=${(data) => this.store?.actions.genetics.updateSeedBatch(data)}
@@ -40193,6 +40219,17 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         catch (err) {
             console.error('[DialogHost] configureEnvironment failed:', err);
         }
+    }
+    _handleOpenLogPollination(e) {
+        const plantId = e.detail?.plantId ?? '';
+        this.store?.actions.ui.setActiveDialog({
+            type: 'STRAIN_LIBRARY',
+            payload: {
+                initialTab: 'seeds',
+                initialSubView: 'log-pollination',
+                prefilledReceiverId: plantId,
+            },
+        });
     }
     _handleDataChanged() {
         if (this._dataChangeTimeout)

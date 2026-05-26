@@ -240,3 +240,63 @@ describe('GrowspaceDialogHost – _handleApplyIPM', () => {
     expect(store.ui.closeDialog).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// open-log-pollination event handler
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – _handleOpenLogPollination', () => {
+  let el: GrowspaceDialogHost;
+  let store: {
+    actions: { ui: { setActiveDialog: ReturnType<typeof vi.fn> } };
+    $dialogHostState: { subscribe: ReturnType<typeof vi.fn>; get: ReturnType<typeof vi.fn> };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    store = {
+      actions: {
+        ui: {
+          setActiveDialog: vi.fn(),
+        },
+      },
+      $dialogHostState: { subscribe: vi.fn(() => () => {}), get: vi.fn() },
+    };
+    (el as any).store = store;
+  });
+
+  it('opens STRAIN_LIBRARY dialog with seeds tab and pre-filled receiver ID', () => {
+    const event = new CustomEvent('open-log-pollination', {
+      detail: { plantId: 'plant-42' },
+    });
+
+    (el as any)._handleOpenLogPollination(event);
+
+    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'STRAIN_LIBRARY',
+      payload: {
+        initialTab: 'seeds',
+        initialSubView: 'log-pollination',
+        prefilledReceiverId: 'plant-42',
+      },
+    });
+  });
+
+  it('uses empty string as receiver ID when plantId is missing', () => {
+    const event = new CustomEvent('open-log-pollination', {
+      detail: {},
+    });
+
+    (el as any)._handleOpenLogPollination(event);
+
+    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'STRAIN_LIBRARY',
+      payload: {
+        initialTab: 'seeds',
+        initialSubView: 'log-pollination',
+        prefilledReceiverId: '',
+      },
+    });
+  });
+});

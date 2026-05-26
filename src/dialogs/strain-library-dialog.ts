@@ -44,6 +44,10 @@ export class StrainLibraryDialog extends LitElement {
   @property({ type: Array }) pollinationEvents: PollinationEvent[] = [];
   @property({ type: Array }) plants: GrowspaceDevice[] = [];
   @property({ type: String }) initialTab: 'strains' | 'seeds' | 'tree' = 'strains';
+  /** When set, the seeds tab opens directly on this sub-view instead of the list. */
+  @property({ type: String }) initialSubView?: 'list' | 'log-pollination';
+  /** Pre-fills the receiver plant field in the log-pollination form. */
+  @property({ type: String }) prefilledReceiverId?: string;
   @property({ type: Function }) onSeedDataChanged?: () => void;
   @property({ attribute: false }) onAddSeedBatch?: (data: {
     strain_name: string;
@@ -1148,6 +1152,8 @@ export class StrainLibraryDialog extends LitElement {
                     .onDeletePollination=${this.onDeletePollination}
                     .onDeleteSeedBatch=${this.onDeleteSeedBatch}
                     .onSowSeeds=${this.onSowSeeds}
+                    .initialSubView=${this.initialSubView}
+                    .prefilledReceiverId=${this.prefilledReceiverId}
                     @close=${() => this.dispatchEvent(new CustomEvent('close'))}
                   ></seeds-genetics-tab>
                 `

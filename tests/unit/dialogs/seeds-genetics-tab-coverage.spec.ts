@@ -386,4 +386,43 @@ describe('SeedsGeneticsTab Coverage', () => {
             expect(label).toBe('unknown-id');
         });
     });
+
+    describe('initialSubView and prefilledReceiverId', () => {
+        it('starts on the log-pollination form when initialSubView is log-pollination', async () => {
+            if (element.isConnected) document.body.removeChild(element);
+
+            const el = new SeedsGeneticsTab();
+            el.strains = [...mockStrains];
+            el.seedBatches = [...mockSeedBatches];
+            el.pollinationEvents = [...mockPollinationEvents];
+            el.plants = [...mockPlants];
+            (el as any).initialSubView = 'log-pollination';
+
+            document.body.appendChild(el);
+            await el.updateComplete;
+
+            expect((el as any)._seedSubView).toBe('log-pollination');
+
+            document.body.removeChild(el);
+        });
+
+        it('pre-fills the receiver plant ID when prefilledReceiverId is set', async () => {
+            if (element.isConnected) document.body.removeChild(element);
+
+            const el = new SeedsGeneticsTab();
+            el.strains = [...mockStrains];
+            el.seedBatches = [...mockSeedBatches];
+            el.pollinationEvents = [...mockPollinationEvents];
+            el.plants = [...mockPlants];
+            (el as any).initialSubView = 'log-pollination';
+            (el as any).prefilledReceiverId = 'p2';
+
+            document.body.appendChild(el);
+            await el.updateComplete;
+
+            expect((el as any)._pollinationForm.receiver_plant_id).toBe('p2');
+
+            document.body.removeChild(el);
+        });
+    });
 });

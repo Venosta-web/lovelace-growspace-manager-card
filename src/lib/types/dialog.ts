@@ -51,6 +51,10 @@ export interface StrainLibraryDialogState {
   returnPayload?: unknown;
   initialTab?: 'strains' | 'seeds';
   view?: 'strains' | 'editor';
+  /** When set, the seeds tab opens directly on this sub-view instead of the list. */
+  initialSubView?: 'list' | 'log-pollination';
+  /** Pre-fills the receiver plant field in the log-pollination form. */
+  prefilledReceiverId?: string;
 }
 
 export interface EnvironmentConfigDialogState {
