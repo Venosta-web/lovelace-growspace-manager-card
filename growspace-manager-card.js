@@ -11262,14 +11262,17 @@ Md3DateInput = __decorate([
 // LogbookEntry (a.k.a. GrowspaceEvent in legacy code)
 // ---------------------------------------------------------------------------
 const LogbookEntrySchema = objectType({
-    sensor_type: stringType(),
+    // Required for all entries
     growspace_id: stringType(),
-    start_time: stringType(),
-    end_time: stringType(),
-    duration_sec: numberType(),
-    severity: numberType(),
     category: stringType(),
-    reasons: arrayType(stringType()),
+    // Optional: present on GrowspaceEvent entries (watering/training/IPM/alert),
+    // absent on note entries which carry `notes` instead.
+    sensor_type: stringType().optional(),
+    start_time: stringType().optional(),
+    end_time: stringType().optional(),
+    duration_sec: numberType().optional(),
+    severity: numberType().optional(),
+    reasons: arrayType(stringType()).optional(),
     timestamp: stringType().optional(),
     notes: stringType().optional(),
     images: arrayType(stringType()).optional(),
@@ -11327,8 +11330,8 @@ const plantEvents$ = atom([]);
 /** Merge log + alert entries and sort newest-first. */
 function _merge(logs, alerts) {
     return [...logs, ...alerts].sort((a, b) => {
-        const tA = new Date(a.timestamp ?? a.start_time).getTime();
-        const tB = new Date(b.timestamp ?? b.start_time).getTime();
+        const tA = new Date(a.timestamp ?? a.start_time ?? 0).getTime();
+        const tB = new Date(b.timestamp ?? b.start_time ?? 0).getTime();
         return tB - tA;
     });
 }
@@ -12795,7 +12798,8 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                     // Clean up underscores
                     const type = isNote ? 'Plant Note' : rawType.replace(/_/g, ' ');
                     const startTime = event.timestamp ||
-                        event.start_time;
+                        event.start_time ||
+                        '';
                     const index = (this._events || []).indexOf(event);
                     const eventColor = this._getEventColor(event.category, event.sensor_type);
                     return x `
@@ -12811,7 +12815,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                           <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
-                        ${event.duration_sec > 0
+                        ${(event.duration_sec ?? 0) > 0
                         ? x `<div class="event-duration">
                               ${formatDuration(event.duration_sec)}
                             </div>`
@@ -12868,7 +12872,7 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
                             : E}
                         </div>
 
-                        ${!isNote && event.severity > 0.5 && event.category !== 'training'
+                        ${!isNote && (event.severity ?? 0) > 0.5 && event.category !== 'training'
                         ? x `
                               <div
                                 class="event-probability"

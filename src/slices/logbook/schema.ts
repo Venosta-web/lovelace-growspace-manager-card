@@ -13,14 +13,17 @@ import { z } from 'zod';
 // ---------------------------------------------------------------------------
 
 export const LogbookEntrySchema = z.object({
-  sensor_type: z.string(),
+  // Required for all entries
   growspace_id: z.string(),
-  start_time: z.string(),
-  end_time: z.string(),
-  duration_sec: z.number(),
-  severity: z.number(),
   category: z.string(),
-  reasons: z.array(z.string()),
+  // Optional: present on GrowspaceEvent entries (watering/training/IPM/alert),
+  // absent on note entries which carry `notes` instead.
+  sensor_type: z.string().optional(),
+  start_time: z.string().optional(),
+  end_time: z.string().optional(),
+  duration_sec: z.number().optional(),
+  severity: z.number().optional(),
+  reasons: z.array(z.string()).optional(),
   timestamp: z.string().optional(),
   notes: z.string().optional(),
   images: z.array(z.string()).optional(),

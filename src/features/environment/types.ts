@@ -74,15 +74,19 @@ export type EventCategory =
  * Used by growspace-timeline and growspace-logbook components
  */
 export interface GrowspaceEvent {
-  sensor_type: string;
+  // Required for all entries
   growspace_id: string;
-  start_time: string; // ISO date string (legacy, use timestamp)
-  end_time: string;
-  duration_sec: number;
-  severity: number;
   category: string; // Should be EventCategory but kept as string for backend compatibility
-  reasons: string[];
+  // Present on alert/watering/IPM/training entries; absent on note entries
+  sensor_type?: string;
+  start_time?: string; // ISO date string (legacy, use timestamp)
+  end_time?: string;
+  duration_sec?: number;
+  severity?: number;
+  reasons?: string[];
+  // Note-entry fields
   notes?: string;
+  // Common optional fields
   timestamp?: string; // ISO date string - preferred over start_time
   images?: string[];
   tags?: string[];

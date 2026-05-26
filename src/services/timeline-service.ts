@@ -45,8 +45,8 @@ export class TimelineService {
 
       // Combine and sort by timestamp descending
       const combined = [...logs, ...alerts].sort((a, b) => {
-        const tA = new Date(a.timestamp || a.start_time).getTime();
-        const tB = new Date(b.timestamp || b.start_time).getTime();
+        const tA = new Date(a.timestamp || a.start_time || 0).getTime();
+        const tB = new Date(b.timestamp || b.start_time || 0).getTime();
         return tB - tA; // Newest first
       });
 
@@ -89,8 +89,8 @@ export class TimelineService {
       const alerts = alertsResponse?.[plantId] || [];
 
       const combined = [...logs, ...alerts].sort((a, b) => {
-        const tA = new Date(a.timestamp || a.start_time).getTime();
-        const tB = new Date(b.timestamp || b.start_time).getTime();
+        const tA = new Date(a.timestamp || a.start_time || 0).getTime();
+        const tB = new Date(b.timestamp || b.start_time || 0).getTime();
         return tB - tA;
       });
 

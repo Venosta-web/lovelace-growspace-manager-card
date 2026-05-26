@@ -432,7 +432,8 @@ export class GrowspaceLogbook extends LitElement {
 
                   const startTime =
                     (event as GrowspaceEvent & { timestamp?: string }).timestamp ||
-                    event.start_time;
+                    event.start_time ||
+                    '';
                   const index = (this._events || []).indexOf(event);
                   const eventColor = this._getEventColor(event.category, event.sensor_type);
 
@@ -449,9 +450,9 @@ export class GrowspaceLogbook extends LitElement {
                           <div class="event-type" style="color: ${eventColor}">${type}</div>
                           <div class="event-time">${this._formatTime(startTime)}</div>
                         </div>
-                        ${event.duration_sec > 0
+                        ${(event.duration_sec ?? 0) > 0
                           ? html`<div class="event-duration">
-                              ${formatDuration(event.duration_sec)}
+                              ${formatDuration(event.duration_sec!)}
                             </div>`
                           : nothing}
                       </div>
@@ -513,16 +514,16 @@ export class GrowspaceLogbook extends LitElement {
                               : nothing}
                         </div>
 
-                        ${!isNote && event.severity > 0.5 && event.category !== 'training'
+                        ${!isNote && (event.severity ?? 0) > 0.5 && event.category !== 'training'
                           ? html`
                               <div
                                 class="event-probability"
                                 style="color: ${this._getSeverityColor(
-                                  event.severity,
+                                  event.severity!,
                                   event.sensor_type
                                 )}"
                               >
-                                ${formatProbability(event.severity)}
+                                ${formatProbability(event.severity!)}
                               </div>
                             `
                           : nothing}

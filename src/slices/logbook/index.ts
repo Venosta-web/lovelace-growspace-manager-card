@@ -63,8 +63,8 @@ export function setPlantEvents(entries: LogbookEntry[]): void {
 /** Merge log + alert entries and sort newest-first. */
 function _merge(logs: LogbookEntry[], alerts: LogbookEntry[]): LogbookEntry[] {
   return [...logs, ...alerts].sort((a, b) => {
-    const tA = new Date(a.timestamp ?? a.start_time).getTime();
-    const tB = new Date(b.timestamp ?? b.start_time).getTime();
+    const tA = new Date(a.timestamp ?? a.start_time ?? 0).getTime();
+    const tB = new Date(b.timestamp ?? b.start_time ?? 0).getTime();
     return tB - tA;
   });
 }
