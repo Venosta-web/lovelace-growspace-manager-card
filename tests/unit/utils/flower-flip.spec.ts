@@ -110,6 +110,18 @@ describe('getFlowerFlipInfo', () => {
     expect(getFlowerFlipInfo(noStrategy, TODAY, {})!.autoLightTracking).toBe(false);
   });
 
+  it('falls back to strain when friendly_name is absent', () => {
+    const plant = { attributes: { flower_start: TODAY, strain: 'OG Kush' } } as any;
+    const device = makeDevice({ plants: [plant] });
+    expect(getFlowerFlipInfo(device, TODAY, {})!.plantNames).toEqual(['OG Kush']);
+  });
+
+  it('uses "Unknown" when both friendly_name and strain are absent', () => {
+    const plant = { attributes: { flower_start: TODAY } } as any;
+    const device = makeDevice({ plants: [plant] });
+    expect(getFlowerFlipInfo(device, TODAY, {})!.plantNames).toEqual(['Unknown']);
+  });
+
   it('uses device.deviceId as the key in dismissedMap (multiple growspaces)', () => {
     const device1 = makeDevice({ deviceId: 'gs1', plants: [makePlant(TODAY)] });
     const device2 = makeDevice({ deviceId: 'gs2', plants: [makePlant(TODAY)] });

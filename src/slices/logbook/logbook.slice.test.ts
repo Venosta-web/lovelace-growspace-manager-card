@@ -219,6 +219,68 @@ describe('fetchGrowspaceEvents', () => {
     await expect(fetchGrowspaceEvents('gs1')).rejects.toThrow('network error');
     expect(growspaceEvents$.get()).toEqual([LOG_ENTRY_A]);
   });
+
+  it('merges and sorts events using start_time fallback if timestamp is missing', async () => {
+    const entryA: LogbookEntry = {
+      sensor_type: 'watering',
+      growspace_id: 'gs1',
+      start_time: '2026-05-04T10:00:00Z',
+      end_time: '2026-05-04T10:01:00Z',
+      duration_sec: 60,
+      severity: 0,
+      category: 'irrigation',
+      reasons: [],
+      timestamp: '2026-05-04T10:00:00Z',
+      event_id: 'evt-1',
+    };
+    const entryB: LogbookEntry = {
+      sensor_type: 'watering',
+      growspace_id: 'gs1',
+      start_time: '2026-05-03T10:00:00Z',
+      end_time: '2026-05-03T10:01:00Z',
+      duration_sec: 60,
+      severity: 0,
+      category: 'irrigation',
+      reasons: [],
+      event_id: 'evt-2',
+    };
+    const entryC: LogbookEntry = {
+      sensor_type: 'watering',
+      growspace_id: 'gs1',
+      start_time: '2026-05-02T10:00:00Z',
+      end_time: '2026-05-02T10:01:00Z',
+      duration_sec: 60,
+      severity: 0,
+      category: 'irrigation',
+      reasons: [],
+      timestamp: '2026-05-02T10:00:00Z',
+      event_id: 'evt-3',
+    };
+    const entryD: LogbookEntry = {
+      sensor_type: 'watering',
+      growspace_id: 'gs1',
+      start_time: '2026-05-01T10:00:00Z',
+      end_time: '2026-05-01T10:01:00Z',
+      duration_sec: 60,
+      severity: 0,
+      category: 'irrigation',
+      reasons: [],
+      event_id: 'evt-4',
+    };
+
+    vi.mocked(hassCallModule.hassCall)
+      .mockResolvedValueOnce({ gs1: [entryA, entryC] })
+      .mockResolvedValueOnce({ gs1: [entryB, entryD] });
+
+    await fetchGrowspaceEvents('gs1');
+
+    const events = growspaceEvents$.get();
+    expect(events).toHaveLength(4);
+    expect(events[0].event_id).toBe('evt-1');
+    expect(events[1].event_id).toBe('evt-2');
+    expect(events[2].event_id).toBe('evt-3');
+    expect(events[3].event_id).toBe('evt-4');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -261,6 +323,15 @@ describe('fetchPlantEvents', () => {
 
     await expect(fetchPlantEvents('p1', 'gs1')).rejects.toThrow();
     expect(plantEvents$.get()).toEqual([LOG_ENTRY_A]);
+  });
+
+  it('handles missing plantId key in response gracefully (empty arrays)', async () => {
+    vi.mocked(hassCallModule.hassCall)
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce({});
+
+    await fetchPlantEvents('p1', 'gs1');
+    expect(plantEvents$.get()).toEqual([]);
   });
 });
 
@@ -381,5 +452,16 @@ describe('deleteEvent', () => {
 
     expect(growspaceEvents$.get()).toHaveLength(2);
     expect(plantEvents$.get()).toHaveLength(1);
+  });
+
+  it('uses empty string as growspaceId when deleting a non-existent event', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
+
+    await deleteEvent('non-existent-event-id');
+
+    expect(mutateModule.mutate).toHaveBeenCalledWith(
+      expect.any(Object),
+      ''
+    );
   });
 });

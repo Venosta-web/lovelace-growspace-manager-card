@@ -409,6 +409,126 @@ describe('MetricsUtils', () => {
             });
         });
 
+        describe('Tank depletion 24-48h window', () => {
+            it('shows no status for single tank with 24-48h remaining (no special color)', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 55,
+                        isWarning: false,
+                        hoursRemaining: 36,
+                        depletionStatus: 'depleting',
+                    },
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBeUndefined();
+            });
+
+            it('shows WARNING for multi-tank when highest urgency is warning (no danger)', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 40,
+                        isWarning: false,
+                        hoursRemaining: 20,
+                        depletionStatus: 'depleting',
+                    },
+                    {
+                        sensorEntity: 'sensor.tank2',
+                        fillLevel: 35,
+                        isWarning: false,
+                        hoursRemaining: 22,
+                        depletionStatus: 'depleting',
+                    },
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBe(StatusLevel.WARNING);
+            });
+
+            it('shows OPTIMAL for multi-tank when all tanks have >= 48h remaining', () => {
+                mockDevice.environmentAttributes.irrigationTanks = [
+                    {
+                        sensorEntity: 'sensor.tank1',
+                        fillLevel: 80,
+                        isWarning: false,
+                        hoursRemaining: 60,
+                        depletionStatus: 'depleting',
+                    },
+                    {
+                        sensorEntity: 'sensor.tank2',
+                        fillLevel: 90,
+                        isWarning: false,
+                        hoursRemaining: 72,
+                        depletionStatus: 'depleting',
+                    },
+                ];
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const tankChip = res.mainChips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+
+                expect(tankChip?.status).toBe(StatusLevel.OPTIMAL);
+            });
+        });
+
+        describe('Light chip numeric value', () => {
+            it('formats light chip value with % suffix when sensor unit is %', () => {
+                mockDevice.environmentAttributes = {
+                    lightSensor: 'sensor.dimmer',
+                };
+                mockHass.states = {
+                    'sensor.dimmer': {
+                        state: '75',
+                        attributes: { unit_of_measurement: '%' },
+                    },
+                };
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const lightChip = res.deviceChips.find((c) => c.key === MetricKey.LIGHT);
+
+                expect(lightChip?.value).toBe('75%');
+            });
+
+            it('uses raw state value for light chip when sensor unit is not %', () => {
+                mockDevice.environmentAttributes = {
+                    lightSensor: 'sensor.lux_sensor',
+                };
+                mockHass.states = {
+                    'sensor.lux_sensor': {
+                        state: '500',
+                        attributes: { unit_of_measurement: 'lx' },
+                    },
+                };
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const lightChip = res.deviceChips.find((c) => c.key === MetricKey.LIGHT);
+
+                expect(lightChip?.value).toBe('500');
+            });
+
+            it('sets off icon when numeric light sensor value is 0', () => {
+                mockDevice.environmentAttributes = {
+                    lightSensor: 'sensor.dimmer',
+                };
+                mockHass.states = {
+                    'sensor.dimmer': {
+                        state: '0',
+                        attributes: { unit_of_measurement: '%' },
+                    },
+                };
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const lightChip = res.deviceChips.find((c) => c.key === MetricKey.LIGHT);
+
+                expect(lightChip?.value).toBe('0%');
+            });
+        });
+
         describe('Device Chips', () => {
             it('should create device chips for equipment', () => {
                 mockDevice.environmentAttributes = {
@@ -537,6 +657,118 @@ describe('MetricsUtils', () => {
                 expect(exhaust?.value).toBe('Multiple');
                 expect(exhaust?.multiValues).toEqual(['on', 'off']);
             });
+        });
+    });
+
+    describe('computeSubareaMetrics', () => {
+        const makeEc = (overrides: Record<string, any> = {}) => ({
+            ...overrides,
+        });
+
+        it('produces temperature chip for a single sensor', () => {
+            mockHass.states = {
+                'sensor.sub_temp': { state: '22.5', attributes: {} },
+            };
+            const ec = makeEc({ temperature_sensor: 'sensor.sub_temp' });
+            const res = MetricsUtils.computeSubareaMetrics(mockHass, ec, new Set());
+            const chip = res.heroChips.find((c) => c.key === MetricKey.TEMPERATURE);
+            expect(chip?.value).toBe('22.5 °C');
+        });
+
+        it('pushes "-" for a sensor whose state is non-numeric and not on/off', () => {
+            // A sensor with state 'heating' is not a float and not 'on'/'off' →
+            // getAggregateState should produce undefined (single sensor returning '-')
+            mockHass.states = {
+                'sensor.sub_temp': { state: 'heating', attributes: {} },
+            };
+            const ec = makeEc({ temperature_sensor: 'sensor.sub_temp' });
+            const res = MetricsUtils.computeSubareaMetrics(mockHass, ec, new Set());
+            // The chip is filtered out when value is undefined (state '-' becomes undefined)
+            const chip = res.heroChips.find((c) => c.key === MetricKey.TEMPERATURE);
+            expect(chip).toBeUndefined();
+        });
+
+        it('formats light chip with % suffix when sensor unit is %', () => {
+            mockHass.states = {
+                'sensor.dimmer': {
+                    state: '80',
+                    attributes: { unit_of_measurement: '%' },
+                },
+            };
+            const ec = makeEc({ light_sensors: ['sensor.dimmer'] });
+            const res = MetricsUtils.computeSubareaMetrics(mockHass, ec, new Set());
+            const lightChip = res.deviceChips.find((c) => c.key === MetricKey.LIGHT);
+            expect(lightChip?.value).toBe('80%');
+        });
+
+        it('uses raw state for light chip when sensor unit is not %', () => {
+            mockHass.states = {
+                'sensor.lux': {
+                    state: '600',
+                    attributes: { unit_of_measurement: 'lx' },
+                },
+            };
+            const ec = makeEc({ light_sensors: ['sensor.lux'] });
+            const res = MetricsUtils.computeSubareaMetrics(mockHass, ec, new Set());
+            const lightChip = res.deviceChips.find((c) => c.key === MetricKey.LIGHT);
+            expect(lightChip?.value).toBe('600');
+        });
+
+        it('sets off icon when numeric light sensor is 0', () => {
+            mockHass.states = {
+                'sensor.dimmer': {
+                    state: '0',
+                    attributes: { unit_of_measurement: '%' },
+                },
+            };
+            const ec = makeEc({ light_sensors: ['sensor.dimmer'] });
+            const res = MetricsUtils.computeSubareaMetrics(mockHass, ec, new Set());
+            const lightChip = res.deviceChips.find((c) => c.key === MetricKey.LIGHT);
+            expect(lightChip?.value).toBe('0%');
+        });
+
+        it('passes multiValues through when multiple sensors are present', () => {
+            mockHass.states = {
+                'sensor.t1': { state: '21', attributes: {} },
+                'sensor.t2': { state: '23', attributes: {} },
+            };
+            const ec = makeEc({ temperature_sensors: ['sensor.t1', 'sensor.t2'] });
+            const res = MetricsUtils.computeSubareaMetrics(mockHass, ec, new Set());
+            const chip = res.heroChips.find((c) => c.key === MetricKey.TEMPERATURE);
+            // value is 'Multiple'; multiValues should contain both formatted readings
+            expect(chip?.value).toBe('Multiple');
+            expect(chip?.multiValues).toEqual(['21.0 °C', '23.0 °C']);
+        });
+
+        it('falls back to uuid VPD sensor when named VPD sensor is unavailable', () => {
+            // The named VPD sensor resolves but reports unavailable → falls through to uuid sensor
+            // This covers the guard inside resolveCalculatedVpdSensor (lines 867, 873)
+            mockHass.states = {
+                'sensor.growspace_tent_subarea_zone_a_calculated_vpd': {
+                    state: EntityState.UNAVAILABLE,
+                    attributes: {},
+                },
+                'sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd': {
+                    state: '1.5',
+                    attributes: {},
+                },
+            };
+            const ec = makeEc({
+                temperature_sensors: ['sensor.t1'],
+                humidity_sensors: ['sensor.h1'],
+            });
+            const res = MetricsUtils.computeSubareaMetrics(
+                mockHass,
+                ec,
+                new Set(),
+                'gs1',
+                'Tent',
+                'sa1',
+                'Zone A'
+            );
+            const vpdChip = res.heroChips.find((c) => c.key === MetricKey.VPD);
+            // The uuid sensor was resolved instead
+            expect(vpdChip?.value).toBe('1.5 kPa');
         });
     });
 });
