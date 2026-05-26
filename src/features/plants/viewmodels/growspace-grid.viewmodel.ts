@@ -128,7 +128,9 @@ function transformGridCells(
       plant,
       row,
       col,
-      overlayColor: plant ? calculateOverlayColor(overlayMode, plant, store) : OVERLAY_COLORS.TRANSPARENT,
+      overlayColor: plant
+        ? calculateOverlayColor(overlayMode, plant, store)
+        : OVERLAY_COLORS.TRANSPARENT,
       isSelected: plant ? selectedPlants.has(plant.attributes.plant_id || '') : false,
     };
   });

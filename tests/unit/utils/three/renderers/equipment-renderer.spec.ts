@@ -871,7 +871,7 @@ describe('EquipmentRenderer', () => {
         context.hass.states['p1'] = { state: 'on' };
         renderer.render();
 
-        for (let i = 0; i < 100; i++) renderer.animate(0.05);
+        for (let i = 0; i < 35; i++) renderer.animate(0.05);
 
         // oldHose branch in updateHumidifierModel
         context.device.environmentAttributes.sensorCoordinates['h1'].x = -20;

@@ -50,11 +50,24 @@ playwright-report/.auth/*
 
 # Verification scratchpad
 verification/
-# Ignore test images
+# Ignore test images (but keep visual snapshot baselines)
 tests/**/*.png
+!tests/**/__screenshots__/**/*.png
+
+# Vitest runtime attachments (failure diffs, not baselines)
+.vitest-attachments/
+
+# E2E test reports
+tests/e2e/test-reports/
 
 
 # Git worktrees
 .worktrees/
 
 
+playwright-report-mock/index.html
+.gitignore
+test-results-mock/.last-run.json
+coverage.txt
+test_run.log
+.sandcastle/*

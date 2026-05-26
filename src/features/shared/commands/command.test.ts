@@ -82,6 +82,20 @@ describe('Command Pattern', () => {
 
       expect(onSuccess).toHaveBeenCalledWith(mockContext, 'result');
     });
+
+    it('should handle success without onSuccess', async () => {
+      const executeFn = vi.fn().mockResolvedValue('result');
+      const command = createCommand({ execute: executeFn });
+      const result = await executeCommand(command, mockContext);
+      expect(result).toBe('result');
+    });
+
+    it('should handle failure without onError', async () => {
+      const executeFn = vi.fn().mockRejectedValue(new Error('Failed'));
+      const command = createCommand({ execute: executeFn });
+      const result = await executeCommand(command, mockContext);
+      expect(result).toBeUndefined();
+    });
   });
 
   describe('executeBatchCommand', () => {
@@ -155,6 +169,105 @@ describe('Command Pattern', () => {
 
       expect(executeOne).toHaveBeenCalledTimes(2);
       expect(onError).toHaveBeenCalledWith(mockContext, expect.any(Error));
+    });
+
+    it('should call onError on partial success if onPartialError is missing', async () => {
+      const executeOne = vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('Failed'));
+
+      const onError = vi.fn();
+
+      const command = createBatchCommand({
+        items: ['item1', 'item2'],
+        executeOne,
+        onError,
+        execute: async () => undefined,
+      });
+
+      await executeBatchCommand(command, mockContext);
+
+      expect(onError).toHaveBeenCalledWith(
+        mockContext,
+        expect.objectContaining({ message: 'Failed' })
+      );
+    });
+
+    it('should handle non-Error exceptions in executeBatchCommand', async () => {
+      const executeOne = vi.fn().mockRejectedValue('string error');
+      const onError = vi.fn();
+
+      const command = createBatchCommand({
+        items: ['item1'],
+        executeOne,
+        onError,
+        execute: async () => undefined,
+      });
+
+      await executeBatchCommand(command, mockContext);
+
+      expect(onError).toHaveBeenCalledWith(
+        mockContext,
+        expect.objectContaining({ message: 'Unknown error' })
+      );
+    });
+
+    it('should handle all success without onSuccess', async () => {
+      const executeOne = vi.fn().mockResolvedValue(undefined);
+      const command = createBatchCommand({
+        items: ['item1'],
+        executeOne,
+        execute: async () => undefined,
+      });
+      await executeBatchCommand(command, mockContext);
+      expect(executeOne).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle all failure without onError', async () => {
+      const executeOne = vi.fn().mockRejectedValue(new Error('Failed'));
+      const command = createBatchCommand({
+        items: ['item1'],
+        executeOne,
+        execute: async () => undefined,
+      });
+      await executeBatchCommand(command, mockContext);
+      expect(executeOne).toHaveBeenCalledTimes(1);
+    });
+
+    it('should handle partial success without any error handlers', async () => {
+      const executeOne = vi
+        .fn()
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('Failed'));
+
+      const command = createBatchCommand({
+        items: ['item1', 'item2'],
+        executeOne,
+        execute: async () => undefined,
+      });
+
+      await executeBatchCommand(command, mockContext);
+      expect(executeOne).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('executeCommand non-Error handling', () => {
+    it('should handle non-Error exceptions in executeCommand', async () => {
+      const executeFn = vi.fn().mockRejectedValue('string error');
+      const onError = vi.fn();
+
+      const command = createCommand({
+        execute: executeFn,
+        onError,
+      });
+
+      await executeCommand(command, mockContext);
+
+      expect(onError).toHaveBeenCalledWith(
+        mockContext,
+        expect.objectContaining({ message: 'Unknown error' })
+      );
     });
   });
 

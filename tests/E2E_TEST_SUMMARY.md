@@ -65,8 +65,8 @@ Comprehensive end-to-end testing suite for the Lovelace Growspace Manager Card, 
 **Coverage:** ~95% of lifecycle workflows
 
 **What's Tested:**
-- ✅ **Mother → Clone Chain** (3 tests)
-  - Create mother and take 1-20 clones
+- ✅ **Plant Cloning Chain** (3 tests)
+  - Create plant (Mother, Veg, or Flower) and take 1-20 clones
   - Clone count validation
   - Genetics preservation (strain + phenotype)
 - ✅ **Flower → Harvest → Dry → Cure** (2 tests)
@@ -82,7 +82,7 @@ Comprehensive end-to-end testing suite for the Lovelace Growspace Manager Card, 
   - Timeline events survive stage transitions
   - Custom fields preserved in clones
 - ✅ **Stage-Based Validations** (3 tests)
-  - "Take Clone" only for mothers
+  - "Take Clone" for Mother, Veg, and Flower
   - "Harvest" only for flowering
   - "Finish Drying" only for dry stage
 - ✅ **Edge Cases** (2 tests)
@@ -91,7 +91,7 @@ Comprehensive end-to-end testing suite for the Lovelace Growspace Manager Card, 
 
 **Key Workflows:**
 ```
-Mother Plant
+Source Plant (Mother, Veg, or Flower)
   ↓ Take Clone
   ↓ Clone created (clone_start = NOW)
   ↓ Transplant Clone

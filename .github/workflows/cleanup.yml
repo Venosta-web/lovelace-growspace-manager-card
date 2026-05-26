@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Delete older prereleases
-        uses: dev-drprasad/delete-older-releases@v0.3.4
+        uses: dev-drprasad/delete-older-releases@v0.3.2
         with:
           # Number of most recent prereleases to keep
           keep_latest: 10

@@ -6,7 +6,7 @@
  */
 
 import { LitElement, html, nothing, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, query } from 'lit/decorators.js';
 import { classMap } from 'lit/directives/class-map.js';
 import { styleMap } from 'lit/directives/style-map.js';
 import {
@@ -25,7 +25,7 @@ import type { PlantStatusIndicators } from '../viewmodels/plant-card.viewmodel';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { plantCardStyles } from '../../../styles/plant-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
-import '../../../components/plant/plant-stats';
+import './plant-stats';
 
 /**
  * Pure presentational plant card component
@@ -47,15 +47,16 @@ export class PlantCardUI extends LitElement {
   @property() ariaLabel = '';
   @property() checkboxAriaLabel = '';
 
+  @query('.plant-card-rich') private _card?: HTMLElement;
+
   static styles = [sharedStyles, plantCardStyles];
 
   /**
    * Focus the card element
    */
   public focus(options?: FocusOptions): void {
-    const card = this.shadowRoot?.querySelector('.plant-card-rich') as HTMLElement;
-    if (card) {
-      card.focus(options);
+    if (this._card) {
+      this._card.focus(options);
     } else {
       super.focus(options);
     }
@@ -70,9 +71,10 @@ export class PlantCardUI extends LitElement {
 
     // Construct srcset for responsive images
     let srcset = '';
-    if (imageUrl && imageUrl.endsWith('.webp')) {
-      const smallUrl = imageUrl.replace('.webp', '_small.webp');
-      srcset = `${smallUrl} 320w, ${imageUrl} 1024w`;
+    let safeImageUrl = imageUrl ? PlantUtils.encodeLocalPath(imageUrl) : imageUrl;
+    if (safeImageUrl && safeImageUrl.endsWith('.webp')) {
+      const smallUrl = safeImageUrl.replace('.webp', '_small.webp');
+      srcset = `${smallUrl} 320w, ${safeImageUrl} 1024w`;
     }
 
     return html`
@@ -86,12 +88,18 @@ export class PlantCardUI extends LitElement {
         @click=${this._handleClick}
         @keydown=${this._handleKeyDown}
       >
-        ${this._renderBackground(imageUrl, srcset, strainName, imageCropMeta)}
-        ${this._renderCheckbox()}
-        ${this._renderStatusIcons()}
+        ${this._renderBackground(safeImageUrl, srcset, strainName, imageCropMeta)}
+        ${this._renderAgePill()} ${this._renderCheckbox()} ${this._renderStatusIcons()}
         ${this._renderContent(strainName, pheno, stages)}
       </div>
     `;
+  }
+
+  private _renderAgePill(): TemplateResult | typeof nothing {
+    if (this.isEditMode) return nothing;
+    const daysInStage = this.plant?.attributes?.days_in_stage;
+    if (daysInStage === undefined || daysInStage === null) return nothing;
+    return html`<div class="age-pill">D${daysInStage}</div>`;
   }
 
   private _renderBackground(
@@ -151,12 +159,34 @@ export class PlantCardUI extends LitElement {
   private _renderStatusIcons(): TemplateResult {
     return html`
       <div class="status-icons">
-        ${this._renderTrainingIcon()}
-        ${this._renderIPMIcon()}
-        ${this._renderWateringIcon()}
-        ${this._renderProblemIcon()}
+        ${this._renderSexBadge()} ${this._renderTrainingIcon()} ${this._renderIPMIcon()}
+        ${this._renderWateringIcon()} ${this._renderProblemIcon()}
         ${this._renderGrowthDeviationIcon()}
       </div>
+    `;
+  }
+
+  private _renderSexBadge(): TemplateResult | typeof nothing {
+    const sex = this.plant?.attributes?.sex;
+    if (!sex || sex === 'unknown') return nothing;
+    const symbols: Record<string, string> = { female: '♀', male: '♂', hermaphrodite: '⚥' };
+    const colors: Record<string, string> = {
+      female: '#4caf50',
+      male: '#2196f3',
+      hermaphrodite: '#ff9800',
+    };
+    const symbol = symbols[sex];
+    const color = colors[sex];
+    if (!symbol) return nothing;
+    return html`
+      <span
+        class="status-icon"
+        style="font-size:13px; font-weight:bold; color:${color}; line-height:1; display:flex; align-items:center;"
+        title="Sex: ${sex}"
+        role="img"
+        aria-label="Sex: ${sex}"
+        >${symbol}</span
+      >
     `;
   }
 
@@ -200,7 +230,12 @@ export class PlantCardUI extends LitElement {
     }
 
     return html`
-      <div class="status-icon watering" role="img" aria-label="Recently watered" title="Recently watered">
+      <div
+        class="status-icon watering"
+        role="img"
+        aria-label="Recently watered"
+        title="Recently watered"
+      >
         <ha-svg-icon .path=${mdiWater}></ha-svg-icon>
       </div>
     `;
@@ -256,6 +291,7 @@ export class PlantCardUI extends LitElement {
     return html`
       <div class="plant-card-content">
         <div class="pc-info">
+          ${this.statusIndicators.hasProblem ? html`<span class="alert-dot"></span>` : nothing}
           <div class="pc-strain-name" title="${strainName}">${strainName}</div>
           ${pheno ? html`<div class="pc-pheno">${pheno}</div>` : nothing}
           <div style="display: flex; align-items: center; gap: 8px;">

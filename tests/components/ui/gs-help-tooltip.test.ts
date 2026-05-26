@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { fixture } from '@open-wc/testing-helpers';
 import { html } from 'lit';
-import '../../../src/components/ui/gs-help-tooltip';
-import type { GsHelpTooltip } from '../../../src/components/ui/gs-help-tooltip';
+import '../../../src/features/shared/ui/gs-help-tooltip';
+import type { GsHelpTooltip } from '../../../src/features/shared/ui/gs-help-tooltip';
 
 describe('GsHelpTooltip', () => {
   it('renders an info icon button', async () => {

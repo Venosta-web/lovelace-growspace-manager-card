@@ -49,7 +49,13 @@ describe('ECRampEditorDialog', () => {
                     }
                 }
             },
-            fetchECRampCurves: vi.fn().mockResolvedValue({}),
+            actions: {
+                library: {
+                    fetchECRampCurves: vi.fn().mockResolvedValue({}),
+                    saveECRampCurve: vi.fn().mockResolvedValue({}),
+                    removeECRampCurve: vi.fn().mockResolvedValue({}),
+                }
+            },
         };
 
         element = document.createElement('ec-ramp-editor-dialog') as ECRampEditorDialog;
@@ -79,9 +85,9 @@ describe('ECRampEditorDialog', () => {
     it('should show list view when opened', async () => {
         element.open = true;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector('gs-dialog')).toBeTruthy();
         expect((element as any)._view).toBe('LIST');
-        expect(mockStore.fetchECRampCurves).toHaveBeenCalled();
+        expect(mockStore.actions.library.fetchECRampCurves).toHaveBeenCalled();
     });
 
     it('should render curve list', async () => {
@@ -175,13 +181,12 @@ describe('ECRampEditorDialog', () => {
         // Success path
         (element as any)._editingCurve.points = [{ day: 1, target_ec: 1.0 }];
         await (element as any)._saveCurve();
-        expect(mockDataService.saveECRampCurve).toHaveBeenCalled();
-        expect(mockStore.fetchECRampCurves).toHaveBeenCalledWith(true);
+        expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalled();
         expect((element as any)._view).toBe('LIST');
     });
 
     it('should handle save errors', async () => {
-        mockDataService.saveECRampCurve.mockRejectedValue(new Error('Save Error'));
+        mockStore.actions.library.saveECRampCurve.mockRejectedValue(new Error('Save Error'));
         (element as any)._startNew();
         (element as any)._editingCurve.name = 'Test';
         await (element as any)._saveCurve();
@@ -200,13 +205,12 @@ describe('ECRampEditorDialog', () => {
         await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async delete
 
         expect(confirmSpy).toHaveBeenCalled();
-        expect(mockDataService.removeECRampCurve).toHaveBeenCalledWith('curve1');
-        expect(mockStore.fetchECRampCurves).toHaveBeenCalledWith(true);
+        expect(mockStore.actions.library.removeECRampCurve).toHaveBeenCalledWith('curve1');
     });
 
     it('should handle delete error', async () => {
         vi.spyOn(window, 'confirm').mockReturnValue(true);
-        mockDataService.removeECRampCurve.mockRejectedValue(new Error('Delete Fail'));
+        mockStore.actions.library.removeECRampCurve.mockRejectedValue(new Error('Delete Fail'));
 
         await (element as any)._deleteCurve('curve1');
         expect((element as any)._error).toBe('Delete Fail');
@@ -297,7 +301,7 @@ describe('ECRampEditorDialog', () => {
 
         await (element as any)._saveCurve();
 
-        const savedCurve = mockDataService.saveECRampCurve.mock.calls[0][0];
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
         expect(savedCurve.points[0].day).toBe(1);
         expect(savedCurve.points[1].day).toBe(10);
     });
@@ -325,8 +329,153 @@ describe('ECRampEditorDialog', () => {
         await element.updateComplete;
 
         await (element as any)._saveCurve();
-        expect(mockDataService.saveECRampCurve).toHaveBeenCalled();
-        const savedCurve = mockDataService.saveECRampCurve.mock.calls[0][0];
+        expect(mockStore.actions.library.saveECRampCurve).toHaveBeenCalled();
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
         expect(savedCurve.stage).toBe('veg');
+    });
+
+    it('should test guards for editing curve operations', () => {
+        (element as any)._editingCurve = null;
+
+        // These should return early without error
+        (element as any)._addPoint();
+        (element as any)._removePoint(0);
+        (element as any)._updatePoint(0, { day: 1 });
+        (element as any)._updateCurveInfo({ name: 'Test' });
+
+        expect((element as any)._editingCurve).toBeNull();
+    });
+
+    it('should handle updated lifecycle without store', async () => {
+        const testEl = document.createElement('ec-ramp-editor-dialog') as any;
+        testEl.open = true;
+        const changedProps = new Map([['open', false]]);
+        // Mock that 'open' changed
+        (changedProps as any).has = (key: string) => key === 'open';
+        
+        testEl.updated(changedProps);
+        // Should not throw even if store is missing
+        expect(testEl.store).toBeUndefined();
+    });
+
+    it('should handle delete cancellation', async () => {
+        vi.spyOn(window, 'confirm').mockReturnValue(false);
+        const removeSpy = vi.spyOn(mockStore.actions.library, 'removeECRampCurve');
+
+        await (element as any)._deleteCurve('curve1');
+        expect(removeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle non-Error exceptions in delete', async () => {
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        mockStore.actions.library.removeECRampCurve.mockRejectedValue('String Error');
+
+        await (element as any)._deleteCurve('curve1');
+        expect((element as any)._error).toBe('Unknown error');
+    });
+
+    it('should handle non-Error exceptions in save', async () => {
+        (element as any)._startNew();
+        (element as any)._editingCurve.name = 'Test';
+        mockStore.actions.library.saveECRampCurve.mockRejectedValue('String Error');
+
+        await (element as any)._saveCurve();
+        expect((element as any)._error).toBe('Unknown error');
+    });
+
+    it('should filter out invalid points during save', async () => {
+        (element as any)._startNew();
+        (element as any)._editingCurve.name = 'Filter Test';
+        (element as any)._editingCurve.points = [
+            { day: -1, target_ec: 1.0 }, // Invalid day
+            { day: 5, target_ec: 0 },    // Invalid EC
+            { day: 10, target_ec: 2.0 }  // Valid
+        ];
+
+        await (element as any)._saveCurve();
+
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
+        expect(savedCurve.points.length).toBe(1);
+        expect(savedCurve.points[0].day).toBe(10);
+    });
+
+    it('should show singular "point" for one point in list view', async () => {
+        curvesMap['curve1'].points = [{ day: 1, target_ec: 1.0 }];
+        element.open = true;
+        await element.updateComplete;
+
+        const details = element.shadowRoot?.querySelector('.curve-details');
+        expect(details?.textContent).toContain('1 point');
+        expect(details?.textContent).not.toContain('1 points');
+    });
+
+    it('should render error bar when error exists', async () => {
+        (element as any)._error = 'Manual Error';
+        element.open = true;
+        await element.updateComplete;
+
+        const errorBar = element.shadowRoot?.querySelector('.error-bar');
+        expect(errorBar).toBeTruthy();
+        expect(errorBar?.textContent).toBe('Manual Error');
+    });
+
+    it('should handle branch where _curvesController or value is missing', async () => {
+        (element as any)._curvesController = null;
+        element.open = true;
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.querySelector('.empty-state')).toBeTruthy();
+
+        (element as any)._curvesController = { value: null };
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('.empty-state')).toBeTruthy();
+    });
+
+    it('should handle empty points message in edit view', async () => {
+        element.open = true;
+        (element as any)._startNew();
+        (element as any)._editingCurve.points = [];
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.textContent).toContain('Add at least one EC point to define the ramp.');
+    });
+
+    it('should handle stage fallback to flower in save', async () => {
+        (element as any)._startNew();
+        (element as any)._editingCurve.name = 'Stage Fallback';
+        (element as any)._editingCurve.stage = undefined; // Trigger fallback
+
+        await (element as any)._saveCurve();
+
+        const savedCurve = mockStore.actions.library.saveECRampCurve.mock.calls[0][0];
+        expect(savedCurve.stage).toBe('flower');
+    });
+
+    it('should handle null/undefined points gracefully in save', async () => {
+        element.open = true;
+        await element.updateComplete;
+        
+        (element as any)._startNew();
+        (element as any)._editingCurve.name = 'Fallback Test';
+        (element as any)._editingCurve.points = [];
+
+        await (element as any)._saveCurve();
+        expect((element as any)._error).toBe('At least one valid EC point is required');
+    });
+
+    it('should handle null/undefined points fallback in manipulation', async () => {
+        (element as any)._startNew();
+        
+        (element as any)._editingCurve.points = undefined;
+        (element as any)._addPoint();
+        expect((element as any)._editingCurve.points.length).toBe(1);
+
+        (element as any)._editingCurve.points = undefined;
+        (element as any)._removePoint(0);
+        expect((element as any)._editingCurve.points.length).toBe(0);
+
+        (element as any)._editingCurve.points = undefined;
+        (element as any)._updatePoint(0, { day: 1 });
+        expect((element as any)._editingCurve.points.length).toBe(1);
     });
 });

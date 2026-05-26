@@ -1,7 +1,12 @@
 import { atom, map, computed, WritableAtom, MapStore, ReadableAtom } from 'nanostores';
-import { HistorySensorState, SensorHistories, HistoryTimeRange, GrowspaceDevice } from '../../types';
+import {
+  HistorySensorState,
+  SensorHistories,
+  HistoryTimeRange,
+  GrowspaceDevice,
+} from '../../types';
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
-import { DataService } from '../../data-service';
+import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from '../core/data-store';
 
 export class GrowspaceHistoryStore {
@@ -24,6 +29,7 @@ export class GrowspaceHistoryStore {
   // --- Dependencies ---
   private dataService: DataService;
   private dataStore: GrowspaceDataStore;
+  private _selectedDevice: ReadableAtom<string | null>;
 
   // --- Internals ---
   private readonly STORAGE_KEY_PREFIX = STORAGE_KEYS.HISTORY_PREFIX;
@@ -35,9 +41,39 @@ export class GrowspaceHistoryStore {
   // --- Computed Stores ---
   public readonly $combinedHistory: ReadableAtom<SensorHistories>;
 
-  constructor(dataService: DataService, dataStore: GrowspaceDataStore) {
+  /**
+   * Single combined atom for all header-relevant history state. Replaces four
+   * separate StoreController subscriptions in GrowspaceHeader.
+   */
+  public readonly $headerHistoryState: ReadableAtom<{
+    historyCache: Record<string, HistorySensorState[]>;
+    historyLoading: boolean;
+    activeEnvGraphs: Set<string>;
+    linkedGraphGroups: string[][];
+  }>;
+
+  /**
+   * Single combined atom for all analytics-relevant history state. Replaces
+   * seven separate StoreController subscriptions in GrowspaceAnalytics.
+   * Does not include $historyCache — $combinedHistory already derives from it.
+   */
+  public readonly $analyticsViewState: ReadableAtom<{
+    historyLoading: boolean;
+    historyLoaded: boolean;
+    activeEnvGraphs: Set<string>;
+    linkedGraphGroups: string[][];
+    combinedHistory: SensorHistories;
+    graphRanges: Record<string, HistoryTimeRange>;
+  }>;
+
+  constructor(
+    dataService: DataService,
+    dataStore: GrowspaceDataStore,
+    selectedDevice: ReadableAtom<string | null>
+  ) {
     this.dataService = dataService;
     this.dataStore = dataStore;
+    this._selectedDevice = selectedDevice;
 
     this.$historyCache = map<Record<string, HistorySensorState[]>>({});
     this.$lastTimestamps = map<Record<string, string>>({});
@@ -49,30 +85,63 @@ export class GrowspaceHistoryStore {
     this.$linkedGraphGroups = atom<string[][]>([]);
 
     // Subscribe to device changes to handle cache and storage
-    this._selectedDeviceUnsub = this.dataStore.$selectedDevice.subscribe((deviceId) => {
+    this._selectedDeviceUnsub = this._selectedDevice.subscribe((deviceId) => {
       if (deviceId) {
         this.handleDeviceChange(deviceId);
       }
     });
 
-    this.$combinedHistory = computed(
-      this.$historyCache,
-      (cache): SensorHistories => {
-        const result: SensorHistories = { ...cache };
-        const commonMetrics = [
-          'temperature',
-          'humidity',
-          'vpd',
-          'co2',
-          'soil_moisture',
-          'light',
-          'optimal',
-        ];
-        commonMetrics.forEach((m) => {
-          if (!result[m]) result[m] = [];
-        });
-        return result;
-      }
+    this.$headerHistoryState = computed(
+      [this.$historyCache, this.$historyLoading, this.$activeEnvGraphs, this.$linkedGraphGroups],
+      (historyCache, historyLoading, activeEnvGraphs, linkedGraphGroups) => ({
+        historyCache,
+        historyLoading,
+        activeEnvGraphs,
+        linkedGraphGroups,
+      })
+    );
+
+    this.$combinedHistory = computed(this.$historyCache, (cache): SensorHistories => {
+      const result: SensorHistories = { ...cache };
+      const commonMetrics = [
+        'temperature',
+        'humidity',
+        'vpd',
+        'co2',
+        'soil_moisture',
+        'light',
+        'optimal',
+      ];
+      commonMetrics.forEach((m) => {
+        if (!result[m]) result[m] = [];
+      });
+      return result;
+    });
+
+    this.$analyticsViewState = computed(
+      [
+        this.$historyLoading,
+        this.$historyLoaded,
+        this.$activeEnvGraphs,
+        this.$linkedGraphGroups,
+        this.$combinedHistory,
+        this.$graphRanges,
+      ],
+      (
+        historyLoading,
+        historyLoaded,
+        activeEnvGraphs,
+        linkedGraphGroups,
+        combinedHistory,
+        graphRanges
+      ) => ({
+        historyLoading,
+        historyLoaded,
+        activeEnvGraphs,
+        linkedGraphGroups,
+        combinedHistory,
+        graphRanges,
+      })
     );
   }
 
@@ -254,12 +323,12 @@ export class GrowspaceHistoryStore {
   }
 
   public getRange(): HistoryTimeRange {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     return this.getGraphRange(deviceId);
   }
 
   private async _fetchHistory(range: HistoryTimeRange = '24h') {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
     const devices = this.dataStore.$devices.get();
@@ -351,7 +420,7 @@ export class GrowspaceHistoryStore {
   }
 
   private async _fetchHistoryDelta() {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
     const devices = this.dataStore.$devices.get();
@@ -509,7 +578,7 @@ export class GrowspaceHistoryStore {
   }
 
   private _saveToStorage() {
-    const deviceId = this.dataStore.$selectedDevice.get();
+    const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
     try {
@@ -533,7 +602,9 @@ export class GrowspaceHistoryStore {
 
     if (metricKey === 'optimal') {
       let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-      const overviewId = device.overviewEntityId || (device as unknown as Record<string, unknown>).overview_entity_id as string;
+      const overviewId =
+        device.overviewEntityId ||
+        ((device as unknown as Record<string, unknown>).overview_entity_id as string);
 
       if (overviewId) {
         slug = overviewId.replace('sensor.', '').replace(/_overview$/, '');
@@ -571,7 +642,10 @@ export class GrowspaceHistoryStore {
     // 2. Fallback to single primary/fallback
     if (mapping.source === 'irrigation') {
       const config = (device.irrigationConfig ||
-        (device as unknown as Record<string, unknown>).irrigation_config) as unknown as Record<string, unknown>;
+        (device as unknown as Record<string, unknown>).irrigation_config) as unknown as Record<
+        string,
+        unknown
+      >;
       if (!config) return ids;
 
       let entityId = config[mapping.primary];
@@ -593,7 +667,14 @@ export class GrowspaceHistoryStore {
       // Special fallback for VPD calculated sensor
       if (!entityId && metricKey === 'vpd' && device.name) {
         const slugify = (text: string) =>
-          text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/--+/g, '_').replace(/^-+/, '').replace(/-+$/, '');
+          text
+            .toString()
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/--+/g, '_')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '');
         const calcName = `${device.name} Calculated VPD`;
         const calculatedId = `sensor.${slugify(calcName)}`;
         if (this.dataService.hass && this.dataService.hass.states[calculatedId]) {
@@ -605,8 +686,9 @@ export class GrowspaceHistoryStore {
 
     // Special case for irrigation_tank_level - extract sensor entities from tanks array
     if (metricKey === 'irrigation_tank_level') {
-      const tanks = envAttrs['irrigationTanks'] as unknown as Array<{ sensorEntity?: string }> || [];
-      return tanks.map(t => t.sensorEntity).filter(Boolean) as string[];
+      const tanks =
+        (envAttrs['irrigationTanks'] as unknown as Array<{ sensorEntity?: string }>) || [];
+      return tanks.map((t) => t.sensorEntity).filter(Boolean) as string[];
     }
 
     return ids;

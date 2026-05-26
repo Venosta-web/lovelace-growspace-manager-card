@@ -3,19 +3,23 @@ import { html, fixture } from '@open-wc/testing-helpers';
 import '../../../src/dialogs/grow-report-dialog';
 import { GrowReportDialog } from '../../../src/dialogs/grow-report-dialog';
 
+const REPORT_DATA = {
+    summary: { plant_count: 5, strains: ['OG Kush'], stages: {} },
+    environment: { temperature_avg: 24, humidity_avg: 50, vpd_avg: 1.2 },
+    harvest: { total_wet_weight: 500, total_dry_weight: 100, total_trim_weight: 50, top_thc: 25 }
+};
+
 describe('GrowReportDialog', () => {
     let element: GrowReportDialog;
     let mockStore: any;
 
     beforeEach(async () => {
         mockStore = {
-            dataService: {
-                fetchGrowReport: vi.fn().mockResolvedValue({
-                    summary: { plant_count: 5, strains: ['OG Kush'], stages: {} },
-                    environment: { temperature_avg: 24, humidity_avg: 50, vpd_avg: 1.2 },
-                    harvest: { total_wet_weight: 500, total_dry_weight: 100, total_trim_weight: 50, top_thc: 25 }
-                }),
-                exportGrowReport: vi.fn().mockResolvedValue(undefined)
+            actions: {
+                report: {
+                    fetch: vi.fn().mockResolvedValue(REPORT_DATA),
+                    export: vi.fn().mockResolvedValue(undefined),
+                }
             },
             ui: {
                 $activeDialog: {
@@ -42,8 +46,8 @@ describe('GrowReportDialog', () => {
     it('renders the header title and growspace name', () => {
         const title = element.shadowRoot?.querySelector('.dialog-title');
         const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-        expect(title?.textContent).toBe('Grow Report');
-        expect(subtitle?.textContent).toBe('Main Tent');
+        expect(title?.textContent?.trim()).toBe('Grow Report');
+        expect(subtitle?.textContent?.trim()).toBe('Main Tent');
     });
 
     it('renders the "x" close button in the header', () => {
@@ -72,14 +76,13 @@ describe('GrowReportDialog', () => {
     });
 
     it('triggers PDF export when PDF button is clicked', async () => {
-        // Wait for report data to load
         await new Promise(r => setTimeout(r, 0));
         await element.updateComplete;
 
         const pdfBtn = element.shadowRoot?.querySelector('mwc-button[label="Export PDF"]') as HTMLElement;
         pdfBtn.click();
 
-        expect(mockStore.dataService.exportGrowReport).toHaveBeenCalledWith('gs1', 'pdf');
+        expect(mockStore.actions.report.export).toHaveBeenCalledWith('gs1', 'pdf');
     });
 
     it('triggers JSON export when JSON button is clicked', async () => {
@@ -89,20 +92,18 @@ describe('GrowReportDialog', () => {
         const jsonBtn = element.shadowRoot?.querySelector('mwc-button[label="Export JSON"]') as HTMLElement;
         jsonBtn.click();
 
-        expect(mockStore.dataService.exportGrowReport).toHaveBeenCalledWith('gs1', 'json');
+        expect(mockStore.actions.report.export).toHaveBeenCalledWith('gs1', 'json');
     });
 
     it('handles error during report loading', async () => {
-        mockStore.dataService.fetchGrowReport.mockRejectedValueOnce(new Error('Load Error'));
-        
-        // Trigger reload
+        mockStore.actions.report.fetch.mockRejectedValueOnce(new Error('Load Error'));
+
         (element as any)._loadReport();
         await element.updateComplete;
-        await element.updateComplete; // Wait for async load and finally block
+        await element.updateComplete;
 
         const alert = element.shadowRoot?.querySelector('ha-alert');
         expect(alert?.textContent?.trim()).toContain('Load Error');
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Load Error', 'error');
     });
 
     it('triggers reload when Retry button is clicked', async () => {
@@ -112,23 +113,24 @@ describe('GrowReportDialog', () => {
         const retryBtn = element.shadowRoot?.querySelector('mwc-button[label="Retry"]') as HTMLElement;
         retryBtn.click();
 
-        expect(mockStore.dataService.fetchGrowReport).toHaveBeenCalled();
+        expect(mockStore.actions.report.fetch).toHaveBeenCalled();
     });
 
     it('handles error during export', async () => {
         await new Promise(r => setTimeout(r, 0));
         await element.updateComplete;
 
-        mockStore.dataService.exportGrowReport.mockRejectedValueOnce(new Error('Export Error'));
+        mockStore.actions.report.export.mockRejectedValueOnce(new Error('Export Error'));
         const pdfBtn = element.shadowRoot?.querySelector('mwc-button[label="Export PDF"]') as HTMLElement;
         pdfBtn.click();
 
         await element.updateComplete;
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Export Error', 'error');
+        // Toast is handled inside the action; dialog only swallows the error
+        expect(mockStore.actions.report.export).toHaveBeenCalledWith('gs1', 'pdf');
     });
 
     it('shows "No report data available" when report is null', async () => {
-        mockStore.dataService.fetchGrowReport.mockResolvedValueOnce(null);
+        mockStore.actions.report.fetch.mockResolvedValueOnce(null);
         (element as any)._loadReport();
         await element.updateComplete;
         await element.updateComplete;
@@ -137,21 +139,21 @@ describe('GrowReportDialog', () => {
     });
 
     it('handles partial report data (missing sections)', async () => {
-        (element as any)._reportData = { 
-            summary: undefined, // Cover line 194
+        (element as any)._reportData = {
+            summary: undefined,
             environment: undefined,
             harvest: undefined
         };
         await element.updateComplete;
         expect(element.shadowRoot?.querySelector('.summary-section')).toBeNull();
 
-        (element as any)._reportData = { 
+        (element as any)._reportData = {
             summary: { plant_count: 5, strains: ['OG Kush'], stages: {} },
             environment: { temperature_avg: 25 },
             harvest: { total_dry_weight: 50.5 }
         };
         await element.updateComplete;
-        
+
         expect(element.shadowRoot?.textContent).toContain('OG Kush');
         expect(element.shadowRoot?.textContent).toContain('Environment Averages');
         expect(element.shadowRoot?.textContent).toContain('Harvest Metrics');
@@ -161,37 +163,41 @@ describe('GrowReportDialog', () => {
         mockStore.data.$devices.get.mockReturnValue([{ deviceId: 'gs1', name: 'New Tent Name' }]);
         element.requestUpdate();
         await element.updateComplete;
-        
+
         const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-        expect(subtitle?.textContent).toBe('New Tent Name');
+        expect(subtitle?.textContent?.trim()).toBe('New Tent Name');
     });
 
     it('renders stage chips when summary has strains', async () => {
-        (element as any)._reportData = { 
+        (element as any)._reportData = {
             summary: { plant_count: 1, strains: ['White Widow'], stages: {} }
         };
         await element.updateComplete;
-        
+
         const chip = element.shadowRoot?.querySelector('ha-chip');
         expect(chip?.textContent).toBe('White Widow');
     });
 
     it('uses default error message when load error has no message', async () => {
-        mockStore.dataService.fetchGrowReport.mockRejectedValueOnce({});
+        mockStore.actions.report.fetch.mockRejectedValueOnce({});
         (element as any)._loadReport();
         await element.updateComplete;
         await element.updateComplete;
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Failed to load grow report', 'error');
+
+        expect((element as any)._error).toBe('Failed to load grow report');
     });
 
     it('uses default error message when export error has no message', async () => {
         (element as any)._reportData = { summary: {} };
         await element.updateComplete;
-        mockStore.dataService.exportGrowReport.mockRejectedValueOnce({});
+
+        mockStore.actions.report.export.mockRejectedValueOnce({});
         const jsonBtn = element.shadowRoot?.querySelector('mwc-button[label="Export JSON"]') as HTMLElement;
         jsonBtn.click();
         await element.updateComplete;
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Failed to export grow report', 'error');
+
+        // Toast is handled inside the action; dialog just swallows the rejection
+        expect(mockStore.actions.report.export).toHaveBeenCalledWith('gs1', 'json');
     });
 
     it('dispatches close event when ha-dialog is closed', async () => {
@@ -207,7 +213,7 @@ describe('GrowReportDialog', () => {
         element.requestUpdate();
         await element.updateComplete;
         const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-        expect(subtitle?.textContent).toBe('');
+        expect(subtitle?.textContent?.trim()).toBe('');
     });
 
     it('prevents concurrent exports', async () => {
@@ -217,9 +223,8 @@ describe('GrowReportDialog', () => {
 
         const pdfBtn = element.shadowRoot?.querySelector('mwc-button[label="Export PDF"]');
         expect(pdfBtn?.hasAttribute('disabled')).toBe(true);
-        
-        // Mock method should not be called if we manually invoke it while exporting
+
         (element as any)._exportReport('pdf');
-        expect(mockStore.dataService.exportGrowReport).not.toHaveBeenCalled();
+        expect(mockStore.actions.report.export).not.toHaveBeenCalled();
     });
 });

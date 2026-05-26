@@ -7,7 +7,7 @@ import { PlantStage, GrowspaceDevice, IrrigationTime } from '../../src/types';
 import { MetricKey, EntityState } from '../../src/constants';
 import { DateTime } from 'luxon';
 // Import component class - note: verify if this needs to be imported as side effect or class
-import { GrowspaceLogbook } from '../../src/components/ui/growspace-logbook';
+import { GrowspaceLogbook } from '../../src/features/shared/ui/growspace-logbook';
 
 describe('Coverage Top-off', () => {
     describe('PlantUtils', () => {

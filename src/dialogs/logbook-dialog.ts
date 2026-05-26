@@ -1,17 +1,19 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { mdiClose, mdiFormatListBulleted, mdiChartTimelineVariant } from '@mdi/js';
+import { mdiFormatListBulleted, mdiChartTimelineVariant } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/growspace-logbook';
-import '../components/ui/growspace-timeline';
-import '../components/ui/vpd-heatmap';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-dialog';
+import '../features/shared/ui/growspace-logbook';
+import '../features/shared/ui/growspace-timeline';
+import '../features/shared/ui/gs-help-tooltip';
+import '../features/shared/ui/quick-note-input';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
+import { addGrowspaceNote } from '../slices/logbook';
 
-type LogbookTab = 'list' | 'timeline' | 'vpd';
+type LogbookTab = 'list' | 'timeline';
 
 @customElement('logbook-dialog')
 export class LogbookDialog extends LitElement {
@@ -26,33 +28,30 @@ export class LogbookDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      ha-dialog {
-        --mdc-dialog-min-width: 90vw;
-        --mdc-dialog-max-width: 90vw;
-        --mdc-dialog-min-height: 80vh;
-        --mdc-dialog-max-height: 90vh;
-      }
-
-      @media (min-width: 600px) {
-        ha-dialog {
-          --mdc-dialog-min-width: 600px;
-          --mdc-dialog-max-width: 800px;
-        }
-      }
-
       .dialog-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0;
-        padding-bottom: 0;
+      }
+
+      .dialog-title-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .dialog-subtitle {
+        font-size: 0.85rem;
+        color: var(--secondary-text-color);
+        margin-top: 4px;
       }
 
       .content-wrapper {
-        height: 70vh;
         display: flex;
         flex-direction: column;
+        flex: 1;
+        min-height: 0;
         overflow: hidden;
+        padding: 16px 24px;
       }
 
       .tab-bar {
@@ -93,9 +92,23 @@ export class LogbookDialog extends LitElement {
         border-bottom-color: var(--primary-color, #4caf50);
       }
 
+      .list-view-container {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
       growspace-logbook {
         flex: 1;
+        min-height: 0;
         overflow: hidden;
+      }
+
+      quick-note-input {
+        flex-shrink: 0;
+        padding-top: 8px;
       }
 
       .timeline-placeholder {
@@ -114,30 +127,43 @@ export class LogbookDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close'));
   }
 
+  private async _handleNoteSubmit(e: CustomEvent) {
+    const noteInput = this.shadowRoot?.querySelector('quick-note-input') as any;
+    if (!noteInput) return;
+
+    noteInput.setSaving(true);
+    try {
+      await addGrowspaceNote(this.growspaceId, {
+        notes: e.detail.text,
+        images: e.detail.images,
+      });
+      noteInput.clear();
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      this.dispatchEvent(new CustomEvent('growspace-refresh', { bubbles: true, composed: true }));
+    } catch (err) {
+      console.error('Error adding growspace note:', err);
+      noteInput.setSaving(false);
+    }
+  }
+
   render() {
     if (!this.open) return html``;
 
     return html`
-      <ha-dialog .open=${this.open} @closed=${this._close} hideActions .heading=${true}>
-        <div slot="heading" class="dialog-header">
-          <div style="display:flex;align-items:center;gap:6px;">
-            <h2 class="dialog-title">Events Logbook</h2>
-            <gs-help-tooltip
-              content="Free-form grow log — add notes, observations, or reminders tied to today's date."
-              placement="bottom"
-              label="Events Logbook"
-            ></gs-help-tooltip>
-          </div>
-          <button
-            class="md3-button text"
-            @click=${this._close}
-            style="min-width:auto; padding:8px;"
-          >
-            <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClose}"></path>
-            </svg>
-          </button>
-        </div>
+      <gs-dialog
+        .open=${this.open}
+        heading="Events Logbook"
+        subtitle="Recent events and history"
+        .iconPath=${mdiFormatListBulleted}
+        .containerStyle=${'height: 85vh'}
+        @close=${this._close}
+      >
+        <gs-help-tooltip
+          slot="header-extra"
+          content="Free-form grow log — add notes, observations, or reminders tied to today's date."
+          placement="bottom"
+          label="Events Logbook"
+        ></gs-help-tooltip>
 
         <div class="content-wrapper">
           <!-- Tab Switcher -->
@@ -156,22 +182,21 @@ export class LogbookDialog extends LitElement {
               <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
               <span>Timeline</span>
             </button>
-            <button
-              class="tab ${this._activeTab === 'vpd' ? 'active' : ''}"
-              @click=${() => (this._activeTab = 'vpd')}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiChartTimelineVariant}"></path></svg>
-              <span>VPD</span>
-            </button>
           </div>
 
           <!-- Content -->
           ${this._activeTab === 'list'
             ? html`
-                <growspace-logbook
-                  .hass=${this.hass}
-                  .growspaceId=${this.growspaceId}
-                ></growspace-logbook>
+                <div class="list-view-container">
+                  <growspace-logbook
+                    .hass=${this.hass}
+                    .growspaceId=${this.growspaceId}
+                  ></growspace-logbook>
+                  <quick-note-input
+                    placeholder="Add a growspace note..."
+                    @submit=${this._handleNoteSubmit}
+                  ></quick-note-input>
+                </div>
               `
             : this._activeTab === 'timeline'
               ? html`
@@ -180,28 +205,9 @@ export class LogbookDialog extends LitElement {
                     .growspaceId=${this.growspaceId}
                   ></growspace-timeline>
                 `
-              : html`
-                  <div
-                    style="padding: 20px; display: flex; flex-direction: column; align-items: center;"
-                  >
-                    <h3 style="margin-bottom: 20px;">VPD Comfort Zone</h3>
-                    <vpd-heatmap
-                      .hass=${this.hass}
-                      .temperature=${24}
-                      .humidity=${60}
-                      .stage=${'vegetative'}
-                    ></vpd-heatmap>
-                    <p
-                      style="margin-top: 16px; opacity: 0.7; font-size: 0.9em; text-align: center;"
-                    >
-                      Shows the Vapor Pressure Deficit (VPD) "Comfort Zone" based on the current
-                      stage.<br />
-                      Targeting 0.8 - 1.2 kPa.
-                    </p>
-                  </div>
-                `}
+              : nothing}
         </div>
-      </ha-dialog>
+      </gs-dialog>
     `;
   }
 }

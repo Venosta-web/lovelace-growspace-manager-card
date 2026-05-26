@@ -2,6 +2,7 @@ import { atom, computed, WritableAtom, ReadableAtom } from 'nanostores';
 import { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import { ActiveDialogState } from '../../ui-state';
+import { cancel } from '../../slices/grid-interaction';
 
 export class GrowspaceUIStore {
   // Definition of atoms
@@ -9,7 +10,6 @@ export class GrowspaceUIStore {
   public readonly $isLoading: WritableAtom<boolean>;
   public readonly $activeDialog: WritableAtom<ActiveDialogState>;
   public readonly $isEditMode: WritableAtom<boolean>;
-  public readonly $isTransplantMode: WritableAtom<boolean>;
   public readonly $selectedPlants: WritableAtom<Set<string>>;
   public readonly $focusedPlantIndex: WritableAtom<number>;
   public readonly $menuOpen: WritableAtom<boolean>;
@@ -24,6 +24,7 @@ export class GrowspaceUIStore {
   public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;
   public readonly $language: WritableAtom<string>;
   public readonly $pendingDeepLinkPlantId: WritableAtom<string | null>;
+  public readonly $flowerFlipDismissed: WritableAtom<Record<string, string>>;
 
   // Computed stores
   public readonly $isCompactView: ReadableAtom<boolean>;
@@ -33,7 +34,6 @@ export class GrowspaceUIStore {
     this.$isLoading = atom<boolean>(true);
     this.$activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
     this.$isEditMode = atom<boolean>(false);
-    this.$isTransplantMode = atom<boolean>(false);
     this.$selectedPlants = atom<Set<string>>(new Set());
     this.$focusedPlantIndex = atom<number>(-1);
     this.$menuOpen = atom<boolean>(false);
@@ -43,6 +43,15 @@ export class GrowspaceUIStore {
     this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
     this.$language = atom<string>('en');
     this.$pendingDeepLinkPlantId = atom<string | null>(null);
+
+    let initialDismissed: Record<string, string> = {};
+    try {
+      const raw = localStorage.getItem('growspace.flowerFlipDismissed');
+      if (raw) initialDismissed = JSON.parse(raw);
+    } catch {
+      // ignore
+    }
+    this.$flowerFlipDismissed = atom<Record<string, string>>(initialDismissed);
 
     this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
 
@@ -55,6 +64,8 @@ export class GrowspaceUIStore {
         this.$activeDialog,
         this.$notification,
         this.$focusedPlantIndex,
+        this.$selectedPlants,
+        this.$gridOverlayMode,
       ],
       (
         viewMode,
@@ -63,7 +74,9 @@ export class GrowspaceUIStore {
         isCompact,
         activeDialog,
         notification,
-        focusedPlantIndex
+        focusedPlantIndex,
+        selectedPlants,
+        overlayMode
       ) => ({
         viewMode,
         isLoading,
@@ -72,6 +85,8 @@ export class GrowspaceUIStore {
         activeDialog,
         notification,
         focusedPlantIndex,
+        selectedPlants,
+        overlayMode,
       })
     );
   }
@@ -88,6 +103,8 @@ export class GrowspaceUIStore {
       action?: { label: string; callback: () => void };
     } | null;
     focusedPlantIndex: number;
+    selectedPlants: Set<string>;
+    overlayMode: GridOverlayMode;
   }>;
 
   // Actions
@@ -113,10 +130,9 @@ export class GrowspaceUIStore {
 
   public setEditMode(isEdit: boolean) {
     this.$isEditMode.set(isEdit);
-    // Clear selection and exit transplant mode when exiting edit mode
     if (!isEdit) {
       this.$selectedPlants.set(new Set());
-      this.exitTransplantMode();
+      cancel();
     }
   }
 
@@ -172,19 +188,21 @@ export class GrowspaceUIStore {
     this.$error.set(error);
   }
 
-  public toggleTransplantMode() {
-    this.$isTransplantMode.set(!this.$isTransplantMode.get());
-  }
-
-  public exitTransplantMode() {
-    this.$isTransplantMode.set(false);
-  }
-
   public setLanguage(lang: string) {
     this.$language.set(lang);
   }
 
   public setPendingDeepLink(plantId: string | null) {
     this.$pendingDeepLinkPlantId.set(plantId);
+  }
+
+  public dismissFlowerFlip(growspaceId: string, flowerStart: string) {
+    const updated = { ...this.$flowerFlipDismissed.get(), [growspaceId]: flowerStart };
+    this.$flowerFlipDismissed.set(updated);
+    try {
+      localStorage.setItem('growspace.flowerFlipDismissed', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
   }
 }

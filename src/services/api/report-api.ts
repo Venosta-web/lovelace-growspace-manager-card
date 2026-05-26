@@ -44,13 +44,11 @@ export class ReportAPI extends BaseAPI {
    * Fetches JSON grow report data over WebSocket if supported.
    */
   async fetchGrowReport(growspaceId: string): Promise<GrowReportData> {
-    console.log(`[ReportAPI:fetchGrowReport] Fetching report for ${growspaceId}`);
     try {
       const response = await this.hass.connection.sendMessagePromise<GrowReportData>({
         type: 'growspace_manager/get_grow_report',
         growspace_id: growspaceId,
       });
-      console.log('[ReportAPI:fetchGrowReport] WS call completed', response);
       return response;
     } catch (err) {
       console.error('[ReportAPI:fetchGrowReport] Error:', err);

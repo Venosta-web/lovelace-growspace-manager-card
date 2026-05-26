@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ScrollContainer } from '../../../../src/components/ui/scroll-container';
+import { ScrollContainer } from '../../../../src/features/shared/ui/scroll-container';
 
 // Ensure custom element is defined
 if (!customElements.get('scroll-container')) {

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import { TrainingTechnique } from '../../src/types';
 
 // Mock DataService
@@ -9,7 +10,7 @@ const mockDataServiceInstance = {
     updateHass: vi.fn(),
 };
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {
@@ -24,14 +25,14 @@ describe('Training UI Logic', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
         // Initialize UI store state needed for tests
         store.ui.setEditMode(true);
     });
 
     it('should open training dialog with selected plants', () => {
         store.ui.togglePlantSelection('plant_123');
-        store.openBatchTrainingDialog();
+        store.actions.ui.openBatchTrainingDialog();
 
         const activeDialog = store.ui.$activeDialog.get();
         expect(activeDialog.type).toBe('TRAINING');
@@ -42,12 +43,12 @@ describe('Training UI Logic', () => {
 
     it('should not open training dialog if no selection and no growspaceId', () => {
         store.ui.clearPlantSelection();
-        store.openBatchTrainingDialog();
+        store.actions.ui.openBatchTrainingDialog();
         expect(store.ui.$activeDialog.get().type).not.toBe('TRAINING');
     });
 
     it('should open training dialog with growspaceId if provided', () => {
-        store.openBatchTrainingDialog('gs_1');
+        store.actions.ui.openBatchTrainingDialog('gs_1');
         const activeDialog = store.ui.$activeDialog.get();
         expect(activeDialog.type).toBe('TRAINING');
         if (activeDialog.type === 'TRAINING') {

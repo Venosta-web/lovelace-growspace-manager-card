@@ -24,6 +24,10 @@ export interface SeedBatch {
   acquisition_date: string;
   generation: string;
   lineage: string;
+  parent_1_strain?: string | null;
+  parent_1_phenotype?: string | null;
+  parent_2_strain?: string | null;
+  parent_2_phenotype?: string | null;
   notes: string;
 }
 

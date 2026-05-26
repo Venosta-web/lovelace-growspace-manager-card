@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
-import '../../../../src/components/views/growspace-view-heatmap';
-import { GrowspaceViewHeatmap } from '../../../../src/components/views/growspace-view-heatmap';
+import '../../../../src/features/shared/layouts/growspace-view-heatmap';
+import { GrowspaceViewHeatmap } from '../../../../src/features/shared/layouts/growspace-view-heatmap';
 
 // Mock child components
-vi.mock('../../../../src/components/growspace-header', () => ({
+vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({
     GrowspaceHeader: class extends HTMLElement { }
 }));
 
-vi.mock('../../../../src/components/heatmap-3d', () => ({
+vi.mock('../../../../src/features/environment/components/heatmap-3d', () => ({
     Heatmap3D: class extends HTMLElement { }
 }));
 
@@ -108,5 +108,21 @@ describe('GrowspaceViewHeatmap', () => {
 
         expect(listener).toHaveBeenCalled();
         expect(listener.mock.calls[0][0].detail).toEqual(eventDetail);
+    });
+
+    it('should redispatch events from header', async () => {
+        const header = element.shadowRoot?.querySelector('growspace-header');
+        const spy = vi.fn();
+        element.addEventListener('growspace-changed', spy);
+
+        const detail = 'gs2';
+        header?.dispatchEvent(new CustomEvent('growspace-changed', {
+            detail,
+            bubbles: true,
+            composed: true
+        }));
+
+        expect(spy).toHaveBeenCalled();
+        expect(spy.mock.calls[0][0].detail).toBe(detail);
     });
 });

@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, nothing } from 'lit';
 import { fixture, elementUpdated } from '@open-wc/testing-helpers';
 import * as THREE from 'three';
-import '../../../src/components/heatmap-3d';
-import { Heatmap3D } from '../../../src/components/heatmap-3d';
+import '../../../src/features/environment/components/heatmap-3d';
+import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
 
 // --- Mocks ---
@@ -332,11 +332,11 @@ describe('Heatmap3D Logic', () => {
         vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => { });
         vi.stubGlobal('ResizeObserver', MockResizeObserver);
 
-        // Mock fetchHistory globally
+        // Mock getHistoryStats globally
         if (!(Heatmap3D.prototype as any).dataService) {
-            (Heatmap3D.prototype as any).dataService = { fetchHistory: vi.fn().mockResolvedValue({}) };
+            (Heatmap3D.prototype as any).dataService = { getHistoryStats: vi.fn().mockResolvedValue({}) };
         } else {
-            vi.spyOn((Heatmap3D.prototype as any).dataService, 'fetchHistory').mockResolvedValue({});
+            vi.spyOn((Heatmap3D.prototype as any).dataService, 'getHistoryStats').mockResolvedValue({});
         }
 
         vi.clearAllMocks();
@@ -369,11 +369,11 @@ describe('Heatmap3D Logic', () => {
 
             // Ensure dataService exists
             if (!(element as any).dataService) {
-                (element as any).dataService = { fetchHistory: vi.fn() };
+                (element as any).dataService = { getHistoryStats: vi.fn() };
             }
 
-            // Mock fetchHistory failure directly
-            const fetchHistorySpy = vi.spyOn((element as any).dataService, 'fetchHistory').mockRejectedValue(new Error('Fetch Error'));
+            // Mock getHistoryStats failure directly
+            const getHistoryStatsSpy = vi.spyOn((element as any).dataService, 'getHistoryStats').mockRejectedValue(new Error('Fetch Error'));
 
             // Add sensors so setup proceeds
             const env = { sensorCoordinates: { 'sensor.t1': { x: 0, y: 0, z: 0 } } };
@@ -382,7 +382,7 @@ describe('Heatmap3D Logic', () => {
             await (element as any).fetchHistory();
             expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to fetch history'), expect.any(Error));
 
-            fetchHistorySpy.mockRestore();
+            getHistoryStatsSpy.mockRestore();
             consoleSpy.mockRestore();
         });
     });
@@ -841,16 +841,7 @@ describe('Heatmap3D Logic', () => {
     });
 
     describe('Keyboard and Resize', () => {
-        it.skip('should handle keyboard rotation keys', () => {
-            (element as any).keyboardRotateEnabled = true;
-            const keyDown = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
-            (element as any)._handleKeyDown(keyDown);
-            expect((element as any)._keysPressed.has('ArrowLeft')).toBe(true);
 
-            const keyUp = new KeyboardEvent('keyup', { key: 'ArrowLeft' });
-            (element as any)._handleKeyUp(keyUp);
-            expect((element as any)._keysPressed.has('ArrowLeft')).toBe(false);
-        });
 
         it('should handle resize', () => {
             const spy = vi.spyOn(element as any, 'handleResize');
@@ -896,7 +887,7 @@ describe('Heatmap3D Logic', () => {
 
         it('should fetch history with sensor groups', async () => {
             element.device = { ...mockDevice, environmentAttributes: { sensorGroups: [{ temperature_sensors: ['s.t1'], humidity_sensors: ['s.h1'], vpd_sensors: ['s.v1'] }] } };
-            const historySpy = vi.spyOn((element as any).dataService, 'fetchHistory');
+            const historySpy = vi.spyOn((element as any).dataService, 'getHistoryStats');
             await (element as any).fetchHistory();
             expect(historySpy).toHaveBeenCalledWith(expect.arrayContaining(['s.t1', 's.h1', 's.v1']), expect.any(Date));
         });
@@ -961,14 +952,18 @@ describe('Heatmap3D Logic', () => {
 
     describe('Interactions', () => {
         it('should handle plant or empty slot click via handleInteraction', () => {
-            const storeSpy = { openPlantOverviewDialog: vi.fn(), openAddPlantDialog: vi.fn() };
+            const openPlantOverviewDialog = vi.fn();
+            const openAddPlantDialog = vi.fn();
+            const storeSpy = {
+                actions: { ui: { openPlantOverviewDialog, openAddPlantDialog } },
+            };
             (element as any).store = storeSpy;
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
             (element as any).handleInteraction('click', { plant: mockPlant });
-            expect(storeSpy.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+            expect(openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
-            expect(storeSpy.openAddPlantDialog).toHaveBeenCalledWith(3, 4);
+            expect(openAddPlantDialog).toHaveBeenCalledWith(3, 4);
         });
 
         it('should handle drag and dragend via handleInteraction', () => {
@@ -1070,7 +1065,7 @@ describe('Heatmap3D Logic', () => {
 
         it('should handle fetchHistory with no entityIds', async () => {
             element.device = { ...mockDevice, environmentAttributes: { sensorCoordinates: {} } };
-            const spy = vi.spyOn((element as any).dataService, 'fetchHistory');
+            const spy = vi.spyOn((element as any).dataService, 'getHistoryStats');
             await (element as any).fetchHistory();
             expect(spy).not.toHaveBeenCalled();
         });

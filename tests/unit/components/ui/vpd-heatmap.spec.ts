@@ -1,6 +1,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { VPDHeatmap } from '../../../../src/components/ui/vpd-heatmap';
+import { VPDHeatmap } from '../../../../src/features/environment/components/vpd-heatmap';
 import { html } from 'lit';
 
 describe('VPDHeatmap', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Md3TextInput } from '../../../../src/components/ui/md3-text-input';
+import { Md3TextInput } from '../../../../src/features/shared/ui/md3-text-input';
 
 // Ensure custom element is defined
 if (!customElements.get('md3-text-input')) {

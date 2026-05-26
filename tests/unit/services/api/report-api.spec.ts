@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 import { DOMAIN, SERVICES } from '../../../../src/constants';
 
@@ -43,7 +43,6 @@ describe('ReportAPI', () => {
                 environment: { temperature_avg: 24, humidity_avg: 50, vpd_avg: 1.2 }
             };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockReport);
-            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
             const result = await service.fetchGrowReport('gs1');
             expect(result).toEqual(mockReport);
@@ -51,7 +50,6 @@ describe('ReportAPI', () => {
                 type: 'growspace_manager/get_grow_report',
                 growspace_id: 'gs1',
             });
-            expect(consoleSpy).toHaveBeenCalledWith('[ReportAPI:fetchGrowReport] WS call completed', mockReport);
         });
 
         it('should handle fetch error', async () => {

@@ -1,0 +1,36 @@
+{
+  "metrics": {
+    "mother_start": "Mother Start",
+    "clone_start": "Clone Start",
+    "veg_start": "Vegetative Start",
+    "flower_start": "Flower Start",
+    "dry_start": "Dry Start",
+    "cure_start": "Cure Start",
+    "planted_date": "Planted Date"
+  },
+  "stages": {
+    "seedling": "Seedling",
+    "mother": "Mother",
+    "clone": "Clone",
+    "veg": "Vegetative",
+    "flower": "Flower",
+    "dry": "Drying",
+    "cure": "Curing"
+  },
+  "card": {
+    "loading": "Loading...",
+    "unknown_state": "Unknown"
+  },
+  "errors": {
+    "fetch_failed": "Failed to fetch data"
+  },
+  "editor": {
+    "select_growspace": "Select a growspace...",
+    "theme_default": "Default",
+    "theme_dark": "Dark",
+    "theme_green": "Green",
+    "view_mode_standard": "Standard",
+    "view_mode_compact": "Compact (Grid Only)",
+    "view_mode_header": "Header Only"
+  }
+}

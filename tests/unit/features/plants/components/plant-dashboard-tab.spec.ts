@@ -86,7 +86,8 @@ describe('plant-dashboard-tab', () => {
       el.addEventListener('toggle-dates', () => { toggled = true; });
       
       const lifecycleCard = el.shadowRoot?.querySelector('plant-lifecycle-dates-card') as HTMLElement;
-      lifecycleCard.dispatchEvent(new CustomEvent('toggle-dates'));
+      // The real lifecycle card dispatches with bubbles + composed so it crosses shadow boundaries
+      lifecycleCard.dispatchEvent(new CustomEvent('toggle-dates', { bubbles: true, composed: true }));
       
       expect(toggled).to.be.true;
     });

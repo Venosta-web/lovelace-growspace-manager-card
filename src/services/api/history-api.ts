@@ -61,12 +61,6 @@ export class HistoryAPI extends BaseAPI {
       url += `&end_time=${endTime.toISOString()}`;
     }
 
-    const duration = endTime ? (endTime.getTime() - startTime.getTime()) / 1000 : 'undefined';
-    console.log(
-      `[HistoryAPI.getBatchHistory] entities=${entityIds.length}, start=${startStr}, end=${endTime?.toISOString() || 'undefined'}, duration=${duration}s, url=${url}`
-    );
-    console.log(`[HistoryAPI.getBatchHistory] About to call API with URL: ${url}`);
-
     try {
       // HA returns an array of arrays (one array per entity)
       const res = await this.hass.callApi<HistorySensorState[][]>('GET', url);
@@ -142,9 +136,7 @@ export class HistoryAPI extends BaseAPI {
         '[HistoryAPI] getHistoryStats WS failed, falling back to REST batch. Error:',
         err
       );
-      console.log(
-        `[HistoryAPI] Fallback params: start=${startTime.toISOString()}, end=${endTime?.toISOString() || 'undefined'}`
-      );
+
       return this.getBatchHistory(entityIds, startTime, endTime);
     }
   }

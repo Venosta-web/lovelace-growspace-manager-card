@@ -1,17 +1,23 @@
-import { LitElement, html, CSSResultGroup, PropertyValues, css, TemplateResult, nothing } from 'lit';
+import {
+  LitElement,
+  html,
+  CSSResultGroup,
+  PropertyValues,
+  css,
+  TemplateResult,
+  nothing,
+} from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
 
-import { hassContext, configContext } from '../lib/context';
-import { storeContext } from '../lib/context';
+import { hassContext, configContext, storeContext } from '../lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { mdiBrain, mdiLoading } from '@mdi/js';
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
-import type { GrowAdviceResponse } from '../types';
 
-import { SubscriptionController } from '../controllers/subscription-controller';
-import '../components/error-boundary';
+import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
+import '../features/shared/ui/error-boundary';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
@@ -21,29 +27,29 @@ import { variables } from '../styles/variables';
 import { GrowspaceStore } from '../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
 
+import {
+  aiInsight$,
+  isAiLoading$,
+  aiError$,
+  askGrowAdvice,
+  analyzeAllGrowspaces,
+  dismissInsight,
+} from '../slices/ai-insight';
+
 @customElement('growspace-ai-insight-card')
 export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
+  private _sharedStore = growspaceStoreRegistry.acquire();
+
   @provide({ context: storeContext })
-  store = new GrowspaceStore();
+  store = new GrowspaceStore(this._sharedStore);
 
-  protected _subscriptionController = new SubscriptionController(
-    this,
-    this.store.data,
-    (refresh) => {
-      if (this.hass) {
-        this.store.updateHass(this.hass);
-      }
-      if (refresh) {
-        this.store.refreshData(true);
-      }
-    }
-  );
-
-  protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
-  protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
+  protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+  protected _aiInsightController = new StoreController(this, aiInsight$);
+  protected _aiLoadingController = new StoreController(this, isAiLoading$);
+  protected _aiErrorController = new StoreController(this, aiError$);
 
   get selectedDevice() {
-    return this._selectedDeviceController.value;
+    return this._viewController.value.grid.selectedDevice;
   }
 
   @provide({ context: hassContext })
@@ -55,9 +61,6 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
   _config!: GrowspaceManagerCardConfig;
 
   @state() private _userQuery = '';
-  @state() private _isLoading = false;
-  @state() private _response: string | null = null;
-  @state() private _error: string | null = null;
 
   static styles: CSSResultGroup = [
     variables,
@@ -85,7 +88,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .ai-icon svg {
         width: 32px;
         height: 32px;
-        fill: #4CAF50;
+        fill: #4caf50;
       }
       .ai-title {
         margin: 0;
@@ -100,7 +103,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       }
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
-        border: 2px solid #4CAF50;
+        border: 2px solid #4caf50;
         border-radius: 12px;
         padding: 20px;
         line-height: 1.6;
@@ -118,7 +121,9 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         gap: 12px;
       }
       @keyframes spin {
-        100% { transform: rotate(360deg); }
+        100% {
+          transform: rotate(360deg);
+        }
       }
       .spinner {
         animation: spin 1s linear infinite;
@@ -142,7 +147,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       .sd-textarea:focus {
         outline: none;
         background: rgba(255, 255, 255, 0.08);
-        border-color: #4CAF50;
+        border-color: #4caf50;
       }
       .button-group {
         display: flex;
@@ -156,7 +161,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
         border-radius: 8px;
         margin-top: 20px;
       }
-    `
+    `,
   ];
 
   protected firstUpdated() {
@@ -168,20 +173,23 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    dismissInsight();
     this.store.destroy();
+    growspaceStoreRegistry.release();
   }
 
   protected updated(changedProps: PropertyValues): void {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass) {
       this.store.updateHass(this.hass);
-      this._subscriptionController.updateHass(this.hass);
     }
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
-    await import('./editors/growspace-ai-insight-card-editor');
-    return document.createElement('growspace-ai-insight-card-editor') as unknown as LovelaceCardEditor;
+    await import('./editors/growspace-ai-insight-card-editor.js');
+    return document.createElement(
+      'growspace-ai-insight-card-editor'
+    ) as unknown as LovelaceCardEditor;
   }
 
   public static getStubConfig() {
@@ -201,41 +209,30 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
     return 4;
   }
 
-  private _extractText(res: GrowAdviceResponse | string): string {
-    if (typeof res === 'string') return res;
-    if (!res.response) return JSON.stringify(res);
-    if (typeof res.response === 'string') return res.response;
-    const nested = res.response as { response?: unknown };
-    if ('response' in nested && typeof nested.response === 'string') {
-      return nested.response;
-    }
-    return JSON.stringify(res.response);
+  public getLayoutOptions() {
+    return {
+      grid_columns: 4,
+      grid_min_columns: 2,
+      grid_rows: 6,
+      grid_min_rows: 5,
+    };
   }
 
   private async _analyze(all: boolean) {
-    this._isLoading = true;
-    this._response = null;
-    this._error = null;
-
     try {
-      let responseData: GrowAdviceResponse;
       if (all) {
-        responseData = await this.store.dataService.analyzeAllGrowspaces();
+        await analyzeAllGrowspaces();
       } else {
         const device = this.selectedDevice;
         if (!device) throw new Error('No device selected and "Analyze All" was false.');
-        const deviceObj = this._activeDevicesController.value.find(d => d.deviceId === device);
-        if (!deviceObj) throw new Error('Selected device not found in devices list.');
-
-        responseData = await this.store.dataService.askGrowAdvice(deviceObj.deviceId, this._userQuery);
+        const devices = this.store.data.$devices.get();
+        if (!devices.find((d: { deviceId: string }) => d.deviceId === device)) {
+          throw new Error('Selected device not found in devices list.');
+        }
+        await askGrowAdvice(device, this._userQuery);
       }
-
-      this._response = this._extractText(responseData);
     } catch (e: unknown) {
-      this._error = e instanceof Error ? e.message : 'Unknown error occurred during analysis.';
       console.error('AI Analysis failed:', e);
-    } finally {
-      this._isLoading = false;
     }
   }
 
@@ -244,10 +241,29 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error-state">Home Assistant not available</div></ha-card>`;
     }
 
-    const devices = this._activeDevicesController.value;
-    const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+    const { devices, selectedDevice } = this._viewController.value.grid;
+    const { isLoading: storeLoading } = this._viewController.value.ui;
 
+    if (storeLoading && !devices.length) {
+      return html`
+        <ha-card>
+          <div class="gm-loading">
+            <svg class="spinner" viewBox="0 0 24 24">
+              <path d="${mdiLoading}" fill="currentColor"></path>
+            </svg>
+            <span>Synchronizing growspace data...</span>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    const selectedDeviceData = devices.find(
+      (d: { deviceId: string; name: string }) => d.deviceId === selectedDevice
+    );
     const targetName = selectedDeviceData ? selectedDeviceData.name : 'Unknown Growspace';
+    const isLoading = this._aiLoadingController.value;
+    const response = this._aiInsightController.value;
+    const error = this._aiErrorController.value;
 
     return html`
       <error-boundary
@@ -256,66 +272,59 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       >
         <ha-card>
           <div class="unified-growspace-card glass-surface glass-panel" style="padding: 24px;">
-            
             <div class="ai-header">
-                <div class="ai-icon">
-                    <svg viewBox="0 0 24 24">
-                        <path d="${mdiBrain}"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h2 class="ai-title">Grow Master AI</h2>
-                    <p class="ai-subtitle">Target: ${targetName}</p>
-                </div>
+              <div class="ai-icon">
+                <svg viewBox="0 0 24 24">
+                  <path d="${mdiBrain}"></path>
+                </svg>
+              </div>
+              <div>
+                <h2 class="ai-title">Grow Master AI</h2>
+                <p class="ai-subtitle">Target: ${targetName}</p>
+              </div>
             </div>
 
             <textarea
-                class="sd-textarea"
-                placeholder="Ask advice about your environment, plants, or VPD history..."
-                .value=${this._userQuery}
-                @input=${(e: InputEvent) => (this._userQuery = (e.target as HTMLTextAreaElement).value)}
+              class="sd-textarea"
+              placeholder="Ask advice about your environment, plants, or VPD history..."
+              .value=${this._userQuery}
+              @input=${(e: InputEvent) =>
+                (this._userQuery = (e.target as HTMLTextAreaElement).value)}
             ></textarea>
 
             <div class="button-group">
               <button
                 class="md3-button tonal"
                 @click=${() => this._analyze(true)}
-                ?disabled=${this._isLoading}
-                style="opacity: ${this._isLoading ? 0.7 : 1}"
+                ?disabled=${isLoading}
+                style="opacity: ${isLoading ? 0.7 : 1}"
               >
                 Analyze All
               </button>
               <button
                 class="md3-button primary"
                 @click=${() => this._analyze(false)}
-                ?disabled=${this._isLoading}
-                style="opacity: ${this._isLoading ? 0.7 : 1}"
+                ?disabled=${isLoading}
+                style="opacity: ${isLoading ? 0.7 : 1}"
               >
-                ${this._isLoading ? 'Analyzing...' : 'Analyze Specific'}
+                ${isLoading ? 'Analyzing...' : 'Analyze Specific'}
               </button>
             </div>
 
-            ${this._isLoading ? html`
-              <div class="gm-loading">
-                <svg class="spinner" viewBox="0 0 24 24">
-                  <path d="${mdiLoading}" fill="currentColor"></path>
-                </svg>
-                <span>Consulting the archives...</span>
-              </div>
-            ` : nothing}
-
-            ${!this._isLoading && this._response ? html`
-              <div class="gm-response-box">
-                ${this._response}
-              </div>
-            ` : nothing}
-
-            ${this._error ? html`
-              <div class="error-state">
-                Error: ${this._error}
-              </div>
-            ` : nothing}
-
+            ${isLoading
+              ? html`
+                  <div class="gm-loading">
+                    <svg class="spinner" viewBox="0 0 24 24">
+                      <path d="${mdiLoading}" fill="currentColor"></path>
+                    </svg>
+                    <span>Consulting the archives...</span>
+                  </div>
+                `
+              : nothing}
+            ${!isLoading && response
+              ? html` <div class="gm-response-box">${response}</div> `
+              : nothing}
+            ${error ? html` <div class="error-state">Error: ${error}</div> ` : nothing}
           </div>
         </ha-card>
       </error-boundary>

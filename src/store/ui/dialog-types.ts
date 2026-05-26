@@ -12,11 +12,15 @@ import type {
   IPMDialogState,
   CloneDialogState,
   PrintLabelDialogState,
+  BatchPrintLabelsDialogState,
+  BatchCloneDialogState,
   HarvestScoringDialogState,
   SnapshotsDialogState,
   CropSteeringDialogState,
   ECRampDialogState,
   GrowReportDialogState,
+  EnvironmentConfigDialogState,
+  IrrigationDialogState,
 } from '../../lib/types/dialog';
 
 // Discriminated union for central dialog management
@@ -29,7 +33,7 @@ export type ActiveDialogState =
   | { type: 'CONFIG'; payload: ConfigDialogState }
   | { type: 'GROW_MASTER'; payload: GrowMasterDialogState }
   | { type: 'STRAIN_RECOMMENDATION'; payload: StrainRecommendationDialogState }
-  | { type: 'IRRIGATION'; payload: Record<string, never> }
+  | { type: 'IRRIGATION'; payload: IrrigationDialogState }
   | { type: 'LOGBOOK'; payload: { growspaceId: string } }
   | { type: 'WATERING'; payload: WateringDialogState }
   | { type: 'NUTRIENT_PRESETS'; payload: NutrientPresetsDialogState }
@@ -37,10 +41,13 @@ export type ActiveDialogState =
   | { type: 'IPM'; payload: IPMDialogState }
   | { type: 'TAKE_CLONE'; payload: CloneDialogState }
   | { type: 'PRINT_LABEL'; payload: PrintLabelDialogState }
+  | { type: 'BATCH_PRINT_LABELS'; payload: BatchPrintLabelsDialogState }
+  | { type: 'BATCH_CLONE'; payload: BatchCloneDialogState }
   | { type: 'NUTRIENT_INVENTORY'; payload: Record<string, never> }
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
   | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
   | { type: 'CROP_STEERING'; payload: CropSteeringDialogState }
   | { type: 'EC_RAMP_EDITOR'; payload: ECRampDialogState }
-  | { type: 'GROW_REPORT'; payload: GrowReportDialogState };
+  | { type: 'GROW_REPORT'; payload: GrowReportDialogState }
+  | { type: 'ENVIRONMENT_CONFIG'; payload: EnvironmentConfigDialogState };

@@ -11,6 +11,7 @@ import {
   IrrigationConfig,
   IrrigationStrategy,
 } from '../types';
+import type { ECTargetStage } from '../services/types';
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -19,9 +20,17 @@ export class GrowspaceAdapter {
   ): GrowspaceDevice | null {
     if (!wsData && !overview) return null;
 
-    const growspaceId = wsData?.growspace_id || overview?.attributes.growspace_id || 'unknown';
-    const name = wsData?.name || overview?.attributes.friendly_name || `Growspace ${growspaceId}`;
-    const overviewEntityId = wsData?.overview_entity_id || overview?.entity_id || '';
+    // Destructure the 6 sub-objects with safe fallbacks
+    const identity = wsData?.identity;
+    const gridData = wsData?.grid;
+    const environment = wsData?.environment;
+    const sensors = wsData?.sensors;
+    const irrigation = wsData?.irrigation;
+    const metrics = wsData?.metrics;
+
+    const growspaceId = identity?.growspace_id || overview?.attributes.growspace_id || 'unknown';
+    const name = identity?.name || overview?.attributes.friendly_name || `Growspace ${growspaceId}`;
+    const overviewEntityId = identity?.overview_entity_id || overview?.entity_id || '';
 
     // 1. Loading State
     if (!wsData) {
@@ -33,38 +42,40 @@ export class GrowspaceAdapter {
       });
     }
 
-    // 2. Map Groups to camelCase
+    // 2. Biological Metrics from metrics sub-object
     const biologicalMetrics: BiologicalMetrics = {
-      vpdStatus: wsData.vpd_status,
-      vpdTargetMin: wsData.vpd_target_min,
-      vpdTargetMax: wsData.vpd_target_max,
-      vpdDangerMin: wsData.vpd_danger_min,
-      vpdDangerMax: wsData.vpd_danger_max,
-      granularStage: wsData.granular_stage,
-      isDay: wsData.is_day,
-      vegWeek: wsData.veg_week,
-      flowerWeek: wsData.flower_week,
-      airExchange: wsData.air_exchange,
+      vpdStatus: metrics?.vpd_status ?? 'unknown',
+      vpdTargetMin: metrics?.vpd_target_min ?? 0,
+      vpdTargetMax: metrics?.vpd_target_max ?? 0,
+      vpdDangerMin: metrics?.vpd_danger_min ?? 0,
+      vpdDangerMax: metrics?.vpd_danger_max ?? 0,
+      granularStage: metrics?.granular_stage ?? 'unknown',
+      isDay: metrics?.is_day ?? false,
+      vegWeek: metrics?.veg_week ?? 0,
+      flowerWeek: metrics?.flower_week ?? 0,
+      airExchange: metrics?.air_exchange,
     };
 
+    // 3. Sensor Coordinates — merge group coords, then backfill defaults
+    const sensorCoordinates = { ...(sensors?.sensor_coordinates ?? {}) };
 
-    // Normalize Coordinates (Merge Group ones into main map for UI consumption)
-    const sensorCoordinates = { ...wsData.sensor_coordinates };
-
-    // 1. Merge Group Coordinates
-    wsData.sensor_groups?.forEach((g: any) => {
+    // Merge group coordinates
+    (sensors?.sensor_groups ?? []).forEach((g: any) => {
       const groupCoords = { x: g.x, y: g.y, z: g.z };
-      [...(g.temperature_sensors || []), ...(g.humidity_sensors || []), ...(g.vpd_sensors || [])].forEach(id => {
+      [
+        ...(g.temperature_sensors || []),
+        ...(g.humidity_sensors || []),
+        ...(g.vpd_sensors || []),
+      ].forEach((id: string) => {
         if (!sensorCoordinates[id]) {
           sensorCoordinates[id] = groupCoords;
         }
       });
     });
 
-    // 2. Backfill Defaults for missing known sensors (Lights, CO2, etc.)
-    // This ensures they appear in SceneManager/SensorRenderer even if not explicitly positioned
-    const midX = (wsData.dimensions?.width || 120) / 2;
-    const midY = (wsData.dimensions?.length || (wsData.dimensions as any)?.depth || 120) / 2;
+    // Backfill defaults for known sensors that have no coordinate
+    const midX = (gridData?.dimensions?.width ?? 120) / 2;
+    const midY = (gridData?.dimensions?.length ?? (gridData?.dimensions as any)?.depth ?? 120) / 2;
     const defaultCoords = { x: midX, y: midY, z: 0 };
 
     const ensureCoord = (id: string | null | undefined) => {
@@ -73,54 +84,54 @@ export class GrowspaceAdapter {
       }
     };
 
-    // Singles
-    ensureCoord(wsData.temperature_sensor);
-    ensureCoord(wsData.humidity_sensor);
-    ensureCoord(wsData.vpd_sensor);
-    ensureCoord(wsData.co2_sensor);
-    ensureCoord(wsData.soil_moisture_sensor);
-    ensureCoord(wsData.light_sensor);
+    ensureCoord(environment?.temperature_sensor);
+    ensureCoord(environment?.humidity_sensor);
+    ensureCoord(environment?.vpd_sensor);
+    ensureCoord(environment?.co2_sensor);
+    ensureCoord(environment?.soil_moisture_sensor);
+    ensureCoord(environment?.light_sensor);
 
-    // Arrays
-    wsData.temperature_sensors?.forEach(ensureCoord);
-    wsData.humidity_sensors?.forEach(ensureCoord);
-    wsData.vpd_sensors?.forEach(ensureCoord);
-    wsData.co2_sensors?.forEach(ensureCoord);
-    wsData.light_sensors?.forEach(ensureCoord);
-    wsData.soil_moisture_sensors?.forEach(ensureCoord);
+    (environment as any)?.temperature_sensors?.forEach(ensureCoord);
+    (environment as any)?.humidity_sensors?.forEach(ensureCoord);
+    (environment as any)?.vpd_sensors?.forEach(ensureCoord);
+    (environment as any)?.co2_sensors?.forEach(ensureCoord);
+    (environment as any)?.light_sensors?.forEach(ensureCoord);
+    (environment as any)?.soil_moisture_sensors?.forEach(ensureCoord);
 
-
+    // 4. Environment Attributes from environment sub-object
     const environmentAttributes: EnvironmentAttributes = {
-      temperatureSensor: wsData.temperature_sensor,
-      temperatureSensors: wsData.temperature_sensors,
-      humiditySensor: wsData.humidity_sensor,
-      humiditySensors: wsData.humidity_sensors,
-      vpdSensor: wsData.vpd_sensor,
-      vpdSensors: wsData.vpd_sensors,
-      co2Sensor: wsData.co2_sensor,
-      co2Sensors: wsData.co2_sensors,
-      soilMoistureSensor: wsData.soil_moisture_sensor,
-      soilMoistureSensors: wsData.soil_moisture_sensors,
-      lightSensor: wsData.light_sensor,
-      lightSensors: wsData.light_sensors,
-      dehumidifierEntity: wsData.dehumidifier_entity,
-      dehumidifierEntities: wsData.dehumidifier_entities,
-      dehumidifierControlEnabled: wsData.dehumidifier_control_enabled,
-      dehumidifierThresholds: wsData.dehumidifier_thresholds,
-      dehumidifierState: wsData.dehumidifier_state,
-      humidifierEntity: wsData.humidifier_entity,
-      humidifierEntities: wsData.humidifier_entities,
-      exhaustEntity: wsData.exhaust_entity,
-      exhaustFanEntities: wsData.exhaust_fan_entities,
-      circulationFanEntity: wsData.circulation_fan_entity,
-      circulationFanEntities: wsData.circulation_fan_entities,
-      vpd: wsData.vpd,
-      soilMoistureValue: wsData.soil_moisture_value,
-      exhaustSensor: wsData.exhaust_sensor,
-      humidifierSensor: wsData.humidifier_sensor,
-      irrigationPumpState: wsData.irrigation_pump_state,
-      drainPumpState: wsData.drain_pump_state,
-      irrigationTanks: wsData.irrigation_tanks?.map((t: any) => ({
+      temperatureSensor: environment?.temperature_sensor,
+      temperatureSensors: (environment as any)?.temperature_sensors,
+      humiditySensor: environment?.humidity_sensor,
+      humiditySensors: (environment as any)?.humidity_sensors,
+      vpdSensor: environment?.vpd_sensor,
+      vpdSensors: (environment as any)?.vpd_sensors,
+      co2Sensor: environment?.co2_sensor,
+      co2Sensors: (environment as any)?.co2_sensors,
+      soilMoistureSensor: environment?.soil_moisture_sensor,
+      soilMoistureSensors: (environment as any)?.soil_moisture_sensors,
+      lightSensor: environment?.light_sensor,
+      lightSensors: (environment as any)?.light_sensors,
+      dehumidifierEntity: environment?.dehumidifier_entity,
+      dehumidifierEntities: (environment as any)?.dehumidifier_entities,
+      dehumidifierControlEnabled: environment?.dehumidifier_control_enabled,
+      dehumidifierThresholds: (environment as any)?.dehumidifier_thresholds,
+      dehumidifierState: (environment as any)?.dehumidifier_state,
+      humidifierEntity: environment?.humidifier_entity,
+      humidifierEntities: (environment as any)?.humidifier_entities,
+      humidifierControlEnabled: environment?.humidifier_control_enabled,
+      humidifierThresholds: (environment as any)?.humidifier_thresholds,
+      exhaustEntity: (environment as any)?.exhaust_entity,
+      exhaustFanEntities: (environment as any)?.exhaust_fan_entities,
+      circulationFanEntity: (environment as any)?.circulation_fan_entity,
+      circulationFanEntities: (environment as any)?.circulation_fan_entities,
+      vpd: (environment as any)?.vpd,
+      soilMoistureValue: (environment as any)?.soil_moisture_value,
+      exhaustSensor: (environment as any)?.exhaust_sensor,
+      humidifierSensor: (environment as any)?.humidifier_sensor,
+      irrigationPumpState: (environment as any)?.irrigation_pump_state,
+      drainPumpState: (environment as any)?.drain_pump_state,
+      irrigationTanks: (environment as any)?.irrigation_tanks?.map((t: any) => ({
         sensorEntity: t.sensor_entity,
         name: t.name,
         warningLevel: t.warning_level,
@@ -131,35 +142,45 @@ export class GrowspaceAdapter {
         volumeLiters: t.volume_liters ?? null,
         waterHistory: t.water_history ?? undefined,
       })),
-      activeEvents: wsData.active_events,
+      activeEvents: (environment as any)?.active_events,
+      // Sensor lookup data comes from sensors sub-object
       sensorCoordinates,
-      sensorTypes: wsData.sensor_types,
-      sensorGroups: wsData.sensor_groups,
-      electricityCostPerKwh: wsData.electricity_cost_per_kwh,
-      substrateTemperatureSensors: wsData.substrate_temperature_sensors,
-      cameraEntities: wsData.camera_entities,
-      energySensors: wsData.energy_sensors,
+      sensorTypes: sensors?.sensor_types,
+      sensorGroups: sensors?.sensor_groups as any,
+      electricityCostPerKwh: (environment as any)?.electricity_cost_per_kwh,
+      substrateTemperatureSensors: (environment as any)?.substrate_temperature_sensors,
+      cameraEntities: (environment as any)?.camera_entities,
+      lungroomTempSensors: (environment as any)?.lung_room_temp_sensors,
+      powerSensors: (environment as any)?.power_sensors,
+      energySensors: (environment as any)?.energy_sensors,
+      phSensors: (environment as any)?.ph_sensors,
+      feedEcSensors: (environment as any)?.feed_ec_sensors,
+      substrateEcSensors: (environment as any)?.substrate_ec_sensors,
+      runoffEcSensors: (environment as any)?.runoff_ec_sensors,
+      drainVolumeSensors: (environment as any)?.drain_volume_sensors,
+      irrigationFlowSensors: (environment as any)?.irrigation_flow_sensors,
     };
 
+    // 5. Stats from metrics sub-object
     const stats: GrowspaceStats = {
-      maxVegDays: wsData.max_veg_days,
-      maxFlowerDays: wsData.max_flower_days,
-      vegWeek: wsData.veg_week,
-      flowerWeek: wsData.flower_week,
-      maxStageSummary: wsData.max_stage_summary,
-      totalPlants: wsData.total_plants,
+      maxVegDays: metrics?.max_veg_days ?? 0,
+      maxFlowerDays: metrics?.max_flower_days ?? 0,
+      vegWeek: metrics?.veg_week ?? 0,
+      flowerWeek: metrics?.flower_week ?? 0,
+      maxStageSummary: metrics?.max_stage_summary ?? '',
+      totalPlants: gridData?.total_plants ?? 0,
     };
 
-    // 3. Transform Grid Dictionary to Plant Entity Array
+    // 6. Plants from grid sub-object
     const plants: PlantEntity[] = [];
-    if (wsData.grid) {
-      Object.values(wsData.grid).forEach((slot) => {
+    if (gridData?.grid) {
+      Object.values(gridData.grid).forEach((slot) => {
         if (slot) {
           plants.push({
             entity_id: slot.entity_id,
             state: slot.stage || 'unknown',
             attributes: {
-              ...slot, // Spread raw plant data
+              ...slot,
               row: Number(slot.row),
               col: Number(slot.col),
               growspace_id: growspaceId,
@@ -174,85 +195,106 @@ export class GrowspaceAdapter {
       });
     }
 
-    // 4. Map Configs
-    const irrigationConfigRaw = wsData.irrigation_config || {};
+    // 7. Irrigation from irrigation sub-object
+    const irrigationConfigRaw = irrigation?.irrigation_config ?? {};
     const irrigationConfig: IrrigationConfig = {
-      irrigationPumpEntity: irrigationConfigRaw.irrigation_pump_entity,
-      drainPumpEntity: irrigationConfigRaw.drain_pump_entity,
-      irrigationDuration: irrigationConfigRaw.irrigation_duration,
-      drainDuration: irrigationConfigRaw.drain_duration,
-      irrigationTimes: irrigationConfigRaw.irrigation_times,
-      drainTimes: irrigationConfigRaw.drain_times,
-      vegDayHours: irrigationConfigRaw.veg_day_hours,
+      irrigationPumpEntity: (irrigationConfigRaw as any).irrigation_pump_entity,
+      drainPumpEntity: (irrigationConfigRaw as any).drain_pump_entity,
+      irrigationDuration: (irrigationConfigRaw as any).irrigation_duration,
+      drainDuration: (irrigationConfigRaw as any).drain_duration,
+      irrigationTimes: (irrigationConfigRaw as any).irrigation_times ?? [],
+      drainTimes: (irrigationConfigRaw as any).drain_times ?? [],
+      vegDayHours: (irrigationConfigRaw as any).veg_day_hours,
+      soilTriggerPercent: (irrigationConfigRaw as any).soil_trigger_percent,
+      dailyVolumeCapLiters: (irrigationConfigRaw as any).daily_volume_cap_liters,
+      maxCyclesPerDay: (irrigationConfigRaw as any).max_cycles_per_day,
+      skipDuringDark: (irrigationConfigRaw as any).skip_during_dark,
+      pauseOnLowTank: (irrigationConfigRaw as any).pause_on_low_tank,
+      logToLogbook: (irrigationConfigRaw as any).log_to_logbook,
+      autoAdvanceP1ToP2: (irrigationConfigRaw as any).auto_advance_p1_to_p2,
+      autoAdvanceP2ToP3: (irrigationConfigRaw as any).auto_advance_p2_to_p3,
+      haltOnRunoffEcThreshold: (irrigationConfigRaw as any).halt_on_runoff_ec_threshold,
+      activeSteeringPhase: (irrigationConfigRaw as any).active_steering_phase,
+      ecTargetRanges: ((irrigationConfigRaw as any).ec_target_ranges ?? []).map(
+        (r: { stage: string; feed_ec_min: number; feed_ec_max: number }) => ({
+          stage: r.stage as ECTargetStage,
+          minEc: r.feed_ec_min,
+          maxEc: r.feed_ec_max,
+        })
+      ),
     };
 
-    const irrigationStrategy: IrrigationStrategy | undefined = wsData.irrigation_strategy
+    const irrigationStrategyRaw = irrigation?.irrigation_strategy;
+    const irrigationStrategy: IrrigationStrategy | undefined = irrigationStrategyRaw
       ? {
-        enabled: wsData.irrigation_strategy.enabled,
-        lightsOnTime: wsData.irrigation_strategy.lights_on_time,
-        p0DurationMinutes: wsData.irrigation_strategy.p0_duration_minutes,
-        p2StopBeforeLightsOffMinutes:
-          wsData.irrigation_strategy.p2_stop_before_lights_off_minutes,
-        targetVwcPercent: wsData.irrigation_strategy.target_vwc_percent,
-        maintenanceDrybackPercent: wsData.irrigation_strategy.maintenance_dryback_percent,
-        shotDurationSeconds: wsData.irrigation_strategy.shot_duration_seconds,
-        shotIntervalMinutes: wsData.irrigation_strategy.shot_interval_minutes,
-      }
+          enabled: irrigationStrategyRaw.enabled,
+          lightsOnTime: irrigationStrategyRaw.lights_on_time,
+          p0DurationMinutes: irrigationStrategyRaw.p0_duration_minutes,
+          p2StopBeforeLightsOffMinutes: irrigationStrategyRaw.p2_stop_before_lights_off_minutes,
+          targetVwcPercent: irrigationStrategyRaw.target_vwc_percent,
+          maintenanceDrybackPercent: irrigationStrategyRaw.maintenance_dryback_percent,
+          shotDurationSeconds: irrigationStrategyRaw.shot_duration_seconds,
+          shotIntervalMinutes: irrigationStrategyRaw.shot_interval_minutes,
+          autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
+          detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
+        }
       : undefined;
 
-    const drainConfig = wsData.drain_config
+    const drainConfigRaw = irrigation?.drain_config;
+    const drainConfig = drainConfigRaw
       ? {
-        enabled: wsData.drain_config.enabled,
-        maxEcDelta: wsData.drain_config.max_ec_delta,
-        targetRunoffPercent: wsData.drain_config.target_runoff_percent,
-        readings: (wsData.drain_config.readings || []).map((r) => ({
-          timestamp: r.timestamp,
-          feedEc: r.feed_ec,
-          drainEc: r.drain_ec,
-          drainVolumeMl: r.drain_volume_ml,
-          feedVolumeMl: r.feed_volume_ml,
-        })),
-      }
+          enabled: drainConfigRaw.enabled,
+          maxEcDelta: drainConfigRaw.max_ec_delta,
+          targetRunoffPercent: drainConfigRaw.target_runoff_percent,
+          readings: (drainConfigRaw.readings || []).map((r) => ({
+            timestamp: r.timestamp,
+            feedEc: r.feed_ec,
+            drainEc: r.drain_ec,
+            drainVolumeMl: r.drain_volume_ml,
+            feedVolumeMl: r.feed_volume_ml,
+          })),
+        }
       : null;
 
-
-    const energyTracking = wsData.energy_tracking
+    const energyTrackingRaw = metrics?.energy_tracking;
+    const energyTracking = energyTrackingRaw
       ? {
-        dailyKwh: wsData.energy_tracking.daily_kwh,
-        costTotal: wsData.energy_tracking.cost_total,
-        costPerGram: wsData.energy_tracking.cost_per_gram,
-        cycleStartDate: wsData.energy_tracking.cycle_start_date,
-      }
+          cycleStartDate: energyTrackingRaw.cycle_start_date,
+          cycleStartKwh: energyTrackingRaw.cycle_start_kwh,
+        }
       : null;
 
-    const waterUsage = wsData.water_usage
+    const waterUsageRaw = irrigation?.water_usage;
+    const waterUsage = waterUsageRaw
       ? {
-        litersPerPlantPerDay: wsData.water_usage.liters_per_plant_per_day,
-        litersToday: wsData.water_usage.liters_today,
-        waterEfficiency: wsData.water_usage.water_efficiency,
-      }
+          totalLiters: waterUsageRaw.total_liters,
+          cycleStartDate: waterUsageRaw.cycle_start_date,
+          dailyReadings: waterUsageRaw.daily_readings as Array<Record<string, unknown>>,
+        }
       : null;
 
-    // 5. Construct Device
+    // 8. Construct Device
     return createGrowspaceDevice({
       deviceId: growspaceId,
       overviewEntityId,
       name,
-      type: wsData.type || 'normal',
-      rows: wsData.rows,
-      plantsPerRow: wsData.plants_per_row,
-      notificationTarget: wsData.notification_target,
-      dimensions: wsData.dimensions ? {
-        width: wsData.dimensions.width,
-        height: wsData.dimensions.height,
-        length: wsData.dimensions.length || (wsData.dimensions as any).depth || 120,
-        unit: wsData.dimensions.unit || 'cm'
-      } : undefined,
+      type: (identity?.type ?? 'normal') as GrowspaceDevice['type'],
+      rows: gridData?.rows ?? 3,
+      plantsPerRow: gridData?.plants_per_row ?? 3,
+      notificationTarget: identity?.notification_target,
+      dimensions: gridData?.dimensions
+        ? {
+            width: gridData.dimensions.width ?? 120,
+            height: gridData.dimensions.height ?? 200,
+            length: gridData.dimensions.length ?? (gridData.dimensions as any)?.depth ?? 120,
+            unit: gridData.dimensions.unit ?? 'cm',
+          }
+        : undefined,
       lastUpdated: overview?.last_updated || new Date().toISOString(),
 
       // Structural Data
       plants,
-      grid: wsData.grid,
+      grid: gridData?.grid ?? {},
 
       // Grouped Data
       biologicalMetrics,
@@ -265,6 +307,12 @@ export class GrowspaceAdapter {
       drainConfig,
       energyTracking,
       waterUsage,
+
+      // Irrigation cycle telemetry
+      lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
+      nextScheduledCycle: irrigation?.next_scheduled_cycle ?? null,
+      cyclesToday: irrigation?.cycles_today ?? 0,
+      volumeDispensedToday: irrigation?.volume_dispensed_today ?? 0,
     });
   }
 

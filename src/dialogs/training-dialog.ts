@@ -5,7 +5,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { hassContext } from '../context';
 import { mdiClose, mdiCheck, mdiDumbbell } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui'; // Ensure MD3 components are registered
+import '../features/shared/ui'; // Ensure MD3 components are registered
 import { TrainingTechnique } from '../types';
 import { GrowspaceStore } from '../store/core/growspace-store';
 
@@ -26,7 +26,6 @@ export class TrainingDialog extends LitElement {
     css`
       :host {
         display: block;
-        --mdc-dialog-min-width: clamp(350px, 500px, 90vw);
       }
       .form-section {
         margin-bottom: 24px;
@@ -112,7 +111,15 @@ export class TrainingDialog extends LitElement {
     const targetText = count > 0 ? `${count} Selected Plant${count !== 1 ? 's' : ''}` : 'Growspace';
 
     return html`
-      <ha-dialog .open=${this.open} @closed=${this._handleClose} hideActions .heading=${title}>
+      <ha-dialog
+        .open=${this.open}
+        @closed=${this._handleClose}
+        hideActions
+        without-header
+        width="large"
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+      >
         <div class="glass-dialog-container" style="--stage-color: ${dialogColor};">
           <div class="dialog-header">
             <div class="dialog-icon">

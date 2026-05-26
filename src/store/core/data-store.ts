@@ -1,4 +1,4 @@
-import { atom, onMount, WritableAtom } from 'nanostores';
+import { atom, onMount, WritableAtom, computed, ReadableAtom } from 'nanostores';
 import {
   GrowspaceDevice,
   StrainEntry,
@@ -8,6 +8,13 @@ import {
   IPMPreset,
 } from '../../types';
 
+export interface NutrientDataState {
+  nutrientPresets: Record<string, NutrientPreset>;
+  nutrientInventory: import('../../types').NutrientInventory | null;
+  ecRampCurves: Record<string, import('../../schemas/api-schema').ECRampCurve>;
+  isLoading: boolean;
+}
+
 export class GrowspaceDataStore {
   // Domain Data Atoms
   public readonly $devices: WritableAtom<GrowspaceDevice[]>;
@@ -15,29 +22,44 @@ export class GrowspaceDataStore {
   public readonly $config: WritableAtom<GrowspaceManagerCardConfig>;
   public readonly $optimisticDeletedPlantIds: WritableAtom<Set<string>>;
   public readonly $wsDataCache: WritableAtom<Record<string, GrowspaceAPIResponse>>;
-  public readonly $selectedDevice: WritableAtom<string | null>;
   /** Map from plantId to deviceId for O(1) lookups */
   public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
   public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
   public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
   public readonly $nutrientInventory: WritableAtom<import('../../types').NutrientInventory | null>;
-  public readonly $ecRampCurves: WritableAtom<Record<string, import('../../schemas/api-schema').ECRampCurve>>;
+  public readonly $ecRampCurves: WritableAtom<
+    Record<string, import('../../schemas/api-schema').ECRampCurve>
+  >;
+  public readonly $nutrientDataState: ReadableAtom<NutrientDataState>;
+
+  /** Incremented by GrowspaceSharedStore when a push event requires a full data refresh. */
+  public readonly $staleCounter: WritableAtom<number>;
 
   /** Indicates if store has active subscribers (for lazy loading) */
   private _isActive = false;
 
   constructor() {
     this.$devices = atom<GrowspaceDevice[]>([]);
+    this.$staleCounter = atom<number>(0);
     this.$strainLibrary = atom<StrainEntry[]>([]);
     this.$config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
     this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());
     this.$wsDataCache = atom<Record<string, GrowspaceAPIResponse>>({});
-    this.$selectedDevice = atom<string | null>(null);
     this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
     this.$nutrientPresets = atom<Record<string, NutrientPreset>>({});
     this.$ipmPresets = atom<Record<string, IPMPreset>>({});
     this.$nutrientInventory = atom<import('../../types').NutrientInventory | null>(null);
     this.$ecRampCurves = atom<Record<string, import('../../schemas/api-schema').ECRampCurve>>({});
+
+    this.$nutrientDataState = computed(
+      [this.$nutrientPresets, this.$nutrientInventory, this.$ecRampCurves],
+      (nutrientPresets, nutrientInventory, ecRampCurves) => ({
+        nutrientPresets,
+        nutrientInventory,
+        ecRampCurves,
+        isLoading: Object.keys(nutrientPresets).length === 0 && nutrientInventory === null,
+      })
+    );
 
     // Lazy initialization: only log activity when store has subscribers
     onMount(this.$devices, () => {
@@ -69,10 +91,6 @@ export class GrowspaceDataStore {
       }
     }
     this.$plantToDeviceMap.set(map);
-  }
-
-  public setSelectedDevice(deviceId: string | null) {
-    this.$selectedDevice.set(deviceId);
   }
 
   public setConfig(config: GrowspaceManagerCardConfig) {
@@ -111,6 +129,19 @@ export class GrowspaceDataStore {
       current.delete(id);
       this.$optimisticDeletedPlantIds.set(current);
     }
+  }
+
+  public patchDeviceIrrigationConfig(
+    growspaceId: string,
+    patch: Partial<import('../../services/types').IrrigationConfig>
+  ) {
+    const devices = this.$devices.get();
+    const idx = devices.findIndex((d) => d.deviceId === growspaceId);
+    if (idx === -1) return;
+    const updated = devices.map((d, i) =>
+      i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d
+    );
+    this.$devices.set(updated);
   }
 
   public setWsDataCache(cache: Record<string, GrowspaceAPIResponse>) {
@@ -159,12 +190,15 @@ export class GrowspaceDataStore {
     if (!currentCache[gsId]) return;
 
     const newCache = { ...currentCache };
-    newCache[gsId] = { ...newCache[gsId] };
-    const newGrid = { ...newCache[gsId].grid };
-    newCache[gsId].grid = newGrid;
+    const gsEntry = newCache[gsId];
+    const newPlantGrid = { ...gsEntry.grid?.grid };
 
-    mutator(newGrid);
+    mutator(newPlantGrid);
 
+    newCache[gsId] = {
+      ...gsEntry,
+      grid: { ...gsEntry.grid, grid: newPlantGrid },
+    };
     this.$wsDataCache.set(newCache);
   }
 
@@ -174,10 +208,10 @@ export class GrowspaceDataStore {
     let changed = false;
 
     const removeFn = (gsId: string) => {
-      if (!newCache[gsId] || !newCache[gsId].grid) return;
+      if (!newCache[gsId] || !newCache[gsId].grid?.grid) return;
 
       let gridChanged = false;
-      const newGrid = { ...newCache[gsId].grid };
+      const newGrid = { ...newCache[gsId].grid.grid };
 
       Object.keys(newGrid).forEach((key) => {
         const plant = newGrid[key];
@@ -188,7 +222,10 @@ export class GrowspaceDataStore {
       });
 
       if (gridChanged) {
-        newCache[gsId] = { ...newCache[gsId], grid: newGrid };
+        newCache[gsId] = {
+          ...newCache[gsId],
+          grid: { ...newCache[gsId].grid, grid: newGrid },
+        };
         changed = true;
       }
     };
@@ -218,7 +255,7 @@ export class GrowspaceDataStore {
     let changed = false;
 
     Object.keys(newCache).forEach((gsId) => {
-      const grid = newCache[gsId].grid;
+      const grid = newCache[gsId].grid?.grid;
       if (!grid) return;
 
       Object.entries(grid).forEach(([key, plant]) => {
@@ -229,7 +266,10 @@ export class GrowspaceDataStore {
             ...newCache[gsId],
             grid: {
               ...newCache[gsId].grid,
-              [key]: updatedPlant,
+              grid: {
+                ...newCache[gsId].grid.grid,
+                [key]: updatedPlant,
+              },
             },
           };
           changed = true;

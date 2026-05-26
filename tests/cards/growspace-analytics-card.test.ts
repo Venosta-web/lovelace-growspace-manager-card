@@ -1,9 +1,10 @@
 import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, beforeEach, vi, afterEach } from 'vitest';
+import { expect, test, describe, aroundEach, beforeEach, vi } from 'vitest';
 import { html } from 'lit';
 import { GrowspaceAnalyticsCard } from '../../src/cards/growspace-analytics-card';
 import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
+import { createMockHass } from '../mocks/hass';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-analytics-card')) {
@@ -11,8 +12,8 @@ if (!customElements.get('growspace-analytics-card')) {
 }
 
 // Mock sub-components
-vi.mock('../../src/components/growspace-analytics', () => ({}));
-vi.mock('../../src/components/error-boundary', () => ({
+vi.mock('../../src/features/ui/containers/growspace-analytics.container', () => ({}));
+vi.mock('../../src/features/shared/ui/error-boundary', () => ({
     ErrorBoundary: class extends HTMLElement { }
 }));
 vi.mock('../../src/cards/editors/growspace-analytics-card-editor', () => ({
@@ -22,20 +23,10 @@ vi.mock('../../src/cards/editors/growspace-analytics-card-editor', () => ({
 describe('GrowspaceAnalyticsCard', () => {
     let element: GrowspaceAnalyticsCard;
 
-    beforeEach(async () => {
-        const mockHass = {
-            states: {},
-            callService: vi.fn(),
-            language: 'en',
-            connection: {
-                sendMessagePromise: vi.fn(),
-                subscribeEvents: vi.fn(),
-            }
-        } as any;
-        element = await fixture<GrowspaceAnalyticsCard>(html`<growspace-analytics-card .hass=${mockHass}></growspace-analytics-card>`);
-    });
-
-    afterEach(() => {
+    aroundEach(async (runTest) => {
+        element = await fixture<GrowspaceAnalyticsCard>(html`<growspace-analytics-card></growspace-analytics-card>`);
+        element.hass = createMockHass() as any;
+        await runTest();
         vi.restoreAllMocks();
     });
 
@@ -93,15 +84,11 @@ describe('GrowspaceAnalyticsCard', () => {
         expect(spy).toHaveBeenCalled();
     });
 
-    test('subscription logic updates Hass and refreshes Data', () => {
-        const updateSpy = vi.spyOn(element.store, 'updateHass');
-        const refreshSpy = vi.spyOn(element.store, 'refreshData');
-        
-        const callback = (element as any)._subscriptionController._onUpdate;
-        callback(true);
-        
-        expect(updateSpy).toHaveBeenCalled();
-        expect(refreshSpy).toHaveBeenCalledWith(true);
+    test('stale counter triggers data refresh', async () => {
+        const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
+        element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
+        await Promise.resolve();
+        expect(refreshSpy).toHaveBeenCalled();
     });
 
     test('renders loading state when store is loading', async () => {
@@ -130,7 +117,7 @@ describe('GrowspaceAnalyticsCard', () => {
         element.store.data.$devices.set([
             { deviceId: 'wrong_device', name: 'Wrong Tent', plants: [] } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
 
         const errorDiv = element.shadowRoot?.querySelector('.error');
@@ -143,7 +130,7 @@ describe('GrowspaceAnalyticsCard', () => {
         element.store.data.$devices.set([
             { deviceId: 'selected_tent', name: 'Selected Tent', plants: [] } as any
         ]);
-        element.store.data.$selectedDevice.set('selected_tent');
+        element.store.grid.$selectedDevice.set('selected_tent');
         await element.updateComplete;
         
         const cardContainer = element.shadowRoot?.querySelector('.unified-growspace-card');
@@ -164,4 +151,5 @@ describe('GrowspaceAnalyticsCard', () => {
         const editor = await GrowspaceAnalyticsCard.getConfigElement();
         expect(editor.tagName.toLowerCase()).toBe('growspace-analytics-card-editor');
     });
+
 });

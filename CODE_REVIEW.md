@@ -17,6 +17,17 @@ The project is well-structured, with a clear separation of concerns. The `src` d
 *   **Store Directory:** The `store` directory is quite large and contains a mix of actions, stores, and managers. It could be beneficial to further organize this directory, perhaps by feature or domain. For example, creating subdirectories for `plant`, `ui`, `grid`, etc., could improve clarity.
 *   **File Naming Conventions:** While generally consistent, a few files have names that could be more descriptive. For example, `events.ts` is quite generic. A more specific name like `growspace-events.ts` might be better.
 
+### UI Component Directory Policy
+
+There are currently two locations for UI components, reflecting an in-progress migration:
+
+| Directory | Status | Use for |
+|-----------|--------|---------|
+| `src/components/ui/` | **Legacy — frozen** | Existing shared primitives only (inputs, dialogs, logbook, timeline). Do not add new components here. |
+| `src/features/<domain>/components/` | **Active** | All new UI components. Scoped to a feature domain (e.g. `plants`, `environment`, `ui`). |
+
+**Rule:** All new components go in `src/features/<domain>/components/`. The `src/components/ui/` directory will be migrated incrementally — do not add new files to it.
+
 ## TypeScript and Strict Typing
 
 The project makes good use of TypeScript and seems to have strict typing enabled. This is a huge plus for code quality and developer experience.

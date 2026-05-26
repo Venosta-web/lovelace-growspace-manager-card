@@ -1,7 +1,7 @@
 import { fixture, html } from '@open-wc/testing-helpers';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { QuickNoteInput } from '../../../../src/components/ui/quick-note-input';
-import '../../../../src/components/ui/quick-note-input';
+import { QuickNoteInput } from '../../../../src/features/shared/ui/quick-note-input';
+import '../../../../src/features/shared/ui/quick-note-input';
 
 describe('QuickNoteInput', () => {
     let element: QuickNoteInput;

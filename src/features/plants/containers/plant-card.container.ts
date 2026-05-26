@@ -5,11 +5,11 @@
  * Handles store access, subscriptions, and event-to-action mapping.
  */
 
-import { LitElement, html, type TemplateResult } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { LitElement, html, css, type TemplateResult } from 'lit';
+import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import type { ReadableAtom } from 'nanostores';
+import { atom, type ReadableAtom } from 'nanostores';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
@@ -18,6 +18,7 @@ import {
   createPlantCardViewModel,
   type PlantCardViewModel,
 } from '../viewmodels/plant-card.viewmodel';
+import { PlantCardUI } from '../components/plant-card-ui';
 import '../components/plant-card-ui';
 
 /**
@@ -25,20 +26,43 @@ import '../components/plant-card-ui';
  */
 @customElement('plant-card-container')
 export class PlantCardContainer extends LitElement implements DragDropHost {
+  static styles = css`
+    .plant-card-skeleton {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: var(--card-background-color, #1c1c1e);
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+    @keyframes skeleton-pulse {
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+  `;
+
   // Input props
   @property({ attribute: false }) plant!: PlantEntity;
   @property({ type: Number }) row!: number;
   @property({ type: Number }) col!: number;
   @property({ type: Boolean }) forceDraggable = false;
 
+  @query('plant-card-ui') private _cardUI?: PlantCardUI;
+
   // Store access
   @consume({ context: storeContext, subscribe: true })
   @property({ attribute: false })
   public store!: GrowspaceStore;
 
+  // Reactive plant atom — updated via willUpdate so the ViewModel reacts to entity changes
+  private $plant = atom<PlantEntity | null>(null);
+
   // ViewModel
-  private viewModel!: ReadableAtom<PlantCardViewModel>;
-  private viewModelController!: StoreController<PlantCardViewModel>;
+  private viewModel!: ReadableAtom<PlantCardViewModel | null>;
+  private viewModelController!: StoreController<PlantCardViewModel | null>;
 
   // Drag & drop controller
   private dragController = new DragDropController(this);
@@ -54,11 +78,24 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
 
   connectedCallback(): void {
     super.connectedCallback();
-
-    if (this.plant && this.store) {
-      // Create ViewModel for this plant
-      this.viewModel = createPlantCardViewModel(this.plant, this.store);
+    if (this.plant) {
+      this.$plant.set(this.plant);
+    }
+    if (this.store) {
+      this.viewModel = createPlantCardViewModel(this.$plant, {
+        $isEditMode: this.store.ui.$isEditMode,
+        $selectedPlants: this.store.ui.$selectedPlants,
+        $strainLibrary: this.store.data.$strainLibrary,
+        $nutrientPresets: this.store.data.$nutrientPresets,
+        $devices: this.store.data.$devices,
+      });
       this.viewModelController = new StoreController(this, this.viewModel);
+    }
+  }
+
+  willUpdate(changedProperties: Map<string, unknown>): void {
+    if (changedProperties.has('plant') && this.plant) {
+      this.$plant.set(this.plant);
     }
   }
 
@@ -66,20 +103,18 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
    * Focus the card
    */
   public focus(options?: FocusOptions): void {
-    const cardUI = this.shadowRoot?.querySelector('plant-card-ui') as any;
-    if (cardUI && typeof cardUI.focus === 'function') {
-      cardUI.focus(options);
+    if (this._cardUI && typeof this._cardUI.focus === 'function') {
+      this._cardUI.focus(options);
     } else {
       super.focus(options);
     }
   }
 
   render(): TemplateResult {
-    if (!this.viewModelController) {
-      return html``;
+    const vm = this.viewModelController?.value ?? null;
+    if (!vm) {
+      return html`<div class="plant-card-skeleton"></div>`;
     }
-
-    const vm = this.viewModelController.value;
 
     return html`
       <plant-card-ui

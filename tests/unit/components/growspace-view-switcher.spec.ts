@@ -1,148 +1,130 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+vi.unmock('../../../src/features/shared/layouts/growspace-view-switcher');
 import { fixture, html } from '@open-wc/testing-helpers';
-import { GrowspaceViewSwitcher } from '../../../src/components/growspace-view-switcher';
+import { GrowspaceViewSwitcher } from '../../../src/features/shared/layouts/growspace-view-switcher';
 import { GrowspaceDevice } from '../../../src/types';
+import { viewMode$, setViewMode } from '../../../src/slices/ui';
+import { ViewMode } from '../../../src/constants';
 
-// Mock child components to avoid deep rendering issues in unit tests
-vi.mock('../../../src/components/views/growspace-view-standard', () => ({
-    GrowspaceViewStandard: class extends HTMLElement { }
+// Mock the unified view component and its heavy children so we can test
+// the switcher's adapter logic in isolation.
+vi.mock('../../../src/features/shared/layouts/growspace-view', () => ({
+  GrowspaceView: class extends HTMLElement {
+    focusPlant = vi.fn();
+  },
 }));
-vi.mock('../../../src/components/views/growspace-view-compact', () => ({
-    GrowspaceViewCompact: class extends HTMLElement { }
-}));
-vi.mock('../../../src/components/views/growspace-view-header', () => ({
-    GrowspaceViewHeader: class extends HTMLElement { }
+vi.mock('../../../src/features/shared/ui/error-boundary', () => ({
+  ErrorBoundary: class extends HTMLElement {},
 }));
 
 describe('GrowspaceViewSwitcher', () => {
-    let element: GrowspaceViewSwitcher;
-    let mockDevice: GrowspaceDevice;
+  let element: GrowspaceViewSwitcher;
+  let mockDevice: GrowspaceDevice;
 
-    beforeEach(async () => {
-        mockDevice = {
-            deviceId: 'd1',
-            plantsPerRow: 4
-        } as unknown as GrowspaceDevice;
+  beforeEach(async () => {
+    viewMode$.set(ViewMode.STANDARD);
 
-        element = await fixture(html`
-            <growspace-view-switcher .device=${mockDevice}></growspace-view-switcher>
-        `);
-    });
+    mockDevice = {
+      deviceId: 'd1',
+      plantsPerRow: 4,
+    } as unknown as GrowspaceDevice;
 
-    afterEach(() => {
-        vi.clearAllMocks();
-    });
+    element = await fixture(html`
+      <growspace-view-switcher .device=${mockDevice}></growspace-view-switcher>
+    `);
+  });
 
-    it('should be defined', () => {
-        expect(customElements.get('growspace-view-switcher')).toBeDefined();
-        // Force usage of the class to prevent tree cleaning of the import
-        expect(element).toBeInstanceOf(GrowspaceViewSwitcher);
-    });
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
-    it('renders standard view by default', async () => {
-        element.viewMode = 'standard';
-        await element.updateComplete;
+  it('should be defined', () => {
+    expect(customElements.get('growspace-view-switcher')).toBeDefined();
+    expect(element).toBeInstanceOf(GrowspaceViewSwitcher);
+  });
 
-        const standard = element.shadowRoot?.querySelector('growspace-view-standard');
-        expect(standard).toBeTruthy();
-        const compact = element.shadowRoot?.querySelector('growspace-view-compact');
-        expect(compact).toBeFalsy();
-    });
+  it('renders growspace-view when device is present', async () => {
+    await element.updateComplete;
+    const view = element.shadowRoot?.querySelector('growspace-view');
+    expect(view).toBeTruthy();
+  });
 
-    it('renders compact view when mode is compact', async () => {
-        element.viewMode = 'compact';
-        await element.updateComplete;
+  it('renders nothing if device is undefined', async () => {
+    element = await fixture(html`<growspace-view-switcher></growspace-view-switcher>`);
+    await element.updateComplete;
 
-        const compact = element.shadowRoot?.querySelector('growspace-view-compact');
-        expect(compact).toBeTruthy();
-    });
+    const anyTag = element.shadowRoot?.querySelector('*');
+    expect(anyTag).toBeNull();
+  });
 
-    it('delegates focusPlant to the child view', async () => {
-        element.viewMode = 'standard';
-        await element.updateComplete;
+  it('syncs viewMode to the global atom when viewMode property changes', async () => {
+    element.viewMode = ViewMode.COMPACT;
+    await element.updateComplete;
 
-        const childMock = element.shadowRoot?.querySelector('growspace-view-standard') as any;
-        childMock.focusPlant = vi.fn();
+    expect(viewMode$.get()).toBe(ViewMode.COMPACT);
+  });
 
-        element.focusPlant(2);
-        expect(childMock.focusPlant).toHaveBeenCalledWith(2);
-    });
+  it('passes properties to growspace-view', async () => {
+    element.viewMode = ViewMode.STANDARD;
+    element.isLoading = true;
+    element.rows = 5;
+    element.selectedCount = 3;
+    await element.updateComplete;
 
-    it('renders header view when mode is header', async () => {
-        element.viewMode = 'header';
-        await element.updateComplete;
+    const view = element.shadowRoot?.querySelector('growspace-view') as any;
+    expect(view.isLoading).toBe(true);
+    expect(view.rows).toBe(5);
+    expect(view.selectedCount).toBe(3);
+    expect(view.cols).toBe(4); // from device mock
+  });
 
-        const header = element.shadowRoot?.querySelector('growspace-view-header');
-        expect(header).toBeTruthy();
-    });
+  it('delegates focusPlant to growspace-view', async () => {
+    await element.updateComplete;
+    const childMock = element.shadowRoot?.querySelector('growspace-view') as any;
+    childMock.focusPlant = vi.fn();
 
-    it('renders nothing if device is undefined', async () => {
-        element = await fixture(html`<growspace-view-switcher></growspace-view-switcher>`); // No device property
+    element.focusPlant(2);
+    expect(childMock.focusPlant).toHaveBeenCalledWith(2);
+  });
 
-        await element.updateComplete;
+  it('triggers focusPlant when focusedPlantIndex changes', async () => {
+    await element.updateComplete;
+    const childMock = element.shadowRoot?.querySelector('growspace-view') as any;
+    childMock.focusPlant = vi.fn();
 
-        // Lit renders comments for empty templates. Check that NO element nodes exist.
-        const anyTag = element.shadowRoot?.querySelector('*');
-        expect(anyTag).toBeNull();
-    });
+    element.focusedPlantIndex = 3;
+    await element.updateComplete;
 
-    it('handles focusPlant safely if active view does not implementation method', async () => {
-        element.viewMode = 'header'; // header view mock doesn't have focusPlant mocked above
-        await element.updateComplete;
+    expect(childMock.focusPlant).toHaveBeenCalledWith(3);
+  });
 
-        // Should not throw
-        element.focusPlant(1);
-    });
+  it('handles focusPlant safely if growspace-view has no focusPlant method', async () => {
+    await element.updateComplete;
+    const childMock = element.shadowRoot?.querySelector('growspace-view') as any;
+    delete childMock.focusPlant;
 
-    it('passes properties to standard view', async () => {
-        // Re-create with properties, or just update them
-        element.viewMode = 'standard';
-        element.isLoading = true;
-        element.rows = 5;
-        element.selectedCount = 3;
+    expect(() => element.focusPlant(1)).not.toThrow();
+  });
 
-        await element.updateComplete;
+  it('propagates batch-add-plants event from growspace-view', async () => {
+    await element.updateComplete;
+    const view = element.shadowRoot?.querySelector('growspace-view');
+    expect(view).toBeTruthy();
 
-        const view = element.shadowRoot?.querySelector('growspace-view-standard') as any;
-        expect(view.isLoading).toBe(true);
-        expect(view.rows).toBe(5);
-        expect(view.selectedCount).toBe(3);
-        expect(view.cols).toBe(4); // from device mock
-    });
+    const listener = vi.fn();
+    element.addEventListener('batch-add-plants', listener);
 
-    it('triggers focusPlant when focusedPlantIndex changes', async () => {
-        element.viewMode = 'standard';
-        await element.updateComplete;
+    const eventDetail = { quantity: 5, strain: 'Test' };
+    view?.dispatchEvent(
+      new CustomEvent('batch-add-plants', {
+        detail: eventDetail,
+        bubbles: false,
+        composed: false,
+      })
+    );
 
-        const childMock = element.shadowRoot?.querySelector('growspace-view-standard') as any;
-        childMock.focusPlant = vi.fn();
-
-        // Update focusedPlantIndex
-        element.focusedPlantIndex = 3;
-        await element.updateComplete;
-
-        expect(childMock.focusPlant).toHaveBeenCalledWith(3);
-    });
-
-    it('propagates batch-add-plants event from standard view', async () => {
-        element.viewMode = 'standard';
-        await element.updateComplete;
-
-        const view = element.shadowRoot?.querySelector('growspace-view-standard');
-        expect(view).toBeTruthy();
-
-        const listener = vi.fn();
-        element.addEventListener('batch-add-plants', listener);
-
-        const eventDetail = { quantity: 5, strain: 'Test' };
-        view?.dispatchEvent(new CustomEvent('batch-add-plants', {
-            detail: eventDetail,
-            bubbles: false,
-            composed: false
-        }));
-
-        expect(listener).toHaveBeenCalledTimes(1);
-        expect(listener.mock.calls[0][0].detail).toEqual(eventDetail);
-    });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener.mock.calls[0][0].detail).toEqual(eventDetail);
+  });
 });

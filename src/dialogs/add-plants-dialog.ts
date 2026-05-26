@@ -6,11 +6,11 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { mdiClose, mdiSprout, mdiInformationOutline, mdiDna } from '@mdi/js';
 import { StrainEntry, GrowspaceDevice } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
-import '../components/ui/md3-text-input';
-import '../components/ui/md3-number-input';
-import '../components/ui/md3-select';
-import '../components/ui/md3-date-input';
-import '../components/ui/md3-switch';
+import '../features/shared/ui/md3-text-input';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/shared/ui/md3-date-input';
+import '../features/shared/ui/md3-switch';
 
 @customElement('add-plants-dialog')
 export class AddPlantsDialog extends LitElement {
@@ -173,8 +173,10 @@ export class AddPlantsDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
+        width="large"
       >
         <div class="glass-dialog-container">
           <!-- HEADER -->
@@ -185,7 +187,14 @@ export class AddPlantsDialog extends LitElement {
               </svg>
             </div>
             <div class="dialog-title-group">
-              <h2 class="dialog-title">Batch Add Plants</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Batch Add Plants</h2>
+                <gs-help-tooltip
+                  content="Add multiple plants at once. This will automatically assign them to available positions in your growspace using a numbered naming pattern."
+                  placement="bottom"
+                  label="Batch Add"
+                ></gs-help-tooltip>
+              </div>
               <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
             </div>
             <button
@@ -252,7 +261,8 @@ export class AddPlantsDialog extends LitElement {
                 >
                 <md3-switch
                   .checked=${this.addToLibrary}
-                  @change=${(e: Event) => (this.addToLibrary = (e.target as HTMLInputElement).checked)}
+                  @change=${(e: Event) =>
+                    (this.addToLibrary = (e.target as HTMLInputElement).checked)}
                   ?disabled=${!this.strain}
                 ></md3-switch>
               </div>

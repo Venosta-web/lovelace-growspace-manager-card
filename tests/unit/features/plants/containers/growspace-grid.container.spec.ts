@@ -6,6 +6,10 @@ import { storeContext } from '../../../../../src/context';
 import '../../../../../src/features/plants/containers/growspace-grid.container';
 import type { GrowspaceGridContainer } from '../../../../../src/features/plants/containers/growspace-grid.container';
 import type { PlantEntity } from '../../../../../src/types';
+import {
+  gridInteraction$,
+  cancel,
+} from '../../../../../src/slices/grid-interaction';
 
 describe('GrowspaceGridContainer', () => {
   let element: GrowspaceGridContainer;
@@ -21,6 +25,7 @@ describe('GrowspaceGridContainer', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    cancel();
 
     mockStore = {
       ui: {
@@ -35,7 +40,7 @@ describe('GrowspaceGridContainer', () => {
       },
       actions: {
         ui: {
-          handlePlantClick: vi.fn(),
+          openPlantOverviewDialog: vi.fn(),
           openAddPlantDialog: vi.fn(),
         },
         plant: {
@@ -69,13 +74,25 @@ describe('GrowspaceGridContainer', () => {
     expect(gridUI.cells.length).to.equal(4);
   });
 
-  it('delegates plant click to store action', async () => {
+  it('cell click transitions gridInteraction$ to selected with the plant id', async () => {
     const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
     gridUI.dispatchEvent(new CustomEvent('cell-click', {
-      detail: { cell: { plant: mockPlant } }
+      detail: { cell: { plant: mockPlant } },
     }));
 
-    expect(mockStore.actions.ui.handlePlantClick).toHaveBeenCalledWith(mockPlant);
+    const state = gridInteraction$.get();
+    expect(state.status).toBe('selected');
+    expect((state as { status: 'selected'; plantId: string }).plantId).toBe('plant_test1');
+  });
+
+  it('opens plant overview dialog when gridInteraction$ transitions to selected', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('cell-click', {
+      detail: { cell: { plant: mockPlant } },
+    }));
+
+    await element.updateComplete;
+    expect(mockStore.actions.ui.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
   });
 
   it('delegates empty slot click to store action (0-based indexing)', async () => {
@@ -169,5 +186,220 @@ describe('GrowspaceGridContainer', () => {
 
     element.focusPlant(0);
     expect(mockCard.focus).toHaveBeenCalled();
+  });
+
+  it('does not throw when focusPlant is called and no cards are found', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as any;
+    gridUI.shadowRoot.querySelectorAll = vi.fn().mockReturnValue([]);
+
+    // Index out of range — should not throw
+    expect(() => element.focusPlant(99)).not.toThrow();
+  });
+
+  it('renders loading placeholder when viewModelController is not initialized', async () => {
+    // Create element without a store so connectedCallback skips init
+    const bare = await fixture<GrowspaceGridContainer>(html`
+      <growspace-grid-container></growspace-grid-container>
+    `);
+    await bare.updateComplete;
+
+    const loading = bare.shadowRoot?.querySelector('div');
+    expect(loading?.textContent).to.contain('Loading');
+  });
+
+  it('handles grid-drop with no draggedPlant and no dataTransfer', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: null,
+        originalEvent: null,
+      }
+    }));
+
+    // plant.drop should NOT be called since there's no dragged plant
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+  });
+
+  it('handles grid-drop with originalEvent but no dataTransfer', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: { dataTransfer: null },
+      }
+    }));
+
+    // Falls through to regular drop
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-mobile-drop targeting a plant-card-container element', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    const mockCardEl = {
+      classList: { contains: () => false },
+      tagName: 'PLANT-CARD-CONTAINER',
+      plant: mockPlant,
+      row: 2,
+      col: 3,
+    };
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue({
+      closest: () => mockCardEl,
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(2, 3, mockPlant, mockPlant);
+  });
+
+  it('handles grid-mobile-drop when no target is found at coordinates', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue(null);
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+  });
+
+  it('handles grid-mobile-drop when closest returns null', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue({
+      closest: () => null,
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+  });
+
+  it('handles cell-click when cell has no plant (no-op)', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('cell-click', {
+      detail: { cell: { plant: null } },
+    }));
+
+    expect(gridInteraction$.get().status).toBe('idle');
+    expect(mockStore.actions.ui.openPlantOverviewDialog).not.toHaveBeenCalled();
+  });
+
+  it('handles grid-drop when transplantData is invalid JSON', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: {
+          dataTransfer: {
+            getData: (type: string) => type === 'application/json' ? '{invalid-json' : ''
+          }
+        }
+      }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-drop when transplantData has type other than transplant', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: {
+          dataTransfer: {
+            getData: (type: string) => type === 'application/json' ? JSON.stringify({ type: 'other' }) : ''
+          }
+        }
+      }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-drop when transplantData is empty string', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+    gridUI.dispatchEvent(new CustomEvent('grid-drop', {
+      detail: {
+        targetRow: 1,
+        targetCol: 1,
+        targetPlant: null,
+        draggedPlant: mockPlant,
+        originalEvent: {
+          dataTransfer: {
+            getData: (type: string) => type === 'application/json' ? '' : ''
+          }
+        }
+      }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-mobile-drop when shadowRoot is undefined', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    Object.defineProperty(element, 'shadowRoot', {
+      get: () => null,
+      configurable: true
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+  });
+
+  it('handles grid-mobile-drop targeting plant-card-empty with missing attributes', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue({
+      closest: () => ({
+        classList: { contains: (c: string) => c === 'plant-card-empty' },
+        getAttribute: () => null
+      })
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+  });
+
+  it('handles grid-mobile-drop when dropTarget does not match expected types', async () => {
+    const gridUI = element.shadowRoot?.querySelector('growspace-grid-ui') as HTMLElement;
+
+    element.shadowRoot!.elementFromPoint = vi.fn().mockReturnValue({
+      closest: () => ({
+        classList: { contains: () => false },
+        tagName: 'OTHER-TAG'
+      })
+    });
+
+    gridUI.dispatchEvent(new CustomEvent('grid-mobile-drop', {
+      detail: { x: 50, y: 50, plant: mockPlant }
+    }));
+
+    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
   });
 });

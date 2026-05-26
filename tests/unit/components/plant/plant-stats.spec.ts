@@ -1,76 +1,61 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import '../../../../src/components/plant/plant-stats';
-import { GrowspacePlantStats } from '../../../../src/components/plant/plant-stats';
-import { StageDisplay, PlantStage } from '../../../../src/types';
+import { fixture, html } from '@open-wc/testing-helpers';
+import { GrowspacePlantStats } from '../../../../src/features/plants/components/plant-stats';
+import { PlantStage } from '../../../../src/features/plants/types';
+import { describe, it, expect } from 'vitest';
+
+if (!customElements.get('growspace-plant-stats')) {
+  customElements.define('growspace-plant-stats', GrowspacePlantStats);
+}
 
 describe('GrowspacePlantStats', () => {
-    let element: GrowspacePlantStats;
-    let container: HTMLElement;
+  it('renders nothing when stages are empty', async () => {
+    const el = await fixture<GrowspacePlantStats>(html`
+      <growspace-plant-stats .stages=${[]}></growspace-plant-stats>
+    `);
+    // Lit handles empty arrays by rendering nothing or just markers
+    const items = el.shadowRoot?.querySelectorAll('.pc-stat-item');
+    expect(items?.length).to.equal(0);
+  });
 
-    const mockStages: StageDisplay[] = [
-        {
-            stage: PlantStage.VEG,
-            title: "Veg",
-            icon: "M12,12",
-            color: "green",
-            days: 14,
-            isCurrent: true
-        },
-        {
-            stage: PlantStage.FLOWER,
-            title: "Flower",
-            icon: "M12,12",
-            color: "red",
-            days: 0,
-            isCurrent: false
-        }
+  it('renders stages correctly and handles current stage styling', async () => {
+    const stages = [
+      {
+        days: 5,
+        icon: 'M12,2L2,12L12,22L22,12L12,2Z',
+        title: 'Veg',
+        stage: PlantStage.VEG,
+        isCurrent: true,
+        color: '#4caf50'
+      },
+      {
+        days: 10,
+        icon: 'M12,2L2,12L12,22L22,12L12,2Z',
+        title: 'Flower',
+        stage: PlantStage.FLOWER,
+        isCurrent: false,
+        color: '#e91e63'
+      }
     ];
 
-    beforeEach(async () => {
-        container = document.createElement('div');
-        document.body.appendChild(container);
-        element = document.createElement('growspace-plant-stats') as GrowspacePlantStats;
-        container.appendChild(element);
-        await element.updateComplete;
-    });
+    const el = await fixture<GrowspacePlantStats>(html`
+      <growspace-plant-stats .stages=${stages}></growspace-plant-stats>
+    `);
 
-    afterEach(() => {
-        if (container && container.parentNode) {
-            document.body.removeChild(container);
-        }
-    });
+    const items = el.shadowRoot?.querySelectorAll('.pc-stat-item');
+    expect(items?.length).to.equal(2);
 
-    it('should render correct number of stats items', async () => {
-        element.stages = mockStages;
-        await element.updateComplete;
+    // Check first item (current)
+    expect(items![0].classList.contains('current-stage')).to.be.true;
+    const svg1 = items![0].querySelector('svg');
+    expect(svg1?.style.color).to.equal('rgb(76, 175, 80)'); // #4caf50 in RGB
 
-        const items = element.shadowRoot?.querySelectorAll('.pc-stat-item');
-        expect(items?.length).toBe(2);
-    });
+    // Check second item (not current)
+    expect(items![1].classList.contains('current-stage')).to.be.false;
+    const svg2 = items![1].querySelector('svg');
+    expect(svg2?.style.color).to.equal('rgb(233, 30, 99)'); // #e91e63 in RGB
 
-    it('should apply current-stage class to active stage', async () => {
-        element.stages = mockStages;
-        await element.updateComplete;
-
-        const items = element.shadowRoot?.querySelectorAll('.pc-stat-item');
-        expect(items?.[0].classList.contains('current-stage')).toBe(true);
-        expect(items?.[1].classList.contains('current-stage')).toBe(false);
-    });
-
-    it('should render correct days', async () => {
-        element.stages = mockStages;
-        await element.updateComplete;
-
-        const daysText = element.shadowRoot?.querySelectorAll('.pc-stat-text');
-        expect(daysText?.[0].textContent).toBe('14d');
-        expect(daysText?.[1].textContent).toBe('0d');
-    });
-
-    it('should render icon paths correctly', async () => {
-        element.stages = mockStages;
-        await element.updateComplete;
-
-        const path = element.shadowRoot?.querySelector('path');
-        expect(path?.getAttribute('d')).toBe('M12,12');
-    });
+    const texts = el.shadowRoot?.querySelectorAll('.pc-stat-text');
+    expect(texts![0].textContent).to.equal('5d');
+    expect(texts![1].textContent).to.equal('10d');
+  });
 });

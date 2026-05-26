@@ -1,8 +1,4 @@
-import type {
-  PlantEntity,
-  PlantAttributes,
-  StrainEntry,
-} from '../../features/plants/types';
+import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
 
 export interface AddPlantDialogState {
@@ -33,6 +29,7 @@ export interface AddPlantsDialogState {
   dry_start?: string;
   cure_start?: string;
   addToLibrary?: boolean;
+  generation?: string;
 }
 
 export interface PlantOverviewDialogState {
@@ -45,17 +42,35 @@ export interface PlantOverviewDialogState {
 
 export interface StrainLibraryDialogState {
   editingStrain?: StrainEntry;
+  focusLineage?: boolean;
   source?: 'add-plant' | 'add-plants' | 'plant-overview';
   returnPayload?: unknown;
   initialTab?: 'strains' | 'seeds';
+  view?: 'strains' | 'editor';
+  /** When set, the seeds tab opens directly on this sub-view instead of the list. */
+  initialSubView?: 'list' | 'log-pollination';
+  /** Pre-fills the receiver plant field in the log-pollination form. */
+  prefilledReceiverId?: string;
+}
+
+export interface EnvironmentConfigDialogState {
+  deviceId: string;
 }
 
 export interface EnvironmentConfigData {
   selectedGrowspaceId: string;
+
+  // Basic sensors (multi)
+  temperatureSensors: string[];
+  humiditySensors: string[];
+  vpdSensors: string[];
+  co2Sensor: string;
+  soilMoistureSensor: string;
+
+  // Legacy singular (backward compat)
   temperatureSensor: string;
   humiditySensor: string;
   vpdSensor: string;
-  co2Sensor: string;
 
   // Fans
   circulationFanEntity: string;
@@ -73,6 +88,8 @@ export interface EnvironmentConfigData {
   // Humidifier
   humidifierEntity: string;
   humidifierEntities: string[];
+  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierControlEnabled: boolean;
 
   // Dehumidifier
   dehumidifierEntity: string;
@@ -80,12 +97,23 @@ export interface EnvironmentConfigData {
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierControlEnabled: boolean;
 
-  soilMoistureSensor: string;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
   cameraEntities?: string[];
+  lungroomTempSensors?: string[];
   visionCheckupConfig?: VisionCheckupConfig;
+
+  // Advanced / irrigation monitoring sensors
+  substrateTemperatureSensors?: string[];
+  phSensors?: string[];
+  feedEcSensors?: string[];
+  substrateEcSensors?: string[];
+  runoffEcSensors?: string[];
+  drainVolumeSensors?: string[];
+  irrigationFlowSensors?: string[];
+  powerSensors?: string[];
+  energySensors?: string[];
 }
 
 export interface VisionCheckupConfig {
@@ -112,32 +140,59 @@ export interface VisionCheckupConfigEventDetail {
 
 export interface EnvironmentConfigEventDetail {
   selectedGrowspaceId: string;
-  temperatureSensor: string;
-  humiditySensor: string;
-  vpdSensor?: string | null;
+  // Multi sensors
+  temperatureSensors: string[];
+  humiditySensors: string[];
+  vpdSensors?: string[];
   co2Sensor?: string | null;
+  soilMoistureSensor?: string | null;
+  // Fans
   circulationFanEntity?: string | null;
   circulationFanEntities?: string[];
+  exhaustEntity?: string | null;
+  exhaustFanEntities?: string[];
   stressThreshold: number;
   moldThreshold: number;
   lightSensor?: string | null;
   lightSensors?: string[];
-  exhaustEntity?: string | null;
-  exhaustFanEntities?: string[];
+  // Humidifier
   humidifierEntity?: string | null;
   humidifierEntities?: string[];
+  humidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
+  humidifierControlEnabled: boolean;
+  // Dehumidifier
   dehumidifierEntity?: string | null;
   dehumidifierEntities?: string[];
   dehumidifierThresholds?: Record<string, Record<string, { on: number; off: number }>>;
-  soilMoistureSensor?: string | null;
   dehumidifierControlEnabled: boolean;
   sensorGroups?: SensorGroup[];
   sensorCoordinates?: Record<string, { x: number; y: number; z: number; rotation?: number }>;
   irrigationTanks?: any[];
+  cameraEntities?: string[];
+  lungroomTempSensors?: string[];
+  // Advanced / irrigation monitoring
+  substrateTemperatureSensors?: string[];
+  phSensors?: string[];
+  feedEcSensors?: string[];
+  substrateEcSensors?: string[];
+  runoffEcSensors?: string[];
+  drainVolumeSensors?: string[];
+  irrigationFlowSensors?: string[];
+  powerSensors?: string[];
+  energySensors?: string[];
 }
 
 export interface ConfigDialogState {
-  currentTab: 'add_growspace' | 'edit_growspace' | 'environment' | 'dehumidifier' | 'sensor_groups';
+  currentTab:
+    | 'growspaces'
+    | 'sensors'
+    | 'climate'
+    | 'humidity'
+    | 'irrigation'
+    | 'tanks'
+    | 'vision'
+    | 'heatmap'
+    | 'subareas';
   environmentData: EnvironmentConfigData;
 }
 
@@ -190,16 +245,19 @@ export interface PrintLabelDialogState {
   deviceId?: string;
 }
 
-/** State for the harvest scoring modal shown before actually harvesting a plant. */
+export interface BatchPrintLabelsDialogState {
+  plantIds: string[];
+}
+
 export interface HarvestScoringDialogState {
   /** The plant being harvested. */
   plant: PlantEntity;
   /** Current score values (1–5 or undefined/null for unset). */
   vigor?: number | null;
-  structure?: number | null;
-  aroma?: number | null;
+  internodal_spacing?: number | null;
+  terpene_intensity?: number | null;
   resin?: number | null;
-  pestResistance?: number | null;
+  mold_resistance?: number | null;
 }
 
 export interface SnapshotsDialogState {
@@ -216,4 +274,13 @@ export interface ECRampDialogState {
 
 export interface GrowReportDialogState {
   growspaceId: string;
+}
+
+export interface BatchCloneDialogState {
+  plantIds: string[];
+}
+
+export interface IrrigationDialogState {
+  initialTab?: string;
+  scrollToField?: string;
 }

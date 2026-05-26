@@ -7,28 +7,16 @@
 
 export const FEATURE_FLAGS = {
   /**
-   * Use new plant-card-container instead of growspace-plant-card
-   * Phase 2: Pilot refactor
-   */
-  USE_NEW_PLANT_CARD: false,
-
-  /**
    * Use new dialog system with ViewModels
    * Phase 3: Dialog refactoring (plant-overview-dialog)
    */
-  USE_NEW_DIALOGS: false,
-
-  /**
-   * Use new growspace-grid-container with ViewModel architecture
-   * Phase 4 Tier 1: Grid refactoring
-   */
-  USE_NEW_GROWSPACE_GRID: false,
+  USE_NEW_DIALOGS: true,
 
   /**
    * Use event bus for cross-component communication
    * Phase 1+: Infrastructure available
    */
-  USE_EVENT_BUS: false,
+  USE_EVENT_BUS: true,
 } as const;
 
 /**

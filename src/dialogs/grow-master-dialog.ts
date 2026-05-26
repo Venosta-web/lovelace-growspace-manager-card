@@ -17,10 +17,6 @@ export class GrowMasterDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
-      :host {
-        display: block;
-      }
-
       /* Specific overrides or additions */
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
@@ -113,8 +109,10 @@ export class GrowMasterDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
+        width="large"
       >
         <div class="glass-dialog-container" style="border-color: ${borderColor}">
           <div class="dialog-header">
@@ -147,7 +145,8 @@ export class GrowMasterDialog extends LitElement {
                 class="sd-textarea"
                 placeholder="Ask about this growspace..."
                 .value=${this.userQuery}
-                @input=${(e: InputEvent) => (this.userQuery = (e.target as HTMLTextAreaElement).value)}
+                @input=${(e: InputEvent) =>
+                  (this.userQuery = (e.target as HTMLTextAreaElement).value)}
                 style="min-height: 80px;"
               ></textarea>
             </div>
@@ -174,7 +173,7 @@ export class GrowMasterDialog extends LitElement {
 
             <!-- Response Area -->
             ${this.isLoading
-        ? html`
+              ? html`
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -182,14 +181,14 @@ export class GrowMasterDialog extends LitElement {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-        : nothing}
+              : nothing}
             ${!this.isLoading && this.response
-        ? html`
+              ? html`
                   <div class="gm-response-box" style="border: 2px solid ${borderColor};">
                     ${this.response}
                   </div>
                 `
-        : nothing}
+              : nothing}
           </div>
         </div>
       </ha-dialog>

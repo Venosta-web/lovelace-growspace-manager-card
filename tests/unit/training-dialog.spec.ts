@@ -244,8 +244,8 @@ describe('TrainingDialog', () => {
             await element.updateComplete;
 
             // Title should be 'Log Training' (without plant count)
-            const dialog = element.shadowRoot?.querySelector('ha-dialog');
-            expect((dialog as any)?.heading).toBe('Log Training');
+            const title = element.shadowRoot?.querySelector('.dialog-title');
+            expect(title?.textContent?.trim()).toBe('Log Training');
 
             const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
             expect(subtitle?.textContent).toBe('Record training activity');
@@ -263,8 +263,8 @@ describe('TrainingDialog', () => {
             await element.requestUpdate();
             await element.updateComplete;
 
-            const dialog = element.shadowRoot?.querySelector('ha-dialog');
-            expect((dialog as any)?.heading).toBe('Log Training');
+            const title = element.shadowRoot?.querySelector('.dialog-title');
+            expect(title?.textContent?.trim()).toBe('Log Training');
 
             const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
             expect(subtitle?.textContent).toBe('Recording training for 1 plant');

@@ -1,14 +1,16 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
+import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../context';
-import { mdiBottleTonicPlus, mdiClose, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
+import { mdiBottleTonicPlus, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import './nutrient-inventory-dialog';
-import '../components/manager/nutrient-presets-editor';
-import '../components/ui/gs-help-tooltip';
+import '../features/ui/components/growspace-nutrient-inventory-dialog-ui';
+import '../features/ui/containers/growspace-nutrient-presets-editor.container';
+import '../features/shared/ui/gs-dialog';
+import '../features/shared/ui/gs-help-tooltip';
 
 type Tab = 'inventory' | 'presets';
 
@@ -24,13 +26,28 @@ export class NutrientDialog extends LitElement {
   @property({ type: Boolean }) public open = false;
   @state() private _activeTab: Tab = 'inventory';
 
+  private _inventoryController!: StoreController<import('../types').NutrientInventory | null>;
+
+  private _initControllers() {
+    if (this.store && !this._inventoryController) {
+      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+    }
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._initControllers();
+  }
+
+  willUpdate(changedProps: PropertyValues) {
+    if (changedProps.has('store')) {
+      this._initControllers();
+    }
+  }
+
   static styles = [
     dialogStyles,
     css`
-      :host {
-        --mdc-dialog-min-width: clamp(500px, 800px, 95vw);
-      }
-
       .dialog-header {
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         padding-bottom: 16px;
@@ -109,77 +126,71 @@ export class NutrientDialog extends LitElement {
     if (!this.open) return nothing;
 
     return html`
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+      <gs-dialog
+        .open=${this.open}
+        heading="Nutrients"
+        subtitle="Manage inventory and recipes"
+        .iconPath=${mdiBottleTonicPlus}
+        @close=${this._close}
       >
-        <div class="glass-dialog-container">
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:32px;height:32px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBottleTonicPlus}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">Nutrients</h2>
-              <div class="dialog-subtitle">Manage inventory and recipes</div>
-            </div>
-            <button class="md3-button text" @click=${this._close}>
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
+        <div class="tab-bar">
+          <div
+            class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
+            @click=${() => this._setTab('inventory')}
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiClipboardList}"></path>
+            </svg>
+            Inventory
+            <gs-help-tooltip
+              content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
+              placement="bottom"
+              label="Inventory"
+            ></gs-help-tooltip>
           </div>
-
-          <div class="tab-bar">
-            <div
-              class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
-              @click=${() => this._setTab('inventory')}
-            >
-              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClipboardList}"></path>
-              </svg>
-              Inventory
-              <gs-help-tooltip
-                content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
-                placement="bottom"
-                label="Inventory"
-              ></gs-help-tooltip>
-            </div>
-            <div
-              class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
-              @click=${() => this._setTab('presets')}
-            >
-              <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiFormatListBulleted}"></path>
-              </svg>
-              Presets
-              <gs-help-tooltip
-                content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
-                placement="bottom"
-                label="Presets"
-              ></gs-help-tooltip>
-            </div>
-          </div>
-
-          <div class="content-area">
-            ${this._activeTab === 'inventory'
-              ? html`<nutrient-inventory-dialog
-                  .open=${true}
-                  .embedded=${true}
-                  .store=${this.store}
-                ></nutrient-inventory-dialog>`
-              : html`<nutrient-presets-editor
-                  .open=${true}
-                  .embedded=${true}
-                  .store=${this.store}
-                ></nutrient-presets-editor>`}
+          <div
+            class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
+            @click=${() => this._setTab('presets')}
+          >
+            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
+              <path d="${mdiFormatListBulleted}"></path>
+            </svg>
+            Presets
+            <gs-help-tooltip
+              content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
+              placement="bottom"
+              label="Presets"
+            ></gs-help-tooltip>
           </div>
         </div>
-      </ha-dialog>
+
+        <div class="content-area">
+          ${this._activeTab === 'inventory'
+            ? html`<growspace-nutrient-inventory-dialog-ui
+                .open=${true}
+                .embedded=${true}
+                .inventory=${this._inventoryController?.value ?? null}
+                @update-stock=${(e: CustomEvent) =>
+                  this.store.actions.library.updateNutrientStock(
+                    e.detail.id,
+                    e.detail.name,
+                    e.detail.current_ml,
+                    e.detail.initial_ml
+                  )}
+                @add-stock=${(e: CustomEvent) =>
+                  this.store.actions.library.updateNutrientStock(
+                    e.detail.id || `nutrient_${Date.now()}`,
+                    e.detail.name,
+                    e.detail.current_ml,
+                    e.detail.initial_ml
+                  )}
+              ></growspace-nutrient-inventory-dialog-ui>`
+            : html`<growspace-nutrient-presets-editor
+                .open=${true}
+                .embedded=${true}
+              ></growspace-nutrient-presets-editor>`}
+        </div>
+      </gs-dialog>
     `;
   }
 }

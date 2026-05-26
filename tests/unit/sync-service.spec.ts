@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SyncService } from '../../src/services/sync-service';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { HomeAssistant } from 'custom-card-helpers';
+
+vi.mock('../../src/slices/plant', () => ({ setPlants: vi.fn() }));
+vi.mock('../../src/slices/device-state', () => ({ setDeviceSnapshot: vi.fn() }));
+vi.mock('../../src/slices/environment', () => ({ setEnvSnapshot: vi.fn() }));
+vi.mock('../../src/slices/irrigation', () => ({
+    setIrrigationConfig: vi.fn(),
+    setTankLevels: vi.fn(),
+}));
 
 describe('SyncService Coverage', () => {
     let service: SyncService;
@@ -65,6 +73,100 @@ describe('SyncService Coverage', () => {
         it('should return false when one array is null', () => {
             const result = (service as any)._areDeviceArraysEqual(null, [{ id: '1' }] as any);
             expect(result).toBe(false);
+        });
+    });
+
+    describe('updateDevicesState — irrigation pump entity watched-entity registration', () => {
+        function makeGridStore(selectedDevice: string | null = null) {
+            return {
+                $selectedDevice: { get: vi.fn().mockReturnValue(selectedDevice) },
+                setSelectedDevice: vi.fn(),
+            };
+        }
+
+        it('adds irrigationPumpEntity to watched entities when present', () => {
+            const gridStore = makeGridStore('device-1');
+            const serviceWithGrid = new SyncService(
+                dataService,
+                dataStore,
+                uiStore,
+                gridStore as any
+            );
+
+            const device = {
+                deviceId: 'device-1',
+                name: null,
+                plants: [],
+                irrigationConfig: {
+                    irrigationPumpEntity: 'switch.irrigation_pump',
+                    // drainPumpEntity intentionally absent
+                },
+                environmentAttributes: {},
+            };
+
+            vi.spyOn(dataService, 'getGrowspaceDevices').mockReturnValue([device] as any);
+            vi.spyOn(uiStore.$defaultApplied, 'get').mockReturnValue(true);
+
+            serviceWithGrid.updateDevicesState();
+
+            expect((serviceWithGrid as any)._watchedEntities.has('switch.irrigation_pump')).toBe(true);
+        });
+
+        it('adds drainPumpEntity to watched entities when present', () => {
+            const gridStore = makeGridStore('device-1');
+            const serviceWithGrid = new SyncService(
+                dataService,
+                dataStore,
+                uiStore,
+                gridStore as any
+            );
+
+            const device = {
+                deviceId: 'device-1',
+                name: null,
+                plants: [],
+                irrigationConfig: {
+                    drainPumpEntity: 'switch.drain_pump',
+                    // irrigationPumpEntity intentionally absent
+                },
+                environmentAttributes: {},
+            };
+
+            vi.spyOn(dataService, 'getGrowspaceDevices').mockReturnValue([device] as any);
+            vi.spyOn(uiStore.$defaultApplied, 'get').mockReturnValue(true);
+
+            serviceWithGrid.updateDevicesState();
+
+            expect((serviceWithGrid as any)._watchedEntities.has('switch.drain_pump')).toBe(true);
+        });
+
+        it('adds both pump entities when both are present', () => {
+            const gridStore = makeGridStore('device-1');
+            const serviceWithGrid = new SyncService(
+                dataService,
+                dataStore,
+                uiStore,
+                gridStore as any
+            );
+
+            const device = {
+                deviceId: 'device-1',
+                name: null,
+                plants: [],
+                irrigationConfig: {
+                    irrigationPumpEntity: 'switch.irrigation_pump',
+                    drainPumpEntity: 'switch.drain_pump',
+                },
+                environmentAttributes: {},
+            };
+
+            vi.spyOn(dataService, 'getGrowspaceDevices').mockReturnValue([device] as any);
+            vi.spyOn(uiStore.$defaultApplied, 'get').mockReturnValue(true);
+
+            serviceWithGrid.updateDevicesState();
+
+            expect((serviceWithGrid as any)._watchedEntities.has('switch.irrigation_pump')).toBe(true);
+            expect((serviceWithGrid as any)._watchedEntities.has('switch.drain_pump')).toBe(true);
         });
     });
 });

@@ -88,15 +88,30 @@ describe('GrowspaceGridViewModel', () => {
 
   it('should compute isListView correctly', () => {
     // Not list view for 2 cols
-    const viewModel2Cols = createGrowspaceGridViewModel(mockPlants, 2, 2, mockStore as GrowspaceStore);
+    const viewModel2Cols = createGrowspaceGridViewModel(
+      mockPlants,
+      2,
+      2,
+      mockStore as GrowspaceStore
+    );
     expect(viewModel2Cols.get().isListView).toBe(false);
 
     // Not list view for 5 cols
-    const viewModel5Cols = createGrowspaceGridViewModel(mockPlants, 2, 5, mockStore as GrowspaceStore);
+    const viewModel5Cols = createGrowspaceGridViewModel(
+      mockPlants,
+      2,
+      5,
+      mockStore as GrowspaceStore
+    );
     expect(viewModel5Cols.get().isListView).toBe(false);
 
     // List view for 6 cols
-    const viewModel6Cols = createGrowspaceGridViewModel(mockPlants, 2, 6, mockStore as GrowspaceStore);
+    const viewModel6Cols = createGrowspaceGridViewModel(
+      mockPlants,
+      2,
+      6,
+      mockStore as GrowspaceStore
+    );
     expect(viewModel6Cols.get().isListView).toBe(true);
   });
 

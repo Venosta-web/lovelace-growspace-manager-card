@@ -77,9 +77,7 @@ export class PlantStatsCard extends LitElement {
     return html`
       <div class="detail-card">
         <h3>Plant Statistics</h3>
-        <div class="stat-grid">
-          ${this.stats.map((stat) => this._renderStatItem(stat))}
-        </div>
+        <div class="stat-grid">${this.stats.map((stat) => this._renderStatItem(stat))}</div>
       </div>
     `;
   }
@@ -88,8 +86,7 @@ export class PlantStatsCard extends LitElement {
     return html`
       <div class="stat-item">
         <span class="stat-value">
-          ${stat.value}
-          ${stat.unit ? html`<span class="stat-unit">${stat.unit}</span>` : ''}
+          ${stat.value} ${stat.unit ? html`<span class="stat-unit">${stat.unit}</span>` : ''}
         </span>
         <span class="stat-label">${stat.label}</span>
       </div>

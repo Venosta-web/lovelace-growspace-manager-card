@@ -10,8 +10,14 @@ const mockStore = {
         $devices: atom<any[]>([]),
         $strainLibrary: atom<any[]>([])
     },
-    printLabel: vi.fn(),
-    showToast: vi.fn()
+    actions: {
+        ui: {
+            toast: vi.fn(),
+        },
+        plant: {
+            printLabel: vi.fn(),
+        },
+    },
 };
 
 describe('PrintLabelDialog', () => {
@@ -57,8 +63,8 @@ describe('PrintLabelDialog', () => {
         };
 
         // Reset mocks
-        mockStore.printLabel.mockReset();
-        mockStore.showToast.mockReset();
+        mockStore.actions.plant.printLabel.mockReset();
+        mockStore.actions.ui.toast.mockReset();
         mockStore.data.$devices.set([]);
         mockStore.data.$strainLibrary.set([]);
 
@@ -144,13 +150,13 @@ describe('PrintLabelDialog', () => {
     });
 
     describe('Preview Fetching', () => {
-        it('should call store.printLabel with preview=true', async () => {
+        it('should call store.actions.plant.printLabel with preview=true', async () => {
             element.dialogState = { plantId: '123', strainName: 'Test' };
             (element as any)._selectedDeviceId = 'image.printer_niimbot';
 
             const promise = (element as any)._fetchPreview();
 
-            expect(mockStore.printLabel).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockStore.actions.plant.printLabel).toHaveBeenCalledWith(expect.objectContaining({
                 preview: true,
                 plantId: '123',
                 strain: 'Test'
@@ -174,7 +180,7 @@ describe('PrintLabelDialog', () => {
         });
 
         it('should handle preview failure with Error object', async () => {
-            mockStore.printLabel.mockRejectedValue(new Error('Preview failed'));
+            mockStore.actions.plant.printLabel.mockRejectedValue(new Error('Preview failed'));
             (element as any)._selectedDeviceId = 'image.printer_preview';
 
             await (element as any)._fetchPreview();
@@ -184,7 +190,7 @@ describe('PrintLabelDialog', () => {
         });
 
         it('should handle preview failure with string error', async () => {
-            mockStore.printLabel.mockRejectedValue('String error');
+            mockStore.actions.plant.printLabel.mockRejectedValue('String error');
             (element as any)._selectedDeviceId = 'image.printer_preview';
 
             await (element as any)._fetchPreview();
@@ -205,20 +211,20 @@ describe('PrintLabelDialog', () => {
         it('should return early if no dialog state', async () => {
             element.dialogState = undefined;
             await (element as any)._fetchPreview();
-            expect(mockStore.printLabel).not.toHaveBeenCalled();
+            expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
         });
 
         it('should return early if no device id', async () => {
             (element as any)._selectedDeviceId = '';
             await (element as any)._fetchPreview();
-            expect(mockStore.printLabel).not.toHaveBeenCalled();
+            expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
         });
 
         it('should return early if no plantId and no strainName', async () => {
             element.dialogState = { phenotype: '1' }; // Neither plantId nor strainName
             (element as any)._selectedDeviceId = 'some_device';
             await (element as any)._fetchPreview();
-            expect(mockStore.printLabel).not.toHaveBeenCalled();
+            expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
         });
     });
 
@@ -278,44 +284,44 @@ describe('PrintLabelDialog', () => {
 
             await (element as any)._submit();
 
-            expect(mockStore.printLabel).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockStore.actions.plant.printLabel).toHaveBeenCalledWith(expect.objectContaining({
                 preview: false,
                 deviceId: 'printer1'
             }));
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('sent'), 'success');
+            expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('sent'), 'success');
             expect(closeSpy).toHaveBeenCalled();
         });
 
         it('should handle submit errors with Error object', async () => {
-            mockStore.printLabel.mockRejectedValue(new Error('Print failed'));
+            mockStore.actions.plant.printLabel.mockRejectedValue(new Error('Print failed'));
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             await (element as any)._submit();
 
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Print failed'), 'error');
+            expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('Print failed'), 'error');
             expect(consoleSpy).toHaveBeenCalled();
         });
 
         it('should handle submit errors with unknown type', async () => {
-            mockStore.printLabel.mockRejectedValue('Unknown Failure');
+            mockStore.actions.plant.printLabel.mockRejectedValue('Unknown Failure');
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
             await (element as any)._submit();
 
-            expect(mockStore.showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+            expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
             expect(consoleSpy).toHaveBeenCalled();
         });
 
         it('should not submit if store is missing', async () => {
             element.store = undefined as any;
             await (element as any)._submit();
-            expect(mockStore.printLabel).not.toHaveBeenCalled();
+            expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
         });
 
         it('should not submit if dialogState is missing', async () => {
             element.dialogState = undefined;
             await (element as any)._submit();
-            expect(mockStore.printLabel).not.toHaveBeenCalled();
+            expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
         });
 
         it('should send undefined deviceId if none selected', async () => {
@@ -324,7 +330,7 @@ describe('PrintLabelDialog', () => {
 
             await (element as any)._submit();
 
-            expect(mockStore.printLabel).toHaveBeenCalledWith(expect.objectContaining({
+            expect(mockStore.actions.plant.printLabel).toHaveBeenCalledWith(expect.objectContaining({
                 deviceId: undefined
             }));
         });
@@ -445,8 +451,8 @@ describe('PrintLabelDialog', () => {
             element.dialogState = { plantId: 'P1' };
 
             await element.updateComplete;
-            const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-            expect(subtitle?.textContent).toBe('StrainA (P1)');
+            const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+            expect(gsDialog?.subtitle).toBe('StrainA (P1)');
         });
 
         it('should render strain-only subtitle if plant not found', async () => {
@@ -454,15 +460,15 @@ describe('PrintLabelDialog', () => {
             element.dialogState = { strainName: 'StrainB' };
 
             await element.updateComplete;
-            const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-            expect(subtitle?.textContent).toBe('StrainB');
+            const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+            expect(gsDialog?.subtitle).toBe('StrainB');
         });
 
         it('should render "Unknown" if no data available', async () => {
             element.dialogState = {};
             await element.updateComplete;
-            const subtitle = element.shadowRoot?.querySelector('.dialog-subtitle');
-            expect(subtitle?.textContent).toBe('Unknown');
+            const gsDialog = element.shadowRoot?.querySelector('gs-dialog') as any;
+            expect(gsDialog?.subtitle).toBe('Unknown');
         });
 
         it('should render loading state', async () => {

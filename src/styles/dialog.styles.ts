@@ -6,22 +6,25 @@ export const dialogStyles = [
   sharedStyles,
   uiStyles,
   css`
-    .glass-dialog-container {
-      display: flex;
-      flex-direction: column;
-      max-height: 85vh;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-      /* Background/Shadow handled by sharedStyles, but specific flex layout kept here */
+    ha-dialog {
+      --dialog-surface-margin-top: 40px;
+      --ha-dialog-min-height: auto;
+      --dialog-content-padding: 0;
     }
 
-    /* Restored from 1.0.24.3.0 */
-    .dialog-content-grid {
-      padding: 24px;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 16px;
+    .glass-dialog-container {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      height: auto;
+      max-height: 90vh;
+      overflow: hidden;
+      position: relative;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif;
     }
 
     .dialog-header {
@@ -30,6 +33,7 @@ export const dialogStyles = [
       padding: 16px 24px;
       border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
       background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      flex-shrink: 0;
     }
 
     .dialog-icon {
@@ -80,6 +84,15 @@ export const dialogStyles = [
       justify-content: flex-end;
       gap: 12px;
       flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .dialog-content,
+    .dialog-content-grid {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
     }
 
     .row-col-grid {
@@ -111,11 +124,9 @@ export const dialogStyles = [
         padding: 12px 16px;
       }
 
-      /* Restored responsive rules */
+      .dialog-content,
       .dialog-content-grid {
-        flex: 1;
-        min-height: 0;
-        padding: 8px;
+        padding: 16px;
       }
       .dialog-header .md3-button.text,
       .dialog-header .md3-button.text.close {

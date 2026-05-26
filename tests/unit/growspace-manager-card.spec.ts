@@ -6,24 +6,18 @@ import { LibraryExportReadyEvent } from '../../src/lib/events';
 import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
 
-// Mock dependencies
-// Mock dependencies
-vi.mock('../../src/components/growspace-header', () => ({}));
-vi.mock('../../src/components/manager/dialog-host', () => ({}));
-vi.mock('../../src/components/growspace-view-switcher', () => ({}));
-
-export const mockSubscriptionCallback = { fn: undefined as ((refresh: boolean) => void) | undefined };
-
-vi.mock('../../src/controllers/subscription-controller', () => ({
-    SubscriptionController: class {
-        constructor(host: any, store: any, onUpdate: (refresh: boolean) => void) {
-            mockSubscriptionCallback.fn = onUpdate;
-        }
-        updateHass() { }
-        hostConnected() { }
-        hostDisconnected() { }
-    }
+vi.mock('../../src/slices/grid-interaction', () => ({
+    startTransplant: vi.fn(),
+    select: vi.fn(),
+    cancel: vi.fn(),
+    gridInteraction$: { get: vi.fn(() => ({ status: 'idle' })), set: vi.fn(), listen: vi.fn(() => () => {}) },
 }));
+
+// Mock dependencies
+// Mock dependencies
+vi.mock('../../src/features/ui/containers/growspace-header.container', () => ({}));
+vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
+vi.mock('../../src/features/shared/layouts/growspace-view-switcher', () => ({}));
 
 // Mock window location
 const mockLocation = {
@@ -42,6 +36,7 @@ const atomMocks = vi.hoisted(() => ({
     $activeDevices: null as any,
     $gridLayout: null as any,
     $growspaceOptions: null as any,
+    $gridViewState: null as any,
     $viewMode: null as any,
     $isLoading: null as any,
     $activeDialog: null as any,
@@ -53,6 +48,8 @@ const atomMocks = vi.hoisted(() => ({
     $notification: null as any,
     $cardViewState: null as any,
     $pendingDeepLinkPlantId: null as any,
+    $mainCardState: null as any,
+    $gridOverlayMode: null as any,
 }));
 
 vi.mock('../../src/store/core/growspace-store', () => ({
@@ -90,35 +87,52 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             selectAllPlants: vi.fn(),
             setFocusedPlantIndex: vi.fn(),
             setActiveDialog: vi.fn(),
-            toggleTransplantMode: vi.fn(),
         };
         grid = {
             $activeDevices: atomMocks.$activeDevices,
             $gridLayout: atomMocks.$gridLayout,
             $growspaceOptions: atomMocks.$growspaceOptions,
+            $gridViewState: atomMocks.$gridViewState,
         };
         history = {
             $historyCache: {},
+        };
+        $mainCardState = atomMocks.$mainCardState;
+
+        actions = {
+            library: {
+                fetchStrains: vi.fn(),
+                fetchNutrientPresets: vi.fn(),
+                fetchIPMPresets: vi.fn(),
+                fetchNutrientInventory: vi.fn(),
+            },
+            ui: {
+                handleKeyboardNavigation: vi.fn(),
+                selectAllPlants: vi.fn(),
+                clearPlantSelection: vi.fn(),
+                deleteSelectedPlants: vi.fn(),
+                openBatchWateringDialog: vi.fn(),
+                openBatchTrainingDialog: vi.fn(),
+                openBatchCloneDialog: vi.fn(),
+                openBatchPrintLabelsDialog: vi.fn(),
+                openIPMDialog: vi.fn(),
+                handleDeepLink: vi.fn(),
+                exitEditMode: vi.fn(),
+                toggleHeaderExpansion: vi.fn(),
+                toggleEnvGraph: vi.fn(),
+                toast: vi.fn(),
+            },
+            plant: {
+                batchAction: vi.fn(),
+                printLabel: vi.fn(),
+            },
         };
 
         constructor(host: any) { this.host = host; }
         updateHass() { }
         initializeSelectedDevice() { }
-        fetchStrainLibrary() { }
-        fetchNutrientPresets() { }
-        fetchIPMPresets() { }
-        fetchNutrientInventory() { }
         handleDeviceChange() { }
-        handleKeyboardNavigation() { }
-        toggleHeaderExpansion() { }
-        selectAllPlants() { }
-        deleteSelectedPlants() { }
-        clearPlantSelection() { this.ui.clearPlantSelection(); }
-        openBatchWateringDialog = vi.fn();
-        openBatchTrainingDialog = vi.fn();
-        openIPMDialog = vi.fn();
         destroy = vi.fn();
-        handleDeepLink = vi.fn();
         refreshData = vi.fn();
     }
 }));
@@ -136,6 +150,12 @@ describe('GrowspaceManagerCard', () => {
         atomMocks.$activeDevices = atom<any[]>([]);
         atomMocks.$gridLayout = atom({ effectiveRows: 1, grid: [] });
         atomMocks.$growspaceOptions = atom({});
+        atomMocks.$gridViewState = atom({
+            devices: [],
+            selectedDevice: 'gs1',
+            gridLayout: { effectiveRows: 1, grid: [] },
+            growspaceOptions: {},
+        });
         atomMocks.$viewMode = atom('standard');
         atomMocks.$isLoading = atom(false);
         atomMocks.$activeDialog = atom<any>({ type: 'NONE' });
@@ -145,19 +165,28 @@ describe('GrowspaceManagerCard', () => {
         atomMocks.$focusedPlantIndex = atom<number>(-1);
         atomMocks.$notification = atom<any>(null);
         atomMocks.$pendingDeepLinkPlantId = atom<string | null>(null);
+        atomMocks.$gridOverlayMode = atom('none');
 
         // Derived mock for consolidated state - matches implementation
         atomMocks.$cardViewState = computed(
-            [atomMocks.$viewMode, atomMocks.$isLoading, atomMocks.$isEditMode, atomMocks.$isCompactView, atomMocks.$activeDialog, atomMocks.$notification, atomMocks.$focusedPlantIndex],
-            (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex) => ({
+            [atomMocks.$viewMode, atomMocks.$isLoading, atomMocks.$isEditMode, atomMocks.$isCompactView, atomMocks.$activeDialog, atomMocks.$notification, atomMocks.$focusedPlantIndex, atomMocks.$selectedPlants, atomMocks.$gridOverlayMode],
+            (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex, selectedPlants, overlayMode) => ({
                 viewMode,
                 isLoading,
                 isEditMode,
                 isCompact,
                 activeDialog,
                 notification,
-                focusedPlantIndex
+                focusedPlantIndex,
+                selectedPlants,
+                overlayMode,
             })
+        );
+
+        // Derived mock for main card state (grid + ui + strainLibrary)
+        atomMocks.$mainCardState = computed(
+            [atomMocks.$gridViewState, atomMocks.$cardViewState, atomMocks.$strainLibrary],
+            (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary })
         );
 
         // Mock history
@@ -188,8 +217,7 @@ describe('GrowspaceManagerCard', () => {
     describe('Static Methods', () => {
         it('should get stub config', () => {
             expect(GrowspaceManagerCard.getStubConfig()).toEqual({
-                default_growspace: '4x4',
-                compact: true
+                default_growspace: '',
             });
         });
 
@@ -222,13 +250,13 @@ describe('GrowspaceManagerCard', () => {
             expect(() => element.setConfig(undefined as any)).toThrow('Invalid configuration');
         });
 
-        it('should set compact mode from config fallback', () => {
+        it('should accept config with compact flag without error', () => {
             const config: GrowspaceManagerCardConfig = {
                 type: 'custom:growspace-manager-card',
                 compact: true
             };
             element.setConfig(config);
-            expect(element.store.ui.setViewMode).toHaveBeenCalledWith('compact');
+            expect((element as any)._config).toEqual(config);
         });
 
         it('should set initial view mode from config', () => {
@@ -245,7 +273,7 @@ describe('GrowspaceManagerCard', () => {
         it('should initialize store on first update', () => {
             const spyUpdateHass = vi.spyOn(element.store, 'updateHass');
             const spyInitDevice = vi.spyOn(element.store, 'initializeSelectedDevice');
-            const spyFetchStrain = vi.spyOn(element.store, 'fetchStrainLibrary');
+            const spyFetchStrain = vi.spyOn(element.store.actions.library, 'fetchStrains');
 
             element.setConfig({ type: 'custom:growspace-manager-card' });
             (element as any).firstUpdated();
@@ -262,7 +290,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should process pending deep link when hass updates', () => {
-            const handleDeepLinkSpy = vi.spyOn(element.store, 'handleDeepLink');
+            const handleDeepLinkSpy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
             atomMocks.$pendingDeepLinkPlantId.set('plant123');
 
             (element as any).updated(new Map([['hass', 'oldValues']]));
@@ -272,12 +300,13 @@ describe('GrowspaceManagerCard', () => {
 
         it('should expose public getters', () => {
             expect(element.dataService).toBe(element.store.dataService);
-            expect(element.devices).toEqual([]);
-            expect(element.selectedDevice).toBe('gs1');
+            // devices and selectedDevice now come from $gridViewState
+            expect(element.devices).toEqual(atomMocks.$gridViewState.get().devices);
+            expect(element.selectedDevice).toBe(atomMocks.$gridViewState.get().selectedDevice);
         });
 
         it('should sync strain library when controller updates', async () => {
-            (element as any)._strainLibraryController = { value: [{ strain: 'new' }] };
+            (element as any)._viewController = { value: { grid: {}, ui: {}, strainLibrary: [{ strain: 'new' }] } };
             (element as any).updated(new Map());
             expect((element as any)._strainLibrary).toEqual([{ strain: 'new' }]);
         });
@@ -298,7 +327,7 @@ describe('GrowspaceManagerCard', () => {
     describe('Deep Linking', () => {
         it('should handle deep link on firstUpdated', () => {
             window.history.pushState({}, '', '?plantId=p1');
-            const spy = vi.spyOn(element.store, 'handleDeepLink');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
@@ -310,7 +339,7 @@ describe('GrowspaceManagerCard', () => {
         it('should ignore if global tracker already matched', () => {
             window.history.pushState({}, '', '?plantId=p1');
             (window as any).GROWSPACE_DEEP_LINK_TRACKED = 'p1';
-            const spy = vi.spyOn(element.store, 'handleDeepLink');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
@@ -319,7 +348,7 @@ describe('GrowspaceManagerCard', () => {
 
         it('should do nothing if no plantId param', () => {
             window.history.pushState({}, '', '/');
-            const spy = vi.spyOn(element.store, 'handleDeepLink');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
@@ -345,13 +374,13 @@ describe('GrowspaceManagerCard', () => {
             atomMocks.$isLoading.set(true);
             document.body.appendChild(element);
             await element.updateComplete;
-            const spinner = element.shadowRoot?.querySelector('.loading-spinner');
+            const spinner = element.shadowRoot?.querySelector('ha-circular-progress');
             expect(spinner).toBeTruthy();
         });
 
         it('should render no data message if no devices', async () => {
             atomMocks.$isLoading.set(false);
-            atomMocks.$activeDevices.set([]);
+            atomMocks.$gridViewState.set({ devices: [], selectedDevice: null, gridLayout: { effectiveRows: 0, grid: [] }, growspaceOptions: {} });
             document.body.appendChild(element);
             await element.updateComplete;
             const msg = element.shadowRoot?.querySelector('.no-data');
@@ -360,10 +389,8 @@ describe('GrowspaceManagerCard', () => {
 
         it('should render error if selected device is invalid', async () => {
             atomMocks.$isLoading.set(false);
-            // Setup mock devices with defined properties
             const mockDevice = { deviceId: 'gs2', name: 'Other', plantsPerRow: 4 };
-            atomMocks.$activeDevices.set([mockDevice]);
-            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridViewState.set({ devices: [mockDevice], selectedDevice: 'gs1', gridLayout: { effectiveRows: 1, grid: [] }, growspaceOptions: { gs2: 'Other' } });
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -375,10 +402,7 @@ describe('GrowspaceManagerCard', () => {
         it('should render main card', async () => {
             atomMocks.$isLoading.set(false);
             const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 4 };
-            atomMocks.$activeDevices.set([mockDevice]);
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$growspaceOptions.set({ gs1: 'Tent' });
-            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridViewState.set({ devices: [mockDevice], selectedDevice: 'gs1', gridLayout: { effectiveRows: 1, grid: [] }, growspaceOptions: { gs1: 'Tent' } });
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -390,9 +414,7 @@ describe('GrowspaceManagerCard', () => {
         it('should render wide card class', async () => {
             atomMocks.$isLoading.set(false);
             const mockDevice = { deviceId: 'gs1', name: 'Tent', plantsPerRow: 8 };
-            atomMocks.$activeDevices.set([mockDevice]);
-            atomMocks.$gridLayout.set({ effectiveRows: 1, grid: [] });
-            atomMocks.$selectedDevice.set('gs1');
+            atomMocks.$gridViewState.set({ devices: [mockDevice], selectedDevice: 'gs1', gridLayout: { effectiveRows: 1, grid: [] }, growspaceOptions: { gs1: 'Tent' } });
 
             document.body.appendChild(element);
             await element.updateComplete;
@@ -429,21 +451,21 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle select all', () => {
-            const spy = vi.spyOn(element.store, 'selectAllPlants');
+            const spy = vi.spyOn(element.store.actions.ui, 'selectAllPlants');
             (element as any)._handleSelectAll();
             expect(spy).toHaveBeenCalled();
         });
 
         it('should handle delete selected', () => {
-            const spy = vi.spyOn(element.store, 'deleteSelectedPlants');
+            const spy = vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants');
             (element as any)._handleDeleteSelected();
             expect(spy).toHaveBeenCalled();
         });
 
-        it('should handle transplant mode', () => {
-            const spy = vi.spyOn(element.store.ui, 'toggleTransplantMode');
+        it('should handle transplant mode', async () => {
+            const { startTransplant } = await import('../../src/slices/grid-interaction');
             (element as any)._handleTransplantMode();
-            expect(spy).toHaveBeenCalled();
+            expect(startTransplant).toHaveBeenCalled();
         });
 
         it('should handle batch add plants', () => {
@@ -453,7 +475,7 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle keyboard nav', () => {
-            const spy = vi.spyOn(element.store, 'handleKeyboardNavigation');
+            const spy = vi.spyOn(element.store.actions.ui, 'handleKeyboardNavigation');
             (element as any)._handleKeyboardNav(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
             expect(spy).toHaveBeenCalledWith('ArrowRight');
         });
@@ -499,27 +521,22 @@ describe('GrowspaceManagerCard', () => {
 
 
     describe('Subscription & Handlers', () => {
-        it('should handle subscription update callback', () => {
+        it('should call updateHass when updated() is called with hass change', () => {
             const updateSpy = vi.spyOn(element.store, 'updateHass');
-            const refreshSpy = vi.spyOn(element.store, 'refreshData');
-
-            if (mockSubscriptionCallback.fn) {
-                mockSubscriptionCallback.fn(true);
-                expect(updateSpy).toHaveBeenCalledWith(mockHass);
-                expect(refreshSpy).toHaveBeenCalledWith(true);
-            } else {
-                throw new Error('Subscription callback not captured');
-            }
+            const newHass = { ...mockHass, themes: {} } as any;
+            element.hass = newHass;
+            (element as any).updated(new Map([['hass', mockHass]]));
+            expect(updateSpy).toHaveBeenCalledWith(newHass);
         });
 
         it('should handle private event handlers', () => {
             // Clear selection
-            const clearSpy = vi.spyOn(element.store, 'clearPlantSelection');
+            const clearSpy = vi.spyOn(element.store.actions.ui, 'clearPlantSelection');
             (element as any)._handleClearSelection();
             expect(clearSpy).toHaveBeenCalled();
 
             // Water selected
-            const waterSpy = vi.spyOn(element.store, 'openBatchWateringDialog');
+            const waterSpy = vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog');
             (element as any)._handleWaterSelected();
             expect(waterSpy).toHaveBeenCalled();
 
@@ -529,19 +546,19 @@ describe('GrowspaceManagerCard', () => {
             expect(editSpy).toHaveBeenCalledWith(false);
 
             // IPM selected
-            const ipmSpy = vi.spyOn(element.store, 'openIPMDialog');
+            const ipmSpy = vi.spyOn(element.store.actions.ui, 'openIPMDialog');
             (element as any)._handleIPMSelected();
             expect(ipmSpy).toHaveBeenCalled();
 
             // Toggle expansion (if available)
             if (typeof (element as any)._handleToggleExpansion === 'function') {
-                const toggleSpy = vi.spyOn(element.store, 'toggleHeaderExpansion');
+                const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleHeaderExpansion');
                 (element as any)._handleToggleExpansion();
                 expect(toggleSpy).toHaveBeenCalled();
             }
 
             // Training selected
-            const trainingSpy = vi.spyOn(element.store, 'openBatchTrainingDialog');
+            const trainingSpy = vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog');
             (element as any)._handleTrainingSelected();
             expect(trainingSpy).toHaveBeenCalled();
 

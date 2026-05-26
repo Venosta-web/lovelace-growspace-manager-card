@@ -194,5 +194,31 @@ describe('SubscriptionController', () => {
             expect(dataStore.removePlantFromWsCache).toHaveBeenCalledWith('p1');
             expect(dataStore.updateWsDataCacheGrid).not.toHaveBeenCalled();
         });
+
+        it('should invoke the grid update callback when gsId, row and col are all present', async () => {
+            let capturedCallback: ((event: unknown) => void) | undefined;
+            hass.connection.subscribeEvents.mockImplementation((cb: any) => {
+                capturedCallback = cb;
+                return Promise.resolve(unsubMock);
+            });
+            await controller.subscribe(hass);
+
+            // Make dataStore.updateWsDataCacheGrid actually invoke the callback
+            const grid: Record<string, unknown> = {};
+            dataStore.updateWsDataCacheGrid.mockImplementation((_gsId: string, cb: (g: Record<string, unknown>) => void) => {
+                cb(grid);
+            });
+
+            const plantData = { plant_id: 'p1', growspace_id: 'gs1', row: 2, col: 3 };
+            capturedCallback!({
+                data: {
+                    event_type: 'plant_added',
+                    data: { plant: plantData },
+                },
+            });
+
+            expect(dataStore.updateWsDataCacheGrid).toHaveBeenCalledWith('gs1', expect.any(Function));
+            expect(grid['position_2_3']).toBe(plantData);
+        });
     });
 });

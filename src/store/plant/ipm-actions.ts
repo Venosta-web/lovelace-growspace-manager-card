@@ -3,6 +3,7 @@
  */
 
 import { ActionContext } from '../core/action-context';
+import { withAction } from '../core/action-utils';
 import * as libraryActions from './library-actions';
 
 /**
@@ -10,24 +11,19 @@ import * as libraryActions from './library-actions';
  */
 export async function applyIPM(
   ctx: ActionContext,
-  detail: {
-    preset_id: string;
-    growspace_id?: string;
-    plant_ids?: string[];
-    notes?: string;
-  }
+  detail: { preset_id: string; growspace_id?: string; plant_ids?: string[]; notes?: string }
 ): Promise<void> {
-  try {
-    await ctx.dataService.applyIPM(detail);
-
-    // Refresh nutrient inventory as IPM products often deduct from stock
-    await libraryActions.fetchNutrientInventory(ctx, true);
-
-    ctx.showToast('IPM treatment applied successfully', 'success');
-  } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
-    console.error('Failed to apply IPM:', e);
-    ctx.showToast(`Failed to apply IPM: ${error}`, 'error');
-    throw e;
-  }
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.applyIPM(detail);
+      // Refresh nutrient inventory as IPM products often deduct from stock
+      await libraryActions.fetchNutrientInventory(ctx, true);
+    },
+    {
+      success: 'IPM treatment applied successfully',
+      errorPrefix: 'Failed to apply IPM',
+      rethrow: true,
+    }
+  );
 }

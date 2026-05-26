@@ -1,23 +1,24 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
+import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
 
 // Mock UI components
-vi.mock('../../../src/components/ui/md3-text-input', () => ({
+vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
         get value() { return this.getAttribute('value') || ''; }
         set value(v) { this.setAttribute('value', v); }
     }
 }));
-vi.mock('../../../src/components/ui/md3-number-input', () => ({
+vi.mock('../../../src/features/shared/ui/md3-number-input', () => ({
     Md3NumberInput: class extends HTMLElement {
         get value() { return this.getAttribute('value') || ''; }
         set value(v) { this.setAttribute('value', v); }
     }
 }));
-vi.mock('../../../src/components/ui/md3-switch', () => ({
+vi.mock('../../../src/features/shared/ui/md3-switch', () => ({
     Md3Switch: class extends HTMLElement {
         get checked() { return this.hasAttribute('checked'); }
         set checked(v) { v ? this.setAttribute('checked', '') : this.removeAttribute('checked'); }
@@ -35,9 +36,10 @@ const mocks = vi.hoisted(() => ({
     addDrainTime: vi.fn().mockResolvedValue(true),
     removeIrrigationTime: vi.fn().mockResolvedValue(true),
     addIrrigationTime: vi.fn().mockResolvedValue(true),
+    getIrrigationAnalytics: vi.fn().mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
 }));
 
-vi.mock('../../../src/data-service', () => {
+vi.mock('../../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {
@@ -59,9 +61,11 @@ describe('IrrigationDialog - Extra Coverage', () => {
         grid: {},
         biologicalMetrics: {} as any,
         environmentAttributes: {
+            soilMoistureSensor: 'sensor.sm1',
             irrigationTanks: [
                 { name: 'Tank 1', fillLevel: 50, isWarning: false, hoursRemaining: 48, depletionStatus: 'depleting' }
-            ]
+            ],
+            substrateEcSensors: [{ entity_id: 'sensor.ec1' }]
         } as any,
         waterUsage: {
             litersToday: 10.5,
@@ -69,10 +73,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             waterEfficiency: 0.85
         } as any,
         irrigationConfig: {
+            irrigationPumpEntity: 'switch.pump1',
             irrigationTimes: [{ time: '08:00', duration: 30 }],
             drainTimes: [{ time: '09:00', duration: 45 }]
         } as any,
         drainConfig: {
+            enabled: true,
             readings: [
                 {
                     timestamp: new Date(Date.now() - 1000 * 3600).toISOString(),
@@ -86,11 +92,49 @@ describe('IrrigationDialog - Extra Coverage', () => {
         stats: {} as any
     };
 
+    function makeMockStore(device: GrowspaceDevice) {
+        const deviceCopy = JSON.parse(JSON.stringify(device));
+        const $devicesValue = [deviceCopy];
+        return {
+            context: {
+                dataService: mocks,
+                data: {
+                    $devices: { get: () => $devicesValue },
+                    patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {
+                        const d = $devicesValue.find((x: any) => x.deviceId === gsId);
+                        if (d) Object.assign(d.irrigationConfig, patch);
+                    }),
+                },
+                optimisticManager: {
+                    applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
+                        await applyFn(_payload);
+                        return 'mock-id';
+                    }),
+                    confirmUpdate: vi.fn(),
+                    rollbackUpdate: vi.fn(),
+                },
+                undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
+                showToast: vi.fn(),
+                closeDialog: vi.fn(),
+                refreshData: vi.fn().mockResolvedValue(undefined),
+                ui: {
+                    showToast: vi.fn(),
+                },
+                history: {}, grid: {}, hass: {}, syncService: {},
+            },
+            ui: {
+                showToast: vi.fn(),
+            },
+        };
+    }
+
     beforeEach(async () => {
         vi.clearAllMocks();
         element = new IrrigationDialog();
         element.device = JSON.parse(JSON.stringify(mockDevice));
-        element.hass = { states: {} } as any;
+        (element as any).store = makeMockStore(mockDevice);
+        element.hass = { states: { 'switch.pump1': { state: 'on' } } } as any;
+        (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_SCHEDULES_DRAFT', partial: { drainPumpEntity: 'switch.pump1' } });
         element.open = true;
         document.body.appendChild(element);
         await element.updateComplete;
@@ -103,8 +147,9 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Analytics Tab', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Analytics
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            const analyticsTab = Array.from(tabs || []).find(t => t.textContent?.includes('Water Analytics'));
+            (analyticsTab as HTMLElement)?.click();
             await element.updateComplete;
         });
 
@@ -125,13 +170,32 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should render schedule summary with irrigation and drain events', () => {
-            const text = element.shadowRoot?.textContent;
+            const text = (element.shadowRoot?.textContent ?? '').replace(/\s+/g, ' ');
             expect(text).toContain('1 events/day');
             expect(text).toContain('08:00');
             expect(text).toContain('09:00');
         });
 
-        it('should render volume history table', () => {
+        it('should render volume history table', async () => {
+            // Volume history requires drainPumpEntity to be set and readings to exist
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_SCHEDULES_DRAFT', partial: { drainPumpEntity: 'switch.pump1' } });
+            element.device = {
+                ...JSON.parse(JSON.stringify(mockDevice)),
+                drainConfig: {
+                    enabled: true,
+                    readings: [
+                        {
+                            timestamp: new Date(Date.now() - 3600000).toISOString(),
+                            feedEc: 1.5,
+                            drainEc: 1.8,
+                            feedVolumeMl: 1000,
+                            drainVolumeMl: 200
+                        }
+                    ]
+                }
+            } as any;
+            await element.updateComplete;
+
             const rows = element.shadowRoot?.querySelectorAll('tbody tr');
             expect(rows?.length).toBe(1);
             expect(rows?.[0].textContent).toContain('20.0%');
@@ -141,7 +205,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Drain EC Tab', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[5] as HTMLElement).click(); // Drain EC
             await element.updateComplete;
         });
@@ -154,27 +218,26 @@ describe('IrrigationDialog - Extra Coverage', () => {
             switchEl.checked = true;
             switchEl.dispatchEvent(new Event('change'));
             await element.updateComplete;
-            expect((element as any)._drainEcEnabled).toBe(true);
+            expect((element as any)._sm.tabs.drain_ec.draft.enabled).toBe(true);
 
             // Update delta
             const deltaInput = element.shadowRoot?.querySelector('md3-number-input[label*="Max EC Delta"]') as any;
             deltaInput.dispatchEvent(new CustomEvent('change', { detail: '1.2' }));
             await element.updateComplete;
-            expect((element as any)._drainEcMaxDelta).toBe(1.2);
+            expect((element as any)._sm.tabs.drain_ec.draft.maxEcDelta).toBe(1.2);
 
             // Update target runoff
             const runoffInput = element.shadowRoot?.querySelector('md3-number-input[label*="Target Runoff"]') as any;
             runoffInput.dispatchEvent(new CustomEvent('change', { detail: '25' }));
             await element.updateComplete;
-            expect((element as any)._drainEcTargetRunoffPercent).toBe(25);
+            expect((element as any)._sm.tabs.drain_ec.draft.targetRunoffPercent).toBe(25);
         });
 
         it('should log reading successfully via manual inputs', async () => {
             // ... set values
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
             // Set values directly to ensure state updates
-            (element as any)._drainLogFeedEc = 2.0;
-            (element as any)._drainLogDrainEc = 2.5;
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedEc: 2.0, logDrainEc: 2.5 } });
             await element.updateComplete;
 
             // Call method directly
@@ -218,8 +281,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             mocks.logDrainReading.mockRejectedValueOnce(new Error('Log Fail'));
             const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 
-            (element as any)._drainLogFeedEc = 2.0;
-            (element as any)._drainLogDrainEc = 2.5;
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedEc: 2.0, logDrainEc: 2.5 } });
             await (element as any)._logDrainReadingNow();
 
             expect(toastSpy).toHaveBeenCalledWith('Failed to log drain reading');
@@ -234,21 +296,21 @@ describe('IrrigationDialog - Extra Coverage', () => {
             drainVolInput.dispatchEvent(new CustomEvent('change', { detail: '300' }));
             await element.updateComplete;
 
-            expect((element as any)._drainLogFeedVolume).toBe(1500);
-            expect((element as any)._drainLogDrainVolume).toBe(300);
+            expect((element as any)._sm.tabs.drain_ec.draft.logFeedVolume).toBe(1500);
+            expect((element as any)._sm.tabs.drain_ec.draft.logDrainVolume).toBe(300);
         });
     });
 
     describe('Schedule Editing - Irrigation Times', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[0] as HTMLElement).click(); // Schedules
             await element.updateComplete;
         });
 
         it('should edit irrigation time', async () => {
             // Open edit dialog for first irrigation time
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             expect(irrigationTimes?.length).toBeGreaterThan(0);
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
@@ -272,12 +334,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await new Promise(r => setTimeout(r, 10)); // wait for async data service calls
             await element.updateComplete;
 
-            expect((element as any)._editingIrrigationTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should delete irrigation time via edit dialog', async () => {
             // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -286,12 +348,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             deleteBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._editingIrrigationTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should cancel irrigation time editing', async () => {
             // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -300,12 +362,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             cancelBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._editingIrrigationTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should cancel irrigation time editing by clicking backdrop', async () => {
             // Open edit dialog
-            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .chart-marker');
+            const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
             (irrigationTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -314,13 +376,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
 
-            expect((element as any)._editingIrrigationTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
     });
 
     describe('Schedule Adding', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[0] as HTMLElement).click(); // Schedules
             await element.updateComplete;
         });
@@ -336,7 +398,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
 
-            expect((element as any)._addingIrrigationTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should cancel adding drain time by clicking backdrop', async () => {
@@ -350,20 +412,20 @@ describe('IrrigationDialog - Extra Coverage', () => {
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
 
-            expect((element as any)._addingDrainTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
     });
 
     describe('Schedule Editing - Drain Times', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[0] as HTMLElement).click(); // Schedules
             await element.updateComplete;
         });
 
         it('should edit drain time', async () => {
             // Open edit dialog for first drain time
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             expect(drainTimes?.length).toBeGreaterThan(0);
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
@@ -387,12 +449,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await new Promise(r => setTimeout(r, 10)); // wait for async data service calls
             await element.updateComplete;
 
-            expect((element as any)._editingDrainTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should delete drain time via edit dialog', async () => {
             // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -401,12 +463,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             deleteBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._editingDrainTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should cancel drain time editing', async () => {
             // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -415,12 +477,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
             cancelBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._editingDrainTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
         it('should cancel drain time editing by clicking backdrop', async () => {
             // Open edit dialog
-            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .chart-marker');
+            const drainTimes = element.shadowRoot?.querySelectorAll('.drain-time-bar .timeline-event');
             (drainTimes?.[0] as HTMLElement).click();
             await element.updateComplete;
 
@@ -429,14 +491,14 @@ describe('IrrigationDialog - Extra Coverage', () => {
             backdrop.dispatchEvent(new CustomEvent('click', { bubbles: true, composed: true }));
             await element.updateComplete;
 
-            expect((element as any)._editingDrainTime).toBeUndefined();
+            expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
     });
 
     describe('Tank Rendering Edge Cases', () => {
         it('should render tank status labels', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Analytics
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            (tabs?.[3] as HTMLElement).click(); // Tanks
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
@@ -448,6 +510,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             element.device = {
                 ...mockDevice,
                 environmentAttributes: {
+                    ...mockDevice.environmentAttributes,
                     irrigationTanks: [
                         { name: 'Refilling', depletionStatus: 'refilling', fillLevel: 90 },
                         { name: 'Stable', depletionStatus: 'static', fillLevel: 40 }
@@ -456,8 +519,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
             } as any;
             await element.updateComplete;
 
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Analytics
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            (tabs?.[3] as HTMLElement).click(); // Tanks
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
@@ -468,8 +531,9 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Drain Config Tab (Save)', () => {
         beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[4] as HTMLElement).click(); // Drain EC tab
+            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+            // When all features enabled: Schedules[0], Steering[1], Config[2], Tanks[3], Analytics[4], Drain EC[5]
+            (tabs?.[5] as HTMLElement).click();
             await element.updateComplete;
         });
 
@@ -490,63 +554,22 @@ describe('IrrigationDialog - Extra Coverage', () => {
     });
 
     describe('Undo Deletion functionality', () => {
-        beforeEach(async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.tab-item');
-            (tabs?.[0] as HTMLElement).click(); // Schedules tab
-            await element.updateComplete;
+        it('should confirm an undoable action when deleting an irrigation time', async () => {
+            await (element as any)._removeIrrigationTime('08:00');
+
+            expect((element as any).store.context.optimisticManager.confirmUpdate).toHaveBeenCalledWith(
+                'mock-id',
+                expect.objectContaining({ description: expect.any(String) })
+            );
         });
 
-        it('should undo an irrigation time deletion', async () => {
-            (element as any)._showUndoToast('irrigation', '08:30', 60);
-            await element.updateComplete;
+        it('should confirm an undoable action when deleting a drain time', async () => {
+            await (element as any)._removeDrainTime('09:00');
 
-            await (element as any)._undoDelete();
-
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith({
-                growspaceId: 'gs1',
-                time: '08:30:00',
-                duration: 60
-            });
-            expect((element as any)._pendingUndo).toBeUndefined();
-        });
-
-        it('should undo a drain time deletion', async () => {
-            (element as any)._showUndoToast('drain', '08:30', 60);
-            await element.updateComplete;
-
-            await (element as any)._undoDelete();
-
-            expect(mocks.addDrainTime).toHaveBeenCalledWith({
-                growspaceId: 'gs1',
-                time: '08:30:00',
-                duration: 60
-            });
-            expect((element as any)._pendingUndo).toBeUndefined();
-        });
-
-        it('should handle undo deletion failure', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-            mocks.addIrrigationTime.mockRejectedValue(new Error('Test error'));
-            (element as any)._showUndoToast('irrigation', '08:30', 60);
-            await element.updateComplete;
-
-            await (element as any)._undoDelete();
-
-            const toast = element.shadowRoot?.querySelector('.toast-notification.error');
-            // Element does not show error toast on save failure, only console logs
-            expect(consoleSpy).toHaveBeenCalled();
-            consoleSpy.mockRestore();
-        });
-
-        it('should clear pending undo timeout on close', async () => {
-            vi.useFakeTimers();
-            (element as any)._showUndoToast('drain', '08:30', 60);
-            expect((element as any)._pendingUndo?.timeoutId).toBeDefined();
-
-            (element as any)._close();
-
-            expect((element as any)._pendingUndo).toBeUndefined();
-            vi.useRealTimers();
+            expect((element as any).store.context.optimisticManager.confirmUpdate).toHaveBeenCalledWith(
+                'mock-id',
+                expect.objectContaining({ description: expect.any(String) })
+            );
         });
     });
 
@@ -561,143 +584,121 @@ describe('IrrigationDialog - Extra Coverage', () => {
             consoleSpy.mockRestore();
         });
 
-        it('should clear existing timeout when showing a new undo toast', () => {
-            vi.useFakeTimers();
-            const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
-
-            (element as any)._showUndoToast('irrigation', '08:00', 30);
-            (element as any)._showUndoToast('drain', '09:00', 45);
-
-            expect(clearTimeoutSpy).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
-
-        it('should return early in _undoDelete if no pending undo', async () => {
-            (element as any)._pendingUndo = undefined;
-            const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
-
-            await (element as any)._undoDelete();
-
-            expect(clearTimeoutSpy).not.toHaveBeenCalled();
-        });
-
         it('should handle duplicate time when saving edited irrigation time', async () => {
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '12:00', // Already exists in mockDevice
-                duration: 30
-            };
-            (element as any)._irrigationTimes = [{ time: '12:00:00', duration: 60 }];
-
-            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
+            element.device = {
+                ...element.device!,
+                irrigationConfig: {
+                    ...element.device!.irrigationConfig,
+                    irrigationTimes: [{ time: '12:00:00', duration: 60 }],
+                },
+            } as any;
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '12:00', duration: 30 });
 
             await (element as any)._saveEditedIrrigationTime();
 
-            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('already exists'));
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('already exists'), 'error'
+            );
+            expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
         });
 
-        it('should recover if adding fails during edit save', async () => {
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '10:00',
-                duration: 60
-            };
-
-            // Step 1 remove succeeds, Step 2 add fails
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
+        it('should show error toast when adding fails during edit save', async () => {
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '10:00', duration: 60 });
             mocks.addIrrigationTime.mockRejectedValueOnce(new Error('Add Fail'));
-            // Step 3 rollback add
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
 
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            await expect((element as any)._saveEditedIrrigationTime()).rejects.toThrow();
 
-            await (element as any)._saveEditedIrrigationTime();
-
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('rolling back'), expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
     });
 
     describe('Template Event Handlers', () => {
         it('should update adding state on time change', async () => {
-            (element as any)._addingIrrigationTime = { time: '08:00', duration: 60 };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
             const timeInput = element.shadowRoot?.querySelector('md3-text-input[label="Time"]') as any;
             timeInput.value = "09:30";
             timeInput.dispatchEvent(new CustomEvent("change", { detail: "09:30" }));
 
-            expect((element as any)._addingIrrigationTime.time).toBe('09:30');
+            expect((element as any)._sm.tabs.schedules.sub.time).toBe('09:30');
         });
 
         it('should update adding state on duration change', async () => {
-            (element as any)._addingIrrigationTime = { time: '08:00', duration: 60 };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
             const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.value = '120';
             durationInput.dispatchEvent(new CustomEvent('change', { detail: '120' }));
 
-            expect((element as any)._addingIrrigationTime.duration).toBe(120);
+            expect((element as any)._sm.tabs.schedules.sub.duration).toBe(120);
         });
 
         it('should update editing state on time change', async () => {
-            (element as any)._editingIrrigationTime = { originalTime: '08:00', originalDuration: 60, time: '08:00', duration: 60 };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 60, originalTime: '08:00', originalDuration: 60 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
             const timeInput = element.shadowRoot?.querySelector('md3-text-input[label="Time"]') as any;
             timeInput.value = "09:30";
             timeInput.dispatchEvent(new CustomEvent("change", { detail: "09:30" }));
 
-            expect((element as any)._editingIrrigationTime.time).toBe('09:30');
+            expect((element as any)._sm.tabs.schedules.sub.time).toBe('09:30');
         });
 
         it('should update editing state on duration change', async () => {
-            (element as any)._editingIrrigationTime = { originalTime: '08:00', originalDuration: 60, time: '08:00', duration: 60 };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 60, originalTime: '08:00', originalDuration: 60 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
             const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.value = '120';
             durationInput.dispatchEvent(new CustomEvent('change', { detail: '120' }));
 
-            expect((element as any)._editingIrrigationTime.duration).toBe(120);
+            expect((element as any)._sm.tabs.schedules.sub.duration).toBe(120);
         });
 
         it('should handle invalid duration input', async () => {
-            (element as any)._addingIrrigationTime = { time: '08:00', duration: 60 };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_ADD_IRRIGATION', time: '08:00', duration: 60 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_ADD_IRRIGATION', time: '08:00', duration: 60 });
             await element.updateComplete;
 
             const durationInput = element.shadowRoot?.querySelector('md3-number-input[label*="Duration"]') as any;
             durationInput.value = 'invalid';
             durationInput.dispatchEvent(new CustomEvent('change', { detail: 'invalid' }));
 
-            expect((element as any)._addingIrrigationTime.duration).toBe(60);
+            expect((element as any)._sm.tabs.schedules.sub.duration).toBe(60);
         });
     });
 
     describe('Coverage Gap Fill - Early Returns and Error Paths', () => {
         it('should return early from _saveEditedIrrigationTime when no editing state', async () => {
-            (element as any)._editingIrrigationTime = undefined;
+            // SM starts with sub.kind === 'idle' (no editing state) by default
             await (element as any)._saveEditedIrrigationTime();
             expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
         });
 
         it('should return early from _saveEditedDrainTime when no editing state', async () => {
-            (element as any)._editingDrainTime = undefined;
+            // SM starts with sub.kind === 'idle' (no editing state) by default
             await (element as any)._saveEditedDrainTime();
             expect(mocks.removeDrainTime).not.toHaveBeenCalled();
         });
 
         it('should return early from _deleteIrrigationTimeFromEdit when no editing state', async () => {
-            (element as any)._editingIrrigationTime = undefined;
+            // SM starts with sub.kind === 'idle' (no editing state) by default
             await (element as any)._deleteIrrigationTimeFromEdit();
             expect(mocks.removeIrrigationTime).not.toHaveBeenCalled();
         });
 
         it('should return early from _deleteDrainTimeFromEdit when no editing state', async () => {
-            (element as any)._editingDrainTime = undefined;
+            // SM starts with sub.kind === 'idle' (no editing state) by default
             await (element as any)._deleteDrainTimeFromEdit();
             expect(mocks.removeDrainTime).not.toHaveBeenCalled();
         });
@@ -716,7 +717,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
         it('should handle _handleResetWaterTracking when user confirms', async () => {
             vi.spyOn(window, 'confirm').mockReturnValue(true);
-            const notifySpy = vi.spyOn(element as any, '_notifyDataChanged').mockImplementation(() => {});
+            const notifySpy = vi.spyOn(element as any, '_notifyDataChanged').mockImplementation(() => { });
             await (element as any)._handleResetWaterTracking();
             expect(mocks.resetWaterTracking || true).toBeTruthy(); // resetWaterTracking may not be in mocks
             notifySpy.mockRestore();
@@ -730,151 +731,91 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedDrainTime with duplicate time', async () => {
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '10:00',
-                duration: 45
-            };
-            (element as any)._drainTimes = [{ time: '10:00:00', duration: 45 }];
-            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(toastSpy).toHaveBeenCalledWith(expect.stringContaining('already exists'));
-        });
+            element.device = {
+                ...element.device!,
+                irrigationConfig: {
+                    ...element.device!.irrigationConfig,
+                    drainTimes: [{ time: '10:00:00', duration: 45 }],
+                },
+            } as any;
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00', duration: 45 });
 
-        it('should handle rollback failure in _saveEditedIrrigationTime', async () => {
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '11:00',
-                duration: 30
-            };
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            mocks.addIrrigationTime
-                .mockRejectedValueOnce(new Error('Add Fail'))
-                .mockRejectedValueOnce(new Error('Rollback Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedIrrigationTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Rollback failed:', expect.any(Error));
-            consoleSpy.mockRestore();
+            await (element as any)._saveEditedDrainTime();
+
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('already exists'), 'error'
+            );
+            expect(mocks.removeDrainTime).not.toHaveBeenCalled();
         });
 
         it('should handle remove failure in _saveEditedIrrigationTime', async () => {
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '11:00',
-                duration: 30
-            };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '11:00', duration: 30 });
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('Remove Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedIrrigationTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove old time:', expect.any(Error));
-            consoleSpy.mockRestore();
-        });
 
-        it('should handle rollback success in _saveEditedDrainTime', async () => {
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '11:00',
-                duration: 45
-            };
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime
-                .mockRejectedValueOnce(new Error('Add Fail'))
-                .mockResolvedValueOnce(true);
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('rolling back'), expect.any(Error));
-            consoleSpy.mockRestore();
-        });
+            await expect((element as any)._saveEditedIrrigationTime()).rejects.toThrow();
 
-        it('should handle rollback failure in _saveEditedDrainTime', async () => {
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '11:00',
-                duration: 45
-            };
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime
-                .mockRejectedValueOnce(new Error('Add Fail'))
-                .mockRejectedValueOnce(new Error('Rollback Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Rollback failed:', expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should handle remove failure in _saveEditedDrainTime', async () => {
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '11:00',
-                duration: 45
-            };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '11:00', duration: 45 });
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Fail'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await (element as any)._saveEditedDrainTime();
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove old drain time:', expect.any(Error));
-            consoleSpy.mockRestore();
+
+            await expect((element as any)._saveEditedDrainTime()).rejects.toThrow();
+
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should call _removeIrrigationTime successfully', async () => {
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._irrigationTimes = [{ time: '08:00', duration: 30 }];
             await (element as any)._removeIrrigationTime('08:00');
-            expect(mocks.removeIrrigationTime).toHaveBeenCalled();
-            expect((element as any)._irrigationTimes).toEqual([]);
+            expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(
+                expect.objectContaining({ growspaceId: 'gs1', time: '08:00' })
+            );
         });
 
-        it('should handle _removeIrrigationTime error and rethrow', async () => {
+        it('should handle _removeIrrigationTime error and show toast', async () => {
             mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('Remove Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             await expect((element as any)._removeIrrigationTime('08:00')).rejects.toThrow('Remove Error');
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove irrigation time:', expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should call _removeDrainTime successfully', async () => {
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [{ time: '09:00', duration: 45 }];
             await (element as any)._removeDrainTime('09:00');
-            expect(mocks.removeDrainTime).toHaveBeenCalled();
-            expect((element as any)._drainTimes).toEqual([]);
+            expect(mocks.removeDrainTime).toHaveBeenCalledWith(
+                expect.objectContaining({ growspaceId: 'gs1', time: '09:00' })
+            );
         });
 
-        it('should handle _removeDrainTime error and rethrow', async () => {
+        it('should handle _removeDrainTime error and show toast', async () => {
             mocks.removeDrainTime.mockRejectedValueOnce(new Error('Remove Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            await expect((element as any)._removeDrainTime('09:00')).rejects.toThrow('Remove Error');
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to remove drain time:', expect.any(Error));
-            consoleSpy.mockRestore();
-        });
-
-        it('should expire undo toast after timeout', async () => {
-            vi.useFakeTimers();
-            (element as any)._showUndoToast('irrigation', '08:00', 30);
-            expect((element as any)._pendingUndo).toBeDefined();
-            vi.advanceTimersByTime(10001);
-            expect((element as any)._pendingUndo).toBeUndefined();
-            vi.useRealTimers();
+            await (element as any)._removeDrainTime('09:00');
+            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
+                expect.any(String), 'error'
+            );
         });
 
         it('should clear _errorToast after timeout in _showErrorToast', async () => {
             vi.useFakeTimers();
             (element as any)._showErrorToast('Test message');
-            expect((element as any)._errorToast).toBe('Test message');
+            expect((element as any)._sm.toast).toBe('Test message');
             vi.advanceTimersByTime(5001);
-            expect((element as any)._errorToast).toBeUndefined();
+            expect((element as any)._sm.toast).toBeUndefined();
             vi.useRealTimers();
         });
     });
 
     describe('Branch Coverage - Analytics Tab Variants', () => {
         beforeEach(async () => {
-            (element as any)._activeTab = 'water_analytics';
+            (element as any)._sm = { ...(element as any)._sm, activeTab: 'water_analytics' };
             await element.updateComplete;
         });
 
@@ -888,7 +829,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
-            expect(text).toContain('No events scheduled');
+            expect(text).not.toContain('Schedule Summary');
         });
 
         it('should render medium water efficiency (0.7) label', async () => {
@@ -945,7 +886,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
-            expect(text).toContain('No events scheduled');
+            expect(text).not.toContain('Schedule Summary');
         });
 
         it('should render with no tanks hiding tank levels section', async () => {
@@ -1033,8 +974,6 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Branch Coverage - Time Format and Sort Callbacks', () => {
         it('should handle _addDrainTime when time already in HH:MM:SS format', async () => {
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [];
             await (element as any)._addDrainTime('09:00:00', 30);
             expect(mocks.addDrainTime).toHaveBeenCalledWith(
                 expect.objectContaining({ time: '09:00:00' })
@@ -1042,14 +981,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedIrrigationTime when time already in HH:MM:SS format', async () => {
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '11:00:00',
-                duration: 30,
-            };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '11:00:00', duration: 30 });
             await (element as any)._saveEditedIrrigationTime();
             expect(mocks.addIrrigationTime).toHaveBeenCalledWith(
                 expect.objectContaining({ time: '11:00:00' })
@@ -1057,74 +990,40 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should handle _saveEditedDrainTime when time already in HH:MM:SS format', async () => {
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '11:00:00',
-                duration: 45,
-            };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '11:00:00', duration: 45 });
             await (element as any)._saveEditedDrainTime();
             expect(mocks.addDrainTime).toHaveBeenCalledWith(
                 expect.objectContaining({ time: '11:00:00' })
             );
         });
 
-        it('should cover sort callback || fallback with undefined time in _saveEditedIrrigationTime', async () => {
-            mocks.removeIrrigationTime.mockResolvedValueOnce(true);
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._irrigationTimes = [
-                { time: undefined, duration: 30 },
-                { time: '10:00:00', duration: 30 },
-            ];
-            (element as any)._editingIrrigationTime = {
-                originalTime: '08:00',
-                originalDuration: 30,
-                time: '09:00',
-                duration: 30,
-            };
+        it('should call addIrrigationTime when editing irrigation time to new value', async () => {
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '09:00', duration: 30 });
             await (element as any)._saveEditedIrrigationTime();
             expect(mocks.addIrrigationTime).toHaveBeenCalled();
         });
 
-        it('should cover sort callback || fallback with undefined time in _saveEditedDrainTime', async () => {
-            mocks.removeDrainTime.mockResolvedValueOnce(true);
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [
-                { time: undefined, duration: 45 },
-                { time: '11:00:00', duration: 45 },
-            ];
-            (element as any)._editingDrainTime = {
-                originalTime: '09:00',
-                originalDuration: 45,
-                time: '10:00',
-                duration: 45,
-            };
+        it('should call addDrainTime when editing drain time to new value', async () => {
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_DRAIN', time: '09:00', duration: 45, originalTime: '09:00', originalDuration: 45 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_DRAIN', time: '10:00', duration: 45 });
             await (element as any)._saveEditedDrainTime();
             expect(mocks.addDrainTime).toHaveBeenCalled();
         });
 
-        it('should cover start_time fallback in _addIrrigationTime sort', async () => {
-            mocks.addIrrigationTime.mockResolvedValueOnce(true);
-            (element as any)._irrigationTimes = [
-                { start_time: '07:00:00', duration: 20 },
-                { time: undefined, start_time: undefined, duration: 25 },
-            ];
-            (element as any)._addingIrrigationTime = { time: '09:00', duration: 30 };
+        it('should handle _addIrrigationTime with various time formats', async () => {
             await (element as any)._addIrrigationTime('09:00', 30);
-            expect(mocks.addIrrigationTime).toHaveBeenCalled();
+            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(
+                expect.objectContaining({ time: '09:00:00' })
+            );
         });
 
-        it('should cover start_time fallback in _addDrainTime sort', async () => {
-            mocks.addDrainTime.mockResolvedValueOnce(true);
-            (element as any)._drainTimes = [
-                { start_time: '07:00:00', duration: 20 },
-                { time: undefined, start_time: undefined, duration: 25 },
-            ];
-            (element as any)._addingDrainTime = { time: '10:00', duration: 30 };
+        it('should handle _addDrainTime with various time formats', async () => {
             await (element as any)._addDrainTime('10:00', 30);
-            expect(mocks.addDrainTime).toHaveBeenCalled();
+            expect(mocks.addDrainTime).toHaveBeenCalledWith(
+                expect.objectContaining({ time: '10:00:00' })
+            );
         });
     });
 
@@ -1138,8 +1037,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
         it('should handle resetWaterTracking API error gracefully', async () => {
             vi.spyOn(window, 'confirm').mockReturnValue(true);
             mocks.resetWaterTracking.mockRejectedValueOnce(new Error('Reset failed'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => {});
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 
             await (element as any)._handleResetWaterTracking();
 
@@ -1152,8 +1051,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Branch Coverage - Drain Saving State and NaN Duration', () => {
         it('should show Saving text when _drainSaving is true', async () => {
-            (element as any)._activeTab = 'drain_ec';
-            (element as any)._drainSaving = true;
+            (element as any)._sm = { ...(element as any)._sm, activeTab: 'drain_ec' };
+            (element as any)._sm = transition((element as any)._sm, { type: 'SET_DRAIN_SAVING', saving: true });
             await element.updateComplete;
 
             const text = element.shadowRoot?.textContent || '';
@@ -1161,12 +1060,8 @@ describe('IrrigationDialog - Extra Coverage', () => {
         });
 
         it('should ignore NaN duration in edit overlay', async () => {
-            (element as any)._editingIrrigationTime = {
-                time: '08:00',
-                duration: 30,
-                originalTime: '08:00',
-                originalDuration: 30,
-            };
+            (element as any)._sm = transition((element as any)._sm, { type: 'BEGIN_EDIT_IRRIGATION', time: '08:00', duration: 30, originalTime: '08:00', originalDuration: 30 });
+            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_EDIT_IRRIGATION', time: '08:00', duration: 30 });
             await element.updateComplete;
 
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
@@ -1176,8 +1071,22 @@ describe('IrrigationDialog - Extra Coverage', () => {
             if (durationInput) {
                 durationInput.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number' }));
                 await element.updateComplete;
-                expect((element as any)._editingIrrigationTime?.duration).toBe(30);
+                expect((element as any)._sm.tabs.schedules.sub.duration).toBe(30);
             }
+        });
+    });
+
+    describe('Tab Visibility with missing components', () => {
+        it('should hide steering tab when no pump is configured', async () => {
+            element.device = {
+                ...JSON.parse(JSON.stringify(mockDevice)),
+                irrigationConfig: { irrigationPumpEntity: '', drainPumpEntity: '' }
+            } as any;
+            await element.updateComplete;
+
+            const tabs = Array.from(element.shadowRoot?.querySelectorAll('.v1-nav-item') || []);
+            const tabTexts = tabs.map(t => t.textContent?.trim());
+            expect(tabTexts).not.toContain('Crop Steering');
         });
     });
 

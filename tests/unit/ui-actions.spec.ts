@@ -6,7 +6,6 @@ import {
     selectAllPlants,
     clearPlantSelection,
     exitEditMode,
-    handlePlantClick,
     handleDeepLink,
     openBatchWateringDialog,
     openBatchTrainingDialog,
@@ -28,7 +27,21 @@ import { ActionContext } from '../../src/store/core/action-context';
 import { ViewMode, ConfigTab } from '../../src/constants';
 import * as libraryActions from '../../src/store/plant/library-actions';
 
-vi.mock('../../src/store/plant/library-actions');
+vi.mock('../../src/store/plant/library-actions', () => ({
+    fetchStrainLibrary: vi.fn(),
+    fetchNutrientPresets: vi.fn(),
+    fetchIPMPresets: vi.fn(),
+    fetchNutrientInventory: vi.fn(),
+    updateNutrientStock: vi.fn(),
+    removeNutrientStock: vi.fn(),
+    fetchECRampCurves: vi.fn(),
+    saveECRampCurve: vi.fn(),
+    removeECRampCurve: vi.fn(),
+    saveIPMPreset: vi.fn(),
+    saveNutrientPreset: vi.fn(),
+    removeNutrientPreset: vi.fn(),
+    removeIPMPreset: vi.fn(),
+}));
 
 describe('ui-actions', () => {
     let ctx: ActionContext;
@@ -60,6 +73,7 @@ describe('ui-actions', () => {
 
         ctx = {
             ui: {
+                showToast: vi.fn(),
                 setActiveDialog: setActiveDialogSpy,
                 setViewMode: setViewModeSpy,
                 togglePlantSelection: togglePlantSelectionSpy,
@@ -70,13 +84,16 @@ describe('ui-actions', () => {
                 ...mockUIState
             },
             data: {
-                $selectedDevice: { get: vi.fn() },
                 $devices: { get: vi.fn(() => []) },
                 $optimisticDeletedPlantIds: { get: vi.fn(() => new Set()) },
                 $plantToDeviceMap: { get: vi.fn(() => new Map()) }
             },
+            grid: {
+                $selectedDevice: { get: vi.fn() },
+            },
             dataService: {
-                fetchStrainLibrary: vi.fn()
+                fetchStrainLibrary: vi.fn(),
+                fetchIPMPresets: vi.fn(),
             },
             showToast: showToastSpy
         } as unknown as ActionContext;
@@ -120,13 +137,13 @@ describe('ui-actions', () => {
         });
 
         it('selectAllPlants should do nothing if no device selected', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue(null);
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue(null);
             selectAllPlants(ctx);
             expect(selectAllPlantsSpy).not.toHaveBeenCalled();
         });
 
         it('selectAllPlants should select all valid plant ids', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('dev1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('dev1');
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
                     deviceId: 'dev1',
@@ -154,21 +171,6 @@ describe('ui-actions', () => {
     });
 
     describe('Navigation & Dialogs', () => {
-        it('handlePlantClick should open overview dialog in normal mode', () => {
-            const plant = { attributes: { plant_id: 'p1' } } as any;
-            handlePlantClick(ctx, plant);
-            expect(setActiveDialogSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'PLANT_OVERVIEW' }));
-        });
-
-        it('handlePlantClick should toggle selection in edit mode', () => {
-            const plant = { attributes: { plant_id: 'p1' } } as any;
-            mockUIState.$isEditMode.get.mockReturnValue(true);
-            mockUIState.$selectedPlants.get.mockReturnValue(new Set(['p2'])); // One selected to ensure we are in multi-select flow
-
-            handlePlantClick(ctx, plant);
-            expect(togglePlantSelectionSpy).toHaveBeenCalledWith('p1');
-        });
-
         it('handleDeepLink should set pending link if devices not ready', () => {
             (ctx.data.$devices.get as any).mockReturnValue([]);
             handleDeepLink(ctx, 'p1');
@@ -231,7 +233,7 @@ describe('ui-actions', () => {
         });
 
         it('should find first empty slot if no coordinates provided', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('dev1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('dev1');
             (ctx.data.$devices.get as any).mockReturnValue([
                 {
                     deviceId: 'dev1',
@@ -269,7 +271,7 @@ describe('ui-actions', () => {
         });
 
         it('should open logbook dialog', () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
             openLogbookDialog(ctx);
             expect(setActiveDialogSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'LOGBOOK' }));
         });
@@ -302,7 +304,7 @@ describe('ui-actions', () => {
 
             await exportStrainLibrary(ctx);
 
-            expect(showToastSpy).toHaveBeenCalledWith('Failed to export library', 'error');
+            expect(ctx.ui.showToast).toHaveBeenCalledWith('Failed to export library', 'error');
             spy.mockRestore();
         });
     });
@@ -314,7 +316,7 @@ describe('ui-actions', () => {
             expect(setActiveDialogSpy).toHaveBeenCalledWith({
                 type: 'CONFIG',
                 payload: expect.objectContaining({
-                    currentTab: ConfigTab.ENVIRONMENT,
+                    currentTab: ConfigTab.SENSORS,
                     environmentData: expect.objectContaining({
                         selectedGrowspaceId: '',
                         temperatureSensor: '',
@@ -406,6 +408,22 @@ describe('ui-actions', () => {
         it('should open irrigation dialog', () => {
             openIrrigationDialog(ctx);
             expect(setActiveDialogSpy).toHaveBeenCalledWith({ type: 'IRRIGATION', payload: {} });
+        });
+
+        it('should open irrigation dialog with initialTab and scrollToField', () => {
+            openIrrigationDialog(ctx, { initialTab: 'steering', scrollToField: 'lightsOnTime' });
+            expect(setActiveDialogSpy).toHaveBeenCalledWith({
+                type: 'IRRIGATION',
+                payload: { initialTab: 'steering', scrollToField: 'lightsOnTime' },
+            });
+        });
+
+        it('should open irrigation dialog with only initialTab', () => {
+            openIrrigationDialog(ctx, { initialTab: 'steering' });
+            expect(setActiveDialogSpy).toHaveBeenCalledWith({
+                type: 'IRRIGATION',
+                payload: { initialTab: 'steering' },
+            });
         });
 
         it('should open nutrients dialog', () => {

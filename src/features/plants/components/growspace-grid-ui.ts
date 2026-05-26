@@ -7,7 +7,7 @@
  */
 
 import { LitElement, html, css, TemplateResult, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
+import { customElement, property, queryAll } from 'lit/decorators.js';
 import { createRef, ref } from 'lit/directives/ref.js';
 import { mdiPlus } from '@mdi/js';
 import { repeat } from 'lit/directives/repeat.js';
@@ -52,9 +52,18 @@ export class GrowspaceGridUI extends LitElement {
   @property({ type: Boolean }) isLoading = false;
   @property() overlayMode: GridOverlayMode = GridOverlayMode.NONE;
 
+  @queryAll('plant-card-container') private _plantCards!: NodeListOf<HTMLElement>;
+
   // Drag state (managed internally by UI component)
   private _draggedPlant: PlantEntity | null = null;
   private _gridRef = createRef<HTMLDivElement>();
+
+  public focusCard(index: number): void {
+    const cards = this._plantCards;
+    if (cards && cards[index]) {
+      cards[index].focus();
+    }
+  }
 
   static styles = [
     variables,
@@ -91,12 +100,12 @@ export class GrowspaceGridUI extends LitElement {
         justify-content: center;
         height: 100%;
         aspect-ratio: 1;
-        border: var(--glass-border);
+        border: 1.5px dashed color-mix(in srgb, var(--primary-color, #4caf50) 30%, transparent);
         border-radius: var(--border-radius-lg, 16px);
-        color: var(--secondary-text-color);
+        color: color-mix(in srgb, var(--primary-color, #4caf50) 65%, transparent);
         cursor: pointer;
         transition: all 0.2s ease;
-        background: var(--glass-bg);
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 4%, transparent);
       }
 
       /* Skeleton Loading */
@@ -121,9 +130,9 @@ export class GrowspaceGridUI extends LitElement {
       }
 
       .plant-card-empty:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-        background: rgba(255, 255, 255, 0.08);
+        border-color: var(--primary-color, #4caf50);
+        color: var(--primary-color, #4caf50);
+        background: color-mix(in srgb, var(--primary-color, #4caf50) 8%, transparent);
         transform: translateY(-2px);
       }
 
@@ -418,7 +427,12 @@ export class GrowspaceGridUI extends LitElement {
     }
   }
 
-  private _handleDrop(e: DragEvent | null, targetRow: number, targetCol: number, targetPlant: PlantEntity | null) {
+  private _handleDrop(
+    e: DragEvent | null,
+    targetRow: number,
+    targetCol: number,
+    targetPlant: PlantEntity | null
+  ) {
     if (e) e.preventDefault();
 
     // Emit drop event to container with the dragged plant
@@ -479,7 +493,9 @@ export class GrowspaceGridUI extends LitElement {
 
     return html`
       <div
-        class="grid ${this.isCompactView ? 'compact' : ''} ${this.isListView ? 'force-list-view' : ''}"
+        class="grid ${this.isCompactView ? 'compact' : ''} ${this.isListView
+          ? 'force-list-view'
+          : ''}"
         style="${gridStyle}"
         @mobile-drop=${this._handleMobileDrop}
         @dragover=${this._handleDragOver}
@@ -489,7 +505,10 @@ export class GrowspaceGridUI extends LitElement {
           ? this._renderSkeletonGrid()
           : repeat(
               this.cells,
-              (cell) => (cell.plant ? cell.plant.attributes?.plant_id || cell.plant.entity_id : `empty-${cell.row}-${cell.col}`),
+              (cell) =>
+                cell.plant
+                  ? cell.plant.attributes?.plant_id || cell.plant.entity_id
+                  : `empty-${cell.row}-${cell.col}`,
               (cell) => this._renderGridCell(cell)
             )}
       </div>
@@ -509,7 +528,8 @@ export class GrowspaceGridUI extends LitElement {
           .col=${cell.col}
           @plant-click=${() => this._handleCellClick(cell)}
           @plant-drag-start=${() => this._handleDragStart(cell.plant!)}
-          @plant-drop=${(e: CustomEvent) => this._handleDrop(e.detail.originalEvent, cell.row, cell.col, cell.plant)}
+          @plant-drop=${(e: CustomEvent) =>
+            this._handleDrop(e.detail.originalEvent, cell.row, cell.col, cell.plant)}
         ></plant-card-container>
         ${this.overlayMode !== GridOverlayMode.NONE
           ? html`<div class="grid-overlay" style="background-color: ${cell.overlayColor}"></div>`
@@ -529,7 +549,10 @@ export class GrowspaceGridUI extends LitElement {
         @drop=${(e: DragEvent) => this._handleDrop(e, row, col, null)}
       >
         <div class="plant-header">
-          <svg style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;" viewBox="0 0 24 24">
+          <svg
+            style="width: 48px; height: 48px; opacity: 0.5; fill: currentColor;"
+            viewBox="0 0 24 24"
+          >
             <path d="${mdiPlus}"></path>
           </svg>
         </div>

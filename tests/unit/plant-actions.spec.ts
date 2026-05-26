@@ -11,9 +11,8 @@ import {
     handlePlantDrop,
     confirmAddPlant,
     confirmAddPlants,
-    waterPlant,
-    waterGrowspace,
 } from '../../src/store/plant/plant-actions';
+import { waterPlant, waterGrowspace } from '../../src/store/growspace/environment-actions';
 import * as libraryActions from '../../src/store/plant/library-actions';
 import { OptimisticAction } from '../../src/store/system/optimistic-manager';
 
@@ -86,6 +85,7 @@ describe('plant-actions', () => {
             undoRedoManager: { pushAction: vi.fn() },
             refreshData: vi.fn().mockResolvedValue(undefined),
             ui: {
+                showToast: vi.fn(),
                 deselectPlants: vi.fn(),
                 $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) },
                 $isEditMode: { get: vi.fn().mockReturnValue(false) },
@@ -93,11 +93,13 @@ describe('plant-actions', () => {
                 clearPlantSelection: vi.fn()
             },
             data: {
-                $selectedDevice: { get: vi.fn() },
                 $devices: { get: vi.fn().mockReturnValue([]), set: vi.fn() },
                 addOptimisticDeletedPlantId: vi.fn(),
                 removeOptimisticDeletedPlantId: vi.fn(),
                 updateWsDataCacheGrid: vi.fn()
+            } as any,
+            grid: {
+                $selectedDevice: { get: vi.fn() },
             } as any,
             optimisticManager: {
                 applyOptimisticUpdate: vi.fn().mockImplementation(async (type, payload, apply) => {
@@ -132,7 +134,7 @@ describe('plant-actions', () => {
                 plant_id: 'test123',
                 strain: 'New Strain',
             });
-            expect(ctx.showToast).toHaveBeenCalledWith('Plant updated', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Plant updated', 'success');
         });
 
         it('should show error toast on failure', async () => {
@@ -140,7 +142,7 @@ describe('plant-actions', () => {
 
             await updatePlant(ctx, 'test123', { strain: 'New Strain' });
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to update plant: Network error', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update plant: Network error', 'error');
         });
     });
 
@@ -231,7 +233,7 @@ describe('plant-actions', () => {
             expect(mockDataService.removePlant).toHaveBeenCalled();
             expect(ctx.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
             expect(ctx.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
         });
 
         it('should handle redo action', async () => {
@@ -361,7 +363,7 @@ describe('plant-actions', () => {
             const result = await movePlantToNextStage(ctx, vegPlant);
 
             expect(result).toBe(false);
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('stage is veg'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('stage is veg'), 'error');
         });
 
         it('should return false for cure stage (edge case)', async () => {
@@ -416,7 +418,7 @@ describe('plant-actions', () => {
             const result = await movePlantToGrowspace(ctx, mockPlant, 'target');
 
             expect(result).toBe(false);
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to move plant: Move failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to move plant: Move failed', 'error');
         });
 
         it('should use entity_id fallback when plant_id is missing', async () => {
@@ -489,19 +491,14 @@ describe('plant-actions', () => {
             });
         });
 
-        it('should log with strain name when available', async () => {
-            const consoleSpy = vi.spyOn(console, 'log');
-            await takeClone(ctx, mockPlant);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Test Strain'), expect.anything());
-            consoleSpy.mockRestore();
+        it('should show success toast with clone count', async () => {
+            await takeClone(ctx, mockPlant, 2);
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Taking 2 clones...', 'success');
         });
 
-        it('should log with plant when strain is missing', async () => {
-            const consoleSpy = vi.spyOn(console, 'log');
-            const plantNoStrain = { ...mockPlant, attributes: { ...mockPlant.attributes, strain: undefined } };
-            await takeClone(ctx, plantNoStrain as any);
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('plant'), expect.anything());
-            consoleSpy.mockRestore();
+        it('should show singular toast for single clone', async () => {
+            await takeClone(ctx, mockPlant, 1);
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Taking 1 clone...', 'success');
         });
     });
 
@@ -813,7 +810,7 @@ describe('plant-actions', () => {
                 strain: 'Blue Dream',
                 phenotype: 'Pheno A'
             };
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
 
             const result = await confirmAddPlant(ctx, detail);
 
@@ -826,18 +823,18 @@ describe('plant-actions', () => {
                 phenotype: 'Pheno A',
             });
             expect(ctx.closeDialog).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith('Plant added successfully', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Plant added successfully', 'success');
             expect(ctx.refreshData).toHaveBeenCalled();
         });
 
         it('should fail if no growspace selected', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue(null);
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue(null);
             const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'X' });
             expect(result).toBe(false);
         });
 
         it('should add plant without phenotype', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'OG Kush' });
 
             expect(result).toBe(true);
@@ -851,7 +848,7 @@ describe('plant-actions', () => {
         });
 
         it('should pass stage start dates correctly', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             const result = await confirmAddPlant(ctx, {
                 row: 1, col: 1, strain: 'OG Kush',
                 veg_start: '2024-01-01',
@@ -870,17 +867,17 @@ describe('plant-actions', () => {
         });
 
         it('should return false and show error on failure', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
             mockDataService.addPlant.mockRejectedValue(new Error('Add failed'));
 
             const result = await confirmAddPlant(ctx, { row: 1, col: 1, strain: 'Test' });
 
             expect(result).toBe(false);
-            expect(ctx.showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to add plant: Add failed', 'error');
         });
 
         it('should add strain to library if addToLibrary is true', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
 
             await confirmAddPlant(ctx, {
                 row: 1, col: 1, strain: 'New Strain', phenotype: 'P1',
@@ -892,11 +889,11 @@ describe('plant-actions', () => {
                 phenotype: 'P1'
             });
             expect(mockDataService.addPlant).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('to library'), 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('to library'), 'success');
         });
 
         it('should continue adding plant if adding strain fails', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             mockDataService.addStrain.mockRejectedValue(new Error('Library fail'));
 
             await confirmAddPlant(ctx, {
@@ -905,7 +902,7 @@ describe('plant-actions', () => {
             });
 
             expect(mockDataService.addStrain).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strain'), 'info');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strain'), 'info');
             expect(mockDataService.addPlant).toHaveBeenCalled(); // Should still proceed
         });
 
@@ -913,7 +910,7 @@ describe('plant-actions', () => {
 
     describe('confirmAddPlants', () => {
         it('should default amount to 1 if not provided', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             const detail = {
                 strain: 'Single Plant',
                 addToLibrary: true
@@ -938,7 +935,7 @@ describe('plant-actions', () => {
                 strain: 'Batch Strain',
                 amount: 3
             };
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             (ctx.data.$devices.get as any).mockReturnValue([
                 { deviceId: 'growspace1', plants: [] }
             ]);
@@ -964,31 +961,31 @@ describe('plant-actions', () => {
             });
             expect(ctx.refreshData).toHaveBeenCalled();
             expect(ctx.closeDialog).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Batch plants added successfully', 'success');
             expect(ctx.undoRedoManager.pushAction).toHaveBeenCalled();
         });
 
         it('should fail if no growspace selected', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue(null);
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue(null);
 
             await confirmAddPlants(ctx, { count: 1 });
 
-            expect(ctx.showToast).toHaveBeenCalledWith('No growspace selected', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('No growspace selected', 'error');
             expect(mockDataService.addPlants).not.toHaveBeenCalled();
         });
 
         it('should handle API failure', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
             (ctx.data.$devices.get as any).mockReturnValue([]);
             mockDataService.addPlants.mockRejectedValue(new Error('Batch failed'));
 
             await confirmAddPlants(ctx, { count: 5 });
 
-            expect(ctx.showToast).toHaveBeenCalledWith('Error: Batch failed', 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to add plants: Batch failed', 'error');
         });
 
         it('should add strain to library during batch add if requested', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             (ctx.data.$devices.get as any).mockReturnValue([]);
 
             await confirmAddPlants(ctx, {
@@ -1003,7 +1000,7 @@ describe('plant-actions', () => {
         });
 
         it('should continue adding plants if adding strain to library fails during batch', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             (ctx.data.$devices.get as any).mockReturnValue([]);
             mockDataService.addStrain.mockRejectedValue(new Error('Library batch fail'));
 
@@ -1012,12 +1009,12 @@ describe('plant-actions', () => {
             });
 
             expect(mockDataService.addStrain).toHaveBeenCalled();
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strains'), 'info');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to add strains'), 'info');
             expect(mockDataService.addPlants).toHaveBeenCalled();
         });
 
         it('should send detail as is (minus addToLibrary) to addPlants', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
             (ctx.data.$devices.get as any).mockReturnValue([]);
             await confirmAddPlants(ctx, { strain: 'X' }); // No amount
             expect(mockDataService.addPlants).toHaveBeenCalledWith({
@@ -1027,7 +1024,7 @@ describe('plant-actions', () => {
         });
 
         it('should use "Strain" as fallback if phenotype not provided when adding to library during batch', async () => {
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
             (ctx.data.$devices.get as any).mockReturnValue([]);
             await confirmAddPlants(ctx, { strain: 'OG', amount: 1, addToLibrary: true }); // No phenotype
             expect(mockDataService.addStrain).toHaveBeenCalledWith({ strain: 'OG', phenotype: 'Strain #1' });
@@ -1039,7 +1036,7 @@ describe('plant-actions', () => {
                 reverseAction = action.reverse;
             });
 
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
             const mockAddedPlants = [{ attributes: { plant_id: 'p1' } }];
 
             (ctx.data.$devices.get as any)
@@ -1062,7 +1059,7 @@ describe('plant-actions', () => {
                 redoAction = action.redo;
             });
 
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('growspace1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('growspace1');
 
             // Reset default mock to ensure clean state
             (ctx.data.$devices.get as any).mockReset();
@@ -1085,7 +1082,7 @@ describe('plant-actions', () => {
 
         it('should correctly identifying added plants for undo when pre-existing plants exist', async () => {
             const detail = { strain: 'New', count: 1 };
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
 
             const existingPlant = { attributes: { plant_id: 'old1' } };
             const newPlant = { attributes: { plant_id: 'new1' } };
@@ -1103,7 +1100,7 @@ describe('plant-actions', () => {
 
         it('should handle undefined plants array in undo logic', async () => {
             const detail = { strain: 'New', count: 1 };
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
 
             (ctx.data.$devices.get as any)
                 .mockReturnValueOnce([{ deviceId: 'gs1' }]) // Before: plants undefined
@@ -1117,7 +1114,7 @@ describe('plant-actions', () => {
 
         it('should NOT push undo action if no new plants detected', async () => {
             const detail = { strain: 'New', count: 1 };
-            (ctx.data.$selectedDevice.get as any).mockReturnValue('gs1');
+            (ctx.grid.$selectedDevice.get as any).mockReturnValue('gs1');
 
             const existingPlant = { attributes: { plant_id: 'p1' } };
 
@@ -1158,7 +1155,7 @@ describe('plant-actions', () => {
             mockDataService.waterPlant.mockRejectedValue(error);
 
             await expect(waterPlant(ctx, plantId, amount)).rejects.toThrow('Watering failed');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water plant'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water plant'), 'error');
         });
     });
 
@@ -1185,7 +1182,60 @@ describe('plant-actions', () => {
             mockDataService.waterGrowspace.mockRejectedValue(error);
 
             await expect(waterGrowspace(ctx, growspaceId, amount)).rejects.toThrow('GS Watering failed');
-            expect(ctx.showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water growspace'), 'error');
+            expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to water growspace'), 'error');
         });
     });
 }); // End plant-actions
+
+// printLabel lives in plant-actions but uses window.location — test in isolation
+import { printLabel } from '../../src/store/plant/plant-actions';
+
+describe('printLabel', () => {
+    let ctx: ActionContext;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        ctx = {
+            dataService: {
+                printLabel: vi.fn().mockResolvedValue({ url: 'http://label' }),
+            },
+            ui: { showToast: vi.fn() },
+        } as any;
+    });
+
+    it('calls dataService.printLabel with resolved params and shows toast when not preview', async () => {
+        const result = await printLabel(ctx, { plantId: 'p1', strain: 'BD', preview: false });
+
+        expect((ctx.dataService as any).printLabel).toHaveBeenCalledWith(
+            expect.objectContaining({ plant_id: 'p1', strain: 'BD', preview: false })
+        );
+        expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Label printing command sent', 'success');
+        expect(result).toEqual({ url: 'http://label' });
+    });
+
+    it('skips toast when preview is true', async () => {
+        await printLabel(ctx, { strain: 'OG', preview: true });
+
+        expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
+    });
+
+    it('shows error toast and rethrows when dataService throws Error', async () => {
+        (ctx.dataService as any).printLabel.mockRejectedValue(new Error('printer-offline'));
+
+        await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toThrow('printer-offline');
+        expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+            'Failed to print label: printer-offline',
+            'error'
+        );
+    });
+
+    it('shows generic error toast and rethrows for non-Error rejections', async () => {
+        (ctx.dataService as any).printLabel.mockRejectedValue('unknown-printer-error');
+
+        await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toBe('unknown-printer-error');
+        expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+            'Failed to print label: Unknown error',
+            'error'
+        );
+    });
+});

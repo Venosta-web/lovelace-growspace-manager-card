@@ -4,68 +4,45 @@ import { provide } from '@lit/context';
 
 import { hassContext, configContext, strainLibraryContext, storeContext } from './lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
+import { setHass } from './services/hass-call';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
-import type { GrowspaceDevice } from './services/types';
 import type { StrainEntry } from './features/plants/types';
-import { ViewMode } from './features/environment/constants';
 
-import { SubscriptionController } from './controllers/subscription-controller';
 import './growspace-env-chart';
-import './components/manager/dialog-host';
-import './components/manager/edit-mode-banner';
-import './components/plant-card';
-import './components/growspace-header';
-import './components/growspace-toast';
+import './features/ui/containers/growspace-dialog-host.container';
+import type { GrowspaceDialogHost } from './features/ui/containers/growspace-dialog-host.container';
+import './features/ui/components/growspace-edit-mode-banner-ui';
+import './features/ui/containers/growspace-header.container';
+import './features/ui/containers/growspace-toast.container';
 
 import { LibraryExportReadyEvent } from './lib/events';
-import './components/growspace-view-switcher';
-import './components/ui'; // Register MD3 components
-import './components/error-boundary';
+import './features/shared/layouts/growspace-view-switcher';
+import './features/shared/ui'; // Register MD3 components
+import './features/shared/ui/error-boundary';
 import { sharedStyles } from './styles/shared.styles';
 import { uiStyles } from './styles/ui.styles';
 import { growspaceCardStyles } from './styles/growspace-card.styles';
 import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/core/growspace-store';
+import { growspaceStoreRegistry } from './store/core/growspace-store-registry';
 import { StoreController } from '@nanostores/lit';
+import { startTransplant } from './slices/grid-interaction';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
+  private _sharedStore = growspaceStoreRegistry.acquire();
+
   @provide({ context: storeContext })
-  store = new GrowspaceStore();
+  store = new GrowspaceStore(this._sharedStore);
 
-  protected _subscriptionController = new SubscriptionController(
-    this,
-    this.store.data,
-    (refresh) => {
-      this.store.updateHass(this.hass);
-      if (refresh) {
-        this.store.refreshData(true);
-      }
-    }
-  );
+  private _dialogPortal: GrowspaceDialogHost | null = null;
+  private _viewModeInitialized = false;
 
-  // UI Store Controllers
-  // Consolidated UI Controller
-  protected _cardViewController = new StoreController(this, this.store.ui.$cardViewState);
-  protected _selectedPlantsController = new StoreController(this, this.store.ui.$selectedPlants);
+  protected _viewController = new StoreController(this, this.store.$mainCardState);
 
-  // Data Store Controllers (for reactivity)
-  protected _devicesController = new StoreController(this, this.store.data.$devices);
-  protected _selectedDeviceController = new StoreController(this, this.store.data.$selectedDevice);
-  protected _strainLibraryController = new StoreController(this, this.store.data.$strainLibrary);
-
-  // Grid derived atoms
-  protected _activeDevicesController = new StoreController(this, this.store.grid.$activeDevices);
-  protected _gridLayoutController = new StoreController(this, this.store.grid.$gridLayout);
-  protected _growspaceOptionsController = new StoreController(
-    this,
-    this.store.grid.$growspaceOptions
-  );
-
-  /* Getter for convenience/compatibility if needed, or update call sites */
   get selectedDevice() {
-    return this._selectedDeviceController.value;
+    return this._viewController.value.grid.selectedDevice;
   }
 
   @provide({ context: strainLibraryContext })
@@ -77,9 +54,8 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     return this.store.dataService;
   }
 
-  // Getter to provide pre-loaded devices to the history controller
   get devices() {
-    return this._devicesController.value as GrowspaceDevice[];
+    return this._viewController.value.grid.devices;
   }
 
   @provide({ context: hassContext })
@@ -93,12 +69,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   static styles: CSSResultGroup = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 
   protected firstUpdated() {
-    this.store.updateHass(this.hass);
+    if (this.hass) {
+      setHass(this.hass);
+      this.store.updateHass(this.hass);
+    }
     this.store.initializeSelectedDevice(this._config);
-    this.store.fetchStrainLibrary();
-    this.store.fetchNutrientPresets();
-    this.store.fetchIPMPresets();
-    this.store.fetchNutrientInventory();
+    this.store.actions.library.fetchStrains();
+    this.store.actions.library.fetchNutrientPresets();
+    this.store.actions.library.fetchIPMPresets();
+    this.store.actions.library.fetchNutrientInventory();
 
     // Check for deep link
     this._checkDeepLink();
@@ -120,20 +99,31 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       url.searchParams.delete('plantId');
       window.history.replaceState({}, '', url.toString());
 
-      this.store.handleDeepLink(plantId);
+      this.store.actions.ui.handleDeepLink(plantId);
     }
   }
 
   connectedCallback() {
     super.connectedCallback();
-    // Listen for export ready events from store
     this.addEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    if (!this._dialogPortal) {
+      const portal = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+      portal.store = this.store;
+      if (this.hass) portal.hass = this.hass;
+      document.body.appendChild(portal);
+      this._dialogPortal = portal;
+    }
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener(LibraryExportReadyEvent.TYPE, this._handleLibraryExportReady);
+    if (this._dialogPortal) {
+      document.body.removeChild(this._dialogPortal);
+      this._dialogPortal = null;
+    }
     this.store.destroy();
+    growspaceStoreRegistry.release();
   }
 
   private _handleLibraryExportReady = (e: LibraryExportReadyEvent) => {
@@ -144,19 +134,27 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     super.updated(changedProps);
 
     if (changedProps.has('hass')) {
+      setHass(this.hass);
       this.store.updateHass(this.hass);
-      this._subscriptionController.updateHass(this.hass);
+      if (this._dialogPortal) {
+        this._dialogPortal.hass = this.hass;
+      }
 
       // Re-check for pending deep link when hass (and thus devices) updates
       const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
       if (pendingId) {
-        this.store.handleDeepLink(pendingId);
+        this.store.actions.ui.handleDeepLink(pendingId);
       }
     }
 
+    if (this._dialogPortal && (changedProps.has('hass') || changedProps.has('_config'))) {
+      this._dialogPortal.config = this._config;
+    }
+
     // Sync strain library to context provider
-    if (this._strainLibraryController.value !== this._strainLibrary) {
-      this._strainLibrary = (this._strainLibraryController.value || []) as StrainEntry[];
+    const currentStrainLibrary = this._viewController.value?.strainLibrary;
+    if (currentStrainLibrary !== this._strainLibrary) {
+      this._strainLibrary = (currentStrainLibrary || []) as StrainEntry[];
     }
   }
 
@@ -171,18 +169,16 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
 
   public static getStubConfig() {
     return {
-      default_growspace: '4x4',
-      compact: true,
+      default_growspace: '',
     };
   }
 
   public setConfig(config: GrowspaceManagerCardConfig): void {
     if (!config) throw new Error('Invalid configuration');
     this._config = config;
-    if (this._config.initial_view_mode) {
+    if (!this._viewModeInitialized && this._config.initial_view_mode) {
       this.store.ui.setViewMode(this._config.initial_view_mode);
-    } else if (this._config.compact !== undefined && this._config.compact) {
-      this.store.ui.setViewMode(ViewMode.COMPACT);
+      this._viewModeInitialized = true;
     }
 
     // Initialize store config immediately to prevent race conditions with updateHass
@@ -193,9 +189,17 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     return 4;
   }
 
+  public getLayoutOptions() {
+    return {
+      grid_columns: 12,
+      grid_min_columns: 6,
+      grid_min_rows: 4,
+    };
+  }
+
   // Event handlers
   private _handleKeyboardNav(e: KeyboardEvent) {
-    this.store.handleKeyboardNavigation(e.key);
+    this.store.actions.ui.handleKeyboardNavigation(e.key);
   }
 
   private _downloadFile(url: string) {
@@ -217,15 +221,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleSelectAll() {
-    this.store.selectAllPlants();
+    this.store.actions.ui.selectAllPlants();
   }
 
   private _handleClearSelection() {
-    this.store.clearPlantSelection();
+    this.store.actions.ui.clearPlantSelection();
   }
 
   private _handleWaterSelected() {
-    this.store.openBatchWateringDialog();
+    this.store.actions.ui.openBatchWateringDialog();
   }
 
   private _handleExitEditMode() {
@@ -233,27 +237,35 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleIPMSelected() {
-    this.store.openIPMDialog();
+    this.store.actions.ui.openIPMDialog();
   }
 
   private _handleToggleExpansion() {
-    this.store.toggleHeaderExpansion();
+    this.store.actions.ui.toggleHeaderExpansion();
   }
 
   private _handleTrainingSelected() {
-    this.store.openBatchTrainingDialog();
+    this.store.actions.ui.openBatchTrainingDialog();
   }
 
   private _handleBatchAddPlants() {
     this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
   }
 
+  private _handlePrintLabelsSelected() {
+    this.store.actions.ui.openBatchPrintLabelsDialog();
+  }
+
+  private _handleCloneSelected() {
+    this.store.actions.ui.openBatchCloneDialog();
+  }
+
   private _handleDeleteSelected = () => {
-    this.store.deleteSelectedPlants();
+    void this.store.actions.ui.deleteSelectedPlants();
   };
 
   private _handleTransplantMode = () => {
-    this.store.ui.toggleTransplantMode();
+    startTransplant();
   };
 
   protected render(): TemplateResult {
@@ -261,14 +273,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="error">Home Assistant not available</div></ha-card>`;
     }
 
-    const devices = this._activeDevicesController.value;
+    const { devices, selectedDevice, growspaceOptions, gridLayout } =
+      this._viewController.value.grid;
+    const { effectiveRows, grid } = gridLayout;
 
-    // Show loading spinner if initially loading and no devices yet
-    if (this._cardViewController.value.isLoading) {
+    if (this._viewController.value.ui.isLoading) {
       return html`
         <ha-card>
           <div class="loading-container">
-            <div class="loading-spinner"></div>
+            <ha-circular-progress active></ha-circular-progress>
           </div>
         </ha-card>
       `;
@@ -278,14 +291,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       return html`<ha-card><div class="no-data">No growspace devices found.</div></ha-card>`;
     }
 
-    const selectedDeviceData = devices.find((d) => d.deviceId === this.selectedDevice);
+    const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
     if (!selectedDeviceData) {
       return html`<ha-card><div class="error">No valid growspace selected.</div></ha-card>`;
     }
 
-    // Use memoized values from grid store atoms
-    const growspaceOptions = this._growspaceOptionsController.value;
-    const { effectiveRows, grid } = this._gridLayoutController.value;
     const isWide = selectedDeviceData.plantsPerRow > 7;
 
     return html`
@@ -310,37 +320,32 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
             @training-selected=${this._handleTrainingSelected}
             @ipm-selected=${this._handleIPMSelected}
             @batch-add-plants=${this._handleBatchAddPlants}
+            @print-labels-selected=${this._handlePrintLabelsSelected}
+            @clone-selected=${this._handleCloneSelected}
             @delete-selected=${this._handleDeleteSelected}
             @transplant-mode=${this._handleTransplantMode}
             @exit-edit-mode=${this._handleExitEditMode}
           >
             <growspace-view-switcher
-              .viewMode=${this._cardViewController.value.viewMode}
+              .viewMode=${this._viewController.value.ui.viewMode}
               .hass=${this.hass}
               .device=${selectedDeviceData}
               .growspaceOptions=${growspaceOptions}
               .grid=${grid}
               .rows=${effectiveRows}
-              .isEditMode=${this._cardViewController.value.isEditMode}
-              .isCompact=${this._cardViewController.value.isCompact}
-              .selectedCount=${this._selectedPlantsController.value.size}
+              .isEditMode=${this._viewController.value.ui.isEditMode}
+              .isCompact=${this._viewController.value.ui.isCompact}
+              .selectedCount=${this._viewController.value.ui.selectedPlants.size}
               .config=${this._config}
-              .isLoading=${this._cardViewController.value.isLoading}
-              .focusedPlantIndex=${this._cardViewController.value.focusedPlantIndex}
+              .isLoading=${this._viewController.value.ui.isLoading}
+              .focusedPlantIndex=${this._viewController.value.ui.focusedPlantIndex}
             ></growspace-view-switcher>
           </div>
         </ha-card>
 
         <growspace-toast></growspace-toast>
-        ${this.renderDialogs()}
       </error-boundary>
     `;
-  }
-
-  private renderDialogs(): TemplateResult {
-    return html`<growspace-dialog-host
-      .devices=${this._devicesController.value}
-    ></growspace-dialog-host>`;
   }
 
   private _handleError = (error: Error, errorInfo: unknown) => {

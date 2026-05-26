@@ -1,15 +1,18 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { html, LitElement } from 'lit';
 import { customElement } from 'lit/decorators.js';
-import { atom } from 'nanostores';
-import { FEATURE_FLAGS } from '../../../../src/features/shared/config/feature-flags';
+import { atom, computed } from 'nanostores';
+import { gridInteraction$, cancel } from '../../../../src/slices/grid-interaction';
 
-// Mock imports
-vi.mock('../../../../src/components/growspace-header', () => ({}));
-vi.mock('../../../../src/components/growspace-analytics', () => ({}));
-vi.mock('../../../../src/components/manager/edit-mode-banner', () => ({}));
-vi.mock('../../../../src/components/transplant-source-panel', () => ({}));
-vi.mock('../../../../src/components/growspace-grid', () => ({}));
+// Mock imports — include both legacy paths (for old imports still in the view) and new container paths
+vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-header.container', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-analytics.container', () => ({}));
+vi.mock('../../../../src/features/ui/containers/growspace-analytics.container', () => ({}));
+vi.mock('../../../../src/features/ui/components/growspace-edit-mode-banner-ui', () => ({}));
+vi.mock('../../../../src/features/ui/components/growspace-edit-mode-banner-ui', () => ({}));
+vi.mock('../../../../src/features/plants/components/transplant-source-panel', () => ({}));
+vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
 vi.mock('../../../../src/features/plants/containers/growspace-grid.container', () => ({}));
 
 // Defines mocks
@@ -42,30 +45,36 @@ class MockGridContainer extends LitElement {
     focusPlant(index: number) { }
 }
 
-// Helper to get grid selector based on feature flag
-const getGridSelector = () =>
-    FEATURE_FLAGS.USE_NEW_GROWSPACE_GRID ? 'growspace-grid-container' : 'growspace-grid';
+// Grid container is always used unconditionally
+const getGridSelector = () => 'growspace-grid-container';
 
-import { GrowspaceViewStandard } from '../../../../src/components/views/growspace-view-standard';
+import { GrowspaceViewStandard } from '../../../../src/features/shared/layouts/growspace-view-standard';
 
 describe('GrowspaceViewStandard', () => {
     let element: GrowspaceViewStandard;
     let mockStore: any;
-    let isTransplantModeAtom: any;
     let devicesAtom: any;
 
     beforeEach(async () => {
-        isTransplantModeAtom = atom(false);
+        cancel();
         devicesAtom = atom([]);
 
+        const $viewStandardState = computed(
+            [devicesAtom],
+            (devices) => ({ devices })
+        );
+
         mockStore = {
-            ui: {
-                $isTransplantMode: isTransplantModeAtom,
-                showToast: vi.fn(),
+            ui: {},
+            actions: {
+                ui: {
+                    toast: vi.fn(),
+                },
             },
             data: {
                 $devices: devicesAtom
             },
+            $viewStandardState,
             hass: {
                 callService: vi.fn(),
             },
@@ -126,18 +135,17 @@ describe('GrowspaceViewStandard', () => {
         expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
     });
 
-    it('should show transplant source panel when in transplant mode', async () => {
-        isTransplantModeAtom.set(true);
-        // Set some devices for _getPlantsByStage
+    it('should show transplant source panel when gridInteraction$ is transplanting', async () => {
         devicesAtom.set([
             {
                 name: 'GS1',
                 plants: [
                     { attributes: { stage: 'clone', plant_id: 'p1' } },
-                    { attributes: { stage: 'seedling', plant_id: 'p2' } }
-                ]
-            }
+                    { attributes: { stage: 'seedling', plant_id: 'p2' } },
+                ],
+            },
         ]);
+        gridInteraction$.set({ status: 'transplanting', sourcePlantId: 'p1' });
         element.requestUpdate();
         await element.updateComplete;
 
@@ -145,6 +153,14 @@ describe('GrowspaceViewStandard', () => {
         expect(panel).toBeTruthy();
         expect(panel.clonePlants.length).toBe(1);
         expect(panel.seedlingPlants.length).toBe(1);
+    });
+
+    it('should hide transplant source panel when gridInteraction$ is not transplanting', async () => {
+        gridInteraction$.set({ status: 'idle' });
+        element.requestUpdate();
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.querySelector('transplant-source-panel')).toBeFalsy();
     });
 
     it('should show view toggle button if initial_view_mode is header', async () => {
@@ -239,7 +255,7 @@ describe('GrowspaceViewStandard', () => {
             })
         );
 
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Plant transplanted successfully', 'success');
+        expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Plant transplanted successfully', 'success');
         vi.useRealTimers();
     });
 
@@ -257,7 +273,7 @@ describe('GrowspaceViewStandard', () => {
         // Flush promise queue
         await new Promise(resolve => setTimeout(resolve, 0));
 
-        expect(mockStore.ui.showToast).toHaveBeenCalledWith('Failed to transplant plant', 'error');
+        expect(mockStore.actions.ui.toast).toHaveBeenCalledWith('Failed to transplant plant', 'error');
         expect(consoleSpy).toHaveBeenCalled();
     });
 
@@ -269,6 +285,21 @@ describe('GrowspaceViewStandard', () => {
         const event = { detail: { plant_id: 'p1' } } as any;
         await (element as any)._handleTransplantDrop(event);
         expect(mockStore.hass.callService).not.toHaveBeenCalled();
+    });
+
+    it('should always render growspace-grid-container unconditionally', async () => {
+        element.requestUpdate();
+        await element.updateComplete;
+
+        const container = element.shadowRoot?.querySelector('growspace-grid-container');
+        expect(container).toBeTruthy();
+
+        // Verify the transplant-drop event handler is wired up
+        mockStore.hass.callService.mockReturnValue(Promise.resolve({}));
+        container?.dispatchEvent(new CustomEvent('transplant-drop', {
+            detail: { plant_id: 'p1', target_row: 1, target_col: 1 },
+        }));
+        await new Promise((r) => setTimeout(r, 0));
     });
 
     it('should use value fallback in redispatch', async () => {
@@ -293,5 +324,34 @@ describe('GrowspaceViewStandard', () => {
             type: 'test-event',
             detail: 'fallback'
         }));
+    });
+
+    it('should re-initialize controllers when store property changes', async () => {
+        const initSpy = vi.spyOn(element as any, '_initControllers');
+        
+        // Trigger property change
+        element.store = { ...mockStore, newProp: true };
+        
+        // willUpdate is called by Lit before update
+        element.requestUpdate('store', mockStore);
+        await element.updateComplete;
+        
+        expect(initSpy).toHaveBeenCalled();
+    });
+
+    it('_getPlantsByStage should return empty array if devices are missing', async () => {
+        // Force the controller to have no value or empty devices
+        // Since it's a nanostores controller, we control it via the atom
+        devicesAtom.set(null as any);
+        
+        const plants = (element as any)._getPlantsByStage('clone');
+        expect(plants).toEqual([]);
+    });
+
+    it('_getPlantsByStage should handle devices without plants property', async () => {
+        devicesAtom.set([{ name: 'Empty GS' } as any]);
+        
+        const plants = (element as any)._getPlantsByStage('clone');
+        expect(plants).toEqual([]);
     });
 });

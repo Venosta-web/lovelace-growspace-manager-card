@@ -58,6 +58,10 @@ export class PlantUtils {
     return this.stageColors[key] ?? '#757575';
   }
 
+  static encodeLocalPath(path: string): string {
+    return path.replace(/#/g, '%23');
+  }
+
   static getPlantStageIcon(state: PlantStage | string | undefined | null): string {
     const key = this.normalizeStage(state);
     return this.stageIcons[key] ?? mdiSprout;

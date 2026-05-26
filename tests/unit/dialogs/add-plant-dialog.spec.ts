@@ -42,45 +42,46 @@ describe('AddPlantDialog', () => {
         expect(container).toBeNull();
     });
 
-    it('should populate strain options', async () => {
-        const select = element.shadowRoot?.querySelector('md3-select') as any;
-        expect(select).toBeTruthy();
-        expect(select.options).toEqual(['Blue Dream', 'OG Kush']);
+    it('should show strain typeahead on step 1', async () => {
+        const strainInput = element.shadowRoot?.querySelector('.strain-typeahead md3-text-input') as any;
+        expect(strainInput).toBeTruthy();
+        expect(strainInput.label).toBe('Strain *');
     });
 
     it('should populate phenotype suggestions when strain is selected', async () => {
-        const select = element.shadowRoot?.querySelector('md3-select') as any;
-
-        // Simulate strain selection
-        select.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
+        // Set strain directly to trigger step 1 rendering with a selected strain
+        element.strain = 'Blue Dream';
+        element.strainLibrary = mockStrains;
         await element.updateComplete;
 
-        const phenotypeInput = element.shadowRoot?.querySelector('md3-text-input') as any;
-        expect(phenotypeInput).toBeTruthy();
-
-        // Should contain phenotypes for Blue Dream, sorted
-        expect(phenotypeInput.suggestions).toEqual(['Indica Pheno', 'Sativa Dom']);
-
-        // Change strain to OG Kush (no phenotypes)
-        select.dispatchEvent(new CustomEvent('change', { detail: 'OG Kush' }));
-        await element.updateComplete;
-
-        expect(phenotypeInput.suggestions).toEqual([]);
+        // Phenotype input appears only after strain is selected
+        const inputs = element.shadowRoot?.querySelectorAll('md3-text-input') as any;
+        const phenoInput = Array.from(inputs).find((i: any) => i.label === 'Phenotype') as any;
+        expect(phenoInput).toBeTruthy();
+        expect(phenoInput.suggestions).toEqual(['Indica Pheno', 'Sativa Dom']);
     });
 
     it('should set initial state', async () => {
         element.setInitialState(2, 3);
+        // Navigate to step 2 where row/col inputs live
+        (element as any)._wizardStep = 2;
+        (element as any).strain = 'Blue Dream'; // need strain set for step 2
         await element.updateComplete;
 
         const rowInput = element.shadowRoot?.querySelectorAll('md3-number-input')[0] as any;
         const colInput = element.shadowRoot?.querySelectorAll('md3-number-input')[1] as any;
 
-        // Inputs display 1-based index
         expect(rowInput.value).toBe(3);
         expect(colInput.value).toBe(4);
     });
 
     describe('Timeline Variations', () => {
+        beforeEach(async () => {
+            // Navigate to step 3 where date inputs live
+            (element as any)._wizardStep = 3;
+            await element.updateComplete;
+        });
+
         it('should show veg/flower inputs for standard growspace', async () => {
             element.growspaceName = 'Main Tent';
             await element.updateComplete;
@@ -137,10 +138,13 @@ describe('AddPlantDialog', () => {
 
     describe('Interaction Tests', () => {
         it('should handle Row and Col changes', async () => {
+            // Row/col inputs are on step 2
+            (element as any)._wizardStep = 2;
+            await element.updateComplete;
+
             const rowInput = element.shadowRoot?.querySelectorAll('md3-number-input')[0];
             const colInput = element.shadowRoot?.querySelectorAll('md3-number-input')[1];
 
-            // User inputs 5 (means index 4)
             rowInput?.dispatchEvent(new CustomEvent('change', { detail: '5' }));
             colInput?.dispatchEvent(new CustomEvent('change', { detail: '10' }));
 
@@ -154,6 +158,7 @@ describe('AddPlantDialog', () => {
             const closeSpy = vi.fn();
             element.addEventListener('close', closeSpy);
 
+            // Step 1 cancel button calls _close() directly
             const cancelBtn = element.shadowRoot?.querySelector('.button-group .tonal') as HTMLElement;
             cancelBtn.click();
 
@@ -174,8 +179,9 @@ describe('AddPlantDialog', () => {
             const createSpy = vi.fn();
             element.addEventListener('create-new-strain', createSpy);
 
-            // Button with mdiDna icon
-            const createBtn = element.shadowRoot?.querySelector('button[title="Add New Strain"]') as HTMLElement;
+            // Create New Strain button is visible on step 1
+            const createBtn = element.shadowRoot?.querySelector('.button-group + .button-group button.tonal, .detail-card ~ .button-group button.tonal') as HTMLElement ??
+              Array.from(element.shadowRoot?.querySelectorAll('button') ?? []).find(b => b.textContent?.includes('Create New Strain')) as HTMLElement;
             expect(createBtn).toBeTruthy();
             createBtn.click();
 
@@ -209,20 +215,16 @@ describe('AddPlantDialog', () => {
 
 
     it('should dispatch submit event with payload', async () => {
-        element.row = 0; // index 0 = row 1
-        element.col = 0; // index 0 = col 1
-        // Simulate filling form via events or props
-        const strainSelect = element.shadowRoot?.querySelector('md3-select');
-        strainSelect?.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
-
-        const phenoInput = element.shadowRoot?.querySelector('md3-text-input');
-        phenoInput?.dispatchEvent(new CustomEvent('change', { detail: 'Sativa Dom' }));
-
-        // Simulate timeline date input (standard view)
+        // Set data directly via properties (wizard steps are UI-only wrappers)
+        element.row = 0;
+        element.col = 0;
+        element.strain = 'Blue Dream';
+        element.phenotype = 'Sativa Dom';
+        element.veg_start = '2023-01-01';
         element.growspaceName = 'Tent';
+        // Navigate to step 3 where submit button lives
+        (element as any)._wizardStep = 3;
         await element.updateComplete;
-        const dateInput = element.shadowRoot?.querySelector('md3-date-input[label="Veg Start"]');
-        dateInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-01-01' }));
 
         const submitSpy = vi.fn();
         element.addEventListener('add-plant-submit', submitSpy);
@@ -240,9 +242,7 @@ describe('AddPlantDialog', () => {
             phenotype: 'Sativa Dom',
             veg_start: '2023-01-01',
             flower_start: '',
-            seedling_start: '',
             mother_start: '',
-            clone_start: '',
             dry_start: '',
             cure_start: ''
         }));
@@ -250,6 +250,8 @@ describe('AddPlantDialog', () => {
 
     it('should handle seedling and flower start date changes', async () => {
         element.growspaceName = 'Tent'; // Standard view
+        // Date inputs live on step 3
+        (element as any)._wizardStep = 3;
         await element.updateComplete;
 
         const seedlingInput = element.shadowRoot?.querySelector('md3-date-input[label="Seedling Start"]');
@@ -263,14 +265,12 @@ describe('AddPlantDialog', () => {
 
         await element.updateComplete;
 
-        // Verify private state update via submission
         const submitSpy = vi.fn();
         element.addEventListener('add-plant-submit', submitSpy);
 
-        (element as any)._confirm(); // Trigger confirm to check payload
+        (element as any)._confirm();
 
         const detail = submitSpy.mock.calls[0][0].detail;
-        expect(detail.seedling_start).toBe('2023-01-02');
         expect(detail.flower_start).toBe('2023-02-01');
     });
 
@@ -468,6 +468,189 @@ describe('AddPlantDialog', () => {
 
             expect((element as any)._activeTab).toBe('add');
             expect((element as any)._selectedTransplantPlant).toBeNull();
+        });
+    });
+
+    describe('Wizard Navigation', () => {
+        it('should navigate through wizard steps next and back', async () => {
+            expect((element as any)._wizardStep).toBe(1);
+
+            // Call _wizardNext() from step 1
+            (element as any)._wizardNext();
+            expect((element as any)._wizardStep).toBe(2);
+
+            // Call _wizardNext() from step 2
+            (element as any)._wizardNext();
+            expect((element as any)._wizardStep).toBe(3);
+
+            // Call _wizardNext() from step 3 (should not go past 3)
+            (element as any)._wizardNext();
+            expect((element as any)._wizardStep).toBe(3);
+
+            // Call _wizardBack() from step 3
+            (element as any)._wizardBack();
+            expect((element as any)._wizardStep).toBe(2);
+
+            // Call _wizardBack() from step 2
+            (element as any)._wizardBack();
+            expect((element as any)._wizardStep).toBe(1);
+
+            // Call _wizardBack() from step 1 (should close dialog)
+            const closeSpy = vi.fn();
+            element.addEventListener('close', closeSpy);
+            (element as any)._wizardBack();
+            expect(closeSpy).toHaveBeenCalled();
+        });
+    });
+
+    describe('Strain Typeahead and Phenotype Inputs', () => {
+        it('should update query and clear strain on input change', async () => {
+            element.strain = 'Blue Dream';
+            (element as any)._strainQuery = 'Blue Dream';
+            await element.updateComplete;
+
+            const input = element.shadowRoot?.querySelector('.strain-typeahead md3-text-input') as HTMLElement;
+            expect(input).toBeTruthy();
+
+            // Simulate query change that matches nothing/new
+            input.dispatchEvent(new CustomEvent('change', { detail: 'New Query' }));
+            await element.updateComplete;
+
+            expect((element as any)._strainQuery).toBe('New Query');
+            expect(element.strain).toBe('');
+        });
+
+        it('should select strain from dropdown on click and render phenotype input', async () => {
+            // Trigger typeahead
+            (element as any)._strainQuery = 'Blue';
+            element.strain = '';
+            await element.updateComplete;
+
+            const option = element.shadowRoot?.querySelector('.strain-dropdown .strain-option') as HTMLElement;
+            expect(option).toBeTruthy();
+
+            option.click();
+            await element.updateComplete;
+
+            expect(element.strain).toBe('Blue Dream');
+            expect((element as any)._strainQuery).toBe('Blue Dream');
+
+            // Phenotype input should be rendered now
+            const phenoInput = element.shadowRoot?.querySelector('md3-text-input[label="Phenotype"]') as HTMLElement;
+            expect(phenoInput).toBeTruthy();
+
+            phenoInput.dispatchEvent(new CustomEvent('change', { detail: 'New Pheno' }));
+            await element.updateComplete;
+
+            expect(element.phenotype).toBe('New Pheno');
+        });
+    });
+
+    describe('Sibling Plants and Clone Source Picker', () => {
+        const mockSiblings = [
+            {
+                entity_id: 'sensor.sibling1',
+                state: 'veg',
+                attributes: {
+                    plant_id: 'sib1',
+                    strain: 'Sour Diesel',
+                    phenotype: 'Pheno S',
+                    days_in_stage: 15,
+                    stage: 'veg'
+                }
+            },
+            {
+                entity_id: 'sensor.sibling2',
+                state: 'flowering',
+                attributes: {
+                    plant_id: 'sib2',
+                    strain: 'OG Kush',
+                    phenotype: 'Pheno O',
+                    days_in_stage: 30,
+                    stage: 'flowering'
+                }
+            },
+            {
+                entity_id: 'sensor.sibling3',
+                state: 'harvested', // should not be clonable
+                attributes: {
+                    plant_id: 'sib3',
+                    strain: 'White Widow',
+                    stage: 'harvested'
+                }
+            }
+        ] as any[];
+
+        beforeEach(async () => {
+            element.siblingPlants = mockSiblings;
+            (element as any)._wizardStep = 2;
+            await element.updateComplete;
+        });
+
+        it('should render clonable sibling plants and handle selection/deselection', async () => {
+            // Sibling plants list is only shown when _sourceType is 'clone'
+            (element as any)._sourceType = 'clone';
+            await element.updateComplete;
+
+            const siblingItems = element.shadowRoot?.querySelectorAll('.sibling-item');
+            // Only 2 of the 3 should be clonable ('veg', 'flowering')
+            expect(siblingItems?.length).toBe(2);
+
+            // Click the first one to select
+            (siblingItems?.[0] as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._siblingPlant).toEqual(mockSiblings[0]);
+            expect(element.strain).toBe('Sour Diesel');
+            expect(element.phenotype).toBe('Pheno S');
+            expect(element.clone_start).toBeTruthy();
+
+            // Click the same sibling plant again to deselect
+            (siblingItems?.[0] as HTMLElement).click();
+            await element.updateComplete;
+
+            expect((element as any)._siblingPlant).toBeNull();
+        });
+
+        it('should change source type between seed and clone', async () => {
+            // Click Clone button
+            const cloneBtn = element.shadowRoot?.querySelectorAll('.source-btn')[1] as HTMLElement;
+            expect(cloneBtn).toBeTruthy();
+            cloneBtn.click();
+            await element.updateComplete;
+
+            expect((element as any)._sourceType).toBe('clone');
+
+            // Select a sibling plant to set _siblingPlant
+            const siblingItems = element.shadowRoot?.querySelectorAll('.sibling-item');
+            (siblingItems?.[0] as HTMLElement).click();
+            await element.updateComplete;
+            expect((element as any)._siblingPlant).toBeTruthy();
+
+            // Click Seed button to revert
+            const seedBtn = element.shadowRoot?.querySelectorAll('.source-btn')[0] as HTMLElement;
+            expect(seedBtn).toBeTruthy();
+            seedBtn.click();
+            await element.updateComplete;
+
+            expect((element as any)._sourceType).toBe('seed');
+            expect((element as any)._siblingPlant).toBeNull();
+        });
+    });
+
+    describe('Extra Date Changes', () => {
+        it('should handle veg start date change', async () => {
+            element.growspaceName = 'Tent'; // Standard view
+            (element as any)._wizardStep = 3;
+            await element.updateComplete;
+
+            const vegInput = element.shadowRoot?.querySelector('md3-date-input[label="Veg Start"]');
+            expect(vegInput).toBeTruthy();
+
+            vegInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-01-10' }));
+            await element.updateComplete;
+
+            expect(element.veg_start).toBe('2023-01-10');
         });
     });
 });

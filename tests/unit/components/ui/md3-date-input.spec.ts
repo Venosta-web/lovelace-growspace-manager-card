@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Md3DateInput } from '../../../../src/components/ui/md3-date-input';
+import { Md3DateInput } from '../../../../src/features/shared/ui/md3-date-input';
 import { PlantUtils } from '../../../../src/utils/plant-utils';
 
 // Ensure custom element is defined

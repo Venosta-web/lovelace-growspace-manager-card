@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService - IrrigationAPI', () => {
@@ -177,7 +177,7 @@ describe('DataService - IrrigationAPI', () => {
         describe('Service Error Handling', () => {
             it('configureEnvironment should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
-                await expect(service.configureEnvironment({ growspaceId: 'g1', temperatureSensor: 'v', humiditySensor: 'v' })).rejects.toThrow('Fail');
+                await expect(service.configureEnvironment({ growspaceId: 'g1', temperatureSensors: ['v'], humiditySensors: ['v'] })).rejects.toThrow('Fail');
             });
 
             it('setDehumidifierControl should handle error', async () => {
@@ -235,6 +235,27 @@ describe('DataService - IrrigationAPI', () => {
                     growspace_id: 'g1',
                     feed_ec: 2.0,
                     drain_ec: 2.2
+                });
+            });
+
+            it('should call setEcTargetRanges and invoke set_ec_target_range sequentially per stage', async () => {
+                const ranges = [
+                    { stage: 'seedling', minEc: 0.8, maxEc: 1.2 },
+                    { stage: 'veg', minEc: 1.5, maxEc: 2.0 },
+                ] as any;
+                await service.setEcTargetRanges('g1', ranges);
+                expect(callServiceMock).toHaveBeenCalledTimes(2);
+                expect(callServiceMock).toHaveBeenNthCalledWith(1, 'growspace_manager', 'set_ec_target_range', {
+                    growspace_id: 'g1',
+                    stage: 'seedling',
+                    feed_ec_min: 0.8,
+                    feed_ec_max: 1.2,
+                });
+                expect(callServiceMock).toHaveBeenNthCalledWith(2, 'growspace_manager', 'set_ec_target_range', {
+                    growspace_id: 'g1',
+                    stage: 'veg',
+                    feed_ec_min: 1.5,
+                    feed_ec_max: 2.0,
                 });
             });
         });

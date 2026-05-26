@@ -19,6 +19,7 @@ export class PlantDashboardTab extends LitElement {
   @property({ attribute: false }) plant!: PlantEntity;
   @property({ attribute: false }) editedAttributes!: PlantOverviewEditedAttributes;
   @property({ attribute: false }) plantStats!: PlantStat[];
+  @property({ attribute: false }) growspaceOptions: Record<string, string> = {};
   @property({ type: Boolean }) isEditing = false;
   @property({ type: Boolean }) showAllDates = false;
 
@@ -30,8 +31,8 @@ export class PlantDashboardTab extends LitElement {
       }
 
       .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        display: flex;
+        flex-direction: column;
         gap: 16px;
       }
     `,
@@ -44,7 +45,10 @@ export class PlantDashboardTab extends LitElement {
           .plant=${this.plant}
           .editedAttributes=${this.editedAttributes}
           .isEditing=${this.isEditing}
+          .growspaceOptions=${this.growspaceOptions}
           @attribute-change=${this._handleAttributeChange}
+          @open-strain-editor=${this._handleOpenStrainEditor}
+          @move-plant=${this._handleMovePlant}
         ></plant-identity-card>
 
         <plant-stats-card .stats=${this.plantStats}></plant-stats-card>
@@ -53,7 +57,6 @@ export class PlantDashboardTab extends LitElement {
           .editedAttributes=${this.editedAttributes}
           .showAllDates=${this.showAllDates}
           @attribute-change=${this._handleAttributeChange}
-          @toggle-dates=${this._handleToggleDates}
         ></plant-lifecycle-dates-card>
       </div>
     `;
@@ -70,10 +73,22 @@ export class PlantDashboardTab extends LitElement {
     );
   }
 
-  private _handleToggleDates(): void {
+  private _handleOpenStrainEditor(e: CustomEvent): void {
     // Bubble up to container
     this.dispatchEvent(
-      new CustomEvent('toggle-dates', {
+      new CustomEvent('open-strain-editor', {
+        detail: e.detail,
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleMovePlant(e: CustomEvent): void {
+    // Bubble up to container
+    this.dispatchEvent(
+      new CustomEvent('move-plant', {
+        detail: e.detail,
         bubbles: true,
         composed: true,
       })

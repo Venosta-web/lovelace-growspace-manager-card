@@ -1,7 +1,11 @@
 import { ActionContext } from '../core/action-context';
 import { GrowAdviceResponse } from '../../types';
 
-export async function analyzeGrowspace(ctx: ActionContext, query: string, all: boolean) {
+export async function analyzeGrowspace(
+  ctx: ActionContext,
+  query: string,
+  all: boolean
+): Promise<string | undefined> {
   const currentDialog = ctx.ui.$activeDialog.get();
   if (currentDialog.type === 'GROW_MASTER') {
     ctx.ui.setActiveDialog({
@@ -15,7 +19,7 @@ export async function analyzeGrowspace(ctx: ActionContext, query: string, all: b
     if (all) {
       response = await ctx.dataService.analyzeAllGrowspaces();
     } else {
-      const selectedDevice = ctx.data.$selectedDevice.get();
+      const selectedDevice = ctx.grid.$selectedDevice.get();
       if (!selectedDevice) throw new Error('No device selected');
       response = await ctx.dataService.askGrowAdvice(selectedDevice, query);
     }
@@ -39,6 +43,7 @@ export async function analyzeGrowspace(ctx: ActionContext, query: string, all: b
         payload: { ...d.payload, isLoading: false, response: text },
       });
     }
+    return text;
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : 'Unknown error';
     const d = ctx.ui.$activeDialog.get();

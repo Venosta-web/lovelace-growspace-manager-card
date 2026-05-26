@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService - HistoryAPI', () => {
@@ -154,16 +154,15 @@ describe('DataService - HistoryAPI', () => {
             expect(await service.getBatchHistory(['s1'], new Date())).toEqual({});
         });
 
-        it('getHistoryStats fallback should log fallback params', async () => {
+        it('getHistoryStats fallback should fallback correctly', async () => {
             (mockHass.callWS as any).mockRejectedValue(new Error('WS Fail'));
-            const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => { });
 
             // Fix: Spy on internal _historyAPI
             const historyAPI = (service as any)._historyAPI;
-            vi.spyOn(historyAPI, 'getBatchHistory').mockResolvedValue({});
+            const batchSpy = vi.spyOn(historyAPI, 'getBatchHistory').mockResolvedValue({});
 
             await service.getHistoryStats(['s1'], new Date());
-            expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Fallback params:'));
+            expect(batchSpy).toHaveBeenCalled();
         });
 
         it('getHistory should handle null or empty response from API', async () => {

@@ -335,7 +335,7 @@ describe('GrowspaceEnvChart', () => {
 
         const tooltip = element.shadowRoot?.querySelector('.gs-tooltip');
         expect(tooltip).toBeTruthy();
-        expect(tooltip?.textContent).toContain('optimal');
+        expect(tooltip?.textContent).toContain('Optimal');
 
         vi.useRealTimers();
     });

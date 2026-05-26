@@ -96,8 +96,10 @@ export class StrainRecommendationDialog extends LitElement {
         open
         @closed=${this._close}
         hideActions
+        without-header
+        width="large"
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
+        .escapeKeyAction=${'close'}
       >
         <div class="glass-dialog-container">
           <div class="dialog-header">
@@ -128,7 +130,8 @@ export class StrainRecommendationDialog extends LitElement {
                 class="sd-textarea"
                 placeholder="e.g., something fruity and good for daytime use..."
                 .value=${this.userQuery}
-                @input=${(e: InputEvent) => (this.userQuery = (e.target as HTMLTextAreaElement).value)}
+                @input=${(e: InputEvent) =>
+                  (this.userQuery = (e.target as HTMLTextAreaElement).value)}
                 style="min-height: 80px;"
               ></textarea>
             </div>
@@ -147,7 +150,7 @@ export class StrainRecommendationDialog extends LitElement {
             </div>
 
             ${this.isLoading
-        ? html`
+              ? html`
                   <div class="gm-loading">
                     <svg class="spinner" viewBox="0 0 24 24">
                       <path d="${mdiLoading}" fill="currentColor"></path>
@@ -155,10 +158,10 @@ export class StrainRecommendationDialog extends LitElement {
                     <span>Consulting the archives...</span>
                   </div>
                 `
-        : nothing}
+              : nothing}
             ${!this.isLoading && this.response
-        ? html` <div class="gm-response-box">${this.response}</div> `
-        : nothing}
+              ? html` <div class="gm-response-box">${this.response}</div> `
+              : nothing}
           </div>
         </div>
       </ha-dialog>

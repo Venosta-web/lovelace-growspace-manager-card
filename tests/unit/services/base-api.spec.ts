@@ -1,7 +1,7 @@
 
 import { HomeAssistant } from 'custom-card-helpers';
 import { describe, it, expect, vi } from 'vitest';
-import { BaseAPI } from '../../../src/services/base-api';
+import { BaseAPI, WSError } from '../../../src/services/base-api';
 
 class TestAPI extends BaseAPI {
     constructor(hass?: HomeAssistant) {
@@ -19,8 +19,15 @@ class TestAPI extends BaseAPI {
     public async testSendWebSocket<T>(
         type: string,
         data?: Record<string, unknown>
+    ): Promise<T> {
+        return this.sendWebSocket<T>(type, data);
+    }
+
+    public async testSendWebSocketSafe<T>(
+        type: string,
+        data?: Record<string, unknown>
     ): Promise<T | null> {
-        return await this.sendWebSocket<T>(type, data);
+        return this.sendWebSocketSafe<T>(type, data);
     }
 }
 
@@ -54,20 +61,61 @@ describe('BaseAPI', () => {
 
     it('should send a websocket message and return data', async () => {
         const api = new TestAPI(hass);
-        (hass.callWS as vi.Mock).mockResolvedValue({ result: 'success' });
+        (hass.callWS as ReturnType<typeof vi.fn>).mockResolvedValue({ result: 'success' });
         const result = await api.testSendWebSocket('test_type', { key: 'value' });
         expect(hass.callWS).toHaveBeenCalledWith({ type: 'test_type', key: 'value' });
         expect(result).toEqual({ result: 'success' });
     });
 
-    it('should return null when websocket call fails', async () => {
+    it('should throw WSError when websocket call fails with a plain Error', async () => {
+        const api = new TestAPI(hass);
+        (hass.callWS as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('WS Error'));
+        await expect(api.testSendWebSocket('test_type', { key: 'value' })).rejects.toBeInstanceOf(WSError);
+    });
+
+    it('should throw WSError with typed code when backend returns a structured error', async () => {
+        const api = new TestAPI(hass);
+        (hass.callWS as ReturnType<typeof vi.fn>).mockRejectedValue({
+            code: 'coordinator_not_ready',
+            message: 'Integration not loaded',
+        });
+        await expect(api.testSendWebSocket('test_type')).rejects.toMatchObject({
+            code: 'coordinator_not_ready',
+            message: 'Integration not loaded',
+        });
+    });
+
+    it('should return null via sendWebSocketSafe when websocket call fails', async () => {
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const api = new TestAPI(hass);
-        (hass.callWS as vi.Mock).mockRejectedValue(new Error('WS Error'));
-        const result = await api.testSendWebSocket('test_type', { key: 'value' });
-        expect(hass.callWS).toHaveBeenCalledWith({ type: 'test_type', key: 'value' });
+        (hass.callWS as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('WS Error'));
+        const result = await api.testSendWebSocketSafe('test_type', { key: 'value' });
         expect(result).toBeNull();
-        expect(consoleErrorSpy).toHaveBeenCalledWith('WebSocket call test_type failed:', new Error('WS Error'));
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+            'WebSocket call test_type failed [internal_error]:',
+            'WS Error'
+        );
+        consoleErrorSpy.mockRestore();
+    });
+
+    it('should return data via sendWebSocketSafe on success', async () => {
+        const api = new TestAPI(hass);
+        (hass.callWS as ReturnType<typeof vi.fn>).mockResolvedValue({ result: 'ok' });
+        const result = await api.testSendWebSocketSafe('test_type', { key: 'value' });
+        expect(result).toEqual({ result: 'ok' });
+    });
+
+    it('should log plain error and return null when sendWebSocket throws a non-WSError', async () => {
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const api = new TestAPI(hass);
+        const rawError = { weird: 'structure' };
+        // Bypass sendWebSocket wrapping by spying on the protected method directly
+        vi.spyOn(api as any, 'sendWebSocket').mockRejectedValue(rawError);
+
+        const result = await api.testSendWebSocketSafe('test_type');
+
+        expect(result).toBeNull();
+        expect(consoleErrorSpy).toHaveBeenCalledWith('WebSocket call test_type failed:', rawError);
         consoleErrorSpy.mockRestore();
     });
 });

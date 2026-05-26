@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SyncService } from '../../src/services/sync-service';
 import { MetricsUtils } from '../../src/utils/metrics-utils';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { GrowspaceDataStore } from '../../src/store/core/data-store';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { GrowspaceDevice, PlantEntity } from '../../src/types';
@@ -10,7 +10,7 @@ import { DateTime } from 'luxon';
 import { MetricKey, EntityState, StatusLevel } from '../../src/constants';
 
 // Mocks
-vi.mock('../../src/data-service');
+vi.mock('../../src/services/data-service');
 vi.mock('../../src/store/core/data-store');
 vi.mock('../../src/store/ui/ui-store');
 
@@ -24,6 +24,7 @@ describe('Coverage Gap Fillers', () => {
         let mockDataService: any;
         let mockDataStore: any;
         let mockUIStore: any;
+        let mockGridStore: any;
 
         beforeEach(() => {
             mockDataService = new DataService() as any;
@@ -32,19 +33,22 @@ describe('Coverage Gap Fillers', () => {
 
             // Setup default mock returns for atomic getters
             mockDataStore.$devices = { get: vi.fn(() => []) };
-            mockDataStore.$selectedDevice = { get: vi.fn(() => null) };
             mockDataStore.$wsDataCache = { get: vi.fn(() => ({})) };
             mockDataStore.$config = { get: vi.fn(() => ({})) };
+
+            mockGridStore = {
+                $selectedDevice: { get: vi.fn(() => null) },
+                setSelectedDevice: vi.fn(),
+            };
 
             mockUIStore.$defaultApplied = { get: vi.fn(() => false) };
 
             mockDataStore.setDevices = vi.fn();
-            mockDataStore.setSelectedDevice = vi.fn();
             mockUIStore.setDefaultApplied = vi.fn();
             // Mock getGrowspaceDevices to return mapped devices
             mockDataService.getGrowspaceDevices = vi.fn((cache) => []);
 
-            syncService = new SyncService(mockDataService, mockDataStore, mockUIStore);
+            syncService = new SyncService(mockDataService, mockDataStore, mockUIStore, mockGridStore);
         });
 
         it('should add plant entity IDs to watchedEntities (lines 110)', () => {
@@ -76,14 +80,14 @@ describe('Coverage Gap Fillers', () => {
             (mockDataStore.$devices.get as any).mockReturnValue(devices); // same devices to avoid setDevices call, but focus on selection logic
 
             // Current selection is null
-            (mockDataStore.$selectedDevice.get as any).mockReturnValue(null);
+            (mockGridStore.$selectedDevice.get as any).mockReturnValue(null);
 
             // BUT default is already applied
             (mockUIStore.$defaultApplied.get as any).mockReturnValue(true);
 
             syncService.updateDevicesState();
 
-            expect(mockDataStore.setSelectedDevice).not.toHaveBeenCalled();
+            expect(mockGridStore.setSelectedDevice).not.toHaveBeenCalled();
             expect(mockUIStore.setDefaultApplied).not.toHaveBeenCalled();
         });
     });

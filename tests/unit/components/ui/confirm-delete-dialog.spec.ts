@@ -1,7 +1,7 @@
 import { fixture, html } from '@open-wc/testing-helpers';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ConfirmDeleteDialog } from '../../../../src/components/ui/confirm-delete-dialog';
-import '../../../../src/components/ui/confirm-delete-dialog';
+import { ConfirmDeleteDialog } from '../../../../src/features/shared/ui/confirm-delete-dialog';
+import '../../../../src/features/shared/ui/confirm-delete-dialog';
 
 describe('ConfirmDeleteDialog', () => {
     let element: ConfirmDeleteDialog;

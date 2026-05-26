@@ -14,7 +14,13 @@ export const WS_TYPE_GET_EC_RAMP_CURVES = 'growspace_manager/get_ec_ramp_curves'
 export const WS_TYPE_CAPTURE_SNAPSHOT = 'growspace_manager/capture_snapshot';
 export const WS_TYPE_GET_SNAPSHOTS = 'growspace_manager/get_snapshots';
 export const WS_TYPE_GET_VISION_HISTORY = 'growspace_manager/get_vision_history';
-export const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG = 'growspace_manager/update_vision_checkup_config';
+export const WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG =
+  'growspace_manager/update_vision_checkup_config';
+export const WS_TYPE_GET_SUBAREAS = 'growspace_manager/get_subareas';
+export const WS_TYPE_ADD_SUBAREA = 'growspace_manager/add_subarea';
+export const WS_TYPE_UPDATE_SUBAREA = 'growspace_manager/update_subarea';
+export const WS_TYPE_REMOVE_SUBAREA = 'growspace_manager/remove_subarea';
+export const WS_TYPE_UPDATE_SENSOR_COORDINATES = 'growspace_manager/update_sensor_coordinates';
 
 // Home Assistant events
 export const EVENTS = {
@@ -72,6 +78,7 @@ export const SERVICES = {
   UPDATE_HARVEST_METRICS: 'update_harvest_metrics',
   CONFIGURE_DRAIN_MONITORING: 'configure_drain_monitoring',
   LOG_DRAIN_READING: 'log_drain_reading',
+  RUN_IRRIGATION_CYCLE: 'run_irrigation_cycle',
   BATCH_ACTION: 'batch_action',
   LOG_TRAINING_EVENT: 'log_training_event',
   EXPORT_GROW_REPORT: 'export_grow_report',
@@ -80,8 +87,11 @@ export const SERVICES = {
   RESET_WATER_TRACKING: 'reset_water_tracking',
   UPDATE_STRAIN_META: 'update_strain_meta',
   TRIGGER_VISION_CHECKUP: 'trigger_vision_checkup',
+  LOG_DRYING_WEIGHT: 'log_drying_weight',
+  LOG_MOISTURE_READING: 'log_moisture_reading',
+  SET_VISUAL_TAG: 'set_visual_tag',
+  SET_EC_TARGET_RANGE: 'set_ec_target_range',
 };
-
 
 // Storage keys
 export const STORAGE_KEYS = {

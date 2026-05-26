@@ -161,8 +161,18 @@ export const METRIC_CONFIG: Record<string, MetricConfigItem> = {
     type: ChartType.STEP,
   },
   [MetricKey.DLI]: { color: '#ffb300', title: 'DLI', unit: 'mol/m²/d', icon: mdiWeatherSunny },
-  [MetricKey.SUBSTRATE_TEMPERATURE]: { color: '#ff5252', title: 'Substrate Temp', unit: '°C', icon: mdiThermometer },
-  [MetricKey.CROP_STEERING]: { color: '#4caf50', title: 'Crop Steering', unit: '', icon: mdiSprout },
+  [MetricKey.SUBSTRATE_TEMPERATURE]: {
+    color: '#ff5252',
+    title: 'Substrate Temp',
+    unit: '°C',
+    icon: mdiThermometer,
+  },
+  [MetricKey.CROP_STEERING]: {
+    color: '#4caf50',
+    title: 'Crop Steering',
+    unit: '',
+    icon: mdiSprout,
+  },
   [MetricKey.ENERGY]: { color: '#fbc02d', title: 'Energy', unit: 'kWh', icon: mdiFlash },
   [MetricKey.WATER]: { color: '#03a9f4', title: 'Water Usage', unit: 'L/d', icon: mdiWaterMinus },
 };
@@ -200,11 +210,15 @@ export enum GridOverlayMode {
 }
 
 export enum ConfigTab {
-  ADD_GROWSPACE = 'add_growspace',
-  EDIT_GROWSPACE = 'edit_growspace',
-  ENVIRONMENT = 'environment',
-  DEHUMIDIFIER = 'dehumidifier',
-  SENSOR_GROUPS = 'sensor_groups',
+  GROWSPACES = 'growspaces',
+  SENSORS = 'sensors',
+  CLIMATE = 'climate',
+  HUMIDITY = 'humidity',
+  IRRIGATION = 'irrigation',
+  TANKS = 'tanks',
+  VISION = 'vision',
+  HEATMAP = 'heatmap',
+  SUBAREAS = 'subareas',
 }
 
 export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {

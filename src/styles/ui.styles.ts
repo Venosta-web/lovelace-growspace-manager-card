@@ -205,6 +205,7 @@ export const uiStyles = css`
     width: 100%;
     padding: 24px 16px 8px;
     border: none;
+    background: transparent;
     color: var(--primary-text-color, #ffffff);
     font-size: 1rem;
     font-family: 'Roboto', sans-serif;
@@ -295,24 +296,6 @@ export const uiStyles = css`
     justify-content: center;
     align-items: center;
     min-height: 200px;
-  }
-
-  .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-left-color: var(--primary-color, #4caf50);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
   }
 
   /* Respect user motion preferences (WCAG 2.3.3) */

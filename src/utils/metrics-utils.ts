@@ -20,7 +20,12 @@ import {
 import { HomeAssistant } from 'custom-card-helpers';
 import { HassEntity } from 'home-assistant-js-websocket';
 import { DateTime } from 'luxon';
-import { GrowspaceDevice, IrrigationTime, SerializedEnvironmentAttributes, EnvironmentAttributes } from '../types';
+import {
+  GrowspaceDevice,
+  IrrigationTime,
+  SerializedEnvironmentAttributes,
+  EnvironmentAttributes,
+} from '../types';
 import { MetricKey, EntityState, StatusLevel } from '../constants';
 import { PlantUtils } from './plant-utils';
 
@@ -44,7 +49,18 @@ export interface DominantStageInfo {
   icon: string;
   daysLabel: string;
   weeksLabel: string;
+  color: string;
 }
+
+const STAGE_COLORS: Record<string, string> = {
+  flower: 'var(--stage-flower, #ff9800)',
+  veg: 'var(--stage-veg, #4caf50)',
+  seedling: 'var(--stage-seedling, #8bc34a)',
+  clone: 'var(--stage-clone, #8bc34a)',
+  mother: 'var(--stage-mother, #e91e63)',
+  dry: 'var(--stage-dry, #9c27b0)',
+  cure: 'var(--stage-cure, #2196f3)',
+};
 
 export class MetricsUtils {
   private static _getAttributeValue(ent: HassEntity | undefined, key: string): unknown {
@@ -95,6 +111,7 @@ export class MetricsUtils {
         icon,
         daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
         weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
+        color: STAGE_COLORS[dominantRaw.stage] ?? '#4caf50',
       };
     }
 
@@ -258,7 +275,10 @@ export class MetricsUtils {
           const sVal = String(fallbackValue);
           const fVal = parseFloat(sVal);
           const isValid =
-            !isNaN(fVal) || sVal === EntityState.UNKNOWN || sVal === EntityState.UNAVAILABLE || sVal === '';
+            !isNaN(fVal) ||
+            sVal === EntityState.UNKNOWN ||
+            sVal === EntityState.UNAVAILABLE ||
+            sVal === '';
 
           if (isValid) {
             return { value: fallbackValue + unit, entityIds: [] };
@@ -298,7 +318,10 @@ export class MetricsUtils {
         const sVal = String(fallbackValue);
         const fVal = parseFloat(sVal);
         const isValid =
-          !isNaN(fVal) || sVal === EntityState.UNKNOWN || sVal === EntityState.UNAVAILABLE || sVal === '';
+          !isNaN(fVal) ||
+          sVal === EntityState.UNKNOWN ||
+          sVal === EntityState.UNAVAILABLE ||
+          sVal === '';
 
         if (isValid) {
           singleValue = sVal + unit;
@@ -350,23 +373,29 @@ export class MetricsUtils {
     // New metrics: DLI, Crop Steering, Substrate Temp, Energy, Water
     const dliEntityId = `sensor.${slug}_dli`;
     const dliState = hass.states[dliEntityId];
-    const dliValue = dliState && dliState.state !== EntityState.UNKNOWN && dliState.state !== EntityState.UNAVAILABLE
-      ? dliState.state
-      : undefined;
+    const dliValue =
+      dliState &&
+      dliState.state !== EntityState.UNKNOWN &&
+      dliState.state !== EntityState.UNAVAILABLE
+        ? dliState.state
+        : undefined;
 
     const cropSteeringEntityId = `sensor.${slug}_crop_steering`;
     const cropSteeringState = hass.states[cropSteeringEntityId];
-    const cropSteeringValue = cropSteeringState && cropSteeringState.state !== EntityState.UNKNOWN && cropSteeringState.state !== EntityState.UNAVAILABLE
-      ? cropSteeringState.state
-      : undefined;
+    const cropSteeringValue =
+      cropSteeringState &&
+      cropSteeringState.state !== EntityState.UNKNOWN &&
+      cropSteeringState.state !== EntityState.UNAVAILABLE
+        ? cropSteeringState.state
+        : undefined;
 
-    const energyValue = device.energyTracking?.dailyKwh != null
-      ? device.energyTracking.dailyKwh.toFixed(2)
-      : undefined;
+    const energyValue =
+      device.energyTracking?.dailyKwh != null
+        ? device.energyTracking.dailyKwh.toFixed(2)
+        : undefined;
 
-    const waterValue = device.waterUsage?.litersToday != null
-      ? device.waterUsage.litersToday.toFixed(1)
-      : undefined;
+    const waterValue =
+      device.waterUsage?.litersToday != null ? device.waterUsage.litersToday.toFixed(1) : undefined;
 
     const substrateTempAgg = getAggregateSensorState(
       undefined,
@@ -375,7 +404,7 @@ export class MetricsUtils {
     );
 
     if (tanks.length > 0) {
-      tankEntityIds = tanks.map(t => t.sensorEntity).filter(Boolean);
+      tankEntityIds = tanks.map((t) => t.sensorEntity).filter(Boolean);
 
       // Helper: Format hours remaining as "Xh" or "Xd"
       const formatTimeRemaining = (hours: number | null | undefined): string => {
@@ -394,7 +423,8 @@ export class MetricsUtils {
       ): string | undefined => {
         // No color if no data or not depleting
         if (depletionStatus === 'insufficient_data' || depletionStatus === null) return undefined;
-        if (depletionStatus === 'static' || depletionStatus === 'refilling') return StatusLevel.OPTIMAL;
+        if (depletionStatus === 'static' || depletionStatus === 'refilling')
+          return StatusLevel.OPTIMAL;
 
         if (hoursRemaining === null || hoursRemaining === undefined) return undefined;
 
@@ -420,9 +450,9 @@ export class MetricsUtils {
         }
       } else {
         // Multiple tanks - compute average and show individual values
-        const validLevels = tanks.filter(t => t.fillLevel !== null && t.fillLevel !== undefined);
+        const validLevels = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
         if (validLevels.length > 0) {
-          tankMultiValues = validLevels.map(t => {
+          tankMultiValues = validLevels.map((t) => {
             const fillPct = Math.round(t.fillLevel!);
             const timeStr = formatTimeRemaining(t.hoursRemaining);
             return `${fillPct}%${timeStr}`;
@@ -433,7 +463,7 @@ export class MetricsUtils {
 
           // Use most urgent status
           const statuses = tanks
-            .map(t => getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
+            .map((t) => getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
             .filter(Boolean);
 
           if (statuses.includes(StatusLevel.DANGER)) {
@@ -551,18 +581,25 @@ export class MetricsUtils {
         soilAgg.entityIds,
         'Moisture'
       ),
+      createChipData(
+        MetricKey.SUBSTRATE_TEMPERATURE,
+        mdiThermometer,
+        substrateTempAgg.value,
+        substrateTempAgg.multiValues,
+        substrateTempAgg.entityIds
+      ),
       createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
       createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
       envEntity
         ? createChipData(
-          MetricKey.OPTIMAL,
-          envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
-          optimalLabel,
-          undefined,
-          undefined,
-          undefined,
-          envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
-        )
+            MetricKey.OPTIMAL,
+            envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank,
+            optimalLabel,
+            undefined,
+            undefined,
+            undefined,
+            envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING
+          )
         : null,
       createChipData(
         MetricKey.DLI,
@@ -584,7 +621,6 @@ export class MetricsUtils {
         undefined,
         'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'
       ),
-      createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
       createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
       createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
@@ -659,12 +695,29 @@ export class MetricsUtils {
 
     const lightState = getAggregateState(envAttrs.lightSensor, envAttrs.lightSensors, undefined);
 
+    // Determine light chip value: prefer numeric sensor value over On/Off
+    let lightChipValue: string | undefined;
+    let lightChipIcon = isLightsOn ? mdiLightbulbOn : mdiLightbulbOff;
+
+    if (lightState.entityIds?.length === 1 && lightState.value !== undefined) {
+      const numVal = parseFloat(lightState.value);
+      if (!isNaN(numVal)) {
+        const lightEnt = hass.states[lightState.entityIds[0]];
+        const unit = lightEnt?.attributes?.unit_of_measurement;
+        lightChipValue = unit === '%' ? `${numVal}%` : lightState.value;
+        lightChipIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+      }
+    }
+    if (!lightChipValue) {
+      lightChipValue = hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined;
+    }
+
     const deviceChips = [
       // Moved light chip here per request
       createChipData(
         MetricKey.LIGHT,
-        isLightsOn ? mdiLightbulbOn : mdiLightbulbOff,
-        hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined,
+        lightChipIcon,
+        lightChipValue,
         lightState.multiValues,
         lightState.entityIds
       ),
@@ -703,5 +756,339 @@ export class MetricsUtils {
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     return { mainChips, deviceChips, dominant, envAttrs };
+  }
+
+  static computeSubareaMetrics(
+    hass: HomeAssistant,
+    ec: import('../services/types').EnvironmentConfig,
+    activeEnvGraphs: Set<string>,
+    growspaceId?: string,
+    growspaceName?: string,
+    subareaId?: string,
+    subareaName?: string
+  ): {
+    heroChips: HeaderChip[];
+    secondaryChips: HeaderChip[];
+    deviceChips: HeaderChip[];
+  } {
+    const createChipData = (
+      key: string,
+      icon: string,
+      value: string | undefined,
+      multiValues: string[] | undefined,
+      entityIds?: string[],
+      label?: string,
+      status?: string,
+      tooltip?: string
+    ) => {
+      if (value === undefined && (!multiValues || multiValues.length === 0)) return null;
+      const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
+      const active = activeEnvGraphs.has(key) || hasCompositeActive;
+      return {
+        key,
+        icon,
+        value: value || '',
+        multiValues,
+        entityIds,
+        label,
+        status,
+        tooltip,
+        active,
+        linked: false,
+        groupIndex: -1,
+      };
+    };
+
+    const getAggregateState = (
+      single: string | undefined | null,
+      multi: string[] | undefined | null,
+      unit: string = ''
+    ): { value: string | undefined; multiValues?: string[]; entityIds?: string[] } => {
+      const ids = new Set<string>();
+      if (multi && multi.length > 0) multi.forEach((id) => ids.add(id));
+      else if (single) ids.add(single);
+
+      if (ids.size === 0) return { value: undefined, entityIds: [] };
+
+      const states: string[] = [];
+      const entityIds: string[] = Array.from(ids);
+
+      ids.forEach((id) => {
+        const s = hass.states[id];
+        if (
+          s &&
+          s.state &&
+          s.state !== EntityState.UNAVAILABLE &&
+          s.state !== EntityState.UNKNOWN
+        ) {
+          const fVal = parseFloat(s.state);
+          if (!isNaN(fVal) || s.state === '') {
+            states.push(unit ? `${parseFloat(s.state).toFixed(1)} ${unit}`.trim() : s.state);
+          } else {
+            states.push('-');
+          }
+        } else {
+          states.push('-');
+        }
+      });
+
+      if (ids.size > 1) {
+        return { value: 'Multiple', multiValues: states, entityIds };
+      }
+
+      return { value: states[0] !== '-' ? states[0] : undefined, entityIds };
+    };
+
+    const slugify = (text: string) =>
+      text
+        .toString()
+        .toLowerCase()
+        .replace(/\s+/g, '_')
+        .replace(/[^\w-]+/g, '')
+        .replace(/[_-]+/g, '_')
+        .replace(/^[_-]+/, '')
+        .replace(/[_-]+$/, '');
+
+    const resolveCalculatedVpdSensor = (index: number | null): string => {
+      const nameSuffix = index !== null ? ` ${index + 1}` : '';
+      const uuidSuffix = index !== null ? `_${index}` : '';
+
+      const calculatedId =
+        growspaceName && subareaName
+          ? `sensor.${slugify(`${growspaceName} ${subareaName} Calculated VPD${nameSuffix}`)}`
+          : '';
+      const uuidId =
+        growspaceId && subareaId
+          ? `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`
+          : '';
+
+      if (calculatedId && hass.states[calculatedId]) {
+        const s = hass.states[calculatedId];
+        if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
+          return calculatedId;
+        }
+      }
+      if (uuidId && hass.states[uuidId]) {
+        const s = hass.states[uuidId];
+        if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
+          return uuidId;
+        }
+      }
+
+      return calculatedId || uuidId || '';
+    };
+
+    const tempSensors: string[] = [];
+    if (ec.temperature_sensors && ec.temperature_sensors.length > 0) {
+      tempSensors.push(...ec.temperature_sensors);
+    } else if (ec.temperature_sensor) {
+      tempSensors.push(ec.temperature_sensor);
+    }
+
+    const humSensors: string[] = [];
+    if (ec.humidity_sensors && ec.humidity_sensors.length > 0) {
+      humSensors.push(...ec.humidity_sensors);
+    } else if (ec.humidity_sensor) {
+      humSensors.push(ec.humidity_sensor);
+    }
+
+    const vpdSensors: string[] = [];
+    if (ec.vpd_sensors && ec.vpd_sensors.length > 0) {
+      vpdSensors.push(...ec.vpd_sensors);
+    } else if (ec.vpd_sensor) {
+      vpdSensors.push(ec.vpd_sensor);
+    }
+
+    const resolvedVpdSensors: string[] = [];
+    const numPairs = Math.min(tempSensors.length, humSensors.length);
+    if (numPairs > 0) {
+      for (let i = 0; i < numPairs; i++) {
+        const existingVpd = vpdSensors[i];
+        if (existingVpd && !existingVpd.includes('calculated_vpd')) {
+          resolvedVpdSensors.push(existingVpd);
+        } else {
+          const index = numPairs > 1 ? i : null;
+          const fallbackId = resolveCalculatedVpdSensor(index);
+          if (fallbackId) {
+            resolvedVpdSensors.push(fallbackId);
+          }
+        }
+      }
+    } else {
+      resolvedVpdSensors.push(...vpdSensors);
+    }
+
+    const tempAgg = getAggregateState(ec.temperature_sensor, ec.temperature_sensors, '°C');
+    const humAgg = getAggregateState(ec.humidity_sensor, ec.humidity_sensors, '%');
+    const vpdAgg = getAggregateState(
+      resolvedVpdSensors.length === 1 ? resolvedVpdSensors[0] : undefined,
+      resolvedVpdSensors.length > 1 ? resolvedVpdSensors : undefined,
+      'kPa'
+    );
+    const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
+
+    const heroChips = [
+      createChipData(
+        MetricKey.TEMPERATURE,
+        mdiThermometer,
+        tempAgg.value,
+        tempAgg.multiValues,
+        tempAgg.entityIds,
+        'Temperature'
+      ),
+      createChipData(
+        MetricKey.HUMIDITY,
+        mdiWaterPercent,
+        humAgg.value,
+        humAgg.multiValues,
+        humAgg.entityIds,
+        'Humidity'
+      ),
+      createChipData(
+        MetricKey.VPD,
+        mdiCloudOutline,
+        vpdAgg.value,
+        vpdAgg.multiValues,
+        vpdAgg.entityIds,
+        'VPD'
+      ),
+      createChipData(
+        MetricKey.CO2,
+        mdiWeatherCloudy,
+        co2Agg.value,
+        co2Agg.multiValues,
+        co2Agg.entityIds,
+        'CO2'
+      ),
+    ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+    const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
+    const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
+    const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
+    const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
+
+    const secondaryChips = [
+      createChipData(
+        MetricKey.SUBSTRATE_TEMPERATURE,
+        '',
+        subTempAgg.value,
+        subTempAgg.multiValues,
+        subTempAgg.entityIds,
+        'Substrate Temp'
+      ),
+      createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
+      createChipData(
+        'feed_ec',
+        '',
+        feedEcAgg.value,
+        feedEcAgg.multiValues,
+        feedEcAgg.entityIds,
+        'Feed EC'
+      ),
+      createChipData(
+        'substrate_ec',
+        '',
+        subEcAgg.value,
+        subEcAgg.multiValues,
+        subEcAgg.entityIds,
+        'Substrate EC'
+      ),
+    ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+    const getAggregateDeviceState = (
+      entities: string[] | undefined | null
+    ): { value: string | undefined; multiValues?: string[]; entityIds?: string[] } => {
+      const ids = new Set<string>();
+      if (entities && entities.length > 0) entities.forEach((id) => ids.add(id));
+      if (ids.size === 0) return { value: undefined, entityIds: [] };
+
+      const states: string[] = [];
+      const entityIds: string[] = Array.from(ids);
+      ids.forEach((id) => {
+        const s = hass.states[id];
+        states.push(
+          s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN
+            ? s.state
+            : '-'
+        );
+      });
+
+      if (ids.size > 1) return { value: 'Multiple', multiValues: states, entityIds };
+      return {
+        value:
+          states[0] !== '-'
+            ? states[0] === 'on'
+              ? 'On'
+              : states[0] === 'off'
+                ? 'Off'
+                : states[0]
+            : undefined,
+        entityIds,
+      };
+    };
+
+    const lightState = getAggregateDeviceState(ec.light_sensors);
+    const exhaustState = getAggregateDeviceState(ec.exhaust_fan_entities);
+    const circFanState = getAggregateDeviceState(ec.circulation_fan_entities);
+    const humState = getAggregateDeviceState(ec.humidifier_entities);
+    const dehumState = getAggregateDeviceState(ec.dehumidifier_entities);
+
+    // Format light sensor value with % for power_factor/% unit sensors
+    let subareaLightValue = lightState.value;
+    let subareaLightIcon = mdiLightbulbOn;
+    if (lightState.entityIds?.length === 1 && lightState.value !== undefined) {
+      const numVal = parseFloat(lightState.value);
+      if (!isNaN(numVal)) {
+        const lightEnt = hass.states[lightState.entityIds[0]];
+        const unit = lightEnt?.attributes?.unit_of_measurement;
+        subareaLightValue = unit === '%' ? `${numVal}%` : lightState.value;
+        subareaLightIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+      }
+    }
+
+    const deviceChips = [
+      createChipData(
+        MetricKey.LIGHT,
+        subareaLightIcon,
+        subareaLightValue,
+        lightState.multiValues,
+        lightState.entityIds,
+        'Lights'
+      ),
+      createChipData(
+        MetricKey.EXHAUST,
+        mdiFan,
+        exhaustState.value,
+        exhaustState.multiValues,
+        exhaustState.entityIds,
+        'Exhaust'
+      ),
+      createChipData(
+        MetricKey.CIRCULATION_FAN,
+        mdiFan,
+        circFanState.value,
+        circFanState.multiValues,
+        circFanState.entityIds,
+        'Fan'
+      ),
+      createChipData(
+        MetricKey.HUMIDIFIER,
+        mdiAirHumidifier,
+        humState.value,
+        humState.multiValues,
+        humState.entityIds,
+        'Humidifier'
+      ),
+      createChipData(
+        MetricKey.DEHUMIDIFIER,
+        mdiAirHumidifierOff,
+        dehumState.value,
+        dehumState.multiValues,
+        dehumState.entityIds,
+        'Dehumidifier'
+      ),
+    ].filter((c): c is NonNullable<typeof c> => c !== null);
+
+    return { heroChips, secondaryChips, deviceChips };
   }
 }

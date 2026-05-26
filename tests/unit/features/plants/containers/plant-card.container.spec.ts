@@ -98,8 +98,32 @@ describe('PlantCardContainer', () => {
     if (cardUI) {
       vi.spyOn(cardUI as any, 'focus').mockImplementation(() => { focusCalled = true; });
     }
-    
+
     element.focus();
     expect(focusCalled).to.be.true;
+  });
+
+  it('falls back to super.focus() when plant-card-ui has no focus method', async () => {
+    await element.updateComplete;
+    const cardUI = element.shadowRoot?.querySelector('plant-card-ui') as any;
+    if (cardUI) {
+      // Remove focus so typeof cardUI.focus !== 'function'
+      (cardUI as any).focus = undefined;
+    }
+    // Should not throw — falls through to super.focus()
+    expect(() => element.focus()).not.toThrow();
+  });
+
+  it('isEditMode getter returns false when viewModelController is unset', () => {
+    // Directly access getter on an element without a viewModelController
+    const bare = Object.create(element) as any;
+    bare.viewModelController = undefined;
+    expect(bare.isEditMode).toBe(false);
+  });
+
+  it('selected getter returns false when viewModelController is unset', () => {
+    const bare = Object.create(element) as any;
+    bare.viewModelController = undefined;
+    expect(bare.selected).toBe(false);
   });
 });

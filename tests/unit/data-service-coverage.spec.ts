@@ -1,7 +1,24 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../src/data-service';
+import { DataService } from '../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 import { WS_TYPE_GET_DATA, WS_TYPE_GET_NUTRIENT_INVENTORY } from '../../src/constants';
+
+// Strain operations now go through slices/strain, not StrainAPI
+vi.mock('../../src/slices/strain', () => ({
+  fetchStrainLibrary: vi.fn().mockResolvedValue([]),
+  addStrain: vi.fn().mockResolvedValue(undefined),
+  updateStrainMeta: vi.fn().mockResolvedValue(undefined),
+  removeStrain: vi.fn().mockResolvedValue(undefined),
+  exportStrainLibrary: vi.fn().mockResolvedValue(undefined),
+  importStrainLibrary: vi.fn().mockResolvedValue({ success: true }),
+  clearStrainLibrary: vi.fn().mockResolvedValue(undefined),
+  updateBreeder: vi.fn().mockResolvedValue(undefined),
+  deleteBreeder: vi.fn().mockResolvedValue(undefined),
+  setStrainLibrary: vi.fn(),
+  strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+}));
+
+import * as strainSlice from '../../src/slices/strain';
 
 describe('DataService Coverage Gap Fill', () => {
     let service: DataService;
@@ -21,52 +38,32 @@ describe('DataService Coverage Gap Fill', () => {
 
     describe('fetchGrowspaceData Cache', () => {
         it('should return cached data if called twice within TTL', async () => {
-            const mockData = { growspace_id: 'gs1', name: 'Cached GS' };
+            const mockData = {
+                identity: { growspace_id: 'gs1', name: 'Cached GS', type: 'normal' },
+                grid: { rows: 2, plants_per_row: 2, total_plants: 0, grid: {} },
+                environment: {},
+                sensors: { sensor_types: {}, sensor_coordinates: {}, sensor_groups: [] },
+                irrigation: { irrigation_config: { irrigation_times: [], drain_times: [] } },
+                metrics: { vpd_status: 'ok', granular_stage: 'unknown', is_day: false },
+            };
             // First call - should hit API
             (mockHass.connection.sendMessagePromise as any).mockResolvedValueOnce(mockData);
 
             const result1 = await service.fetchGrowspaceData('gs1');
-            expect(result1).toEqual(mockData);
+            expect((result1 as any).identity.growspace_id).toBe('gs1');
             expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledTimes(1);
 
             // Second call - should hit Cache (no new API call)
             const result2 = await service.fetchGrowspaceData('gs1');
-            expect(result2).toEqual(mockData);
+            expect((result2 as any).identity.growspace_id).toBe('gs1');
             expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledTimes(1); // Call count remains 1
         });
     });
 
-    describe('getStrainLibrary Entity Lookup', () => {
-        it('should find library in known entity sensor.strain_library', () => {
-            service.updateHass({
-                states: {
-                    'sensor.strain_library': {
-                        attributes: {
-                            strains: ['Strain A', 'Strain B']
-                        }
-                    }
-                }
-            } as any);
-
-            const strains = service.getStrainLibrary();
-            expect(strains).toHaveLength(2);
-            expect(strains[0].strain).toBe('Strain A');
-        });
-
-        it('should find library in known entity sensor.growspace_manager_strain_library', () => {
-            service.updateHass({
-                states: {
-                    'sensor.growspace_manager_strain_library': {
-                        attributes: {
-                            strains: ['Strain C']
-                        }
-                    }
-                }
-            } as any);
-
-            const strains = service.getStrainLibrary();
-            expect(strains).toHaveLength(1);
-            expect(strains[0].strain).toBe('Strain C');
+    describe('fetchStrainLibrary slice delegation', () => {
+        it('delegates fetchStrainLibrary to strain slice', async () => {
+            await service.fetchStrainLibrary();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
         });
     });
 
@@ -136,30 +133,26 @@ describe('DataService Coverage Gap Fill', () => {
             expect(setDehumSpy).toHaveBeenCalled();
         });
 
-        it('should delegate Strain API calls', async () => {
-            const fetchSpy = vi.spyOn((service as any)._strainAPI, 'fetchStrainLibrary');
-            service.fetchStrainLibrary();
-            expect(fetchSpy).toHaveBeenCalled();
+        it('should delegate Strain API calls to strain slice', async () => {
+            vi.clearAllMocks();
 
-            const addSpy = vi.spyOn((service as any)._strainAPI, 'addStrain');
-            service.addStrain({ strain: 'S1' });
-            expect(addSpy).toHaveBeenCalled();
+            await service.fetchStrainLibrary();
+            expect(strainSlice.fetchStrainLibrary).toHaveBeenCalled();
 
-            const removeSpy = vi.spyOn((service as any)._strainAPI, 'removeStrain');
-            service.removeStrain('S1');
-            expect(removeSpy).toHaveBeenCalled();
+            await service.addStrain({ strain: 'S1' } as any);
+            expect(strainSlice.addStrain).toHaveBeenCalled();
 
-            const exportSpy = vi.spyOn((service as any)._strainAPI, 'exportStrainLibrary');
-            service.exportStrainLibrary();
-            expect(exportSpy).toHaveBeenCalled();
+            await service.removeStrain('S1', 'pheno1');
+            expect(strainSlice.removeStrain).toHaveBeenCalled();
 
-            const importSpy = vi.spyOn((service as any)._strainAPI, 'importStrainLibrary');
-            service.importStrainLibrary({} as any, true);
-            expect(importSpy).toHaveBeenCalled();
+            await service.exportStrainLibrary();
+            expect(strainSlice.exportStrainLibrary).toHaveBeenCalled();
 
-            const clearSpy = vi.spyOn((service as any)._strainAPI, 'clearStrainLibrary');
-            service.clearStrainLibrary();
-            expect(clearSpy).toHaveBeenCalled();
+            await service.importStrainLibrary({} as any, true);
+            expect(strainSlice.importStrainLibrary).toHaveBeenCalled();
+
+            await service.clearStrainLibrary();
+            expect(strainSlice.clearStrainLibrary).toHaveBeenCalled();
         });
 
         it('should delegate Nutrient API calls', async () => {

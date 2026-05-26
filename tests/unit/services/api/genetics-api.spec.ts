@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GeneticsAPI } from '../../../../src/services/api/genetics-api';
+import { WSError } from '../../../../src/services/base-api';
 
 describe('GeneticsAPI', () => {
     let api: GeneticsAPI;
@@ -116,6 +117,23 @@ describe('GeneticsAPI', () => {
         });
     });
 
+    // ── updateSeedBatch ───────────────────────────────────────────────────────
+
+    describe('updateSeedBatch', () => {
+        it('calls service with correct payload', async () => {
+            api.updateHass(mockHass);
+            const payload = {
+                batch_id: 'batch-1',
+                strain_name: 'Super Lemon Haze',
+                quantity: 15,
+            };
+
+            await api.updateSeedBatch(payload);
+
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'update_seed_batch', payload);
+        });
+    });
+
     // ── harvestSeeds ──────────────────────────────────────────────────────────
 
     describe('harvestSeeds', () => {
@@ -138,59 +156,138 @@ describe('GeneticsAPI', () => {
         });
     });
 
-    // ── scorePlant ────────────────────────────────────────────────────────────
+    // ── updatePollination ─────────────────────────────────────────────────────
 
-    describe('scorePlant', () => {
-        it('filters out null values and calls service', async () => {
+    describe('updatePollination', () => {
+        it('calls service with correct payload', async () => {
             api.updateHass(mockHass);
-            await api.scorePlant({
-                plant_id: 'plant-1',
-                vigor: 8,
-                structure: null,
-                aroma: 7,
-                resin: null,
-                pest_resistance: 6,
-            });
+            const payload = {
+                event_id: 'evt-1',
+                notes: 'Updated notes',
+            };
 
-            expect(callService).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
-                plant_id: 'plant-1',
-                vigor: 8,
-                aroma: 7,
-                pest_resistance: 6,
+            await api.updatePollination(payload);
+
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'update_pollination', payload);
+        });
+    });
+
+    // ── deletePollination ─────────────────────────────────────────────────────
+    describe('deletePollination', () => {
+        it('calls service with correct event_id', async () => {
+            api.updateHass(mockHass);
+            await api.deletePollination('evt-1');
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'delete_pollination', { event_id: 'evt-1' });
+        });
+    });
+
+    // ── deleteSeedBatch ──────────────────────────────────────────────────────
+    describe('deleteSeedBatch', () => {
+        it('calls service with correct batch_id', async () => {
+            api.updateHass(mockHass);
+            const batch_id = 'batch-123';
+            await api.deleteSeedBatch(batch_id);
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'delete_seed_batch', { batch_id });
+        });
+    });
+
+    // ── setPlantSex ──────────────────────────────────────────────────────────
+    describe('setPlantSex', () => {
+        it('calls service with correct payload', async () => {
+            api.updateHass(mockHass);
+            await api.setPlantSex('p1', 'female');
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'set_plant_sex', { plant_id: 'p1', sex: 'female' });
+        });
+    });
+
+    // ── sowSeed ──────────────────────────────────────────────────────────────
+    describe('sowSeed', () => {
+        it('calls service with correct payload', async () => {
+            api.updateHass(mockHass);
+            await api.sowSeed('b1', 'p1');
+            expect(callService).toHaveBeenCalledWith('growspace_manager', 'sow_seed', { batch_id: 'b1', plant_id: 'p1' });
+        });
+    });
+
+    // ── getLineageTree ────────────────────────────────────────────────────────
+    describe('getLineageTree', () => {
+        it('calls websocket and returns result', async () => {
+            api.updateHass(mockHass);
+            const mockNode = { id: 'p1', parents: [] };
+            callWS.mockResolvedValue(mockNode);
+
+            const result = await api.getLineageTree('p1');
+
+            expect(callWS).toHaveBeenCalledWith({ type: 'growspace_manager/get_lineage_tree', plant_id: 'p1' });
+            expect(result).toEqual(mockNode);
+        });
+
+        it('returns null if websocket fails', async () => {
+            api.updateHass(mockHass);
+            callWS.mockRejectedValue(new Error('WS fail'));
+            const result = await api.getLineageTree('p1');
+            expect(result).toBeNull();
+        });
+    });
+
+    // ── getStrainLineageTree ──────────────────────────────────────────────────
+    describe('getStrainLineageTree', () => {
+        it('calls websocket with correct params', async () => {
+            api.updateHass(mockHass);
+            const mockTree = { name: 'Strain Root' } as any;
+            callWS.mockResolvedValueOnce(mockTree);
+
+            const result = await api.getStrainLineageTree('Strain A');
+
+            expect(result).toEqual(mockTree);
+            expect(callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/get_strain_lineage_tree',
+                strain_name: 'Strain A',
             });
         });
 
-        it('passes all values when none are null', async () => {
+        it('returns null if websocket fails or returns null', async () => {
             api.updateHass(mockHass);
-            await api.scorePlant({
-                plant_id: 'plant-2',
-                vigor: 9,
-                structure: 8,
-                aroma: 7,
-                resin: 10,
-                pest_resistance: 6,
-            });
+            callWS.mockResolvedValueOnce(null);
+            const result = await api.getStrainLineageTree('Strain A');
+            expect(result).toBeNull();
+        });
+    });
 
-            expect(callService).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
-                plant_id: 'plant-2',
-                vigor: 9,
-                structure: 8,
-                aroma: 7,
-                resin: 10,
-                pest_resistance: 6,
+    // ── updateStrainLineageTree ───────────────────────────────────────────────
+    describe('updateStrainLineageTree', () => {
+        it('calls websocket and returns lineage string', async () => {
+            api.updateHass(mockHass);
+            const parents = [{ name: 'P1', source: 'library' as const }];
+            callWS.mockResolvedValue({ lineage: 'P1' });
+
+            const result = await api.updateStrainLineageTree('OG Kush', parents);
+
+            expect(callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/update_strain_lineage_tree',
+                strain_name: 'OG Kush',
+                parents
             });
+            expect(result).toEqual({ lineage: 'P1' });
         });
 
-        it('sends only plant_id when all scores are null', async () => {
+        it('throws WSError if websocket fails', async () => {
             api.updateHass(mockHass);
-            await api.scorePlant({
-                plant_id: 'plant-3',
-                vigor: null,
-                structure: null,
-            });
+            callWS.mockRejectedValue(new Error('WS fail'));
+            await expect(api.updateStrainLineageTree('OG Kush', [])).rejects.toBeInstanceOf(WSError);
+        });
+    });
 
-            expect(callService).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
-                plant_id: 'plant-3',
+    // ── importStrainLineageTree ───────────────────────────────────────────────
+    describe('importStrainLineageTree', () => {
+        it('calls websocket with tree data', async () => {
+            api.updateHass(mockHass);
+            const tree = { name: 'OG' };
+            await api.importStrainLineageTree('OG Kush', tree);
+            expect(callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/import_strain_lineage_tree',
+                strain_name: 'OG Kush',
+                tree
             });
         });
     });

@@ -11,6 +11,25 @@ export function setIsCompactView(ctx: ActionContext, value: boolean) {
   }
 }
 
+export function showToast(
+  ctx: ActionContext,
+  message: string,
+  type: 'success' | 'error' | 'info' = 'info'
+) {
+  ctx.ui.showToast(message, type);
+}
+
+export function setActiveDialog(
+  ctx: ActionContext,
+  dialog: import('../../ui-state').ActiveDialogState
+) {
+  ctx.ui.setActiveDialog(dialog);
+}
+
+export function closeDialog(ctx: ActionContext) {
+  ctx.ui.closeDialog();
+}
+
 export function toggleHeaderExpansion(ctx: ActionContext) {
   if (ctx.ui.$viewMode.get() === ViewMode.HEADER) {
     ctx.ui.setViewMode(ViewMode.STANDARD);
@@ -35,7 +54,7 @@ export function togglePlantSelection(ctx: ActionContext, plantOrId: string | Pla
 }
 
 export function selectAllPlants(ctx: ActionContext) {
-  const selectedDevice = ctx.data.$selectedDevice.get();
+  const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) return;
 
   const devices = ctx.data.$devices.get();
@@ -62,18 +81,6 @@ export function clearPlantSelection(ctx: ActionContext) {
 export function exitEditMode(ctx: ActionContext) {
   ctx.ui.setEditMode(false);
   ctx.ui.clearPlantSelection();
-}
-
-export function handlePlantClick(ctx: ActionContext, plant: PlantEntity) {
-  if (ctx.ui.$isEditMode.get() && ctx.ui.$selectedPlants.get().size > 0) {
-    const plantId = plant.attributes.plant_id;
-    if (plantId && !ctx.ui.$selectedPlants.get().has(plantId)) {
-      togglePlantSelection(ctx, plantId);
-    }
-    openPlantOverviewDialog(ctx, plant, Array.from(ctx.ui.$selectedPlants.get()));
-  } else {
-    openPlantOverviewDialog(ctx, plant);
-  }
 }
 
 export function openPlantOverviewDialog(
@@ -131,6 +138,26 @@ export function handleDeepLink(ctx: ActionContext, plantId: string) {
   }
 }
 
+export function openBatchPrintLabelsDialog(ctx: ActionContext) {
+  const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+  if (selectedIds.length === 0) return;
+
+  ctx.ui.setActiveDialog({
+    type: 'BATCH_PRINT_LABELS',
+    payload: { plantIds: selectedIds },
+  });
+}
+
+export function openBatchCloneDialog(ctx: ActionContext) {
+  const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
+  if (selectedIds.length === 0) return;
+
+  ctx.ui.setActiveDialog({
+    type: 'BATCH_CLONE',
+    payload: { plantIds: selectedIds },
+  });
+}
+
 export function openBatchWateringDialog(ctx: ActionContext, growspaceId?: string) {
   const selectedIds = Array.from(ctx.ui.$selectedPlants.get());
   if (selectedIds.length === 0 && !growspaceId) return;
@@ -171,7 +198,7 @@ export function openBatchTrainingDialog(ctx: ActionContext, growspaceId?: string
 
 export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: number) {
   if (row !== undefined && col !== undefined) {
-    libraryActions.fetchStrainLibrary(ctx);
+    libraryActions.fetchStrainLibrary(ctx, true);
     ctx.ui.setActiveDialog({
       type: 'ADD_PLANT',
       payload: { row, col },
@@ -179,7 +206,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     return;
   }
 
-  const selectedDeviceId = ctx.data.$selectedDevice.get();
+  const selectedDeviceId = ctx.grid.$selectedDevice.get();
   if (!selectedDeviceId) {
     return;
   }
@@ -220,7 +247,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     }
   }
 
-  libraryActions.fetchStrainLibrary(ctx);
+  libraryActions.fetchStrainLibrary(ctx, true);
   ctx.ui.setActiveDialog({
     type: 'ADD_PLANT',
     payload: { row: targetRow, col: targetCol },
@@ -249,7 +276,7 @@ export function openIPMDialog(
   libraryActions.fetchIPMPresets(ctx);
   const growspaceId =
     context?.growspaceId ||
-    (!context?.plantIds?.length ? ctx.data.$selectedDevice.get() || undefined : undefined);
+    (!context?.plantIds?.length ? ctx.grid.$selectedDevice.get() || undefined : undefined);
 
   ctx.ui.setActiveDialog({
     type: 'IPM',
@@ -261,7 +288,7 @@ export function openIPMDialog(
 }
 
 export function openLogbookDialog(ctx: ActionContext) {
-  const growspaceId = ctx.data.$selectedDevice.get();
+  const growspaceId = ctx.grid.$selectedDevice.get();
   if (growspaceId) {
     ctx.ui.setActiveDialog({
       type: 'LOGBOOK',
@@ -282,7 +309,7 @@ export async function exportStrainLibrary(ctx: ActionContext) {
     downloadAnchorNode.remove();
   } catch (e) {
     console.error(e);
-    ctx.showToast('Failed to export library', 'error');
+    ctx.ui.showToast('Failed to export library', 'error');
   }
 }
 
@@ -311,9 +338,14 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
   ctx.ui.setActiveDialog({
     type: 'CONFIG',
     payload: {
-      currentTab: ConfigTab.ENVIRONMENT,
+      currentTab: ConfigTab.SENSORS,
       environmentData: {
         selectedGrowspaceId: device?.deviceId || '',
+        // Multi sensors (preferred)
+        temperatureSensors: device?.environmentAttributes?.temperatureSensors || [],
+        humiditySensors: device?.environmentAttributes?.humiditySensors || [],
+        vpdSensors: device?.environmentAttributes?.vpdSensors || [],
+        // Legacy singular (backward compat)
         temperatureSensor: device?.environmentAttributes?.temperatureSensor || '',
         humiditySensor: device?.environmentAttributes?.humiditySensor || '',
         vpdSensor: device?.environmentAttributes?.vpdSensor || '',
@@ -328,6 +360,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         exhaustFanEntities: device?.environmentAttributes?.exhaustFanEntities || [],
         humidifierEntity: device?.environmentAttributes?.humidifierEntity || '',
         humidifierEntities: device?.environmentAttributes?.humidifierEntities || [],
+        humidifierControlEnabled: device?.environmentAttributes?.humidifierControlEnabled || false,
         dehumidifierEntity: device?.environmentAttributes?.dehumidifierEntity || '',
         dehumidifierEntities: device?.environmentAttributes?.dehumidifierEntities || [],
         dehumidifierThresholds: device?.environmentAttributes?.dehumidifierThresholds || {},
@@ -339,23 +372,33 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         irrigationTanks: device?.environmentAttributes?.irrigationTanks || [],
         cameraEntities: device?.environmentAttributes?.cameraEntities || [],
         visionCheckupConfig: device?.environmentAttributes?.visionCheckupConfig,
+        substrateTemperatureSensors:
+          device?.environmentAttributes?.substrateTemperatureSensors || [],
+        phSensors: device?.environmentAttributes?.phSensors || [],
+        feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
+        substrateEcSensors: device?.environmentAttributes?.substrateEcSensors || [],
+        runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
+        drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
+        irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
+        powerSensors: device?.environmentAttributes?.powerSensors || [],
+        energySensors: device?.environmentAttributes?.energySensors || [],
       } as EnvironmentConfigData,
     },
   });
 }
 
-export function openStrainLibraryDialog(
-  ctx: ActionContext,
-  initialTab?: 'strains' | 'seeds'
-) {
+export function openStrainLibraryDialog(ctx: ActionContext, initialTab?: 'strains' | 'seeds') {
   ctx.ui.setActiveDialog({
     type: 'STRAIN_LIBRARY',
     payload: { initialTab },
   });
 }
 
-export function openIrrigationDialog(ctx: ActionContext) {
-  ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: {} });
+export function openIrrigationDialog(
+  ctx: ActionContext,
+  options?: { initialTab?: string; scrollToField?: string }
+) {
+  ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: options ?? {} });
 }
 
 export function openGrowMasterDialog(ctx: ActionContext, growspaceId: string) {

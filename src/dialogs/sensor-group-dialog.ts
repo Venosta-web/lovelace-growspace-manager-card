@@ -4,25 +4,25 @@ import { mdiClose, mdiPencil, mdiDelete, mdiChartTree } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
 import { SensorGroup } from '../types';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('sensor-group-dialog')
 export class SensorGroupDialog extends LitElement {
-    @property({ type: Boolean }) open = false;
-    @property({ attribute: false }) public hass!: HomeAssistant;
-    @property({ attribute: false }) public sensorGroup: SensorGroup | undefined;
+  @property({ type: Boolean }) open = false;
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public sensorGroup: SensorGroup | undefined;
 
-    @state() private _name = '';
-    @state() private _x = 0;
-    @state() private _y = 0;
-    @state() private _z = 0;
-    @state() private _tempSensors: string[] = [];
-    @state() private _humidSensors: string[] = [];
-    @state() private _vpdSensors: string[] = [];
+  @state() private _name = '';
+  @state() private _x = 0;
+  @state() private _y = 0;
+  @state() private _z = 0;
+  @state() private _tempSensors: string[] = [];
+  @state() private _humidSensors: string[] = [];
+  @state() private _vpdSensors: string[] = [];
 
-    static styles = [
-        dialogStyles,
-        css`
+  static styles = [
+    dialogStyles,
+    css`
       .group-form {
         display: flex;
         flex-direction: column;
@@ -73,93 +73,109 @@ export class SensorGroupDialog extends LitElement {
         text-overflow: ellipsis;
       }
     `,
-    ];
+  ];
 
-    protected willUpdate(changedProperties: Map<string, unknown>) {
-        if (changedProperties.has('sensorGroup') && this.sensorGroup) {
-            this._name = this.sensorGroup.name;
-            this._x = this.sensorGroup.x;
-            this._y = this.sensorGroup.y;
-            this._z = this.sensorGroup.z;
-            this._tempSensors = [...(this.sensorGroup.temperature_sensors || [])];
-            this._humidSensors = [...(this.sensorGroup.humidity_sensors || [])];
-            this._vpdSensors = [...(this.sensorGroup.vpd_sensors || [])];
-        } else if (changedProperties.has('sensorGroup') && !this.sensorGroup) {
-            this._name = '';
-            this._x = 0;
-            this._y = 0;
-            this._z = 0;
-            this._tempSensors = [];
-            this._humidSensors = [];
-            this._vpdSensors = [];
-        }
+  protected willUpdate(changedProperties: Map<string, unknown>) {
+    if (changedProperties.has('sensorGroup') && this.sensorGroup) {
+      this._name = this.sensorGroup.name;
+      this._x = this.sensorGroup.x;
+      this._y = this.sensorGroup.y;
+      this._z = this.sensorGroup.z;
+      this._tempSensors = [...(this.sensorGroup.temperature_sensors || [])];
+      this._humidSensors = [...(this.sensorGroup.humidity_sensors || [])];
+      this._vpdSensors = [...(this.sensorGroup.vpd_sensors || [])];
+    } else if (changedProperties.has('sensorGroup') && !this.sensorGroup) {
+      this._name = '';
+      this._x = 0;
+      this._y = 0;
+      this._z = 0;
+      this._tempSensors = [];
+      this._humidSensors = [];
+      this._vpdSensors = [];
     }
+  }
 
-    private _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
+  private _close() {
+    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+  }
 
-    private _save() {
-        const group: SensorGroup = {
-            id: this.sensorGroup?.id || `group_${Date.now()}`,
-            name: this._name || 'Unnamed Group',
-            x: this._x,
-            y: this._y,
-            z: this._z,
-            temperature_sensors: this._tempSensors,
-            humidity_sensors: this._humidSensors,
-            vpd_sensors: this._vpdSensors,
-        };
+  private _save() {
+    const group: SensorGroup = {
+      id: this.sensorGroup?.id || `group_${Date.now()}`,
+      name: this._name || 'Unnamed Group',
+      x: this._x,
+      y: this._y,
+      z: this._z,
+      temperature_sensors: this._tempSensors,
+      humidity_sensors: this._humidSensors,
+      vpd_sensors: this._vpdSensors,
+    };
 
-        this.dispatchEvent(
-            new CustomEvent('save-sensor-group', {
-                detail: { group },
-                bubbles: true,
-                composed: true,
-            })
-        );
-    }
+    this.dispatchEvent(
+      new CustomEvent('save-sensor-group', {
+        detail: { group },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
 
-    private _toggleSensor(sensorList: string[], sensor: string, listName: '_tempSensors' | '_humidSensors' | '_vpdSensors') {
-        const newList = sensorList.includes(sensor)
-            ? sensorList.filter(s => s !== sensor)
-            : [...sensorList, sensor];
+  private _toggleSensor(
+    sensorList: string[],
+    sensor: string,
+    listName: '_tempSensors' | '_humidSensors' | '_vpdSensors'
+  ) {
+    const newList = sensorList.includes(sensor)
+      ? sensorList.filter((s) => s !== sensor)
+      : [...sensorList, sensor];
 
-        this[listName] = newList;
-    }
+    this[listName] = newList;
+  }
 
-    render() {
-        if (!this.open) return nothing;
+  render() {
+    if (!this.open) return nothing;
 
-        const allSensors = this._getAvailableSensors();
+    const allSensors = this._getAvailableSensors();
 
-        return html`
+    return html`
       <ha-dialog
         open
         @closed=${this._close}
         hideActions
+        without-header
+        width="large"
         .scrimClickAction=${''}
-        .escapeKeyAction=${''}
-        heading=${this.sensorGroup ? 'Edit Sensor Group' : 'Add Sensor Group'}
+        .escapeKeyAction=${'close'}
       >
-        <div class="glass-dialog-container" style="max-width: 600px; height: auto; max-height: 90vh;">
+        <div
+          class="glass-dialog-container"
+          style="max-width: 600px; height: auto; max-height: 90vh;"
+        >
           <div class="dialog-header">
             <div class="dialog-icon">
-               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiChartTree}"></path></svg>
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiChartTree}"></path>
+              </svg>
             </div>
             <div class="dialog-title-group">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
-                  <gs-help-tooltip
-                    content="Group sensors together so their readings are averaged or compared as a unit."
-                    placement="bottom"
-                    label="Sensor Group"
-                  ></gs-help-tooltip>
-                </div>
-                <div class="dialog-subtitle">Configure 3D heatmap coordinates & sensors</div>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${this.sensorGroup ? 'Edit Group' : 'Add Group'}</h2>
+                <gs-help-tooltip
+                  content="Group sensors together so their readings are averaged or compared as a unit."
+                  placement="bottom"
+                  label="Sensor Group"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">Configure 3D heatmap coordinates & sensors</div>
             </div>
-            <button class="md3-button text" @click=${this._close} style="min-width: auto; padding: 8px;">
-                <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24"><path d="${mdiClose}"></path></svg>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
             </button>
           </div>
 
@@ -192,15 +208,21 @@ export class SensorGroupDialog extends LitElement {
               <div class="sensor-columns">
                 <div class="sensor-column">
                   <div class="column-title">Temp Sensors</div>
-                  ${allSensors.temp.map(s => this._renderCheckbox(s, this._tempSensors, '_tempSensors'))}
+                  ${allSensors.temp.map((s) =>
+                    this._renderCheckbox(s, this._tempSensors, '_tempSensors')
+                  )}
                 </div>
                 <div class="sensor-column">
                   <div class="column-title">Humidity Sensors</div>
-                  ${allSensors.humid.map(s => this._renderCheckbox(s, this._humidSensors, '_humidSensors'))}
+                  ${allSensors.humid.map((s) =>
+                    this._renderCheckbox(s, this._humidSensors, '_humidSensors')
+                  )}
                 </div>
                 <div class="sensor-column">
                   <div class="column-title">VPD Sensors</div>
-                  ${allSensors.vpd.map(s => this._renderCheckbox(s, this._vpdSensors, '_vpdSensors'))}
+                  ${allSensors.vpd.map((s) =>
+                    this._renderCheckbox(s, this._vpdSensors, '_vpdSensors')
+                  )}
                 </div>
               </div>
             </div>
@@ -215,36 +237,43 @@ export class SensorGroupDialog extends LitElement {
         </div>
       </ha-dialog>
     `;
-    }
+  }
 
-    private _renderCheckbox(sensor: string, currentList: string[], type: '_tempSensors' | '_humidSensors' | '_vpdSensors') {
-        const friendlyName = this.hass.states[sensor]?.attributes.friendly_name || sensor.split('.')[1];
-        return html`
+  private _renderCheckbox(
+    sensor: string,
+    currentList: string[],
+    type: '_tempSensors' | '_humidSensors' | '_vpdSensors'
+  ) {
+    const friendlyName = this.hass.states[sensor]?.attributes.friendly_name || sensor.split('.')[1];
+    return html`
       <label class="checkbox-item">
-        <input 
-          type="checkbox" 
+        <input
+          type="checkbox"
           .checked=${currentList.includes(sensor)}
           @change=${() => this._toggleSensor(currentList, sensor, type)}
-        >
+        />
         <div style="display:flex; flex-direction:column; min-width:0;">
-          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${friendlyName}</span>
+          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+            >${friendlyName}</span
+          >
           <span class="entity-id">${sensor}</span>
         </div>
       </label>
     `;
-    }
+  }
 
-    private _getAvailableSensors() {
-        if (!this.hass) return { temp: [], humid: [], vpd: [] };
+  private _getAvailableSensors() {
+    if (!this.hass) return { temp: [], humid: [], vpd: [] };
 
-        const entities = Object.keys(this.hass.states);
-        const filterByClass = (cls: string) => entities.filter(e => this.hass.states[e].attributes.device_class === cls);
-        const filterByDomain = (dom: string) => entities.filter(e => e.startsWith(dom));
+    const entities = Object.keys(this.hass.states);
+    const filterByClass = (cls: string) =>
+      entities.filter((e) => this.hass.states[e].attributes.device_class === cls);
+    const filterByDomain = (dom: string) => entities.filter((e) => e.startsWith(dom));
 
-        return {
-            temp: filterByClass('temperature').sort(),
-            humid: filterByClass('humidity').sort(),
-            vpd: entities.filter(e => e.includes('vpd')).sort()
-        };
-    }
+    return {
+      temp: filterByClass('temperature').sort(),
+      humid: filterByClass('humidity').sort(),
+      vpd: entities.filter((e) => e.includes('vpd')).sort(),
+    };
+  }
 }

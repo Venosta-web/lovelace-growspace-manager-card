@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import { GrowspaceDevice, PlantEntity } from '../../src/types';
 
 // Mock dependencies
@@ -14,7 +15,7 @@ const mockDataServiceInstance = {
     getGrowspaceDevices: vi.fn().mockReturnValue([]),
 };
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             constructor() {
@@ -47,7 +48,7 @@ describe('Batch Actions', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
 
         // Mock UI store methods
         store.ui.showToast = mockShowToast;
@@ -91,7 +92,7 @@ describe('Batch Actions', () => {
         store.ui.togglePlantSelection('p1');
         store.ui.togglePlantSelection('p2');
 
-        store.openBatchWateringDialog();
+        store.actions.ui.openBatchWateringDialog();
 
         expect(mockSetActiveDialog).toHaveBeenCalledWith({
             type: 'WATERING',
@@ -108,7 +109,7 @@ describe('Batch Actions', () => {
         store.ui.togglePlantSelection('p1');
         store.ui.togglePlantSelection('p3');
 
-        store.openBatchWateringDialog();
+        store.actions.ui.openBatchWateringDialog();
 
         // growspaceId should be undefined as they are mixed
         expect(mockSetActiveDialog).toHaveBeenCalledWith({
@@ -122,7 +123,7 @@ describe('Batch Actions', () => {
     });
 
     it('should do nothing if no plants selected', () => {
-        store.openBatchWateringDialog();
+        store.actions.ui.openBatchWateringDialog();
         expect(mockSetActiveDialog).not.toHaveBeenCalled();
     });
 });

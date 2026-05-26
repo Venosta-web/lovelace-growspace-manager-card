@@ -5,7 +5,7 @@ import { GrowspaceStore } from '../store/core/growspace-store';
 import { GrowReportDialogState } from '../lib/types/dialog';
 import { GrowReportData } from '../services/api/report-api';
 import { mdiClose, mdiFilePdfBox, mdiCodeJson } from '@mdi/js';
-import '../components/ui/gs-help-tooltip';
+import '../features/shared/ui/gs-help-tooltip';
 
 @customElement('grow-report-dialog')
 export class GrowReportDialog extends LitElement {
@@ -88,10 +88,10 @@ export class GrowReportDialog extends LitElement {
     this._loading = true;
     this._error = null;
     try {
-      this._reportData = await this.store.dataService.fetchGrowReport(this.state.growspaceId);
+      this._reportData = await this.store.actions.report.fetch(this.state.growspaceId);
     } catch (err: any) {
       this._error = err?.message || 'Failed to load grow report';
-      this.store.ui.showToast(this._error!, 'error');
+      // Toast is shown inside the action
     } finally {
       this._loading = false;
     }
@@ -101,10 +101,9 @@ export class GrowReportDialog extends LitElement {
     if (this._exporting) return;
     this._exporting = true;
     try {
-      await this.store.dataService.exportGrowReport(this.state.growspaceId, format);
-      this.store.ui.showToast(`Grow report export triggered (${format.toUpperCase()})`, 'success');
-    } catch (err: any) {
-      this.store.ui.showToast(err?.message || 'Failed to export grow report', 'error');
+      await this.store.actions.report.export(this.state.growspaceId, format);
+    } catch {
+      // Toast is shown inside the action
     } finally {
       this._exporting = false;
     }
@@ -117,11 +116,15 @@ export class GrowReportDialog extends LitElement {
   render() {
     return html`
       <ha-dialog
-        .open=${this.open}
+        open
         @closed=${this._close}
         hideActions
+        without-header
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="large"
       >
-        <div slot="heading" class="dialog-header">
+        <div class="dialog-header">
           <div style="display: flex; flex-direction: column;">
             <div style="display:flex;align-items:center;gap:6px;">
               <h2 class="dialog-title">Grow Report</h2>
@@ -131,46 +134,44 @@ export class GrowReportDialog extends LitElement {
                 label="Grow Report"
               ></gs-help-tooltip>
             </div>
-            <div class="dialog-subtitle">${this.state?.growspaceId ? this.store.data.$devices.get().find(d => d.deviceId === this.state.growspaceId)?.name : ''}</div>
+            <div class="dialog-subtitle">
+              ${this.state?.growspaceId
+                ? this.store.data.$devices.get().find((d) => d.deviceId === this.state.growspaceId)
+                    ?.name
+                : ''}
+            </div>
           </div>
-          <ha-icon-button
-            .path=${mdiClose}
-            @click=${this._close}
-            title="Close"
-          ></ha-icon-button>
+          <ha-icon-button .path=${mdiClose} @click=${this._close} title="Close"></ha-icon-button>
         </div>
         <div class="content">
-
           ${this._loading
             ? html`<div class="loading-state">
                 <ha-circular-progress active></ha-circular-progress>
                 <span>Generating report data...</span>
               </div>`
             : this._renderReportContent()}
-          
         </div>
-        
+
         <div slot="primaryAction" class="actions">
-          <mwc-button
-            label="Close"
-            @click=${this._close}
-          ></mwc-button>
-          ${this._reportData ? html`
-            <mwc-button
-              outlined
-              label="Export JSON"
-              icon="mdi:code-json"
-              ?disabled=${this._exporting}
-              @click=${() => this._exportReport('json')}
-            ></mwc-button>
-            <mwc-button
-              raised
-              label="Export PDF"
-              icon="mdi:file-pdf-box"
-              ?disabled=${this._exporting}
-              @click=${() => this._exportReport('pdf')}
-            ></mwc-button>
-          ` : ''}
+          <mwc-button label="Close" @click=${this._close}></mwc-button>
+          ${this._reportData
+            ? html`
+                <mwc-button
+                  outlined
+                  label="Export JSON"
+                  icon="mdi:code-json"
+                  ?disabled=${this._exporting}
+                  @click=${() => this._exportReport('json')}
+                ></mwc-button>
+                <mwc-button
+                  raised
+                  label="Export PDF"
+                  icon="mdi:file-pdf-box"
+                  ?disabled=${this._exporting}
+                  @click=${() => this._exportReport('pdf')}
+                ></mwc-button>
+              `
+            : ''}
         </div>
       </ha-dialog>
     `;
@@ -179,9 +180,7 @@ export class GrowReportDialog extends LitElement {
   private _renderReportContent() {
     if (this._error) {
       return html`
-        <ha-alert alert-type="error">
-          ${this._error}
-        </ha-alert>
+        <ha-alert alert-type="error"> ${this._error} </ha-alert>
         <mwc-button label="Retry" @click=${() => this._loadReport()}></mwc-button>
       `;
     }
@@ -191,8 +190,7 @@ export class GrowReportDialog extends LitElement {
     }
 
     return html`
-      ${this._renderSummarySection()}
-      ${this._renderEnvironmentSection()}
+      ${this._renderSummarySection()} ${this._renderEnvironmentSection()}
       ${this._renderHarvestSection()}
     `;
   }
@@ -214,14 +212,16 @@ export class GrowReportDialog extends LitElement {
             <span class="stat-value">${summary.strains?.length || 0}</span>
           </div>
         </div>
-        ${summary.strains?.length ? html`
-          <div style="margin-top: 12px;">
-            <span class="stat-label">Cultivated Strains:</span>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
-              ${summary.strains.map((s: string) => html`<ha-chip>${s}</ha-chip>`)}
-            </div>
-          </div>
-        ` : ''}
+        ${summary.strains?.length
+          ? html`
+              <div style="margin-top: 12px;">
+                <span class="stat-label">Cultivated Strains:</span>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px;">
+                  ${summary.strains.map((s: string) => html`<ha-chip>${s}</ha-chip>`)}
+                </div>
+              </div>
+            `
+          : ''}
       </div>
     `;
   }
@@ -236,11 +236,15 @@ export class GrowReportDialog extends LitElement {
         <div class="grid-stats">
           <div class="stat-item">
             <span class="stat-label">Temperature</span>
-            <span class="stat-value">${env.temperature_avg ? `${env.temperature_avg.toFixed(1)}°C` : 'N/A'}</span>
+            <span class="stat-value"
+              >${env.temperature_avg ? `${env.temperature_avg.toFixed(1)}°C` : 'N/A'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">Humidity</span>
-            <span class="stat-value">${env.humidity_avg ? `${env.humidity_avg.toFixed(1)}%` : 'N/A'}</span>
+            <span class="stat-value"
+              >${env.humidity_avg ? `${env.humidity_avg.toFixed(1)}%` : 'N/A'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">VPD</span>
@@ -261,15 +265,21 @@ export class GrowReportDialog extends LitElement {
         <div class="grid-stats">
           <div class="stat-item">
             <span class="stat-label">Total Wet Weight</span>
-            <span class="stat-value">${harvest.total_wet_weight ? `${harvest.total_wet_weight}g` : '0g'}</span>
+            <span class="stat-value"
+              >${harvest.total_wet_weight ? `${harvest.total_wet_weight}g` : '0g'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">Total Dry Weight</span>
-            <span class="stat-value">${harvest.total_dry_weight ? `${harvest.total_dry_weight}g` : '0g'}</span>
+            <span class="stat-value"
+              >${harvest.total_dry_weight ? `${harvest.total_dry_weight}g` : '0g'}</span
+            >
           </div>
           <div class="stat-item">
             <span class="stat-label">Total Trim</span>
-            <span class="stat-value">${harvest.total_trim_weight ? `${harvest.total_trim_weight}g` : '0g'}</span>
+            <span class="stat-value"
+              >${harvest.total_trim_weight ? `${harvest.total_trim_weight}g` : '0g'}</span
+            >
           </div>
         </div>
       </div>

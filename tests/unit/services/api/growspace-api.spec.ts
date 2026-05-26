@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService - GrowspaceAPI', () => {
@@ -112,7 +112,8 @@ describe('DataService - GrowspaceAPI', () => {
 
     describe('Validation and Edge Cases', () => {
         it('should handle single failure vs collection', async () => {
-            const badData = { gs1: { broken: true } };
+            // growspace_id must be string; passing a number forces a Zod type mismatch
+            const badData = { gs1: { identity: { growspace_id: 123 } } };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             const result = await service.fetchGrowspaceData();
@@ -121,7 +122,8 @@ describe('DataService - GrowspaceAPI', () => {
         });
 
         it('should return raw single response on validation failure', async () => {
-            const badData = { broken: true };
+            // growspace_id must be string; passing a number forces a Zod type mismatch
+            const badData = { identity: { growspace_id: 123 } };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(badData);
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             const result = await service.fetchGrowspaceData('gs1');
@@ -136,8 +138,12 @@ describe('DataService - GrowspaceAPI', () => {
 
         it('fetchGrowspaceData should log problematic items in collection failure', async () => {
             const result = {
-                gs1: { name: 'missing_id' },
-                gs2: { growspace_id: 'gs2', name: 'GS2', type: 'normal', rows: 1, plantsPerRow: 1, grid: {} }
+                // growspace_id must be string; number forces Zod type mismatch → gs1 logged as problematic
+                gs1: { identity: { growspace_id: 123 } },
+                gs2: {
+                    identity: { growspace_id: 'gs2', name: 'GS2', type: 'normal' },
+                    grid: { rows: 1, plants_per_row: 1, total_plants: 0, grid: {} },
+                },
             };
             (mockHass.connection.sendMessagePromise as any).mockResolvedValue(result);
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });

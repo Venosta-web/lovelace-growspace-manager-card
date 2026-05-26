@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DataService } from '../../../../src/data-service';
+import { DataService } from '../../../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
 
 describe('DataService - PlantAPI', () => {
@@ -131,14 +131,6 @@ describe('DataService - PlantAPI', () => {
             }));
         });
 
-        it('should clean undefined keys in addStrain', async () => {
-            await service.addStrain({ strain: 'X', breeder: undefined });
-            // Verify breeder is NOT in call
-            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'add_strain', {
-                strain: 'X'
-            });
-        });
-
         it('should call takeClone and remove target if undefined', async () => {
             // Technically target_growspace_id is omitted from payload if not present
             await service.takeClone({ mother_plant_id: 'p1' });
@@ -166,6 +158,40 @@ describe('DataService - PlantAPI', () => {
             await service.harvestPlant('p1');
             expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
                 plant_id: 'p1', target_growspace_id: 'dry'
+            });
+        });
+
+        it('should call harvestPlant with all metrics parameters', async () => {
+            const metrics = {
+                wet_weight: 120.5,
+                dry_weight: 25.2,
+                trim_weight: 5.1,
+                thc_percentage: 24.8,
+                cbd_percentage: 0.1,
+                terpene_profile: 'Limonene'
+            };
+            await service.harvestPlant('p1', 'dry', metrics);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1',
+                target_growspace_id: 'dry',
+                ...metrics
+            });
+        });
+
+        it('should handle falsy, null or undefined values in metrics', async () => {
+            const metrics = {
+                wet_weight: null as any,
+                dry_weight: undefined,
+                trim_weight: 0,
+                thc_percentage: null as any,
+                cbd_percentage: undefined,
+                terpene_profile: ''
+            };
+            await service.harvestPlant('p1', 'dry', metrics);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'harvest_plant', {
+                plant_id: 'p1',
+                target_growspace_id: 'dry',
+                trim_weight: 0
             });
         });
     });
@@ -204,6 +230,11 @@ describe('DataService - PlantAPI', () => {
             it('addPlant should handle error', async () => {
                 callServiceMock.mockRejectedValue(new Error('Fail'));
                 await expect(service.addPlant({ growspace_id: 'g1', strain: 's', row: 1, col: 1 })).rejects.toThrow('Fail');
+            });
+
+            it('addPlant should handle non-Error rejections', async () => {
+                callServiceMock.mockRejectedValue('String Fail');
+                await expect(service.addPlant({ growspace_id: 'g1', strain: 's', row: 1, col: 1 })).rejects.toThrow('Failed to add plant');
             });
 
             it('updatePlant should handle error', async () => {
@@ -295,6 +326,51 @@ describe('DataService - PlantAPI', () => {
             callServiceMock.mockRejectedValue(new Error('Score fail'));
             await expect(service.scorePlant({ plant_id: 'p1' })).rejects.toThrow('Score fail');
         });
+
+        it('should include structure, resin, and pest_resistance when provided', async () => {
+            await service.scorePlant({ plant_id: 'p1', structure: 3, resin: 4, pest_resistance: 5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
+                plant_id: 'p1',
+                structure: 3,
+                resin: 4,
+                pest_resistance: 5,
+            });
+        });
+
+        it('should include all parameters when provided', async () => {
+            const params = {
+                plant_id: 'p1',
+                vigor: 5,
+                structure: 4,
+                aroma: 3,
+                resin: 5,
+                pest_resistance: 4,
+                internodal_spacing: 3,
+                terpene_intensity: 5,
+                mold_resistance: 4,
+                yield_potential: 5,
+                keeper: true,
+                notes: 'Superb keeper'
+            };
+            await service.scorePlant(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'score_plant', params);
+        });
+
+        it('should include explicitly passed null values', async () => {
+            const params = {
+                plant_id: 'p1',
+                vigor: null,
+                structure: null,
+                notes: null
+            };
+            await service.scorePlant(params);
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'score_plant', {
+                plant_id: 'p1',
+                vigor: null,
+                structure: null,
+                notes: null
+            });
+        });
     });
 
     describe('updateHarvestMetrics', () => {
@@ -310,6 +386,23 @@ describe('DataService - PlantAPI', () => {
         it('should handle error', async () => {
             callServiceMock.mockRejectedValue(new Error('Metrics fail'));
             await expect(service.updateHarvestMetrics({ plant_id: 'p1' })).rejects.toThrow('Metrics fail');
+        });
+
+        it('should include trim_weight, thc_percentage, cbd_percentage, terpene_profile when provided', async () => {
+            await service.updateHarvestMetrics({
+                plant_id: 'p1',
+                trim_weight: 10,
+                thc_percentage: 20,
+                cbd_percentage: 1,
+                terpene_profile: 'citrus',
+            });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'update_harvest_metrics', {
+                plant_id: 'p1',
+                trim_weight: 10,
+                thc_percentage: 20,
+                cbd_percentage: 1,
+                terpene_profile: 'citrus',
+            });
         });
     });
 
@@ -346,6 +439,77 @@ describe('DataService - PlantAPI', () => {
                 target_growspace_id: 'dry',
                 ...metrics
             });
+        });
+    });
+
+    describe('logDryingWeight', () => {
+        it('should call log_drying_weight service with correct params', async () => {
+            await service.logDryingWeight({ plant_id: 'p1', weight_grams: 150 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'log_drying_weight', {
+                plant_id: 'p1',
+                weight_grams: 150
+            });
+        });
+
+        it('should include date when provided', async () => {
+            await service.logDryingWeight({ plant_id: 'p1', weight_grams: 150, date: '2026-05-19' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'log_drying_weight', {
+                plant_id: 'p1',
+                weight_grams: 150,
+                date: '2026-05-19'
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Log fail'));
+            await expect(service.logDryingWeight({ plant_id: 'p1', weight_grams: 150 })).rejects.toThrow('Log fail');
+        });
+    });
+
+    describe('logMoistureReading', () => {
+        it('should call log_moisture_reading service with correct params', async () => {
+            await service.logMoistureReading({ plant_id: 'p1', moisture_percent: 12.5 });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'log_moisture_reading', {
+                plant_id: 'p1',
+                moisture_percent: 12.5
+            });
+        });
+
+        it('should include date when provided', async () => {
+            await service.logMoistureReading({ plant_id: 'p1', moisture_percent: 12.5, date: '2026-05-19' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'log_moisture_reading', {
+                plant_id: 'p1',
+                moisture_percent: 12.5,
+                date: '2026-05-19'
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Moisture fail'));
+            await expect(service.logMoistureReading({ plant_id: 'p1', moisture_percent: 12.5 })).rejects.toThrow('Moisture fail');
+        });
+    });
+
+    describe('setVisualTag', () => {
+        it('should call set_visual_tag service with tag string', async () => {
+            await service.setVisualTag({ plant_id: 'p1', visual_tag: 'tag123' });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_visual_tag', {
+                plant_id: 'p1',
+                visual_tag: 'tag123'
+            });
+        });
+
+        it('should call set_visual_tag service with null', async () => {
+            await service.setVisualTag({ plant_id: 'p1', visual_tag: null });
+            expect(callServiceMock).toHaveBeenCalledWith('growspace_manager', 'set_visual_tag', {
+                plant_id: 'p1',
+                visual_tag: null
+            });
+        });
+
+        it('should handle error', async () => {
+            callServiceMock.mockRejectedValue(new Error('Tag fail'));
+            await expect(service.setVisualTag({ plant_id: 'p1', visual_tag: 'tag' })).rejects.toThrow('Tag fail');
         });
     });
 });

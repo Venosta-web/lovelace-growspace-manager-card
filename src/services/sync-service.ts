@@ -1,8 +1,13 @@
 import { HomeAssistant } from 'custom-card-helpers';
-import { DataService } from '../data-service';
+import { DataService } from './data-service';
 import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
-import { GrowspaceAPIResponse, GrowspaceDevice } from '../types';
+import type { GridSliceRef } from '../slices/grid';
+import { setDeviceSnapshot } from '../slices/device-state';
+import { setEnvSnapshot } from '../slices/environment';
+import { setPlants } from '../slices/plant';
+import { setIrrigationConfig, setTankLevels } from '../slices/irrigation';
+import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
 
 /**
  * Service responsible for synchronizing data between Home Assistant and the local store.
@@ -12,12 +17,22 @@ export class SyncService {
   private _isFetchingWS = false;
   private _lastHassRef: HomeAssistant | undefined;
   private _watchedEntities = new Set<string>();
+  /** Per-card config — not shared across card instances. */
+  private _cardConfig: GrowspaceManagerCardConfig = {} as GrowspaceManagerCardConfig;
+
+  public setCardConfig(config: GrowspaceManagerCardConfig): void {
+    if (config.default_growspace !== this._cardConfig?.default_growspace) {
+      this.uiStore.setDefaultApplied(false);
+    }
+    this._cardConfig = config;
+  }
 
   constructor(
     private dataService: DataService,
     private dataStore: GrowspaceDataStore,
-    private uiStore: GrowspaceUIStore
-  ) { }
+    private uiStore: GrowspaceUIStore,
+    private gridStore: GridSliceRef
+  ) {}
 
   /**
    * Updates the Home Assistant reference and triggers data refresh if necessary.
@@ -62,6 +77,7 @@ export class SyncService {
 
     // Just re-calculate derived state (sync) because entities might have changed
     this.updateDevicesState();
+    this.uiStore.setIsLoading(false);
     this._lastHassRef = hass;
   }
 
@@ -80,16 +96,15 @@ export class SyncService {
 
     try {
       const data = await this.dataService.fetchGrowspaceData();
-      this.dataStore.setWsDataCache((data as unknown as Record<string, GrowspaceAPIResponse>) || {});
+      this.dataStore.setWsDataCache(
+        (data as unknown as Record<string, GrowspaceAPIResponse>) || {}
+      );
       this.updateDevicesState();
     } catch (e) {
       console.error('Failed to fetch growspace data', e);
     } finally {
       this._isFetchingWS = false;
-      // Check if devices loaded or if a device is selected to turn off loading
-      if (this.dataStore.$devices.get().length === 0 || this.dataStore.$selectedDevice.get()) {
-        this.uiStore.setIsLoading(false);
-      }
+      this.uiStore.setIsLoading(false);
     }
   }
 
@@ -105,9 +120,24 @@ export class SyncService {
       this.dataStore.setDevices(devices);
     }
 
-    // Populate watched entities for next update cycle
+    // Update device-controlled entity snapshots and populate watched entities for next update cycle
+    const hassStates = this.dataService.hass?.states ?? {};
     this._watchedEntities.clear();
+    const allPlants = devices.flatMap((d) => d.plants || []);
+    setPlants(allPlants);
     devices.forEach((d) => {
+      // Device state snapshot (lights, fans, humidifiers, dehumidifiers)
+      setDeviceSnapshot(d.deviceId, d, hassStates);
+
+      // Environment slice (hero chips: temperature, humidity, VPD, CO2)
+      if (d.name) setEnvSnapshot(d.deviceId, d, hassStates);
+
+      // Irrigation slice (tank level chip, next irrigation/drain chips)
+      if (d.irrigationConfig) {
+        setIrrigationConfig(d.deviceId, d.irrigationConfig);
+      }
+      setTankLevels(d.deviceId, d.environmentAttributes?.irrigationTanks ?? []);
+
       // Plants
       (d.plants || []).forEach((p) => {
         const eid = p.entity_id;
@@ -128,12 +158,10 @@ export class SyncService {
       }
     });
 
-    const selectedDevice = this.dataStore.$selectedDevice.get();
+    const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed
     if ((!selectedDevice || !this.uiStore.$defaultApplied.get()) && devices.length > 0) {
-      const config = this.dataStore.$config.get();
-      // Default to true if not defined
-      const autoSelect = config?.auto_select_growspace ?? true;
+      const config = this._cardConfig;
 
       if (this.uiStore.$defaultApplied.get()) return;
 
@@ -141,15 +169,13 @@ export class SyncService {
         (d) => d.deviceId === config.default_growspace || d.name === config.default_growspace
       );
       if (defaultDevice) {
-        this.dataStore.setSelectedDevice(defaultDevice.deviceId);
+        this.gridStore.setSelectedDevice(defaultDevice.deviceId);
         this.uiStore.setDefaultApplied(true);
         return;
       }
 
-      // Fallback to first device only if autoSelect is enabled
-      if (autoSelect) {
-        this.dataStore.setSelectedDevice(devices[0].deviceId);
-      }
+      // Fallback to first device
+      this.gridStore.setSelectedDevice(devices[0].deviceId);
       this.uiStore.setDefaultApplied(true);
     }
   }

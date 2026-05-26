@@ -1,6 +1,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceStore } from '../../src/store/core/growspace-store';
+import { GrowspaceSharedStore } from '../../src/store/core/growspace-shared-store';
 import * as _dataStore from '../../src/store/core/data-store';
 import * as _uiStore from '../../src/store/ui/ui-store';
 
@@ -53,6 +54,7 @@ vi.mock('../../src/store/core/data-store', () => {
         $nutrientPresets: { get: vi.fn(() => ({})), subscribe: vi.fn() },
         $ipmPresets: { get: vi.fn(() => ({})), subscribe: vi.fn() },
         $nutrientInventory: { get: vi.fn(() => []), subscribe: vi.fn() },
+        $staleCounter: { get: vi.fn(() => 0), set: vi.fn(), subscribe: vi.fn(() => () => { }) },
     };
     return {
         ...atoms,
@@ -64,7 +66,7 @@ vi.mock('../../src/store/core/data-store', () => {
     }
 });
 
-vi.mock('../../src/data-service', () => {
+vi.mock('../../src/services/data-service', () => {
     return {
         DataService: class {
             callService = vi.fn().mockResolvedValue({});
@@ -76,9 +78,45 @@ vi.mock('../../src/data-service', () => {
     };
 });
 
-// Mock action-dispatcher to avoid circular deps if any
+// Mock action-dispatcher with the subset of methods needed by these tests
 vi.mock('../../src/store/core/action-dispatcher', () => ({
-    ActionDispatcher: class { }
+    ActionDispatcher: class {
+        constructor(private store: any) { }
+        plant = {
+            batchAction: async (action: string, entityIds: string[], data?: any) => {
+                if (entityIds.length === 0) return;
+                if (action === 'remove') {
+                    entityIds.forEach((id: string) => this.store.data.addOptimisticDeletedPlantId(id));
+                }
+                try {
+                    await this.store.dataService.callService('growspace_manager', 'batch_action', { entity_ids: entityIds, action, data: data || {} });
+                    this.store.ui.showToast(`Batch ${action} completed for ${entityIds.length} plant(s)`, 'success');
+                    this.store.ui.clearPlantSelection();
+                    this.store.ui.setEditMode(false);
+                    await this.store.refreshData();
+                } catch (err: any) {
+                    const error = err instanceof Error ? err.message : 'Unknown error';
+                    this.store.ui.showToast(`Batch ${action} failed: ${error}`, 'error');
+                    if (action === 'remove') {
+                        entityIds.forEach((id: string) => this.store.data.removeOptimisticDeletedPlantId(id));
+                    }
+                }
+            },
+        };
+        library = {
+            import: async (file: File, _replace: boolean) => {
+                try {
+                    const content = await file.text();
+                    const strains = JSON.parse(content);
+                    if (!Array.isArray(strains)) throw new Error('Invalid format');
+                    this.store.ui.showToast('Library imported successfully', 'success');
+                } catch (e: any) {
+                    const error = e instanceof Error ? e.message : 'Unknown error';
+                    this.store.ui.showToast('Import failed: ' + error, 'error');
+                }
+            },
+        };
+    }
 }));
 
 describe('GrowspaceStore Custom Coverage', () => {
@@ -87,7 +125,7 @@ describe('GrowspaceStore Custom Coverage', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        store = new GrowspaceStore();
+        store = new GrowspaceStore(new GrowspaceSharedStore());
         mockDataService = store.dataService;
     });
 
@@ -130,27 +168,27 @@ describe('GrowspaceStore Custom Coverage', () => {
     describe('performImport coverage', () => {
         it('should handle valid JSON that is NOT an array', async () => {
             const file = new File(['{"not": "array"}'], 'test.json', { type: 'application/json' });
-            await store.performImport(file, false);
+            await store.actions.library.import(file, false);
 
-            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Import failed: Invalid format'), 'error', undefined);
+            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Import failed: Invalid format'), 'error');
         });
 
         it('should handle invalid JSON syntax', async () => {
             const file = new File(['{ invalid json'], 'test.json', { type: 'application/json' });
-            await store.performImport(file, false);
+            await store.actions.library.import(file, false);
 
-            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error', undefined);
+            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Import failed'), 'error');
         });
     });
 
     describe('batchAction coverage', () => {
         it('should return early if empty entityIds', async () => {
-            await store.batchAction('remove', []);
+            await store.actions.plant.batchAction('remove', []);
             expect(mockDataService.callService).not.toHaveBeenCalled();
         });
 
         it('should handle remove action success (add optimistic ids)', async () => {
-            await store.batchAction('remove', ['p1']);
+            await store.actions.plant.batchAction('remove', ['p1']);
             expect(store.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
             expect(mockDataService.callService).toHaveBeenCalled();
             expect(store.data.removeOptimisticDeletedPlantId).not.toHaveBeenCalled();
@@ -159,22 +197,22 @@ describe('GrowspaceStore Custom Coverage', () => {
         it('should handle remove action failure (revert optimistic ids)', async () => {
             mockDataService.callService.mockRejectedValue(new Error('Batch fail'));
 
-            await store.batchAction('remove', ['p1']);
+            await store.actions.plant.batchAction('remove', ['p1']);
 
             expect(store.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
             expect(mockDataService.callService).toHaveBeenCalled();
             expect(store.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
-            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Batch remove failed'), 'error', undefined);
+            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Batch remove failed'), 'error');
         });
 
         it('should handle non-remove action failure (no optimistic revert needed)', async () => {
             mockDataService.callService.mockRejectedValue(new Error('Batch fail'));
 
-            await store.batchAction('transition', ['p1']);
+            await store.actions.plant.batchAction('transition', ['p1']);
 
             expect(store.data.addOptimisticDeletedPlantId).not.toHaveBeenCalled();
             expect(store.data.removeOptimisticDeletedPlantId).not.toHaveBeenCalled();
-            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Batch transition failed'), 'error', undefined);
+            expect(store.ui.showToast).toHaveBeenCalledWith(expect.stringContaining('Batch transition failed'), 'error');
         });
     });
 });

@@ -5,11 +5,20 @@ export default defineConfig({
     test: {
         browser: {
             enabled: true,
-            provider: playwright(),
+            provider: playwright({ contextOptions: { viewport: { width: 1280, height: 720 } } }),
             instances: [
                 { browser: 'chromium' },
             ],
             headless: true,
+            viewport: { width: 1280, height: 720 },
+            expect: {
+                toMatchScreenshot: {
+                    comparatorName: 'pixelmatch',
+                    comparatorOptions: {
+                        allowedMismatchedPixelRatio: 0.002,
+                    },
+                },
+            },
         },
         setupFiles: ['./tests/setup.ts'],
         include: [
@@ -21,6 +30,7 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             enabled: true,
+            clean: false,
             reporter: ['text', 'json', 'html'],
             include: ['src/**/*.ts'],
             exclude: ['src/**/*.spec.ts', 'src/types.ts']

@@ -20,7 +20,6 @@ export class PlantAPI extends BaseAPI {
     dry_start?: string;
     cure_start?: string;
   }): Promise<void> {
-    console.log('[PlantAPI:addPlant] Sending payload:', params);
     try {
       if (params.growspace_id === 'mother' || params.growspace_id === 'mother_overview') {
         params.mother_start = new Date().toISOString().split('T')[0];
@@ -29,7 +28,6 @@ export class PlantAPI extends BaseAPI {
         params.clone_start = new Date().toISOString().split('T')[0];
       }
       await this.callService(DOMAIN, SERVICES.ADD_PLANT, params);
-      console.log('[PlantAPI:addPlant] Service Called');
     } catch (err: unknown) {
       console.error('[PlantAPI:addPlant] Error:', err);
       const msg = err instanceof Error ? err.message : 'Failed to add plant';
@@ -51,10 +49,8 @@ export class PlantAPI extends BaseAPI {
     dry_start?: string;
     cure_start?: string;
   }): Promise<void> {
-    console.log('[PlantAPI:addPlants] Sending payload:', params);
     try {
       await this.callService(DOMAIN, SERVICES.ADD_PLANTS, params);
-      console.log('[PlantAPI:addPlants] Service Called');
     } catch (err: unknown) {
       console.error('[PlantAPI:addPlants] Error:', err);
       const msg = err instanceof Error ? err.message : 'Failed to add plants';
@@ -62,11 +58,9 @@ export class PlantAPI extends BaseAPI {
     }
   }
 
-  async updatePlant(params: { plant_id: string;[key: string]: unknown }): Promise<void> {
-    console.log('[PlantAPI:updatePlant] Sending payload:', params);
+  async updatePlant(params: { plant_id: string; [key: string]: unknown }): Promise<void> {
     try {
       await this.callService(DOMAIN, SERVICES.UPDATE_PLANT, params);
-      console.log('[PlantAPI:updatePlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:updatePlant] Error:', err);
       throw err;
@@ -74,10 +68,8 @@ export class PlantAPI extends BaseAPI {
   }
 
   async removePlant(plantId: string): Promise<void> {
-    console.log('[PlantAPI:removePlant] Removing plant_id:', plantId);
     try {
       await this.callService(DOMAIN, SERVICES.REMOVE_PLANT, { plant_id: plantId });
-      console.log('[PlantAPI:removePlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:removePlant] Error:', err);
       throw err;
@@ -96,7 +88,6 @@ export class PlantAPI extends BaseAPI {
       terpene_profile?: string;
     }
   ): Promise<void> {
-    console.log('[PlantAPI:harvestPlant] Harvesting plant:', plantId, '→ target:', target);
     try {
       const payload: Record<string, unknown> = {
         plant_id: plantId,
@@ -114,7 +105,6 @@ export class PlantAPI extends BaseAPI {
       }
 
       await this.callService(DOMAIN, SERVICES.HARVEST_PLANT, payload);
-      console.log('[PlantAPI:harvestPlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:harvestPlant] Error:', err);
       throw err;
@@ -126,14 +116,12 @@ export class PlantAPI extends BaseAPI {
     num_clones?: number;
     target_growspace_id?: string;
   }): Promise<void> {
-    console.log('[PlantAPI:takeClone] Cloning plant:', params);
     try {
       // Ensure target_growspace_id is set if not provided
       const payload: Record<string, unknown> = { ...params };
       if (!payload.target_growspace_id) delete payload.target_growspace_id;
 
       await this.callService(DOMAIN, SERVICES.TAKE_CLONE, payload);
-      console.log('[PlantAPI:takeClone] Service Called');
     } catch (err) {
       console.error('[PlantAPI:takeClone] Error:', err);
       throw err;
@@ -145,7 +133,6 @@ export class PlantAPI extends BaseAPI {
     targetGrowspaceId: string,
     transitionDate?: string
   ): Promise<void> {
-    console.log('[PlantAPI:moveClone] Moving clone:', plantId, 'to', targetGrowspaceId);
     try {
       const payload: Record<string, string> = {
         plant_id: plantId,
@@ -156,7 +143,6 @@ export class PlantAPI extends BaseAPI {
       }
 
       await this.callService(DOMAIN, SERVICES.MOVE_CLONE, payload);
-      console.log('[PlantAPI:moveClone] Service Called');
     } catch (err) {
       console.error('[PlantAPI:moveClone] Error:', err);
       throw err;
@@ -164,13 +150,11 @@ export class PlantAPI extends BaseAPI {
   }
 
   async swapPlants(plant1Id: string, plant2Id: string): Promise<void> {
-    console.log(`[PlantAPI:swapPlants] Swapping plants: ${plant1Id} and ${plant2Id}`);
     try {
       await this.callService(DOMAIN, SERVICES.SWITCH_PLANTS, {
         plant1_id: plant1Id,
         plant2_id: plant2Id,
       });
-      console.log('[PlantAPI:swapPlants] Service Called');
     } catch (err) {
       console.error('[PlantAPI:swapPlants] Error:', err);
       throw err;
@@ -183,14 +167,6 @@ export class PlantAPI extends BaseAPI {
     nutrients?: Record<string, number>,
     presetId?: string
   ): Promise<void> {
-    console.log(
-      '[PlantAPI:waterPlant] Watering plant:',
-      plantId,
-      'amount:',
-      amount,
-      'preset:',
-      presetId
-    );
     try {
       const payload: Record<string, unknown> = {
         plant_id: plantId,
@@ -203,7 +179,6 @@ export class PlantAPI extends BaseAPI {
         payload.preset_id = presetId;
       }
       await this.callService(DOMAIN, SERVICES.WATER_PLANT, payload);
-      console.log('[PlantAPI:waterPlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:waterPlant] Error:', err);
       throw err;
@@ -221,7 +196,6 @@ export class PlantAPI extends BaseAPI {
     preview?: boolean;
     base_url?: string;
   }): Promise<any> {
-    console.log('[PlantAPI:printLabel] Printing label:', params.plant_id || params.strain);
     try {
       return await this.callService(DOMAIN, SERVICES.PRINT_LABEL, params);
     } catch (err) {
@@ -237,8 +211,13 @@ export class PlantAPI extends BaseAPI {
     aroma?: number | null;
     resin?: number | null;
     pest_resistance?: number | null;
+    internodal_spacing?: number | null;
+    terpene_intensity?: number | null;
+    mold_resistance?: number | null;
+    yield_potential?: number | null;
+    keeper?: boolean | null;
+    notes?: string | null;
   }): Promise<void> {
-    console.log('[PlantAPI:scorePlant] Scoring plant:', params.plant_id);
     const payload: Record<string, unknown> = { plant_id: params.plant_id };
 
     // Explicitly include null values to allow clearing fields on the backend
@@ -247,10 +226,17 @@ export class PlantAPI extends BaseAPI {
     if (params.aroma !== undefined) payload.aroma = params.aroma;
     if (params.resin !== undefined) payload.resin = params.resin;
     if (params.pest_resistance !== undefined) payload.pest_resistance = params.pest_resistance;
+    if (params.internodal_spacing !== undefined)
+      payload.internodal_spacing = params.internodal_spacing;
+    if (params.terpene_intensity !== undefined)
+      payload.terpene_intensity = params.terpene_intensity;
+    if (params.mold_resistance !== undefined) payload.mold_resistance = params.mold_resistance;
+    if (params.yield_potential !== undefined) payload.yield_potential = params.yield_potential;
+    if (params.keeper !== undefined) payload.keeper = params.keeper;
+    if (params.notes !== undefined) payload.notes = params.notes;
 
     try {
       await this.callService(DOMAIN, SERVICES.SCORE_PLANT, payload);
-      console.log('[PlantAPI:scorePlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:scorePlant] Error:', err);
       throw err;
@@ -266,7 +252,6 @@ export class PlantAPI extends BaseAPI {
     cbd_percentage?: number | null;
     terpene_profile?: string | null;
   }): Promise<void> {
-    console.log('[PlantAPI:updateHarvestMetrics] Updating metrics:', params.plant_id);
     const payload: Record<string, unknown> = { plant_id: params.plant_id };
 
     // Explicitly include null values to allow clearing fields on the backend
@@ -279,15 +264,65 @@ export class PlantAPI extends BaseAPI {
 
     try {
       await this.callService(DOMAIN, SERVICES.UPDATE_HARVEST_METRICS, payload);
-      console.log('[PlantAPI:updateHarvestMetrics] Service Called');
     } catch (err) {
       console.error('[PlantAPI:updateHarvestMetrics] Error:', err);
       throw err;
     }
   }
 
-  async movePlant(plantId: string, targetGrowspaceId: string, transitionDate?: string): Promise<void> {
-    console.log('[PlantAPI:movePlant] Moving plant:', plantId, 'to', targetGrowspaceId);
+  async logDryingWeight(params: {
+    plant_id: string;
+    weight_grams: number;
+    date?: string;
+  }): Promise<void> {
+    const payload: Record<string, unknown> = {
+      plant_id: params.plant_id,
+      weight_grams: params.weight_grams,
+    };
+    if (params.date) payload.date = params.date;
+    try {
+      await this.callService(DOMAIN, SERVICES.LOG_DRYING_WEIGHT, payload);
+    } catch (err) {
+      console.error('[PlantAPI:logDryingWeight] Error:', err);
+      throw err;
+    }
+  }
+
+  async logMoistureReading(params: {
+    plant_id: string;
+    moisture_percent: number;
+    date?: string;
+  }): Promise<void> {
+    const payload: Record<string, unknown> = {
+      plant_id: params.plant_id,
+      moisture_percent: params.moisture_percent,
+    };
+    if (params.date) payload.date = params.date;
+    try {
+      await this.callService(DOMAIN, SERVICES.LOG_MOISTURE_READING, payload);
+    } catch (err) {
+      console.error('[PlantAPI:logMoistureReading] Error:', err);
+      throw err;
+    }
+  }
+
+  async setVisualTag(params: { plant_id: string; visual_tag: string | null }): Promise<void> {
+    try {
+      await this.callService(DOMAIN, SERVICES.SET_VISUAL_TAG, {
+        plant_id: params.plant_id,
+        visual_tag: params.visual_tag ?? null,
+      });
+    } catch (err) {
+      console.error('[PlantAPI:setVisualTag] Error:', err);
+      throw err;
+    }
+  }
+
+  async movePlant(
+    plantId: string,
+    targetGrowspaceId: string,
+    transitionDate?: string
+  ): Promise<void> {
     const payload: Record<string, unknown> = {
       plant_id: plantId,
       target_growspace_id: targetGrowspaceId,
@@ -297,7 +332,6 @@ export class PlantAPI extends BaseAPI {
     }
     try {
       await this.callService(DOMAIN, SERVICES.MOVE_PLANT, payload);
-      console.log('[PlantAPI:movePlant] Service Called');
     } catch (err) {
       console.error('[PlantAPI:movePlant] Error:', err);
       throw err;

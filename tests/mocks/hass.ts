@@ -1,5 +1,7 @@
 // tests/mocks/hass.ts
 
+import { vi } from 'vitest';
+
 export interface MockHassOptions {
     growspaceName?: string;
     rows?: number;
@@ -75,7 +77,7 @@ export const createMockHass = (options: MockHassOptions = {}) => {
             }
         },
         // Mock service calls to verify card actions (e.g. add_plant)
-        callService: async (domain: string, service: string, data: any) => {
+        callService: vi.fn().mockImplementation(async (domain: string, service: string, data: any) => {
             console.log(`[MockHass] Service Called: ${domain}.${service}`, data);
 
             if (domain === 'growspace_manager' && service === 'get_strain_library') {
@@ -98,7 +100,7 @@ export const createMockHass = (options: MockHassOptions = {}) => {
             }
 
             return Promise.resolve();
-        },
+        }),
         callApi: async (method: string, path: string, parameters?: any) => {
             console.log(`[MockHass] callApi: ${method} ${path}`, parameters);
             return Promise.resolve();
