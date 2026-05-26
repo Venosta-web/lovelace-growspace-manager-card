@@ -1,0 +1,20 @@
+{
+  "name": "growspace-manager-e2e-tests",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:plant": "playwright test plant-management",
+    "test:env": "playwright test environmental-monitoring",
+    "test:config": "playwright test configuration"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "dotenv": "^16.4.0"
+  }
+}

@@ -1,0 +1,54 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.17 [39m[90m/home/maxi/core/core/vendor/lovelace-growspace-manager-card[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould fetch from server and cache when no cache exists
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould use valid cache and not fetch from server
+[22m[39m[LibraryActions] Using cached EC ramp curves (Age: 0ms)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould fetch from server if cache is expired
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould fetch from server if force is true
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: true)
+[90mstderr[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould handle corrupt cache
+[22m[39m[LibraryActions] Failed to parse cached EC ramp curves [SyntaxError: Unexpected token 'i', "invalid-json" is not valid JSON]
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould handle corrupt cache
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchECRampCurves[2m > [22m[2mshould log error on fetch failure
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2msaveECRampCurve[2m > [22m[2mshould save curve, refresh and show toast
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: true)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mremoveECRampCurve[2m > [22m[2mshould remove curve, refresh and show toast
+[22m[39m[LibraryActions] Fetching EC ramp curves from server (Force: true)
+[90mstderr[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchStrainLibrary[2m > [22m[2mshould handle JSON parse error
+[22m[39mFailed to parse cached strain library [SyntaxError: Unexpected token 'i', "invalid-json" is not valid JSON]
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchNutrientPresets[2m > [22m[2mshould use valid cache
+[22m[39m[LibraryActions] Using cached nutrient presets (Age: 0ms)
+[90mstderr[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchNutrientPresets[2m > [22m[2mshould handle parse error
+[22m[39m[LibraryActions] Failed to parse cached nutrient presets [SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)]
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchNutrientPresets[2m > [22m[2mshould handle parse error
+[22m[39m[LibraryActions] Fetching nutrient presets from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchNutrientPresets[2m > [22m[2mshould handle fetch error
+[22m[39m[LibraryActions] Fetching nutrient presets from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchIPMPresets[2m > [22m[2mshould use valid cache
+[22m[39m[LibraryActions] Using cached IPM presets (Age: 0ms)
+[90mstderr[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchIPMPresets[2m > [22m[2mshould handle parse error
+[22m[39m[LibraryActions] Failed to parse cached IPM presets [SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)]
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchIPMPresets[2m > [22m[2mshould handle parse error
+[22m[39m[LibraryActions] Fetching IPM presets from server (Force: false)
+[90mstdout[2m | tests/unit/library-actions.spec.ts[2m > [22m[2mLibraryActions[2m > [22m[2mfetchIPMPresets[2m > [22m[2mshould handle fetch error
+[22m[39m[LibraryActions] Fetching IPM presets from server (Force: false)
+ [32m✓[39m [30m[43m chromium [49m[39m tests/unit/library-actions.spec.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m32 passed[39m[22m[90m (32)[39m
+[2m   Start at [22m 15:08:24
+[2m   Duration [22m 537ms[2m (transform 0ms, setup 5ms, import 8ms, tests 22ms, environment 0ms)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   93.18 |    83.33 |     100 |   95.27 |                   
+ ...ary-actions.ts |   93.18 |    83.33 |     100 |   95.27 | ...21-122,158-159 
+-------------------|---------|----------|---------|---------|-------------------

@@ -1,0 +1,508 @@
+import { LitElement, html, css, svg, nothing } from 'lit';
+import { repeat } from 'lit/directives/repeat.js';
+import { customElement, property, state, query } from 'lit/decorators.js';
+import { ChartUtils } from '../../../utils/chart-utils';
+import { GrowspaceDevice } from '../../../types';
+import { HeaderChip } from '../../../utils/metrics-utils';
+import { sharedStyles } from '../../../styles/shared.styles';
+import type { HomeAssistant } from 'custom-card-helpers';
+
+@customElement('growspace-header-hero-ui')
+export class GrowspaceHeaderHeroUI extends LitElement {
+  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public device!: GrowspaceDevice;
+  @property({ attribute: false }) public chips: HeaderChip[] = [];
+  @property({ type: Boolean }) public isMobile = false;
+  @property({ type: Boolean }) public mobileLink = false;
+  @property({ attribute: false }) public historyCache: any = {};
+  @property() public timeRange = '24h';
+
+  @state() private _deckIndex = 0;
+  @query('.deck-scroll') private _deckEl?: HTMLElement;
+
+  private _onDeckScroll() {
+    const el = this._deckEl;
+    if (!el) return;
+    const firstItem = el.firstElementChild as HTMLElement;
+    if (!firstItem) return;
+    const itemWidth = firstItem.offsetWidth + 12;
+    const next = Math.round(el.scrollLeft / itemWidth);
+    if (next !== this._deckIndex) this._deckIndex = next;
+  }
+
+  private _renderDeck() {
+    return html`
+      <div class="deck-scroll" @scroll=${this._onDeckScroll}>
+        ${repeat(
+          this.chips,
+          (chip) => chip.key,
+          (chip) => html`<div class="deck-item">${this._renderHeroCard(chip)}</div>`
+        )}
+      </div>
+      ${this.chips.length > 1
+        ? html`
+            <div class="deck-dots">
+              ${this.chips.map(
+                (_, i) => html`
+                  <span class="deck-dot ${i === this._deckIndex ? 'active' : ''}"></span>
+                `
+              )}
+            </div>
+          `
+        : nothing}
+    `;
+  }
+
+  private _handleChipDragStart(e: DragEvent, metric: string) {
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', metric);
+    }
+    this.dispatchEvent(
+      new CustomEvent('chip-drag-start', {
+        detail: { metric, event: e },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleChipDrop(e: DragEvent, targetMetric: string) {
+    e.preventDefault();
+    this.dispatchEvent(
+      new CustomEvent('chip-drop', { detail: { targetMetric }, bubbles: true, composed: true })
+    );
+  }
+
+  private _handleDragOver(e: DragEvent) {
+    e.preventDefault();
+  }
+
+  private _toggleEnvGraph(metric: string) {
+    this.dispatchEvent(
+      new CustomEvent('toggle-graph', { detail: { metric }, bubbles: true, composed: true })
+    );
+  }
+
+  static styles = [
+    sharedStyles,
+    css`
+      :host {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        width: 100%;
+        min-height: 50px;
+      }
+
+      .hero-card {
+        background: var(--glass-bg, rgba(255, 255, 255, 0.05));
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        backdrop-filter: var(--glass-blur);
+        box-shadow:
+          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+
+        border-radius: 24px;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        position: relative;
+        cursor: grab;
+        transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        overflow: hidden;
+        min-height: 110px;
+      }
+
+      .hero-card:active {
+        cursor: grabbing;
+        transform: scale(0.98);
+      }
+
+      .hero-card:hover {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+        border-color: var(--divider-color, rgba(255, 255, 255, 0.15));
+        box-shadow:
+          0 8px 32px -4px rgba(0, 0, 0, 0.3),
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        transform: translateY(-2px);
+      }
+
+      .hero-card.linked {
+        border-color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+      }
+
+      .hero-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        z-index: 1;
+      }
+
+      .hero-icon {
+        --mdc-icon-size: 20px;
+        flex-shrink: 0;
+      }
+
+      .hero-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .hero-value-group {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .hero-value {
+        font-size: 2rem;
+        font-weight: 400;
+        color: var(--primary-text-color, #fff);
+        line-height: 1;
+      }
+
+      .hero-unit {
+        font-size: 1rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-weight: 500;
+      }
+
+      .hero-card.active {
+        background: color-mix(
+          in srgb,
+          var(--primary-color, #2196f3) 15%,
+          var(--glass-bg, rgba(255, 255, 255, 0.05))
+        );
+        border-color: var(--primary-color, #2196f3);
+        box-shadow:
+          0 8px 32px -4px rgba(0, 0, 0, 0.3),
+          0 0 0 1px var(--primary-color, #2196f3) inset;
+      }
+
+      .hero-card.active .hero-value,
+      .hero-card.active .hero-label,
+      .hero-card.active .hero-unit,
+      .hero-card.active .hero-icon {
+        color: var(--primary-text-color, #fff) !important;
+        fill: var(--primary-text-color, #fff) !important;
+      }
+
+      .hero-sparkline {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 50%;
+        pointer-events: none;
+        z-index: 0;
+        opacity: 0.7;
+      }
+
+      .hero-sparkline path {
+        transition:
+          d 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          stroke 0.3s ease,
+          fill 0.3s ease;
+      }
+
+      @media (max-width: 600px) {
+        :host {
+          display: block;
+        }
+
+        .deck-scroll {
+          display: flex;
+          gap: 12px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: none;
+          padding: 2px 2px 4px;
+        }
+
+        .deck-scroll::-webkit-scrollbar {
+          display: none;
+        }
+
+        .deck-item {
+          flex: 0 0 calc(100% - 48px);
+          scroll-snap-align: start;
+          min-width: 0;
+        }
+
+        .deck-dots {
+          display: flex;
+          gap: 5px;
+          justify-content: center;
+          margin-top: 10px;
+        }
+
+        .deck-dot {
+          height: 5px;
+          width: 5px;
+          border-radius: 3px;
+          background: rgba(255, 255, 255, 0.2);
+          transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .deck-dot.active {
+          width: 14px;
+          background: var(--primary-color, #4caf50);
+        }
+
+        .hero-value {
+          font-size: 1.75rem;
+        }
+      }
+
+      .hero-multi-values {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.5rem;
+        color: var(--primary-text-color);
+      }
+
+      .hero-multi-divider {
+        width: 1px;
+        height: 24px;
+        background: var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+
+      .hero-status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+
+      .hero-status-badge.status-ok {
+        background: rgba(76, 175, 80, 0.15);
+        color: #69f0ae;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .hero-status-badge.status-warning {
+        background: rgba(255, 167, 38, 0.15);
+        color: #ffb74d;
+        border: 1px solid rgba(255, 167, 38, 0.3);
+      }
+
+      .hero-status-badge.status-error {
+        background: rgba(244, 67, 54, 0.15);
+        color: #ff8a80;
+        border: 1px solid rgba(244, 67, 54, 0.3);
+      }
+    `,
+  ];
+
+  render() {
+    if (this.isMobile) {
+      return this._renderDeck();
+    }
+    return html`
+      ${repeat(
+        this.chips,
+        (chip) => chip.key,
+        (chip) => this._renderHeroCard(chip)
+      )}
+    `;
+  }
+
+  private _renderHeroCard(chip: HeaderChip) {
+    const match = String(chip.value || '').match(/^([\d.,]+)\s*(.*)$/);
+    const val = match ? match[1] : chip.value;
+    const unit = match ? match[2] : '';
+
+    const sparklineWidth = 140;
+    const sparklineHeight = 80;
+
+    const timeRange = this.timeRange;
+    const isVpd = chip.key === 'vpd';
+    let vpdSegments: Array<{ path: string; color: string }> = [];
+
+    if (isVpd && this.device) {
+      const historyData = (this.historyCache as any)?.vpd;
+      const lightHistory = (this.historyCache as any)?.light || [];
+
+      const overviewEntity = this.device.overviewEntityId
+        ? this.hass?.states[this.device.overviewEntityId]
+        : null;
+
+      const attrs = overviewEntity?.attributes || {};
+      const day = {
+        targetMin: attrs.day_vpd_target_min ?? attrs.vpd_target_min ?? 0.8,
+        targetMax: attrs.day_vpd_target_max ?? attrs.vpd_target_max ?? 1.2,
+        dangerMin: attrs.day_vpd_danger_min ?? attrs.vpd_danger_min ?? 0.4,
+        dangerMax: attrs.day_vpd_danger_max ?? attrs.vpd_danger_max ?? 1.6,
+      };
+      const night = {
+        targetMin: attrs.night_vpd_target_min ?? day.targetMin,
+        targetMax: attrs.night_vpd_target_max ?? day.targetMax,
+        dangerMin: attrs.night_vpd_danger_min ?? day.dangerMin,
+        dangerMax: attrs.night_vpd_danger_max ?? day.dangerMax,
+      };
+
+      vpdSegments = ChartUtils.generateVpdSparklineSegments(
+        this.historyCache?.vpd,
+        sparklineWidth,
+        sparklineHeight,
+        { day, night },
+        lightHistory,
+        timeRange as any
+      );
+    }
+
+    const useVpdSegments = isVpd && vpdSegments.length > 0;
+    const sparklineColor = ChartUtils.getSparklineColor(chip.key, chip.status);
+    const entityIds = chip.entityIds || [];
+    const sparklinePaths: Array<{ d: string; color: string }> = [];
+
+    if (!useVpdSegments) {
+      if (entityIds.length > 1) {
+        entityIds.forEach((id, idx) => {
+          const path = ChartUtils.generateSparklinePath(
+            (this.historyCache as any)?.[`${chip.key}:${id}`],
+            sparklineWidth,
+            sparklineHeight,
+            timeRange as any
+          );
+          if (path) {
+            const color =
+              idx === 0
+                ? sparklineColor
+                : `color-mix(in srgb, ${sparklineColor}, white ${idx * 20}%)`;
+            sparklinePaths.push({ d: path, color });
+          }
+        });
+      } else {
+        const path = ChartUtils.generateSparklinePath(
+          (this.historyCache as any)?.[chip.key],
+          sparklineWidth,
+          sparklineHeight,
+          timeRange as any
+        );
+        if (path) {
+          sparklinePaths.push({ d: path, color: sparklineColor });
+        }
+      }
+    }
+
+    return html`
+      <div
+        class="hero-card ${chip.status ? `status-${chip.status}` : ''} ${chip.active
+          ? 'active'
+          : ''} ${chip.linked ? 'linked' : ''}"
+        draggable="${!this.isMobile || this.mobileLink}"
+        @dragstart=${(e: DragEvent) => this._handleChipDragStart(e, chip.key)}
+        @drop=${(e: DragEvent) => this._handleChipDrop(e, chip.key)}
+        @dragover=${(e: DragEvent) => this._handleDragOver(e)}
+        @click=${() => this._toggleEnvGraph(chip.key)}
+        title="${chip.tooltip || ''}"
+      >
+        ${useVpdSegments
+          ? html`
+              <svg
+                class="hero-sparkline"
+                viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                preserveAspectRatio="none"
+                style="overflow: visible;"
+              >
+                <rect
+                  x="0"
+                  y="0"
+                  width="${sparklineWidth}"
+                  height="${sparklineHeight}"
+                  fill="transparent"
+                />
+                ${vpdSegments.map(
+                  (seg) => svg`
+                      <path d="${seg.path}" fill="none" stroke="${seg.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                    `
+                )}
+              </svg>
+            `
+          : sparklinePaths.length > 0
+            ? html`
+                <svg
+                  class="hero-sparkline"
+                  viewBox="0 0 ${sparklineWidth} ${sparklineHeight}"
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient
+                      id="sparkline-grad-${chip.key}"
+                      x1="0%"
+                      y1="0%"
+                      x2="0%"
+                      y2="100%"
+                    >
+                      <stop offset="0%" stop-color="${sparklineColor}" stop-opacity="0.3" />
+                      <stop offset="100%" stop-color="${sparklineColor}" stop-opacity="0" />
+                    </linearGradient>
+                  </defs>
+                  ${sparklinePaths.map(
+                    (p) => svg`
+                    <path
+                      d="${p.d}"
+                      fill="none"
+                      stroke="${p.color}"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      style="opacity: ${p.color === sparklineColor ? 1 : 0.6}"
+                    />
+                  `
+                  )}
+                  <path
+                    d="${sparklinePaths[0].d} V ${sparklineHeight} H 0 Z"
+                    fill="url(#sparkline-grad-${chip.key})"
+                  />
+                </svg>
+              `
+            : ''}
+
+        <div class="hero-header">
+          <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
+          <span class="hero-label">${chip.label || chip.key}</span>
+          ${chip.status
+            ? html`<span class="hero-status-badge status-${chip.status}">${chip.status}</span>`
+            : ''}
+        </div>
+
+        <div class="hero-value-group">
+          ${chip.multiValues && chip.multiValues.length > 0
+            ? html`
+                <div class="hero-multi-values">
+                  ${chip.multiValues.map(
+                    (v, i) => html`
+                      ${i > 0 ? html`<div class="hero-multi-divider"></div>` : ''}
+                      <span>${v}</span>
+                    `
+                  )}
+                </div>
+              `
+            : html`
+                <span class="hero-value">${val}</span>
+                <span class="hero-unit">${unit}</span>
+              `}
+        </div>
+      </div>
+    `;
+  }
+}

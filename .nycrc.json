@@ -1,0 +1,26 @@
+{
+    "all": true,
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "tests/**",
+        "node_modules/**"
+    ],
+    "reporter": [
+        "text",
+        "text-summary",
+        "html",
+        "lcov"
+    ],
+    "report-dir": "./coverage",
+    "temp-dir": "./.nyc_output",
+    "extension": [
+        ".ts"
+    ],
+    "sourceMap": true,
+    "instrument": true,
+    "cache": false
+}

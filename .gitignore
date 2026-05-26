@@ -2,11 +2,13 @@
 node_modules/
 
 # Build output
-dist/
 build/
 
 # Local env files
 .env
+ha-login-debug.png
+ha-login-debug.html
+ha-auth.json
 
 # VSCode settings (optional)
 .vscode/
@@ -16,4 +18,56 @@ build/
 
 # Ignore zip files
 *.zip
+growspace_manager/
 
+# Ignore test results
+test-results/
+server.log
+
+# Ignore test output
+test_*.txt
+test-*.txt
+
+# Playwright
+playwright-report/
+coverage/tmp
+
+# Logs and Debug output
+*_log.txt
+debug_output.txt
+
+# Debug images
+debug_*.png
+verification_*.png
+
+# Ignore coverage
+coverage/
+
+
+playwright/.auth/user.json
+playwright-report/index.html
+playwright-report/.auth/*
+
+# Verification scratchpad
+verification/
+# Ignore test images (but keep visual snapshot baselines)
+tests/**/*.png
+!tests/**/__screenshots__/**/*.png
+
+# Vitest runtime attachments (failure diffs, not baselines)
+.vitest-attachments/
+
+# E2E test reports
+tests/e2e/test-reports/
+
+
+# Git worktrees
+.worktrees/
+
+
+playwright-report-mock/index.html
+.gitignore
+test-results-mock/.last-run.json
+coverage.txt
+test_run.log
+.sandcastle/*

@@ -1,0 +1,292 @@
+import { LitElement, html, nothing } from 'lit';
+import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant } from 'custom-card-helpers';
+
+import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../../../types';
+import { HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
+import type { FlowerFlipInfo } from '../../../utils/flower-flip';
+import { ResizeController } from '../../../controllers/resize-controller';
+import { headerStyles } from '../../../styles/header.styles';
+
+import './growspace-header-actions-ui';
+import './growspace-header-hero-ui';
+import './growspace-header-stages-ui';
+import './growspace-header-secondary-ui';
+
+@customElement('growspace-header-ui')
+export class GrowspaceHeaderUI extends LitElement {
+  @property({ attribute: false }) heroChips: HeaderChip[] = [];
+  @property({ attribute: false }) secondaryChips: HeaderChip[] = [];
+  @property({ attribute: false }) deviceChips: HeaderChip[] = [];
+  @property({ attribute: false }) dominant: DominantStageInfo | undefined;
+  @property({ attribute: false }) inventory: NutrientInventory | null = null;
+  @property({ attribute: false }) devices: GrowspaceDevice[] = [];
+  @property({ attribute: false }) problemPlants: string[] = [];
+  @property() deviceId = '';
+  @property({ attribute: false }) device: GrowspaceDevice | undefined;
+  @property({ attribute: false }) config: GrowspaceManagerCardConfig | null = null;
+  @property({ type: Boolean }) compact = false;
+  @property({ attribute: false }) historyCache: Record<string, unknown[]> = {};
+  @property() timeRange = '24h';
+  @property() viewMode = '';
+  @property({ type: Boolean }) isEditMode = false;
+  @property({ attribute: false }) selectedPlants = new Set<string>();
+  @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ attribute: false }) flowerFlipInfo: FlowerFlipInfo | null = null;
+
+  @state() private _mobileLink = false;
+  private _resizeController = new ResizeController(this, () => {});
+
+  static styles = headerStyles;
+
+  private _handleDeviceChange(e: Event) {
+    const target = e.target as HTMLSelectElement;
+    this.dispatchEvent(
+      new CustomEvent('device-changed', {
+        detail: { value: target.value },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _toggleEnvGraph(metric: string) {
+    this.dispatchEvent(
+      new CustomEvent('toggle-graph', {
+        detail: { metric },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleChipDragStart(e: DragEvent | null, metric: string) {
+    this.dispatchEvent(
+      new CustomEvent('chip-drag-start', {
+        detail: { metric, event: e },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleChipDrop(e: DragEvent | null, targetMetric: string) {
+    this.dispatchEvent(
+      new CustomEvent('chip-drop', {
+        detail: { targetMetric, event: e },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _unlinkGraphs(groupIndex: number) {
+    this.dispatchEvent(
+      new CustomEvent('unlink-graphs', {
+        detail: { groupIndex },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  private _handleToggleMobileLink() {
+    this._mobileLink = !this._mobileLink;
+  }
+
+  private _renderMobileStageContext() {
+    const plants = this.device?.plants || [];
+    const plantCount = plants.length;
+    if (!this.dominant && plantCount === 0) return nothing;
+
+    return html`
+      <div class="mobile-stage-context">
+        ${this.dominant
+          ? html`
+              <span
+                class="mobile-stage-dot"
+                style="background:${this.dominant.color};box-shadow:0 0 6px ${this.dominant.color}"
+              ></span>
+              <span style="color:${this.dominant.color}">${this.dominant.daysLabel}</span>
+            `
+          : nothing}
+        ${this.dominant && plantCount > 0 ? html`<span class="mobile-stage-sep">·</span>` : nothing}
+        ${plantCount > 0
+          ? html` <span>${plantCount} plant${plantCount !== 1 ? 's' : ''}</span> `
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _renderMetaRow() {
+    const plants = this.device?.plants || [];
+    const plantCount = plants.length;
+    if (plantCount === 0 && !this.dominant) return nothing;
+
+    const alertCount = this.problemPlants.length;
+
+    return html`
+      <div class="header-meta-row">
+        ${plantCount > 0
+          ? html`
+              <span class="header-meta-stat">
+                <span class="num">${plantCount}</span>plant${plantCount !== 1 ? 's' : ''}
+              </span>
+            `
+          : nothing}
+        ${this.dominant?.daysLabel
+          ? html` <span class="header-meta-stat">${this.dominant.daysLabel}</span> `
+          : nothing}
+        ${alertCount > 0
+          ? html`
+              <span class="header-meta-stat alert">
+                <span class="num">${alertCount}</span>need${alertCount !== 1 ? '' : 's'} attention
+              </span>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+
+  private _openNutrients() {
+    this.dispatchEvent(
+      new CustomEvent('open-nutrients', {
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
+  render() {
+    if (!this.device) return html``;
+
+    return html`
+      <div class="gs-stats-container">
+        <!-- TOP HEADER GRID -->
+        <div class="gs-header-top">
+          <!-- Row 1 Left: Title/Select + Meta -->
+          <div class="header-title-area">
+            ${this._renderMobileStageContext()}
+            <div class="header-title-row">
+              ${!this.config?.default_growspace
+                ? html`<div class="select-wrapper">
+                    <div class="select-sizer">${this.device.name || 'Select Growspace'}</div>
+                    <select
+                      class="growspace-select-header"
+                      .value=${this.deviceId}
+                      @change=${this._handleDeviceChange}
+                    >
+                      ${this.devices.map(
+                        (d) => html`<option value="${d.deviceId}">${d.name}</option>`
+                      )}
+                    </select>
+                  </div>`
+                : html`<h1 class="gs-title">${this.device.name}</h1>`}
+            </div>
+            ${this._renderMetaRow()}
+          </div>
+
+          <!-- Row 1 Right: Actions & Device Chips -->
+          <growspace-header-actions-ui
+            class="header-actions"
+            .device=${this.device}
+            .deviceChips=${this.deviceChips}
+            .isMobile=${this._resizeController.isMobile}
+            .mobileLink=${this._mobileLink}
+            .viewMode=${this.viewMode}
+            .isEditMode=${this.isEditMode}
+            .selectedPlants=${this.selectedPlants}
+            .selectedDevice=${this.deviceId}
+            @toggle-graph=${(e: CustomEvent) => {
+              e.stopPropagation();
+              this._toggleEnvGraph(e.detail.metric);
+            }}
+            @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
+            @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+            @toggle-mobile-link=${() => this._handleToggleMobileLink()}
+            @action-triggered=${(e: CustomEvent) => {
+              e.stopPropagation();
+              this.dispatchEvent(
+                new CustomEvent('action-triggered', {
+                  detail: e.detail,
+                  bubbles: true,
+                  composed: true,
+                })
+              );
+            }}
+          ></growspace-header-actions-ui>
+
+          <!-- Row 2 Left: Stages + Status -->
+          <div class="header-stage-area-wrapper">
+            <growspace-header-stages-ui
+              .dominant=${this.dominant}
+              .problemPlants=${this.problemPlants}
+            ></growspace-header-stages-ui>
+          </div>
+
+          <!-- Row 2 Right: Secondary Chips & Inventory -->
+          <div class="secondary-strip-container">
+            <growspace-header-secondary-ui
+              .isMobile=${this._resizeController.isMobile}
+              .mobileLink=${this._mobileLink}
+              .compact=${this.compact}
+              .chips=${this.secondaryChips}
+              .inventory=${this.inventory}
+              .flowerFlipInfo=${this.flowerFlipInfo}
+              .growspaceId=${this.deviceId}
+              @open-nutrients=${() => this._openNutrients()}
+              @toggle-graph=${(e: CustomEvent) => {
+                e.stopPropagation();
+                this._toggleEnvGraph(e.detail.metric);
+              }}
+              @chip-drag-start=${(e: CustomEvent) =>
+                this._handleChipDragStart(e.detail.event, e.detail.metric)}
+              @chip-drop=${(e: CustomEvent) =>
+                this._handleChipDrop(e.detail.event, e.detail.targetMetric)}
+              @unlink-graphs=${(e: CustomEvent) => this._unlinkGraphs(e.detail.groupIndex)}
+            ></growspace-header-secondary-ui>
+          </div>
+        </div>
+
+        <!-- HERO GRID (Vital Stats) -->
+        <growspace-header-hero-ui
+          .hass=${this.hass}
+          .chips=${this.heroChips}
+          .device=${this.device}
+          .isMobile=${this._resizeController.isMobile}
+          .mobileLink=${this._mobileLink}
+          .historyCache=${this.historyCache}
+          .timeRange=${this.timeRange}
+          @toggle-graph=${(e: CustomEvent) => {
+            e.stopPropagation();
+            this._toggleEnvGraph(e.detail.metric);
+          }}
+          @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
+          @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+        ></growspace-header-hero-ui>
+
+        ${this._resizeController.isMobile && this.secondaryChips.length > 0
+          ? html`
+              <!-- SECONDARY STAT DECK (mobile only) -->
+              <growspace-header-hero-ui
+                .hass=${this.hass}
+                .chips=${this.secondaryChips}
+                .device=${this.device}
+                .isMobile=${true}
+                .mobileLink=${this._mobileLink}
+                .historyCache=${this.historyCache}
+                .timeRange=${this.timeRange}
+                @toggle-graph=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  this._toggleEnvGraph(e.detail.metric);
+                }}
+                @chip-drag-start=${(e: CustomEvent) =>
+                  this._handleChipDragStart(null, e.detail.metric)}
+                @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+              ></growspace-header-hero-ui>
+            `
+          : nothing}
+      </div>
+    `;
+  }
+}
