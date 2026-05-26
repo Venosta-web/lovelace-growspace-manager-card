@@ -336,8 +336,8 @@ describe('GrowspaceHeaderActionsUI', () => {
 
   describe('Menu Actions', () => {
     const actions = [
-      'add_plant', 'water', 'ipm', 'training', 
-      'irrigation', 'nutrients', 'ec_ramp', 'strains', 
+      'add_plant', 'water', 'ipm', 'training',
+      'irrigation', 'nutrients', 'strains',
       'logbook', 'snapshots', 'ai'
     ];
 
@@ -361,57 +361,6 @@ describe('GrowspaceHeaderActionsUI', () => {
           expect(handler.mock.calls[0][0].detail.action).toBe(action);
         }
       });
-    });
-
-    it('hides EC Ramp Curves when requirements are not met', async () => {
-      const deviceNoPump = {
-        irrigationConfig: { irrigationPumpEntity: null, drainPumpEntity: null, irrigationTimes: ['08:00'] },
-        environmentAttributes: { feedEcSensors: ['sensor.ec'] }
-      } as any;
-      
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${deviceNoPump}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).not.toContain('EC Ramp Curves');
-    });
-
-    it('shows EC Ramp Curves when all requirements are met', async () => {
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${mockDeviceFull}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).toContain('EC Ramp Curves');
-    });
-
-    it('hides EC Ramp Curves when no schedule is defined', async () => {
-      const deviceNoSchedule = {
-        irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: [] },
-        environmentAttributes: { feedEcSensors: ['sensor.ec'] }
-      } as any;
-      
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${deviceNoSchedule}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).not.toContain('EC Ramp Curves');
-    });
-
-    it('hides EC Ramp Curves when no EC sensor is defined', async () => {
-      const deviceNoEC = {
-        irrigationConfig: { irrigationPumpEntity: 'switch.pump', irrigationTimes: ['08:00'] },
-        environmentAttributes: { feedEcSensors: [], runoffEcSensors: [], substrateEcSensors: [] }
-      } as any;
-      
-      const el = await fixture<GrowspaceHeaderActionsUI>(html`
-        <growspace-header-actions-ui .device=${deviceNoEC}></growspace-header-actions-ui>
-      `);
-      
-      const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(l => l.textContent);
-      expect(labels).not.toContain('EC Ramp Curves');
     });
 
     it('hides popover when action is triggered', async () => {

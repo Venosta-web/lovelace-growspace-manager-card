@@ -105,7 +105,6 @@ var mdiCameraPlus = "M3 4V1H5V4H8V6H5V9H3V6H0V4M6 10V7H9V4H16L17.8 6H21C22.1 6 2
 var mdiCannabis = "M11.5,22V17.35C11,18.13 10,19.09 8.03,19.81C8.03,19.81 8.53,18.1 9.94,16.95C8.64,17.23 6.68,17.19 4,16C4,16 6.47,14.59 9.28,14.97C7.69,14 5.7,12.08 4.17,8.11C4.17,8.11 8.67,9.34 10.91,13.14C8.88,8.24 12,2 12,2C14.43,7.47 13.91,11.1 13.12,13.1C15.37,9.33 19.83,8.11 19.83,8.11C18.3,12.08 16.31,14 14.72,14.97C17.53,14.59 20,16 20,16C17.32,17.19 15.36,17.23 14.06,16.95C15.47,18.1 15.97,19.81 15.97,19.81C14,19.09 13,18.13 12.5,17.35V22H11.5Z";
 var mdiChartBar = "M22,21H2V3H4V19H6V10H10V19H12V6H16V19H18V14H22V21Z";
 var mdiChartDonut = "M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,12.9 18.82,13.75 18.5,14.54L21.12,16.07C21.68,14.83 22,13.45 22,12C22,6.82 18.05,2.55 13,2.05M12,19A7,7 0 0,1 5,12C5,8.47 7.61,5.57 11,5.08V2.05C5.94,2.55 2,6.81 2,12A10,10 0 0,0 12,22C15.3,22 18.23,20.39 20.05,17.91L17.45,16.38C16.17,18 14.21,19 12,19Z";
-var mdiChartLine = "M16,11.78L20.24,4.45L21.97,5.45L16.74,14.5L10.23,10.75L5.46,19H22V21H2V3H4V17.54L9.5,8L16,11.78Z";
 var mdiChartTimelineVariant = "M3,14L3.5,14.07L8.07,9.5C7.89,8.85 8.06,8.11 8.59,7.59C9.37,6.8 10.63,6.8 11.41,7.59C11.94,8.11 12.11,8.85 11.93,9.5L14.5,12.07L15,12C15.18,12 15.35,12 15.5,12.07L19.07,8.5C19,8.35 19,8.18 19,8A2,2 0 0,1 21,6A2,2 0 0,1 23,8A2,2 0 0,1 21,10C20.82,10 20.65,10 20.5,9.93L16.93,13.5C17,13.65 17,13.82 17,14A2,2 0 0,1 15,16A2,2 0 0,1 13,14L13.07,13.5L10.5,10.93C10.18,11 9.82,11 9.5,10.93L4.93,15.5L5,16A2,2 0 0,1 3,18A2,2 0 0,1 1,16A2,2 0 0,1 3,14Z";
 var mdiChartTimelineVariantShimmer = "M21 8C19.5 8 18.7 9.4 19.1 10.5L15.5 14.1C15.2 14 14.8 14 14.5 14.1L11.9 11.5C12.3 10.4 11.5 9 10 9C8.6 9 7.7 10.4 8.1 11.5L3.5 16C2.4 15.7 1 16.5 1 18C1 19.1 1.9 20 3 20C4.4 20 5.3 18.6 4.9 17.5L9.4 12.9C9.7 13 10.1 13 10.4 12.9L13 15.5C12.7 16.5 13.5 18 15 18C16.5 18 17.3 16.6 16.9 15.5L20.5 11.9C21.6 12.2 23 11.4 23 10C23 8.9 22.1 8 21 8M15 9L15.9 6.9L18 6L15.9 5.1L15 3L14.1 5.1L12 6L14.1 6.9L15 9M3.5 11L4 9L6 8.5L4 8L3.5 6L3 8L1 8.5L3 9L3.5 11Z";
 var mdiChartTree = "M14,6H22V22H14V6M2,4H22V2H2V4M2,8H12V6H2V8M9,22H12V10H9V22M2,22H7V10H2V22Z";
@@ -18826,482 +18825,6 @@ CropSteeringDialog = __decorate([
     t$2('crop-steering-dialog')
 ], CropSteeringDialog);
 
-let ECRampEditorDialog = class ECRampEditorDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceName = '';
-        this._view = 'LIST';
-        this._editingCurve = null;
-        this._error = null;
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.store) {
-            this._curvesController = new libExports.StoreController(this, this.store.data.$ecRampCurves);
-            // Fetch curves when dialog opens
-            void this.store.actions.library.fetchECRampCurves();
-        }
-    }
-    updated(changedProps) {
-        if (changedProps.has('open') && this.open) {
-            this._view = 'LIST';
-            this._editingCurve = null;
-            this._error = null;
-            if (this.store) {
-                void this.store.actions.library.fetchECRampCurves();
-            }
-        }
-    }
-    _close() {
-        this.open = false;
-        this._editingCurve = null;
-        this._view = 'LIST';
-        this._error = null;
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    // --- LIST VIEW ---
-    _startNew() {
-        this._editingCurve = {
-            name: '',
-            stage: 'flower',
-            points: [{ day: 1, target_ec: 1.0 }],
-        };
-        this._view = 'EDIT';
-        this._error = null;
-    }
-    _editCurve(curve) {
-        this._editingCurve = JSON.parse(JSON.stringify(curve));
-        this._view = 'EDIT';
-        this._error = null;
-    }
-    async _deleteCurve(curveId) {
-        if (!confirm('Are you sure you want to delete this EC ramp curve?'))
-            return;
-        try {
-            await this.store.actions.library.removeECRampCurve(curveId);
-        }
-        catch (err) {
-            this._error = err instanceof Error ? err.message : 'Unknown error';
-        }
-    }
-    // --- EDIT VIEW ---
-    _addPoint() {
-        if (!this._editingCurve)
-            return;
-        const points = [...(this._editingCurve.points || [])];
-        const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
-        const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
-        points.push({ day: lastDay + 7, target_ec: lastEc + 0.2 });
-        this._editingCurve = { ...this._editingCurve, points };
-    }
-    _removePoint(index) {
-        if (!this._editingCurve)
-            return;
-        const points = [...(this._editingCurve.points || [])];
-        points.splice(index, 1);
-        this._editingCurve = { ...this._editingCurve, points };
-    }
-    _updatePoint(index, updates) {
-        if (!this._editingCurve)
-            return;
-        const points = [...(this._editingCurve.points || [])];
-        points[index] = { ...points[index], ...updates };
-        this._editingCurve = { ...this._editingCurve, points };
-    }
-    async _saveCurve() {
-        if (!this._editingCurve || !this._editingCurve.name?.trim()) {
-            this._error = 'Curve name is required';
-            return;
-        }
-        const points = (this._editingCurve.points || []).filter((p) => p.day >= 0 && p.target_ec > 0);
-        if (points.length === 0) {
-            this._error = 'At least one valid EC point is required';
-            return;
-        }
-        // Sort points by day
-        const sortedPoints = [...points].sort((a, b) => a.day - b.day);
-        try {
-            await this.store.actions.library.saveECRampCurve({
-                curve_id: this._editingCurve.id,
-                name: this._editingCurve.name.trim(),
-                stage: this._editingCurve.stage || 'flower',
-                points: sortedPoints,
-            });
-            this._view = 'LIST';
-            this._editingCurve = null;
-        }
-        catch (err) {
-            this._error = err instanceof Error ? err.message : 'Unknown error';
-        }
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const title = this._view === 'LIST'
-            ? 'EC Ramp Curves'
-            : this._editingCurve?.id
-                ? 'Edit EC Ramp'
-                : 'New EC Ramp';
-        const subtitle = this._view === 'LIST' ? 'Manage EC targets over time' : 'Define daily EC targets';
-        return x `
-      <gs-dialog
-        .open=${this.open}
-        .heading=${title}
-        .subtitle=${subtitle}
-        .iconPath=${mdiChartLine}
-        @close=${this._close}
-      >
-        <gs-help-tooltip
-          slot="header-extra"
-          content=${this._view === 'LIST'
-            ? 'Manage your library of EC Ramp Curves. These curves define the target nutrient concentration for each day of a growth stage.'
-            : 'Define target nutrient strength (EC in mS/cm) day-by-day throughout a growth stage. Use points to create a progressive ramp.'}
-          placement="bottom"
-          label=${title}
-        ></gs-help-tooltip>
-
-        <div class="dialog-content-grid">
-          ${this._error ? x `<div class="error-bar">${this._error}</div>` : E}
-          ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
-        </div>
-
-        <div class="button-group">${this._renderFooterButtons()}</div>
-      </gs-dialog>
-    `;
-    }
-    _renderFooterButtons() {
-        if (this._view === 'LIST') {
-            return x `
-        <button class="md3-button tonal" @click=${this._close}>Close</button>
-        <button class="md3-button primary" @click=${this._startNew}>
-          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-          New Curve
-        </button>
-      `;
-        }
-        else {
-            return x `
-        <button
-          class="md3-button tonal"
-          @click=${() => {
-                this._view = 'LIST';
-                this._editingCurve = null;
-                this._error = null;
-            }}
-        >
-          <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
-          Back
-        </button>
-        <button class="md3-button primary" @click=${this._saveCurve}>
-          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
-          Save Curve
-        </button>
-      `;
-        }
-    }
-    _renderList() {
-        const curves = this._curvesController?.value || {};
-        const curveList = Object.values(curves);
-        if (curveList.length === 0) {
-            return x `
-        <div class="empty-state">
-          <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
-          <p>No EC ramp curves defined yet.</p>
-          <p style="font-size: 0.9rem;">
-            Create curves to schedule EC targets across your grow cycle.
-          </p>
-        </div>
-      `;
-        }
-        return x `
-      <div class="curves-list">
-        ${curveList.map((curve) => x `
-            <div class="curve-item" @click=${() => this._editCurve(curve)}>
-              <div class="curve-info">
-                <div class="curve-name">${curve.name}</div>
-                <div class="curve-details">
-                  ${curve.points.length} point${curve.points.length !== 1 ? 's' : ''} • Day
-                  ${Math.min(...curve.points.map((p) => p.day))}–${Math.max(...curve.points.map((p) => p.day))}
-                </div>
-                <div class="curve-preview">
-                  ${curve.points
-            .slice(0, 6)
-            .map((p) => x `<span class="point-badge">D${p.day}: ${p.target_ec.toFixed(1)}</span>`)}
-                  ${curve.points.length > 6
-            ? x `<span class="point-badge" style="opacity: 0.5;"
-                        >+${curve.points.length - 6} more</span
-                      >`
-            : E}
-                </div>
-              </div>
-              <div class="curve-actions">
-                <button
-                  class="md3-button icon"
-                  @click=${(e) => {
-            e.stopPropagation();
-            this._editCurve(curve);
-        }}
-                  title="Edit"
-                >
-                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-                </button>
-                <button
-                  class="md3-button icon"
-                  @click=${(e) => {
-            e.stopPropagation();
-            this._deleteCurve(curve.id);
-        }}
-                  title="Delete"
-                  style="color: var(--error-color);"
-                >
-                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                </button>
-              </div>
-            </div>
-          `)}
-      </div>
-    `;
-    }
-    _updateCurveInfo(updates) {
-        if (!this._editingCurve)
-            return;
-        this._editingCurve = { ...this._editingCurve, ...updates };
-    }
-    _renderEdit() {
-        if (!this._editingCurve)
-            return E;
-        const points = this._editingCurve.points || [];
-        return x `
-      <div class="preset-form">
-        <div class="form-section">
-          <h3>Curve Info</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-            <md3-text-input
-              label="Curve Name"
-              .value=${this._editingCurve.name || ''}
-              @change=${(e) => this._updateCurveInfo({ name: e.detail })}
-              placeholder="e.g. Veg Ramp, Bloom Progression"
-            ></md3-text-input>
-            <div>
-              <div
-                style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
-              >
-                <span>Growth Stage</span>
-                <gs-help-tooltip
-                  content="Which growth phase this curve applies to. The correct curve is automatically applied when a plant enters that stage."
-                  placement="right"
-                  label="Growth Stage"
-                ></gs-help-tooltip>
-              </div>
-              <md3-select
-                label="Growth Stage"
-                .value=${this._editingCurve.stage || 'flower'}
-                .options=${[
-            { label: 'Seedling', value: 'seedling' },
-            { label: 'Mother', value: 'mother' },
-            { label: 'Vegetative', value: 'veg' },
-            { label: 'Flower', value: 'flower' },
-            { label: 'Cure', value: 'cure' },
-        ]}
-                @change=${(e) => this._updateCurveInfo({ stage: e.detail })}
-              ></md3-select>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <div class="points-header">
-            <div style="display:flex;align-items:center;gap:6px;">
-              <h3>Ramp Points</h3>
-              <gs-help-tooltip
-                content="Each point sets a target EC (mS/cm) for a specific day of the stage. The system interpolates between points. Add at least 2 points — a start and an end."
-                placement="top"
-                label="Ramp Points"
-              ></gs-help-tooltip>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._addPoint}
-              style="--mdc-button-horizontal-padding: 8px;"
-            >
-              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-              Add Point
-            </button>
-          </div>
-          <div
-            style="display:flex;align-items:center;gap:4px;font-size:0.875rem;color:var(--secondary-text-color);margin-bottom:4px;"
-          >
-            <span>Target EC (mS/cm)</span>
-            <gs-help-tooltip
-              content="Electrical Conductivity measures total dissolved nutrients. 1 mS/cm ≈ 700 ppm. Too high causes nutrient burn; too low causes deficiency. Adjust based on plant response."
-              placement="top"
-              label="Target EC"
-            ></gs-help-tooltip>
-          </div>
-          <div class="points-list">
-            ${points.map((point, index) => x `
-                <div class="point-row">
-                  <md3-number-input
-                    label="Day"
-                    .value=${point.day}
-                    @change=${(e) => this._updatePoint(index, { day: parseInt(e.detail) || 0 })}
-                    min="0"
-                  ></md3-number-input>
-                  <md3-number-input
-                    label="Target EC (mS/cm)"
-                    .value=${point.target_ec}
-                    @change=${(e) => this._updatePoint(index, { target_ec: parseFloat(e.detail) || 0 })}
-                    min="0"
-                    step="0.1"
-                  ></md3-number-input>
-                  <button
-                    class="md3-button icon"
-                    @click=${() => this._removePoint(index)}
-                    style="color: var(--error-color);"
-                    ?disabled=${points.length <= 1}
-                  >
-                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                  </button>
-                </div>
-              `)}
-          </div>
-          ${points.length === 0
-            ? x `<p style="opacity: 0.6; font-size: 0.9rem;">
-                Add at least one EC point to define the ramp.
-              </p>`
-            : E}
-        </div>
-      </div>
-    `;
-    }
-};
-ECRampEditorDialog.styles = [
-    dialogStyles,
-    i$6 `
-      .curve-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 8px;
-        margin-bottom: 8px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-      .curve-item:hover {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
-      }
-      .curve-info {
-        flex: 1;
-      }
-      .curve-name {
-        font-weight: 500;
-        font-size: 1rem;
-      }
-      .curve-details {
-        font-size: 0.8rem;
-        opacity: 0.7;
-        margin-top: 2px;
-      }
-      .curve-actions {
-        display: flex;
-        gap: 8px;
-      }
-      .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        opacity: 0.6;
-      }
-      .empty-state ha-svg-icon {
-        --mdc-icon-size: 48px;
-        opacity: 0.5;
-        margin-bottom: 16px;
-        display: block;
-      }
-      .error-bar {
-        background: var(--error-color, #ff5252);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        margin-bottom: 16px;
-        font-size: 0.9rem;
-      }
-      .form-section {
-        margin-bottom: 24px;
-      }
-      .form-section h3 {
-        margin: 0 0 12px;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        opacity: 0.6;
-        letter-spacing: 1px;
-      }
-      .points-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 12px;
-      }
-      .points-header h3 {
-        margin: 0;
-      }
-      .point-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr auto;
-        gap: 8px;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .points-list {
-        max-height: 300px;
-        overflow-y: auto;
-      }
-      .curve-preview {
-        display: flex;
-        gap: 4px;
-        flex-wrap: wrap;
-        margin-top: 4px;
-      }
-      .point-badge {
-        background: var(--primary-color, #4caf50);
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.7rem;
-        opacity: 0.8;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], ECRampEditorDialog.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true })
-], ECRampEditorDialog.prototype, "store", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], ECRampEditorDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false })
-], ECRampEditorDialog.prototype, "dialogState", void 0);
-__decorate([
-    n$5({ type: String })
-], ECRampEditorDialog.prototype, "growspaceName", void 0);
-__decorate([
-    r$3()
-], ECRampEditorDialog.prototype, "_view", void 0);
-__decorate([
-    r$3()
-], ECRampEditorDialog.prototype, "_editingCurve", void 0);
-__decorate([
-    r$3()
-], ECRampEditorDialog.prototype, "_error", void 0);
-ECRampEditorDialog = __decorate([
-    t$2('ec-ramp-editor-dialog')
-], ECRampEditorDialog);
-
 let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -22828,6 +22351,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
         const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
         const readings = this.device?.drainConfig?.readings || [];
+        const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
+        const csShots = isCropSteering ? this._computeCropSteeringCycle() : [];
         const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity ||
             this.device?.irrigationConfig?.drainPumpEntity);
         const hasTankSensors = tanks.some((t) => t.sensorEntity);
@@ -23104,7 +22629,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </div>
           `
             : E}
-      ${totalIrrig > 0 || totalDrain > 0
+      ${isCropSteering
             ? x `
             <div class="detail-card">
               <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
@@ -23115,38 +22640,41 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   >
                     Irrigation
                   </div>
-                  ${totalIrrig === 0
+                  ${csShots.length === 0
                 ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                        No events scheduled
+                        No strategy configured
                       </p>`
                 : x `
                         <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
-                          ${totalIrrig}
+                          ${csShots.length}
                           <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                            >events/day</span
+                            >shots/day</span
                           >
                         </div>
-                        ${irrigDuration
-                    ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                              ${irrigDuration}s per event
-                            </div>`
-                    : E}
+                        <div style="font-size:0.75rem;opacity:0.5;margin-top:2px;">
+                          Managed automatically ·
+                          <a
+                            href="#"
+                            style="color:#4CAF50;"
+                            @click=${(e) => {
+                    e.preventDefault();
+                    this._sm = requestTabSwitch(this._sm, 'steering', this.device);
+                }}
+                            >edit in Steering →</a
+                          >
+                        </div>
                         <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                          ${irrigTimes.slice(0, 5).map((t) => {
-                    const time = t.time ?? t.start_time ?? '';
-                    const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
-                    return x `
-                              <div
-                                style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                              >
-                                <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                <span style="opacity:0.5;">${dur}s</span>
-                              </div>
-                            `;
-                })}
-                          ${totalIrrig > 5
+                          ${csShots.slice(0, 5).map((s) => x `
+                            <div
+                              style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                            >
+                              <span style="font-weight:500;">${s.time.substring(0, 5)}</span>
+                              <span style="opacity:0.5;">${s.duration}s</span>
+                            </div>
+                          `)}
+                          ${csShots.length > 5
                     ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                +${totalIrrig - 5} more
+                                +${csShots.length - 5} more
                               </div>`
                     : E}
                         </div>
@@ -23198,7 +22726,101 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               </div>
             </div>
           `
-            : E}
+            : totalIrrig > 0 || totalDrain > 0
+                ? x `
+              <div class="detail-card">
+                <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                  <div>
+                    <div
+                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+                    >
+                      Irrigation
+                    </div>
+                    ${totalIrrig === 0
+                    ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+                          No events scheduled
+                        </p>`
+                    : x `
+                          <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
+                            ${totalIrrig}
+                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
+                              >events/day</span
+                            >
+                          </div>
+                          ${irrigDuration
+                        ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                                ${irrigDuration}s per event
+                              </div>`
+                        : E}
+                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                            ${irrigTimes.slice(0, 5).map((t) => {
+                        const time = t.time ?? t.start_time ?? '';
+                        const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
+                        return x `
+                                <div
+                                  style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                                >
+                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
+                                  <span style="opacity:0.5;">${dur}s</span>
+                                </div>
+                              `;
+                    })}
+                            ${totalIrrig > 5
+                        ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                                  +${totalIrrig - 5} more
+                                </div>`
+                        : E}
+                          </div>
+                        `}
+                  </div>
+                  <div>
+                    <div
+                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+                    >
+                      Drain
+                    </div>
+                    ${totalDrain === 0
+                    ? x `<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+                          No events scheduled
+                        </p>`
+                    : x `
+                          <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
+                            ${totalDrain}
+                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
+                              >events/day</span
+                            >
+                          </div>
+                          ${drainDuration
+                        ? x `<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                                ${drainDuration}s per event
+                              </div>`
+                        : E}
+                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                            ${drainTimes.slice(0, 5).map((t) => {
+                        const time = t.time ?? t.start_time ?? '';
+                        const dur = t.duration ?? t.duration_seconds ?? drainDuration;
+                        return x `
+                                <div
+                                  style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                                >
+                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
+                                  <span style="opacity:0.5;">${dur}s</span>
+                                </div>
+                              `;
+                    })}
+                            ${totalDrain > 5
+                        ? x `<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                                  +${totalDrain - 5} more
+                                </div>`
+                        : E}
+                          </div>
+                        `}
+                  </div>
+                </div>
+              </div>
+            `
+                : E}
       ${this._sm.tabs.water_analytics.stageAggregates &&
             Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0
             ? x `
@@ -42707,8 +42329,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                     return this._renderSnapshotsDialog(active, effectiveDeviceData);
                 case 'CROP_STEERING':
                     return this._renderCropSteeringDialog(active, effectiveDeviceData);
-                case 'EC_RAMP_EDITOR':
-                    return this._renderECRampEditorDialog(active, effectiveDeviceData);
                 default:
                     return x ``;
             }
@@ -43546,20 +43166,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @close=${() => this._closeDialogIfActive('HARVEST_SCORING')}
         @data-changed=${() => this._handleDataChanged()}
       ></harvest-scoring-dialog>
-    `;
-    }
-    _renderECRampEditorDialog(active, selectedDeviceData) {
-        if (active.type !== 'EC_RAMP_EDITOR')
-            return x ``;
-        return x `
-      <ec-ramp-editor-dialog
-        .open=${true}
-        .dialogState=${active.payload}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this._closeDialogIfActive('EC_RAMP_EDITOR')}
-        @strain-created-at-source=${(e) => this._handleStrainCreatedAtSource(e)}
-        @data-changed=${() => this._handleDataChanged()}
-      ></ec-ramp-editor-dialog>
     `;
     }
     _renderEnvironmentConfigDialog(active) {
@@ -53873,14 +53479,6 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
           <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
           <span class="menu-item-label">Nutrients</span>
         </div>
-        ${this._showECRamp()
-            ? x `
-              <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
-                <span class="menu-item-label">EC Ramp Curves</span>
-              </div>
-            `
-            : ''}
         <div class="menu-item" @click=${() => this._triggerAction('strains')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
           <span class="menu-item-label">Strains</span>
@@ -53903,17 +53501,6 @@ let GrowspaceHeaderActionsUI = class GrowspaceHeaderActionsUI extends i$3 {
         </div>
       </div>
     `;
-    }
-    _showECRamp() {
-        if (!this.device)
-            return false;
-        const hasPump = !!this.device.irrigationConfig?.irrigationPumpEntity ||
-            !!this.device.irrigationConfig?.drainPumpEntity;
-        const hasSchedule = (this.device.irrigationConfig?.irrigationTimes?.length || 0) > 0;
-        const hasECSensor = (this.device.environmentAttributes?.feedEcSensors?.length || 0) > 0 ||
-            (this.device.environmentAttributes?.runoffEcSensors?.length || 0) > 0 ||
-            (this.device.environmentAttributes?.substrateEcSensors?.length || 0) > 0;
-        return hasPump && hasSchedule && hasECSensor;
     }
 };
 GrowspaceHeaderActionsUI.styles = i$6 `
@@ -55299,9 +54886,6 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             }
             case 'nutrients':
                 this.store.actions.ui.openNutrientsDialog();
-                break;
-            case 'ec_ramp':
-                this.store.actions.ui.openECRampDialog(this.device?.deviceId || undefined);
                 break;
             case 'edit': {
                 const newEditMode = !this.store.ui.$isEditMode.get();
@@ -118656,14 +118240,6 @@ function openCropSteeringDialog(ctx, growspaceId) {
         },
     });
 }
-function openECRampDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'EC_RAMP_EDITOR',
-        payload: {
-            growspaceId,
-        },
-    });
-}
 
 /**
  * Snapshot & Vision Actions
@@ -119312,7 +118888,6 @@ class ActionDispatcher {
             openNutrientsDialog: () => openNutrientsDialog(this.ctx),
             openSnapshotsDialog: (growspaceId) => openSnapshotsDialog(this.ctx, growspaceId),
             openCropSteeringDialog: (growspaceId) => openCropSteeringDialog(this.ctx, growspaceId),
-            openECRampDialog: (growspaceId) => openECRampDialog(this.ctx, growspaceId),
             openBatchWateringDialog: (growspaceId) => openBatchWateringDialog(this.ctx, growspaceId),
             openBatchTrainingDialog: (growspaceId) => openBatchTrainingDialog(this.ctx, growspaceId),
             openBatchCloneDialog: () => openBatchCloneDialog(this.ctx),

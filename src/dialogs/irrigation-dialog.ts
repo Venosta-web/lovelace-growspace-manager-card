@@ -3021,6 +3021,8 @@ export class IrrigationDialog extends LitElement {
     const irrigTimes = this.device?.irrigationConfig?.irrigationTimes || [];
     const drainTimes = this.device?.irrigationConfig?.drainTimes || [];
     const readings = this.device?.drainConfig?.readings || [];
+    const isCropSteering = !!this._sm.tabs.steering.draft.enabled;
+    const csShots = isCropSteering ? this._computeCropSteeringCycle() : [];
     const hasPump = !!(
       this.device?.irrigationConfig?.irrigationPumpEntity ||
       this.device?.irrigationConfig?.drainPumpEntity
@@ -3370,7 +3372,7 @@ export class IrrigationDialog extends LitElement {
             </div>
           `
         : nothing}
-      ${totalIrrig > 0 || totalDrain > 0
+      ${isCropSteering
         ? html`
             <div class="detail-card">
               <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
@@ -3381,38 +3383,41 @@ export class IrrigationDialog extends LitElement {
                   >
                     Irrigation
                   </div>
-                  ${totalIrrig === 0
+                  ${csShots.length === 0
                     ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
-                        No events scheduled
+                        No strategy configured
                       </p>`
                     : html`
                         <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
-                          ${totalIrrig}
+                          ${csShots.length}
                           <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
-                            >events/day</span
+                            >shots/day</span
                           >
                         </div>
-                        ${irrigDuration
-                          ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
-                              ${irrigDuration}s per event
-                            </div>`
-                          : nothing}
+                        <div style="font-size:0.75rem;opacity:0.5;margin-top:2px;">
+                          Managed automatically ·
+                          <a
+                            href="#"
+                            style="color:#4CAF50;"
+                            @click=${(e: Event) => {
+                              e.preventDefault();
+                              this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
+                            }}
+                            >edit in Steering →</a
+                          >
+                        </div>
                         <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
-                          ${irrigTimes.slice(0, 5).map((t: IrrigationTime) => {
-                            const time = t.time ?? t.start_time ?? '';
-                            const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
-                            return html`
-                              <div
-                                style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
-                              >
-                                <span style="font-weight:500;">${time.substring(0, 5)}</span>
-                                <span style="opacity:0.5;">${dur}s</span>
-                              </div>
-                            `;
-                          })}
-                          ${totalIrrig > 5
+                          ${csShots.slice(0, 5).map((s) => html`
+                            <div
+                              style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                            >
+                              <span style="font-weight:500;">${s.time.substring(0, 5)}</span>
+                              <span style="opacity:0.5;">${s.duration}s</span>
+                            </div>
+                          `)}
+                          ${csShots.length > 5
                             ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
-                                +${totalIrrig - 5} more
+                                +${csShots.length - 5} more
                               </div>`
                             : nothing}
                         </div>
@@ -3464,7 +3469,101 @@ export class IrrigationDialog extends LitElement {
               </div>
             </div>
           `
-        : nothing}
+        : totalIrrig > 0 || totalDrain > 0
+          ? html`
+              <div class="detail-card">
+                <h3 style="margin-top:0;margin-bottom:16px;">Schedule Summary</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                  <div>
+                    <div
+                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+                    >
+                      Irrigation
+                    </div>
+                    ${totalIrrig === 0
+                      ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+                          No events scheduled
+                        </p>`
+                      : html`
+                          <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
+                            ${totalIrrig}
+                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
+                              >events/day</span
+                            >
+                          </div>
+                          ${irrigDuration
+                            ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                                ${irrigDuration}s per event
+                              </div>`
+                            : nothing}
+                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                            ${irrigTimes.slice(0, 5).map((t: IrrigationTime) => {
+                              const time = t.time ?? t.start_time ?? '';
+                              const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
+                              return html`
+                                <div
+                                  style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                                >
+                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
+                                  <span style="opacity:0.5;">${dur}s</span>
+                                </div>
+                              `;
+                            })}
+                            ${totalIrrig > 5
+                              ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                                  +${totalIrrig - 5} more
+                                </div>`
+                              : nothing}
+                          </div>
+                        `}
+                  </div>
+                  <div>
+                    <div
+                      style="font-size:0.8rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
+                    >
+                      Drain
+                    </div>
+                    ${totalDrain === 0
+                      ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+                          No events scheduled
+                        </p>`
+                      : html`
+                          <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
+                            ${totalDrain}
+                            <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
+                              >events/day</span
+                            >
+                          </div>
+                          ${drainDuration
+                            ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                                ${drainDuration}s per event
+                              </div>`
+                            : nothing}
+                          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
+                            ${drainTimes.slice(0, 5).map((t: IrrigationTime) => {
+                              const time = t.time ?? t.start_time ?? '';
+                              const dur = t.duration ?? t.duration_seconds ?? drainDuration;
+                              return html`
+                                <div
+                                  style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
+                                >
+                                  <span style="font-weight:500;">${time.substring(0, 5)}</span>
+                                  <span style="opacity:0.5;">${dur}s</span>
+                                </div>
+                              `;
+                            })}
+                            ${totalDrain > 5
+                              ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                                  +${totalDrain - 5} more
+                                </div>`
+                              : nothing}
+                          </div>
+                        `}
+                  </div>
+                </div>
+              </div>
+            `
+          : nothing}
       ${this._sm.tabs.water_analytics.stageAggregates &&
       Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0
         ? html`

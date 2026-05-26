@@ -10,22 +10,6 @@ for (const tag of mockTags) {
   }
 }
 
-function makeDevice(overrides: Record<string, unknown> = {}) {
-  return {
-    irrigationConfig: {
-      irrigationPumpEntity: '',
-      drainPumpEntity: '',
-      irrigationTimes: [] as string[],
-    },
-    environmentAttributes: {
-      feedEcSensors: [] as string[],
-      runoffEcSensors: [] as string[],
-      substrateEcSensors: [] as string[],
-    },
-    ...overrides,
-  };
-}
-
 function createElement(props: Partial<GrowspaceHeaderActionsUI> = {}): GrowspaceHeaderActionsUI {
   const el = document.createElement('growspace-header-actions-ui') as GrowspaceHeaderActionsUI;
   Object.assign(el, props);
@@ -54,121 +38,32 @@ describe('GrowspaceHeaderActionsUI – _chipDraggable', () => {
 });
 
 // ---------------------------------------------------------------------------
-// _showECRamp
+// EC Ramp Curves menu item removal
 // ---------------------------------------------------------------------------
 
-describe('GrowspaceHeaderActionsUI – _showECRamp', () => {
-  it('returns false when device is undefined', () => {
-    const el = createElement();
-    expect((el as any)._showECRamp()).toBe(false);
-  });
-
-  it('returns false when pump present but no schedule', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: [],
-        },
-        environmentAttributes: {
-          feedEcSensors: ['sensor.ec'],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(false);
-  });
-
-  it('returns false when pump and schedule present but no EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: [],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(false);
-  });
-
-  it('returns true with irrigation pump, schedule, and feed EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: ['sensor.feed_ec'],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(true);
-  });
-
-  it('returns true with drain pump, schedule, and runoff EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: '',
-          drainPumpEntity: 'switch.drain',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: [],
-          runoffEcSensors: ['sensor.runoff_ec'],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(true);
-  });
-
-  it('returns true with substrate EC sensor', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: 'switch.pump',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: [],
-          runoffEcSensors: [],
-          substrateEcSensors: ['sensor.substrate_ec'],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(true);
-  });
-
-  it('returns false when no pump entity is set', () => {
-    const el = createElement({
-      device: makeDevice({
-        irrigationConfig: {
-          irrigationPumpEntity: '',
-          drainPumpEntity: '',
-          irrigationTimes: ['08:00'],
-        },
-        environmentAttributes: {
-          feedEcSensors: ['sensor.ec'],
-          runoffEcSensors: [],
-          substrateEcSensors: [],
-        },
-      }) as any,
-    });
-    expect((el as any)._showECRamp()).toBe(false);
+describe('GrowspaceHeaderActionsUI – EC Ramp Curves menu item', () => {
+  it('never appears in the menu even when device has pump, schedule, and EC sensors', async () => {
+    const el = await fixture<GrowspaceHeaderActionsUI>(html`
+      <growspace-header-actions-ui
+        .isMobile=${false}
+        .device=${{
+          irrigationConfig: {
+            irrigationPumpEntity: 'switch.pump',
+            drainPumpEntity: '',
+            irrigationTimes: ['08:00'],
+          },
+          environmentAttributes: {
+            feedEcSensors: ['sensor.feed_ec'],
+            runoffEcSensors: [],
+            substrateEcSensors: [],
+          },
+        }}
+      ></growspace-header-actions-ui>
+    `);
+    const labels = Array.from(el.shadowRoot!.querySelectorAll('.menu-item-label')).map(
+      (i) => i.textContent?.trim()
+    );
+    expect(labels).not.toContain('EC Ramp Curves');
   });
 });
 

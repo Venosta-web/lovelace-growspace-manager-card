@@ -460,12 +460,4 @@ export function openCropSteeringDialog(ctx: ActionContext, growspaceId?: string)
   });
 }
 
-export function openECRampDialog(ctx: ActionContext, growspaceId?: string) {
-  ctx.ui.setActiveDialog({
-    type: 'EC_RAMP_EDITOR',
-    payload: {
-      growspaceId,
-    },
-  });
-}
 

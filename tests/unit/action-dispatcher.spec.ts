@@ -59,7 +59,6 @@ vi.mock('../../src/store/ui/ui-actions', () => ({
     openNutrientsDialog: vi.fn(),
     openSnapshotsDialog: vi.fn(),
     openCropSteeringDialog: vi.fn(),
-    openECRampDialog: vi.fn(),
 }));
 
 vi.mock('../../src/store/plant/library-actions', () => ({
@@ -446,10 +445,6 @@ describe('ActionDispatcher', () => {
             expect(uiActions.openCropSteeringDialog).toHaveBeenCalledWith(mockStore.context, 'gs1');
         });
 
-        it('should delegate openECRampDialog to uiActions', () => {
-            dispatcher.ui.openECRampDialog('gs1');
-            expect(uiActions.openECRampDialog).toHaveBeenCalledWith(mockStore.context, 'gs1');
-        });
     });
 
     describe('Library Actions', () => {

@@ -17,8 +17,6 @@ import type {
   HarvestScoringDialogState,
   SnapshotsDialogState,
   CropSteeringDialogState,
-  ECRampDialogState,
-
   EnvironmentConfigDialogState,
   IrrigationDialogState,
 } from '../../lib/types/dialog';
@@ -48,5 +46,4 @@ export type ActiveDialogState =
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
   | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
   | { type: 'CROP_STEERING'; payload: CropSteeringDialogState }
-  | { type: 'EC_RAMP_EDITOR'; payload: ECRampDialogState }
   | { type: 'ENVIRONMENT_CONFIG'; payload: EnvironmentConfigDialogState };

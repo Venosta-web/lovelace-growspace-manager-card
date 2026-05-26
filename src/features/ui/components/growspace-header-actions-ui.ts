@@ -24,7 +24,6 @@ import {
   mdiDna,
   mdiCube,
   mdiCamera,
-  mdiChartLine,
 } from '@mdi/js';
 
 @customElement('growspace-header-actions-ui')
@@ -447,14 +446,6 @@ export class GrowspaceHeaderActionsUI extends LitElement {
           <svg viewBox="0 0 24 24"><path d="${mdiBottleTonicPlus}"></path></svg>
           <span class="menu-item-label">Nutrients</span>
         </div>
-        ${this._showECRamp()
-          ? html`
-              <div class="menu-item" @click=${() => this._triggerAction('ec_ramp')}>
-                <svg viewBox="0 0 24 24"><path d="${mdiChartLine}"></path></svg>
-                <span class="menu-item-label">EC Ramp Curves</span>
-              </div>
-            `
-          : ''}
         <div class="menu-item" @click=${() => this._triggerAction('strains')}>
           <svg viewBox="0 0 24 24"><path d="${mdiDna}"></path></svg>
           <span class="menu-item-label">Strains</span>
@@ -479,18 +470,4 @@ export class GrowspaceHeaderActionsUI extends LitElement {
     `;
   }
 
-  private _showECRamp(): boolean {
-    if (!this.device) return false;
-
-    const hasPump =
-      !!this.device.irrigationConfig?.irrigationPumpEntity ||
-      !!this.device.irrigationConfig?.drainPumpEntity;
-    const hasSchedule = (this.device.irrigationConfig?.irrigationTimes?.length || 0) > 0;
-    const hasECSensor =
-      (this.device.environmentAttributes?.feedEcSensors?.length || 0) > 0 ||
-      (this.device.environmentAttributes?.runoffEcSensors?.length || 0) > 0 ||
-      (this.device.environmentAttributes?.substrateEcSensors?.length || 0) > 0;
-
-    return hasPump && hasSchedule && hasECSensor;
-  }
 }

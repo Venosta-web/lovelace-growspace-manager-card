@@ -98,7 +98,6 @@ describe('GrowspaceDialogHostContainer', () => {
                 openNutrientsDialog: vi.fn(),
                 openSnapshotsDialog: vi.fn(),
                 openCropSteeringDialog: vi.fn(),
-                openECRampDialog: vi.fn(),
                 exportStrainLibrary: vi.fn(),
             },
             grid: {
@@ -638,14 +637,6 @@ describe('GrowspaceDialogHostContainer', () => {
         expect(element.shadowRoot?.querySelector('crop-steering-dialog')).toBeTruthy();
     });
 
-    it('should render ec-ramp-editor-dialog for EC_RAMP_EDITOR type', async () => {
-        mockStore.ui.$activeDialog.set({ type: 'EC_RAMP_EDITOR', payload: {} });
-        await element.updateComplete;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ec-ramp-editor-dialog')).toBeTruthy();
-    });
-
-
     it('should return empty template for unknown dialog type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'UNKNOWN_TYPE' as any, payload: {} });
         await element.updateComplete;
@@ -1014,16 +1005,6 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useRealTimers();
         });
 
-        it('should handle @data-changed on EC_RAMP_EDITOR', async () => {
-            vi.useFakeTimers();
-            const refreshSpy = vi.spyOn(mockStore, 'refreshData');
-            await testDialogEvent('EC_RAMP_EDITOR', 'ec-ramp-editor-dialog', 'data-changed', () => {});
-            vi.runAllTimers();
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
-
-
         it('should handle @data-changed on NUTRIENTS', async () => {
             vi.useFakeTimers();
             const refreshSpy = vi.spyOn(mockStore, 'refreshData');
@@ -1143,25 +1124,7 @@ describe('GrowspaceDialogHostContainer', () => {
             testDialogEvent('HARVEST_SCORING', 'harvest-scoring-dialog', 'close', () => 
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
-        it('should handle @close on EC_RAMP_EDITOR', () => 
-            testDialogEvent('EC_RAMP_EDITOR', 'ec-ramp-editor-dialog', 'close', () => 
-                expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
-
-        it('should handle @strain-created-at-source on EC_RAMP_EDITOR', async () => {
-            const spy = vi.spyOn(element as any, '_handleStrainCreatedAtSource');
-            mockStore.ui.$activeDialog.set({ type: 'EC_RAMP_EDITOR', payload: {} });
-            await element.updateComplete;
-            await element.updateComplete;
-
-            const dialog = element.shadowRoot?.querySelector('ec-ramp-editor-dialog');
-            dialog?.dispatchEvent(new CustomEvent('strain-created-at-source', {
-                detail: { source: 'test', returnPayload: {} }
-            }));
-            expect(spy).toHaveBeenCalled();
-        });
-
-
-        it('should handle @close on ENVIRONMENT_CONFIG', () => 
+        it('should handle @close on ENVIRONMENT_CONFIG', () =>
             testDialogEvent('ENVIRONMENT_CONFIG', 'growspace-environment-config-dialog', 'close', () => 
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
     });
@@ -1384,7 +1347,6 @@ describe('GrowspaceDialogHostContainer', () => {
                 { type: 'HARVEST_SCORING', selector: 'harvest-scoring-dialog' },
                 { type: 'SNAPSHOTS', selector: 'snapshots-dialog' },
                 { type: 'CROP_STEERING', selector: 'crop-steering-dialog' },
-                { type: 'EC_RAMP_EDITOR', selector: 'ec-ramp-editor-dialog' }
             ];
 
             for (const { type, selector } of dialogTypes) {

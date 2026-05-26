@@ -268,10 +268,6 @@ export interface CropSteeringDialogState {
   growspaceId: string;
 }
 
-export interface ECRampDialogState {
-  growspaceId?: string;
-}
-
 export interface BatchCloneDialogState {
   plantIds: string[];
 }

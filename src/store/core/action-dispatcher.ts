@@ -240,8 +240,6 @@ export class ActionDispatcher {
       uiActions.openSnapshotsDialog(this.ctx, growspaceId),
     openCropSteeringDialog: (growspaceId?: string) =>
       uiActions.openCropSteeringDialog(this.ctx, growspaceId),
-    openECRampDialog: (growspaceId?: string) => uiActions.openECRampDialog(this.ctx, growspaceId),
-
     openBatchWateringDialog: (growspaceId?: string) =>
       uiActions.openBatchWateringDialog(this.ctx, growspaceId),
     openBatchTrainingDialog: (growspaceId?: string) =>

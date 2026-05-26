@@ -52,7 +52,6 @@ const buildMockStore = () => {
         openIPMDialog: vi.fn(),
         openTrainingDialog: vi.fn(),
         openNutrientsDialog: vi.fn(),
-        openECRampDialog: vi.fn(),
         toggleEnvGraph: vi.fn(),
         showToast: vi.fn(),
     };
@@ -68,7 +67,6 @@ const buildMockStore = () => {
         get openWateringDialog() { return ui_actions.openWateringDialog; },
         get openIPMDialog() { return ui_actions.openIPMDialog; },
         get openNutrientsDialog() { return ui_actions.openNutrientsDialog; },
-        get openECRampDialog() { return ui_actions.openECRampDialog; },
         get toggleEnvGraph() { return ui_actions.toggleEnvGraph; },
         actions: { ui: ui_actions },
         handleDeviceChange: vi.fn(),
@@ -463,13 +461,6 @@ describe('GrowspaceHeaderContainer', () => {
         expect(mockStore.openNutrientsDialog).toHaveBeenCalledOnce();
     });
 
-    it('ec_ramp action calls store.openECRampDialog with deviceId', () => {
-        (element as any)._handleActionTriggered(
-            new CustomEvent('action-triggered', { detail: { action: 'ec_ramp' } })
-        );
-        expect(mockStore.openECRampDialog).toHaveBeenCalledWith('grow1');
-    });
-
     it('edit action toggles edit mode', () => {
         mockStore.ui.$isEditMode.get.mockReturnValue(false);
         (element as any)._handleActionTriggered(
@@ -521,12 +512,6 @@ describe('GrowspaceHeaderContainer', () => {
         element.device = undefined as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'training' } }));
         expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], undefined);
-    });
-
-    it('ec_ramp action with no device passes undefined', () => {
-        element.device = undefined as any;
-        (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ec_ramp' } }));
-        expect(mockStore.openECRampDialog).toHaveBeenCalledWith(undefined);
     });
 
     it('snapshots action with no device passes undefined', () => {

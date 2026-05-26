@@ -832,11 +832,6 @@ describe('GrowspaceStore Branch Coverage', () => {
         });
 
 
-        it('should cover openECRampDialog', () => {
-            store.actions.ui.openECRampDialog('gs1');
-            expect(uiStore.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'EC_RAMP_EDITOR' }));
-        });
-
         it('should open crop steering dialog when toggleEnvGraph is called with crop_steering', () => {
             store.grid.$selectedDevice.set('gs1');
             store.actions.ui.toggleEnvGraph('crop_steering');

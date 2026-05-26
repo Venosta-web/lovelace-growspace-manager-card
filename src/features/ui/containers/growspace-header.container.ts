@@ -236,9 +236,6 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'nutrients':
         this.store.actions.ui.openNutrientsDialog();
         break;
-      case 'ec_ramp':
-        this.store.actions.ui.openECRampDialog(this.device?.deviceId || undefined);
-        break;
       case 'edit': {
         const newEditMode = !this.store.ui.$isEditMode.get();
         this.store.ui.setEditMode(newEditMode);

@@ -30,7 +30,6 @@ import '../../../dialogs/add-plants-dialog';
 import '../../../dialogs/clone-dialog';
 import '../../../dialogs/config-dialog';
 import '../../../dialogs/crop-steering-dialog';
-import '../../../dialogs/ec-ramp-editor-dialog';
 import '../../../dialogs/grow-master-dialog';
 import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
@@ -198,8 +197,6 @@ export class GrowspaceDialogHost extends LitElement {
             return this._renderSnapshotsDialog(active, effectiveDeviceData);
           case 'CROP_STEERING':
             return this._renderCropSteeringDialog(active, effectiveDeviceData);
-          case 'EC_RAMP_EDITOR':
-            return this._renderECRampEditorDialog(active, effectiveDeviceData);
           default:
             return html``;
         }
@@ -1207,24 +1204,6 @@ export class GrowspaceDialogHost extends LitElement {
       ></harvest-scoring-dialog>
     `;
   }
-
-  private _renderECRampEditorDialog(
-    active: ActiveDialogState,
-    selectedDeviceData?: GrowspaceDevice
-  ): TemplateResult {
-    if (active.type !== 'EC_RAMP_EDITOR') return html``;
-    return html`
-      <ec-ramp-editor-dialog
-        .open=${true}
-        .dialogState=${active.payload}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this._closeDialogIfActive('EC_RAMP_EDITOR')}
-        @strain-created-at-source=${(e: CustomEvent) => this._handleStrainCreatedAtSource(e)}
-        @data-changed=${() => this._handleDataChanged()}
-      ></ec-ramp-editor-dialog>
-    `;
-  }
-
 
   private _renderEnvironmentConfigDialog(active: ActiveDialogState): TemplateResult {
     if (active.type !== 'ENVIRONMENT_CONFIG') return html``;
