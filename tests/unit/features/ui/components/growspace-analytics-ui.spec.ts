@@ -50,4 +50,55 @@ describe('growspace-analytics-ui', () => {
     (el.shadowRoot!.querySelector('.range-btn') as HTMLElement).click();
     expect(handler).toHaveBeenCalledOnce();
   });
+
+  it('renders group analytics items and redispatches chart events', async () => {
+    const toggleHandler = vi.fn();
+    const unlinkGraphsHandler = vi.fn();
+    const unlinkGraphHandler = vi.fn();
+
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui
+        .items=${[{ type: 'group', metrics: ['temperature', 'humidity'] }]}
+        .isLoading=${false}
+        @toggle-graph=${toggleHandler}
+        @unlink-graphs=${unlinkGraphsHandler}
+        @unlink-graph=${unlinkGraphHandler}
+      ></growspace-analytics-ui>
+    `);
+
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart');
+    expect(chart).not.toBeNull();
+
+    // Simulate event dispatches from the chart
+    chart!.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'test-toggle-detail' }));
+    expect(toggleHandler).toHaveBeenCalledOnce();
+    expect(toggleHandler.mock.calls[0][0].detail).toBe('test-toggle-detail');
+
+    chart!.dispatchEvent(new CustomEvent('unlink-graphs', { detail: 'test-unlink-graphs-detail' }));
+    expect(unlinkGraphsHandler).toHaveBeenCalledOnce();
+    expect(unlinkGraphsHandler.mock.calls[0][0].detail).toBe('test-unlink-graphs-detail');
+
+    chart!.dispatchEvent(new CustomEvent('unlink-graph', { detail: 'test-unlink-graph-detail' }));
+    expect(unlinkGraphHandler).toHaveBeenCalledOnce();
+    expect(unlinkGraphHandler.mock.calls[0][0].detail).toBe('test-unlink-graph-detail');
+  });
+
+  it('renders single analytics items and redispatches toggle-graph event', async () => {
+    const toggleHandler = vi.fn();
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui
+        .items=${[{ type: 'single', metrics: ['temperature'] }]}
+        .isLoading=${false}
+        @toggle-graph=${toggleHandler}
+      ></growspace-analytics-ui>
+    `);
+
+    const chart = el.shadowRoot!.querySelector('growspace-env-chart');
+    expect(chart).not.toBeNull();
+
+    chart!.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'test-single-toggle' }));
+    expect(toggleHandler).toHaveBeenCalledOnce();
+    expect(toggleHandler.mock.calls[0][0].detail).toBe('test-single-toggle');
+  });
 });
+

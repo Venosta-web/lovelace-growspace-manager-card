@@ -154,6 +154,15 @@ describe('mutate', () => {
     expect(inverseA).not.toHaveBeenCalled();
   });
 
+  it('undo does nothing when stack is empty', async () => {
+    // Ensure no entries on GS_A
+    expect(canUndo(GS_A)).toBe(false);
+
+    // Should resolve without throwing and without calling any inverse
+    await expect(undo(GS_A)).resolves.toBeUndefined();
+    expect(canUndo(GS_A)).toBe(false);
+  });
+
   it('MAX_UNDO cap is enforced per growspace independently', async () => {
     // Push 11 actions to tentA; tentB should still be unaffected
     for (let i = 0; i < 11; i++) {

@@ -104,4 +104,18 @@ describe('BaseAPI', () => {
         const result = await api.testSendWebSocketSafe('test_type', { key: 'value' });
         expect(result).toEqual({ result: 'ok' });
     });
+
+    it('should log plain error and return null when sendWebSocket throws a non-WSError', async () => {
+        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        const api = new TestAPI(hass);
+        const rawError = { weird: 'structure' };
+        // Bypass sendWebSocket wrapping by spying on the protected method directly
+        vi.spyOn(api as any, 'sendWebSocket').mockRejectedValue(rawError);
+
+        const result = await api.testSendWebSocketSafe('test_type');
+
+        expect(result).toBeNull();
+        expect(consoleErrorSpy).toHaveBeenCalledWith('WebSocket call test_type failed:', rawError);
+        consoleErrorSpy.mockRestore();
+    });
 });

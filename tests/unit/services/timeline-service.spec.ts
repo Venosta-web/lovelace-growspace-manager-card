@@ -278,6 +278,39 @@ describe('TimelineService', () => {
         });
     });
 
+    describe('addGrowspaceNote', () => {
+        it('should add growspace note with all fields', async () => {
+            mockHass.callWS.mockResolvedValue(undefined);
+            const payload: NotePayload = {
+                notes: 'Tent A looking healthy',
+                images: ['snap.jpg'],
+            };
+
+            await service.addGrowspaceNote('gs_tent_a', payload);
+
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/add_growspace_note',
+                growspace_id: 'gs_tent_a',
+                notes: 'Tent A looking healthy',
+                images: ['snap.jpg'],
+            });
+        });
+
+        it('should use empty array when images not provided', async () => {
+            mockHass.callWS.mockResolvedValue(undefined);
+            const payload: NotePayload = { notes: 'No images attached' };
+
+            await service.addGrowspaceNote('gs_tent_b', payload);
+
+            expect(mockHass.callWS).toHaveBeenCalledWith({
+                type: 'growspace_manager/add_growspace_note',
+                growspace_id: 'gs_tent_b',
+                notes: 'No images attached',
+                images: [],
+            });
+        });
+    });
+
     describe('getTimelineService (singleton)', () => {
         it('should create new instance on first call', () => {
             const instance = getTimelineService(mockHass);
