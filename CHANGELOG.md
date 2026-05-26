@@ -1,3 +1,10 @@
+# [1.1.0-next.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.0.31...v1.1.0-next.1) (2026-05-26)
+
+
+### Features
+
+* automate versioning and releases using semantic-release on main and dev branches ([2f26dfb](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2f26dfb11d2b05d0d3b259f2087e933e786c0c72))
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
