@@ -1,3 +1,10 @@
+# [1.1.0-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.1...v1.1.0-next.2) (2026-05-27)
+
+
+### Features
+
+* implement undo functionality with toast notifications and Ctrl+Z keyboard support ([2410f12](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2410f122a82265577f2e45d2ca13f21a6d6da717))
+
 # [1.1.0-next.1](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.0.31...v1.1.0-next.1) (2026-05-26)
 
 
