@@ -42515,7 +42515,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     _initControllers() {
         if (!this.store)
             return;
-        // Always create a new controller if the store changes
+        if (this._controllersInitialized)
+            return;
         this._dialogHostController = new libExports.StoreController(this, this.store.$dialogHostState);
         this._controllersInitialized = true;
     }

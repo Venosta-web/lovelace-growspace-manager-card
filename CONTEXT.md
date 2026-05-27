@@ -144,6 +144,22 @@ The event when a growspace's plants transition from veg (18h photoperiod) to flo
 
 A pulsing warning chip rendered to the left of the Optimal Conditions chip in the secondary chip strip. Visible from the day `flower_start` is reached for any plant in the growspace; persists until explicitly dismissed (dismiss keyed to `growspaceId + flowerStart`). Clicking it opens the Irrigation Dialog on the Steering tab with `lightsOnTime` scrolled into focus and pulsing with `var(--primary-color)`.
 
+## Grow Master Dialog
+
+The AI assistant dialog (`grow-master-dialog`). Uses the Design A shell (sidebar rail + sticky header/footer, same structure as Config Dialog and Irrigation Dialog) with three modes switchable via the rail:
+
+- **Chat** — threaded multi-turn conversation backed by a `Conversation Thread`. Left rail shows recent threads and capability tiles. Composer supports context chips (growspace, time range, sensors) and photo attachment via the existing image pipeline.
+- **Briefing** — AI-generated facility-wide summary ([[AI Briefing]]). Left rail lists briefing types and scope filters.
+- **Inbox** — filterable list of [[Triage Alert]]s. Detail pane shows AI reasoning, KPI snapshot, and suggested actions.
+
+## Conversation Thread (client)
+
+Client-side record of a multi-turn dialogue in Chat mode. Fields: `id` (UUID), `title`, `messages` (array of `{ role, text, suggestedAction?, confidence?, timestamp }`), `conversationId` (the HA conversation agent's session ID), `growspaceId`. Stored in the `aiInsight$` slice atom. Threads survive dialog open/close within the same page session; they are not persisted across HA restarts.
+
+## Suggested Action Card
+
+A UI element rendered inside an AI chat bubble when the backend returns a [[Suggested Action]]. Shows the action description, target entity, and two buttons: **Dismiss** (removes the card) and **Apply** (calls the HA service via the slice mutator). Only rendered when `suggestedAction` is present in the message.
+
 ## Build
 
 **`__VERSION__`**

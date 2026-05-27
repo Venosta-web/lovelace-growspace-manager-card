@@ -106,8 +106,8 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _initControllers(): void {
     if (!this.store) return;
+    if (this._controllersInitialized) return;
 
-    // Always create a new controller if the store changes
     this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
     this._controllersInitialized = true;
   }

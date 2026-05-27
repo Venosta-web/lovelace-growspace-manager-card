@@ -1,9 +1,6 @@
 /**
- * GrowspaceDialogHost – watering submit handler
- *
- * Verifies that the watering submit handler closes the dialog and shows a
- * success toast on completion, and shows an error toast (instead of a silent
- * console.error) when the API call fails.
+ * GrowspaceDialogHost – watering submit handler, IPM apply handler,
+ * log-pollination handler, and _initControllers idempotency guard.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -303,5 +300,69 @@ describe('GrowspaceDialogHost – _handleOpenLogPollination', () => {
         prefilledReceiverId: '',
       },
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _initControllers idempotency guard
+// ---------------------------------------------------------------------------
+
+function makeMinimalStore() {
+  return {
+    $dialogHostState: {
+      subscribe: vi.fn(() => () => {}),
+      get: vi.fn().mockReturnValue({
+        activeDialog: { type: 'NONE' },
+        devices: [],
+        selectedDevice: null,
+        strainLibrary: [],
+        nutrientPresets: {},
+        ipmPresets: {},
+        nutrientInventory: null,
+      }),
+    },
+  };
+}
+
+describe('GrowspaceDialogHost – _initControllers idempotency', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('does not replace the controller when _initControllers is called a second time', () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = makeMinimalStore();
+
+    (el as any)._initControllers();
+    const firstController = (el as any)._dialogHostController;
+
+    (el as any)._initControllers();
+    const secondController = (el as any)._dialogHostController;
+
+    expect(secondController).toBe(firstController);
+  });
+
+  it('does not replace the controller when called three times', () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = makeMinimalStore();
+
+    (el as any)._initControllers();
+    const originalController = (el as any)._dialogHostController;
+
+    (el as any)._initControllers();
+    (el as any)._initControllers();
+
+    expect((el as any)._dialogHostController).toBe(originalController);
+  });
+
+  it('still initializes the controller on the first call', () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = makeMinimalStore();
+
+    expect((el as any)._dialogHostController).toBeUndefined();
+
+    (el as any)._initControllers();
+
+    expect((el as any)._dialogHostController).toBeDefined();
   });
 });
