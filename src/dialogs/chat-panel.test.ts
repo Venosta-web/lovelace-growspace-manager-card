@@ -349,7 +349,7 @@ describe('GmChatPanel — composer', () => {
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
-      expect.objectContaining({ growspace_id: 'gs1', text: 'What is my VPD?' }),
+      expect.objectContaining({ growspace_id: 'gs1', message: 'What is my VPD?' }),
       expect.anything(),
     );
   });
@@ -378,7 +378,7 @@ describe('GmChatPanel — composer', () => {
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/send_message',
-      expect.objectContaining({ thread_id: 't1', text: 'Follow up question' }),
+      expect.objectContaining({ conversation_id: 't1', growspace_id: 'gs1', message: 'Follow up question' }),
       expect.anything(),
     );
   });
@@ -582,7 +582,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
-      expect.objectContaining({ image_entity_id: dataUrl }),
+      expect.objectContaining({ image_entities: [dataUrl] }),
       expect.anything(),
     );
   });
@@ -643,7 +643,7 @@ describe('GmChatPanel — imageEntityId wire-up', () => {
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/send_message',
-      expect.objectContaining({ image_entity_id: dataUrl }),
+      expect.objectContaining({ image_entities: [dataUrl] }),
       expect.anything(),
     );
   });

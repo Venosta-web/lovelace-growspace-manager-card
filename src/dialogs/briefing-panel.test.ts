@@ -408,7 +408,7 @@ describe('GmBriefingPanel — follow-up input', () => {
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/start_conversation',
-      expect.objectContaining({ growspace_id: 'gs1', text: 'Why is VPD rising?' }),
+      expect.objectContaining({ growspace_id: 'gs1', message: 'Why is VPD rising?' }),
       expect.anything(),
     );
   });

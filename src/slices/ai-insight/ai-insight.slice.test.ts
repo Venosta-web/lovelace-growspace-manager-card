@@ -280,6 +280,36 @@ describe('startConversation', () => {
     expect(activeThreadId$.get()).toBe('thread-abc');
     expect(conversationThreads$.get().has('thread-abc')).toBe(true);
   });
+
+  it('sends message and growspace_id fields (not text) in payload', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [{ role: 'ai', text: 'Here is advice', timestamp: 1700000001 }],
+    });
+
+    await startConversation('gs1', 'How can I optimize?');
+
+    const [cmd, payload] = vi.mocked(hassCall.hassCall).mock.calls[0];
+    expect(cmd).toBe('growspace_manager/start_conversation');
+    expect(payload).toHaveProperty('message', 'How can I optimize?');
+    expect(payload).toHaveProperty('growspace_id', 'gs1');
+    expect(payload).not.toHaveProperty('text');
+  });
+
+  it('sends image_entities as an array when imageEntityId is provided', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-xyz',
+      growspace_id: 'gs1',
+      messages: [{ role: 'user', text: 'Check this image', timestamp: 1700000000 }],
+    });
+
+    await startConversation('gs1', 'Check this image', 'camera.tent1');
+
+    const [, payload] = vi.mocked(hassCall.hassCall).mock.calls[0];
+    expect(payload).toHaveProperty('image_entities', ['camera.tent1']);
+    expect(payload).not.toHaveProperty('image_entity_id');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -293,8 +323,28 @@ describe('sendMessage', () => {
       growspace_id: 'gs2',
       messages: [{ role: 'user' as const, text: 'Hello', timestamp: 1700000001 }],
     };
-    conversationThreads$.set(new Map([['other-thread', existingThread]]));
+    conversationThreads$.set(new Map([
+      ['other-thread', existingThread],
+      ['thread-abc', { thread_id: 'thread-abc', growspace_id: 'gs1', messages: [
+        { role: 'user' as const, text: 'First message', timestamp: 1700000000 },
+      ] }],
+    ]));
 
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [{ role: 'ai', text: 'AI reply', timestamp: 1700000003 }],
+    });
+
+    await sendMessage('thread-abc', 'Follow-up');
+
+    const threads = conversationThreads$.get();
+    // existing(1) + user message(1) + AI reply(1) = 3
+    expect(threads.get('thread-abc')?.messages).toHaveLength(3);
+    expect(threads.get('other-thread')).toEqual(existingThread);
+  });
+
+  it('sends conversation_id and message fields (not thread_id or text)', async () => {
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
       thread_id: 'thread-abc',
       growspace_id: 'gs1',
@@ -306,9 +356,12 @@ describe('sendMessage', () => {
 
     await sendMessage('thread-abc', 'Follow-up');
 
-    const threads = conversationThreads$.get();
-    expect(threads.get('thread-abc')?.messages).toHaveLength(2);
-    expect(threads.get('other-thread')).toEqual(existingThread);
+    const [cmd, payload] = vi.mocked(hassCall.hassCall).mock.calls[0];
+    expect(cmd).toBe('growspace_manager/send_message');
+    expect(payload).toHaveProperty('conversation_id', 'thread-abc');
+    expect(payload).toHaveProperty('message', 'Follow-up');
+    expect(payload).not.toHaveProperty('thread_id');
+    expect(payload).not.toHaveProperty('text');
   });
 });
 

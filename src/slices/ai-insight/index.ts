@@ -162,16 +162,22 @@ export async function startConversation(
   text: string,
   imageEntityId?: string
 ): Promise<ConversationThread> {
+  const userMessage = { role: 'user' as const, text, timestamp: Date.now() };
   const raw = await hassCall(
     'growspace_manager/start_conversation',
-    { growspace_id: growspaceId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) },
+    {
+      growspace_id: growspaceId,
+      message: text,
+      ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+    },
     ConversationThreadSchema
   );
+  const thread: ConversationThread = { ...raw, messages: [userMessage, ...raw.messages] };
   const threads = new Map(conversationThreads$.get());
-  threads.set(raw.thread_id, raw);
+  threads.set(thread.thread_id, thread);
   conversationThreads$.set(threads);
-  activeThreadId$.set(raw.thread_id);
-  return raw;
+  activeThreadId$.set(thread.thread_id);
+  return thread;
 }
 
 /**
@@ -184,13 +190,25 @@ export async function sendMessage(
   text: string,
   imageEntityId?: string
 ): Promise<void> {
+  const existingThread = conversationThreads$.get().get(threadId);
+  const growspaceId = existingThread?.growspace_id ?? '';
+  const userMessage = { role: 'user' as const, text, timestamp: Date.now() };
   const raw = await hassCall(
     'growspace_manager/send_message',
-    { thread_id: threadId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) },
+    {
+      conversation_id: threadId,
+      growspace_id: growspaceId,
+      message: text,
+      ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+    },
     ConversationThreadSchema
   );
   const threads = new Map(conversationThreads$.get());
-  threads.set(raw.thread_id, raw);
+  const existingMessages = threads.get(threadId)?.messages ?? [];
+  threads.set(raw.thread_id, {
+    ...raw,
+    messages: [...existingMessages, userMessage, ...raw.messages],
+  });
   conversationThreads$.set(threads);
 }
 

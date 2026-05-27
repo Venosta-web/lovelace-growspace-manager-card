@@ -19195,12 +19195,18 @@ function dismissInsight() {
  * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
  */
 async function startConversation(growspaceId, text, imageEntityId) {
-    const raw = await hassCall('growspace_manager/start_conversation', { growspace_id: growspaceId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) }, ConversationThreadSchema);
+    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    const raw = await hassCall('growspace_manager/start_conversation', {
+        growspace_id: growspaceId,
+        message: text,
+        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+    }, ConversationThreadSchema);
+    const thread = { ...raw, messages: [userMessage, ...raw.messages] };
     const threads = new Map(conversationThreads$.get());
-    threads.set(raw.thread_id, raw);
+    threads.set(thread.thread_id, thread);
     conversationThreads$.set(threads);
-    activeThreadId$.set(raw.thread_id);
-    return raw;
+    activeThreadId$.set(thread.thread_id);
+    return thread;
 }
 /**
  * Send a message in an existing conversation thread.
@@ -19208,9 +19214,21 @@ async function startConversation(growspaceId, text, imageEntityId) {
  * Appends the AI response message to the thread. Other threads are unchanged.
  */
 async function sendMessage(threadId, text, imageEntityId) {
-    const raw = await hassCall('growspace_manager/send_message', { thread_id: threadId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) }, ConversationThreadSchema);
+    const existingThread = conversationThreads$.get().get(threadId);
+    const growspaceId = existingThread?.growspace_id ?? '';
+    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    const raw = await hassCall('growspace_manager/send_message', {
+        conversation_id: threadId,
+        growspace_id: growspaceId,
+        message: text,
+        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+    }, ConversationThreadSchema);
     const threads = new Map(conversationThreads$.get());
-    threads.set(raw.thread_id, raw);
+    const existingMessages = threads.get(threadId)?.messages ?? [];
+    threads.set(raw.thread_id, {
+        ...raw,
+        messages: [...existingMessages, userMessage, ...raw.messages],
+    });
     conversationThreads$.set(threads);
 }
 /**
