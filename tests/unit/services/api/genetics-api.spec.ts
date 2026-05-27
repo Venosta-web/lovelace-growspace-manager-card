@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { HomeAssistant } from 'custom-card-helpers';
 import { GeneticsAPI } from '../../../../src/services/api/genetics-api';
 import { WSError } from '../../../../src/services/base-api';
+import type { LineageNode } from '../../../../src/features/plants/types';
 
 describe('GeneticsAPI', () => {
     let api: GeneticsAPI;
     let callWS: ReturnType<typeof vi.fn>;
     let callService: ReturnType<typeof vi.fn>;
-    let mockHass: any;
+    let mockHass: HomeAssistant;
 
     beforeEach(() => {
         api = new GeneticsAPI();
@@ -15,7 +17,7 @@ describe('GeneticsAPI', () => {
         mockHass = {
             callWS,
             callService,
-        };
+        } as unknown as HomeAssistant;
     });
 
     // ── fetchGeneticsData ─────────────────────────────────────────────────────
@@ -234,7 +236,7 @@ describe('GeneticsAPI', () => {
     describe('getStrainLineageTree', () => {
         it('calls websocket with correct params', async () => {
             api.updateHass(mockHass);
-            const mockTree = { name: 'Strain Root' } as any;
+            const mockTree = { name: 'Strain Root' } as unknown as LineageNode;
             callWS.mockResolvedValueOnce(mockTree);
 
             const result = await api.getStrainLineageTree('Strain A');
