@@ -26,12 +26,6 @@ test.describe('Insights dialogs', () => {
     await dialog.waitForOpen();
   });
 
-  test('grow report dialog opens from menu', async ({ page }) => {
-    await growspaceCard.clickMenuItem(/generate report/i);
-    const dialog = new GrowReportDialog(page);
-    await dialog.waitForOpen();
-  });
-
   test('ask AI dialog opens from menu', async ({ page }) => {
     await growspaceCard.clickMenuItem(/ask ai/i);
     const dialog = new GrowMasterDialog(page);

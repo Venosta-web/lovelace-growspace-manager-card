@@ -25,5 +25,12 @@ for (const [key, value] of Object.entries(haTheme)) {
 }
 document.body.style.backgroundColor = '#111111';
 
+// Suppress Lit's "dev mode" warning. The warning fires via queueMicrotask and
+// checks globalThis.litIssuedWarnings before printing. Pre-populating the set
+// with the warning code stops it before it runs — without touching module resolution
+// or changing which Lit build is loaded.
+(globalThis as any).litIssuedWarnings ??= new Set();
+(globalThis as any).litIssuedWarnings.add('dev-mode');
+
 // Only mock native APIs if the browser doesn't have them or we need to force a state.
 // Chromium has matchMedia and ResizeObserver natively.

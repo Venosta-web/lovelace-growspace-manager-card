@@ -101,6 +101,7 @@ export const createMockHass = (options: MockHassOptions = {}) => {
 
             return Promise.resolve();
         }),
+        callWS: vi.fn().mockResolvedValue({}),
         callApi: async (method: string, path: string, parameters?: any) => {
             console.log(`[MockHass] callApi: ${method} ${path}`, parameters);
             return Promise.resolve();

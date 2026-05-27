@@ -90,13 +90,17 @@ export class GrowspaceDialogHost extends LitElement {
     }
   }
 
+  protected willUpdate(changed: PropertyValues): void {
+    super.willUpdate(changed);
+    if (changed.has('store')) {
+      this._initControllers();
+    }
+  }
+
   protected updated(changed: PropertyValues): void {
     super.updated(changed);
     if (changed.has('hass') && this.hass) {
       setHass(this.hass);
-    }
-    if (changed.has('store')) {
-      this._initControllers();
     }
   }
 

@@ -5,6 +5,19 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { LibraryExportReadyEvent } from '../../src/lib/events';
 import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
+import { setMutateListener, undo, canUndo } from '../../src/services/mutate';
+import { selectedDeviceId$ } from '../../src/slices/grid';
+
+vi.mock('../../src/services/mutate', () => ({
+    setMutateListener: vi.fn(),
+    undo: vi.fn(),
+    canUndo: vi.fn(),
+    mutate: vi.fn(),
+}));
+
+vi.mock('../../src/slices/grid', () => ({
+    selectedDeviceId$: { get: vi.fn() },
+}));
 
 vi.mock('../../src/slices/grid-interaction', () => ({
     startTransplant: vi.fn(),
@@ -87,6 +100,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             selectAllPlants: vi.fn(),
             setFocusedPlantIndex: vi.fn(),
             setActiveDialog: vi.fn(),
+            showToast: vi.fn(),
         };
         grid = {
             $activeDevices: atomMocks.$activeDevices,
@@ -566,6 +580,158 @@ describe('GrowspaceManagerCard', () => {
             const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
             (element as any)._handleBatchAddPlants();
             expect(dialogSpy).toHaveBeenCalledWith({ type: 'ADD_PLANTS', payload: {} });
+        });
+
+        it('should handle print labels selected', () => {
+            const spy = vi.spyOn(element.store.actions.ui, 'openBatchPrintLabelsDialog');
+            (element as any)._handlePrintLabelsSelected();
+            expect(spy).toHaveBeenCalled();
+        });
+
+        it('should handle clone selected', () => {
+            const spy = vi.spyOn(element.store.actions.ui, 'openBatchCloneDialog');
+            (element as any)._handleCloneSelected();
+            expect(spy).toHaveBeenCalled();
+        });
+    });
+
+    describe('getLayoutOptions', () => {
+        it('should return the expected layout options', () => {
+            expect(element.getLayoutOptions()).toEqual({
+                grid_columns: 12,
+                grid_min_columns: 6,
+                grid_min_rows: 4,
+            });
+        });
+    });
+
+    describe('setMutateListener callback', () => {
+        it('should show a success toast with undo button when a mutate action fires', () => {
+            let capturedListener: ((info: any, growspaceId: string) => void) | null = null;
+            vi.mocked(setMutateListener).mockImplementation((fn) => { capturedListener = fn; });
+
+            element.connectedCallback();
+
+            expect(capturedListener).not.toBeNull();
+
+            capturedListener!({ label: 'Watering logged', type: 'WATER' }, 'gs1');
+
+            expect(element.store.ui.showToast).toHaveBeenCalledWith(
+                'Watering logged',
+                'success',
+                expect.objectContaining({ label: 'Undo', callback: expect.any(Function) }),
+            );
+        });
+
+        it('should fall back to info.type as label when label is not provided', () => {
+            let capturedListener: ((info: any, growspaceId: string) => void) | null = null;
+            vi.mocked(setMutateListener).mockImplementation((fn) => { capturedListener = fn; });
+
+            element.connectedCallback();
+            capturedListener!({ type: 'WATER' }, 'gs1');
+
+            expect(element.store.ui.showToast).toHaveBeenCalledWith(
+                'WATER',
+                'success',
+                expect.anything(),
+            );
+        });
+
+        it('should call undo and show "Action undone" toast when the undo button callback is invoked', async () => {
+            let capturedListener: ((info: any, growspaceId: string) => void) | null = null;
+            vi.mocked(setMutateListener).mockImplementation((fn) => { capturedListener = fn; });
+            vi.mocked(undo).mockResolvedValue(undefined);
+
+            element.connectedCallback();
+            capturedListener!({ label: 'Fertilised', type: 'NUTRIENTS' }, 'gs2');
+
+            const { callback } = vi.mocked(element.store.ui.showToast).mock.calls[0][2] as any;
+            await callback();
+
+            expect(undo).toHaveBeenCalledWith('gs2');
+            expect(element.store.ui.showToast).toHaveBeenCalledWith('Action undone', 'info');
+        });
+
+        it('should log an error to console when the undo callback rejects', async () => {
+            let capturedListener: ((info: any, growspaceId: string) => void) | null = null;
+            vi.mocked(setMutateListener).mockImplementation((fn) => { capturedListener = fn; });
+            vi.mocked(undo).mockRejectedValue(new Error('network error'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            element.connectedCallback();
+            capturedListener!({ label: 'Test', type: 'TEST' }, 'gs1');
+
+            const { callback } = vi.mocked(element.store.ui.showToast).mock.calls[0][2] as any;
+            callback(); // fire but do not await — the callback itself isn't async
+            // flush the microtask queue so the .catch() handler runs
+            await new Promise((r) => setTimeout(r, 0));
+
+            expect(errorSpy).toHaveBeenCalledWith('[Undo failed]', expect.any(Error));
+            errorSpy.mockRestore();
+        });
+    });
+
+    describe('_handleGlobalKeydown (Ctrl+Z undo)', () => {
+        it('should call undo and show toast when Ctrl+Z is pressed and canUndo is true', async () => {
+            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            vi.mocked(canUndo).mockReturnValue(true);
+            vi.mocked(undo).mockResolvedValue(undefined);
+
+            const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true });
+            const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+
+            await (element as any)._handleGlobalKeydown(event);
+
+            expect(preventDefaultSpy).toHaveBeenCalled();
+            expect(undo).toHaveBeenCalledWith('gs1');
+            // Allow the microtask to settle
+            await Promise.resolve();
+            expect(element.store.ui.showToast).toHaveBeenCalledWith('Action undone', 'info');
+        });
+
+        it('should do nothing when the key is not Ctrl+Z', () => {
+            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            vi.mocked(canUndo).mockReturnValue(true);
+
+            const event = new KeyboardEvent('keydown', { key: 'a', ctrlKey: true });
+            (element as any)._handleGlobalKeydown(event);
+
+            expect(undo).not.toHaveBeenCalled();
+        });
+
+        it('should do nothing when no growspace is selected', () => {
+            vi.mocked(selectedDeviceId$.get).mockReturnValue(null);
+            vi.mocked(canUndo).mockReturnValue(false);
+
+            const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
+            (element as any)._handleGlobalKeydown(event);
+
+            expect(undo).not.toHaveBeenCalled();
+        });
+
+        it('should do nothing when canUndo returns false', () => {
+            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            vi.mocked(canUndo).mockReturnValue(false);
+
+            const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
+            (element as any)._handleGlobalKeydown(event);
+
+            expect(undo).not.toHaveBeenCalled();
+        });
+
+        it('should log error when undo rejects in global keydown handler', async () => {
+            vi.mocked(selectedDeviceId$.get).mockReturnValue('gs1');
+            vi.mocked(canUndo).mockReturnValue(true);
+            vi.mocked(undo).mockRejectedValue(new Error('fail'));
+            const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            const event = new KeyboardEvent('keydown', { key: 'z', ctrlKey: true });
+            (element as any)._handleGlobalKeydown(event);
+            await Promise.resolve();
+            await Promise.resolve(); // flush rejection
+
+            expect(errorSpy).toHaveBeenCalledWith('[Undo failed]', expect.any(Error));
+            errorSpy.mockRestore();
         });
     });
 });

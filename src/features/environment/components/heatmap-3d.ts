@@ -531,7 +531,8 @@ export class Heatmap3D extends LitElement {
 
     // Initial Scene Update & Render Trigger
     this.updateScene();
-    this.requestUpdate(); // Trigger second render to populate panels with now-ready meshes
+    // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
+    Promise.resolve().then(() => this.requestUpdate());
   }
 
   private updateScene() {

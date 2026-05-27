@@ -138,10 +138,12 @@ describe('plant-actions', () => {
         });
 
         it('should show error toast on failure', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockDataService.updatePlant.mockRejectedValue(new Error('Network error'));
 
             await updatePlant(ctx, 'test123', { strain: 'New Strain' });
 
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to update plant', expect.any(Error));
             expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update plant: Network error', 'error');
         });
     });
@@ -172,6 +174,7 @@ describe('plant-actions', () => {
         });
 
         it('should return false on error', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockDataService.updatePlant.mockRejectedValue(new Error('Update failed'));
 
             const dialogState = {
@@ -181,7 +184,8 @@ describe('plant-actions', () => {
             };
 
             await updatePlantFromDialog(ctx, dialogState);
-            // Error logged, implied void return
+
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to update plant(s)', expect.any(Error));
         });
 
         it('should use entity_id fallback when plant_id is missing', async () => {
@@ -226,6 +230,7 @@ describe('plant-actions', () => {
         });
 
         it('should remove optimistic IDs on failure', async () => {
+            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
             mockDataService.removePlant.mockRejectedValue(new Error('Delete failed'));
 
             await handleDeletePlant(ctx, ['plant1']);
@@ -233,6 +238,7 @@ describe('plant-actions', () => {
             expect(mockDataService.removePlant).toHaveBeenCalled();
             expect(ctx.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
             expect(ctx.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
+            expect(consoleSpy).toHaveBeenCalledWith('Failed to delete plant:', expect.any(Error));
             expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
         });
 
