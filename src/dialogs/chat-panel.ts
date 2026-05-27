@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { mdiBrain, mdiSend, mdiClose, mdiCheck, mdiMessageOutline, mdiPaperclip } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
+import type { HomeAssistant } from 'custom-card-helpers';
 import {
   activeThreadId$,
   conversationThreads$,
@@ -12,6 +13,7 @@ import {
   startConversation,
   sendMessage,
   applyAction,
+  saveAiAgent,
 } from '../slices/ai-insight';
 import type { ConversationThread, ConversationMessage, SuggestedAction } from '../slices/ai-insight/schema';
 
@@ -27,11 +29,15 @@ const SUGGESTION_PROMPTS = [
 export class GmChatPanel extends LitElement {
   @property({ type: String }) growspaceid = '';
   @property({ type: String }) growspacename = '';
+  @property({ attribute: false }) hass: HomeAssistant | undefined;
 
   @state() private _inputText = '';
   @state() private _dismissedActions = new Set<number>();
   @state() private _contextChips: ContextChip[] = [];
   @state() private _pendingAttachment: string | null = null;
+  @state() private _selectedAgent = '';
+  @state() private _agentSaving = false;
+  @state() private _agentSaveError: string | null = null;
 
   private _activeThread = new StoreController(this, activeThreadId$);
   private _threads = new StoreController(this, conversationThreads$);
@@ -485,17 +491,44 @@ export class GmChatPanel extends LitElement {
       color: var(--secondary-text-color);
     }
 
-    /* ── AI unavailable banner ────────────────────────────────── */
-    .ai-unavailable-banner {
+    /* ── Agent setup banner ───────────────────────────────────── */
+    .agent-setup-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      flex-shrink: 0;
+    }
+    .agent-setup-label {
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+    }
+    .agent-setup-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 16px;
-      background: rgba(255, 152, 0, 0.08);
-      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
-      font-size: 0.78rem;
-      color: var(--ai-amber, #ff9800);
+    }
+    .agent-setup-picker {
+      flex: 1;
+    }
+    .agent-save-btn {
       flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-amber, #ff9800);
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-setup-error {
+      font-size: 0.72rem;
+      color: var(--error-color, #f44336);
     }
 
     .composer--disabled {
@@ -814,19 +847,51 @@ export class GmChatPanel extends LitElement {
     `;
   }
 
+  private async _saveAgent() {
+    if (!this._selectedAgent) return;
+    this._agentSaving = true;
+    this._agentSaveError = null;
+    try {
+      await saveAiAgent(this._selectedAgent);
+    } catch (err) {
+      this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
+    } finally {
+      this._agentSaving = false;
+    }
+  }
+
+  private _renderAgentSetup() {
+    return html`
+      <div class="agent-setup-banner">
+        <span class="agent-setup-label">No AI agent configured — select one to enable chat:</span>
+        <div class="agent-setup-row">
+          <div class="agent-setup-picker">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._selectedAgent}
+              .includeDomains=${['conversation']}
+              allow-custom-entity
+              @value-changed=${(e: CustomEvent) => { this._selectedAgent = e.detail.value ?? ''; }}
+            ></ha-entity-picker>
+          </div>
+          <button
+            class="agent-save-btn"
+            ?disabled=${!this._selectedAgent || this._agentSaving}
+            @click=${this._saveAgent}
+          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+        </div>
+        ${this._agentSaveError ? html`<div class="agent-setup-error">${this._agentSaveError}</div>` : nothing}
+      </div>
+    `;
+  }
+
   render() {
     const thread = this._getActiveThread();
     const aiUnavailable = this._briefing.value?.ai_available === false;
     return html`
       ${this._renderThreadRail()}
       <div class="chat-content">
-        ${aiUnavailable ? html`
-          <div class="ai-unavailable-banner">
-            AI agent not configured — set one up in
-            <strong>Settings → Integrations → Growspace Manager</strong>
-            to enable chat.
-          </div>
-        ` : nothing}
+        ${aiUnavailable ? this._renderAgentSetup() : nothing}
         ${thread ? this._renderThread(thread, aiUnavailable) : this._renderWelcome(aiUnavailable)}
       </div>
     `;

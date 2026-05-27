@@ -738,7 +738,7 @@ const BRIEFING_BASE = {
 };
 
 describe('GmChatPanel — AI unavailable banner', () => {
-  it('shows .ai-unavailable-banner when aiBriefing ai_available is false', async () => {
+  it('shows .agent-setup-banner when aiBriefing ai_available is false', async () => {
     aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
 
     const el = await fixture<GmChatPanel>(html`
@@ -746,7 +746,7 @@ describe('GmChatPanel — AI unavailable banner', () => {
     `);
     await el.updateComplete;
 
-    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.agent-setup-banner')).not.toBeNull();
   });
 
   it('does not show banner when aiBriefing ai_available is true', async () => {
@@ -757,7 +757,7 @@ describe('GmChatPanel — AI unavailable banner', () => {
     `);
     await el.updateComplete;
 
-    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.agent-setup-banner')).toBeNull();
   });
 
   it('does not show banner when aiBriefing is null', async () => {
@@ -768,7 +768,7 @@ describe('GmChatPanel — AI unavailable banner', () => {
     `);
     await el.updateComplete;
 
-    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.agent-setup-banner')).toBeNull();
   });
 
   it('composer textarea is disabled when AI is unavailable', async () => {

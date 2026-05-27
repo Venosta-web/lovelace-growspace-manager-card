@@ -816,6 +816,7 @@ export class GrowspaceDialogHost extends LitElement {
     return html`
       <grow-master-dialog
         .open=${true}
+        .hass=${this.hass}
         .isStressed=${isStressed}
         .personality=${personality}
         .isLoading=${dialogState.isLoading}

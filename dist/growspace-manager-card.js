@@ -19275,6 +19275,16 @@ async function fetchBriefing(forceRefresh) {
     const briefing = await hassCall('growspace_manager/get_briefing', { ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
     aiBriefing$.set(briefing);
 }
+/**
+ * Persist a conversation agent selection and enable AI in the integration.
+ *
+ * Saves the chosen entity ID to the backend config entry, then refreshes the
+ * briefing atom so panels drop their unconfigured state without a page reload.
+ */
+async function saveAiAgent(agentEntityId) {
+    await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknownType());
+    await fetchBriefing(true);
+}
 
 const SUGGESTION_PROMPTS = [
     'What is the current VPD?',
@@ -19290,6 +19300,9 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._dismissedActions = new Set();
         this._contextChips = [];
         this._pendingAttachment = null;
+        this._selectedAgent = '';
+        this._agentSaving = false;
+        this._agentSaveError = null;
         this._activeThread = new libExports.StoreController(this, activeThreadId$);
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
@@ -19590,19 +19603,52 @@ let GmChatPanel = class GmChatPanel extends i$3 {
       </div>
     `;
     }
+    async _saveAgent() {
+        if (!this._selectedAgent)
+            return;
+        this._agentSaving = true;
+        this._agentSaveError = null;
+        try {
+            await saveAiAgent(this._selectedAgent);
+        }
+        catch (err) {
+            this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
+        }
+        finally {
+            this._agentSaving = false;
+        }
+    }
+    _renderAgentSetup() {
+        return x `
+      <div class="agent-setup-banner">
+        <span class="agent-setup-label">No AI agent configured — select one to enable chat:</span>
+        <div class="agent-setup-row">
+          <div class="agent-setup-picker">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._selectedAgent}
+              .includeDomains=${['conversation']}
+              allow-custom-entity
+              @value-changed=${(e) => { this._selectedAgent = e.detail.value ?? ''; }}
+            ></ha-entity-picker>
+          </div>
+          <button
+            class="agent-save-btn"
+            ?disabled=${!this._selectedAgent || this._agentSaving}
+            @click=${this._saveAgent}
+          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+        </div>
+        ${this._agentSaveError ? x `<div class="agent-setup-error">${this._agentSaveError}</div>` : E}
+      </div>
+    `;
+    }
     render() {
         const thread = this._getActiveThread();
         const aiUnavailable = this._briefing.value?.ai_available === false;
         return x `
       ${this._renderThreadRail()}
       <div class="chat-content">
-        ${aiUnavailable ? x `
-          <div class="ai-unavailable-banner">
-            AI agent not configured — set one up in
-            <strong>Settings → Integrations → Growspace Manager</strong>
-            to enable chat.
-          </div>
-        ` : E}
+        ${aiUnavailable ? this._renderAgentSetup() : E}
         ${thread ? this._renderThread(thread, aiUnavailable) : this._renderWelcome(aiUnavailable)}
       </div>
     `;
@@ -20045,17 +20091,44 @@ GmChatPanel.styles = i$6 `
       color: var(--secondary-text-color);
     }
 
-    /* ── AI unavailable banner ────────────────────────────────── */
-    .ai-unavailable-banner {
+    /* ── Agent setup banner ───────────────────────────────────── */
+    .agent-setup-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      flex-shrink: 0;
+    }
+    .agent-setup-label {
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+    }
+    .agent-setup-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 16px;
-      background: rgba(255, 152, 0, 0.08);
-      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
-      font-size: 0.78rem;
-      color: var(--ai-amber, #ff9800);
+    }
+    .agent-setup-picker {
+      flex: 1;
+    }
+    .agent-save-btn {
       flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-amber, #ff9800);
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-setup-error {
+      font-size: 0.72rem;
+      color: var(--error-color, #f44336);
     }
 
     .composer--disabled {
@@ -20086,6 +20159,9 @@ __decorate([
     n$5({ type: String })
 ], GmChatPanel.prototype, "growspacename", void 0);
 __decorate([
+    n$5({ attribute: false })
+], GmChatPanel.prototype, "hass", void 0);
+__decorate([
     r$3()
 ], GmChatPanel.prototype, "_inputText", void 0);
 __decorate([
@@ -20097,6 +20173,15 @@ __decorate([
 __decorate([
     r$3()
 ], GmChatPanel.prototype, "_pendingAttachment", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_selectedAgent", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_agentSaving", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_agentSaveError", void 0);
 GmChatPanel = __decorate([
     t$2('gm-chat-panel')
 ], GmChatPanel);
@@ -20107,6 +20192,9 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         this.growspaceid = '';
         this._followUp = '';
         this._activeTab = 0;
+        this._selectedAgent = '';
+        this._agentSaving = false;
+        this._agentSaveError = null;
         this._briefing = new libExports.StoreController(this, aiBriefing$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
     }
@@ -20209,11 +20297,43 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
       </div>
     `;
     }
+    async _saveAgent() {
+        if (!this._selectedAgent)
+            return;
+        this._agentSaving = true;
+        this._agentSaveError = null;
+        try {
+            await saveAiAgent(this._selectedAgent);
+        }
+        catch (err) {
+            this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
+        }
+        finally {
+            this._agentSaving = false;
+        }
+    }
     _renderAiUnavailable() {
         return x `
-      <div class="tab-placeholder">
-        <h3>AI agent not configured</h3>
-        <p>Set up a conversation agent in <strong>Settings → Integrations → Growspace Manager</strong> to enable AI-powered insights.</p>
+      <div class="agent-setup">
+        <h3>No AI agent configured</h3>
+        <p>Select a conversation agent to enable AI-powered briefings.</p>
+        <div class="agent-setup-row">
+          <div class="agent-setup-picker">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._selectedAgent}
+              .includeDomains=${['conversation']}
+              allow-custom-entity
+              @value-changed=${(e) => { this._selectedAgent = e.detail.value ?? ''; }}
+            ></ha-entity-picker>
+          </div>
+          <button
+            class="agent-save-btn"
+            ?disabled=${!this._selectedAgent || this._agentSaving}
+            @click=${this._saveAgent}
+          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+        </div>
+        ${this._agentSaveError ? x `<div class="agent-setup-error">${this._agentSaveError}</div>` : E}
       </div>
     `;
     }
@@ -20327,6 +20447,8 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
     `;
     }
     _renderTabContent(briefing) {
+        if (!briefing.ai_available)
+            return this._renderAiUnavailable();
         switch (this._activeTab) {
             case 1: return this._renderRiskWatch(briefing);
             case 2: return this._renderGoingWell(briefing);
@@ -20685,6 +20807,55 @@ GmBriefingPanel.styles = i$6 `
       border-color: rgba(156, 39, 176, 0.5);
     }
 
+    /* ── Agent setup ──────────────────────────────────────────────── */
+    .agent-setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 14px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .agent-setup h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .agent-setup p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--secondary-text-color);
+    }
+    .agent-setup-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .agent-setup-picker {
+      flex: 1;
+    }
+    .agent-save-btn {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-violet, #9c27b0);
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-setup-error {
+      font-size: 0.72rem;
+      color: var(--error-color, #f44336);
+    }
+
     /* ── Per-tab placeholder sections ────────────────────────────── */
     .tab-placeholder {
       display: flex;
@@ -20709,11 +20880,23 @@ __decorate([
     n$5({ type: String })
 ], GmBriefingPanel.prototype, "growspaceid", void 0);
 __decorate([
+    n$5({ attribute: false })
+], GmBriefingPanel.prototype, "hass", void 0);
+__decorate([
     r$3()
 ], GmBriefingPanel.prototype, "_followUp", void 0);
 __decorate([
     r$3()
 ], GmBriefingPanel.prototype, "_activeTab", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_selectedAgent", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_agentSaving", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_agentSaveError", void 0);
 GmBriefingPanel = __decorate([
     t$2('gm-briefing-panel')
 ], GmBriefingPanel);
@@ -21492,6 +21675,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         style="flex:1;min-height:0;overflow:hidden;"
         growspaceid=${this._growspaceId ?? ''}
         growspacename=${this._growspaceName ?? ''}
+        .hass=${this.hass}
       ></gm-chat-panel>
     `;
     }
@@ -21501,6 +21685,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         style="flex:1;min-height:0;overflow:hidden;"
         growspaceid=${this._growspaceId}
         growspacename=${this._growspaceName}
+        .hass=${this.hass}
       ></gm-briefing-panel>
     `;
     }
@@ -21836,6 +22021,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], GrowMasterDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowMasterDialog.prototype, "hass", void 0);
 GrowMasterDialog = __decorate([
     t$2('grow-master-dialog')
 ], GrowMasterDialog);
@@ -45859,6 +46047,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         return x `
       <grow-master-dialog
         .open=${true}
+        .hass=${this.hass}
         .isStressed=${isStressed}
         .personality=${personality}
         .isLoading=${dialogState.isLoading}

@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { mdiBrain, mdiRefresh } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
+import type { HomeAssistant } from 'custom-card-helpers';
 import {
   aiBriefing$,
   isAiLoading$,
@@ -9,15 +10,20 @@ import {
   fetchBriefing,
   applyAction,
   startConversation,
+  saveAiAgent,
 } from '../slices/ai-insight';
 import type { AIBriefing, Recommendation } from '../slices/ai-insight/schema';
 
 @customElement('gm-briefing-panel')
 export class GmBriefingPanel extends LitElement {
   @property({ type: String }) growspaceid = '';
+  @property({ attribute: false }) hass: HomeAssistant | undefined;
 
   @state() private _followUp = '';
   @state() private _activeTab = 0;
+  @state() private _selectedAgent = '';
+  @state() private _agentSaving = false;
+  @state() private _agentSaveError: string | null = null;
 
   private _briefing = new StoreController(this, aiBriefing$);
   private _loading = new StoreController(this, isAiLoading$);
@@ -368,6 +374,55 @@ export class GmBriefingPanel extends LitElement {
       border-color: rgba(156, 39, 176, 0.5);
     }
 
+    /* ── Agent setup ──────────────────────────────────────────────── */
+    .agent-setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 14px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .agent-setup h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .agent-setup p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--secondary-text-color);
+    }
+    .agent-setup-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .agent-setup-picker {
+      flex: 1;
+    }
+    .agent-save-btn {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-violet, #9c27b0);
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-setup-error {
+      font-size: 0.72rem;
+      color: var(--error-color, #f44336);
+    }
+
     /* ── Per-tab placeholder sections ────────────────────────────── */
     .tab-placeholder {
       display: flex;
@@ -487,11 +542,41 @@ export class GmBriefingPanel extends LitElement {
     `;
   }
 
+  private async _saveAgent() {
+    if (!this._selectedAgent) return;
+    this._agentSaving = true;
+    this._agentSaveError = null;
+    try {
+      await saveAiAgent(this._selectedAgent);
+    } catch (err) {
+      this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
+    } finally {
+      this._agentSaving = false;
+    }
+  }
+
   private _renderAiUnavailable() {
     return html`
-      <div class="tab-placeholder">
-        <h3>AI agent not configured</h3>
-        <p>Set up a conversation agent in <strong>Settings → Integrations → Growspace Manager</strong> to enable AI-powered insights.</p>
+      <div class="agent-setup">
+        <h3>No AI agent configured</h3>
+        <p>Select a conversation agent to enable AI-powered briefings.</p>
+        <div class="agent-setup-row">
+          <div class="agent-setup-picker">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._selectedAgent}
+              .includeDomains=${['conversation']}
+              allow-custom-entity
+              @value-changed=${(e: CustomEvent) => { this._selectedAgent = e.detail.value ?? ''; }}
+            ></ha-entity-picker>
+          </div>
+          <button
+            class="agent-save-btn"
+            ?disabled=${!this._selectedAgent || this._agentSaving}
+            @click=${this._saveAgent}
+          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+        </div>
+        ${this._agentSaveError ? html`<div class="agent-setup-error">${this._agentSaveError}</div>` : nothing}
       </div>
     `;
   }
@@ -607,6 +692,7 @@ export class GmBriefingPanel extends LitElement {
   }
 
   private _renderTabContent(briefing: AIBriefing) {
+    if (!briefing.ai_available) return this._renderAiUnavailable();
     switch (this._activeTab) {
       case 1: return this._renderRiskWatch(briefing);
       case 2: return this._renderGoingWell(briefing);

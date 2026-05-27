@@ -2,6 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
+import type { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
 import { aiMode$, aiBriefing$, fetchBriefing } from '../slices/ai-insight';
 import './chat-panel';
@@ -23,6 +24,7 @@ export class GrowMasterDialog extends LitElement {
   @property({ type: String }) personality: string | undefined;
   @property({ type: String }) growspaceId: string | undefined;
   @property({ type: String }) growspaceName: string | undefined;
+  @property({ attribute: false }) hass: HomeAssistant | undefined;
 
   private get _growspaceId() { return this.growspaceId ?? ''; }
   private get _growspaceName() { return this.growspaceName ?? ''; }
@@ -310,6 +312,7 @@ export class GrowMasterDialog extends LitElement {
         style="flex:1;min-height:0;overflow:hidden;"
         growspaceid=${this._growspaceId ?? ''}
         growspacename=${this._growspaceName ?? ''}
+        .hass=${this.hass}
       ></gm-chat-panel>
     `;
   }
@@ -320,6 +323,7 @@ export class GrowMasterDialog extends LitElement {
         style="flex:1;min-height:0;overflow:hidden;"
         growspaceid=${this._growspaceId}
         growspacename=${this._growspaceName}
+        .hass=${this.hass}
       ></gm-briefing-panel>
     `;
   }

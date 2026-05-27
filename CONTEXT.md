@@ -72,6 +72,17 @@ When `ViewMode.HEATMAP` is active, overlays the grid cells with a colour gradien
 **LayoutSpec**
 Declarative description of a ViewMode: `{ slots: ('header' | 'grid' | 'chart')[], overlay?: GridOverlayMode }`. A single `<growspace-view>` component reads the spec for the current ViewMode and renders the slots. HEATMAP is `{ slots: ['grid'], overlay: 'temperature' }` — a composition, not a sibling file. Adding a view mode is a config entry. Lives in the UI slice alongside ViewMode.
 
+## AI / Growmaster
+
+**Growmaster Dialog** (`grow-master-dialog`)
+The full-screen AI assistant modal. Contains three panels — Chat, Briefing, and Inbox — navigated via a side rail. Opened by the Growmaster button in the card header.
+
+**Conversation Agent**
+A Home Assistant entity in the `conversation` domain (e.g. `conversation.claude`, `conversation.openai`) that the Growmaster uses to generate responses. Stored as `assistant_id` in the integration's `ai_settings` config entry options. When none is configured, the briefing reports `ai_available: false` and both the Chat and Briefing panels display an inline `ha-entity-picker` so the user can select and save an agent without leaving the dialog.
+
+**AI Available**
+Boolean flag (`ai_available`) returned in every `AIBriefing` response. `false` when no Conversation Agent is configured or AI is disabled. Panels use this to gate their content and show the agent selector.
+
 ## Localization
 
 **Translation Key**

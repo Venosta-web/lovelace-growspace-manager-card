@@ -27,6 +27,7 @@
  */
 
 import { atom } from 'nanostores';
+import { z } from 'zod';
 import { callService, callServiceReturning, hassCall } from '../../services/hass-call';
 import {
   GrowAdviceResponseSchema,
@@ -268,4 +269,15 @@ export async function fetchBriefing(forceRefresh?: boolean): Promise<void> {
     AIBriefingSchema
   );
   aiBriefing$.set(briefing);
+}
+
+/**
+ * Persist a conversation agent selection and enable AI in the integration.
+ *
+ * Saves the chosen entity ID to the backend config entry, then refreshes the
+ * briefing atom so panels drop their unconfigured state without a page reload.
+ */
+export async function saveAiAgent(agentEntityId: string): Promise<void> {
+  await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, z.unknown());
+  await fetchBriefing(true);
 }
