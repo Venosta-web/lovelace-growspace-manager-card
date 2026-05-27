@@ -21438,7 +21438,7 @@ GrowMasterDialog.styles = [
         flex-direction: column;
         width: 100%;
         height: 100%;
-        min-height: 0;
+        min-height: 90vh;
         max-height: 90vh;
         overflow: hidden;
       }
