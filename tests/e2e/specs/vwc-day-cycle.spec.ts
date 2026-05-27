@@ -6,7 +6,7 @@ import { TestContext } from '../fixtures/types';
 // Strategy constants — kept short for E2E reliability
 // ---------------------------------------------------------------------------
 const P0_DURATION_MIN = 5;
-const SHOT_DURATION_SEC = 120; // 2-min shot → easily detectable via polling
+const SHOT_DURATION_SEC = 15; // short shot → detectable by 3s poller, clears before next test
 const SHOT_INTERVAL_MIN = 1;
 const P2_STOP_MIN = 30;
 const DAY_HOURS = 12;
