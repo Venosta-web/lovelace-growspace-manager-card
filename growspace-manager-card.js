@@ -166,6 +166,7 @@ var mdiMinus = "M19,13H5V11H19V13Z";
 var mdiNewspaper = "M20,11H4V8H20M20,15H13V13H20M20,19H13V17H20M11,19H4V13H11M20.33,4.67L18.67,3L17,4.67L15.33,3L13.67,4.67L12,3L10.33,4.67L8.67,3L7,4.67L5.33,3L3.67,4.67L2,3V19A2,2 0 0,0 4,21H20A2,2 0 0,0 22,19V3L20.33,4.67Z";
 var mdiNoteOutline = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
+var mdiPaperclip = "M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPh = "M13 7V17H15V13H17V17H19V7H17V11H15V7H13M11 15V13C11 11.9 10.11 11 9 11H5V21H7V17H9C10.11 17 11 16.11 11 15M9 15H7V13H9V15Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
@@ -19166,7 +19167,7 @@ function dismissInsight() {
  * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
  */
 async function startConversation(growspaceId, text, imageEntityId) {
-    const raw = await hassCall('growspace_manager/start_conversation', { growspace_id: growspaceId, text, ...({}) }, ConversationThreadSchema);
+    const raw = await hassCall('growspace_manager/start_conversation', { growspace_id: growspaceId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) }, ConversationThreadSchema);
     const threads = new Map(conversationThreads$.get());
     threads.set(raw.thread_id, raw);
     conversationThreads$.set(threads);
@@ -19179,7 +19180,7 @@ async function startConversation(growspaceId, text, imageEntityId) {
  * Appends the AI response message to the thread. Other threads are unchanged.
  */
 async function sendMessage(threadId, text, imageEntityId) {
-    const raw = await hassCall('growspace_manager/send_message', { thread_id: threadId, text, ...({}) }, ConversationThreadSchema);
+    const raw = await hassCall('growspace_manager/send_message', { thread_id: threadId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) }, ConversationThreadSchema);
     const threads = new Map(conversationThreads$.get());
     threads.set(raw.thread_id, raw);
     conversationThreads$.set(threads);
@@ -19206,9 +19207,11 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._inputText = '';
         this._dismissedActions = new Set();
         this._contextChips = [];
+        this._pendingAttachment = null;
         this._activeThread = new libExports.StoreController(this, activeThreadId$);
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
+        this._error = new libExports.StoreController(this, aiError$);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -19235,13 +19238,31 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         if (!text)
             return;
         this._inputText = '';
+        const attachment = this._pendingAttachment ?? undefined;
+        this._pendingAttachment = null;
         const threadId = this._activeThread.value;
         if (threadId) {
-            await sendMessage(threadId, text);
+            await sendMessage(threadId, text, attachment);
         }
         else {
-            await startConversation(this.growspaceid, text);
+            await startConversation(this.growspaceid, text, attachment);
         }
+    }
+    _openFilePicker() {
+        this.shadowRoot.querySelector('input[type="file"]')?.click();
+    }
+    _onFileSelected(e) {
+        const file = e.target.files?.[0];
+        if (!file)
+            return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            this._pendingAttachment = reader.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    _removeAttachment() {
+        this._pendingAttachment = null;
     }
     _clickPrompt(prompt) {
         startConversation(this.growspaceid, prompt);
@@ -19356,6 +19377,9 @@ let GmChatPanel = class GmChatPanel extends i$3 {
               ` : E}
             </div>
           ` : E}
+          ${msg.imageEntityId ? x `
+            <img class="msg-image" src=${msg.imageEntityId} alt="Attached image" />
+          ` : E}
           ${msg.text}
           ${msg.sensorSnapshot && msg.sensorSnapshot.length > 0 ? x `
             <div class="data-snap">
@@ -19394,6 +19418,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     }
     _renderComposer() {
         const hasText = this._inputText.trim().length > 0;
+        const error = this._error.value;
         return x `
       <div class="composer">
         <div class="suggest-strip">
@@ -19415,7 +19440,23 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             `)}
           </div>
         ` : E}
+        ${this._pendingAttachment ? x `
+          <div class="attachment-preview">
+            <img src=${this._pendingAttachment} alt="Attachment preview" />
+            <button class="remove-attachment" aria-label="Remove attachment" @click=${this._removeAttachment}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d=${mdiClose}></path>
+              </svg>
+            </button>
+          </div>
+        ` : E}
         <div class="composer-input">
+          <input type="file" accept="image/*" @change=${this._onFileSelected} />
+          <button class="attach-btn" aria-label="Attach image" @click=${this._openFilePicker}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiPaperclip}></path>
+            </svg>
+          </button>
           <textarea
             class="composer-textarea"
             placeholder="Ask anything about your grow..."
@@ -19435,6 +19476,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             </svg>
           </button>
         </div>
+        ${error ? x `<div class="composer-error">${error}</div>` : E}
       </div>
     `;
     }
@@ -19864,6 +19906,68 @@ GmChatPanel.styles = i$6 `
       transition: opacity 150ms;
     }
     .send:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Attach button ────────────────────────────────────────── */
+    .attach-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: none;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--secondary-text-color);
+      transition: background 150ms, color 150ms;
+    }
+    .attach-btn:hover { background: rgba(255,255,255,0.07); color: var(--primary-text-color); }
+
+    input[type='file'] { display: none; }
+
+    /* ── Attachment preview ───────────────────────────────────── */
+    .attachment-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+    }
+    .attachment-preview img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+    }
+    .remove-attachment {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+    }
+
+    /* ── Composer error ───────────────────────────────────────── */
+    .composer-error {
+      font-size: 0.78rem;
+      color: var(--error-color, #f44336);
+      padding: 4px 2px 0;
+    }
+
+    /* ── Message image thumbnail ──────────────────────────────── */
+    .msg-image {
+      display: block;
+      max-width: 200px;
+      border-radius: 8px;
+      margin-top: 6px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
   `;
 __decorate([
     n$5({ type: String })
@@ -19880,6 +19984,9 @@ __decorate([
 __decorate([
     r$3()
 ], GmChatPanel.prototype, "_contextChips", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_pendingAttachment", void 0);
 GmChatPanel = __decorate([
     t$2('gm-chat-panel')
 ], GmChatPanel);
@@ -19980,7 +20087,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="large"
+        width="full"
       >
         <div class="glass-dialog-container gm-shell">
           <!-- Header -->

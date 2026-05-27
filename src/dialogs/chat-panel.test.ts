@@ -469,3 +469,259 @@ describe('GmChatPanel — typing indicator', () => {
     expect(el.shadowRoot!.querySelector('.typing')).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Slice 7 — Attach button renders in composer
+// ---------------------------------------------------------------------------
+
+describe('GmChatPanel — attach button', () => {
+  it('renders .attach-btn in the composer', async () => {
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.attach-btn')).not.toBeNull();
+  });
+
+  it('renders a hidden file input in the composer', async () => {
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const fileInput = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(fileInput).not.toBeNull();
+    expect(fileInput!.accept).toContain('image/');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 8 — Image attachment preview
+// ---------------------------------------------------------------------------
+
+describe('GmChatPanel — attachment preview', () => {
+  it('shows .attachment-preview after a file is selected', async () => {
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    // Simulate FileReader producing a data URL
+    (el as unknown as { _pendingAttachment: string })._pendingAttachment =
+      'data:image/png;base64,abc123';
+    await el.requestUpdate();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.attachment-preview')).not.toBeNull();
+  });
+
+  it('shows an img tag with the data URL inside .attachment-preview', async () => {
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const dataUrl = 'data:image/png;base64,abc123';
+    (el as unknown as { _pendingAttachment: string })._pendingAttachment = dataUrl;
+    await el.requestUpdate();
+    await el.updateComplete;
+
+    const img = el.shadowRoot!.querySelector<HTMLImageElement>('.attachment-preview img');
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain('abc123');
+  });
+
+  it('remove button in .attachment-preview clears the attachment', async () => {
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    (el as unknown as { _pendingAttachment: string })._pendingAttachment =
+      'data:image/png;base64,abc123';
+    await el.requestUpdate();
+    await el.updateComplete;
+
+    const removeBtn = el.shadowRoot!.querySelector<HTMLElement>('.attachment-preview .remove-attachment');
+    expect(removeBtn).not.toBeNull();
+    removeBtn!.click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.attachment-preview')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 9 — imageEntityId wired through send
+// ---------------------------------------------------------------------------
+
+describe('GmChatPanel — imageEntityId wire-up', () => {
+  it('passes image_entity_id in start_conversation when attachment is pending', async () => {
+    vi.mocked(hassCallMod.hassCall).mockResolvedValue({
+      thread_id: 't1', growspace_id: 'gs1', messages: [],
+    });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const dataUrl = 'data:image/png;base64,abc123';
+    (el as unknown as { _pendingAttachment: string })._pendingAttachment = dataUrl;
+    await el.requestUpdate();
+    await el.updateComplete;
+
+    const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea');
+    textarea!.value = 'Check this image';
+    textarea!.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(hassCallMod.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/start_conversation',
+      expect.objectContaining({ image_entity_id: dataUrl }),
+      expect.anything(),
+    );
+  });
+
+  it('clears _pendingAttachment after sending', async () => {
+    vi.mocked(hassCallMod.hassCall).mockResolvedValue({
+      thread_id: 't1', growspace_id: 'gs1', messages: [],
+    });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    (el as unknown as { _pendingAttachment: string })._pendingAttachment =
+      'data:image/png;base64,abc123';
+    await el.requestUpdate();
+    await el.updateComplete;
+
+    const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea');
+    textarea!.value = 'With image';
+    textarea!.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
+    await new Promise((r) => setTimeout(r, 50));
+    await el.updateComplete;
+
+    expect((el as unknown as { _pendingAttachment: string | null })._pendingAttachment).toBeNull();
+  });
+
+  it('passes image_entity_id in send_message when attachment is pending', async () => {
+    activeThreadId$.set('t1');
+    conversationThreads$.set(new Map([
+      ['t1', { thread_id: 't1', growspace_id: 'gs1', messages: [] }],
+    ]));
+    vi.mocked(hassCallMod.hassCall).mockResolvedValue({
+      thread_id: 't1', growspace_id: 'gs1', messages: [],
+    });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const dataUrl = 'data:image/png;base64,abc123';
+    (el as unknown as { _pendingAttachment: string })._pendingAttachment = dataUrl;
+    await el.requestUpdate();
+    await el.updateComplete;
+
+    const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea');
+    textarea!.value = 'Follow up with image';
+    textarea!.dispatchEvent(new Event('input'));
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.send')!.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(hassCallMod.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/send_message',
+      expect.objectContaining({ image_entity_id: dataUrl }),
+      expect.anything(),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 10 — Backend error displayed beneath composer
+// ---------------------------------------------------------------------------
+
+describe('GmChatPanel — composer error display', () => {
+  it('renders .composer-error when aiError$ is set', async () => {
+    aiError$.set('camera.plant_cam is not a valid camera or image entity');
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const errorEl = el.shadowRoot!.querySelector('.composer-error');
+    expect(errorEl).not.toBeNull();
+    expect(normalize(errorEl!.textContent)).toContain('camera.plant_cam');
+  });
+
+  it('hides .composer-error when aiError$ is null', async () => {
+    aiError$.set(null);
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.composer-error')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 11 — User message bubble renders image thumbnail
+// ---------------------------------------------------------------------------
+
+describe('GmChatPanel — image in user message bubble', () => {
+  it('renders an img thumbnail inside .msg.user bubble when imageEntityId is set', async () => {
+    activeThreadId$.set('t1');
+    conversationThreads$.set(new Map([
+      ['t1', { thread_id: 't1', growspace_id: 'gs1', messages: [
+        {
+          role: 'user' as const,
+          text: 'Look at this',
+          timestamp: 1700000001,
+          imageEntityId: 'data:image/png;base64,abc123',
+        },
+      ]}],
+    ]));
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const bubble = el.shadowRoot!.querySelector('.msg.user .msg-bubble');
+    expect(bubble).not.toBeNull();
+    const img = bubble!.querySelector<HTMLImageElement>('.msg-image');
+    expect(img).not.toBeNull();
+    expect(img!.src).toContain('abc123');
+  });
+
+  it('does not render .msg-image when message has no imageEntityId', async () => {
+    activeThreadId$.set('t1');
+    conversationThreads$.set(new Map([
+      ['t1', { thread_id: 't1', growspace_id: 'gs1', messages: [
+        { role: 'user' as const, text: 'Plain message', timestamp: 1700000001 },
+      ]}],
+    ]));
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.msg-image')).toBeNull();
+  });
+});

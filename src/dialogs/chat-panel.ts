@@ -1,12 +1,13 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { mdiBrain, mdiSend, mdiClose, mdiCheck, mdiMessageOutline } from '@mdi/js';
+import { mdiBrain, mdiSend, mdiClose, mdiCheck, mdiMessageOutline, mdiPaperclip } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
 import {
   activeThreadId$,
   conversationThreads$,
   isAiLoading$,
+  aiError$,
   startConversation,
   sendMessage,
   applyAction,
@@ -29,10 +30,12 @@ export class GmChatPanel extends LitElement {
   @state() private _inputText = '';
   @state() private _dismissedActions = new Set<number>();
   @state() private _contextChips: ContextChip[] = [];
+  @state() private _pendingAttachment: string | null = null;
 
   private _activeThread = new StoreController(this, activeThreadId$);
   private _threads = new StoreController(this, conversationThreads$);
   private _loading = new StoreController(this, isAiLoading$);
+  private _error = new StoreController(this, aiError$);
 
   connectedCallback() {
     super.connectedCallback();
@@ -433,6 +436,68 @@ export class GmChatPanel extends LitElement {
       transition: opacity 150ms;
     }
     .send:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Attach button ────────────────────────────────────────── */
+    .attach-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: none;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--secondary-text-color);
+      transition: background 150ms, color 150ms;
+    }
+    .attach-btn:hover { background: rgba(255,255,255,0.07); color: var(--primary-text-color); }
+
+    input[type='file'] { display: none; }
+
+    /* ── Attachment preview ───────────────────────────────────── */
+    .attachment-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+    }
+    .attachment-preview img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+    }
+    .remove-attachment {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+    }
+
+    /* ── Composer error ───────────────────────────────────────── */
+    .composer-error {
+      font-size: 0.78rem;
+      color: var(--error-color, #f44336);
+      padding: 4px 2px 0;
+    }
+
+    /* ── Message image thumbnail ──────────────────────────────── */
+    .msg-image {
+      display: block;
+      max-width: 200px;
+      border-radius: 8px;
+      margin-top: 6px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
   `;
 
   private _getActiveThread(): ConversationThread | undefined {
@@ -453,12 +518,32 @@ export class GmChatPanel extends LitElement {
     const text = this._inputText.trim();
     if (!text) return;
     this._inputText = '';
+    const attachment = this._pendingAttachment ?? undefined;
+    this._pendingAttachment = null;
     const threadId = this._activeThread.value;
     if (threadId) {
-      await sendMessage(threadId, text);
+      await sendMessage(threadId, text, attachment);
     } else {
-      await startConversation(this.growspaceid, text);
+      await startConversation(this.growspaceid, text, attachment);
     }
+  }
+
+  private _openFilePicker() {
+    this.shadowRoot!.querySelector<HTMLInputElement>('input[type="file"]')?.click();
+  }
+
+  private _onFileSelected(e: Event) {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this._pendingAttachment = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  private _removeAttachment() {
+    this._pendingAttachment = null;
   }
 
   private _clickPrompt(prompt: string) {
@@ -575,6 +660,9 @@ export class GmChatPanel extends LitElement {
               ` : nothing}
             </div>
           ` : nothing}
+          ${msg.imageEntityId ? html`
+            <img class="msg-image" src=${msg.imageEntityId} alt="Attached image" />
+          ` : nothing}
           ${msg.text}
           ${msg.sensorSnapshot && msg.sensorSnapshot.length > 0 ? html`
             <div class="data-snap">
@@ -615,6 +703,7 @@ export class GmChatPanel extends LitElement {
 
   private _renderComposer() {
     const hasText = this._inputText.trim().length > 0;
+    const error = this._error.value;
     return html`
       <div class="composer">
         <div class="suggest-strip">
@@ -636,7 +725,23 @@ export class GmChatPanel extends LitElement {
             `)}
           </div>
         ` : nothing}
+        ${this._pendingAttachment ? html`
+          <div class="attachment-preview">
+            <img src=${this._pendingAttachment} alt="Attachment preview" />
+            <button class="remove-attachment" aria-label="Remove attachment" @click=${this._removeAttachment}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d=${mdiClose}></path>
+              </svg>
+            </button>
+          </div>
+        ` : nothing}
         <div class="composer-input">
+          <input type="file" accept="image/*" @change=${this._onFileSelected} />
+          <button class="attach-btn" aria-label="Attach image" @click=${this._openFilePicker}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiPaperclip}></path>
+            </svg>
+          </button>
           <textarea
             class="composer-textarea"
             placeholder="Ask anything about your grow..."
@@ -656,6 +761,7 @@ export class GmChatPanel extends LitElement {
             </svg>
           </button>
         </div>
+        ${error ? html`<div class="composer-error">${error}</div>` : nothing}
       </div>
     `;
   }
