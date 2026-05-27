@@ -42500,13 +42500,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             this._initControllers();
         }
     }
+    willUpdate(changed) {
+        super.willUpdate(changed);
+        if (changed.has('store')) {
+            this._initControllers();
+        }
+    }
     updated(changed) {
         super.updated(changed);
         if (changed.has('hass') && this.hass) {
             setHass(this.hass);
-        }
-        if (changed.has('store')) {
-            this._initControllers();
         }
     }
     _initControllers() {
@@ -115053,7 +115056,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.fetchHistory();
         // Initial Scene Update & Render Trigger
         this.updateScene();
-        this.requestUpdate(); // Trigger second render to populate panels with now-ready meshes
+        // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
+        Promise.resolve().then(() => this.requestUpdate());
     }
     updateScene() {
         if (!this.device || !this.sceneManager)

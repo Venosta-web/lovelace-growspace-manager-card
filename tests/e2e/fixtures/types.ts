@@ -25,4 +25,6 @@ export interface TestContext {
   vwcVegDashboardPath: string;
   vwcFlowerGrowspaceId: string;
   vwcFlowerDashboardPath: string;
+  /** Anchor plant for per-plant E2E tests (row 1, col 1 of veg growspace) */
+  vegPlantId: string;
 }

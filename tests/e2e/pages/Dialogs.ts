@@ -1,6 +1,35 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { PlantData } from './types';
 
+export class PlantOverviewDialog {
+  readonly page: Page;
+  readonly dialog: Locator;
+
+  constructor(page: Page) {
+    this.page = page;
+    this.dialog = page.locator('plant-overview-container ha-dialog');
+  }
+
+  async waitForOpen() {
+    await expect(this.dialog).toHaveAttribute('open', '');
+  }
+
+  async clickWaterButton() {
+    const btn = this.page
+      .locator('plant-overview-container')
+      .locator('button.quickbar-btn[title="Log watering"]');
+    await btn.click();
+  }
+
+  async close() {
+    const btn = this.page
+      .locator('plant-overview-container')
+      .locator('button.md3-button.outlined', { hasText: /cancel/i });
+    await btn.click();
+    await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  }
+}
+
 export class AddPlantDialog {
   readonly page: Page;
   readonly dialog: Locator;
@@ -136,25 +165,26 @@ export class ConfigDialog {
 export class WateringDialog {
   readonly page: Page;
   readonly dialog: Locator;
+  private readonly haDialog: Locator;
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('growspace-watering-dialog-ui ha-dialog');
+    this.dialog = page.locator('growspace-watering-dialog-ui');
+    this.haDialog = page.locator('growspace-watering-dialog-ui ha-dialog');
   }
 
   async waitForOpen() {
-    await expect(this.dialog).toHaveAttribute('open', '');
+    await expect(this.haDialog).toHaveAttribute('open', '');
   }
 
   async fillAmount(amount: number) {
-    const amountInput = this.dialog.locator('md3-number-input[label*="Amount" i]').locator('input');
+    const amountInput = this.dialog.locator('md3-number-input[label="Volume (Liters)"]').locator('input');
     await amountInput.fill(String(amount));
   }
 
   async submit() {
-    const saveButton = this.dialog.locator('button.md3-button.primary');
-    await saveButton.click();
-    await this.dialog.waitFor({ state: 'hidden', timeout: 5000 });
+    await this.dialog.locator('button.md3-button.primary', { hasText: /Record Watering/i }).click();
+    await this.dialog.waitFor({ state: 'detached', timeout: 10000 });
   }
 }
 

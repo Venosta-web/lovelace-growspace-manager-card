@@ -175,7 +175,9 @@ function buildSensors(slug: string) {
 async function resolveGrowspaceId(slug: string): Promise<string | null> {
   const attrs = await getStateAttributes(`sensor.e2e_${slug}_overview`);
   if (!attrs) return null;
-  return (attrs['growspace_id'] as string) ?? null;
+  // growspace_id is nested under attrs.identity in the current schema
+  const identity = attrs['identity'] as Record<string, unknown> | undefined;
+  return (identity?.['growspace_id'] as string) ?? null;
 }
 
 async function ensureGrowspace(spec: GrowspaceSpec): Promise<string> {

@@ -30,6 +30,7 @@ export const haTest = authenticatedTest.extend<{ testContext: TestContext }>({
       vwcVegDashboardPath: process.env.TEST_VWC_VEG_DASHBOARD_PATH || '',
       vwcFlowerGrowspaceId: process.env.TEST_VWC_FLOWER_GROWSPACE_ID || '',
       vwcFlowerDashboardPath: process.env.TEST_VWC_FLOWER_DASHBOARD_PATH || '',
+      vegPlantId: process.env.TEST_VEG_PLANT_ID || '',
     });
   },
 });
