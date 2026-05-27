@@ -145,6 +145,7 @@ describe('plant-actions', () => {
 
             expect(consoleSpy).toHaveBeenCalledWith('Failed to update plant', expect.any(Error));
             expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Failed to update plant: Network error', 'error');
+            consoleSpy.mockRestore();
         });
     });
 
@@ -186,6 +187,7 @@ describe('plant-actions', () => {
             await updatePlantFromDialog(ctx, dialogState);
 
             expect(consoleSpy).toHaveBeenCalledWith('Failed to update plant(s)', expect.any(Error));
+            consoleSpy.mockRestore();
         });
 
         it('should use entity_id fallback when plant_id is missing', async () => {
@@ -240,6 +242,7 @@ describe('plant-actions', () => {
             expect(ctx.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant1');
             expect(consoleSpy).toHaveBeenCalledWith('Failed to delete plant:', expect.any(Error));
             expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Failed to delete'), 'error');
+            consoleSpy.mockRestore();
         });
 
         it('should handle redo action', async () => {
