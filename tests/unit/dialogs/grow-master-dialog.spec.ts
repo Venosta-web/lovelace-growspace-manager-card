@@ -5,10 +5,10 @@ import { html, render } from 'lit';
 import { aiMode$, activeThreadId$, conversationThreads$ } from '../../../src/slices/ai-insight';
 
 vi.mock('../../../src/services/hass-call', () => ({
-  callService: vi.fn().mockResolvedValue(undefined),
-  callServiceReturning: vi.fn().mockResolvedValue({ response: 'ok' }),
-  hassCall: vi.fn().mockResolvedValue({}),
-  setHass: vi.fn(),
+    callService: vi.fn().mockResolvedValue(undefined),
+    callServiceReturning: vi.fn().mockResolvedValue({ response: 'ok' }),
+    hassCall: vi.fn().mockResolvedValue({}),
+    setHass: vi.fn(),
 }));
 
 describe('GrowMasterDialog', () => {
