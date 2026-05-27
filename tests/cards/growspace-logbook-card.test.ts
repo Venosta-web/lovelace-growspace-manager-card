@@ -4,6 +4,7 @@ import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../src/cards/growspace-logbook-card';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import { createMockHass } from '../mocks/hass';
+import { setHass } from '../../src/services/hass-call';
 
 // Ensure the custom element is defined
 if (!customElements.get('growspace-logbook-card')) {
@@ -25,8 +26,10 @@ describe('GrowspaceLogbookCard', () => {
   let element: GrowspaceLogbookCard;
 
   aroundEach(async (runTest) => {
+    const mockHass = createMockHass() as any;
+    setHass(mockHass);
     element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card></growspace-logbook-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = mockHass;
     await runTest();
     vi.restoreAllMocks();
   });
