@@ -19,7 +19,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
-import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema } from './schema';
+import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema, ResolveAckSchema } from './schema';
 import {
   aiInsight$,
   isAiLoading$,
@@ -429,20 +429,46 @@ describe('fetchAlerts', () => {
 // ---------------------------------------------------------------------------
 
 describe('resolveAlert', () => {
-  it('patches the resolved flag on the matching alert in aiAlerts$', async () => {
-    const alert = {
-      id: 'alert-1',
-      growspace_id: 'gs1',
-      type: 'vpd_warning',
-      severity: 'warning' as const,
-      bayesian_reasons: [],
-      ai_reasoning: null,
-      timestamp: 1700000000,
-      resolved: false,
-      resolution_note: null,
-    };
+  const alert = {
+    id: 'alert-1',
+    growspace_id: 'gs1',
+    type: 'vpd_warning',
+    severity: 'warning' as const,
+    bayesian_reasons: [],
+    ai_reasoning: null,
+    timestamp: 1700000000,
+    resolved: false,
+    resolution_note: null,
+  };
+
+  it('calls resolve_ai_alert with the correct schema (ResolveAckSchema, not TriageAlertSchema)', async () => {
     aiAlerts$.set([alert]);
-    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ...alert, resolved: true });
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
+
+    await resolveAlert('alert-1');
+
+    const [, , schema] = vi.mocked(hassCall.hassCall).mock.calls[0];
+    // ResolveAckSchema accepts { success, alert_id }; TriageAlertSchema would not.
+    expect(ResolveAckSchema.safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(true);
+    expect(TriageAlertSchema.safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(false);
+    // The schema passed must accept the ack payload
+    expect((schema as typeof ResolveAckSchema).safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(true);
+  });
+
+  it('sends resolution_note in the payload when provided', async () => {
+    aiAlerts$.set([alert]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
+
+    await resolveAlert('alert-1', 'Fixed humidity');
+
+    const [, payload] = vi.mocked(hassCall.hassCall).mock.calls[0];
+    expect(payload).toHaveProperty('resolution_note', 'Fixed humidity');
+    expect(payload).not.toHaveProperty('notes');
+  });
+
+  it('patches the resolved flag on the matching alert in aiAlerts$', async () => {
+    aiAlerts$.set([alert]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
 
     await resolveAlert('alert-1', 'Fixed humidity');
 
@@ -451,20 +477,9 @@ describe('resolveAlert', () => {
   });
 
   it('leaves other alerts unchanged', async () => {
-    const alertA = {
-      id: 'alert-1',
-      growspace_id: 'gs1',
-      type: 'vpd_warning',
-      severity: 'warning' as const,
-      bayesian_reasons: [],
-      ai_reasoning: null,
-      timestamp: 1700000000,
-      resolved: false,
-      resolution_note: null,
-    };
-    const alertB = { ...alertA, id: 'alert-2' };
-    aiAlerts$.set([alertA, alertB]);
-    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ...alertA, resolved: true });
+    const alertB = { ...alert, id: 'alert-2' };
+    aiAlerts$.set([alert, alertB]);
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
 
     await resolveAlert('alert-1');
 

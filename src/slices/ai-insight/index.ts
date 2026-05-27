@@ -32,6 +32,7 @@ import {
   GrowAdviceResponseSchema,
   ConversationThreadSchema,
   TriageAlertSchema,
+  ResolveAckSchema,
   AIBriefingSchema,
   type ConversationThread,
   type TriageAlert,
@@ -246,7 +247,7 @@ export async function resolveAlert(alertId: string, note?: string): Promise<void
   await hassCall(
     'growspace_manager/resolve_ai_alert',
     { alert_id: alertId, ...(note ? { resolution_note: note } : {}) },
-    TriageAlertSchema
+    ResolveAckSchema
   );
   aiAlerts$.set(
     aiAlerts$.get().map((a) => (a.id === alertId ? { ...a, resolved: true, resolution_note: note ?? null } : a))

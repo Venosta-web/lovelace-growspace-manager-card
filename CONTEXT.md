@@ -150,7 +150,18 @@ The AI assistant dialog (`grow-master-dialog`). Uses the Design A shell (sidebar
 
 - **Chat** — threaded multi-turn conversation backed by a `Conversation Thread`. Left rail shows recent threads and capability tiles. Composer supports context chips (growspace, time range, sensors) and photo attachment via the existing image pipeline.
 - **Briefing** — AI-generated facility-wide summary ([[AI Briefing]]). Left rail lists briefing types and scope filters.
-- **Inbox** — filterable list of [[Triage Alert]]s. Detail pane shows AI reasoning, KPI snapshot, and suggested actions.
+- **Inbox** — filterable list of [[Triage Alert]]s. Alerts are bucketed by Severity: `"danger"` → Action filter, `"warning"` → Watch filter, `"info"` → All only. Detail pane shows AI reasoning (when available) or Bayesian reasons, KPI snapshot, and suggested actions.
+
+## Triage Alert
+
+A persistent record created by the backend [[Alert Monitor]] when a Bayesian binary sensor (`stress` or `mold`) transitions off→on. Always carries Bayesian reasons; optionally enriched with AI reasoning when an AI assistant is configured. Wire format fields (as consumed by `TriageAlertSchema`): `id`, `growspace_id`, `type`, `severity`, `bayesian_reasons`, `ai_reasoning`, `timestamp` (Unix epoch int), `resolved`, `resolution_note`, plus optional `title`, `description`, `kpis`, `suggested_actions`, `snapshot_entity_id`.
+
+**Severity** — the urgency level of a Triage Alert, computed by the backend at serialization time:
+- `"danger"` — immediate action required (maps to the **Action** Inbox filter)
+- `"warning"` — monitor closely (maps to the **Watch** Inbox filter)
+- `"info"` — informational only (visible in **All** only)
+
+Current mapping: `stress → danger`, `mold → warning`.
 
 ## Conversation Thread (client)
 

@@ -78,6 +78,17 @@ export const TriageAlertSchema = z.object({
 export type TriageAlert = z.infer<typeof TriageAlertSchema>;
 
 // ---------------------------------------------------------------------------
+// ResolveAck
+// ---------------------------------------------------------------------------
+
+export const ResolveAckSchema = z.object({
+  success: z.boolean(),
+  alert_id: z.string(),
+});
+
+export type ResolveAck = z.infer<typeof ResolveAckSchema>;
+
+// ---------------------------------------------------------------------------
 // ConversationMessage
 // ---------------------------------------------------------------------------
 

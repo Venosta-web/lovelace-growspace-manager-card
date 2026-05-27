@@ -19010,6 +19010,13 @@ const TriageAlertSchema = objectType({
     snapshot_entity_id: stringType().nullable().optional(),
 });
 // ---------------------------------------------------------------------------
+// ResolveAck
+// ---------------------------------------------------------------------------
+const ResolveAckSchema = objectType({
+    success: booleanType(),
+    alert_id: stringType(),
+});
+// ---------------------------------------------------------------------------
 // ConversationMessage
 // ---------------------------------------------------------------------------
 const SensorSnapshotItemSchema = objectType({
@@ -19255,7 +19262,7 @@ async function fetchAlerts(growspaceId) {
  * calls the backend to persist the resolution.
  */
 async function resolveAlert(alertId, note) {
-    await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, TriageAlertSchema);
+    await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, ResolveAckSchema);
     aiAlerts$.set(aiAlerts$.get().map((a) => (a.id === alertId ? { ...a, resolved: true, resolution_note: note ?? null } : a)));
 }
 // ---------------------------------------------------------------------------
