@@ -61,6 +61,22 @@ export type TriageAlert = z.infer<typeof TriageAlertSchema>;
 // ConversationMessage
 // ---------------------------------------------------------------------------
 
+export const SensorSnapshotItemSchema = z.object({
+  label: z.string(),
+  value: z.string(),
+  unit: z.string(),
+  delta: z.string().optional(),
+});
+
+export type SensorSnapshotItem = z.infer<typeof SensorSnapshotItemSchema>;
+
+export const CitationSchema = z.object({
+  label: z.string(),
+  source: z.enum(['sensor', 'logbook']),
+});
+
+export type Citation = z.infer<typeof CitationSchema>;
+
 export const ConversationMessageSchema = z.object({
   role: z.enum(['user', 'ai']),
   text: z.string(),
@@ -76,6 +92,8 @@ export const ConversationMessageSchema = z.object({
     .optional(),
   confidence: z.number().optional(),
   imageEntityId: z.string().optional(),
+  sensorSnapshot: z.array(SensorSnapshotItemSchema).optional(),
+  citations: z.array(CitationSchema).optional(),
 });
 
 export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;

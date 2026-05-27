@@ -99,6 +99,11 @@ export const variables: CSSResult = css`
     --gm-ipm-color: #9c27b0;
     --gm-phi-color: #ff9800;
 
+    /* AI Assistant Panel Colors */
+    --ai-accent: #4caf50; /* Chat mode — Vitality Green */
+    --ai-violet: #9c27b0; /* Briefing mode */
+    --ai-amber: #ff9800; /* Inbox mode */
+
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
     --strain-dialog-color: var(--primary-text-color, #fff);

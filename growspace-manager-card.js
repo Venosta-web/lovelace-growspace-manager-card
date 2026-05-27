@@ -150,6 +150,7 @@ var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
 var mdiImageMultiple = "M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M11,12L13.03,14.71L16,11L20,16H8M2,6V20A2,2 0 0,0 4,22H18V20H4V6";
+var mdiInbox = "M19,15H15A3,3 0 0,1 12,18A3,3 0 0,1 9,15H5V5H19M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z";
 var mdiInformation = "M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiInformationOutline = "M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
@@ -159,7 +160,10 @@ var mdiLightningBolt = "M11 15H6L13 1V9H18L11 23V15Z";
 var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
+var mdiMessageOutline = "M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2M20 16H5.2L4 17.2V4H20V16Z";
+var mdiMicrophone = "M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z";
 var mdiMinus = "M19,13H5V11H19V13Z";
+var mdiNewspaper = "M20,11H4V8H20M20,15H13V13H20M20,19H13V17H20M11,19H4V13H11M20.33,4.67L18.67,3L17,4.67L15.33,3L13.67,4.67L12,3L10.33,4.67L8.67,3L7,4.67L5.33,3L3.67,4.67L2,3V19A2,2 0 0,0 4,21H20A2,2 0 0,0 22,19V3L20.33,4.67Z";
 var mdiNoteOutline = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
@@ -18944,38 +18948,1030 @@ CropSteeringDialog = __decorate([
     t$2('crop-steering-dialog')
 ], CropSteeringDialog);
 
+/**
+ * AIInsight slice — zod schemas for backend response validation.
+ *
+ * GrowAdviceResponseSchema validates the payload returned by the
+ * ask_grow_advice and analyze_all_growspaces HA services.
+ *
+ * New schemas cover the conversation, triage-alert, and briefing
+ * WebSocket commands added in issue #159.
+ */
+// The backend returns either a plain string or a nested { response: string }
+// object (sometimes double-nested). We accept both shapes and let the slice
+// extract the text.
+const responseBody = unionType([
+    stringType(),
+    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
+]);
+const GrowAdviceResponseSchema = unionType([
+    stringType(),
+    objectType({ response: responseBody }),
+    recordType(unknownType()),
+]);
+// ---------------------------------------------------------------------------
+// SuggestedAction
+// ---------------------------------------------------------------------------
+objectType({
+    service: stringType(),
+    target_entity_id: stringType(),
+    service_data: recordType(unknownType()),
+    description: stringType(),
+    confidence: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// TriageAlert
+// ---------------------------------------------------------------------------
+objectType({
+    id: stringType(),
+    growspace_id: stringType(),
+    type: stringType(),
+    bayesian_reasons: arrayType(stringType()),
+    ai_reasoning: stringType().nullable(),
+    timestamp: numberType(),
+    resolved: booleanType(),
+    resolution_note: stringType().nullable(),
+});
+// ---------------------------------------------------------------------------
+// ConversationMessage
+// ---------------------------------------------------------------------------
+const SensorSnapshotItemSchema = objectType({
+    label: stringType(),
+    value: stringType(),
+    unit: stringType(),
+    delta: stringType().optional(),
+});
+const CitationSchema = objectType({
+    label: stringType(),
+    source: enumType(['sensor', 'logbook']),
+});
+const ConversationMessageSchema = objectType({
+    role: enumType(['user', 'ai']),
+    text: stringType(),
+    timestamp: numberType().nonnegative(),
+    suggestedAction: objectType({
+        service: stringType(),
+        target_entity_id: stringType(),
+        service_data: recordType(unknownType()),
+        description: stringType(),
+        confidence: numberType().optional(),
+    })
+        .optional(),
+    confidence: numberType().optional(),
+    imageEntityId: stringType().optional(),
+    sensorSnapshot: arrayType(SensorSnapshotItemSchema).optional(),
+    citations: arrayType(CitationSchema).optional(),
+});
+// ---------------------------------------------------------------------------
+// ConversationThread
+// ---------------------------------------------------------------------------
+const ConversationThreadSchema = objectType({
+    thread_id: stringType(),
+    growspace_id: stringType(),
+    messages: arrayType(ConversationMessageSchema),
+});
+// ---------------------------------------------------------------------------
+// AIBriefing
+// ---------------------------------------------------------------------------
+objectType({
+    generated_at: numberType().nonnegative(),
+    summary_text: stringType(),
+    kpis: arrayType(unknownType()),
+    recommendations: arrayType(stringType()),
+    ai_available: booleanType(),
+});
+
+/**
+ * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
+ *
+ * Public API (atoms):
+ *   aiInsight$            — last AI response text (null if none loaded yet)
+ *   isAiLoading$          — whether an AI request is in-flight
+ *   aiError$              — error message from the last failed request (null = none)
+ *   conversationThreads$  — conversation threads keyed by thread ID
+ *   activeThreadId$       — ID of the currently active thread (null = none)
+ *   aiAlerts$             — triage alerts fetched from the backend
+ *   aiBriefing$           — latest AI briefing (null = none fetched yet)
+ *   aiMode$               — current AI panel mode
+ *
+ * Public API (mutators):
+ *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
+ *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
+ *   dismissInsight()                     — clear the current insight and any error
+ *   clearAiError()                       — clear only the error without touching the insight
+ *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
+ *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
+ *   applyAction(suggestedAction)                         — execute a suggested service action
+ *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
+ *   resolveAlert(alertId, note?)                         — mark an alert as resolved
+ *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
+ *
+ * Zod schemas are in ./schema.ts and private to this module.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const aiInsight$ = atom(null);
+const isAiLoading$ = atom(false);
+const aiError$ = atom(null);
+const conversationThreads$ = atom(new Map());
+const activeThreadId$ = atom(null);
+const aiMode$ = atom('briefing');
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+/**
+ * Extract a plain text string from a GrowAdviceResponse, which the backend
+ * may return as a string or as a nested `{ response: string }` object.
+ */
+function _extractText(raw) {
+    if (typeof raw === 'string')
+        return raw;
+    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
+        const inner = raw.response;
+        if (typeof inner === 'string')
+            return inner;
+        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
+            const deepInner = inner.response;
+            if (typeof deepInner === 'string')
+                return deepInner;
+        }
+        return JSON.stringify(inner);
+    }
+    return JSON.stringify(raw);
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Ask the AI for cultivation advice about a specific growspace.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function askGrowAdvice(growspaceId, userQuery) {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Request an AI analysis that covers all growspaces at once.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function analyzeAllGrowspaces() {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Clear the current insight and any error state.
+ * Use this when the user dismisses the AI response panel.
+ */
+function dismissInsight() {
+    aiInsight$.set(null);
+    aiError$.set(null);
+}
+// ---------------------------------------------------------------------------
+// Conversation mutators
+// ---------------------------------------------------------------------------
+/**
+ * Start a new AI conversation thread for a growspace.
+ *
+ * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
+ */
+async function startConversation(growspaceId, text, imageEntityId) {
+    const raw = await hassCall('growspace_manager/start_conversation', { growspace_id: growspaceId, text, ...({}) }, ConversationThreadSchema);
+    const threads = new Map(conversationThreads$.get());
+    threads.set(raw.thread_id, raw);
+    conversationThreads$.set(threads);
+    activeThreadId$.set(raw.thread_id);
+    return raw;
+}
+/**
+ * Send a message in an existing conversation thread.
+ *
+ * Appends the AI response message to the thread. Other threads are unchanged.
+ */
+async function sendMessage(threadId, text, imageEntityId) {
+    const raw = await hassCall('growspace_manager/send_message', { thread_id: threadId, text, ...({}) }, ConversationThreadSchema);
+    const threads = new Map(conversationThreads$.get());
+    threads.set(raw.thread_id, raw);
+    conversationThreads$.set(threads);
+}
+/**
+ * Execute a suggested service action.
+ *
+ * Calls the HA service specified in the action payload.
+ */
+async function applyAction(action) {
+    await callService(action.service, action.target_entity_id, action.service_data);
+}
+
+const SUGGESTION_PROMPTS = [
+    'What is the current VPD?',
+    'How can I optimize my environment?',
+    'Are there any plant stress indicators?',
+];
+let GmChatPanel = class GmChatPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceid = '';
+        this.growspacename = '';
+        this._inputText = '';
+        this._dismissedActions = new Set();
+        this._contextChips = [];
+        this._activeThread = new libExports.StoreController(this, activeThreadId$);
+        this._threads = new libExports.StoreController(this, conversationThreads$);
+        this._loading = new libExports.StoreController(this, isAiLoading$);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.growspacename) {
+            this._contextChips = [
+                { id: 'growspace', label: this.growspacename, type: 'growspace' },
+            ];
+        }
+    }
+    _getActiveThread() {
+        const threadId = this._activeThread.value;
+        if (!threadId)
+            return undefined;
+        return this._threads.value.get(threadId);
+    }
+    _setActiveThread(threadId) {
+        activeThreadId$.set(threadId);
+    }
+    _handleInput(e) {
+        this._inputText = e.target.value;
+    }
+    async _send() {
+        const text = this._inputText.trim();
+        if (!text)
+            return;
+        this._inputText = '';
+        const threadId = this._activeThread.value;
+        if (threadId) {
+            await sendMessage(threadId, text);
+        }
+        else {
+            await startConversation(this.growspaceid, text);
+        }
+    }
+    _clickPrompt(prompt) {
+        startConversation(this.growspaceid, prompt);
+    }
+    _clickSuggest(prompt) {
+        this._inputText = prompt;
+    }
+    _removeCtxChip(id) {
+        this._contextChips = this._contextChips.filter((c) => c.id !== id);
+    }
+    _renderThreadRail() {
+        const threads = [...this._threads.value.values()];
+        const activeId = this._activeThread.value;
+        return x `
+      <div class="chat-rail">
+        <div class="ai-model-card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
+            <path d=${mdiBrain}></path>
+          </svg>
+          <div class="model-info">
+            <div class="model-name">Grow Master</div>
+            <div class="model-cap">AI cultivation assistant</div>
+          </div>
+        </div>
+
+        ${threads.length > 0 ? x `
+          <div class="rail-section-label">Recent</div>
+          <div class="rail-recent">
+            ${c(threads, (t) => t.thread_id, (t) => {
+            const firstMsg = t.messages[0];
+            const isActive = t.thread_id === activeId;
+            return x `
+                <button
+                  class="thread-row"
+                  data-thread-id=${t.thread_id}
+                  aria-pressed=${isActive ? 'true' : 'false'}
+                  @click=${() => this._setActiveThread(t.thread_id)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
+                    <path d=${mdiMessageOutline}></path>
+                  </svg>
+                  <div>
+                    <div class="thread-title">${firstMsg?.text ?? 'New conversation'}</div>
+                    <div class="thread-time">${this._relTime(firstMsg?.timestamp)}</div>
+                  </div>
+                </button>
+              `;
+        })}
+          </div>
+        ` : E}
+      </div>
+    `;
+    }
+    _relTime(ts) {
+        if (!ts)
+            return '';
+        const diff = Date.now() / 1000 - ts;
+        if (diff < 60)
+            return 'just now';
+        if (diff < 3600)
+            return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400)
+            return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    }
+    _renderWelcome() {
+        return x `
+      <div class="welcome">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
+          <path d=${mdiBrain}></path>
+        </svg>
+        <h3 class="welcome-title">Good morning, grower</h3>
+        <p class="welcome-lede">Ask me anything about your grow — I'll analyze your data and suggest actions.</p>
+        <div class="prompt-grid">
+          ${SUGGESTION_PROMPTS.concat('What nutrients should I adjust?').map((p) => x `
+            <button class="prompt-card" @click=${() => this._clickPrompt(p)}>${p}</button>
+          `)}
+        </div>
+      </div>
+      ${this._renderComposer()}
+    `;
+    }
+    _confidenceLevel(conf) {
+        if (conf === undefined)
+            return 'high';
+        if (conf >= 0.8)
+            return 'high';
+        if (conf >= 0.5)
+            return 'mid';
+        return 'low';
+    }
+    _renderMessage(msg, index) {
+        const isUser = msg.role === 'user';
+        const initials = 'U';
+        const confLevel = this._confidenceLevel(msg.confidence);
+        const dismissed = this._dismissedActions.has(index);
+        return x `
+      <div class="msg ${msg.role}">
+        <div class="msg-avatar">
+          ${isUser ? initials : x `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiBrain}></path>
+            </svg>
+          `}
+        </div>
+        <div class="msg-bubble">
+          ${!isUser ? x `
+            <div class="msg-meta">
+              <span class="msg-label">Grow Master</span>
+              ${msg.confidence !== undefined ? x `
+                <span class="conf ${confLevel === 'mid' ? 'mid' : ''}">${Math.round(msg.confidence * 100)}%</span>
+              ` : E}
+            </div>
+          ` : E}
+          ${msg.text}
+          ${msg.sensorSnapshot && msg.sensorSnapshot.length > 0 ? x `
+            <div class="data-snap">
+              ${msg.sensorSnapshot.map((s) => x `
+                <div class="snap-cell">
+                  <div class="snap-value">${s.value}</div>
+                  <div class="snap-unit">${s.unit}</div>
+                  ${s.delta ? x `<div class="snap-delta">${s.delta}</div>` : E}
+                </div>
+              `)}
+            </div>
+          ` : E}
+          ${msg.suggestedAction && !dismissed ? x `
+            <div class="act-card">
+              <div class="act-title">${msg.suggestedAction.description}</div>
+              <div class="act-desc">${msg.suggestedAction.service}</div>
+              <div class="act-buttons">
+                <button class="apply-btn" @click=${() => applyAction(msg.suggestedAction)}>Apply</button>
+                <button class="dismiss-btn" @click=${() => this._dismiss(index)}>Dismiss</button>
+              </div>
+            </div>
+          ` : E}
+          ${msg.citations && msg.citations.length > 0 ? x `
+            <div class="cite-row">
+              ${msg.citations.map((c) => x `
+                <span class="cite-chip">${c.label}</span>
+              `)}
+            </div>
+          ` : E}
+        </div>
+      </div>
+    `;
+    }
+    _dismiss(index) {
+        this._dismissedActions = new Set([...this._dismissedActions, index]);
+    }
+    _renderComposer() {
+        const hasText = this._inputText.trim().length > 0;
+        return x `
+      <div class="composer">
+        <div class="suggest-strip">
+          ${SUGGESTION_PROMPTS.map((p) => x `
+            <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
+          `)}
+        </div>
+        ${this._contextChips.length > 0 ? x `
+          <div class="composer-chips">
+            ${this._contextChips.map((chip) => x `
+              <div class="ctx-chip" data-chip-id=${chip.id}>
+                ${chip.label}
+                <button class="remove-chip" aria-label="Remove ${chip.label}" @click=${() => this._removeCtxChip(chip.id)}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d=${mdiClose}></path>
+                  </svg>
+                </button>
+              </div>
+            `)}
+          </div>
+        ` : E}
+        <div class="composer-input">
+          <textarea
+            class="composer-textarea"
+            placeholder="Ask anything about your grow..."
+            rows="1"
+            .value=${this._inputText}
+            @input=${this._handleInput}
+            @keydown=${(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this._send();
+            }
+        }}
+          ></textarea>
+          <button class="send" ?disabled=${!hasText} @click=${this._send} aria-label="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiSend}></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderThread(thread) {
+        const isLoading = this._loading.value;
+        return x `
+      <div class="chat-area">
+        <div class="thread-header">
+          <span class="thread-breadcrumb">Chat / ${thread.messages[0]?.text?.slice(0, 40) ?? 'Conversation'}</span>
+          <button style="background:none;border:none;cursor:pointer;color:var(--secondary-text-color)" aria-label="Pin">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiCheck}></path>
+            </svg>
+          </button>
+        </div>
+        <div class="chat-scroll">
+          ${thread.messages.map((msg, i) => this._renderMessage(msg, i))}
+          ${isLoading ? x `
+            <div class="typing">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          ` : E}
+        </div>
+        ${this._renderComposer()}
+      </div>
+    `;
+    }
+    render() {
+        const thread = this._getActiveThread();
+        return x `
+      ${this._renderThreadRail()}
+      <div class="chat-content">
+        ${thread ? this._renderThread(thread) : this._renderWelcome()}
+      </div>
+    `;
+    }
+};
+GmChatPanel.styles = i$6 `
+    :host {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Rail ─────────────────────────────────────────────────── */
+    .chat-rail {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 8px;
+      border-right: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      overflow-y: auto;
+    }
+
+    .ai-model-card {
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ai-model-card .model-info { flex: 1; }
+    .ai-model-card .model-name { font-size: 0.85rem; font-weight: 500; }
+    .ai-model-card .model-cap { font-size: 0.7rem; color: var(--secondary-text-color); }
+
+    .rail-section-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--secondary-text-color);
+      padding: 0 4px;
+      margin-top: 8px;
+    }
+
+    .rail-recent { display: flex; flex-direction: column; gap: 2px; }
+
+    .thread-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-text-color);
+      font-family: inherit;
+      text-align: left;
+      width: 100%;
+      transition: background 150ms;
+    }
+    .thread-row:hover { background: rgba(255,255,255,0.05); }
+    .thread-row[aria-pressed='true'] {
+      background: rgba(76,175,80,0.12);
+      color: var(--ai-accent, #4caf50);
+    }
+    .thread-title {
+      font-size: 0.78rem;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+    .thread-time { font-size: 0.68rem; color: var(--secondary-text-color); margin-top: 2px; }
+
+    /* ── Content area ─────────────────────────────────────────── */
+    .chat-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Welcome ──────────────────────────────────────────────── */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      gap: 12px;
+      text-align: center;
+    }
+    .welcome-title { font-size: 1.3rem; font-weight: 500; margin: 0; }
+    .welcome-lede { font-size: 0.9rem; color: var(--secondary-text-color); margin: 0; }
+
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 16px;
+    }
+    .prompt-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--primary-text-color);
+      text-align: left;
+      font-family: inherit;
+      transition: background 150ms, border-color 150ms;
+    }
+    .prompt-card:hover {
+      background: rgba(76,175,80,0.1);
+      border-color: var(--ai-accent, #4caf50);
+    }
+
+    /* ── Thread header ────────────────────────────────────────── */
+    .thread-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      flex-shrink: 0;
+    }
+    .thread-breadcrumb { flex: 1; font-size: 0.85rem; color: var(--secondary-text-color); }
+
+    /* ── Chat area ────────────────────────────────────────────── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .chat-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Messages ─────────────────────────────────────────────── */
+    .msg {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+    }
+    .msg.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .msg.ai { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .msg.ai .msg-avatar { color: var(--ai-accent, #4caf50); }
+
+    .msg-bubble {
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .msg.user .msg-bubble {
+      background: rgba(76,175,80,0.18);
+      border-radius: 12px 4px 12px 12px;
+    }
+    .msg.ai .msg-bubble { border-radius: 4px 12px 12px 12px; }
+
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .msg-label { font-size: 0.75rem; font-weight: 600; }
+    .conf {
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 20px;
+      background: rgba(76,175,80,0.25);
+      color: var(--ai-accent, #4caf50);
+    }
+    .conf.mid {
+      background: rgba(255,152,0,0.25);
+      color: var(--ai-amber, #ff9800);
+    }
+
+    /* ── Data snap ────────────────────────────────────────────── */
+    .data-snap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .snap-cell { text-align: center; }
+    .snap-value { font-size: 1rem; font-weight: 600; }
+    .snap-unit { font-size: 0.7rem; color: var(--secondary-text-color); }
+    .snap-delta { font-size: 0.68rem; color: var(--ai-accent, #4caf50); }
+
+    /* ── Action card ──────────────────────────────────────────── */
+    .act-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .act-title { font-size: 0.82rem; font-weight: 600; }
+    .act-desc { font-size: 0.8rem; color: var(--secondary-text-color); }
+    .act-buttons { display: flex; gap: 8px; margin-top: 4px; }
+    .apply-btn, .dismiss-btn {
+      font-size: 0.78rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .apply-btn {
+      background: var(--ai-accent, #4caf50);
+      color: #fff;
+    }
+    .dismiss-btn {
+      background: rgba(255,255,255,0.08);
+      color: var(--primary-text-color);
+    }
+
+    /* ── Citations ────────────────────────────────────────────── */
+    .cite-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .cite-chip {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.07);
+      color: var(--secondary-text-color);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
+
+    /* ── Typing indicator ─────────────────────────────────────── */
+    .typing {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      color: var(--secondary-text-color);
+    }
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    /* ── Composer ─────────────────────────────────────────────── */
+    .composer {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 16px 12px;
+      border-top: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
+    .suggest-strip {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .suggest-chip {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 150ms;
+    }
+    .suggest-chip:hover { background: rgba(76,175,80,0.12); }
+
+    .composer-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .ctx-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      padding: 3px 8px 3px 10px;
+      border-radius: 20px;
+      background: rgba(76,175,80,0.12);
+      border: 1px solid rgba(76,175,80,0.3);
+      color: var(--ai-accent, #4caf50);
+    }
+    .remove-chip {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      padding: 0;
+      opacity: 0.7;
+      line-height: 1;
+    }
+
+    .composer-input {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .composer-textarea {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--primary-text-color, #fff);
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: none;
+      min-height: 40px;
+      max-height: 140px;
+      line-height: 1.4;
+      box-sizing: border-box;
+    }
+    .composer-textarea:focus {
+      outline: none;
+      border-color: rgba(76,175,80,0.5);
+    }
+    .send {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--ai-accent, #4caf50);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .send:disabled { opacity: 0.4; cursor: default; }
+  `;
+__decorate([
+    n$5({ type: String })
+], GmChatPanel.prototype, "growspaceid", void 0);
+__decorate([
+    n$5({ type: String })
+], GmChatPanel.prototype, "growspacename", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_inputText", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_dismissedActions", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_contextChips", void 0);
+GmChatPanel = __decorate([
+    t$2('gm-chat-panel')
+], GmChatPanel);
+
+const MODE_META = {
+    chat: { label: 'Chat', icon: mdiBrain, token: 'var(--ai-accent, #4caf50)' },
+    briefing: { label: 'Briefing', icon: mdiNewspaper, token: 'var(--ai-violet, #9c27b0)' },
+    inbox: { label: 'Inbox', icon: mdiInbox, token: 'var(--ai-amber, #ff9800)' },
+};
 let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        // Props from parent
         this.isStressed = false;
-        this.isLoading = false;
-        this.response = null;
-        this.userQuery = '';
+        this._aiMode = new libExports.StoreController(this, aiMode$);
     }
+    get _growspaceId() { return this.growspaceId ?? ''; }
+    get _growspaceName() { return this.growspaceName ?? ''; }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
-    _analyze() {
-        this.dispatchEvent(new CustomEvent('analyze-growspace', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
+    _setMode(mode) {
+        aiMode$.set(mode);
     }
-    _analyzeAll() {
-        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
+    _renderNavRail(mode) {
+        return x `
+      <nav class="gm-nav-rail" aria-label="AI mode navigation">
+        ${['chat', 'briefing', 'inbox'].map((m) => {
+            const meta = MODE_META[m];
+            return x `
+            <button
+              class="gm-nav-item"
+              data-mode=${m}
+              aria-pressed=${mode === m ? 'true' : 'false'}
+              @click=${() => this._setMode(m)}
+              title=${meta.label}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                <path d=${meta.icon}></path>
+              </svg>
+              ${meta.label}
+            </button>
+          `;
+        })}
+      </nav>
+    `;
+    }
+    _renderChatPanel() {
+        return x `
+      <gm-chat-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId ?? ''}
+        growspacename=${this._growspaceName ?? ''}
+      ></gm-chat-panel>
+    `;
+    }
+    _renderBriefingPanel() {
+        return x `<div class="gm-panel-briefing"><p>Briefing — coming soon</p></div>`;
+    }
+    _renderInboxPanel() {
+        return x `<div class="gm-panel-inbox"><p>Inbox — coming soon</p></div>`;
+    }
+    _renderFooter(mode) {
+        return x `
+      <footer class="gm-footer">
+        <p class="gm-disclaimer">
+          AI-generated advice. Always verify with expert guidance before applying.
+        </p>
+        <div class="gm-footer-actions">
+          ${mode === 'chat' ? E : E}
+          ${mode === 'briefing'
+            ? x `<button class="md3-button tonal">Refresh Briefing</button>`
+            : E}
+          ${mode === 'inbox'
+            ? x `<button class="md3-button tonal">Mark All Read</button>`
+            : E}
+          <button class="gm-mic-btn" disabled aria-label="Voice input (unavailable)" title="Voice input coming soon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="${mdiMicrophone}"></path>
+            </svg>
+          </button>
+        </div>
+      </footer>
+    `;
     }
     render() {
         if (!this.open)
             return x ``;
-        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
+        const mode = this._aiMode.value;
+        const meta = MODE_META[mode];
         const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
+        const subtitle = this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal';
         return x `
       <ha-dialog
         open
@@ -18986,81 +19982,37 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         .escapeKeyAction=${'close'}
         width="large"
       >
-        <div class="glass-dialog-container" style="border-color: ${borderColor}">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: ${borderColor}">
+        <div class="glass-dialog-container gm-shell">
+          <!-- Header -->
+          <header class="gm-header dialog-header">
+            <div class="gm-header-icon dialog-icon" data-mode=${mode}>
               <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBrain}"></path>
+                <path d=${meta.icon}></path>
               </svg>
             </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
-              <div class="dialog-subtitle">
-                ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
-              </div>
+            <div class="gm-header-title-group dialog-title-group">
+              <h2 class="gm-header-title dialog-title">${title}</h2>
+              <div class="gm-header-subtitle dialog-subtitle">${subtitle}</div>
             </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width:auto; padding:8px;"
-            >
+            <button class="gm-close-btn md3-button text" @click=${this._close} aria-label="Close">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
               </svg>
             </button>
+          </header>
+
+          <!-- Body: rail + content -->
+          <div class="gm-body">
+            ${this._renderNavRail(mode)}
+            <main class="gm-content ${mode === 'chat' ? 'no-pad' : ''}">
+              ${mode === 'chat' ? this._renderChatPanel() : E}
+              ${mode === 'briefing' ? this._renderBriefingPanel() : E}
+              ${mode === 'inbox' ? this._renderInboxPanel() : E}
+            </main>
           </div>
 
-          <div class="content-padding">
-            <!-- Input Area -->
-            <div class="md3-input-group">
-              <textarea
-                class="sd-textarea"
-                placeholder="Ask about this growspace..."
-                .value=${this.userQuery}
-                @input=${(e) => (this.userQuery = e.target.value)}
-                style="min-height: 80px;"
-              ></textarea>
-            </div>
-
-            <!-- Action -->
-            <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
-              <button
-                class="md3-button tonal"
-                @click=${this._analyzeAll}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                Analyze All
-              </button>
-              <button
-                class="md3-button primary"
-                @click=${this._analyze}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
-              </button>
-            </div>
-
-            <!-- Response Area -->
-            ${this.isLoading
-            ? x `
-                  <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24">
-                      <path d="${mdiLoading}" fill="currentColor"></path>
-                    </svg>
-                    <span>Consulting the archives...</span>
-                  </div>
-                `
-            : E}
-            ${!this.isLoading && this.response
-            ? x `
-                  <div class="gm-response-box" style="border: 2px solid ${borderColor};">
-                    ${this.response}
-                  </div>
-                `
-            : E}
-          </div>
+          <!-- Footer -->
+          ${this._renderFooter(mode)}
         </div>
       </ha-dialog>
     `;
@@ -19069,7 +20021,153 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
 GrowMasterDialog.styles = [
     dialogStyles,
     i$6 `
-      /* Specific overrides or additions */
+      /* ── Shell layout ────────────────────────────────────────── */
+      .gm-shell {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        max-height: 90vh;
+        overflow: hidden;
+      }
+
+      /* ── Header ──────────────────────────────────────────────── */
+      .gm-header {
+        display: flex;
+        align-items: center;
+        padding: 16px 24px;
+        gap: 12px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
+      .gm-header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .gm-header-icon[data-mode='chat'] {
+        color: var(--ai-accent, #4caf50);
+      }
+      .gm-header-icon[data-mode='briefing'] {
+        color: var(--ai-violet, #9c27b0);
+      }
+      .gm-header-icon[data-mode='inbox'] {
+        color: var(--ai-amber, #ff9800);
+      }
+      .gm-header-title-group {
+        flex: 1;
+      }
+      .gm-header-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+      .gm-header-subtitle {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin-top: 2px;
+        color: var(--secondary-text-color);
+      }
+      .gm-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--primary-text-color, #fff);
+        padding: 8px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gm-close-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* ── Body (rail + content) ───────────────────────────────── */
+      .gm-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      /* ── Nav rail ────────────────────────────────────────────── */
+      .gm-nav-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 8px;
+        border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
+        width: 72px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .gm-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-size: 0.6875rem;
+        font-family: inherit;
+        width: 56px;
+        transition: background var(--md3-motion-duration-short4, 200ms),
+          color var(--md3-motion-duration-short4, 200ms);
+      }
+      .gm-nav-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .gm-nav-item[aria-pressed='true'][data-mode='chat'] {
+        color: var(--ai-accent, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
+      }
+      .gm-nav-item[aria-pressed='true'][data-mode='briefing'] {
+        color: var(--ai-violet, #9c27b0);
+        background: rgba(156, 39, 176, 0.12);
+      }
+      .gm-nav-item[aria-pressed='true'][data-mode='inbox'] {
+        color: var(--ai-amber, #ff9800);
+        background: rgba(255, 152, 0, 0.12);
+      }
+
+      /* ── Content area ────────────────────────────────────────── */
+      .gm-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .gm-content.no-pad {
+        padding: 0;
+        overflow: hidden;
+      }
+
+      /* ── Panels ──────────────────────────────────────────────── */
+      .gm-panel-chat,
+      .gm-panel-briefing,
+      .gm-panel-inbox {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+      }
+
+      /* ── Legacy chat widgets (preserved) ─────────────────────── */
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
         border-radius: 16px;
@@ -19098,7 +20196,6 @@ GrowMasterDialog.styles = [
         width: 24px;
         height: 24px;
       }
-
       .sd-textarea {
         width: 100%;
         background: rgba(255, 255, 255, 0.05);
@@ -19116,12 +20213,40 @@ GrowMasterDialog.styles = [
         background: rgba(255, 255, 255, 0.08);
       }
 
-      .content-padding {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
+      /* ── Footer ──────────────────────────────────────────────── */
+      .gm-footer {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
+      .gm-disclaimer {
+        flex: 1;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.45));
+        line-height: 1.3;
+      }
+      .gm-footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .gm-mic-btn {
+        background: none;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: not-allowed;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.3));
+        opacity: 0.45;
       }
     `,
 ];
@@ -19135,14 +20260,11 @@ __decorate([
     n$5({ type: String })
 ], GrowMasterDialog.prototype, "personality", void 0);
 __decorate([
-    n$5({ type: Boolean })
-], GrowMasterDialog.prototype, "isLoading", void 0);
+    n$5({ type: String })
+], GrowMasterDialog.prototype, "growspaceId", void 0);
 __decorate([
     n$5({ type: String })
-], GrowMasterDialog.prototype, "response", void 0);
-__decorate([
-    r$3()
-], GrowMasterDialog.prototype, "userQuery", void 0);
+], GrowMasterDialog.prototype, "growspaceName", void 0);
 GrowMasterDialog = __decorate([
     t$2('grow-master-dialog')
 ], GrowMasterDialog);
@@ -29646,6 +30768,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             notes: '',
         };
         this._harvestForm = { quantity: 1, notes: '' };
+        this._donorActivePlantsOnly = true;
     }
     connectedCallback() {
         super.connectedCallback();
@@ -29683,6 +30806,11 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
                 }
             }
+        }
+        // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
+        if (plant_id.includes('||')) {
+            const [strain, phenotype] = plant_id.split('||', 2);
+            return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
         }
         return plant_id;
     }
@@ -29950,6 +31078,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button tonal"
               @click=${() => {
+            this._donorActivePlantsOnly = true;
             this._seedSubView = 'log-pollination';
         }}
             >
@@ -29968,6 +31097,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                           title="Edit"
                           @click=${() => {
                 this._editingEventId = e.event_id;
+                this._donorActivePlantsOnly = !e.donor_plant_id.includes('||');
                 this._pollinationForm = {
                     date: e.date,
                     donor_plant_id: e.donor_plant_id,
@@ -30206,6 +31336,16 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     }
     _renderLogPollinationForm() {
         const eligiblePlants = this._flowerVegPlants;
+        const libraryDonorOptions = this.strains
+            .slice()
+            .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
+            .map((s) => ({
+            key: `${s.strain}||${s.phenotype}`,
+            label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
+        }));
+        const donorOptions = this._donorActivePlantsOnly
+            ? eligiblePlants.map((p) => ({ key: p.plant_id, label: p.label }))
+            : libraryDonorOptions;
         return x `
       <div class="form-view">
         <div class="form-header">
@@ -30214,6 +31354,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             @click=${() => {
             this._seedSubView = 'list';
             this._editingEventId = null;
+            this._donorActivePlantsOnly = true;
             this._pollinationForm = {
                 date: '',
                 donor_plant_id: '',
@@ -30250,15 +31391,26 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         }}
           >
             <option value="">— select plant —</option>
-            ${eligiblePlants.map((p) => x `
+            ${donorOptions.map((o) => x `
                 <option
-                  value="${p.plant_id}"
-                  ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}
+                  value="${o.key}"
+                  ?selected=${this._pollinationForm.donor_plant_id === o.key}
                 >
-                  ${p.label}
+                  ${o.label}
                 </option>
               `)}
           </select>
+        </label>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            .checked=${this._donorActivePlantsOnly}
+            @change=${(e) => {
+            this._donorActivePlantsOnly = e.target.checked;
+            this._pollinationForm = { ...this._pollinationForm, donor_plant_id: '' };
+        }}
+          />
+          Active plants only
         </label>
         <label
           >Receiver plant (female / seed bearer)
@@ -30759,6 +31911,23 @@ SeedsGeneticsTab.styles = [
       .form-view select:focus {
         border-color: var(--accent-green, #4caf50);
       }
+      .checkbox-label {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px !important;
+        font-weight: 400 !important;
+        color: var(--primary-text-color) !important;
+        cursor: pointer;
+        margin-top: -4px;
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px !important;
+        padding: 0 !important;
+        accent-color: var(--accent-green, #4caf50);
+        cursor: pointer;
+      }
       .form-actions {
         display: flex;
         justify-content: flex-end;
@@ -30859,6 +32028,9 @@ __decorate([
 __decorate([
     r$3()
 ], SeedsGeneticsTab.prototype, "_harvestForm", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_donorActivePlantsOnly", void 0);
 SeedsGeneticsTab = __decorate([
     t$2('seeds-genetics-tab')
 ], SeedsGeneticsTab);
@@ -57259,6 +58431,11 @@ const variables = i$6 `
     --gm-error-color: var(--error-color, #f44336);
     --gm-ipm-color: #9c27b0;
     --gm-phi-color: #ff9800;
+
+    /* AI Assistant Panel Colors */
+    --ai-accent: #4caf50; /* Chat mode — Vitality Green */
+    --ai-violet: #9c27b0; /* Briefing mode */
+    --ai-amber: #ff9800; /* Inbox mode */
 
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
@@ -121171,201 +122348,6 @@ __decorate([
 GrowspaceAnalyticsCard = __decorate([
     t$2('growspace-analytics-card')
 ], GrowspaceAnalyticsCard);
-
-/**
- * AIInsight slice — zod schemas for backend response validation.
- *
- * GrowAdviceResponseSchema validates the payload returned by the
- * ask_grow_advice and analyze_all_growspaces HA services.
- *
- * New schemas cover the conversation, triage-alert, and briefing
- * WebSocket commands added in issue #159.
- */
-// The backend returns either a plain string or a nested { response: string }
-// object (sometimes double-nested). We accept both shapes and let the slice
-// extract the text.
-const responseBody = unionType([
-    stringType(),
-    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
-]);
-const GrowAdviceResponseSchema = unionType([
-    stringType(),
-    objectType({ response: responseBody }),
-    recordType(unknownType()),
-]);
-// ---------------------------------------------------------------------------
-// SuggestedAction
-// ---------------------------------------------------------------------------
-objectType({
-    service: stringType(),
-    target_entity_id: stringType(),
-    service_data: recordType(unknownType()),
-    description: stringType(),
-    confidence: numberType().optional(),
-});
-// ---------------------------------------------------------------------------
-// TriageAlert
-// ---------------------------------------------------------------------------
-objectType({
-    id: stringType(),
-    growspace_id: stringType(),
-    type: stringType(),
-    bayesian_reasons: arrayType(stringType()),
-    ai_reasoning: stringType().nullable(),
-    timestamp: numberType(),
-    resolved: booleanType(),
-    resolution_note: stringType().nullable(),
-});
-// ---------------------------------------------------------------------------
-// ConversationMessage
-// ---------------------------------------------------------------------------
-const ConversationMessageSchema = objectType({
-    role: enumType(['user', 'ai']),
-    text: stringType(),
-    timestamp: numberType().nonnegative(),
-    suggestedAction: objectType({
-        service: stringType(),
-        target_entity_id: stringType(),
-        service_data: recordType(unknownType()),
-        description: stringType(),
-        confidence: numberType().optional(),
-    })
-        .optional(),
-    confidence: numberType().optional(),
-    imageEntityId: stringType().optional(),
-});
-// ---------------------------------------------------------------------------
-// ConversationThread
-// ---------------------------------------------------------------------------
-objectType({
-    thread_id: stringType(),
-    growspace_id: stringType(),
-    messages: arrayType(ConversationMessageSchema),
-});
-// ---------------------------------------------------------------------------
-// AIBriefing
-// ---------------------------------------------------------------------------
-objectType({
-    generated_at: numberType().nonnegative(),
-    summary_text: stringType(),
-    kpis: arrayType(unknownType()),
-    recommendations: arrayType(stringType()),
-    ai_available: booleanType(),
-});
-
-/**
- * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
- *
- * Public API (atoms):
- *   aiInsight$            — last AI response text (null if none loaded yet)
- *   isAiLoading$          — whether an AI request is in-flight
- *   aiError$              — error message from the last failed request (null = none)
- *   conversationThreads$  — conversation threads keyed by thread ID
- *   activeThreadId$       — ID of the currently active thread (null = none)
- *   aiAlerts$             — triage alerts fetched from the backend
- *   aiBriefing$           — latest AI briefing (null = none fetched yet)
- *   aiMode$               — current AI panel mode
- *
- * Public API (mutators):
- *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
- *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
- *   dismissInsight()                     — clear the current insight and any error
- *   clearAiError()                       — clear only the error without touching the insight
- *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
- *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
- *   applyAction(suggestedAction)                         — execute a suggested service action
- *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
- *   resolveAlert(alertId, note?)                         — mark an alert as resolved
- *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
- *
- * Zod schemas are in ./schema.ts and private to this module.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-const aiInsight$ = atom(null);
-const isAiLoading$ = atom(false);
-const aiError$ = atom(null);
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-/**
- * Extract a plain text string from a GrowAdviceResponse, which the backend
- * may return as a string or as a nested `{ response: string }` object.
- */
-function _extractText(raw) {
-    if (typeof raw === 'string')
-        return raw;
-    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
-        const inner = raw.response;
-        if (typeof inner === 'string')
-            return inner;
-        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
-            const deepInner = inner.response;
-            if (typeof deepInner === 'string')
-                return deepInner;
-        }
-        return JSON.stringify(inner);
-    }
-    return JSON.stringify(raw);
-}
-// ---------------------------------------------------------------------------
-// Mutators (public)
-// ---------------------------------------------------------------------------
-/**
- * Ask the AI for cultivation advice about a specific growspace.
- *
- * Sets isAiLoading$ to true for the duration of the call.
- * On success: stores the response text in aiInsight$.
- * On failure: stores the error message in aiError$ and re-throws.
- */
-async function askGrowAdvice(growspaceId, userQuery) {
-    isAiLoading$.set(true);
-    aiError$.set(null);
-    try {
-        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
-        aiInsight$.set(_extractText(raw));
-    }
-    catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        aiError$.set(message);
-        throw err;
-    }
-    finally {
-        isAiLoading$.set(false);
-    }
-}
-/**
- * Request an AI analysis that covers all growspaces at once.
- *
- * Sets isAiLoading$ to true for the duration of the call.
- * On success: stores the response text in aiInsight$.
- * On failure: stores the error message in aiError$ and re-throws.
- */
-async function analyzeAllGrowspaces() {
-    isAiLoading$.set(true);
-    aiError$.set(null);
-    try {
-        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
-        aiInsight$.set(_extractText(raw));
-    }
-    catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        aiError$.set(message);
-        throw err;
-    }
-    finally {
-        isAiLoading$.set(false);
-    }
-}
-/**
- * Clear the current insight and any error state.
- * Use this when the user dismisses the AI response panel.
- */
-function dismissInsight() {
-    aiInsight$.set(null);
-    aiError$.set(null);
-}
 
 let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     constructor() {
