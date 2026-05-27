@@ -121177,6 +121177,9 @@ GrowspaceAnalyticsCard = __decorate([
  *
  * GrowAdviceResponseSchema validates the payload returned by the
  * ask_grow_advice and analyze_all_growspaces HA services.
+ *
+ * New schemas cover the conversation, triage-alert, and briefing
+ * WebSocket commands added in issue #159.
  */
 // The backend returns either a plain string or a nested { response: string }
 // object (sometimes double-nested). We accept both shapes and let the slice
@@ -121190,20 +121193,90 @@ const GrowAdviceResponseSchema = unionType([
     objectType({ response: responseBody }),
     recordType(unknownType()),
 ]);
+// ---------------------------------------------------------------------------
+// SuggestedAction
+// ---------------------------------------------------------------------------
+objectType({
+    service: stringType(),
+    target_entity_id: stringType(),
+    service_data: recordType(unknownType()),
+    description: stringType(),
+    confidence: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// TriageAlert
+// ---------------------------------------------------------------------------
+objectType({
+    id: stringType(),
+    growspace_id: stringType(),
+    type: stringType(),
+    bayesian_reasons: arrayType(stringType()),
+    ai_reasoning: stringType().nullable(),
+    timestamp: numberType(),
+    resolved: booleanType(),
+    resolution_note: stringType().nullable(),
+});
+// ---------------------------------------------------------------------------
+// ConversationMessage
+// ---------------------------------------------------------------------------
+const ConversationMessageSchema = objectType({
+    role: enumType(['user', 'ai']),
+    text: stringType(),
+    timestamp: numberType().nonnegative(),
+    suggestedAction: objectType({
+        service: stringType(),
+        target_entity_id: stringType(),
+        service_data: recordType(unknownType()),
+        description: stringType(),
+        confidence: numberType().optional(),
+    })
+        .optional(),
+    confidence: numberType().optional(),
+    imageEntityId: stringType().optional(),
+});
+// ---------------------------------------------------------------------------
+// ConversationThread
+// ---------------------------------------------------------------------------
+objectType({
+    thread_id: stringType(),
+    growspace_id: stringType(),
+    messages: arrayType(ConversationMessageSchema),
+});
+// ---------------------------------------------------------------------------
+// AIBriefing
+// ---------------------------------------------------------------------------
+objectType({
+    generated_at: numberType().nonnegative(),
+    summary_text: stringType(),
+    kpis: arrayType(unknownType()),
+    recommendations: arrayType(stringType()),
+    ai_available: booleanType(),
+});
 
 /**
  * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
  *
  * Public API (atoms):
- *   aiInsight$      — read: last AI response text (null if none loaded yet)
- *   isAiLoading$    — read: whether an AI request is in-flight
- *   aiError$        — read: error message from the last failed request (null = none)
+ *   aiInsight$            — last AI response text (null if none loaded yet)
+ *   isAiLoading$          — whether an AI request is in-flight
+ *   aiError$              — error message from the last failed request (null = none)
+ *   conversationThreads$  — conversation threads keyed by thread ID
+ *   activeThreadId$       — ID of the currently active thread (null = none)
+ *   aiAlerts$             — triage alerts fetched from the backend
+ *   aiBriefing$           — latest AI briefing (null = none fetched yet)
+ *   aiMode$               — current AI panel mode
  *
  * Public API (mutators):
  *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
  *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
  *   dismissInsight()                     — clear the current insight and any error
  *   clearAiError()                       — clear only the error without touching the insight
+ *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
+ *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
+ *   applyAction(suggestedAction)                         — execute a suggested service action
+ *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
+ *   resolveAlert(alertId, note?)                         — mark an alert as resolved
+ *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
  *
  * Zod schemas are in ./schema.ts and private to this module.
  */

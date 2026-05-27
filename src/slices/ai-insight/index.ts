@@ -2,22 +2,42 @@
  * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
  *
  * Public API (atoms):
- *   aiInsight$      — read: last AI response text (null if none loaded yet)
- *   isAiLoading$    — read: whether an AI request is in-flight
- *   aiError$        — read: error message from the last failed request (null = none)
+ *   aiInsight$            — last AI response text (null if none loaded yet)
+ *   isAiLoading$          — whether an AI request is in-flight
+ *   aiError$              — error message from the last failed request (null = none)
+ *   conversationThreads$  — conversation threads keyed by thread ID
+ *   activeThreadId$       — ID of the currently active thread (null = none)
+ *   aiAlerts$             — triage alerts fetched from the backend
+ *   aiBriefing$           — latest AI briefing (null = none fetched yet)
+ *   aiMode$               — current AI panel mode
  *
  * Public API (mutators):
  *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
  *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
  *   dismissInsight()                     — clear the current insight and any error
  *   clearAiError()                       — clear only the error without touching the insight
+ *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
+ *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
+ *   applyAction(suggestedAction)                         — execute a suggested service action
+ *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
+ *   resolveAlert(alertId, note?)                         — mark an alert as resolved
+ *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
  *
  * Zod schemas are in ./schema.ts and private to this module.
  */
 
 import { atom } from 'nanostores';
-import { callServiceReturning } from '../../services/hass-call';
-import { GrowAdviceResponseSchema } from './schema';
+import { callService, callServiceReturning, hassCall } from '../../services/hass-call';
+import {
+  GrowAdviceResponseSchema,
+  ConversationThreadSchema,
+  TriageAlertSchema,
+  AIBriefingSchema,
+  type ConversationThread,
+  type TriageAlert,
+  type AIBriefing,
+  type SuggestedAction,
+} from './schema';
 
 // ---------------------------------------------------------------------------
 // Atoms (public)
@@ -26,6 +46,11 @@ import { GrowAdviceResponseSchema } from './schema';
 export const aiInsight$ = atom<string | null>(null);
 export const isAiLoading$ = atom<boolean>(false);
 export const aiError$ = atom<string | null>(null);
+export const conversationThreads$ = atom<Map<string, ConversationThread>>(new Map());
+export const activeThreadId$ = atom<string | null>(null);
+export const aiAlerts$ = atom<TriageAlert[]>([]);
+export const aiBriefing$ = atom<AIBriefing | null>(null);
+export const aiMode$ = atom<'chat' | 'briefing' | 'inbox'>('briefing');
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -121,4 +146,107 @@ export function dismissInsight(): void {
  */
 export function clearAiError(): void {
   aiError$.set(null);
+}
+
+// ---------------------------------------------------------------------------
+// Conversation mutators
+// ---------------------------------------------------------------------------
+
+/**
+ * Start a new AI conversation thread for a growspace.
+ *
+ * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
+ */
+export async function startConversation(
+  growspaceId: string,
+  text: string,
+  imageEntityId?: string
+): Promise<ConversationThread> {
+  const raw = await hassCall(
+    'growspace_manager/start_conversation',
+    { growspace_id: growspaceId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) },
+    ConversationThreadSchema
+  );
+  const threads = new Map(conversationThreads$.get());
+  threads.set(raw.thread_id, raw);
+  conversationThreads$.set(threads);
+  activeThreadId$.set(raw.thread_id);
+  return raw;
+}
+
+/**
+ * Send a message in an existing conversation thread.
+ *
+ * Appends the AI response message to the thread. Other threads are unchanged.
+ */
+export async function sendMessage(
+  threadId: string,
+  text: string,
+  imageEntityId?: string
+): Promise<void> {
+  const raw = await hassCall(
+    'growspace_manager/send_message',
+    { thread_id: threadId, text, ...(imageEntityId ? { image_entity_id: imageEntityId } : {}) },
+    ConversationThreadSchema
+  );
+  const threads = new Map(conversationThreads$.get());
+  threads.set(raw.thread_id, raw);
+  conversationThreads$.set(threads);
+}
+
+/**
+ * Execute a suggested service action.
+ *
+ * Calls the HA service specified in the action payload.
+ */
+export async function applyAction(action: SuggestedAction): Promise<void> {
+  await callService(action.service, action.target_entity_id, action.service_data);
+}
+
+// ---------------------------------------------------------------------------
+// Alert mutators
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch triage alerts from the backend, optionally scoped to a growspace.
+ */
+export async function fetchAlerts(growspaceId?: string): Promise<void> {
+  const AlertsResponseSchema = TriageAlertSchema.array();
+  const alerts = await hassCall(
+    'growspace_manager/get_ai_alerts',
+    { ...(growspaceId ? { growspace_id: growspaceId } : {}) },
+    AlertsResponseSchema
+  );
+  aiAlerts$.set(alerts);
+}
+
+/**
+ * Mark an alert as resolved. Patches the matching alert in aiAlerts$ and
+ * calls the backend to persist the resolution.
+ */
+export async function resolveAlert(alertId: string, note?: string): Promise<void> {
+  await hassCall(
+    'growspace_manager/resolve_ai_alert',
+    { alert_id: alertId, ...(note ? { resolution_note: note } : {}) },
+    TriageAlertSchema
+  );
+  aiAlerts$.set(
+    aiAlerts$.get().map((a) => (a.id === alertId ? { ...a, resolved: true, resolution_note: note ?? null } : a))
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Briefing mutators
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch the latest AI briefing, optionally forcing a backend refresh.
+ */
+export async function fetchBriefing(forceRefresh?: boolean): Promise<void> {
+  const briefing = await hassCall(
+    'growspace_manager/get_briefing',
+    { ...(forceRefresh ? { force_refresh: true } : {}) },
+    AIBriefingSchema
+  );
+  aiBriefing$.set(briefing);
 }
