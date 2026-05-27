@@ -17,6 +17,7 @@ export class GmBriefingPanel extends LitElement {
   @property({ type: String }) growspaceid = '';
 
   @state() private _followUp = '';
+  @state() private _activeTab = 0;
 
   private _briefing = new StoreController(this, aiBriefing$);
   private _loading = new StoreController(this, isAiLoading$);
@@ -366,6 +367,26 @@ export class GmBriefingPanel extends LitElement {
       outline: none;
       border-color: rgba(156, 39, 176, 0.5);
     }
+
+    /* ── Per-tab placeholder sections ────────────────────────────── */
+    .tab-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      color: var(--secondary-text-color);
+      font-size: 0.9rem;
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .tab-placeholder h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
   `;
 
   private async _regenerate() {
@@ -402,7 +423,11 @@ export class GmBriefingPanel extends LitElement {
       <aside class="briefing-rail">
         <div class="rail-section-label">Briefings</div>
         ${BRIEFING_ITEMS.map((label, i) => html`
-          <button class="v1-nav-item" aria-pressed=${i === 0 ? 'true' : 'false'}>
+          <button
+            class="v1-nav-item"
+            aria-pressed=${this._activeTab === i ? 'true' : 'false'}
+            @click=${() => { this._activeTab = i; }}
+          >
             ${label}
           </button>
         `)}
@@ -458,6 +483,39 @@ export class GmBriefingPanel extends LitElement {
               : nothing}
           </div>
         </div>
+      </div>
+    `;
+  }
+
+  private _renderRiskWatch(briefing: AIBriefing) {
+    const risks = briefing.recommendations.filter((r) => r.impact === 'high');
+    return html`
+      <div class="risk-watch-content v1-content-scroll">
+        <div class="reco-section-title">High-impact risks · ${risks.length}</div>
+        ${risks.length
+          ? risks.map((r) => this._renderReco(r))
+          : html`<p class="tab-placeholder">No high-impact risks flagged.</p>`}
+      </div>
+    `;
+  }
+
+  private _renderGoingWell(briefing: AIBriefing) {
+    const good = briefing.recommendations.filter((r) => r.impact === 'low');
+    return html`
+      <div class="going-well-content v1-content-scroll">
+        <div class="reco-section-title">What's going well · ${good.length}</div>
+        ${good.length
+          ? good.map((r) => this._renderReco(r))
+          : html`<p class="tab-placeholder">Nothing flagged as low-impact — keep it up!</p>`}
+      </div>
+    `;
+  }
+
+  private _renderForecast() {
+    return html`
+      <div class="forecast-content tab-placeholder">
+        <h3>7-day forecast</h3>
+        <p>Predictive forecast coming soon.</p>
       </div>
     `;
   }
@@ -537,6 +595,15 @@ export class GmBriefingPanel extends LitElement {
     `;
   }
 
+  private _renderTabContent(briefing: AIBriefing) {
+    switch (this._activeTab) {
+      case 1: return this._renderRiskWatch(briefing);
+      case 2: return this._renderGoingWell(briefing);
+      case 3: return this._renderForecast();
+      default: return this._renderBriefing(briefing);
+    }
+  }
+
   render() {
     const briefing = this._briefing.value;
     const loading = this._loading.value;
@@ -545,7 +612,7 @@ export class GmBriefingPanel extends LitElement {
       ${this._renderRail()}
       <div class="briefing-content">
         ${!briefing && loading ? this._renderLoading() : nothing}
-        ${briefing ? this._renderBriefing(briefing) : nothing}
+        ${briefing ? this._renderTabContent(briefing) : nothing}
       </div>
     `;
   }

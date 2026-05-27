@@ -20053,6 +20053,7 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this._followUp = '';
+        this._activeTab = 0;
         this._briefing = new libExports.StoreController(this, aiBriefing$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
     }
@@ -20094,7 +20095,11 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
       <aside class="briefing-rail">
         <div class="rail-section-label">Briefings</div>
         ${BRIEFING_ITEMS.map((label, i) => x `
-          <button class="v1-nav-item" aria-pressed=${i === 0 ? 'true' : 'false'}>
+          <button
+            class="v1-nav-item"
+            aria-pressed=${this._activeTab === i ? 'true' : 'false'}
+            @click=${() => { this._activeTab = i; }}
+          >
             ${label}
           </button>
         `)}
@@ -20148,6 +20153,36 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
             : E}
           </div>
         </div>
+      </div>
+    `;
+    }
+    _renderRiskWatch(briefing) {
+        const risks = briefing.recommendations.filter((r) => r.impact === 'high');
+        return x `
+      <div class="risk-watch-content v1-content-scroll">
+        <div class="reco-section-title">High-impact risks · ${risks.length}</div>
+        ${risks.length
+            ? risks.map((r) => this._renderReco(r))
+            : x `<p class="tab-placeholder">No high-impact risks flagged.</p>`}
+      </div>
+    `;
+    }
+    _renderGoingWell(briefing) {
+        const good = briefing.recommendations.filter((r) => r.impact === 'low');
+        return x `
+      <div class="going-well-content v1-content-scroll">
+        <div class="reco-section-title">What's going well · ${good.length}</div>
+        ${good.length
+            ? good.map((r) => this._renderReco(r))
+            : x `<p class="tab-placeholder">Nothing flagged as low-impact — keep it up!</p>`}
+      </div>
+    `;
+    }
+    _renderForecast() {
+        return x `
+      <div class="forecast-content tab-placeholder">
+        <h3>7-day forecast</h3>
+        <p>Predictive forecast coming soon.</p>
       </div>
     `;
     }
@@ -20226,6 +20261,14 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
       </div>
     `;
     }
+    _renderTabContent(briefing) {
+        switch (this._activeTab) {
+            case 1: return this._renderRiskWatch(briefing);
+            case 2: return this._renderGoingWell(briefing);
+            case 3: return this._renderForecast();
+            default: return this._renderBriefing(briefing);
+        }
+    }
     render() {
         const briefing = this._briefing.value;
         const loading = this._loading.value;
@@ -20233,7 +20276,7 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
       ${this._renderRail()}
       <div class="briefing-content">
         ${!briefing && loading ? this._renderLoading() : E}
-        ${briefing ? this._renderBriefing(briefing) : E}
+        ${briefing ? this._renderTabContent(briefing) : E}
       </div>
     `;
     }
@@ -20576,6 +20619,26 @@ GmBriefingPanel.styles = i$6 `
       outline: none;
       border-color: rgba(156, 39, 176, 0.5);
     }
+
+    /* ── Per-tab placeholder sections ────────────────────────────── */
+    .tab-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      color: var(--secondary-text-color);
+      font-size: 0.9rem;
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .tab-placeholder h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
   `;
 __decorate([
     n$5({ type: String })
@@ -20583,6 +20646,9 @@ __decorate([
 __decorate([
     r$3()
 ], GmBriefingPanel.prototype, "_followUp", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_activeTab", void 0);
 GmBriefingPanel = __decorate([
     t$2('gm-briefing-panel')
 ], GmBriefingPanel);
