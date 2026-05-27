@@ -19287,6 +19287,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
         this._error = new libExports.StoreController(this, aiError$);
+        this._briefing = new libExports.StoreController(this, aiBriefing$);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -19403,7 +19404,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             return `${Math.floor(diff / 3600)}h ago`;
         return `${Math.floor(diff / 86400)}d ago`;
     }
-    _renderWelcome() {
+    _renderWelcome(aiUnavailable) {
         return x `
       <div class="welcome">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
@@ -19413,11 +19414,11 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         <p class="welcome-lede">Ask me anything about your grow — I'll analyze your data and suggest actions.</p>
         <div class="prompt-grid">
           ${SUGGESTION_PROMPTS.concat('What nutrients should I adjust?').map((p) => x `
-            <button class="prompt-card" @click=${() => this._clickPrompt(p)}>${p}</button>
+            <button class="prompt-card" ?disabled=${aiUnavailable} @click=${() => this._clickPrompt(p)}>${p}</button>
           `)}
         </div>
       </div>
-      ${this._renderComposer()}
+      ${this._renderComposer(aiUnavailable)}
     `;
     }
     _confidenceLevel(conf) {
@@ -19491,11 +19492,11 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     _dismiss(index) {
         this._dismissedActions = new Set([...this._dismissedActions, index]);
     }
-    _renderComposer() {
+    _renderComposer(disabled = false) {
         const hasText = this._inputText.trim().length > 0;
         const error = this._error.value;
         return x `
-      <div class="composer">
+      <div class="composer ${disabled ? 'composer--disabled' : ''}">
         <div class="suggest-strip">
           ${SUGGESTION_PROMPTS.map((p) => x `
             <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
@@ -19527,7 +19528,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         ` : E}
         <div class="composer-input">
           <input type="file" accept="image/*" @change=${this._onFileSelected} />
-          <button class="attach-btn" aria-label="Attach image" @click=${this._openFilePicker}>
+          <button class="attach-btn" aria-label="Attach image" ?disabled=${disabled} @click=${this._openFilePicker}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d=${mdiPaperclip}></path>
             </svg>
@@ -19536,6 +19537,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             class="composer-textarea"
             placeholder="Ask anything about your grow..."
             rows="1"
+            ?disabled=${disabled}
             .value=${this._inputText}
             @input=${this._handleInput}
             @keydown=${(e) => {
@@ -19545,7 +19547,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             }
         }}
           ></textarea>
-          <button class="send" ?disabled=${!hasText} @click=${this._send} aria-label="Send">
+          <button class="send" ?disabled=${!hasText || disabled} @click=${this._send} aria-label="Send">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d=${mdiSend}></path>
             </svg>
@@ -19555,7 +19557,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
       </div>
     `;
     }
-    _renderThread(thread) {
+    _renderThread(thread, aiUnavailable) {
         const isLoading = this._loading.value;
         return x `
       <div class="chat-area">
@@ -19577,16 +19579,24 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             </div>
           ` : E}
         </div>
-        ${this._renderComposer()}
+        ${this._renderComposer(aiUnavailable)}
       </div>
     `;
     }
     render() {
         const thread = this._getActiveThread();
+        const aiUnavailable = this._briefing.value?.ai_available === false;
         return x `
       ${this._renderThreadRail()}
       <div class="chat-content">
-        ${thread ? this._renderThread(thread) : this._renderWelcome()}
+        ${aiUnavailable ? x `
+          <div class="ai-unavailable-banner">
+            AI agent not configured — set one up in
+            <strong>Settings → Integrations → Growspace Manager</strong>
+            to enable chat.
+          </div>
+        ` : E}
+        ${thread ? this._renderThread(thread, aiUnavailable) : this._renderWelcome(aiUnavailable)}
       </div>
     `;
     }
@@ -20028,6 +20038,24 @@ GmChatPanel.styles = i$6 `
       color: var(--secondary-text-color);
     }
 
+    /* ── AI unavailable banner ────────────────────────────────── */
+    .ai-unavailable-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
+    }
+
+    .composer--disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
     /* ── Composer error ───────────────────────────────────────── */
     .composer-error {
       font-size: 0.78rem;
@@ -20174,7 +20202,17 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
       </div>
     `;
     }
+    _renderAiUnavailable() {
+        return x `
+      <div class="tab-placeholder">
+        <h3>AI agent not configured</h3>
+        <p>Set up a conversation agent in <strong>Settings → Integrations → Growspace Manager</strong> to enable AI-powered insights.</p>
+      </div>
+    `;
+    }
     _renderRiskWatch(briefing) {
+        if (!briefing.ai_available)
+            return this._renderAiUnavailable();
         const risks = briefing.recommendations.filter((r) => r.impact === 'high');
         return x `
       <div class="risk-watch-content v1-content-scroll">
@@ -20186,6 +20224,8 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
     `;
     }
     _renderGoingWell(briefing) {
+        if (!briefing.ai_available)
+            return this._renderAiUnavailable();
         const good = briefing.recommendations.filter((r) => r.impact === 'low');
         return x `
       <div class="going-well-content v1-content-scroll">
@@ -20692,6 +20732,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         this._showNoteInput = false;
         this._noteText = '';
         this._alerts = new libExports.StoreController(this, aiAlerts$);
+        this._briefing = new libExports.StoreController(this, aiBriefing$);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -20901,10 +20942,19 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
       </div>
     `;
     }
+    _renderAiUnavailableBanner() {
+        return x `
+      <div class="ai-unavailable-banner">
+        AI reasoning unavailable — alerts shown without enrichment.
+      </div>
+    `;
+    }
     render() {
+        const aiAvailable = this._briefing.value?.ai_available;
         return x `
       <div class="inbox-shell">
         <div class="inbox-rail">
+          ${aiAvailable === false ? this._renderAiUnavailableBanner() : E}
           ${this._renderFilterStrip()}
           ${this._renderAlertList()}
         </div>
@@ -21061,6 +21111,19 @@ GmInboxPanel.styles = i$6 `
       color: var(--secondary-text-color);
       margin-top: 4px;
       opacity: 0.7;
+    }
+
+    /* ── AI unavailable banner ──────────────────────────────── */
+    .ai-unavailable-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
     }
 
     /* ── Empty state ────────────────────────────────────────── */
@@ -21378,6 +21441,12 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     }
     get _growspaceId() { return this.growspaceId ?? ''; }
     get _growspaceName() { return this.growspaceName ?? ''; }
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        if (changedProperties.has('open') && this.open && !aiBriefing$.get()) {
+            fetchBriefing();
+        }
+    }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }

@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { mdiInbox } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
-import { aiAlerts$, fetchAlerts, resolveAlert, applyAction } from '../slices/ai-insight';
+import { aiAlerts$, aiBriefing$, fetchAlerts, resolveAlert, applyAction } from '../slices/ai-insight';
 import type { TriageAlert, SuggestedAction } from '../slices/ai-insight/schema';
 
 type InboxFilter = 'all' | 'action' | 'watch';
@@ -28,6 +28,7 @@ export class GmInboxPanel extends LitElement {
   @state() private _noteText = '';
 
   private _alerts = new StoreController(this, aiAlerts$);
+  private _briefing = new StoreController(this, aiBriefing$);
 
   connectedCallback() {
     super.connectedCallback();
@@ -224,6 +225,19 @@ export class GmInboxPanel extends LitElement {
       color: var(--secondary-text-color);
       margin-top: 4px;
       opacity: 0.7;
+    }
+
+    /* ── AI unavailable banner ──────────────────────────────── */
+    .ai-unavailable-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
     }
 
     /* ── Empty state ────────────────────────────────────────── */
@@ -689,10 +703,20 @@ export class GmInboxPanel extends LitElement {
     `;
   }
 
+  private _renderAiUnavailableBanner() {
+    return html`
+      <div class="ai-unavailable-banner">
+        AI reasoning unavailable — alerts shown without enrichment.
+      </div>
+    `;
+  }
+
   render() {
+    const aiAvailable = this._briefing.value?.ai_available;
     return html`
       <div class="inbox-shell">
         <div class="inbox-rail">
+          ${aiAvailable === false ? this._renderAiUnavailableBanner() : nothing}
           ${this._renderFilterStrip()}
           ${this._renderAlertList()}
         </div>

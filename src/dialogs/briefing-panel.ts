@@ -487,7 +487,17 @@ export class GmBriefingPanel extends LitElement {
     `;
   }
 
+  private _renderAiUnavailable() {
+    return html`
+      <div class="tab-placeholder">
+        <h3>AI agent not configured</h3>
+        <p>Set up a conversation agent in <strong>Settings → Integrations → Growspace Manager</strong> to enable AI-powered insights.</p>
+      </div>
+    `;
+  }
+
   private _renderRiskWatch(briefing: AIBriefing) {
+    if (!briefing.ai_available) return this._renderAiUnavailable();
     const risks = briefing.recommendations.filter((r) => r.impact === 'high');
     return html`
       <div class="risk-watch-content v1-content-scroll">
@@ -500,6 +510,7 @@ export class GmBriefingPanel extends LitElement {
   }
 
   private _renderGoingWell(briefing: AIBriefing) {
+    if (!briefing.ai_available) return this._renderAiUnavailable();
     const good = briefing.recommendations.filter((r) => r.impact === 'low');
     return html`
       <div class="going-well-content v1-content-scroll">

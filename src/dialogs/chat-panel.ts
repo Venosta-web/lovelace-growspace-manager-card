@@ -8,6 +8,7 @@ import {
   conversationThreads$,
   isAiLoading$,
   aiError$,
+  aiBriefing$,
   startConversation,
   sendMessage,
   applyAction,
@@ -36,6 +37,7 @@ export class GmChatPanel extends LitElement {
   private _threads = new StoreController(this, conversationThreads$);
   private _loading = new StoreController(this, isAiLoading$);
   private _error = new StoreController(this, aiError$);
+  private _briefing = new StoreController(this, aiBriefing$);
 
   connectedCallback() {
     super.connectedCallback();
@@ -483,6 +485,24 @@ export class GmChatPanel extends LitElement {
       color: var(--secondary-text-color);
     }
 
+    /* ── AI unavailable banner ────────────────────────────────── */
+    .ai-unavailable-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
+    }
+
+    .composer--disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
     /* ── Composer error ───────────────────────────────────────── */
     .composer-error {
       font-size: 0.78rem;
@@ -611,7 +631,7 @@ export class GmChatPanel extends LitElement {
     return `${Math.floor(diff / 86400)}d ago`;
   }
 
-  private _renderWelcome() {
+  private _renderWelcome(aiUnavailable: boolean) {
     return html`
       <div class="welcome">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
@@ -621,11 +641,11 @@ export class GmChatPanel extends LitElement {
         <p class="welcome-lede">Ask me anything about your grow — I'll analyze your data and suggest actions.</p>
         <div class="prompt-grid">
           ${SUGGESTION_PROMPTS.concat('What nutrients should I adjust?').map((p) => html`
-            <button class="prompt-card" @click=${() => this._clickPrompt(p)}>${p}</button>
+            <button class="prompt-card" ?disabled=${aiUnavailable} @click=${() => this._clickPrompt(p)}>${p}</button>
           `)}
         </div>
       </div>
-      ${this._renderComposer()}
+      ${this._renderComposer(aiUnavailable)}
     `;
   }
 
@@ -701,11 +721,11 @@ export class GmChatPanel extends LitElement {
     this._dismissedActions = new Set([...this._dismissedActions, index]);
   }
 
-  private _renderComposer() {
+  private _renderComposer(disabled = false) {
     const hasText = this._inputText.trim().length > 0;
     const error = this._error.value;
     return html`
-      <div class="composer">
+      <div class="composer ${disabled ? 'composer--disabled' : ''}">
         <div class="suggest-strip">
           ${SUGGESTION_PROMPTS.map((p) => html`
             <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
@@ -737,7 +757,7 @@ export class GmChatPanel extends LitElement {
         ` : nothing}
         <div class="composer-input">
           <input type="file" accept="image/*" @change=${this._onFileSelected} />
-          <button class="attach-btn" aria-label="Attach image" @click=${this._openFilePicker}>
+          <button class="attach-btn" aria-label="Attach image" ?disabled=${disabled} @click=${this._openFilePicker}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d=${mdiPaperclip}></path>
             </svg>
@@ -746,6 +766,7 @@ export class GmChatPanel extends LitElement {
             class="composer-textarea"
             placeholder="Ask anything about your grow..."
             rows="1"
+            ?disabled=${disabled}
             .value=${this._inputText}
             @input=${this._handleInput}
             @keydown=${(e: KeyboardEvent) => {
@@ -755,7 +776,7 @@ export class GmChatPanel extends LitElement {
               }
             }}
           ></textarea>
-          <button class="send" ?disabled=${!hasText} @click=${this._send} aria-label="Send">
+          <button class="send" ?disabled=${!hasText || disabled} @click=${this._send} aria-label="Send">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d=${mdiSend}></path>
             </svg>
@@ -766,7 +787,7 @@ export class GmChatPanel extends LitElement {
     `;
   }
 
-  private _renderThread(thread: ConversationThread) {
+  private _renderThread(thread: ConversationThread, aiUnavailable: boolean) {
     const isLoading = this._loading.value;
     return html`
       <div class="chat-area">
@@ -788,17 +809,25 @@ export class GmChatPanel extends LitElement {
             </div>
           ` : nothing}
         </div>
-        ${this._renderComposer()}
+        ${this._renderComposer(aiUnavailable)}
       </div>
     `;
   }
 
   render() {
     const thread = this._getActiveThread();
+    const aiUnavailable = this._briefing.value?.ai_available === false;
     return html`
       ${this._renderThreadRail()}
       <div class="chat-content">
-        ${thread ? this._renderThread(thread) : this._renderWelcome()}
+        ${aiUnavailable ? html`
+          <div class="ai-unavailable-banner">
+            AI agent not configured — set one up in
+            <strong>Settings → Integrations → Growspace Manager</strong>
+            to enable chat.
+          </div>
+        ` : nothing}
+        ${thread ? this._renderThread(thread, aiUnavailable) : this._renderWelcome(aiUnavailable)}
       </div>
     `;
   }

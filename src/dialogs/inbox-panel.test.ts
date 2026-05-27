@@ -588,3 +588,61 @@ describe('GmInboxPanel — atom persistence', () => {
     expect(aiAlerts$.get()).toEqual([ALERT_DANGER]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Slice 12 — AI unavailable banner
+// ---------------------------------------------------------------------------
+
+const BRIEFING_BASE = {
+  generated_at: 1700000000,
+  summary_text: 'Not optimal.',
+  kpis: [],
+  recommendations: [],
+};
+
+describe('GmInboxPanel — AI unavailable banner', () => {
+  it('shows .ai-unavailable-banner when aiBriefing ai_available is false', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).not.toBeNull();
+  });
+
+  it('does not show banner when aiBriefing ai_available is true', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: true });
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
+  });
+
+  it('does not show banner when aiBriefing is null', async () => {
+    aiBriefing$.set(null);
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
+  });
+
+  it('still renders alert rows when AI is unavailable', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
+    aiAlerts$.set([ALERT_WARNING]);
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelectorAll('.inbox-row').length).toBe(1);
+  });
+});

@@ -262,6 +262,13 @@ export class GrowMasterDialog extends LitElement {
     `,
   ];
 
+  override updated(changedProperties: Map<string | symbol, unknown>) {
+    super.updated(changedProperties);
+    if (changedProperties.has('open') && this.open && !aiBriefing$.get()) {
+      fetchBriefing();
+    }
+  }
+
   private _close() {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }

@@ -725,3 +725,97 @@ describe('GmChatPanel — image in user message bubble', () => {
     expect(el.shadowRoot!.querySelector('.msg-image')).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Slice 12 — AI unavailable banner and disabled composer
+// ---------------------------------------------------------------------------
+
+const BRIEFING_BASE = {
+  generated_at: 1700000000,
+  summary_text: 'Not optimal.',
+  kpis: [],
+  recommendations: [],
+};
+
+describe('GmChatPanel — AI unavailable banner', () => {
+  it('shows .ai-unavailable-banner when aiBriefing ai_available is false', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).not.toBeNull();
+  });
+
+  it('does not show banner when aiBriefing ai_available is true', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: true });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
+  });
+
+  it('does not show banner when aiBriefing is null', async () => {
+    aiBriefing$.set(null);
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
+  });
+
+  it('composer textarea is disabled when AI is unavailable', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea');
+    expect(textarea?.disabled).toBe(true);
+  });
+
+  it('send button is disabled when AI is unavailable', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const sendBtn = el.shadowRoot!.querySelector<HTMLButtonElement>('.send');
+    expect(sendBtn?.disabled).toBe(true);
+  });
+
+  it('composer has composer--disabled class when AI is unavailable', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: false });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.composer--disabled')).not.toBeNull();
+  });
+
+  it('composer is fully enabled when AI is available', async () => {
+    aiBriefing$.set({ ...BRIEFING_BASE, ai_available: true });
+
+    const el = await fixture<GmChatPanel>(html`
+      <gm-chat-panel growspaceid="gs1"></gm-chat-panel>
+    `);
+    await el.updateComplete;
+
+    const textarea = el.shadowRoot!.querySelector<HTMLTextAreaElement>('.composer-textarea');
+    expect(textarea?.disabled).toBe(false);
+    expect(el.shadowRoot!.querySelector('.composer--disabled')).toBeNull();
+  });
+});
