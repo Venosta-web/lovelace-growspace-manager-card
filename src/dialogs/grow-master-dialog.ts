@@ -3,8 +3,10 @@ import { customElement, property } from 'lit/decorators.js';
 import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
 import { dialogStyles } from '../styles/dialog.styles';
-import { aiMode$ } from '../slices/ai-insight';
+import { aiMode$, aiBriefing$, fetchBriefing } from '../slices/ai-insight';
 import './chat-panel';
+import './briefing-panel';
+import './inbox-panel';
 
 type AiMode = 'chat' | 'briefing' | 'inbox';
 
@@ -266,6 +268,9 @@ export class GrowMasterDialog extends LitElement {
 
   private _setMode(mode: AiMode) {
     aiMode$.set(mode);
+    if (mode === 'briefing' && !aiBriefing$.get()) {
+      fetchBriefing();
+    }
   }
 
   private _renderNavRail(mode: AiMode) {
@@ -303,11 +308,23 @@ export class GrowMasterDialog extends LitElement {
   }
 
   private _renderBriefingPanel() {
-    return html`<div class="gm-panel-briefing"><p>Briefing — coming soon</p></div>`;
+    return html`
+      <gm-briefing-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId}
+        growspacename=${this._growspaceName}
+      ></gm-briefing-panel>
+    `;
   }
 
   private _renderInboxPanel() {
-    return html`<div class="gm-panel-inbox"><p>Inbox — coming soon</p></div>`;
+    return html`
+      <gm-inbox-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId}
+        growspacename=${this._growspaceName}
+      ></gm-inbox-panel>
+    `;
   }
 
   private _renderFooter(mode: AiMode) {

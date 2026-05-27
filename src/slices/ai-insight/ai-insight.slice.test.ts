@@ -381,6 +381,7 @@ describe('resolveAlert', () => {
       id: 'alert-1',
       growspace_id: 'gs1',
       type: 'vpd_warning',
+      severity: 'warning' as const,
       bayesian_reasons: [],
       ai_reasoning: null,
       timestamp: 1700000000,
@@ -401,6 +402,7 @@ describe('resolveAlert', () => {
       id: 'alert-1',
       growspace_id: 'gs1',
       type: 'vpd_warning',
+      severity: 'warning' as const,
       bayesian_reasons: [],
       ai_reasoning: null,
       timestamp: 1700000000,
@@ -425,8 +427,8 @@ describe('fetchBriefing', () => {
   const briefingPayload = {
     generated_at: 1700000000,
     summary_text: 'Plants are healthy',
-    kpis: [{ label: 'VPD', value: '1.2 kPa' }],
-    recommendations: ['Reduce humidity slightly'],
+    kpis: [{ label: 'VPD', value: '1.2', unit: 'kPa' }],
+    recommendations: [{ title: 'Reduce humidity', description: 'Slightly lower RH', impact: 'low' as const }],
     ai_available: true,
   };
 

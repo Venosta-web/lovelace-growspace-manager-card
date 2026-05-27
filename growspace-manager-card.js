@@ -18973,7 +18973,7 @@ const GrowAdviceResponseSchema = unionType([
 // ---------------------------------------------------------------------------
 // SuggestedAction
 // ---------------------------------------------------------------------------
-objectType({
+const SuggestedActionSchema = objectType({
     service: stringType(),
     target_entity_id: stringType(),
     service_data: recordType(unknownType()),
@@ -18981,17 +18981,33 @@ objectType({
     confidence: numberType().optional(),
 });
 // ---------------------------------------------------------------------------
+// KPI (shared by TriageAlert and AIBriefing)
+// ---------------------------------------------------------------------------
+const KPISchema = objectType({
+    label: stringType(),
+    value: unionType([numberType(), stringType()]),
+    unit: stringType().optional(),
+    delta: stringType().optional(),
+});
+// ---------------------------------------------------------------------------
 // TriageAlert
 // ---------------------------------------------------------------------------
-objectType({
+const TriageAlertSchema = objectType({
     id: stringType(),
     growspace_id: stringType(),
     type: stringType(),
+    severity: enumType(['info', 'warning', 'danger']).default('info'),
+    title: stringType().optional(),
+    description: stringType().optional(),
     bayesian_reasons: arrayType(stringType()),
     ai_reasoning: stringType().nullable(),
     timestamp: numberType(),
     resolved: booleanType(),
     resolution_note: stringType().nullable(),
+    confidence: numberType().optional(),
+    suggested_actions: arrayType(SuggestedActionSchema).optional(),
+    kpis: arrayType(KPISchema).optional(),
+    snapshot_entity_id: stringType().nullable().optional(),
 });
 // ---------------------------------------------------------------------------
 // ConversationMessage
@@ -19034,11 +19050,21 @@ const ConversationThreadSchema = objectType({
 // ---------------------------------------------------------------------------
 // AIBriefing
 // ---------------------------------------------------------------------------
-objectType({
+const RecommendationSchema = objectType({
+    title: stringType(),
+    description: stringType(),
+    impact: enumType(['high', 'medium', 'low']),
+    suggested_action: SuggestedActionSchema.optional(),
+    action_type: enumType(['apply', 'plan', 'remind']).optional(),
+});
+const AIBriefingSchema = objectType({
     generated_at: numberType().nonnegative(),
     summary_text: stringType(),
-    kpis: arrayType(unknownType()),
-    recommendations: arrayType(stringType()),
+    headline: stringType().optional(),
+    confidence: numberType().optional(),
+    drawn_from: stringType().optional(),
+    kpis: arrayType(KPISchema),
+    recommendations: arrayType(RecommendationSchema),
     ai_available: booleanType(),
 });
 
@@ -19077,6 +19103,8 @@ const isAiLoading$ = atom(false);
 const aiError$ = atom(null);
 const conversationThreads$ = atom(new Map());
 const activeThreadId$ = atom(null);
+const aiAlerts$ = atom([]);
+const aiBriefing$ = atom(null);
 const aiMode$ = atom('briefing');
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -19192,6 +19220,35 @@ async function sendMessage(threadId, text, imageEntityId) {
  */
 async function applyAction(action) {
     await callService(action.service, action.target_entity_id, action.service_data);
+}
+// ---------------------------------------------------------------------------
+// Alert mutators
+// ---------------------------------------------------------------------------
+/**
+ * Fetch triage alerts from the backend, optionally scoped to a growspace.
+ */
+async function fetchAlerts(growspaceId) {
+    const AlertsResponseSchema = TriageAlertSchema.array();
+    const alerts = await hassCall('growspace_manager/get_ai_alerts', { ...(growspaceId ? { growspace_id: growspaceId } : {}) }, AlertsResponseSchema);
+    aiAlerts$.set(alerts);
+}
+/**
+ * Mark an alert as resolved. Patches the matching alert in aiAlerts$ and
+ * calls the backend to persist the resolution.
+ */
+async function resolveAlert(alertId, note) {
+    await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, TriageAlertSchema);
+    aiAlerts$.set(aiAlerts$.get().map((a) => (a.id === alertId ? { ...a, resolved: true, resolution_note: note ?? null } : a)));
+}
+// ---------------------------------------------------------------------------
+// Briefing mutators
+// ---------------------------------------------------------------------------
+/**
+ * Fetch the latest AI briefing, optionally forcing a backend refresh.
+ */
+async function fetchBriefing(forceRefresh) {
+    const briefing = await hassCall('growspace_manager/get_briefing', { ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
+    aiBriefing$.set(briefing);
 }
 
 const SUGGESTION_PROMPTS = [
@@ -19991,6 +20048,1238 @@ GmChatPanel = __decorate([
     t$2('gm-chat-panel')
 ], GmChatPanel);
 
+let GmBriefingPanel = class GmBriefingPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceid = '';
+        this._followUp = '';
+        this._briefing = new libExports.StoreController(this, aiBriefing$);
+        this._loading = new libExports.StoreController(this, isAiLoading$);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (!aiBriefing$.get()) {
+            fetchBriefing();
+        }
+    }
+    async _regenerate() {
+        await fetchBriefing(true);
+    }
+    async _submitFollowUp() {
+        const text = this._followUp.trim();
+        if (!text)
+            return;
+        this._followUp = '';
+        await startConversation(this.growspaceid, text);
+        aiMode$.set('chat');
+    }
+    _renderLoading() {
+        return x `
+      <div class="briefing-loading">
+        <svg class="briefing-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a10 10 0 1 0 10 10" stroke-linecap="round"/>
+        </svg>
+        Fetching briefing…
+      </div>
+    `;
+    }
+    _renderRail() {
+        const BRIEFING_ITEMS = [
+            'Morning briefing',
+            'Risk watch',
+            "What's going well",
+            '7-day forecast',
+        ];
+        return x `
+      <aside class="briefing-rail">
+        <div class="rail-section-label">Briefings</div>
+        ${BRIEFING_ITEMS.map((label, i) => x `
+          <button class="v1-nav-item" aria-pressed=${i === 0 ? 'true' : 'false'}>
+            ${label}
+          </button>
+        `)}
+      </aside>
+    `;
+    }
+    _renderChart() {
+        return x `
+      <div class="evidence-card">
+        <div class="evidence-title">VPD + Canopy Temp · 24h</div>
+        <svg class="evidence-chart" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true">
+          <!-- target band -->
+          <rect x="0" y="20" width="400" height="20" fill="rgba(76,175,80,0.08)" />
+          <!-- VPD line (purple) -->
+          <polyline
+            points="0,40 50,35 100,30 150,28 200,25 250,30 300,22 350,18 400,20"
+            fill="none" stroke="var(--ai-violet,#9c27b0)" stroke-width="2"
+          />
+          <!-- canopy temp line (amber) -->
+          <polyline
+            points="0,60 50,55 100,50 150,52 200,48 250,44 300,46 350,40 400,38"
+            fill="none" stroke="var(--ai-amber,#ff9800)" stroke-width="2"
+          />
+          <!-- spike marker -->
+          <circle cx="300" cy="22" r="4" fill="var(--error-color,#f44336)" />
+        </svg>
+        <div class="evidence-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--ai-violet,#9c27b0)"></div>VPD
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--ai-amber,#ff9800)"></div>Canopy temp
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:rgba(76,175,80,0.4)"></div>Target band
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderReco(reco) {
+        return x `
+      <div class="reco-row">
+        <div class="reco-body">
+          <p class="reco-title">${reco.title}</p>
+          <p class="reco-desc">${reco.description}</p>
+          <div class="reco-footer">
+            <span class="impact-badge" data-impact=${reco.impact}>${reco.impact}</span>
+            ${reco.suggested_action
+            ? x `<button class="reco-apply" @click=${() => applyAction(reco.suggested_action)}>Apply</button>`
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderBriefing(briefing) {
+        const ts = new Date(briefing.generated_at * 1000).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+        return x `
+      <header class="briefing-header">
+        <span class="briefing-breadcrumb">Briefing · ${ts}</span>
+        <button class="briefing-regenerate" @click=${this._regenerate}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${mdiRefresh}></path>
+          </svg>
+          Regenerate
+        </button>
+      </header>
+      <div class="v1-content-scroll">
+        <!-- TL;DR card -->
+        <div class="insight-head">
+          <div class="insight-head-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-violet,#9c27b0);flex-shrink:0">
+              <path d=${mdiBrain}></path>
+            </svg>
+            <h3>${briefing.headline ?? 'Morning Briefing'}</h3>
+          </div>
+          ${briefing.confidence !== undefined ? x `
+            <div class="conf-meter">
+              <div class="conf-bar">
+                <div class="conf-fill" style="width:${Math.round(briefing.confidence * 100)}%"></div>
+              </div>
+              ${Math.round(briefing.confidence * 100)}% confidence
+            </div>
+          ` : E}
+          ${briefing.drawn_from ? x `<div class="drawn-from">Drawn from ${briefing.drawn_from}</div>` : E}
+          <p>${briefing.summary_text}</p>
+        </div>
+
+        <!-- KPI row -->
+        <div class="kpi-row">
+          ${briefing.kpis.map((kpi) => x `
+            <div class="kpi-card">
+              <div class="kpi-label">${kpi.label}</div>
+              <div class="kpi-value">
+                ${kpi.value}<span class="kpi-unit">${kpi.unit ?? ''}</span>
+              </div>
+              ${kpi.delta ? x `<div class="kpi-delta">${kpi.delta}</div>` : E}
+            </div>
+          `)}
+        </div>
+
+        <!-- Evidence chart -->
+        ${this._renderChart()}
+
+        <!-- Recommendations -->
+        <div class="reco-section-title">
+          Recommendations · ${briefing.recommendations.length} actionable
+        </div>
+        ${briefing.recommendations.map((r) => this._renderReco(r))}
+      </div>
+
+      <!-- Follow-up input -->
+      <div class="follow-up-wrap">
+        <input
+          class="follow-up"
+          type="text"
+          placeholder="Ask a follow-up question…"
+          .value=${this._followUp}
+          @input=${(e) => { this._followUp = e.target.value; }}
+          @keydown=${(e) => {
+            if (e.key === 'Enter')
+                this._submitFollowUp();
+        }}
+        />
+      </div>
+    `;
+    }
+    render() {
+        const briefing = this._briefing.value;
+        const loading = this._loading.value;
+        return x `
+      ${this._renderRail()}
+      <div class="briefing-content">
+        ${!briefing && loading ? this._renderLoading() : E}
+        ${briefing ? this._renderBriefing(briefing) : E}
+      </div>
+    `;
+    }
+};
+GmBriefingPanel.styles = i$6 `
+    :host {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Rail ─────────────────────────────────────────────────── */
+    .briefing-rail {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 8px;
+      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      overflow-y: auto;
+    }
+
+    .rail-section-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--secondary-text-color);
+      padding: 0 4px;
+      margin-top: 8px;
+    }
+
+    .v1-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-text-color);
+      font-size: 0.82rem;
+      font-family: inherit;
+      text-align: left;
+      width: 100%;
+      transition: background 150ms;
+    }
+    .v1-nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .v1-nav-item[aria-pressed='true'] {
+      background: rgba(156, 39, 176, 0.14);
+      color: var(--ai-violet, #9c27b0);
+    }
+
+    /* ── Content ──────────────────────────────────────────────── */
+    .briefing-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .briefing-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      flex-shrink: 0;
+    }
+    .briefing-breadcrumb {
+      flex: 1;
+      font-size: 0.82rem;
+      color: var(--secondary-text-color);
+    }
+    .briefing-regenerate {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      background: none;
+      cursor: pointer;
+      color: var(--primary-text-color);
+      font-family: inherit;
+      transition: background 150ms;
+    }
+    .briefing-regenerate:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .v1-content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Loading ──────────────────────────────────────────────── */
+    .briefing-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      color: var(--secondary-text-color);
+      font-size: 0.9rem;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    .briefing-spinner {
+      animation: spin 1s linear infinite;
+      width: 22px;
+      height: 22px;
+    }
+
+    /* ── TL;DR (insight-head) ─────────────────────────────────── */
+    .insight-head {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .insight-head-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .insight-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      flex: 1;
+      line-height: 1.3;
+    }
+    .insight-head p {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--secondary-text-color);
+    }
+    .insight-head p em {
+      font-style: normal;
+      color: var(--primary-text-color);
+      font-weight: 500;
+    }
+    .conf-meter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+    }
+    .conf-bar {
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      width: 60px;
+      overflow: hidden;
+    }
+    .conf-fill {
+      height: 100%;
+      background: var(--ai-violet, #9c27b0);
+      border-radius: 4px;
+    }
+    .drawn-from {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+      opacity: 0.7;
+    }
+
+    /* ── KPI row ──────────────────────────────────────────────── */
+    .kpi-row {
+      display: flex;
+      gap: 10px;
+    }
+    .kpi-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .kpi-label {
+      font-size: 0.72rem;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .kpi-unit {
+      font-size: 0.72rem;
+      color: var(--secondary-text-color);
+      font-weight: 400;
+      margin-left: 2px;
+    }
+    .kpi-delta {
+      font-size: 0.72rem;
+      color: var(--ai-accent, #4caf50);
+    }
+
+    /* ── Evidence card ────────────────────────────────────────── */
+    .evidence-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .evidence-title {
+      font-size: 0.78rem;
+      color: var(--secondary-text-color);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .evidence-chart {
+      width: 100%;
+      height: 80px;
+    }
+    .evidence-legend {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* ── Recommendations ──────────────────────────────────────── */
+    .reco-section-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .reco-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    }
+    .reco-body { flex: 1; }
+    .reco-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0 0 3px;
+    }
+    .reco-desc {
+      font-size: 0.8rem;
+      color: var(--secondary-text-color);
+      margin: 0;
+    }
+    .reco-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .impact-badge {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .impact-badge[data-impact='high'] {
+      background: rgba(244, 67, 54, 0.2);
+      color: var(--error-color, #f44336);
+    }
+    .impact-badge[data-impact='medium'] {
+      background: rgba(255, 152, 0, 0.2);
+      color: var(--ai-amber, #ff9800);
+    }
+    .impact-badge[data-impact='low'] {
+      background: rgba(33, 150, 243, 0.2);
+      color: var(--primary-color, #2196f3);
+    }
+    .reco-apply {
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-violet, #9c27b0);
+      color: #fff;
+    }
+
+    /* ── Follow-up ────────────────────────────────────────────── */
+    .follow-up-wrap {
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      padding: 10px 16px 12px;
+      flex-shrink: 0;
+    }
+    .follow-up {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 20px;
+      padding: 9px 16px;
+      color: var(--primary-text-color, #fff);
+      font-family: inherit;
+      font-size: 0.88rem;
+      box-sizing: border-box;
+    }
+    .follow-up:focus {
+      outline: none;
+      border-color: rgba(156, 39, 176, 0.5);
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GmBriefingPanel.prototype, "growspaceid", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_followUp", void 0);
+GmBriefingPanel = __decorate([
+    t$2('gm-briefing-panel')
+], GmBriefingPanel);
+
+function formatRelative(ts) {
+    const diff = Math.floor((Date.now() - ts * 1000) / 1000);
+    if (diff < 60)
+        return `${diff}s ago`;
+    if (diff < 3600)
+        return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400)
+        return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+}
+let GmInboxPanel = class GmInboxPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceid = '';
+        this.growspacename = '';
+        this._filter = 'all';
+        this._selectedId = null;
+        this._readIds = new Set();
+        this._showNoteInput = false;
+        this._noteText = '';
+        this._alerts = new libExports.StoreController(this, aiAlerts$);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        fetchAlerts(this.growspaceid || undefined);
+    }
+    get _filtered() {
+        const all = this._alerts.value.filter((a) => !a.resolved);
+        if (this._filter === 'action')
+            return all.filter((a) => a.severity === 'danger');
+        if (this._filter === 'watch')
+            return all.filter((a) => a.severity === 'warning');
+        return all;
+    }
+    get _selected() {
+        return this._selectedId ? this._alerts.value.find((a) => a.id === this._selectedId) : undefined;
+    }
+    _selectAlert(id) {
+        this._selectedId = id;
+        this._readIds = new Set([...this._readIds, id]);
+        this._showNoteInput = false;
+        this._noteText = '';
+    }
+    _setFilter(f) {
+        this._filter = f;
+        this._selectedId = null;
+        this._showNoteInput = false;
+    }
+    async _resolve(alert, note) {
+        await resolveAlert(alert.id, note);
+        this._selectedId = null;
+        this._showNoteInput = false;
+        this._noteText = '';
+    }
+    async _applyAction(action) {
+        await applyAction(action);
+    }
+    _countFor(f) {
+        const all = this._alerts.value.filter((a) => !a.resolved);
+        if (f === 'action')
+            return all.filter((a) => a.severity === 'danger').length;
+        if (f === 'watch')
+            return all.filter((a) => a.severity === 'warning').length;
+        return all.length;
+    }
+    _renderFilterStrip() {
+        const filters = [
+            { key: 'all', label: 'All' },
+            { key: 'action', label: 'Action' },
+            { key: 'watch', label: 'Watch' },
+        ];
+        return x `
+      <div class="inbox-filters">
+        ${filters.map(({ key, label }) => x `
+            <button
+              class="inbox-filter-pill"
+              aria-pressed=${this._filter === key ? 'true' : 'false'}
+              @click=${() => this._setFilter(key)}
+            >
+              ${label}
+              <span class="pill-count">${this._countFor(key)}</span>
+            </button>
+          `)}
+      </div>
+    `;
+    }
+    _renderAlertList() {
+        const items = this._filtered;
+        if (items.length === 0) {
+            return x `
+        <div class="inbox-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+            <path d="${mdiInbox}"></path>
+          </svg>
+          <p>No alerts</p>
+        </div>
+      `;
+        }
+        return x `
+      <div class="inbox-list">
+        ${c(items, (a) => a.id, (a) => {
+            const isRead = this._readIds.has(a.id);
+            return x `
+              <div
+                class="inbox-row"
+                aria-selected=${this._selectedId === a.id ? 'true' : 'false'}
+                @click=${() => this._selectAlert(a.id)}
+              >
+                <div
+                  class="inbox-severity-bar"
+                  data-severity=${a.severity ?? 'info'}
+                ></div>
+                <div class="inbox-row-body">
+                  <div class="inbox-row-title">
+                    ${!isRead ? x `<span class="inbox-unread-dot"></span>` : E}
+                    ${a.title ?? a.type}
+                  </div>
+                  ${a.description
+                ? x `<div class="inbox-row-desc">${a.description}</div>`
+                : E}
+                  <div class="inbox-row-time">${formatRelative(a.timestamp)}</div>
+                </div>
+              </div>
+            `;
+        })}
+      </div>
+    `;
+    }
+    _renderDetailPane() {
+        const alert = this._selected;
+        if (!alert) {
+            return x `<div class="inbox-no-selection">Select an alert to view details</div>`;
+        }
+        const hasAiReasoning = !!alert.ai_reasoning;
+        return x `
+      <div class="inbox-detail">
+        <!-- Header -->
+        <div class="inbox-detail-head">
+          <h3>${alert.title ?? alert.type}</h3>
+          <div class="inbox-detail-meta">
+            <span class="inbox-severity-pill" data-severity=${alert.severity ?? 'info'}>
+              ${alert.severity ?? 'info'}
+            </span>
+            <span class="inbox-detail-time">${formatRelative(alert.timestamp)}</span>
+          </div>
+        </div>
+
+        <!-- Reasoning -->
+        <div class="reasoning">
+          <div class="reasoning-label">Why I flagged this</div>
+          ${hasAiReasoning
+            ? x `<div class="reasoning-text">${alert.ai_reasoning}</div>`
+            : alert.bayesian_reasons.map((r) => x `<div class="reasoning-bayesian-item">${r}</div>`)}
+        </div>
+
+        <!-- Evidence photo (only when AI reasoning is present) -->
+        ${hasAiReasoning
+            ? x `
+              <div class="photo-evid">
+                <div class="photo-evid-label">Evidence snapshot</div>
+                <div class="photo-evid-placeholder">Camera snapshot unavailable</div>
+              </div>
+            `
+            : E}
+
+        <!-- KPI row -->
+        ${alert.kpis && alert.kpis.length > 0
+            ? x `
+              <div class="kpi-row">
+                ${alert.kpis.map((k) => x `
+                    <div class="kpi-card">
+                      <div class="kpi-card-label">${k.label}</div>
+                      <div class="kpi-card-value">${k.value}${k.unit ? x ` <small>${k.unit}</small>` : E}</div>
+                    </div>
+                  `)}
+              </div>
+            `
+            : E}
+
+        <!-- Suggested actions -->
+        ${alert.suggested_actions && alert.suggested_actions.length > 0
+            ? x `
+              <div class="reco-section-label">Suggested actions</div>
+              ${alert.suggested_actions.map((action) => x `
+                  <div class="reco-row">
+                    <div class="reco-row-body">${action.description}</div>
+                    <button
+                      class="apply-btn"
+                      @click=${() => this._applyAction(action)}
+                    >Apply</button>
+                  </div>
+                `)}
+            `
+            : E}
+
+        <!-- Action ribbon -->
+        <div class="action-ribbon">
+          <span class="action-ribbon-hint">
+            Resolved manually? Tell Grow Master what you did.
+          </span>
+          ${this._showNoteInput
+            ? x `
+                <div class="note-area">
+                  <input
+                    class="note-input"
+                    type="text"
+                    placeholder="Add a note…"
+                    .value=${this._noteText}
+                    @input=${(e) => { this._noteText = e.target.value; }}
+                  />
+                  <button
+                    class="note-submit-btn"
+                    @click=${() => this._resolve(alert, this._noteText)}
+                  >Submit</button>
+                </div>
+              `
+            : x `
+                <button
+                  class="add-note-btn"
+                  @click=${() => { this._showNoteInput = true; }}
+                >Add note</button>
+                <button
+                  class="resolve-btn"
+                  @click=${() => this._resolve(alert)}
+                >Resolve</button>
+              `}
+        </div>
+      </div>
+    `;
+    }
+    render() {
+        return x `
+      <div class="inbox-shell">
+        <div class="inbox-rail">
+          ${this._renderFilterStrip()}
+          ${this._renderAlertList()}
+        </div>
+        ${this._renderDetailPane()}
+      </div>
+    `;
+    }
+};
+GmInboxPanel.styles = i$6 `
+    :host {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .inbox-shell {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Rail ───────────────────────────────────────────────── */
+    .inbox-rail {
+      width: 280px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      overflow: hidden;
+    }
+
+    /* ── Filter strip ──────────────────────────────────────── */
+    .inbox-filters {
+      display: flex;
+      gap: 6px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      flex-shrink: 0;
+    }
+
+    .inbox-filter-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: none;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 150ms, color 150ms;
+    }
+
+    .inbox-filter-pill[aria-pressed='true'] {
+      background: rgba(255, 152, 0, 0.15);
+      color: var(--ai-amber, #ff9800);
+      border-color: var(--ai-amber, #ff9800);
+    }
+
+    .pill-count {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0 5px;
+      font-size: 0.7rem;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* ── Alert list ─────────────────────────────────────────── */
+    .inbox-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .inbox-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      transition: background 150ms;
+    }
+
+    .inbox-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .inbox-row[aria-selected='true'] {
+      background: rgba(255, 152, 0, 0.08);
+    }
+
+    .inbox-severity-bar {
+      width: 3px;
+      border-radius: 2px;
+      margin-right: 10px;
+      flex-shrink: 0;
+      background: var(--secondary-text-color);
+    }
+
+    .inbox-severity-bar[data-severity='danger'] {
+      background: var(--error-color, #f44336);
+    }
+
+    .inbox-severity-bar[data-severity='warning'] {
+      background: var(--warning-color, #ff9800);
+    }
+
+    .inbox-severity-bar[data-severity='info'] {
+      background: var(--success-color, #4caf50);
+    }
+
+    .inbox-row-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .inbox-row-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .inbox-unread-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
+    }
+
+    .inbox-row-desc {
+      font-size: 0.78rem;
+      color: var(--secondary-text-color);
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .inbox-row-time {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
+    /* ── Empty state ────────────────────────────────────────── */
+    .inbox-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 8px;
+      color: var(--secondary-text-color);
+      padding: 24px;
+      text-align: center;
+    }
+
+    .inbox-empty svg {
+      opacity: 0.3;
+    }
+
+    /* ── Detail pane ────────────────────────────────────────── */
+    .inbox-detail {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .inbox-no-selection {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+      opacity: 0.5;
+    }
+
+    /* ── Detail header ──────────────────────────────────────── */
+    .inbox-detail-head {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .inbox-detail-head h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .inbox-detail-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .inbox-severity-pill {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .inbox-severity-pill[data-severity='danger'] {
+      background: rgba(244, 67, 54, 0.15);
+      color: #f44336;
+    }
+
+    .inbox-severity-pill[data-severity='warning'] {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
+
+    .inbox-severity-pill[data-severity='info'] {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+    }
+
+    .inbox-detail-time {
+      font-size: 0.78rem;
+      color: var(--secondary-text-color);
+    }
+
+    /* ── Reasoning ──────────────────────────────────────────── */
+    .reasoning {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .reasoning-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--secondary-text-color);
+      margin-bottom: 8px;
+    }
+
+    .reasoning-text {
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .reasoning-bayesian-item {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      padding: 2px 0;
+    }
+
+    .reasoning-bayesian-item::before {
+      content: '• ';
+    }
+
+    /* ── Evidence photo ─────────────────────────────────────── */
+    .photo-evid {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .photo-evid-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--secondary-text-color);
+    }
+
+    .photo-evid-placeholder {
+      width: 100%;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+      font-size: 0.8rem;
+    }
+
+    /* ── KPI cards ──────────────────────────────────────────── */
+    .kpi-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .kpi-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .kpi-card-label {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+    }
+
+    .kpi-card-value {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ── Suggested actions ──────────────────────────────────── */
+    .reco-section-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--secondary-text-color);
+    }
+
+    .reco-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+    }
+
+    .reco-row-body {
+      flex: 1;
+      font-size: 0.85rem;
+    }
+
+    .apply-btn {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success-color, #4caf50);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+    }
+
+    .apply-btn:hover {
+      background: rgba(76, 175, 80, 0.25);
+    }
+
+    /* ── Action ribbon ──────────────────────────────────────── */
+    .action-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-ribbon-hint {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--secondary-text-color);
+      min-width: 160px;
+    }
+
+    .add-note-btn,
+    .resolve-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+      color: var(--primary-text-color, #fff);
+    }
+
+    .resolve-btn {
+      background: rgba(76, 175, 80, 0.12);
+      color: var(--success-color, #4caf50);
+      border-color: var(--success-color, #4caf50);
+    }
+
+    .resolve-btn:hover {
+      background: rgba(76, 175, 80, 0.22);
+    }
+
+    /* ── Note input ─────────────────────────────────────────── */
+    .note-area {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .note-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.88rem;
+      resize: none;
+    }
+
+    .note-submit-btn {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success-color, #4caf50);
+      border: 1px solid var(--success-color, #4caf50);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.82rem;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GmInboxPanel.prototype, "growspaceid", void 0);
+__decorate([
+    n$5({ type: String })
+], GmInboxPanel.prototype, "growspacename", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_filter", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_selectedId", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_readIds", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_showNoteInput", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_noteText", void 0);
+GmInboxPanel = __decorate([
+    t$2('gm-inbox-panel')
+], GmInboxPanel);
+
 const MODE_META = {
     chat: { label: 'Chat', icon: mdiBrain, token: 'var(--ai-accent, #4caf50)' },
     briefing: { label: 'Briefing', icon: mdiNewspaper, token: 'var(--ai-violet, #9c27b0)' },
@@ -20010,6 +21299,9 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     }
     _setMode(mode) {
         aiMode$.set(mode);
+        if (mode === 'briefing' && !aiBriefing$.get()) {
+            fetchBriefing();
+        }
     }
     _renderNavRail(mode) {
         return x `
@@ -20044,10 +21336,22 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     `;
     }
     _renderBriefingPanel() {
-        return x `<div class="gm-panel-briefing"><p>Briefing — coming soon</p></div>`;
+        return x `
+      <gm-briefing-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId}
+        growspacename=${this._growspaceName}
+      ></gm-briefing-panel>
+    `;
     }
     _renderInboxPanel() {
-        return x `<div class="gm-panel-inbox"><p>Inbox — coming soon</p></div>`;
+        return x `
+      <gm-inbox-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId}
+        growspacename=${this._growspaceName}
+      ></gm-inbox-panel>
+    `;
     }
     _renderFooter(mode) {
         return x `

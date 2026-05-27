@@ -41,6 +41,19 @@ export const SuggestedActionSchema = z.object({
 export type SuggestedAction = z.infer<typeof SuggestedActionSchema>;
 
 // ---------------------------------------------------------------------------
+// KPI (shared by TriageAlert and AIBriefing)
+// ---------------------------------------------------------------------------
+
+export const KPISchema = z.object({
+  label: z.string(),
+  value: z.union([z.number(), z.string()]),
+  unit: z.string().optional(),
+  delta: z.string().optional(),
+});
+
+export type KPI = z.infer<typeof KPISchema>;
+
+// ---------------------------------------------------------------------------
 // TriageAlert
 // ---------------------------------------------------------------------------
 
@@ -48,11 +61,18 @@ export const TriageAlertSchema = z.object({
   id: z.string(),
   growspace_id: z.string(),
   type: z.string(),
+  severity: z.enum(['info', 'warning', 'danger']).default('info'),
+  title: z.string().optional(),
+  description: z.string().optional(),
   bayesian_reasons: z.array(z.string()),
   ai_reasoning: z.string().nullable(),
   timestamp: z.number(),
   resolved: z.boolean(),
   resolution_note: z.string().nullable(),
+  confidence: z.number().optional(),
+  suggested_actions: z.array(SuggestedActionSchema).optional(),
+  kpis: z.array(KPISchema).optional(),
+  snapshot_entity_id: z.string().nullable().optional(),
 });
 
 export type TriageAlert = z.infer<typeof TriageAlertSchema>;
@@ -114,11 +134,24 @@ export type ConversationThread = z.infer<typeof ConversationThreadSchema>;
 // AIBriefing
 // ---------------------------------------------------------------------------
 
+export const RecommendationSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  impact: z.enum(['high', 'medium', 'low']),
+  suggested_action: SuggestedActionSchema.optional(),
+  action_type: z.enum(['apply', 'plan', 'remind']).optional(),
+});
+
+export type Recommendation = z.infer<typeof RecommendationSchema>;
+
 export const AIBriefingSchema = z.object({
   generated_at: z.number().nonnegative(),
   summary_text: z.string(),
-  kpis: z.array(z.unknown()),
-  recommendations: z.array(z.string()),
+  headline: z.string().optional(),
+  confidence: z.number().optional(),
+  drawn_from: z.string().optional(),
+  kpis: z.array(KPISchema),
+  recommendations: z.array(RecommendationSchema),
   ai_available: z.boolean(),
 });
 

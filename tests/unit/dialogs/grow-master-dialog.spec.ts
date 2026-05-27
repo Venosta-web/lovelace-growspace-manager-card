@@ -153,22 +153,22 @@ describe('GrowMasterDialog — three-mode shell', () => {
             aiMode$.set('chat');
             await element.updateComplete;
             expect(element.shadowRoot?.querySelector('gm-chat-panel')).toBeTruthy();
-            expect(element.shadowRoot?.querySelector('.gm-panel-briefing')).toBeFalsy();
-            expect(element.shadowRoot?.querySelector('.gm-panel-inbox')).toBeFalsy();
+            expect(element.shadowRoot?.querySelector('gm-briefing-panel')).toBeFalsy();
+            expect(element.shadowRoot?.querySelector('gm-inbox-panel')).toBeFalsy();
         });
 
         it('shows briefing panel when aiMode$ is "briefing"', async () => {
             aiMode$.set('briefing');
             await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.gm-panel-briefing')).toBeTruthy();
-            expect(element.shadowRoot?.querySelector('.gm-panel-chat')).toBeFalsy();
+            expect(element.shadowRoot?.querySelector('gm-briefing-panel')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('gm-chat-panel')).toBeFalsy();
         });
 
         it('shows inbox panel when aiMode$ is "inbox"', async () => {
             aiMode$.set('inbox');
             await element.updateComplete;
-            expect(element.shadowRoot?.querySelector('.gm-panel-inbox')).toBeTruthy();
-            expect(element.shadowRoot?.querySelector('.gm-panel-chat')).toBeFalsy();
+            expect(element.shadowRoot?.querySelector('gm-inbox-panel')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('gm-chat-panel')).toBeFalsy();
         });
     });
 
