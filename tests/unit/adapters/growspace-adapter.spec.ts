@@ -439,8 +439,8 @@ describe('GrowspaceAdapter', () => {
           irrigation_times: [],
           drain_times: [],
           ec_target_ranges: [
-            { stage: 'veg', min_ec: 1.2, max_ec: 1.6 },
-            { stage: 'flower', min_ec: 1.8, max_ec: 2.2 },
+            { stage: 'veg', feed_ec_min: 1.2, feed_ec_max: 1.6 },
+            { stage: 'flower', feed_ec_min: 1.8, feed_ec_max: 2.2 },
           ],
         },
         irrigation_strategy: null,
