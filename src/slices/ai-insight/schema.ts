@@ -133,10 +133,15 @@ export type ConversationMessage = z.infer<typeof ConversationMessageSchema>;
 // ConversationThread
 // ---------------------------------------------------------------------------
 
+export const MAX_PINNED_THREADS = 10;
+export const MAX_RECENT_THREADS = 20;
+
 export const ConversationThreadSchema = z.object({
   thread_id: z.string(),
   growspace_id: z.string(),
   messages: z.array(ConversationMessageSchema),
+  pinned: z.boolean().default(false),
+  updated_at: z.number().nonnegative().default(0),
 });
 
 export type ConversationThread = z.infer<typeof ConversationThreadSchema>;

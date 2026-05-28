@@ -185,9 +185,13 @@ A persistent record created by the backend [[Alert Monitor]] when a Bayesian bin
 
 Current mapping: `stress → danger`, `mold → warning`.
 
-## Conversation Thread (client)
+## Conversation Thread
 
-Client-side record of a multi-turn dialogue in Chat mode. Fields: `id` (UUID), `title`, `messages` (array of `{ role, text, suggestedAction?, confidence?, timestamp }`), `conversationId` (the HA conversation agent's session ID), `growspaceId`. Stored in the `conversationThreads$` atom (keyed by thread ID). The active thread per growspace is tracked separately in `activeThreadId$` (keyed by growspace ID). Threads survive dialog open/close within the same page session; they are not persisted across HA restarts.
+A persistent record of a multi-turn dialogue in Chat mode. Fields: `thread_id` (UUID), `growspace_id`, `messages` (array of `ConversationMessage`), `pinned` (boolean, default false), `updated_at` (Unix ms — set on create and each `sendMessage`). Stored in the `conversationThreads$` atom (keyed by `thread_id`) and persisted to the backend via `growspace_manager/save_conversation_threads`. The active thread per growspace is tracked separately in `activeThreadId$` (keyed by `growspace_id`). Threads are hydrated from the backend each time the [[Growmaster Dialog]] opens.
+
+**Thread retention is per-growspace:** at most `MAX_PINNED_THREADS` (10) pinned threads and `MAX_RECENT_THREADS` (20) unpinned threads are kept per growspace. Eviction is enforced on the frontend before each backend save — oldest unpinned threads (by `updated_at`) are dropped first. Pinned threads are never evicted. Attempting to pin beyond the cap triggers a toast error.
+
+**Thread rail layout:** the Chat panel left rail shows two labeled sections — "Pinned" (only when ≥1 pinned thread exists) and "Recent" (unpinned threads). Pinned threads are sorted by `updated_at` descending within their section.
 
 ## Suggested Action Card
 

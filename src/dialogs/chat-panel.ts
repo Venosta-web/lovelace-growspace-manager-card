@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { mdiBrain, mdiSend, mdiClose, mdiCheck, mdiMessageOutline, mdiPaperclip } from '@mdi/js';
+import { mdiBrain, mdiSend, mdiClose, mdiPin, mdiPinOff, mdiMessageOutline, mdiPaperclip } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import {
@@ -12,6 +12,7 @@ import {
   aiEnabled$,
   startConversation,
   sendMessage,
+  togglePin,
   applyAction,
   saveAiAgent,
 } from '../slices/ai-insight';
@@ -543,6 +544,25 @@ export class GmChatPanel extends LitElement {
       padding: 4px 2px 0;
     }
 
+    /* ── Pin button ──────────────────────────────────────────── */
+    .pin-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-text-color, rgba(255,255,255,0.4));
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 150ms, color 150ms;
+    }
+    .thread-row:hover .pin-btn,
+    .thread-header .pin-btn { opacity: 1; }
+    .pin-btn.pinned { color: var(--ai-accent, #4caf50); opacity: 1; }
+    .pin-btn:hover { color: var(--primary-text-color, #fff); }
+
     /* ── Message image thumbnail ──────────────────────────────── */
     .msg-image {
       display: block;
@@ -615,12 +635,44 @@ export class GmChatPanel extends LitElement {
     this._contextChips = this._contextChips.filter((c) => c.id !== id);
   }
 
+  private _renderThreadRow(t: ConversationThread, activeId: string | null) {
+    const firstMsg = t.messages[0];
+    const isActive = t.thread_id === activeId;
+    return html`
+      <button
+        class="thread-row"
+        data-thread-id=${t.thread_id}
+        aria-pressed=${isActive ? 'true' : 'false'}
+        @click=${() => this._setActiveThread(t.thread_id)}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
+          <path d=${mdiMessageOutline}></path>
+        </svg>
+        <div style="flex:1;min-width:0;">
+          <div class="thread-title">${firstMsg?.text ?? 'New conversation'}</div>
+          <div class="thread-time">${this._relTime(firstMsg?.timestamp)}</div>
+        </div>
+        <button
+          class="pin-btn ${t.pinned ? 'pinned' : ''}"
+          aria-label=${t.pinned ? 'Unpin conversation' : 'Pin conversation'}
+          @click=${(e: Event) => { e.stopPropagation(); togglePin(t.thread_id); }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${t.pinned ? mdiPinOff : mdiPin}></path>
+          </svg>
+        </button>
+      </button>
+    `;
+  }
+
   private _renderThreadRail() {
-    const threads = [...this._threads.value.values()].filter(
+    const allThreads = [...this._threads.value.values()].filter(
       (t) => t.growspace_id === this.growspaceid
     );
-    const _activeMap = this._activeThread.value;
-    const activeId = (_activeMap instanceof Map ? _activeMap.get(this.growspaceid) : null) ?? null;
+    const pinned = allThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+    const recent = allThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+    const activeMap = this._activeThread.value;
+    const activeId = (activeMap instanceof Map ? activeMap.get(this.growspaceid) : null) ?? null;
     return html`
       <div class="chat-rail">
         <div class="ai-model-card">
@@ -633,29 +685,17 @@ export class GmChatPanel extends LitElement {
           </div>
         </div>
 
-        ${threads.length > 0 ? html`
+        ${pinned.length > 0 ? html`
+          <div class="rail-section-label">Pinned</div>
+          <div class="rail-recent">
+            ${repeat(pinned, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
+          </div>
+        ` : nothing}
+
+        ${recent.length > 0 ? html`
           <div class="rail-section-label">Recent</div>
           <div class="rail-recent">
-            ${repeat(threads, (t) => t.thread_id, (t) => {
-              const firstMsg = t.messages[0];
-              const isActive = t.thread_id === activeId;
-              return html`
-                <button
-                  class="thread-row"
-                  data-thread-id=${t.thread_id}
-                  aria-pressed=${isActive ? 'true' : 'false'}
-                  @click=${() => this._setActiveThread(t.thread_id)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
-                    <path d=${mdiMessageOutline}></path>
-                  </svg>
-                  <div>
-                    <div class="thread-title">${firstMsg?.text ?? 'New conversation'}</div>
-                    <div class="thread-time">${this._relTime(firstMsg?.timestamp)}</div>
-                  </div>
-                </button>
-              `;
-            })}
+            ${repeat(recent, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
           </div>
         ` : nothing}
       </div>
@@ -833,9 +873,14 @@ export class GmChatPanel extends LitElement {
       <div class="chat-area">
         <div class="thread-header">
           <span class="thread-breadcrumb">Chat / ${thread.messages[0]?.text?.slice(0, 40) ?? 'Conversation'}</span>
-          <button style="background:none;border:none;cursor:pointer;color:var(--secondary-text-color)" aria-label="Pin">
+          <button
+            class="pin-btn ${thread.pinned ? 'pinned' : ''}"
+            aria-label=${thread.pinned ? 'Unpin conversation' : 'Pin conversation'}
+            title=${thread.pinned ? 'Unpin' : 'Pin this conversation'}
+            @click=${() => togglePin(thread.thread_id)}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d=${mdiCheck}></path>
+              <path d=${thread.pinned ? mdiPinOff : mdiPin}></path>
             </svg>
           </button>
         </div>

@@ -37,6 +37,8 @@ import {
   TriageAlertSchema,
   ResolveAckSchema,
   AIBriefingSchema,
+  MAX_PINNED_THREADS,
+  MAX_RECENT_THREADS,
   type ConversationThread,
   type TriageAlert,
   type AIBriefing,
@@ -165,6 +167,62 @@ export function clearAiError(): void {
 // Conversation mutators
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Thread persistence helpers (private)
+// ---------------------------------------------------------------------------
+
+function _evictThreads(
+  threads: Map<string, ConversationThread>,
+  growspaceId: string
+): Map<string, ConversationThread> {
+  const gsThreads = [...threads.values()].filter((t) => t.growspace_id === growspaceId);
+  const pinned = gsThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+  const recent = gsThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+  const keep = new Set([
+    ...pinned.slice(0, MAX_PINNED_THREADS),
+    ...recent.slice(0, MAX_RECENT_THREADS),
+  ].map((t) => t.thread_id));
+  const result = new Map(threads);
+  for (const [id, t] of result) {
+    if (t.growspace_id === growspaceId && !keep.has(id)) result.delete(id);
+  }
+  return result;
+}
+
+async function _saveConversationThreads(growspaceId: string): Promise<void> {
+  const threads = [...conversationThreads$.get().values()].filter(
+    (t) => t.growspace_id === growspaceId
+  );
+  await hassCall(
+    'growspace_manager/save_conversation_threads',
+    { growspace_id: growspaceId, threads },
+    z.unknown()
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Thread persistence (public)
+// ---------------------------------------------------------------------------
+
+export async function fetchConversationThreads(growspaceId: string): Promise<void> {
+  try {
+    const ThreadsResponseSchema = z.array(ConversationThreadSchema);
+    const fetched = await hassCall(
+      'growspace_manager/get_conversation_threads',
+      { growspace_id: growspaceId },
+      ThreadsResponseSchema
+    );
+    const updated = new Map(conversationThreads$.get());
+    for (const [id, t] of updated) {
+      if (t.growspace_id === growspaceId) updated.delete(id);
+    }
+    for (const t of fetched) updated.set(t.thread_id, t);
+    conversationThreads$.set(updated);
+  } catch {
+    // Silently ignore — leave existing data intact
+  }
+}
+
 /**
  * Start a new AI conversation thread for a growspace.
  *
@@ -186,13 +244,20 @@ export async function startConversation(
       },
       ConversationThreadSchema
     );
-    const thread: ConversationThread = { ...raw, messages: [userMessage, ...raw.messages] };
-    const threads = new Map(conversationThreads$.get());
+    const thread: ConversationThread = {
+      ...raw,
+      messages: [userMessage, ...raw.messages],
+      pinned: false,
+      updated_at: Date.now(),
+    };
+    let threads = new Map(conversationThreads$.get());
     threads.set(thread.thread_id, thread);
+    threads = _evictThreads(threads, growspaceId);
     conversationThreads$.set(threads);
     const activeMap = new Map(activeThreadId$.get());
     activeMap.set(growspaceId, thread.thread_id);
     activeThreadId$.set(activeMap);
+    await _saveConversationThreads(growspaceId);
     return thread;
   } catch (err) {
     if (err instanceof WSError && err.code === 'rate_limited') {
@@ -228,12 +293,16 @@ export async function sendMessage(
       ConversationThreadSchema
     );
     const threads = new Map(conversationThreads$.get());
-    const existingMessages = threads.get(threadId)?.messages ?? [];
+    const existing = threads.get(threadId);
+    const existingMessages = existing?.messages ?? [];
     threads.set(raw.thread_id, {
       ...raw,
       messages: [...existingMessages, userMessage, ...raw.messages],
+      pinned: existing?.pinned ?? false,
+      updated_at: Date.now(),
     });
     conversationThreads$.set(threads);
+    await _saveConversationThreads(growspaceId);
   } catch (err) {
     if (err instanceof WSError && err.code === 'rate_limited') {
       showToast('AI rate limit reached — please wait a moment before trying again', 'error');
@@ -241,6 +310,29 @@ export async function sendMessage(
     }
     throw err;
   }
+}
+
+export async function togglePin(threadId: string): Promise<void> {
+  const threads = new Map(conversationThreads$.get());
+  const thread = threads.get(threadId);
+  if (!thread) return;
+
+  if (!thread.pinned) {
+    const pinnedCount = [...threads.values()].filter(
+      (t) => t.growspace_id === thread.growspace_id && t.pinned
+    ).length;
+    if (pinnedCount >= MAX_PINNED_THREADS) {
+      showToast(
+        `Pinned limit reached (${MAX_PINNED_THREADS}). Unpin a conversation to pin this one.`,
+        'info'
+      );
+      return;
+    }
+  }
+
+  threads.set(threadId, { ...thread, pinned: !thread.pinned });
+  conversationThreads$.set(threads);
+  await _saveConversationThreads(thread.growspace_id);
 }
 
 /**

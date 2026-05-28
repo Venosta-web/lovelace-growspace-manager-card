@@ -21,7 +21,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
 import { WSError } from '../../services/base-api';
 import { notification$ } from '../ui';
-import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema, ResolveAckSchema } from './schema';
+import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema, ResolveAckSchema, ConversationThreadSchema, MAX_PINNED_THREADS, MAX_RECENT_THREADS } from './schema';
+import type { ConversationThread } from './schema';
 import {
   aiInsight$,
   isAiLoading$,
@@ -38,10 +39,12 @@ import {
   aiMode$,
   startConversation,
   sendMessage,
+  togglePin,
   applyAction,
   fetchAlerts,
   resolveAlert,
   fetchBriefing,
+  fetchConversationThreads,
   fetchAiStatus,
 } from './index';
 
@@ -378,6 +381,36 @@ describe('startConversation', () => {
     expect(payload).not.toHaveProperty('image_entity_id');
   });
 
+  it('sets pinned: false and a positive updated_at on the new thread', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [],
+    });
+
+    await startConversation('gs1', 'hello');
+
+    const thread = conversationThreads$.get().get('thread-abc');
+    expect(thread?.pinned).toBe(false);
+    expect(thread?.updated_at).toBeGreaterThan(0);
+  });
+
+  it('calls save_conversation_threads for the growspace after creating a thread', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [],
+    });
+
+    await startConversation('gs1', 'hello');
+
+    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
+      ([cmd]) => cmd === 'growspace_manager/save_conversation_threads'
+    );
+    expect(saveCalls).toHaveLength(1);
+    expect(saveCalls[0][1]).toMatchObject({ growspace_id: 'gs1' });
+  });
+
   it('shows a rate-limit toast, does not update thread state, and does not throw when rate_limited', async () => {
     vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new WSError('rate_limited', 'rate_limited'));
     notification$.set(null);
@@ -402,12 +435,14 @@ describe('sendMessage', () => {
       thread_id: 'other-thread',
       growspace_id: 'gs2',
       messages: [{ role: 'user' as const, text: 'Hello', timestamp: 1700000001 }],
+      pinned: false,
+      updated_at: 1700000001,
     };
     conversationThreads$.set(new Map([
       ['other-thread', existingThread],
       ['thread-abc', { thread_id: 'thread-abc', growspace_id: 'gs1', messages: [
         { role: 'user' as const, text: 'First message', timestamp: 1700000000 },
-      ] }],
+      ], pinned: false, updated_at: 1700000000 }],
     ]));
 
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
@@ -422,6 +457,54 @@ describe('sendMessage', () => {
     // existing(1) + user message(1) + AI reply(1) = 3
     expect(threads.get('thread-abc')?.messages).toHaveLength(3);
     expect(threads.get('other-thread')).toEqual(existingThread);
+  });
+
+  it('updates updated_at on the thread after sending', async () => {
+    const originalTime = 1700000000000;
+    conversationThreads$.set(new Map([
+      ['thread-abc', {
+        thread_id: 'thread-abc',
+        growspace_id: 'gs1',
+        messages: [],
+        pinned: false,
+        updated_at: originalTime,
+      }],
+    ]));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [{ role: 'ai', text: 'reply', timestamp: 1700000001 }],
+    });
+
+    await sendMessage('thread-abc', 'follow-up');
+
+    const thread = conversationThreads$.get().get('thread-abc');
+    expect(thread?.updated_at).toBeGreaterThan(originalTime);
+  });
+
+  it('calls save_conversation_threads after sending a message', async () => {
+    conversationThreads$.set(new Map([
+      ['thread-abc', {
+        thread_id: 'thread-abc',
+        growspace_id: 'gs1',
+        messages: [],
+        pinned: false,
+        updated_at: 1700000000000,
+      }],
+    ]));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [{ role: 'ai', text: 'reply', timestamp: 1700000001 }],
+    });
+
+    await sendMessage('thread-abc', 'follow-up');
+
+    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
+      ([cmd]) => cmd === 'growspace_manager/save_conversation_threads'
+    );
+    expect(saveCalls).toHaveLength(1);
+    expect(saveCalls[0][1]).toMatchObject({ growspace_id: 'gs1' });
   });
 
   it('sends conversation_id and message fields (not thread_id or text)', async () => {
@@ -720,6 +803,187 @@ describe('saveAiSettings', () => {
 // ---------------------------------------------------------------------------
 // fetchAiSettings
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// togglePin
+// ---------------------------------------------------------------------------
+
+describe('togglePin', () => {
+  const makeThread = (id: string, pinned: boolean): ConversationThread => ({
+    thread_id: id,
+    growspace_id: 'gs1',
+    messages: [],
+    pinned,
+    updated_at: 1700000000,
+  });
+
+  it('pins an unpinned thread and saves to backend', async () => {
+    conversationThreads$.set(new Map([['t1', makeThread('t1', false)]]));
+
+    await togglePin('t1');
+
+    expect(conversationThreads$.get().get('t1')?.pinned).toBe(true);
+    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
+      ([cmd]) => cmd === 'growspace_manager/save_conversation_threads'
+    );
+    expect(saveCalls).toHaveLength(1);
+  });
+
+  it('unpins a pinned thread', async () => {
+    conversationThreads$.set(new Map([['t1', makeThread('t1', true)]]));
+
+    await togglePin('t1');
+
+    expect(conversationThreads$.get().get('t1')?.pinned).toBe(false);
+  });
+
+  it('shows a toast and does not pin when MAX_PINNED_THREADS is reached', async () => {
+    const threads = new Map<string, ConversationThread>();
+    for (let i = 0; i < MAX_PINNED_THREADS; i++) {
+      threads.set(`pinned-${i}`, makeThread(`pinned-${i}`, true));
+    }
+    threads.set('unpinned', makeThread('unpinned', false));
+    conversationThreads$.set(threads);
+    notification$.set(null);
+
+    await togglePin('unpinned');
+
+    expect(conversationThreads$.get().get('unpinned')?.pinned).toBe(false);
+    expect(notification$.get()).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchConversationThreads
+// ---------------------------------------------------------------------------
+
+describe('fetchConversationThreads', () => {
+  const thread = {
+    thread_id: 'thread-1',
+    growspace_id: 'gs1',
+    messages: [],
+    pinned: true,
+    updated_at: 1700000001,
+  };
+
+  it('calls the correct WS command and hydrates conversationThreads$ for the growspace', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce([thread]);
+
+    await fetchConversationThreads('gs1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_conversation_threads',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+    expect(conversationThreads$.get().get('thread-1')).toMatchObject({ pinned: true });
+  });
+
+  it('does not overwrite threads of other growspaces', async () => {
+    const gs2Thread = { thread_id: 'thread-2', growspace_id: 'gs2', messages: [], pinned: false, updated_at: 1700000000 };
+    conversationThreads$.set(new Map([['thread-2', gs2Thread]]));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce([thread]);
+
+    await fetchConversationThreads('gs1');
+
+    expect(conversationThreads$.get().get('thread-2')).toEqual(gs2Thread);
+    expect(conversationThreads$.get().get('thread-1')).toMatchObject({ growspace_id: 'gs1' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Thread eviction (via startConversation)
+// ---------------------------------------------------------------------------
+
+describe('thread eviction', () => {
+  it('drops the oldest unpinned thread when MAX_RECENT_THREADS is exceeded for a growspace', async () => {
+    const threads = new Map<string, ConversationThread>();
+    for (let i = 0; i < MAX_RECENT_THREADS; i++) {
+      threads.set(`t${i}`, {
+        thread_id: `t${i}`,
+        growspace_id: 'gs1',
+        messages: [],
+        pinned: false,
+        updated_at: 1700000000 + i,
+      });
+    }
+    conversationThreads$.set(threads);
+
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'new-thread',
+      growspace_id: 'gs1',
+      messages: [],
+    });
+
+    await startConversation('gs1', 'hello');
+
+    const gs1Threads = [...conversationThreads$.get().values()].filter(
+      (t) => t.growspace_id === 'gs1'
+    );
+    expect(gs1Threads).toHaveLength(MAX_RECENT_THREADS);
+    expect(conversationThreads$.get().has('t0')).toBe(false);
+    expect(conversationThreads$.get().has('new-thread')).toBe(true);
+  });
+
+  it('never evicts pinned threads even when unpinned threads exceed the limit', async () => {
+    const threads = new Map<string, ConversationThread>();
+    threads.set('pinned-1', {
+      thread_id: 'pinned-1',
+      growspace_id: 'gs1',
+      messages: [],
+      pinned: true,
+      updated_at: 1700000001,
+    });
+    for (let i = 0; i < MAX_RECENT_THREADS; i++) {
+      threads.set(`t${i}`, {
+        thread_id: `t${i}`,
+        growspace_id: 'gs1',
+        messages: [],
+        pinned: false,
+        updated_at: 1700000002 + i,
+      });
+    }
+    conversationThreads$.set(threads);
+
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'new-thread',
+      growspace_id: 'gs1',
+      messages: [],
+    });
+
+    await startConversation('gs1', 'hello');
+
+    expect(conversationThreads$.get().has('pinned-1')).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ConversationThreadSchema — pinned + updated_at
+// ---------------------------------------------------------------------------
+
+describe('ConversationThreadSchema', () => {
+  it('accepts a thread with pinned: false and updated_at', () => {
+    const result = ConversationThreadSchema.safeParse({
+      thread_id: 'thread-1',
+      growspace_id: 'gs1',
+      messages: [],
+      pinned: false,
+      updated_at: 1700000000,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('defaults pinned to false when not provided', () => {
+    const result = ConversationThreadSchema.safeParse({
+      thread_id: 'thread-1',
+      growspace_id: 'gs1',
+      messages: [],
+      updated_at: 1700000000,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.pinned).toBe(false);
+  });
+});
 
 describe('fetchAiSettings', () => {
   it('calls growspace_manager/get_ai_settings and returns the settings object', async () => {

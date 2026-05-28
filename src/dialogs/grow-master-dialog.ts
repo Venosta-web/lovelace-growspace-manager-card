@@ -4,7 +4,7 @@ import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox, mdiCog } fro
 import { StoreController } from '@nanostores/lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
-import { aiMode$, aiBriefing$, fetchBriefing, fetchAiSettings, saveAiSettings, type AiSettingsDraft } from '../slices/ai-insight';
+import { aiMode$, aiBriefing$, fetchBriefing, fetchAiSettings, saveAiSettings, fetchConversationThreads, type AiSettingsDraft } from '../slices/ai-insight';
 import './chat-panel';
 import './briefing-panel';
 import './inbox-panel';
@@ -276,6 +276,7 @@ export class GrowMasterDialog extends LitElement {
   override updated(changedProperties: Map<string | symbol, unknown>) {
     super.updated(changedProperties);
     if (changedProperties.has('open') && this.open) {
+      fetchConversationThreads(this._growspaceId);
       if (!aiBriefing$.get().get(this._growspaceId)) {
         fetchBriefing(this._growspaceId);
       }

@@ -169,6 +169,8 @@ var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,2
 var mdiPaperclip = "M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPh = "M13 7V17H15V13H17V17H19V7H17V11H15V7H13M11 15V13C11 11.9 10.11 11 9 11H5V21H7V17H9C10.11 17 11 16.11 11 15M9 15H7V13H9V15Z";
+var mdiPin = "M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z";
+var mdiPinOff = "M2,5.27L3.28,4L20,20.72L18.73,22L12.8,16.07V22H11.2V16H6V14L8,12V11.27L2,5.27M16,12L18,14V16H17.82L8,6.18V4H7V2H17V4H16V12Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiPlusBoxMultiple = "M19,11H15V15H13V11H9V9H13V5H15V9H19M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z";
 var mdiPrinter = "M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z";
@@ -8207,10 +8209,14 @@ const ConversationMessageSchema = objectType({
 // ---------------------------------------------------------------------------
 // ConversationThread
 // ---------------------------------------------------------------------------
+const MAX_PINNED_THREADS = 10;
+const MAX_RECENT_THREADS = 20;
 const ConversationThreadSchema = objectType({
     thread_id: stringType(),
     growspace_id: stringType(),
     messages: arrayType(ConversationMessageSchema),
+    pinned: booleanType().default(false),
+    updated_at: numberType().nonnegative().default(0),
 });
 // ---------------------------------------------------------------------------
 // AIBriefing
@@ -8363,6 +8369,48 @@ function dismissInsight() {
 // ---------------------------------------------------------------------------
 // Conversation mutators
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Thread persistence helpers (private)
+// ---------------------------------------------------------------------------
+function _evictThreads(threads, growspaceId) {
+    const gsThreads = [...threads.values()].filter((t) => t.growspace_id === growspaceId);
+    const pinned = gsThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+    const recent = gsThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+    const keep = new Set([
+        ...pinned.slice(0, MAX_PINNED_THREADS),
+        ...recent.slice(0, MAX_RECENT_THREADS),
+    ].map((t) => t.thread_id));
+    const result = new Map(threads);
+    for (const [id, t] of result) {
+        if (t.growspace_id === growspaceId && !keep.has(id))
+            result.delete(id);
+    }
+    return result;
+}
+async function _saveConversationThreads(growspaceId) {
+    const threads = [...conversationThreads$.get().values()].filter((t) => t.growspace_id === growspaceId);
+    await hassCall('growspace_manager/save_conversation_threads', { growspace_id: growspaceId, threads }, unknownType());
+}
+// ---------------------------------------------------------------------------
+// Thread persistence (public)
+// ---------------------------------------------------------------------------
+async function fetchConversationThreads(growspaceId) {
+    try {
+        const ThreadsResponseSchema = arrayType(ConversationThreadSchema);
+        const fetched = await hassCall('growspace_manager/get_conversation_threads', { growspace_id: growspaceId }, ThreadsResponseSchema);
+        const updated = new Map(conversationThreads$.get());
+        for (const [id, t] of updated) {
+            if (t.growspace_id === growspaceId)
+                updated.delete(id);
+        }
+        for (const t of fetched)
+            updated.set(t.thread_id, t);
+        conversationThreads$.set(updated);
+    }
+    catch {
+        // Silently ignore — leave existing data intact
+    }
+}
 /**
  * Start a new AI conversation thread for a growspace.
  *
@@ -8376,13 +8424,20 @@ async function startConversation(growspaceId, text, imageEntityId) {
             message: text,
             ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
         }, ConversationThreadSchema);
-        const thread = { ...raw, messages: [userMessage, ...raw.messages] };
-        const threads = new Map(conversationThreads$.get());
+        const thread = {
+            ...raw,
+            messages: [userMessage, ...raw.messages],
+            pinned: false,
+            updated_at: Date.now(),
+        };
+        let threads = new Map(conversationThreads$.get());
         threads.set(thread.thread_id, thread);
+        threads = _evictThreads(threads, growspaceId);
         conversationThreads$.set(threads);
         const activeMap = new Map(activeThreadId$.get());
         activeMap.set(growspaceId, thread.thread_id);
         activeThreadId$.set(activeMap);
+        await _saveConversationThreads(growspaceId);
         return thread;
     }
     catch (err) {
@@ -8410,12 +8465,16 @@ async function sendMessage(threadId, text, imageEntityId) {
             ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
         }, ConversationThreadSchema);
         const threads = new Map(conversationThreads$.get());
-        const existingMessages = threads.get(threadId)?.messages ?? [];
+        const existing = threads.get(threadId);
+        const existingMessages = existing?.messages ?? [];
         threads.set(raw.thread_id, {
             ...raw,
             messages: [...existingMessages, userMessage, ...raw.messages],
+            pinned: existing?.pinned ?? false,
+            updated_at: Date.now(),
         });
         conversationThreads$.set(threads);
+        await _saveConversationThreads(growspaceId);
     }
     catch (err) {
         if (err instanceof WSError && err.code === 'rate_limited') {
@@ -8424,6 +8483,22 @@ async function sendMessage(threadId, text, imageEntityId) {
         }
         throw err;
     }
+}
+async function togglePin(threadId) {
+    const threads = new Map(conversationThreads$.get());
+    const thread = threads.get(threadId);
+    if (!thread)
+        return;
+    if (!thread.pinned) {
+        const pinnedCount = [...threads.values()].filter((t) => t.growspace_id === thread.growspace_id && t.pinned).length;
+        if (pinnedCount >= MAX_PINNED_THREADS) {
+            showToast$1(`Pinned limit reached (${MAX_PINNED_THREADS}). Unpin a conversation to pin this one.`, 'info');
+            return;
+        }
+    }
+    threads.set(threadId, { ...thread, pinned: !thread.pinned });
+    conversationThreads$.set(threads);
+    await _saveConversationThreads(thread.growspace_id);
 }
 /**
  * Execute a suggested service action.
@@ -19621,10 +19696,41 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     _removeCtxChip(id) {
         this._contextChips = this._contextChips.filter((c) => c.id !== id);
     }
+    _renderThreadRow(t, activeId) {
+        const firstMsg = t.messages[0];
+        const isActive = t.thread_id === activeId;
+        return x `
+      <button
+        class="thread-row"
+        data-thread-id=${t.thread_id}
+        aria-pressed=${isActive ? 'true' : 'false'}
+        @click=${() => this._setActiveThread(t.thread_id)}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
+          <path d=${mdiMessageOutline}></path>
+        </svg>
+        <div style="flex:1;min-width:0;">
+          <div class="thread-title">${firstMsg?.text ?? 'New conversation'}</div>
+          <div class="thread-time">${this._relTime(firstMsg?.timestamp)}</div>
+        </div>
+        <button
+          class="pin-btn ${t.pinned ? 'pinned' : ''}"
+          aria-label=${t.pinned ? 'Unpin conversation' : 'Pin conversation'}
+          @click=${(e) => { e.stopPropagation(); togglePin(t.thread_id); }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${t.pinned ? mdiPinOff : mdiPin}></path>
+          </svg>
+        </button>
+      </button>
+    `;
+    }
     _renderThreadRail() {
-        const threads = [...this._threads.value.values()].filter((t) => t.growspace_id === this.growspaceid);
-        const _activeMap = this._activeThread.value;
-        const activeId = (_activeMap instanceof Map ? _activeMap.get(this.growspaceid) : null) ?? null;
+        const allThreads = [...this._threads.value.values()].filter((t) => t.growspace_id === this.growspaceid);
+        const pinned = allThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+        const recent = allThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+        const activeMap = this._activeThread.value;
+        const activeId = (activeMap instanceof Map ? activeMap.get(this.growspaceid) : null) ?? null;
         return x `
       <div class="chat-rail">
         <div class="ai-model-card">
@@ -19637,29 +19743,17 @@ let GmChatPanel = class GmChatPanel extends i$3 {
           </div>
         </div>
 
-        ${threads.length > 0 ? x `
+        ${pinned.length > 0 ? x `
+          <div class="rail-section-label">Pinned</div>
+          <div class="rail-recent">
+            ${c(pinned, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
+          </div>
+        ` : E}
+
+        ${recent.length > 0 ? x `
           <div class="rail-section-label">Recent</div>
           <div class="rail-recent">
-            ${c(threads, (t) => t.thread_id, (t) => {
-            const firstMsg = t.messages[0];
-            const isActive = t.thread_id === activeId;
-            return x `
-                <button
-                  class="thread-row"
-                  data-thread-id=${t.thread_id}
-                  aria-pressed=${isActive ? 'true' : 'false'}
-                  @click=${() => this._setActiveThread(t.thread_id)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
-                    <path d=${mdiMessageOutline}></path>
-                  </svg>
-                  <div>
-                    <div class="thread-title">${firstMsg?.text ?? 'New conversation'}</div>
-                    <div class="thread-time">${this._relTime(firstMsg?.timestamp)}</div>
-                  </div>
-                </button>
-              `;
-        })}
+            ${c(recent, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
           </div>
         ` : E}
       </div>
@@ -19836,9 +19930,14 @@ let GmChatPanel = class GmChatPanel extends i$3 {
       <div class="chat-area">
         <div class="thread-header">
           <span class="thread-breadcrumb">Chat / ${thread.messages[0]?.text?.slice(0, 40) ?? 'Conversation'}</span>
-          <button style="background:none;border:none;cursor:pointer;color:var(--secondary-text-color)" aria-label="Pin">
+          <button
+            class="pin-btn ${thread.pinned ? 'pinned' : ''}"
+            aria-label=${thread.pinned ? 'Unpin conversation' : 'Pin conversation'}
+            title=${thread.pinned ? 'Unpin' : 'Pin this conversation'}
+            @click=${() => togglePin(thread.thread_id)}
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-              <path d=${mdiCheck}></path>
+              <path d=${thread.pinned ? mdiPinOff : mdiPin}></path>
             </svg>
           </button>
         </div>
@@ -20395,6 +20494,25 @@ GmChatPanel.styles = i$6 `
       color: var(--error-color, #f44336);
       padding: 4px 2px 0;
     }
+
+    /* ── Pin button ──────────────────────────────────────────── */
+    .pin-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-text-color, rgba(255,255,255,0.4));
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 150ms, color 150ms;
+    }
+    .thread-row:hover .pin-btn,
+    .thread-header .pin-btn { opacity: 1; }
+    .pin-btn.pinned { color: var(--ai-accent, #4caf50); opacity: 1; }
+    .pin-btn:hover { color: var(--primary-text-color, #fff); }
 
     /* ── Message image thumbnail ──────────────────────────────── */
     .msg-image {
@@ -22297,6 +22415,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     updated(changedProperties) {
         super.updated(changedProperties);
         if (changedProperties.has('open') && this.open) {
+            fetchConversationThreads(this._growspaceId);
             if (!aiBriefing$.get().get(this._growspaceId)) {
                 fetchBriefing(this._growspaceId);
             }
