@@ -291,7 +291,7 @@ describe('GrowspaceAdapter', () => {
           growspace_id: 'test_gs',
           overview_entity_id: '',
           name: 'Test Room',
-          type: 'normal',
+          type: GrowspaceTypeEnum.NORMAL,
         },
       });
       const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
@@ -411,7 +411,7 @@ describe('GrowspaceAdapter', () => {
         plants_per_row: 2,
         total_plants: 0,
         grid: {},
-        dimensions: { width: 100, length: 111, height: 100 },
+        dimensions: { width: 100, length: 111, height: 100, unit: 'cm' },
       },
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
@@ -430,6 +430,67 @@ describe('GrowspaceAdapter', () => {
     });
     const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
     expect(result?.dimensions?.length).toBe(120);
+  });
+
+  it('should map ecTargetRanges from irrigation_config', () => {
+    const ws = makeWsData({
+      irrigation: {
+        irrigation_config: {
+          irrigation_times: [],
+          drain_times: [],
+          ec_target_ranges: [
+            { stage: 'veg', min_ec: 1.2, max_ec: 1.6 },
+            { stage: 'flower', min_ec: 1.8, max_ec: 2.2 },
+          ],
+        },
+        irrigation_strategy: null,
+      },
+    });
+    const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+    expect(result?.irrigationConfig.ecTargetRanges).toHaveLength(2);
+    expect(result?.irrigationConfig.ecTargetRanges[0]).toEqual({
+      stage: 'veg',
+      minEc: 1.2,
+      maxEc: 1.6,
+    });
+    expect(result?.irrigationConfig.ecTargetRanges[1]).toEqual({
+      stage: 'flower',
+      minEc: 1.8,
+      maxEc: 2.2,
+    });
+  });
+
+  it('should map drainConfig.readings when drain_config has entries', () => {
+    const ws = makeWsData({
+      irrigation: {
+        irrigation_config: { irrigation_times: [], drain_times: [] },
+        irrigation_strategy: null,
+        drain_config: {
+          enabled: true,
+          max_ec_delta: 0.5,
+          target_runoff_percent: 20,
+          readings: [
+            {
+              timestamp: '2024-01-01T10:00:00Z',
+              feed_ec: 1.5,
+              drain_ec: 1.8,
+              drain_volume_ml: 200,
+              feed_volume_ml: 1000,
+            },
+          ],
+        },
+      } as any,
+    });
+    const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+    expect(result?.drainConfig).not.toBeNull();
+    expect(result?.drainConfig?.readings).toHaveLength(1);
+    expect(result?.drainConfig?.readings[0]).toEqual({
+      timestamp: '2024-01-01T10:00:00Z',
+      feedEc: 1.5,
+      drainEc: 1.8,
+      drainVolumeMl: 200,
+      feedVolumeMl: 1000,
+    });
   });
 
   it('should backfill sensorCoordinates for known sensors if missing', () => {
