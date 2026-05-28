@@ -564,6 +564,28 @@ describe('sendMessage', () => {
 
     await expect(sendMessage('thread-abc', 'hello')).rejects.toThrow('send failed');
   });
+
+  it('sends image_entities as an array when imageEntityId is provided', async () => {
+    conversationThreads$.set(new Map([
+      ['thread-abc', {
+        thread_id: 'thread-abc',
+        growspace_id: 'gs1',
+        messages: [],
+        pinned: false,
+        updated_at: 1700000000,
+      }],
+    ]));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [{ role: 'ai', text: 'reply', timestamp: 1700000001 }],
+    });
+
+    await sendMessage('thread-abc', 'Check image', 'camera.tent1');
+
+    const [, payload] = vi.mocked(hassCall.hassCall).mock.calls[0];
+    expect(payload).toHaveProperty('image_entities', ['camera.tent1']);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -696,6 +718,15 @@ describe('resolveAlert', () => {
     await resolveAlert('alert-1');
 
     expect(aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-2')?.resolved).toBe(false);
+  });
+
+  it('leaves aiAlerts$ unchanged when alert id is not found in any growspace', async () => {
+    aiAlerts$.set(new Map([['gs1', [alert]]]));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'nonexistent' });
+
+    await resolveAlert('nonexistent');
+
+    expect(aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-1')?.resolved).toBe(false);
   });
 });
 
@@ -875,6 +906,15 @@ describe('togglePin', () => {
     expect(conversationThreads$.get().get('t1')?.pinned).toBe(false);
   });
 
+  it('does nothing when thread does not exist', async () => {
+    conversationThreads$.set(new Map());
+
+    await togglePin('nonexistent-thread');
+
+    expect(conversationThreads$.get().size).toBe(0);
+    expect(hassCall.hassCall).not.toHaveBeenCalled();
+  });
+
   it('shows a toast and does not pin when MAX_PINNED_THREADS is reached', async () => {
     const threads = new Map<string, ConversationThread>();
     for (let i = 0; i < MAX_PINNED_THREADS; i++) {
@@ -1020,6 +1060,62 @@ describe('ConversationThreadSchema', () => {
     });
     expect(result.success).toBe(true);
     expect(result.data?.pinned).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveAiAgent
+// ---------------------------------------------------------------------------
+
+describe('saveAiAgent', () => {
+  const briefingPayload = {
+    generated_at: 1700000000,
+    summary_text: 'Plants are healthy',
+    kpis: [],
+    recommendations: [],
+    ai_available: true,
+  };
+
+  it('calls growspace_manager/save_ai_agent with the agent_id', async () => {
+    const { saveAiAgent } = await import('./index');
+    vi.mocked(hassCall.hassCall)
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce(briefingPayload);
+
+    await saveAiAgent('conversation.claude', 'gs1');
+
+    const saveCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
+      ([cmd]) => cmd === 'growspace_manager/save_ai_agent'
+    );
+    expect(saveCalls).toHaveLength(1);
+    expect(saveCalls[0][1]).toEqual({ agent_id: 'conversation.claude' });
+  });
+
+  it('sets aiEnabled$ to true after saving', async () => {
+    const { saveAiAgent } = await import('./index');
+    aiEnabled$.set(null);
+    vi.mocked(hassCall.hassCall)
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce(briefingPayload);
+
+    await saveAiAgent('conversation.claude', 'gs1');
+
+    expect(aiEnabled$.get()).toBe(true);
+  });
+
+  it('calls fetchBriefing with forceRefresh after saving', async () => {
+    const { saveAiAgent } = await import('./index');
+    vi.mocked(hassCall.hassCall)
+      .mockResolvedValueOnce({})
+      .mockResolvedValueOnce(briefingPayload);
+
+    await saveAiAgent('conversation.claude', 'gs1');
+
+    const briefingCalls = vi.mocked(hassCall.hassCall).mock.calls.filter(
+      ([cmd]) => cmd === 'growspace_manager/get_briefing'
+    );
+    expect(briefingCalls).toHaveLength(1);
+    expect(briefingCalls[0][1]).toMatchObject({ growspace_id: 'gs1', force_refresh: true });
   });
 });
 
