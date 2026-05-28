@@ -185,6 +185,22 @@ describe('askGrowAdvice', () => {
     expect(aiInsight$.get()).toBe('Nested advice text.');
   });
 
+  it('JSON-stringifies inner when response is a non-string non-response object', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce({ response: 42 });
+
+    await askGrowAdvice('gs1', 'question');
+
+    expect(aiInsight$.get()).toBe('42');
+  });
+
+  it('JSON-stringifies raw when it has no response property', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce(42);
+
+    await askGrowAdvice('gs1', 'question');
+
+    expect(aiInsight$.get()).toBe('42');
+  });
+
   it('clears isAiLoading$ after a successful call', async () => {
     await askGrowAdvice('gs1', 'question');
 
@@ -423,6 +439,12 @@ describe('startConversation', () => {
     expect(notification$.get()).not.toBeNull();
     expect(notification$.get()?.message).toContain('rate limit');
   });
+
+  it('rethrows non-rate-limited errors', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('backend error'));
+
+    await expect(startConversation('gs1', 'hello')).rejects.toThrow('backend error');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -525,6 +547,22 @@ describe('sendMessage', () => {
     expect(payload).toHaveProperty('message', 'Follow-up');
     expect(payload).not.toHaveProperty('thread_id');
     expect(payload).not.toHaveProperty('text');
+  });
+
+  it('shows a rate-limit toast and does not throw when rate_limited', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new WSError('rate_limited', 'rate_limited'));
+    notification$.set(null);
+
+    await sendMessage('thread-abc', 'hello');
+
+    expect(notification$.get()).not.toBeNull();
+    expect(notification$.get()?.message).toContain('rate limit');
+  });
+
+  it('rethrows non-rate-limited errors', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('send failed'));
+
+    await expect(sendMessage('thread-abc', 'hello')).rejects.toThrow('send failed');
   });
 });
 
