@@ -159,9 +159,11 @@ A pulsing warning chip rendered to the left of the Optimal Conditions chip in th
 
 The AI assistant dialog (`grow-master-dialog`). Uses the Design A shell (sidebar rail + sticky header/footer, same structure as Config Dialog and Irrigation Dialog) with three modes switchable via the rail:
 
-- **Chat** — threaded multi-turn conversation backed by a `Conversation Thread`. Left rail shows recent threads and capability tiles. Composer supports context chips (growspace, time range, sensors) and photo attachment via the existing image pipeline.
-- **Briefing** — AI-generated facility-wide summary ([[AI Briefing]]). Left rail lists briefing types and scope filters.
-- **Inbox** — filterable list of [[Triage Alert]]s. Alerts are bucketed by Severity: `"danger"` → Action filter, `"warning"` → Watch filter, `"info"` → All only. Detail pane shows AI reasoning (when available) or Bayesian reasons, KPI snapshot, and suggested actions.
+All three panels are scoped to the **single growspace** the dialog was opened from. Data from other growspaces is never shown.
+
+- **Chat** — threaded multi-turn conversation backed by a `Conversation Thread`. Left rail shows only threads belonging to this growspace. Composer supports context chips (growspace, time range, sensors) and photo attachment via the existing image pipeline.
+- **Briefing** — AI-generated summary scoped to this growspace ([[AI Briefing]]). Left rail lists briefing types and scope filters. Fetched lazily — cached value is reused if present; "Regenerate" forces a fresh fetch.
+- **Inbox** — filterable list of [[Triage Alert]]s scoped to this growspace. Alerts are bucketed by Severity: `"danger"` → Action filter, `"warning"` → Watch filter, `"info"` → All only. Detail pane shows AI reasoning (when available) or Bayesian reasons, KPI snapshot, and suggested actions.
 
 ## Triage Alert
 
@@ -176,7 +178,7 @@ Current mapping: `stress → danger`, `mold → warning`.
 
 ## Conversation Thread (client)
 
-Client-side record of a multi-turn dialogue in Chat mode. Fields: `id` (UUID), `title`, `messages` (array of `{ role, text, suggestedAction?, confidence?, timestamp }`), `conversationId` (the HA conversation agent's session ID), `growspaceId`. Stored in the `aiInsight$` slice atom. Threads survive dialog open/close within the same page session; they are not persisted across HA restarts.
+Client-side record of a multi-turn dialogue in Chat mode. Fields: `id` (UUID), `title`, `messages` (array of `{ role, text, suggestedAction?, confidence?, timestamp }`), `conversationId` (the HA conversation agent's session ID), `growspaceId`. Stored in the `conversationThreads$` atom (keyed by thread ID). The active thread per growspace is tracked separately in `activeThreadId$` (keyed by growspace ID). Threads survive dialog open/close within the same page session; they are not persisted across HA restarts.
 
 ## Suggested Action Card
 

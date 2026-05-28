@@ -40,7 +40,7 @@ describe('GmBriefingPanel — tab rail', () => {
 
   beforeEach(async () => {
     isAiLoading$.set(false);
-    aiBriefing$.set(STUB_BRIEFING);
+    aiBriefing$.set(new Map([['', STUB_BRIEFING]]));
     element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
     document.body.appendChild(element);
     await element.updateComplete;
@@ -108,7 +108,7 @@ describe('GmBriefingPanel — tab content', () => {
 
   beforeEach(async () => {
     isAiLoading$.set(false);
-    aiBriefing$.set(STUB_BRIEFING);
+    aiBriefing$.set(new Map([['', STUB_BRIEFING]]));
     element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
     document.body.appendChild(element);
     await element.updateComplete;

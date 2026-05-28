@@ -30,8 +30,8 @@ export class GmBriefingPanel extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    if (!aiBriefing$.get()) {
-      fetchBriefing();
+    if (!aiBriefing$.get().get(this.growspaceid)) {
+      fetchBriefing(this.growspaceid);
     }
   }
 
@@ -445,7 +445,7 @@ export class GmBriefingPanel extends LitElement {
   `;
 
   private async _regenerate() {
-    await fetchBriefing(true);
+    await fetchBriefing(this.growspaceid, true);
   }
 
   private async _submitFollowUp() {
@@ -547,7 +547,7 @@ export class GmBriefingPanel extends LitElement {
     this._agentSaving = true;
     this._agentSaveError = null;
     try {
-      await saveAiAgent(this._selectedAgent);
+      await saveAiAgent(this._selectedAgent, this.growspaceid);
     } catch (err) {
       this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
     } finally {
@@ -702,7 +702,7 @@ export class GmBriefingPanel extends LitElement {
   }
 
   render() {
-    const briefing = this._briefing.value;
+    const briefing = this._briefing.value.get(this.growspaceid) ?? null;
     const loading = this._loading.value;
 
     return html`

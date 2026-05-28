@@ -10,8 +10,10 @@ import {
   aiAlerts$,
   aiInsight$,
 } from '../slices/ai-insight';
-import './briefing-panel';
+/* eslint-disable import/no-duplicates */
+import './briefing-panel'; // side-effect import required for custom element registration
 import { GmBriefingPanel } from './briefing-panel';
+/* eslint-enable import/no-duplicates */
 
 vi.mock('../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -67,13 +69,13 @@ const BRIEFING = {
 };
 
 beforeEach(() => {
-  aiBriefing$.set(null);
+  aiBriefing$.set(new Map());
   aiMode$.set('briefing');
   isAiLoading$.set(false);
   aiError$.set(null);
   conversationThreads$.set(new Map());
-  activeThreadId$.set(null);
-  aiAlerts$.set([]);
+  activeThreadId$.set(new Map());
+  aiAlerts$.set(new Map());
   aiInsight$.set(null);
   vi.clearAllMocks();
   // Default: never resolves so connectedCallback's fetchBriefing() doesn't overwrite test state.
@@ -103,10 +105,10 @@ describe('GmBriefingPanel — loading state', () => {
 
   it('hides .briefing-loading when aiBriefing$ is set', async () => {
     isAiLoading$.set(true);
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
 
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -120,12 +122,12 @@ describe('GmBriefingPanel — loading state', () => {
 
 describe('GmBriefingPanel — TL;DR card', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('renders .insight-head when briefing is loaded', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -134,7 +136,7 @@ describe('GmBriefingPanel — TL;DR card', () => {
 
   it('renders the briefing headline in .insight-head h3', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -145,7 +147,7 @@ describe('GmBriefingPanel — TL;DR card', () => {
 
   it('renders summary_text as a paragraph in .insight-head', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -161,10 +163,10 @@ describe('GmBriefingPanel — TL;DR card', () => {
 
 describe('GmBriefingPanel — confidence meter', () => {
   it('renders .conf-meter when briefing has confidence', async () => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
 
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -173,10 +175,10 @@ describe('GmBriefingPanel — confidence meter', () => {
 
   it('does not render .conf-meter when confidence is absent', async () => {
     const { confidence: _c, ...noConf } = BRIEFING;
-    aiBriefing$.set({ ...noConf, kpis: BRIEFING.kpis, recommendations: BRIEFING.recommendations });
+    aiBriefing$.set(new Map([['gs1', { ...noConf, kpis: BRIEFING.kpis, recommendations: BRIEFING.recommendations }]]));
 
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -190,12 +192,12 @@ describe('GmBriefingPanel — confidence meter', () => {
 
 describe('GmBriefingPanel — KPI row', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('renders .kpi-row when briefing is loaded', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -204,7 +206,7 @@ describe('GmBriefingPanel — KPI row', () => {
 
   it('renders one .kpi-card per KPI entry', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -214,7 +216,7 @@ describe('GmBriefingPanel — KPI row', () => {
 
   it('renders KPI label and value inside .kpi-card', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -230,12 +232,12 @@ describe('GmBriefingPanel — KPI row', () => {
 
 describe('GmBriefingPanel — recommendation rows', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('renders one .reco-row per recommendation', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -245,7 +247,7 @@ describe('GmBriefingPanel — recommendation rows', () => {
 
   it('renders title and description in each .reco-row', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -261,12 +263,12 @@ describe('GmBriefingPanel — recommendation rows', () => {
 
 describe('GmBriefingPanel — impact badge colours', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('high impact badge has data-impact="high"', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -277,7 +279,7 @@ describe('GmBriefingPanel — impact badge colours', () => {
 
   it('medium impact badge has data-impact="medium"', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -288,7 +290,7 @@ describe('GmBriefingPanel — impact badge colours', () => {
 
   it('low impact badge has data-impact="low"', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -304,12 +306,12 @@ describe('GmBriefingPanel — impact badge colours', () => {
 
 describe('GmBriefingPanel — Apply button', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('renders Apply button only on recommendations with suggested_action', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -319,7 +321,7 @@ describe('GmBriefingPanel — Apply button', () => {
 
   it('Apply button calls callService with the suggested_action payload', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -341,21 +343,21 @@ describe('GmBriefingPanel — Apply button', () => {
 
 describe('GmBriefingPanel — Regenerate button', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('renders a Regenerate button', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.briefing-regenerate')).not.toBeNull();
   });
 
-  it('Regenerate calls hassCall with get_briefing + force_refresh: true', async () => {
+  it('Regenerate calls hassCall with get_briefing + growspace_id + force_refresh: true', async () => {
     const el = await fixture<GmBriefingPanel>(html`
-      <gm-briefing-panel></gm-briefing-panel>
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
     `);
     await el.updateComplete;
 
@@ -364,7 +366,7 @@ describe('GmBriefingPanel — Regenerate button', () => {
 
     expect(hassCallMod.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
-      { force_refresh: true },
+      { growspace_id: 'gs1', force_refresh: true },
       expect.anything(),
     );
   });
@@ -376,7 +378,7 @@ describe('GmBriefingPanel — Regenerate button', () => {
 
 describe('GmBriefingPanel — follow-up input', () => {
   beforeEach(() => {
-    aiBriefing$.set(BRIEFING);
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
   });
 
   it('renders .follow-up input', async () => {

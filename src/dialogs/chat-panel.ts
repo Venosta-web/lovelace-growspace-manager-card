@@ -554,13 +554,17 @@ export class GmChatPanel extends LitElement {
   `;
 
   private _getActiveThread(): ConversationThread | undefined {
-    const threadId = this._activeThread.value;
+    const activeMap = this._activeThread.value;
+    if (!(activeMap instanceof Map)) return undefined;
+    const threadId = activeMap.get(this.growspaceid) ?? null;
     if (!threadId) return undefined;
     return this._threads.value.get(threadId);
   }
 
   private _setActiveThread(threadId: string) {
-    activeThreadId$.set(threadId);
+    const map = new Map(activeThreadId$.get());
+    map.set(this.growspaceid, threadId);
+    activeThreadId$.set(map);
   }
 
   private _handleInput(e: Event) {
@@ -573,7 +577,7 @@ export class GmChatPanel extends LitElement {
     this._inputText = '';
     const attachment = this._pendingAttachment ?? undefined;
     this._pendingAttachment = null;
-    const threadId = this._activeThread.value;
+    const threadId = this._activeThread.value.get(this.growspaceid) ?? null;
     if (threadId) {
       await sendMessage(threadId, text, attachment);
     } else {
@@ -612,8 +616,11 @@ export class GmChatPanel extends LitElement {
   }
 
   private _renderThreadRail() {
-    const threads = [...this._threads.value.values()];
-    const activeId = this._activeThread.value;
+    const threads = [...this._threads.value.values()].filter(
+      (t) => t.growspace_id === this.growspaceid
+    );
+    const _activeMap = this._activeThread.value;
+    const activeId = (_activeMap instanceof Map ? _activeMap.get(this.growspaceid) : null) ?? null;
     return html`
       <div class="chat-rail">
         <div class="ai-model-card">
@@ -852,7 +859,7 @@ export class GmChatPanel extends LitElement {
     this._agentSaving = true;
     this._agentSaveError = null;
     try {
-      await saveAiAgent(this._selectedAgent);
+      await saveAiAgent(this._selectedAgent, this.growspaceid);
     } catch (err) {
       this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
     } finally {
@@ -887,7 +894,7 @@ export class GmChatPanel extends LitElement {
 
   render() {
     const thread = this._getActiveThread();
-    const aiUnavailable = this._briefing.value?.ai_available === false;
+    const aiUnavailable = this._briefing.value.get(this.growspaceid)?.ai_available === false;
     return html`
       ${this._renderThreadRail()}
       <div class="chat-content">

@@ -19109,9 +19109,9 @@ const aiInsight$ = atom(null);
 const isAiLoading$ = atom(false);
 const aiError$ = atom(null);
 const conversationThreads$ = atom(new Map());
-const activeThreadId$ = atom(null);
-const aiAlerts$ = atom([]);
-const aiBriefing$ = atom(null);
+const activeThreadId$ = atom(new Map());
+const aiAlerts$ = atom(new Map());
+const aiBriefing$ = atom(new Map());
 const aiMode$ = atom('briefing');
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -19212,7 +19212,9 @@ async function startConversation(growspaceId, text, imageEntityId) {
     const threads = new Map(conversationThreads$.get());
     threads.set(thread.thread_id, thread);
     conversationThreads$.set(threads);
-    activeThreadId$.set(thread.thread_id);
+    const activeMap = new Map(activeThreadId$.get());
+    activeMap.set(growspaceId, thread.thread_id);
+    activeThreadId$.set(activeMap);
     return thread;
 }
 /**
@@ -19250,30 +19252,58 @@ async function applyAction(action) {
 // Alert mutators
 // ---------------------------------------------------------------------------
 /**
- * Fetch triage alerts from the backend, optionally scoped to a growspace.
+ * Fetch triage alerts for a specific growspace and store them in aiAlerts$
+ * keyed by growspaceId. Other growspaces' alerts are unaffected.
  */
 async function fetchAlerts(growspaceId) {
     const AlertsResponseSchema = TriageAlertSchema.array();
-    const alerts = await hassCall('growspace_manager/get_ai_alerts', { ...(growspaceId ? { growspace_id: growspaceId } : {}) }, AlertsResponseSchema);
-    aiAlerts$.set(alerts);
+    try {
+        const alerts = await hassCall('growspace_manager/get_ai_alerts', { growspace_id: growspaceId }, AlertsResponseSchema);
+        const updated = new Map(aiAlerts$.get());
+        updated.set(growspaceId, alerts);
+        aiAlerts$.set(updated);
+    }
+    catch {
+        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    }
 }
 /**
- * Mark an alert as resolved. Patches the matching alert in aiAlerts$ and
- * calls the backend to persist the resolution.
+ * Mark an alert as resolved. Searches across all growspaces in aiAlerts$,
+ * patches the matching alert, and calls the backend to persist the resolution.
  */
 async function resolveAlert(alertId, note) {
     await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, ResolveAckSchema);
-    aiAlerts$.set(aiAlerts$.get().map((a) => (a.id === alertId ? { ...a, resolved: true, resolution_note: note ?? null } : a)));
+    const currentMap = aiAlerts$.get();
+    const updated = new Map(currentMap);
+    for (const [gsId, alerts] of updated) {
+        const idx = alerts.findIndex((a) => a.id === alertId);
+        if (idx !== -1) {
+            const patched = [...alerts];
+            patched[idx] = { ...alerts[idx], resolved: true, resolution_note: note ?? null };
+            updated.set(gsId, patched);
+            break;
+        }
+    }
+    aiAlerts$.set(updated);
 }
 // ---------------------------------------------------------------------------
 // Briefing mutators
 // ---------------------------------------------------------------------------
 /**
- * Fetch the latest AI briefing, optionally forcing a backend refresh.
+ * Fetch the AI briefing for a specific growspace and store it in aiBriefing$
+ * keyed by growspaceId. Other growspaces' briefings are unaffected.
+ * Pass forceRefresh=true to bypass the backend cache.
  */
-async function fetchBriefing(forceRefresh) {
-    const briefing = await hassCall('growspace_manager/get_briefing', { ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
-    aiBriefing$.set(briefing);
+async function fetchBriefing(growspaceId, forceRefresh) {
+    try {
+        const briefing = await hassCall('growspace_manager/get_briefing', { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
+        const updated = new Map(aiBriefing$.get());
+        updated.set(growspaceId, briefing);
+        aiBriefing$.set(updated);
+    }
+    catch {
+        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    }
 }
 /**
  * Persist a conversation agent selection and enable AI in the integration.
@@ -19281,9 +19311,9 @@ async function fetchBriefing(forceRefresh) {
  * Saves the chosen entity ID to the backend config entry, then refreshes the
  * briefing atom so panels drop their unconfigured state without a page reload.
  */
-async function saveAiAgent(agentEntityId) {
+async function saveAiAgent(agentEntityId, growspaceId) {
     await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknownType());
-    await fetchBriefing(true);
+    await fetchBriefing(growspaceId, true);
 }
 
 const SUGGESTION_PROMPTS = [
@@ -19318,13 +19348,18 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         }
     }
     _getActiveThread() {
-        const threadId = this._activeThread.value;
+        const activeMap = this._activeThread.value;
+        if (!(activeMap instanceof Map))
+            return undefined;
+        const threadId = activeMap.get(this.growspaceid) ?? null;
         if (!threadId)
             return undefined;
         return this._threads.value.get(threadId);
     }
     _setActiveThread(threadId) {
-        activeThreadId$.set(threadId);
+        const map = new Map(activeThreadId$.get());
+        map.set(this.growspaceid, threadId);
+        activeThreadId$.set(map);
     }
     _handleInput(e) {
         this._inputText = e.target.value;
@@ -19336,7 +19371,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._inputText = '';
         const attachment = this._pendingAttachment ?? undefined;
         this._pendingAttachment = null;
-        const threadId = this._activeThread.value;
+        const threadId = this._activeThread.value.get(this.growspaceid) ?? null;
         if (threadId) {
             await sendMessage(threadId, text, attachment);
         }
@@ -19370,8 +19405,9 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._contextChips = this._contextChips.filter((c) => c.id !== id);
     }
     _renderThreadRail() {
-        const threads = [...this._threads.value.values()];
-        const activeId = this._activeThread.value;
+        const threads = [...this._threads.value.values()].filter((t) => t.growspace_id === this.growspaceid);
+        const _activeMap = this._activeThread.value;
+        const activeId = (_activeMap instanceof Map ? _activeMap.get(this.growspaceid) : null) ?? null;
         return x `
       <div class="chat-rail">
         <div class="ai-model-card">
@@ -19609,7 +19645,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._agentSaving = true;
         this._agentSaveError = null;
         try {
-            await saveAiAgent(this._selectedAgent);
+            await saveAiAgent(this._selectedAgent, this.growspaceid);
         }
         catch (err) {
             this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
@@ -19644,7 +19680,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     }
     render() {
         const thread = this._getActiveThread();
-        const aiUnavailable = this._briefing.value?.ai_available === false;
+        const aiUnavailable = this._briefing.value.get(this.growspaceid)?.ai_available === false;
         return x `
       ${this._renderThreadRail()}
       <div class="chat-content">
@@ -20200,12 +20236,12 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        if (!aiBriefing$.get()) {
-            fetchBriefing();
+        if (!aiBriefing$.get().get(this.growspaceid)) {
+            fetchBriefing(this.growspaceid);
         }
     }
     async _regenerate() {
-        await fetchBriefing(true);
+        await fetchBriefing(this.growspaceid, true);
     }
     async _submitFollowUp() {
         const text = this._followUp.trim();
@@ -20303,7 +20339,7 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         this._agentSaving = true;
         this._agentSaveError = null;
         try {
-            await saveAiAgent(this._selectedAgent);
+            await saveAiAgent(this._selectedAgent, this.growspaceid);
         }
         catch (err) {
             this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
@@ -20457,7 +20493,7 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         }
     }
     render() {
-        const briefing = this._briefing.value;
+        const briefing = this._briefing.value.get(this.growspaceid) ?? null;
         const loading = this._loading.value;
         return x `
       ${this._renderRail()}
@@ -20926,10 +20962,14 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        fetchAlerts(this.growspaceid || undefined);
+        fetchAlerts(this.growspaceid);
+    }
+    _alertsForGs() {
+        const raw = this._alerts.value?.get(this.growspaceid);
+        return Array.isArray(raw) ? raw : [];
     }
     get _filtered() {
-        const all = this._alerts.value.filter((a) => !a.resolved);
+        const all = this._alertsForGs().filter((a) => !a.resolved);
         if (this._filter === 'action')
             return all.filter((a) => a.severity === 'danger');
         if (this._filter === 'watch')
@@ -20937,7 +20977,9 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         return all;
     }
     get _selected() {
-        return this._selectedId ? this._alerts.value.find((a) => a.id === this._selectedId) : undefined;
+        return this._selectedId
+            ? this._alertsForGs().find((a) => a.id === this._selectedId)
+            : undefined;
     }
     _selectAlert(id) {
         this._selectedId = id;
@@ -20960,7 +21002,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         await applyAction(action);
     }
     _countFor(f) {
-        const all = this._alerts.value.filter((a) => !a.resolved);
+        const all = this._alertsForGs().filter((a) => !a.resolved);
         if (f === 'action')
             return all.filter((a) => a.severity === 'danger').length;
         if (f === 'watch')
@@ -21140,7 +21182,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
     `;
     }
     render() {
-        const aiAvailable = this._briefing.value?.ai_available;
+        const aiAvailable = this._briefing.value.get(this.growspaceid)?.ai_available;
         return x `
       <div class="inbox-shell">
         <div class="inbox-rail">
@@ -21633,8 +21675,8 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     get _growspaceName() { return this.growspaceName ?? ''; }
     updated(changedProperties) {
         super.updated(changedProperties);
-        if (changedProperties.has('open') && this.open && !aiBriefing$.get()) {
-            fetchBriefing();
+        if (changedProperties.has('open') && this.open && !aiBriefing$.get().get(this._growspaceId)) {
+            fetchBriefing(this._growspaceId);
         }
     }
     _close() {
@@ -21642,8 +21684,8 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     }
     _setMode(mode) {
         aiMode$.set(mode);
-        if (mode === 'briefing' && !aiBriefing$.get()) {
-            fetchBriefing();
+        if (mode === 'briefing' && !aiBriefing$.get().get(this._growspaceId)) {
+            fetchBriefing(this._growspaceId);
         }
     }
     _renderNavRail(mode) {

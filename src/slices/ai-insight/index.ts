@@ -49,9 +49,9 @@ export const aiInsight$ = atom<string | null>(null);
 export const isAiLoading$ = atom<boolean>(false);
 export const aiError$ = atom<string | null>(null);
 export const conversationThreads$ = atom<Map<string, ConversationThread>>(new Map());
-export const activeThreadId$ = atom<string | null>(null);
-export const aiAlerts$ = atom<TriageAlert[]>([]);
-export const aiBriefing$ = atom<AIBriefing | null>(null);
+export const activeThreadId$ = atom<Map<string, string | null>>(new Map());
+export const aiAlerts$ = atom<Map<string, TriageAlert[]>>(new Map());
+export const aiBriefing$ = atom<Map<string, AIBriefing>>(new Map());
 export const aiMode$ = atom<'chat' | 'briefing' | 'inbox'>('briefing');
 
 // ---------------------------------------------------------------------------
@@ -178,7 +178,9 @@ export async function startConversation(
   const threads = new Map(conversationThreads$.get());
   threads.set(thread.thread_id, thread);
   conversationThreads$.set(threads);
-  activeThreadId$.set(thread.thread_id);
+  const activeMap = new Map(activeThreadId$.get());
+  activeMap.set(growspaceId, thread.thread_id);
+  activeThreadId$.set(activeMap);
   return thread;
 }
 
@@ -228,21 +230,28 @@ export async function applyAction(action: SuggestedAction): Promise<void> {
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch triage alerts from the backend, optionally scoped to a growspace.
+ * Fetch triage alerts for a specific growspace and store them in aiAlerts$
+ * keyed by growspaceId. Other growspaces' alerts are unaffected.
  */
-export async function fetchAlerts(growspaceId?: string): Promise<void> {
+export async function fetchAlerts(growspaceId: string): Promise<void> {
   const AlertsResponseSchema = TriageAlertSchema.array();
-  const alerts = await hassCall(
-    'growspace_manager/get_ai_alerts',
-    { ...(growspaceId ? { growspace_id: growspaceId } : {}) },
-    AlertsResponseSchema
-  );
-  aiAlerts$.set(alerts);
+  try {
+    const alerts = await hassCall(
+      'growspace_manager/get_ai_alerts',
+      { growspace_id: growspaceId },
+      AlertsResponseSchema
+    );
+    const updated = new Map(aiAlerts$.get());
+    updated.set(growspaceId, alerts);
+    aiAlerts$.set(updated);
+  } catch {
+    // Silently ignore — connection errors or schema mismatches leave existing data intact
+  }
 }
 
 /**
- * Mark an alert as resolved. Patches the matching alert in aiAlerts$ and
- * calls the backend to persist the resolution.
+ * Mark an alert as resolved. Searches across all growspaces in aiAlerts$,
+ * patches the matching alert, and calls the backend to persist the resolution.
  */
 export async function resolveAlert(alertId: string, note?: string): Promise<void> {
   await hassCall(
@@ -250,9 +259,18 @@ export async function resolveAlert(alertId: string, note?: string): Promise<void
     { alert_id: alertId, ...(note ? { resolution_note: note } : {}) },
     ResolveAckSchema
   );
-  aiAlerts$.set(
-    aiAlerts$.get().map((a) => (a.id === alertId ? { ...a, resolved: true, resolution_note: note ?? null } : a))
-  );
+  const currentMap = aiAlerts$.get();
+  const updated = new Map(currentMap);
+  for (const [gsId, alerts] of updated) {
+    const idx = alerts.findIndex((a) => a.id === alertId);
+    if (idx !== -1) {
+      const patched = [...alerts];
+      patched[idx] = { ...alerts[idx], resolved: true, resolution_note: note ?? null };
+      updated.set(gsId, patched);
+      break;
+    }
+  }
+  aiAlerts$.set(updated);
 }
 
 // ---------------------------------------------------------------------------
@@ -260,15 +278,23 @@ export async function resolveAlert(alertId: string, note?: string): Promise<void
 // ---------------------------------------------------------------------------
 
 /**
- * Fetch the latest AI briefing, optionally forcing a backend refresh.
+ * Fetch the AI briefing for a specific growspace and store it in aiBriefing$
+ * keyed by growspaceId. Other growspaces' briefings are unaffected.
+ * Pass forceRefresh=true to bypass the backend cache.
  */
-export async function fetchBriefing(forceRefresh?: boolean): Promise<void> {
-  const briefing = await hassCall(
-    'growspace_manager/get_briefing',
-    { ...(forceRefresh ? { force_refresh: true } : {}) },
-    AIBriefingSchema
-  );
-  aiBriefing$.set(briefing);
+export async function fetchBriefing(growspaceId: string, forceRefresh?: boolean): Promise<void> {
+  try {
+    const briefing = await hassCall(
+      'growspace_manager/get_briefing',
+      { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) },
+      AIBriefingSchema
+    );
+    const updated = new Map(aiBriefing$.get());
+    updated.set(growspaceId, briefing);
+    aiBriefing$.set(updated);
+  } catch {
+    // Silently ignore — connection errors or schema mismatches leave existing data intact
+  }
 }
 
 /**
@@ -277,7 +303,7 @@ export async function fetchBriefing(forceRefresh?: boolean): Promise<void> {
  * Saves the chosen entity ID to the backend config entry, then refreshes the
  * briefing atom so panels drop their unconfigured state without a page reload.
  */
-export async function saveAiAgent(agentEntityId: string): Promise<void> {
+export async function saveAiAgent(agentEntityId: string, growspaceId: string): Promise<void> {
   await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, z.unknown());
-  await fetchBriefing(true);
+  await fetchBriefing(growspaceId, true);
 }

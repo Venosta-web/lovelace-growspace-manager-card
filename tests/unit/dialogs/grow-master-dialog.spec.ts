@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GrowMasterDialog } from '../../../src/dialogs/grow-master-dialog';
 import '../../../src/dialogs/grow-master-dialog';
 import { html, render } from 'lit';
-import { aiMode$, activeThreadId$, conversationThreads$ } from '../../../src/slices/ai-insight';
+import { aiMode$, activeThreadId$, conversationThreads$, aiAlerts$, aiBriefing$ } from '../../../src/slices/ai-insight';
 
 vi.mock('../../../src/services/hass-call', () => ({
     callService: vi.fn().mockResolvedValue(undefined),
@@ -16,8 +16,10 @@ describe('GrowMasterDialog', () => {
 
     beforeEach(async () => {
         aiMode$.set('chat');
-        activeThreadId$.set(null);
+        activeThreadId$.set(new Map());
         conversationThreads$.set(new Map());
+        aiAlerts$.set(new Map());
+        aiBriefing$.set(new Map());
         element = document.createElement('grow-master-dialog') as GrowMasterDialog;
         document.body.appendChild(element);
         await element.updateComplete;

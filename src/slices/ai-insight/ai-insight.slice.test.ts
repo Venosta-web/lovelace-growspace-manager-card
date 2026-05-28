@@ -9,12 +9,12 @@
  *   - SuggestedActionSchema (rejects invalid, accepts valid)
  *   - TriageAlertSchema (nullable ai_reasoning, required fields)
  *   - AIBriefingSchema (rejects negative generated_at)
- *   - startConversation (thread creation, activeThreadId$)
+ *   - startConversation (thread creation, activeThreadId$ keyed by growspace)
  *   - sendMessage (appends to correct thread)
  *   - applyAction (exact callService payload)
- *   - fetchAlerts (populates aiAlerts$)
- *   - resolveAlert (patches resolved flag)
- *   - fetchBriefing (forceRefresh flag pass-through)
+ *   - fetchAlerts (populates aiAlerts$ keyed by growspace, isolated per growspace)
+ *   - resolveAlert (patches resolved flag in keyed map)
+ *   - fetchBriefing (keyed by growspace, forceRefresh flag, isolated per growspace)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -57,9 +57,9 @@ beforeEach(() => {
   isAiLoading$.set(false);
   aiError$.set(null);
   conversationThreads$.set(new Map());
-  activeThreadId$.set(null);
-  aiAlerts$.set([]);
-  aiBriefing$.set(null);
+  activeThreadId$.set(new Map());
+  aiAlerts$.set(new Map());
+  aiBriefing$.set(new Map());
   aiMode$.set('briefing');
   vi.clearAllMocks();
   vi.mocked(hassCall.callServiceReturning).mockResolvedValue({ response: 'ok' });
@@ -85,6 +85,27 @@ describe('isAiLoading$', () => {
 describe('aiError$', () => {
   it('defaults to null', () => {
     expect(aiError$.get()).toBeNull();
+  });
+});
+
+describe('aiBriefing$', () => {
+  it('defaults to an empty map', () => {
+    expect(aiBriefing$.get()).toBeInstanceOf(Map);
+    expect(aiBriefing$.get().size).toBe(0);
+  });
+});
+
+describe('aiAlerts$', () => {
+  it('defaults to an empty map', () => {
+    expect(aiAlerts$.get()).toBeInstanceOf(Map);
+    expect(aiAlerts$.get().size).toBe(0);
+  });
+});
+
+describe('activeThreadId$', () => {
+  it('defaults to an empty map', () => {
+    expect(activeThreadId$.get()).toBeInstanceOf(Map);
+    expect(activeThreadId$.get().size).toBe(0);
   });
 });
 
@@ -268,7 +289,7 @@ describe('AIBriefingSchema', () => {
 // ---------------------------------------------------------------------------
 
 describe('startConversation', () => {
-  it('creates a new thread in conversationThreads$ and sets activeThreadId$', async () => {
+  it('creates a new thread in conversationThreads$ and sets activeThreadId$ for that growspace', async () => {
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
       thread_id: 'thread-abc',
       growspace_id: 'gs1',
@@ -277,8 +298,23 @@ describe('startConversation', () => {
 
     await startConversation('gs1', 'How is my VPD?');
 
-    expect(activeThreadId$.get()).toBe('thread-abc');
+    expect(activeThreadId$.get().get('gs1')).toBe('thread-abc');
     expect(conversationThreads$.get().has('thread-abc')).toBe(true);
+  });
+
+  it('does not affect the active thread of a different growspace', async () => {
+    const existingMap = new Map<string, string | null>([['gs2', 'thread-other']]);
+    activeThreadId$.set(existingMap);
+
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({
+      thread_id: 'thread-abc',
+      growspace_id: 'gs1',
+      messages: [{ role: 'user', text: 'Hello', timestamp: 1700000000 }],
+    });
+
+    await startConversation('gs1', 'Hello');
+
+    expect(activeThreadId$.get().get('gs2')).toBe('thread-other');
   });
 
   it('sends message and growspace_id fields (not text) in payload', async () => {
@@ -393,25 +429,27 @@ describe('applyAction', () => {
 // ---------------------------------------------------------------------------
 
 describe('fetchAlerts', () => {
-  it('populates aiAlerts$ with validated TriageAlert records', async () => {
-    const alert = {
-      id: 'alert-1',
-      growspace_id: 'gs1',
-      type: 'vpd_warning',
-      bayesian_reasons: ['humidity too high'],
-      ai_reasoning: 'VPD is outside optimal range',
-      timestamp: 1700000000,
-      resolved: false,
-      resolution_note: null,
-    };
+  const alert = {
+    id: 'alert-1',
+    growspace_id: 'gs1',
+    type: 'vpd_warning',
+    severity: 'info' as const,
+    bayesian_reasons: ['humidity too high'],
+    ai_reasoning: 'VPD is outside optimal range',
+    timestamp: 1700000000,
+    resolved: false,
+    resolution_note: null,
+  };
+
+  it('stores alerts for the given growspace in aiAlerts$', async () => {
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce([alert]);
 
     await fetchAlerts('gs1');
 
-    expect(aiAlerts$.get()).toEqual([alert]);
+    expect(aiAlerts$.get().get('gs1')).toEqual([alert]);
   });
 
-  it('calls the correct WS command with growspace_id when provided', async () => {
+  it('calls the correct WS command with growspace_id', async () => {
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce([]);
 
     await fetchAlerts('gs1');
@@ -421,6 +459,17 @@ describe('fetchAlerts', () => {
       { growspace_id: 'gs1' },
       expect.anything()
     );
+  });
+
+  it('does not overwrite alerts for a different growspace', async () => {
+    const gs2Alert = { ...alert, id: 'alert-2', growspace_id: 'gs2' };
+    aiAlerts$.set(new Map([['gs2', [gs2Alert]]]));
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce([alert]);
+
+    await fetchAlerts('gs1');
+
+    expect(aiAlerts$.get().get('gs2')).toEqual([gs2Alert]);
+    expect(aiAlerts$.get().get('gs1')).toEqual([alert]);
   });
 });
 
@@ -442,21 +491,19 @@ describe('resolveAlert', () => {
   };
 
   it('calls resolve_ai_alert with the correct schema (ResolveAckSchema, not TriageAlertSchema)', async () => {
-    aiAlerts$.set([alert]);
+    aiAlerts$.set(new Map([['gs1', [alert]]]));
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
 
     await resolveAlert('alert-1');
 
     const [, , schema] = vi.mocked(hassCall.hassCall).mock.calls[0];
-    // ResolveAckSchema accepts { success, alert_id }; TriageAlertSchema would not.
     expect(ResolveAckSchema.safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(true);
     expect(TriageAlertSchema.safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(false);
-    // The schema passed must accept the ack payload
     expect((schema as typeof ResolveAckSchema).safeParse({ success: true, alert_id: 'alert-1' }).success).toBe(true);
   });
 
   it('sends resolution_note in the payload when provided', async () => {
-    aiAlerts$.set([alert]);
+    aiAlerts$.set(new Map([['gs1', [alert]]]));
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
 
     await resolveAlert('alert-1', 'Fixed humidity');
@@ -466,24 +513,24 @@ describe('resolveAlert', () => {
     expect(payload).not.toHaveProperty('notes');
   });
 
-  it('patches the resolved flag on the matching alert in aiAlerts$', async () => {
-    aiAlerts$.set([alert]);
+  it('patches the resolved flag on the matching alert regardless of growspace', async () => {
+    aiAlerts$.set(new Map([['gs1', [alert]]]));
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
 
     await resolveAlert('alert-1', 'Fixed humidity');
 
-    const resolved = aiAlerts$.get().find((a) => a.id === 'alert-1');
+    const resolved = aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-1');
     expect(resolved?.resolved).toBe(true);
   });
 
   it('leaves other alerts unchanged', async () => {
     const alertB = { ...alert, id: 'alert-2' };
-    aiAlerts$.set([alert, alertB]);
+    aiAlerts$.set(new Map([['gs1', [alert, alertB]]]));
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true, alert_id: 'alert-1' });
 
     await resolveAlert('alert-1');
 
-    expect(aiAlerts$.get().find((a) => a.id === 'alert-2')?.resolved).toBe(false);
+    expect(aiAlerts$.get().get('gs1')?.find((a) => a.id === 'alert-2')?.resolved).toBe(false);
   });
 });
 
@@ -500,34 +547,45 @@ describe('fetchBriefing', () => {
     ai_available: true,
   };
 
-  it('updates aiBriefing$ with the returned briefing', async () => {
+  it('stores the briefing keyed by growspaceId', async () => {
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce(briefingPayload);
 
-    await fetchBriefing();
+    await fetchBriefing('gs1');
 
-    expect(aiBriefing$.get()).toEqual(briefingPayload);
+    expect(aiBriefing$.get().get('gs1')).toEqual(briefingPayload);
   });
 
-  it('passes force_refresh: true when forceRefresh is true', async () => {
+  it('does not overwrite the briefing of a different growspace', async () => {
+    const gs2Briefing = { ...briefingPayload, summary_text: 'gs2 is healthy' };
+    aiBriefing$.set(new Map([['gs2', gs2Briefing]]));
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce(briefingPayload);
 
-    await fetchBriefing(true);
+    await fetchBriefing('gs1');
+
+    expect(aiBriefing$.get().get('gs2')).toEqual(gs2Briefing);
+    expect(aiBriefing$.get().get('gs1')).toEqual(briefingPayload);
+  });
+
+  it('passes growspace_id and force_refresh: true when forceRefresh is true', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(briefingPayload);
+
+    await fetchBriefing('gs1', true);
 
     expect(hassCall.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
-      { force_refresh: true },
+      { growspace_id: 'gs1', force_refresh: true },
       expect.anything()
     );
   });
 
-  it('omits force_refresh when forceRefresh is false', async () => {
+  it('passes growspace_id and omits force_refresh when forceRefresh is false', async () => {
     vi.mocked(hassCall.hassCall).mockResolvedValueOnce(briefingPayload);
 
-    await fetchBriefing(false);
+    await fetchBriefing('gs1', false);
 
     expect(hassCall.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
-      {},
+      { growspace_id: 'gs1' },
       expect.anything()
     );
   });

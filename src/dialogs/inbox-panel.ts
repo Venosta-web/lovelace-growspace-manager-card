@@ -32,18 +32,25 @@ export class GmInboxPanel extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    fetchAlerts(this.growspaceid || undefined);
+    fetchAlerts(this.growspaceid);
+  }
+
+  private _alertsForGs(): TriageAlert[] {
+    const raw = this._alerts.value?.get(this.growspaceid);
+    return Array.isArray(raw) ? raw : [];
   }
 
   private get _filtered(): TriageAlert[] {
-    const all = this._alerts.value.filter((a) => !a.resolved);
+    const all = this._alertsForGs().filter((a) => !a.resolved);
     if (this._filter === 'action') return all.filter((a) => a.severity === 'danger');
     if (this._filter === 'watch') return all.filter((a) => a.severity === 'warning');
     return all;
   }
 
   private get _selected(): TriageAlert | undefined {
-    return this._selectedId ? this._alerts.value.find((a) => a.id === this._selectedId) : undefined;
+    return this._selectedId
+      ? this._alertsForGs().find((a) => a.id === this._selectedId)
+      : undefined;
   }
 
   private _selectAlert(id: string) {
@@ -71,7 +78,7 @@ export class GmInboxPanel extends LitElement {
   }
 
   private _countFor(f: InboxFilter): number {
-    const all = this._alerts.value.filter((a) => !a.resolved);
+    const all = this._alertsForGs().filter((a) => !a.resolved);
     if (f === 'action') return all.filter((a) => a.severity === 'danger').length;
     if (f === 'watch') return all.filter((a) => a.severity === 'warning').length;
     return all.length;
@@ -712,7 +719,7 @@ export class GmInboxPanel extends LitElement {
   }
 
   render() {
-    const aiAvailable = this._briefing.value?.ai_available;
+    const aiAvailable = this._briefing.value.get(this.growspaceid)?.ai_available;
     return html`
       <div class="inbox-shell">
         <div class="inbox-rail">

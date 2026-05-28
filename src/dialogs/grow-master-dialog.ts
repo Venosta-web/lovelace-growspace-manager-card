@@ -266,8 +266,8 @@ export class GrowMasterDialog extends LitElement {
 
   override updated(changedProperties: Map<string | symbol, unknown>) {
     super.updated(changedProperties);
-    if (changedProperties.has('open') && this.open && !aiBriefing$.get()) {
-      fetchBriefing();
+    if (changedProperties.has('open') && this.open && !aiBriefing$.get().get(this._growspaceId)) {
+      fetchBriefing(this._growspaceId);
     }
   }
 
@@ -277,8 +277,8 @@ export class GrowMasterDialog extends LitElement {
 
   private _setMode(mode: AiMode) {
     aiMode$.set(mode);
-    if (mode === 'briefing' && !aiBriefing$.get()) {
-      fetchBriefing();
+    if (mode === 'briefing' && !aiBriefing$.get().get(this._growspaceId)) {
+      fetchBriefing(this._growspaceId);
     }
   }
 
