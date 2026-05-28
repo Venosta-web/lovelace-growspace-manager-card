@@ -22220,7 +22220,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         </p>
         <div class="gm-footer-actions">
           ${mode === 'briefing'
-            ? x `<button class="md3-button tonal">Refresh Briefing</button>`
+            ? x `<button class="md3-button tonal" @click=${() => fetchBriefing(this._growspaceId, true)}>Refresh Briefing</button>`
             : E}
           ${mode === 'inbox'
             ? x `<button class="md3-button tonal">Mark All Read</button>`
@@ -46572,6 +46572,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .hass=${this.hass}
         .isStressed=${isStressed}
         .personality=${personality}
+        .growspaceId=${dialogState.growspaceId}
+        .growspaceName=${selectedDeviceData?.name || ''}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}

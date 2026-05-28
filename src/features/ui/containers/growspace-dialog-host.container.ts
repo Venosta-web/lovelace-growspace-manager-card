@@ -819,6 +819,8 @@ export class GrowspaceDialogHost extends LitElement {
         .hass=${this.hass}
         .isStressed=${isStressed}
         .personality=${personality}
+        .growspaceId=${dialogState.growspaceId}
+        .growspaceName=${selectedDeviceData?.name || ''}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}

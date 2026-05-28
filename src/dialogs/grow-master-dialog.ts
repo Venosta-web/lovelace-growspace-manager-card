@@ -398,7 +398,7 @@ export class GrowMasterDialog extends LitElement {
         </p>
         <div class="gm-footer-actions">
           ${mode === 'briefing'
-        ? html`<button class="md3-button tonal">Refresh Briefing</button>`
+        ? html`<button class="md3-button tonal" @click=${() => fetchBriefing(this._growspaceId, true)}>Refresh Briefing</button>`
         : nothing}
           ${mode === 'inbox'
         ? html`<button class="md3-button tonal">Mark All Read</button>`
