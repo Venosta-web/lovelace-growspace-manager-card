@@ -603,8 +603,8 @@ export class GmChatPanel extends LitElement {
     this._pendingAttachment = null;
   }
 
-  private _clickPrompt(prompt: string) {
-    startConversation(this.growspaceid, prompt);
+  private async _clickPrompt(prompt: string) {
+    await startConversation(this.growspaceid, prompt);
   }
 
   private _clickSuggest(prompt: string) {

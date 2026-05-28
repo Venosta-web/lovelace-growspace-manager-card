@@ -5,7 +5,8 @@ export type ErrorCode =
   | 'coordinator_not_ready'
   | 'entity_not_found'
   | 'validation_failed'
-  | 'internal_error';
+  | 'internal_error'
+  | 'rate_limited';
 
 /** Thrown when the backend sends a structured error response over WebSocket. */
 export class WSError extends Error {
@@ -33,6 +34,7 @@ const KNOWN_ERROR_CODES = new Set<ErrorCode>([
   'entity_not_found',
   'validation_failed',
   'internal_error',
+  'rate_limited',
 ]);
 
 function toErrorCode(raw: string): ErrorCode {

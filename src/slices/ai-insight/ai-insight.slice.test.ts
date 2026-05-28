@@ -19,6 +19,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
+import { WSError } from '../../services/base-api';
+import { notification$ } from '../ui';
 import { SuggestedActionSchema, TriageAlertSchema, AIBriefingSchema, ResolveAckSchema } from './schema';
 import {
   aiInsight$,
@@ -195,6 +197,19 @@ describe('askGrowAdvice', () => {
     expect(isAiLoading$.get()).toBe(false);
     expect(aiInsight$.get()).toBeNull();
   });
+
+  it('shows a rate-limit toast and does not set aiError$ or throw when rate_limited', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockRejectedValueOnce(
+      new WSError('rate_limited', 'Rate limit exceeded')
+    );
+    notification$.set(null);
+
+    await askGrowAdvice('gs1', 'question');
+
+    expect(aiError$.get()).toBeNull();
+    expect(notification$.get()).not.toBeNull();
+    expect(notification$.get()?.message).toContain('rate limit');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -230,6 +245,19 @@ describe('analyzeAllGrowspaces', () => {
 
     expect(aiError$.get()).toBe('timeout');
     expect(isAiLoading$.get()).toBe(false);
+  });
+
+  it('shows a rate-limit toast and does not set aiError$ or throw when rate_limited', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockRejectedValueOnce(
+      new WSError('rate_limited', 'Rate limit exceeded')
+    );
+    notification$.set(null);
+
+    await analyzeAllGrowspaces();
+
+    expect(aiError$.get()).toBeNull();
+    expect(notification$.get()).not.toBeNull();
+    expect(notification$.get()?.message).toContain('rate limit');
   });
 });
 
@@ -348,6 +376,19 @@ describe('startConversation', () => {
     const [, payload] = vi.mocked(hassCall.hassCall).mock.calls[0];
     expect(payload).toHaveProperty('image_entities', ['camera.tent1']);
     expect(payload).not.toHaveProperty('image_entity_id');
+  });
+
+  it('shows a rate-limit toast, does not update thread state, and does not throw when rate_limited', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new WSError('rate_limited', 'rate_limited'));
+    notification$.set(null);
+
+    const result = await startConversation('gs1', 'test message');
+
+    expect(result).toBeUndefined();
+    expect(conversationThreads$.get().size).toBe(0);
+    expect(activeThreadId$.get().size).toBe(0);
+    expect(notification$.get()).not.toBeNull();
+    expect(notification$.get()?.message).toContain('rate limit');
   });
 });
 

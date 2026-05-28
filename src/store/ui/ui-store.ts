@@ -3,6 +3,7 @@ import { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import { ActiveDialogState } from '../../ui-state';
 import { cancel } from '../../slices/grid-interaction';
+import { notification$ } from '../../slices/ui';
 
 export class GrowspaceUIStore {
   // Definition of atoms
@@ -37,7 +38,7 @@ export class GrowspaceUIStore {
     this.$selectedPlants = atom<Set<string>>(new Set());
     this.$focusedPlantIndex = atom<number>(-1);
     this.$menuOpen = atom<boolean>(false);
-    this.$notification = atom<{ message: string; type: 'info' | 'error' | 'success' } | null>(null);
+    this.$notification = notification$;
     this.$error = atom<string | null>(null);
     this.$defaultApplied = atom<boolean>(false);
     this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);

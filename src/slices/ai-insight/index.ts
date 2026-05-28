@@ -28,7 +28,9 @@
 
 import { atom } from 'nanostores';
 import { z } from 'zod';
+import { WSError } from '../../services/base-api';
 import { callService, callServiceReturning, hassCall } from '../../services/hass-call';
+import { showToast } from '../ui';
 import {
   GrowAdviceResponseSchema,
   ConversationThreadSchema,
@@ -100,6 +102,10 @@ export async function askGrowAdvice(growspaceId: string, userQuery: string): Pro
     );
     aiInsight$.set(_extractText(raw));
   } catch (err) {
+    if (err instanceof WSError && err.code === 'rate_limited') {
+      showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+      return;
+    }
     const message = err instanceof Error ? err.message : String(err);
     aiError$.set(message);
     throw err;
@@ -127,6 +133,10 @@ export async function analyzeAllGrowspaces(): Promise<void> {
     );
     aiInsight$.set(_extractText(raw));
   } catch (err) {
+    if (err instanceof WSError && err.code === 'rate_limited') {
+      showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+      return;
+    }
     const message = err instanceof Error ? err.message : String(err);
     aiError$.set(message);
     throw err;
@@ -164,25 +174,33 @@ export async function startConversation(
   growspaceId: string,
   text: string,
   imageEntityId?: string
-): Promise<ConversationThread> {
+): Promise<ConversationThread | undefined> {
   const userMessage = { role: 'user' as const, text, timestamp: Date.now() };
-  const raw = await hassCall(
-    'growspace_manager/start_conversation',
-    {
-      growspace_id: growspaceId,
-      message: text,
-      ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
-    },
-    ConversationThreadSchema
-  );
-  const thread: ConversationThread = { ...raw, messages: [userMessage, ...raw.messages] };
-  const threads = new Map(conversationThreads$.get());
-  threads.set(thread.thread_id, thread);
-  conversationThreads$.set(threads);
-  const activeMap = new Map(activeThreadId$.get());
-  activeMap.set(growspaceId, thread.thread_id);
-  activeThreadId$.set(activeMap);
-  return thread;
+  try {
+    const raw = await hassCall(
+      'growspace_manager/start_conversation',
+      {
+        growspace_id: growspaceId,
+        message: text,
+        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+      },
+      ConversationThreadSchema
+    );
+    const thread: ConversationThread = { ...raw, messages: [userMessage, ...raw.messages] };
+    const threads = new Map(conversationThreads$.get());
+    threads.set(thread.thread_id, thread);
+    conversationThreads$.set(threads);
+    const activeMap = new Map(activeThreadId$.get());
+    activeMap.set(growspaceId, thread.thread_id);
+    activeThreadId$.set(activeMap);
+    return thread;
+  } catch (err) {
+    if (err instanceof WSError && err.code === 'rate_limited') {
+      showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+      return undefined;
+    }
+    throw err;
+  }
 }
 
 /**
@@ -198,23 +216,31 @@ export async function sendMessage(
   const existingThread = conversationThreads$.get().get(threadId);
   const growspaceId = existingThread?.growspace_id ?? '';
   const userMessage = { role: 'user' as const, text, timestamp: Date.now() };
-  const raw = await hassCall(
-    'growspace_manager/send_message',
-    {
-      conversation_id: threadId,
-      growspace_id: growspaceId,
-      message: text,
-      ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
-    },
-    ConversationThreadSchema
-  );
-  const threads = new Map(conversationThreads$.get());
-  const existingMessages = threads.get(threadId)?.messages ?? [];
-  threads.set(raw.thread_id, {
-    ...raw,
-    messages: [...existingMessages, userMessage, ...raw.messages],
-  });
-  conversationThreads$.set(threads);
+  try {
+    const raw = await hassCall(
+      'growspace_manager/send_message',
+      {
+        conversation_id: threadId,
+        growspace_id: growspaceId,
+        message: text,
+        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+      },
+      ConversationThreadSchema
+    );
+    const threads = new Map(conversationThreads$.get());
+    const existingMessages = threads.get(threadId)?.messages ?? [];
+    threads.set(raw.thread_id, {
+      ...raw,
+      messages: [...existingMessages, userMessage, ...raw.messages],
+    });
+    conversationThreads$.set(threads);
+  } catch (err) {
+    if (err instanceof WSError && err.code === 'rate_limited') {
+      showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+      return;
+    }
+    throw err;
+  }
 }
 
 /**

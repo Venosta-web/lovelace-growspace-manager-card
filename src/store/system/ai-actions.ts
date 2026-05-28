@@ -1,4 +1,5 @@
 import { ActionContext } from '../core/action-context';
+import { WSError } from '../../services/base-api';
 import { GrowAdviceResponse } from '../../types';
 
 export async function analyzeGrowspace(
@@ -45,8 +46,18 @@ export async function analyzeGrowspace(
     }
     return text;
   } catch (e: unknown) {
-    const error = e instanceof Error ? e.message : 'Unknown error';
     const d = ctx.ui.$activeDialog.get();
+    if (e instanceof WSError && e.code === 'rate_limited') {
+      ctx.ui.showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+      if (d.type === 'GROW_MASTER') {
+        ctx.ui.setActiveDialog({
+          type: 'GROW_MASTER',
+          payload: { ...d.payload, isLoading: false },
+        });
+      }
+      return;
+    }
+    const error = e instanceof Error ? e.message : 'Unknown error';
     if (d.type === 'GROW_MASTER') {
       ctx.ui.setActiveDialog({
         type: 'GROW_MASTER',

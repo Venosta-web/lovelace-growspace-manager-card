@@ -452,8 +452,8 @@ export class GmBriefingPanel extends LitElement {
     const text = this._followUp.trim();
     if (!text) return;
     this._followUp = '';
-    await startConversation(this.growspaceid, text);
-    aiMode$.set('chat');
+    const thread = await startConversation(this.growspaceid, text);
+    if (thread) aiMode$.set('chat');
   }
 
   private _renderLoading() {

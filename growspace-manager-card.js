@@ -1059,6 +1059,7 @@ const KNOWN_ERROR_CODES = new Set([
     'entity_not_found',
     'validation_failed',
     'internal_error',
+    'rate_limited',
 ]);
 function toErrorCode(raw) {
     return KNOWN_ERROR_CODES.has(raw) ? raw : 'internal_error';
@@ -6781,6 +6782,18 @@ class IrrigationAPI extends BaseAPI {
     }
 }
 
+function toWSError(err) {
+    if (typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        'message' in err &&
+        typeof err.code === 'string') {
+        const { code, message } = err;
+        const knownCodes = ['coordinator_not_ready', 'entity_not_found', 'validation_failed', 'internal_error', 'rate_limited'];
+        return new WSError((knownCodes.includes(code) ? code : 'internal_error'), message);
+    }
+    return new WSError('internal_error', err instanceof Error ? err.message : String(err));
+}
 /**
  * API service for AI assistant operations.
  * Handles grow advice, analysis, and strain recommendations via AI.
@@ -6808,8 +6821,7 @@ class AIAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[AIAPI:askGrowAdvice] Error:', err);
-            const message = err instanceof Error ? err.message : 'Failed to get advice';
-            throw new Error(message);
+            throw toWSError(err);
         }
     }
     /**
@@ -6828,7 +6840,7 @@ class AIAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[AIAPI:analyzeAllGrowspaces] Error:', err);
-            throw err;
+            throw toWSError(err);
         }
     }
     /**
@@ -7190,6 +7202,7 @@ async function hassCall(command, params, schema) {
                 'entity_not_found',
                 'validation_failed',
                 'internal_error',
+                'rate_limited',
             ].includes(code)
                 ? code
                 : 'internal_error'), message);
@@ -7946,6 +7959,155 @@ const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
 
 /**
+ * GridInteraction slice — store-driven interaction state machine for Plant Grid Cells.
+ *
+ * Public API (atom):
+ *   gridInteraction$   — read: current interaction state (discriminated union)
+ *
+ * Public API (transitions):
+ *   select(plantId)        — idle → selected; selected(same) → idle; selected(other) → selected(other);
+ *                            confirming-water → selected; no-op while transplanting
+ *   confirmWater()         — selected → confirming-water; no-op otherwise
+ *   cancel()               — any → idle
+ *   startTransplant()      — selected → transplanting; no-op otherwise
+ *   completeTransplant()   — transplanting → idle; no-op otherwise
+ *
+ * The type system (discriminated union) prevents callers from accessing fields
+ * that don't exist on a given status — e.g. `plantId` is absent on `idle`.
+ * Runtime guards make illegal transitions no-ops so callers never need to
+ * pre-check the current status.
+ *
+ * This slice owns no backend calls — all state is local UI-only.
+ * Cross-slice side-effects (Plant mutations, Grid optimistic updates) are
+ * triggered by action modules that call transition functions here then call
+ * the relevant Plant / Grid slice mutators.
+ */
+// ---------------------------------------------------------------------------
+// Atom (public)
+// ---------------------------------------------------------------------------
+/** Current interaction state for the Plant Grid. */
+const gridInteraction$ = atom({ status: 'idle' });
+// ---------------------------------------------------------------------------
+// Transitions (public)
+// ---------------------------------------------------------------------------
+/**
+ * Select a plant cell.
+ *
+ * - idle            → selected { plantId }
+ * - selected(same)  → idle  (toggle: deselects the cell)
+ * - selected(other) → selected { plantId }  (switch selection)
+ * - confirming-water → selected { plantId }  (aborts confirmation)
+ * - transplanting   → no-op  (source plant is locked during transplant)
+ */
+function select(plantId) {
+    const state = gridInteraction$.get();
+    if (state.status === 'transplanting')
+        return;
+    if (state.status === 'selected' && state.plantId === plantId) {
+        gridInteraction$.set({ status: 'idle' });
+        return;
+    }
+    gridInteraction$.set({ status: 'selected', plantId });
+}
+/**
+ * Cancel the current interaction and return to idle.
+ * Safe to call from any state.
+ */
+function cancel() {
+    gridInteraction$.set({ status: 'idle' });
+}
+/**
+ * Begin transplant mode from the currently selected plant.
+ *
+ * - selected → transplanting { sourcePlantId: plantId }
+ * - all other states → no-op
+ */
+function startTransplant() {
+    const state = gridInteraction$.get();
+    if (state.status !== 'selected')
+        return;
+    gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
+}
+
+/**
+ * UI slice — atoms and mutators for global UI state.
+ *
+ * Public API (atoms):
+ *   viewMode$               — read: active view mode (standard/compact/header/heatmap)
+ *   isLoading$              — read: whether the card is in a loading state
+ *   activeDialog$           — read: currently open dialog (NONE when closed)
+ *   isEditMode$             — read: whether edit mode is active
+ *   selectedPlants$         — read: set of selected plant IDs
+ *   focusedPlantIndex$      — read: keyboard-focused plant index (-1 = none)
+ *   menuOpen$               — read: whether the card menu is open
+ *   notification$           — read: active toast notification (null = none)
+ *   error$                  — read: global error string (null = none)
+ *   defaultApplied$         — read: whether the card config default was applied
+ *   gridOverlayMode$        — read: active grid overlay mode
+ *   language$               — read: active UI language code
+ *   pendingDeepLinkPlantId$ — read: plant ID awaiting deep-link navigation (null = none)
+ *   flowerFlipDismissed$    — read: map of growspace ID → dismissed flower-flip date
+ *   isCompactView$          — computed: true when viewMode is COMPACT
+ *   cardViewState$          — computed: combined view-state object for card subscription
+ *
+ * Public API (mutators):
+ *   setViewMode()           — switch the active view mode
+ *   setGridOverlayMode()    — switch the active grid overlay
+ *   setIsLoading()          — toggle loading state
+ *   openDialog()            — set the active dialog
+ *   closeDialog()           — reset dialog to NONE
+ *   setEditMode()           — enter/exit edit mode (clears selection on exit)
+ *   togglePlantSelection()  — add/remove a plant from the selection set
+ *   selectAllPlants()       — replace the selection with all provided IDs
+ *   clearPlantSelection()   — empty the selection
+ *   deselectPlants()        — remove specific plant IDs from the selection
+ *   setFocusedPlantIndex()  — set the keyboard-focus index
+ *   setMenuOpen()           — open/close the card menu
+ *   showToast()             — display a toast notification
+ *   clearToast()            — dismiss the current toast
+ *   setDefaultApplied()     — mark the config default as applied
+ *   setError()              — set or clear the global error
+ *   setLanguage()           — change the UI language
+ *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
+ *   dismissFlowerFlip()     — record a dismissed flower-flip notification
+ *
+ * This slice owns no backend calls — all state is local UI-only.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const viewMode$ = atom(ViewMode.STANDARD);
+const notification$ = atom(null);
+atom(GridOverlayMode.NONE);
+/** Map of growspace ID → flower-flip start date that the user has dismissed. */
+atom(_loadFlowerFlipDismissed());
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+function _loadFlowerFlipDismissed() {
+    try {
+        const raw = localStorage.getItem('growspace.flowerFlipDismissed');
+        if (raw)
+            return JSON.parse(raw);
+    }
+    catch {
+        // Ignore — localStorage unavailable (SSR / test environments).
+    }
+    return {};
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/** Switch the active view mode (standard / compact / header / heatmap). */
+function setViewMode(mode) {
+    viewMode$.set(mode);
+}
+/** Display a toast notification. Defaults to type 'info'. */
+function showToast$1(message, type = 'info', action) {
+    notification$.set({ message, type, ...({}) });
+}
+
+/**
  * AIInsight slice — zod schemas for backend response validation.
  *
  * GrowAdviceResponseSchema validates the payload returned by the
@@ -8151,6 +8313,10 @@ async function askGrowAdvice(growspaceId, userQuery) {
         aiInsight$.set(_extractText(raw));
     }
     catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return;
+        }
         const message = err instanceof Error ? err.message : String(err);
         aiError$.set(message);
         throw err;
@@ -8174,6 +8340,10 @@ async function analyzeAllGrowspaces() {
         aiInsight$.set(_extractText(raw));
     }
     catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return;
+        }
         const message = err instanceof Error ? err.message : String(err);
         aiError$.set(message);
         throw err;
@@ -8200,19 +8370,28 @@ function dismissInsight() {
  */
 async function startConversation(growspaceId, text, imageEntityId) {
     const userMessage = { role: 'user', text, timestamp: Date.now() };
-    const raw = await hassCall('growspace_manager/start_conversation', {
-        growspace_id: growspaceId,
-        message: text,
-        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
-    }, ConversationThreadSchema);
-    const thread = { ...raw, messages: [userMessage, ...raw.messages] };
-    const threads = new Map(conversationThreads$.get());
-    threads.set(thread.thread_id, thread);
-    conversationThreads$.set(threads);
-    const activeMap = new Map(activeThreadId$.get());
-    activeMap.set(growspaceId, thread.thread_id);
-    activeThreadId$.set(activeMap);
-    return thread;
+    try {
+        const raw = await hassCall('growspace_manager/start_conversation', {
+            growspace_id: growspaceId,
+            message: text,
+            ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+        }, ConversationThreadSchema);
+        const thread = { ...raw, messages: [userMessage, ...raw.messages] };
+        const threads = new Map(conversationThreads$.get());
+        threads.set(thread.thread_id, thread);
+        conversationThreads$.set(threads);
+        const activeMap = new Map(activeThreadId$.get());
+        activeMap.set(growspaceId, thread.thread_id);
+        activeThreadId$.set(activeMap);
+        return thread;
+    }
+    catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return undefined;
+        }
+        throw err;
+    }
 }
 /**
  * Send a message in an existing conversation thread.
@@ -8223,19 +8402,28 @@ async function sendMessage(threadId, text, imageEntityId) {
     const existingThread = conversationThreads$.get().get(threadId);
     const growspaceId = existingThread?.growspace_id ?? '';
     const userMessage = { role: 'user', text, timestamp: Date.now() };
-    const raw = await hassCall('growspace_manager/send_message', {
-        conversation_id: threadId,
-        growspace_id: growspaceId,
-        message: text,
-        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
-    }, ConversationThreadSchema);
-    const threads = new Map(conversationThreads$.get());
-    const existingMessages = threads.get(threadId)?.messages ?? [];
-    threads.set(raw.thread_id, {
-        ...raw,
-        messages: [...existingMessages, userMessage, ...raw.messages],
-    });
-    conversationThreads$.set(threads);
+    try {
+        const raw = await hassCall('growspace_manager/send_message', {
+            conversation_id: threadId,
+            growspace_id: growspaceId,
+            message: text,
+            ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+        }, ConversationThreadSchema);
+        const threads = new Map(conversationThreads$.get());
+        const existingMessages = threads.get(threadId)?.messages ?? [];
+        threads.set(raw.thread_id, {
+            ...raw,
+            messages: [...existingMessages, userMessage, ...raw.messages],
+        });
+        conversationThreads$.set(threads);
+    }
+    catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return;
+        }
+        throw err;
+    }
 }
 /**
  * Execute a suggested service action.
@@ -19424,8 +19612,8 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     _removeAttachment() {
         this._pendingAttachment = null;
     }
-    _clickPrompt(prompt) {
-        startConversation(this.growspaceid, prompt);
+    async _clickPrompt(prompt) {
+        await startConversation(this.growspaceid, prompt);
     }
     _clickSuggest(prompt) {
         this._inputText = prompt;
@@ -20277,8 +20465,9 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         if (!text)
             return;
         this._followUp = '';
-        await startConversation(this.growspaceid, text);
-        aiMode$.set('chat');
+        const thread = await startConversation(this.growspaceid, text);
+        if (thread)
+            aiMode$.set('chat');
     }
     _renderLoading() {
         return x `
@@ -59133,150 +59322,6 @@ class LibraryExportReadyEvent extends CustomEvent {
     }
 }
 LibraryExportReadyEvent.TYPE = 'library-export-ready';
-
-/**
- * GridInteraction slice — store-driven interaction state machine for Plant Grid Cells.
- *
- * Public API (atom):
- *   gridInteraction$   — read: current interaction state (discriminated union)
- *
- * Public API (transitions):
- *   select(plantId)        — idle → selected; selected(same) → idle; selected(other) → selected(other);
- *                            confirming-water → selected; no-op while transplanting
- *   confirmWater()         — selected → confirming-water; no-op otherwise
- *   cancel()               — any → idle
- *   startTransplant()      — selected → transplanting; no-op otherwise
- *   completeTransplant()   — transplanting → idle; no-op otherwise
- *
- * The type system (discriminated union) prevents callers from accessing fields
- * that don't exist on a given status — e.g. `plantId` is absent on `idle`.
- * Runtime guards make illegal transitions no-ops so callers never need to
- * pre-check the current status.
- *
- * This slice owns no backend calls — all state is local UI-only.
- * Cross-slice side-effects (Plant mutations, Grid optimistic updates) are
- * triggered by action modules that call transition functions here then call
- * the relevant Plant / Grid slice mutators.
- */
-// ---------------------------------------------------------------------------
-// Atom (public)
-// ---------------------------------------------------------------------------
-/** Current interaction state for the Plant Grid. */
-const gridInteraction$ = atom({ status: 'idle' });
-// ---------------------------------------------------------------------------
-// Transitions (public)
-// ---------------------------------------------------------------------------
-/**
- * Select a plant cell.
- *
- * - idle            → selected { plantId }
- * - selected(same)  → idle  (toggle: deselects the cell)
- * - selected(other) → selected { plantId }  (switch selection)
- * - confirming-water → selected { plantId }  (aborts confirmation)
- * - transplanting   → no-op  (source plant is locked during transplant)
- */
-function select(plantId) {
-    const state = gridInteraction$.get();
-    if (state.status === 'transplanting')
-        return;
-    if (state.status === 'selected' && state.plantId === plantId) {
-        gridInteraction$.set({ status: 'idle' });
-        return;
-    }
-    gridInteraction$.set({ status: 'selected', plantId });
-}
-/**
- * Cancel the current interaction and return to idle.
- * Safe to call from any state.
- */
-function cancel() {
-    gridInteraction$.set({ status: 'idle' });
-}
-/**
- * Begin transplant mode from the currently selected plant.
- *
- * - selected → transplanting { sourcePlantId: plantId }
- * - all other states → no-op
- */
-function startTransplant() {
-    const state = gridInteraction$.get();
-    if (state.status !== 'selected')
-        return;
-    gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
-}
-
-/**
- * UI slice — atoms and mutators for global UI state.
- *
- * Public API (atoms):
- *   viewMode$               — read: active view mode (standard/compact/header/heatmap)
- *   isLoading$              — read: whether the card is in a loading state
- *   activeDialog$           — read: currently open dialog (NONE when closed)
- *   isEditMode$             — read: whether edit mode is active
- *   selectedPlants$         — read: set of selected plant IDs
- *   focusedPlantIndex$      — read: keyboard-focused plant index (-1 = none)
- *   menuOpen$               — read: whether the card menu is open
- *   notification$           — read: active toast notification (null = none)
- *   error$                  — read: global error string (null = none)
- *   defaultApplied$         — read: whether the card config default was applied
- *   gridOverlayMode$        — read: active grid overlay mode
- *   language$               — read: active UI language code
- *   pendingDeepLinkPlantId$ — read: plant ID awaiting deep-link navigation (null = none)
- *   flowerFlipDismissed$    — read: map of growspace ID → dismissed flower-flip date
- *   isCompactView$          — computed: true when viewMode is COMPACT
- *   cardViewState$          — computed: combined view-state object for card subscription
- *
- * Public API (mutators):
- *   setViewMode()           — switch the active view mode
- *   setGridOverlayMode()    — switch the active grid overlay
- *   setIsLoading()          — toggle loading state
- *   openDialog()            — set the active dialog
- *   closeDialog()           — reset dialog to NONE
- *   setEditMode()           — enter/exit edit mode (clears selection on exit)
- *   togglePlantSelection()  — add/remove a plant from the selection set
- *   selectAllPlants()       — replace the selection with all provided IDs
- *   clearPlantSelection()   — empty the selection
- *   deselectPlants()        — remove specific plant IDs from the selection
- *   setFocusedPlantIndex()  — set the keyboard-focus index
- *   setMenuOpen()           — open/close the card menu
- *   showToast()             — display a toast notification
- *   clearToast()            — dismiss the current toast
- *   setDefaultApplied()     — mark the config default as applied
- *   setError()              — set or clear the global error
- *   setLanguage()           — change the UI language
- *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
- *   dismissFlowerFlip()     — record a dismissed flower-flip notification
- *
- * This slice owns no backend calls — all state is local UI-only.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-const viewMode$ = atom(ViewMode.STANDARD);
-atom(GridOverlayMode.NONE);
-/** Map of growspace ID → flower-flip start date that the user has dismissed. */
-atom(_loadFlowerFlipDismissed());
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-function _loadFlowerFlipDismissed() {
-    try {
-        const raw = localStorage.getItem('growspace.flowerFlipDismissed');
-        if (raw)
-            return JSON.parse(raw);
-    }
-    catch {
-        // Ignore — localStorage unavailable (SSR / test environments).
-    }
-    return {};
-}
-// ---------------------------------------------------------------------------
-// Mutators (public)
-// ---------------------------------------------------------------------------
-/** Switch the active view mode (standard / compact / header / heatmap). */
-function setViewMode(mode) {
-    viewMode$.set(mode);
-}
 
 /**
  * LayoutSpec — declarative layout configuration for each ViewMode.
@@ -120142,7 +120187,7 @@ class GrowspaceUIStore {
         this.$selectedPlants = atom(new Set());
         this.$focusedPlantIndex = atom(-1);
         this.$menuOpen = atom(false);
-        this.$notification = atom(null);
+        this.$notification = notification$;
         this.$error = atom(null);
         this.$defaultApplied = atom(false);
         this.$gridOverlayMode = atom(GridOverlayMode.NONE);
@@ -122239,8 +122284,18 @@ async function analyzeGrowspace(ctx, query, all) {
         return text;
     }
     catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
         const d = ctx.ui.$activeDialog.get();
+        if (e instanceof WSError && e.code === 'rate_limited') {
+            ctx.ui.showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+            if (d.type === 'GROW_MASTER') {
+                ctx.ui.setActiveDialog({
+                    type: 'GROW_MASTER',
+                    payload: { ...d.payload, isLoading: false },
+                });
+            }
+            return;
+        }
+        const error = e instanceof Error ? e.message : 'Unknown error';
         if (d.type === 'GROW_MASTER') {
             ctx.ui.setActiveDialog({
                 type: 'GROW_MASTER',

@@ -64,7 +64,7 @@ describe('DataService - AIAPI', () => {
 
             it('askGrowAdvice should handle non-Error catch', async () => {
                 (mockHass.connection.sendMessagePromise as any).mockRejectedValue('String Error');
-                await expect(service.askGrowAdvice('g1', 'q')).rejects.toThrow('Failed to get advice');
+                await expect(service.askGrowAdvice('g1', 'q')).rejects.toThrow('String Error');
             });
         });
     });

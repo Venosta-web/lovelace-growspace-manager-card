@@ -1,6 +1,6 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { z } from 'zod';
-import { WSError } from './base-api';
+import { WSError, type ErrorCode } from './base-api';
 
 let _hass: HomeAssistant | undefined;
 
@@ -129,9 +129,10 @@ export async function hassCall<T>(
           'entity_not_found',
           'validation_failed',
           'internal_error',
+          'rate_limited',
         ].includes(code)
           ? code
-          : 'internal_error') as ConstructorParameters<typeof WSError>[0],
+          : 'internal_error') as ErrorCode,
         message
       );
     }
