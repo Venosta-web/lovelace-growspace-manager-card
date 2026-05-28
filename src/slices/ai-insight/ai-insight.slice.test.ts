@@ -675,3 +675,34 @@ describe('saveAiSettings', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// fetchAiSettings
+// ---------------------------------------------------------------------------
+
+describe('fetchAiSettings', () => {
+  it('calls growspace_manager/get_ai_settings and returns the settings object', async () => {
+    const { fetchAiSettings } = await import('./index');
+    const settings = {
+      ai_enabled: true,
+      assistant_id: 'conversation.claude',
+      notification_personality: 'Scientific',
+      ai_auto_alerts: true,
+      max_response_length: 300,
+      vision_checkup_enabled: false,
+      ai_task_entity_id: 'todo.grow_tasks',
+      briefing_interval_minutes: 60,
+      briefing_trigger_entities: ['sensor.vpd'],
+    };
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(settings);
+
+    const result = await fetchAiSettings();
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_ai_settings',
+      {},
+      expect.anything()
+    );
+    expect(result).toEqual(settings);
+  });
+});

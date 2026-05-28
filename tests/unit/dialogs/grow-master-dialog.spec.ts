@@ -11,6 +11,14 @@ vi.mock('../../../src/services/hass-call', () => ({
     setHass: vi.fn(),
 }));
 
+vi.mock('../../../src/slices/ai-insight', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/ai-insight')>();
+    return {
+        ...actual,
+        fetchAiSettings: vi.fn().mockResolvedValue({}),
+    };
+});
+
 describe('GrowMasterDialog', () => {
     let element: GrowMasterDialog;
 
@@ -258,6 +266,44 @@ describe('GrowMasterDialog — three-mode shell', () => {
             await element.updateComplete;
             const panelAfter = element.shadowRoot?.querySelector('gm-settings-panel') as any;
             expect(panelAfter?.draft).toMatchObject({ ai_enabled: true, max_response_length: 500 });
+        });
+
+        it('switching to settings mode calls fetchAiSettings', async () => {
+            const { fetchAiSettings } = await import('../../../src/slices/ai-insight');
+            const settingsBtn = element.shadowRoot?.querySelector('[data-mode="settings"]') as HTMLElement;
+            settingsBtn.click();
+            await element.updateComplete;
+            expect(fetchAiSettings).toHaveBeenCalled();
+        });
+
+        it('fetched settings populate the draft on the settings panel', async () => {
+            const { fetchAiSettings } = await import('../../../src/slices/ai-insight');
+            vi.mocked(fetchAiSettings).mockResolvedValueOnce({
+                ai_enabled: true,
+                assistant_id: 'conversation.claude',
+                max_response_length: 400,
+            });
+            const settingsBtn = element.shadowRoot?.querySelector('[data-mode="settings"]') as HTMLElement;
+            settingsBtn.click();
+            await element.updateComplete;
+            // allow the async fetch to complete
+            await new Promise((r) => setTimeout(r, 0));
+            await element.updateComplete;
+            const panel = element.shadowRoot?.querySelector('gm-settings-panel') as any;
+            expect(panel?.draft).toMatchObject({
+                ai_enabled: true,
+                assistant_id: 'conversation.claude',
+                max_response_length: 400,
+            });
+        });
+
+        it('gm-settings-panel receives hass from the dialog', async () => {
+            const mockHass = { states: {}, callWS: vi.fn() } as any;
+            element.hass = mockHass;
+            aiMode$.set('settings');
+            await element.updateComplete;
+            const panel = element.shadowRoot?.querySelector('gm-settings-panel') as any;
+            expect(panel?.hass).toBe(mockHass);
         });
     });
 });

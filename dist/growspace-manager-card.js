@@ -8330,6 +8330,16 @@ async function saveAiAgent(agentEntityId, growspaceId) {
 async function saveAiSettings(draft) {
     await hassCall('growspace_manager/save_ai_settings', draft, unknownType());
 }
+/**
+ * Fetch the current AI settings from the integration config entry.
+ *
+ * Returns the full ai_settings dict so the Growmaster Settings Panel can
+ * pre-populate its draft when the settings tab is opened.
+ */
+async function fetchAiSettings() {
+    const result = await hassCall('growspace_manager/get_ai_settings', {}, recordType(unknownType()));
+    return result;
+}
 
 /**
  * mutate primitive — owns optimistic updates, undo stack, and sync trigger.
@@ -21678,6 +21688,211 @@ GmInboxPanel = __decorate([
     t$2('gm-inbox-panel')
 ], GmInboxPanel);
 
+let Md3EntityInput = class Md3EntityInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.domains = [];
+        this._listId = `entity-list-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    _getEntities() {
+        if (!this.hass)
+            return [];
+        return Object.keys(this.hass.states || {})
+            .filter((eid) => {
+            if (this.domains.length === 0)
+                return true;
+            return this.domains.includes(eid.split('.')[0]);
+        })
+            .sort();
+    }
+    _handleChange(e) {
+        const val = e.target.value;
+        this.value = val;
+        this.dispatchEvent(new CustomEvent('change', { detail: val || null, bubbles: true, composed: true }));
+    }
+    render() {
+        const entities = this._getEntities();
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          class="md3-input"
+          list="${this._listId}"
+          .value=${this.value}
+          placeholder="Search entity..."
+          @change=${this._handleChange}
+        />
+        <datalist id="${this._listId}">
+          ${entities.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+};
+Md3EntityInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5()
+], Md3EntityInput.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3EntityInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3EntityInput.prototype, "domains", void 0);
+__decorate([
+    n$5({ attribute: false })
+], Md3EntityInput.prototype, "hass", void 0);
+Md3EntityInput = __decorate([
+    t$2('md3-entity-input')
+], Md3EntityInput);
+
+let Md3EntitiesInput = class Md3EntitiesInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = [];
+        this.domains = [];
+        this._listId = `entities-list-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    _getEntities() {
+        if (!this.hass)
+            return [];
+        return Object.keys(this.hass.states || {})
+            .filter((eid) => {
+            if (this.domains.length === 0)
+                return true;
+            return this.domains.includes(eid.split('.')[0]);
+        })
+            .sort();
+    }
+    _remove(val) {
+        const next = this.value.filter((v) => v !== val);
+        this.value = next;
+        this.dispatchEvent(new CustomEvent('change', { detail: next, bubbles: true, composed: true }));
+    }
+    _handleAdd(e) {
+        const input = e.target;
+        const val = input.value.trim();
+        if (val && !this.value.includes(val)) {
+            const next = [...this.value, val];
+            this.value = next;
+            this.dispatchEvent(new CustomEvent('change', { detail: next, bubbles: true, composed: true }));
+        }
+        input.value = '';
+    }
+    render() {
+        const entities = this._getEntities();
+        return x `
+      ${this.label ? x `<span class="label">${this.label}</span>` : ''}
+      <div class="multi-select-box">
+        ${this.value.map((val) => x `
+            <div class="chip">
+              ${val}
+              <span class="chip-remove" @click=${() => this._remove(val)}>×</span>
+            </div>
+          `)}
+        <input
+          class="search-input"
+          list="${this._listId}"
+          placeholder="Add entity..."
+          @change=${this._handleAdd}
+        />
+      </div>
+      <datalist id="${this._listId}">
+        ${entities.map((eid) => x `<option value="${eid}"></option>`)}
+      </datalist>
+    `;
+    }
+};
+Md3EntitiesInput.styles = i$6 `
+    :host {
+      display: block;
+      width: 100%;
+    }
+    .label {
+      font-size: 0.75rem;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      display: block;
+      margin-bottom: 4px;
+    }
+    .multi-select-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px 4px 0 0;
+      border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      min-height: 40px;
+      box-sizing: border-box;
+    }
+    .multi-select-box:focus-within {
+      border-bottom: 2px solid var(--primary-color, rgba(255, 255, 255, 0.6));
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border-radius: 16px;
+      padding: 2px 10px;
+      font-size: 0.85rem;
+      gap: 4px;
+    }
+    .chip-remove {
+      cursor: pointer;
+      font-weight: bold;
+      opacity: 0.7;
+      line-height: 1;
+    }
+    .chip-remove:hover {
+      opacity: 1;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 80px;
+      border: none;
+      background: transparent;
+      color: var(--primary-text-color);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 2px 0;
+      outline: none;
+    }
+  `;
+__decorate([
+    n$5()
+], Md3EntitiesInput.prototype, "label", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3EntitiesInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3EntitiesInput.prototype, "domains", void 0);
+__decorate([
+    n$5({ attribute: false })
+], Md3EntitiesInput.prototype, "hass", void 0);
+Md3EntitiesInput = __decorate([
+    t$2('md3-entities-input')
+], Md3EntitiesInput);
+
+const PERSONALITY_OPTIONS = [
+    'Standard',
+    'Scientific',
+    'Chill Stoner',
+    'Strict Coach',
+    'Pirate',
+];
 let GmSettingsPanel = class GmSettingsPanel extends i$3 {
     constructor() {
         super(...arguments);
@@ -21704,16 +21919,25 @@ let GmSettingsPanel = class GmSettingsPanel extends i$3 {
           <div>
             <div class="field-label">Enable AI</div>
           </div>
-          <ha-switch
+          <md3-switch
+            data-field="ai_enabled"
             .checked=${d.ai_enabled ?? false}
-            @change=${(e) => this._patch({ ai_enabled: e.target.checked })}
-          ></ha-switch>
+            @change=${(e) => this._patch({ ai_enabled: e.detail.checked })}
+          ></md3-switch>
         </div>
         <div class="field-row">
           <div>
             <div class="field-label">Conversation Agent</div>
             <div class="field-hint">HA conversation entity to use</div>
           </div>
+          <md3-entity-input
+            data-field="assistant_id"
+            label="Conversation Agent"
+            .hass=${this.hass}
+            .value=${d.assistant_id ?? ''}
+            .domains=${['conversation']}
+            @change=${(e) => this._patch({ assistant_id: e.detail ?? null })}
+          ></md3-entity-input>
         </div>
       </div>
 
@@ -21722,9 +21946,21 @@ let GmSettingsPanel = class GmSettingsPanel extends i$3 {
         <div class="section-heading">Responses</div>
         <div class="field-row">
           <div class="field-label">Personality</div>
+          <md3-select
+            data-field="notification_personality"
+            .value=${d.notification_personality ?? 'Standard'}
+            .options=${PERSONALITY_OPTIONS}
+            @change=${(e) => this._patch({ notification_personality: e.detail })}
+          ></md3-select>
         </div>
         <div class="field-row">
           <div class="field-label">Max Response Length</div>
+          <md3-number-input
+            data-field="max_response_length"
+            label="Characters"
+            .value=${d.max_response_length ?? 250}
+            @change=${(e) => this._patch({ max_response_length: Number(e.detail) })}
+          ></md3-number-input>
         </div>
       </div>
 
@@ -21736,10 +21972,11 @@ let GmSettingsPanel = class GmSettingsPanel extends i$3 {
             <div class="field-label">Auto Alerts</div>
             <div class="field-hint">Enrich triage alerts with AI reasoning</div>
           </div>
-          <ha-switch
+          <md3-switch
+            data-field="ai_auto_alerts"
             .checked=${d.ai_auto_alerts ?? true}
-            @change=${(e) => this._patch({ ai_auto_alerts: e.target.checked })}
-          ></ha-switch>
+            @change=${(e) => this._patch({ ai_auto_alerts: e.detail.checked })}
+          ></md3-switch>
         </div>
       </div>
 
@@ -21751,10 +21988,11 @@ let GmSettingsPanel = class GmSettingsPanel extends i$3 {
             <div class="field-label">Vision Checkups</div>
             <div class="field-hint">AI plant health checkups via camera</div>
           </div>
-          <ha-switch
+          <md3-switch
+            data-field="vision_checkup_enabled"
             .checked=${d.vision_checkup_enabled ?? false}
-            @change=${(e) => this._patch({ vision_checkup_enabled: e.target.checked })}
-          ></ha-switch>
+            @change=${(e) => this._patch({ vision_checkup_enabled: e.detail.checked })}
+          ></md3-switch>
         </div>
       </div>
 
@@ -21763,12 +22001,35 @@ let GmSettingsPanel = class GmSettingsPanel extends i$3 {
         <div class="section-heading">Briefings</div>
         <div class="field-row">
           <div class="field-label">Briefing Interval (minutes)</div>
+          <md3-number-input
+            data-field="briefing_interval_minutes"
+            label="Minutes"
+            .min=${5}
+            .max=${1440}
+            .value=${d.briefing_interval_minutes ?? 30}
+            @change=${(e) => this._patch({ briefing_interval_minutes: Number(e.detail) })}
+          ></md3-number-input>
         </div>
         <div class="field-row">
           <div class="field-label">AI Task Entity</div>
+          <md3-entity-input
+            data-field="ai_task_entity_id"
+            label="AI Task Entity"
+            .hass=${this.hass}
+            .value=${d.ai_task_entity_id ?? ''}
+            .domains=${['ai_task']}
+            @change=${(e) => this._patch({ ai_task_entity_id: e.detail ?? null })}
+          ></md3-entity-input>
         </div>
         <div class="field-row">
           <div class="field-label">Trigger Entities</div>
+          <md3-entities-input
+            data-field="briefing_trigger_entities"
+            label="Trigger Entities"
+            .hass=${this.hass}
+            .value=${d.briefing_trigger_entities ?? []}
+            @change=${(e) => this._patch({ briefing_trigger_entities: e.detail ?? [] })}
+          ></md3-entities-input>
         </div>
       </div>
     `;
@@ -21811,10 +22072,19 @@ GmSettingsPanel.styles = i$6 `
       color: var(--secondary-text-color, rgba(255,255,255,0.5));
       margin-top: 2px;
     }
+    md3-entity-input,
+    md3-entities-input,
+    md3-select,
+    md3-number-input {
+      flex: 1;
+    }
   `;
 __decorate([
     n$5({ attribute: false })
 ], GmSettingsPanel.prototype, "draft", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GmSettingsPanel.prototype, "hass", void 0);
 GmSettingsPanel = __decorate([
     t$2('gm-settings-panel')
 ], GmSettingsPanel);
@@ -21837,8 +22107,15 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     get _growspaceName() { return this.growspaceName ?? ''; }
     updated(changedProperties) {
         super.updated(changedProperties);
-        if (changedProperties.has('open') && this.open && !aiBriefing$.get().get(this._growspaceId)) {
-            fetchBriefing(this._growspaceId);
+        if (changedProperties.has('open') && this.open) {
+            if (!aiBriefing$.get().get(this._growspaceId)) {
+                fetchBriefing(this._growspaceId);
+            }
+            if (aiMode$.get() === 'settings') {
+                fetchAiSettings().then((settings) => {
+                    this._settingsDraft = { ...settings };
+                });
+            }
         }
     }
     _close() {
@@ -21848,6 +22125,11 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         aiMode$.set(mode);
         if (mode === 'briefing' && !aiBriefing$.get().get(this._growspaceId)) {
             fetchBriefing(this._growspaceId);
+        }
+        if (mode === 'settings') {
+            fetchAiSettings().then((settings) => {
+                this._settingsDraft = { ...settings };
+            });
         }
     }
     _renderNavItem(m, mode) {
@@ -21911,6 +22193,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
       <gm-settings-panel
         style="flex:1;min-height:0;"
         .draft=${this._settingsDraft}
+        .hass=${this.hass}
         @draft-change=${(e) => { this._settingsDraft = e.detail; }}
       ></gm-settings-panel>
     `;
@@ -57359,7 +57642,6 @@ let GrowspaceHeaderHeroUI = class GrowspaceHeaderHeroUI extends i$3 {
         const isVpd = chip.key === 'vpd';
         let vpdSegments = [];
         if (isVpd && this.device) {
-            this.historyCache?.vpd;
             const lightHistory = this.historyCache?.light || [];
             const overviewEntity = this.device.overviewEntityId
                 ? this.hass?.states[this.device.overviewEntityId]

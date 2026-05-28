@@ -339,3 +339,14 @@ export type AiSettingsDraft = {
 export async function saveAiSettings(draft: AiSettingsDraft): Promise<void> {
   await hassCall('growspace_manager/save_ai_settings', draft as Record<string, unknown>, z.unknown());
 }
+
+/**
+ * Fetch the current AI settings from the integration config entry.
+ *
+ * Returns the full ai_settings dict so the Growmaster Settings Panel can
+ * pre-populate its draft when the settings tab is opened.
+ */
+export async function fetchAiSettings(): Promise<AiSettingsDraft> {
+  const result = await hassCall('growspace_manager/get_ai_settings', {}, z.record(z.unknown()));
+  return result as AiSettingsDraft;
+}

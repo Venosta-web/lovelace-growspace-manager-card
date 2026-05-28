@@ -4,7 +4,7 @@ import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox, mdiCog } fro
 import { StoreController } from '@nanostores/lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
-import { aiMode$, aiBriefing$, fetchBriefing, saveAiSettings, type AiSettingsDraft } from '../slices/ai-insight';
+import { aiMode$, aiBriefing$, fetchBriefing, fetchAiSettings, saveAiSettings, type AiSettingsDraft } from '../slices/ai-insight';
 import './chat-panel';
 import './briefing-panel';
 import './inbox-panel';
@@ -275,8 +275,15 @@ export class GrowMasterDialog extends LitElement {
 
   override updated(changedProperties: Map<string | symbol, unknown>) {
     super.updated(changedProperties);
-    if (changedProperties.has('open') && this.open && !aiBriefing$.get().get(this._growspaceId)) {
-      fetchBriefing(this._growspaceId);
+    if (changedProperties.has('open') && this.open) {
+      if (!aiBriefing$.get().get(this._growspaceId)) {
+        fetchBriefing(this._growspaceId);
+      }
+      if (aiMode$.get() === 'settings') {
+        fetchAiSettings().then((settings) => {
+          this._settingsDraft = { ...settings };
+        });
+      }
     }
   }
 
@@ -288,6 +295,11 @@ export class GrowMasterDialog extends LitElement {
     aiMode$.set(mode);
     if (mode === 'briefing' && !aiBriefing$.get().get(this._growspaceId)) {
       fetchBriefing(this._growspaceId);
+    }
+    if (mode === 'settings') {
+      fetchAiSettings().then((settings) => {
+        this._settingsDraft = { ...settings };
+      });
     }
   }
 
@@ -357,6 +369,7 @@ export class GrowMasterDialog extends LitElement {
       <gm-settings-panel
         style="flex:1;min-height:0;"
         .draft=${this._settingsDraft}
+        .hass=${this.hass}
         @draft-change=${(e: CustomEvent<AiSettingsDraft>) => { this._settingsDraft = e.detail; }}
       ></gm-settings-panel>
     `;
