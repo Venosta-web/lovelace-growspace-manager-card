@@ -233,7 +233,7 @@ export class StrainImportDialog extends LitElement {
   }
 
   private _close() {
-    this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('close'));
   }
 
   static styles = [

@@ -32922,7 +32922,7 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         this._close();
     }
     _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('close'));
     }
     render() {
         if (!this.open)
