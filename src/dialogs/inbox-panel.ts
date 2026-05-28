@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import { mdiInbox } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
-import { aiAlerts$, aiBriefing$, fetchAlerts, resolveAlert, applyAction } from '../slices/ai-insight';
+import { aiAlerts$, aiEnabled$, fetchAlerts, resolveAlert, applyAction } from '../slices/ai-insight';
 import type { TriageAlert, SuggestedAction } from '../slices/ai-insight/schema';
 
 type InboxFilter = 'all' | 'action' | 'watch';
@@ -28,7 +28,7 @@ export class GmInboxPanel extends LitElement {
   @state() private _noteText = '';
 
   private _alerts = new StoreController(this, aiAlerts$);
-  private _briefing = new StoreController(this, aiBriefing$);
+  private _aiEnabled = new StoreController(this, aiEnabled$);
 
   connectedCallback() {
     super.connectedCallback();
@@ -719,7 +719,7 @@ export class GmInboxPanel extends LitElement {
   }
 
   render() {
-    const aiAvailable = this._briefing.value.get(this.growspaceid)?.ai_available;
+    const aiAvailable = this._aiEnabled.value;
     return html`
       <div class="inbox-shell">
         <div class="inbox-rail">

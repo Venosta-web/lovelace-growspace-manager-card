@@ -202,4 +202,62 @@ describe('GrowMasterDialog — three-mode shell', () => {
             expect(icon?.getAttribute('data-mode')).toBe('briefing');
         });
     });
+
+    describe('settings panel', () => {
+        it('nav rail has a settings button at the bottom of the rail', async () => {
+            const rail = element.shadowRoot?.querySelector('.gm-nav-rail');
+            const settingsBtn = rail?.querySelector('[data-mode="settings"]');
+            expect(settingsBtn).toBeTruthy();
+        });
+
+        it('settings button sits inside .gm-nav-rail-bottom', async () => {
+            const bottom = element.shadowRoot?.querySelector('.gm-nav-rail-bottom');
+            expect(bottom?.querySelector('[data-mode="settings"]')).toBeTruthy();
+        });
+
+        it('clicking settings nav item updates aiMode$ to "settings"', async () => {
+            const settingsBtn = element.shadowRoot?.querySelector('[data-mode="settings"]') as HTMLElement;
+            settingsBtn.click();
+            expect(aiMode$.get()).toBe('settings');
+        });
+
+        it('shows gm-settings-panel when aiMode$ is "settings"', async () => {
+            aiMode$.set('settings');
+            await element.updateComplete;
+            expect(element.shadowRoot?.querySelector('gm-settings-panel')).toBeTruthy();
+            expect(element.shadowRoot?.querySelector('gm-chat-panel')).toBeFalsy();
+        });
+
+        it('footer shows Save Settings button when mode is "settings"', async () => {
+            aiMode$.set('settings');
+            await element.updateComplete;
+            const footer = element.shadowRoot?.querySelector('.gm-footer');
+            const saveBtn = footer?.querySelector('.gm-save-settings-btn');
+            expect(saveBtn).toBeTruthy();
+        });
+
+        it('footer hides disclaimer when mode is "settings"', async () => {
+            aiMode$.set('settings');
+            await element.updateComplete;
+            const footer = element.shadowRoot?.querySelector('.gm-footer');
+            expect(footer?.querySelector('.gm-disclaimer')).toBeFalsy();
+        });
+
+        it('draft survives switching away from settings and back', async () => {
+            aiMode$.set('settings');
+            await element.updateComplete;
+            const panel = element.shadowRoot?.querySelector('gm-settings-panel') as any;
+            panel?.dispatchEvent(new CustomEvent('draft-change', {
+                detail: { ai_enabled: true, max_response_length: 500 },
+                bubbles: true,
+                composed: true,
+            }));
+            aiMode$.set('chat');
+            await element.updateComplete;
+            aiMode$.set('settings');
+            await element.updateComplete;
+            const panelAfter = element.shadowRoot?.querySelector('gm-settings-panel') as any;
+            expect(panelAfter?.draft).toMatchObject({ ai_enabled: true, max_response_length: 500 });
+        });
+    });
 });

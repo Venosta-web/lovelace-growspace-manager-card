@@ -24,6 +24,7 @@ import {
   aiInsight$,
   isAiLoading$,
   aiError$,
+  aiEnabled$,
   dismissInsight,
   clearAiError,
   askGrowAdvice,
@@ -39,6 +40,7 @@ import {
   fetchAlerts,
   resolveAlert,
   fetchBriefing,
+  fetchAiStatus,
 } from './index';
 
 vi.mock('../../services/hass-call', () => ({
@@ -56,6 +58,7 @@ beforeEach(() => {
   aiInsight$.set(null);
   isAiLoading$.set(false);
   aiError$.set(null);
+  aiEnabled$.set(null);
   conversationThreads$.set(new Map());
   activeThreadId$.set(new Map());
   aiAlerts$.set(new Map());
@@ -586,6 +589,88 @@ describe('fetchBriefing', () => {
     expect(hassCall.hassCall).toHaveBeenCalledWith(
       'growspace_manager/get_briefing',
       { growspace_id: 'gs1' },
+      expect.anything()
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// aiEnabled$
+// ---------------------------------------------------------------------------
+
+describe('aiEnabled$', () => {
+  it('defaults to null', () => {
+    expect(aiEnabled$.get()).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchAiStatus
+// ---------------------------------------------------------------------------
+
+describe('fetchAiStatus', () => {
+  it('sets aiEnabled$ to true when backend returns ai_enabled: true', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ai_enabled: true });
+
+    await fetchAiStatus();
+
+    expect(aiEnabled$.get()).toBe(true);
+  });
+
+  it('sets aiEnabled$ to false when backend returns ai_enabled: false', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ai_enabled: false });
+
+    await fetchAiStatus();
+
+    expect(aiEnabled$.get()).toBe(false);
+  });
+
+  it('calls the correct WS command', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ ai_enabled: true });
+
+    await fetchAiStatus();
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_ai_status',
+      {},
+      expect.anything()
+    );
+  });
+
+  it('does not update aiEnabled$ when call fails', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('network'));
+    aiEnabled$.set(null);
+
+    await fetchAiStatus();
+
+    expect(aiEnabled$.get()).toBeNull();
+  });
+});
+
+describe('saveAiSettings', () => {
+  beforeEach(() => {
+    vi.mocked(hassCall.hassCall).mockResolvedValue({});
+  });
+
+  it('calls growspace_manager/save_ai_settings with the draft payload', async () => {
+    const { saveAiSettings } = await import('./index');
+    const draft = {
+      ai_enabled: true,
+      assistant_id: 'conversation.claude',
+      notification_personality: 'Scientific',
+      ai_auto_alerts: false,
+      max_response_length: 300,
+      vision_checkup_enabled: true,
+      ai_task_entity_id: 'ai_task.my_task',
+      briefing_interval_minutes: 60,
+      briefing_trigger_entities: ['sensor.vpd'],
+    };
+
+    await saveAiSettings(draft);
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/save_ai_settings',
+      draft,
       expect.anything()
     );
   });

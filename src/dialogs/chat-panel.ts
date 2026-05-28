@@ -9,7 +9,7 @@ import {
   conversationThreads$,
   isAiLoading$,
   aiError$,
-  aiBriefing$,
+  aiEnabled$,
   startConversation,
   sendMessage,
   applyAction,
@@ -43,7 +43,7 @@ export class GmChatPanel extends LitElement {
   private _threads = new StoreController(this, conversationThreads$);
   private _loading = new StoreController(this, isAiLoading$);
   private _error = new StoreController(this, aiError$);
-  private _briefing = new StoreController(this, aiBriefing$);
+  private _aiEnabled = new StoreController(this, aiEnabled$);
 
   connectedCallback() {
     super.connectedCallback();
@@ -894,7 +894,7 @@ export class GmChatPanel extends LitElement {
 
   render() {
     const thread = this._getActiveThread();
-    const aiUnavailable = this._briefing.value.get(this.growspaceid)?.ai_available === false;
+    const aiUnavailable = this._aiEnabled.value === false;
     return html`
       ${this._renderThreadRail()}
       <div class="chat-content">

@@ -7946,6 +7946,392 @@ const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
 
 /**
+ * AIInsight slice — zod schemas for backend response validation.
+ *
+ * GrowAdviceResponseSchema validates the payload returned by the
+ * ask_grow_advice and analyze_all_growspaces HA services.
+ *
+ * New schemas cover the conversation, triage-alert, and briefing
+ * WebSocket commands added in issue #159.
+ */
+// The backend returns either a plain string or a nested { response: string }
+// object (sometimes double-nested). We accept both shapes and let the slice
+// extract the text.
+const responseBody = unionType([
+    stringType(),
+    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
+]);
+const GrowAdviceResponseSchema = unionType([
+    stringType(),
+    objectType({ response: responseBody }),
+    recordType(unknownType()),
+]);
+// ---------------------------------------------------------------------------
+// SuggestedAction
+// ---------------------------------------------------------------------------
+const SuggestedActionSchema = objectType({
+    service: stringType(),
+    target_entity_id: stringType(),
+    service_data: recordType(unknownType()),
+    description: stringType(),
+    confidence: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// KPI (shared by TriageAlert and AIBriefing)
+// ---------------------------------------------------------------------------
+const KPISchema = objectType({
+    label: stringType(),
+    value: unionType([numberType(), stringType()]),
+    unit: stringType().optional(),
+    delta: stringType().optional(),
+});
+// ---------------------------------------------------------------------------
+// TriageAlert
+// ---------------------------------------------------------------------------
+const TriageAlertSchema = objectType({
+    id: stringType(),
+    growspace_id: stringType(),
+    type: stringType(),
+    severity: enumType(['info', 'warning', 'danger']).default('info'),
+    title: stringType().optional(),
+    description: stringType().optional(),
+    bayesian_reasons: arrayType(stringType()),
+    ai_reasoning: stringType().nullable(),
+    timestamp: numberType(),
+    resolved: booleanType(),
+    resolution_note: stringType().nullable(),
+    confidence: numberType().optional(),
+    suggested_actions: arrayType(SuggestedActionSchema).optional(),
+    kpis: arrayType(KPISchema).optional(),
+    snapshot_entity_id: stringType().nullable().optional(),
+});
+// ---------------------------------------------------------------------------
+// ResolveAck
+// ---------------------------------------------------------------------------
+const ResolveAckSchema = objectType({
+    success: booleanType(),
+    alert_id: stringType(),
+});
+// ---------------------------------------------------------------------------
+// ConversationMessage
+// ---------------------------------------------------------------------------
+const SensorSnapshotItemSchema = objectType({
+    label: stringType(),
+    value: stringType(),
+    unit: stringType(),
+    delta: stringType().optional(),
+});
+const CitationSchema = objectType({
+    label: stringType(),
+    source: enumType(['sensor', 'logbook']),
+});
+const ConversationMessageSchema = objectType({
+    role: enumType(['user', 'ai']),
+    text: stringType(),
+    timestamp: numberType().nonnegative(),
+    suggestedAction: objectType({
+        service: stringType(),
+        target_entity_id: stringType(),
+        service_data: recordType(unknownType()),
+        description: stringType(),
+        confidence: numberType().optional(),
+    })
+        .optional(),
+    confidence: numberType().optional(),
+    imageEntityId: stringType().optional(),
+    sensorSnapshot: arrayType(SensorSnapshotItemSchema).optional(),
+    citations: arrayType(CitationSchema).optional(),
+});
+// ---------------------------------------------------------------------------
+// ConversationThread
+// ---------------------------------------------------------------------------
+const ConversationThreadSchema = objectType({
+    thread_id: stringType(),
+    growspace_id: stringType(),
+    messages: arrayType(ConversationMessageSchema),
+});
+// ---------------------------------------------------------------------------
+// AIBriefing
+// ---------------------------------------------------------------------------
+const RecommendationSchema = objectType({
+    title: stringType(),
+    description: stringType(),
+    impact: enumType(['high', 'medium', 'low']),
+    suggested_action: SuggestedActionSchema.optional(),
+    action_type: enumType(['apply', 'plan', 'remind']).optional(),
+});
+const AIBriefingSchema = objectType({
+    generated_at: numberType().nonnegative(),
+    summary_text: stringType(),
+    headline: stringType().optional(),
+    confidence: numberType().optional(),
+    drawn_from: stringType().optional(),
+    kpis: arrayType(KPISchema),
+    recommendations: arrayType(RecommendationSchema),
+    ai_available: booleanType(),
+});
+
+/**
+ * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
+ *
+ * Public API (atoms):
+ *   aiInsight$            — last AI response text (null if none loaded yet)
+ *   isAiLoading$          — whether an AI request is in-flight
+ *   aiError$              — error message from the last failed request (null = none)
+ *   conversationThreads$  — conversation threads keyed by thread ID
+ *   activeThreadId$       — ID of the currently active thread (null = none)
+ *   aiAlerts$             — triage alerts fetched from the backend
+ *   aiBriefing$           — latest AI briefing (null = none fetched yet)
+ *   aiMode$               — current AI panel mode
+ *
+ * Public API (mutators):
+ *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
+ *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
+ *   dismissInsight()                     — clear the current insight and any error
+ *   clearAiError()                       — clear only the error without touching the insight
+ *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
+ *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
+ *   applyAction(suggestedAction)                         — execute a suggested service action
+ *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
+ *   resolveAlert(alertId, note?)                         — mark an alert as resolved
+ *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
+ *
+ * Zod schemas are in ./schema.ts and private to this module.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const aiInsight$ = atom(null);
+const isAiLoading$ = atom(false);
+const aiError$ = atom(null);
+const aiEnabled$ = atom(null);
+const conversationThreads$ = atom(new Map());
+const activeThreadId$ = atom(new Map());
+const aiAlerts$ = atom(new Map());
+const aiBriefing$ = atom(new Map());
+const aiMode$ = atom('briefing');
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+/**
+ * Extract a plain text string from a GrowAdviceResponse, which the backend
+ * may return as a string or as a nested `{ response: string }` object.
+ */
+function _extractText(raw) {
+    if (typeof raw === 'string')
+        return raw;
+    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
+        const inner = raw.response;
+        if (typeof inner === 'string')
+            return inner;
+        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
+            const deepInner = inner.response;
+            if (typeof deepInner === 'string')
+                return deepInner;
+        }
+        return JSON.stringify(inner);
+    }
+    return JSON.stringify(raw);
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Ask the AI for cultivation advice about a specific growspace.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function askGrowAdvice(growspaceId, userQuery) {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Request an AI analysis that covers all growspaces at once.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function analyzeAllGrowspaces() {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Clear the current insight and any error state.
+ * Use this when the user dismisses the AI response panel.
+ */
+function dismissInsight() {
+    aiInsight$.set(null);
+    aiError$.set(null);
+}
+// ---------------------------------------------------------------------------
+// Conversation mutators
+// ---------------------------------------------------------------------------
+/**
+ * Start a new AI conversation thread for a growspace.
+ *
+ * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
+ */
+async function startConversation(growspaceId, text, imageEntityId) {
+    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    const raw = await hassCall('growspace_manager/start_conversation', {
+        growspace_id: growspaceId,
+        message: text,
+        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+    }, ConversationThreadSchema);
+    const thread = { ...raw, messages: [userMessage, ...raw.messages] };
+    const threads = new Map(conversationThreads$.get());
+    threads.set(thread.thread_id, thread);
+    conversationThreads$.set(threads);
+    const activeMap = new Map(activeThreadId$.get());
+    activeMap.set(growspaceId, thread.thread_id);
+    activeThreadId$.set(activeMap);
+    return thread;
+}
+/**
+ * Send a message in an existing conversation thread.
+ *
+ * Appends the AI response message to the thread. Other threads are unchanged.
+ */
+async function sendMessage(threadId, text, imageEntityId) {
+    const existingThread = conversationThreads$.get().get(threadId);
+    const growspaceId = existingThread?.growspace_id ?? '';
+    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    const raw = await hassCall('growspace_manager/send_message', {
+        conversation_id: threadId,
+        growspace_id: growspaceId,
+        message: text,
+        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+    }, ConversationThreadSchema);
+    const threads = new Map(conversationThreads$.get());
+    const existingMessages = threads.get(threadId)?.messages ?? [];
+    threads.set(raw.thread_id, {
+        ...raw,
+        messages: [...existingMessages, userMessage, ...raw.messages],
+    });
+    conversationThreads$.set(threads);
+}
+/**
+ * Execute a suggested service action.
+ *
+ * Calls the HA service specified in the action payload.
+ */
+async function applyAction(action) {
+    await callService(action.service, action.target_entity_id, action.service_data);
+}
+// ---------------------------------------------------------------------------
+// Alert mutators
+// ---------------------------------------------------------------------------
+/**
+ * Fetch triage alerts for a specific growspace and store them in aiAlerts$
+ * keyed by growspaceId. Other growspaces' alerts are unaffected.
+ */
+async function fetchAlerts(growspaceId) {
+    const AlertsResponseSchema = TriageAlertSchema.array();
+    try {
+        const alerts = await hassCall('growspace_manager/get_ai_alerts', { growspace_id: growspaceId }, AlertsResponseSchema);
+        const updated = new Map(aiAlerts$.get());
+        updated.set(growspaceId, alerts);
+        aiAlerts$.set(updated);
+    }
+    catch {
+        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    }
+}
+/**
+ * Mark an alert as resolved. Searches across all growspaces in aiAlerts$,
+ * patches the matching alert, and calls the backend to persist the resolution.
+ */
+async function resolveAlert(alertId, note) {
+    await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, ResolveAckSchema);
+    const currentMap = aiAlerts$.get();
+    const updated = new Map(currentMap);
+    for (const [gsId, alerts] of updated) {
+        const idx = alerts.findIndex((a) => a.id === alertId);
+        if (idx !== -1) {
+            const patched = [...alerts];
+            patched[idx] = { ...alerts[idx], resolved: true, resolution_note: note ?? null };
+            updated.set(gsId, patched);
+            break;
+        }
+    }
+    aiAlerts$.set(updated);
+}
+// ---------------------------------------------------------------------------
+// Briefing mutators
+// ---------------------------------------------------------------------------
+/**
+ * Fetch the AI briefing for a specific growspace and store it in aiBriefing$
+ * keyed by growspaceId. Other growspaces' briefings are unaffected.
+ * Pass forceRefresh=true to bypass the backend cache.
+ */
+async function fetchBriefing(growspaceId, forceRefresh) {
+    try {
+        const briefing = await hassCall('growspace_manager/get_briefing', { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
+        const updated = new Map(aiBriefing$.get());
+        updated.set(growspaceId, briefing);
+        aiBriefing$.set(updated);
+    }
+    catch {
+        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    }
+}
+/**
+ * Fetch the component-level AI enabled flag and store it in aiEnabled$.
+ * Silently ignores errors so the atom stays at its previous value.
+ */
+async function fetchAiStatus() {
+    const AiStatusSchema = objectType({ ai_enabled: booleanType() });
+    try {
+        const result = await hassCall('growspace_manager/get_ai_status', {}, AiStatusSchema);
+        aiEnabled$.set(result.ai_enabled);
+    }
+    catch {
+        // Silently ignore — leave aiEnabled$ unchanged
+    }
+}
+/**
+ * Persist a conversation agent selection and enable AI in the integration.
+ *
+ * Saves the chosen entity ID to the backend config entry, then refreshes the
+ * briefing atom so panels drop their unconfigured state without a page reload.
+ */
+async function saveAiAgent(agentEntityId, growspaceId) {
+    await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknownType());
+    aiEnabled$.set(true);
+    await fetchBriefing(growspaceId, true);
+}
+async function saveAiSettings(draft) {
+    await hassCall('growspace_manager/save_ai_settings', draft, unknownType());
+}
+
+/**
  * mutate primitive — owns optimistic updates, undo stack, and sync trigger.
  *
  * Replaces undo-redo-manager.ts + sync-service.ts for migrated mutators.
@@ -18949,373 +19335,6 @@ CropSteeringDialog = __decorate([
     t$2('crop-steering-dialog')
 ], CropSteeringDialog);
 
-/**
- * AIInsight slice — zod schemas for backend response validation.
- *
- * GrowAdviceResponseSchema validates the payload returned by the
- * ask_grow_advice and analyze_all_growspaces HA services.
- *
- * New schemas cover the conversation, triage-alert, and briefing
- * WebSocket commands added in issue #159.
- */
-// The backend returns either a plain string or a nested { response: string }
-// object (sometimes double-nested). We accept both shapes and let the slice
-// extract the text.
-const responseBody = unionType([
-    stringType(),
-    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
-]);
-const GrowAdviceResponseSchema = unionType([
-    stringType(),
-    objectType({ response: responseBody }),
-    recordType(unknownType()),
-]);
-// ---------------------------------------------------------------------------
-// SuggestedAction
-// ---------------------------------------------------------------------------
-const SuggestedActionSchema = objectType({
-    service: stringType(),
-    target_entity_id: stringType(),
-    service_data: recordType(unknownType()),
-    description: stringType(),
-    confidence: numberType().optional(),
-});
-// ---------------------------------------------------------------------------
-// KPI (shared by TriageAlert and AIBriefing)
-// ---------------------------------------------------------------------------
-const KPISchema = objectType({
-    label: stringType(),
-    value: unionType([numberType(), stringType()]),
-    unit: stringType().optional(),
-    delta: stringType().optional(),
-});
-// ---------------------------------------------------------------------------
-// TriageAlert
-// ---------------------------------------------------------------------------
-const TriageAlertSchema = objectType({
-    id: stringType(),
-    growspace_id: stringType(),
-    type: stringType(),
-    severity: enumType(['info', 'warning', 'danger']).default('info'),
-    title: stringType().optional(),
-    description: stringType().optional(),
-    bayesian_reasons: arrayType(stringType()),
-    ai_reasoning: stringType().nullable(),
-    timestamp: numberType(),
-    resolved: booleanType(),
-    resolution_note: stringType().nullable(),
-    confidence: numberType().optional(),
-    suggested_actions: arrayType(SuggestedActionSchema).optional(),
-    kpis: arrayType(KPISchema).optional(),
-    snapshot_entity_id: stringType().nullable().optional(),
-});
-// ---------------------------------------------------------------------------
-// ResolveAck
-// ---------------------------------------------------------------------------
-const ResolveAckSchema = objectType({
-    success: booleanType(),
-    alert_id: stringType(),
-});
-// ---------------------------------------------------------------------------
-// ConversationMessage
-// ---------------------------------------------------------------------------
-const SensorSnapshotItemSchema = objectType({
-    label: stringType(),
-    value: stringType(),
-    unit: stringType(),
-    delta: stringType().optional(),
-});
-const CitationSchema = objectType({
-    label: stringType(),
-    source: enumType(['sensor', 'logbook']),
-});
-const ConversationMessageSchema = objectType({
-    role: enumType(['user', 'ai']),
-    text: stringType(),
-    timestamp: numberType().nonnegative(),
-    suggestedAction: objectType({
-        service: stringType(),
-        target_entity_id: stringType(),
-        service_data: recordType(unknownType()),
-        description: stringType(),
-        confidence: numberType().optional(),
-    })
-        .optional(),
-    confidence: numberType().optional(),
-    imageEntityId: stringType().optional(),
-    sensorSnapshot: arrayType(SensorSnapshotItemSchema).optional(),
-    citations: arrayType(CitationSchema).optional(),
-});
-// ---------------------------------------------------------------------------
-// ConversationThread
-// ---------------------------------------------------------------------------
-const ConversationThreadSchema = objectType({
-    thread_id: stringType(),
-    growspace_id: stringType(),
-    messages: arrayType(ConversationMessageSchema),
-});
-// ---------------------------------------------------------------------------
-// AIBriefing
-// ---------------------------------------------------------------------------
-const RecommendationSchema = objectType({
-    title: stringType(),
-    description: stringType(),
-    impact: enumType(['high', 'medium', 'low']),
-    suggested_action: SuggestedActionSchema.optional(),
-    action_type: enumType(['apply', 'plan', 'remind']).optional(),
-});
-const AIBriefingSchema = objectType({
-    generated_at: numberType().nonnegative(),
-    summary_text: stringType(),
-    headline: stringType().optional(),
-    confidence: numberType().optional(),
-    drawn_from: stringType().optional(),
-    kpis: arrayType(KPISchema),
-    recommendations: arrayType(RecommendationSchema),
-    ai_available: booleanType(),
-});
-
-/**
- * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
- *
- * Public API (atoms):
- *   aiInsight$            — last AI response text (null if none loaded yet)
- *   isAiLoading$          — whether an AI request is in-flight
- *   aiError$              — error message from the last failed request (null = none)
- *   conversationThreads$  — conversation threads keyed by thread ID
- *   activeThreadId$       — ID of the currently active thread (null = none)
- *   aiAlerts$             — triage alerts fetched from the backend
- *   aiBriefing$           — latest AI briefing (null = none fetched yet)
- *   aiMode$               — current AI panel mode
- *
- * Public API (mutators):
- *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
- *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
- *   dismissInsight()                     — clear the current insight and any error
- *   clearAiError()                       — clear only the error without touching the insight
- *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
- *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
- *   applyAction(suggestedAction)                         — execute a suggested service action
- *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
- *   resolveAlert(alertId, note?)                         — mark an alert as resolved
- *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
- *
- * Zod schemas are in ./schema.ts and private to this module.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-const aiInsight$ = atom(null);
-const isAiLoading$ = atom(false);
-const aiError$ = atom(null);
-const conversationThreads$ = atom(new Map());
-const activeThreadId$ = atom(new Map());
-const aiAlerts$ = atom(new Map());
-const aiBriefing$ = atom(new Map());
-const aiMode$ = atom('briefing');
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-/**
- * Extract a plain text string from a GrowAdviceResponse, which the backend
- * may return as a string or as a nested `{ response: string }` object.
- */
-function _extractText(raw) {
-    if (typeof raw === 'string')
-        return raw;
-    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
-        const inner = raw.response;
-        if (typeof inner === 'string')
-            return inner;
-        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
-            const deepInner = inner.response;
-            if (typeof deepInner === 'string')
-                return deepInner;
-        }
-        return JSON.stringify(inner);
-    }
-    return JSON.stringify(raw);
-}
-// ---------------------------------------------------------------------------
-// Mutators (public)
-// ---------------------------------------------------------------------------
-/**
- * Ask the AI for cultivation advice about a specific growspace.
- *
- * Sets isAiLoading$ to true for the duration of the call.
- * On success: stores the response text in aiInsight$.
- * On failure: stores the error message in aiError$ and re-throws.
- */
-async function askGrowAdvice(growspaceId, userQuery) {
-    isAiLoading$.set(true);
-    aiError$.set(null);
-    try {
-        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
-        aiInsight$.set(_extractText(raw));
-    }
-    catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        aiError$.set(message);
-        throw err;
-    }
-    finally {
-        isAiLoading$.set(false);
-    }
-}
-/**
- * Request an AI analysis that covers all growspaces at once.
- *
- * Sets isAiLoading$ to true for the duration of the call.
- * On success: stores the response text in aiInsight$.
- * On failure: stores the error message in aiError$ and re-throws.
- */
-async function analyzeAllGrowspaces() {
-    isAiLoading$.set(true);
-    aiError$.set(null);
-    try {
-        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
-        aiInsight$.set(_extractText(raw));
-    }
-    catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        aiError$.set(message);
-        throw err;
-    }
-    finally {
-        isAiLoading$.set(false);
-    }
-}
-/**
- * Clear the current insight and any error state.
- * Use this when the user dismisses the AI response panel.
- */
-function dismissInsight() {
-    aiInsight$.set(null);
-    aiError$.set(null);
-}
-// ---------------------------------------------------------------------------
-// Conversation mutators
-// ---------------------------------------------------------------------------
-/**
- * Start a new AI conversation thread for a growspace.
- *
- * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
- */
-async function startConversation(growspaceId, text, imageEntityId) {
-    const userMessage = { role: 'user', text, timestamp: Date.now() };
-    const raw = await hassCall('growspace_manager/start_conversation', {
-        growspace_id: growspaceId,
-        message: text,
-        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
-    }, ConversationThreadSchema);
-    const thread = { ...raw, messages: [userMessage, ...raw.messages] };
-    const threads = new Map(conversationThreads$.get());
-    threads.set(thread.thread_id, thread);
-    conversationThreads$.set(threads);
-    const activeMap = new Map(activeThreadId$.get());
-    activeMap.set(growspaceId, thread.thread_id);
-    activeThreadId$.set(activeMap);
-    return thread;
-}
-/**
- * Send a message in an existing conversation thread.
- *
- * Appends the AI response message to the thread. Other threads are unchanged.
- */
-async function sendMessage(threadId, text, imageEntityId) {
-    const existingThread = conversationThreads$.get().get(threadId);
-    const growspaceId = existingThread?.growspace_id ?? '';
-    const userMessage = { role: 'user', text, timestamp: Date.now() };
-    const raw = await hassCall('growspace_manager/send_message', {
-        conversation_id: threadId,
-        growspace_id: growspaceId,
-        message: text,
-        ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
-    }, ConversationThreadSchema);
-    const threads = new Map(conversationThreads$.get());
-    const existingMessages = threads.get(threadId)?.messages ?? [];
-    threads.set(raw.thread_id, {
-        ...raw,
-        messages: [...existingMessages, userMessage, ...raw.messages],
-    });
-    conversationThreads$.set(threads);
-}
-/**
- * Execute a suggested service action.
- *
- * Calls the HA service specified in the action payload.
- */
-async function applyAction(action) {
-    await callService(action.service, action.target_entity_id, action.service_data);
-}
-// ---------------------------------------------------------------------------
-// Alert mutators
-// ---------------------------------------------------------------------------
-/**
- * Fetch triage alerts for a specific growspace and store them in aiAlerts$
- * keyed by growspaceId. Other growspaces' alerts are unaffected.
- */
-async function fetchAlerts(growspaceId) {
-    const AlertsResponseSchema = TriageAlertSchema.array();
-    try {
-        const alerts = await hassCall('growspace_manager/get_ai_alerts', { growspace_id: growspaceId }, AlertsResponseSchema);
-        const updated = new Map(aiAlerts$.get());
-        updated.set(growspaceId, alerts);
-        aiAlerts$.set(updated);
-    }
-    catch {
-        // Silently ignore — connection errors or schema mismatches leave existing data intact
-    }
-}
-/**
- * Mark an alert as resolved. Searches across all growspaces in aiAlerts$,
- * patches the matching alert, and calls the backend to persist the resolution.
- */
-async function resolveAlert(alertId, note) {
-    await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, ResolveAckSchema);
-    const currentMap = aiAlerts$.get();
-    const updated = new Map(currentMap);
-    for (const [gsId, alerts] of updated) {
-        const idx = alerts.findIndex((a) => a.id === alertId);
-        if (idx !== -1) {
-            const patched = [...alerts];
-            patched[idx] = { ...alerts[idx], resolved: true, resolution_note: note ?? null };
-            updated.set(gsId, patched);
-            break;
-        }
-    }
-    aiAlerts$.set(updated);
-}
-// ---------------------------------------------------------------------------
-// Briefing mutators
-// ---------------------------------------------------------------------------
-/**
- * Fetch the AI briefing for a specific growspace and store it in aiBriefing$
- * keyed by growspaceId. Other growspaces' briefings are unaffected.
- * Pass forceRefresh=true to bypass the backend cache.
- */
-async function fetchBriefing(growspaceId, forceRefresh) {
-    try {
-        const briefing = await hassCall('growspace_manager/get_briefing', { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
-        const updated = new Map(aiBriefing$.get());
-        updated.set(growspaceId, briefing);
-        aiBriefing$.set(updated);
-    }
-    catch {
-        // Silently ignore — connection errors or schema mismatches leave existing data intact
-    }
-}
-/**
- * Persist a conversation agent selection and enable AI in the integration.
- *
- * Saves the chosen entity ID to the backend config entry, then refreshes the
- * briefing atom so panels drop their unconfigured state without a page reload.
- */
-async function saveAiAgent(agentEntityId, growspaceId) {
-    await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknownType());
-    await fetchBriefing(growspaceId, true);
-}
-
 const SUGGESTION_PROMPTS = [
     'What is the current VPD?',
     'How can I optimize my environment?',
@@ -19337,7 +19356,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
         this._error = new libExports.StoreController(this, aiError$);
-        this._briefing = new libExports.StoreController(this, aiBriefing$);
+        this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -19680,7 +19699,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     }
     render() {
         const thread = this._getActiveThread();
-        const aiUnavailable = this._briefing.value.get(this.growspaceid)?.ai_available === false;
+        const aiUnavailable = this._aiEnabled.value === false;
         return x `
       ${this._renderThreadRail()}
       <div class="chat-content">
@@ -20958,7 +20977,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         this._showNoteInput = false;
         this._noteText = '';
         this._alerts = new libExports.StoreController(this, aiAlerts$);
-        this._briefing = new libExports.StoreController(this, aiBriefing$);
+        this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -21182,7 +21201,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
     `;
     }
     render() {
-        const aiAvailable = this._briefing.value.get(this.growspaceid)?.ai_available;
+        const aiAvailable = this._aiEnabled.value;
         return x `
       <div class="inbox-shell">
         <div class="inbox-rail">
@@ -21659,16 +21678,159 @@ GmInboxPanel = __decorate([
     t$2('gm-inbox-panel')
 ], GmInboxPanel);
 
+let GmSettingsPanel = class GmSettingsPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.draft = {};
+    }
+    _emit() {
+        this.dispatchEvent(new CustomEvent('draft-change', {
+            detail: { ...this.draft },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _patch(update) {
+        this.draft = { ...this.draft, ...update };
+        this._emit();
+    }
+    render() {
+        const d = this.draft;
+        return x `
+      <!-- Core -->
+      <div class="section">
+        <div class="section-heading">Core</div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Enable AI</div>
+          </div>
+          <ha-switch
+            .checked=${d.ai_enabled ?? false}
+            @change=${(e) => this._patch({ ai_enabled: e.target.checked })}
+          ></ha-switch>
+        </div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Conversation Agent</div>
+            <div class="field-hint">HA conversation entity to use</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Responses -->
+      <div class="section">
+        <div class="section-heading">Responses</div>
+        <div class="field-row">
+          <div class="field-label">Personality</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Max Response Length</div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="section">
+        <div class="section-heading">Alerts</div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Auto Alerts</div>
+            <div class="field-hint">Enrich triage alerts with AI reasoning</div>
+          </div>
+          <ha-switch
+            .checked=${d.ai_auto_alerts ?? true}
+            @change=${(e) => this._patch({ ai_auto_alerts: e.target.checked })}
+          ></ha-switch>
+        </div>
+      </div>
+
+      <!-- Vision -->
+      <div class="section">
+        <div class="section-heading">Vision</div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Vision Checkups</div>
+            <div class="field-hint">AI plant health checkups via camera</div>
+          </div>
+          <ha-switch
+            .checked=${d.vision_checkup_enabled ?? false}
+            @change=${(e) => this._patch({ vision_checkup_enabled: e.target.checked })}
+          ></ha-switch>
+        </div>
+      </div>
+
+      <!-- Briefings -->
+      <div class="section">
+        <div class="section-heading">Briefings</div>
+        <div class="field-row">
+          <div class="field-label">Briefing Interval (minutes)</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">AI Task Entity</div>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Trigger Entities</div>
+        </div>
+      </div>
+    `;
+    }
+};
+GmSettingsPanel.styles = i$6 `
+    :host {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .section-heading {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      margin-bottom: 8px;
+    }
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .field-label {
+      font-size: 0.9rem;
+      color: var(--primary-text-color);
+    }
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      margin-top: 2px;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GmSettingsPanel.prototype, "draft", void 0);
+GmSettingsPanel = __decorate([
+    t$2('gm-settings-panel')
+], GmSettingsPanel);
+
 const MODE_META = {
     chat: { label: 'Chat', icon: mdiBrain, token: 'var(--ai-accent, #4caf50)' },
     briefing: { label: 'Briefing', icon: mdiNewspaper, token: 'var(--ai-violet, #9c27b0)' },
     inbox: { label: 'Inbox', icon: mdiInbox, token: 'var(--ai-amber, #ff9800)' },
+    settings: { label: 'Settings', icon: mdiCog, token: 'var(--secondary-text-color, rgba(255,255,255,0.6))' },
 };
 let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
         this.isStressed = false;
+        this._settingsDraft = {};
         this._aiMode = new libExports.StoreController(this, aiMode$);
     }
     get _growspaceId() { return this.growspaceId ?? ''; }
@@ -21688,26 +21850,30 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
             fetchBriefing(this._growspaceId);
         }
     }
+    _renderNavItem(m, mode) {
+        const meta = MODE_META[m];
+        return x `
+      <button
+        class="gm-nav-item"
+        data-mode=${m}
+        aria-pressed=${mode === m ? 'true' : 'false'}
+        @click=${() => this._setMode(m)}
+        title=${meta.label}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d=${meta.icon}></path>
+        </svg>
+        ${meta.label}
+      </button>
+    `;
+    }
     _renderNavRail(mode) {
         return x `
       <nav class="gm-nav-rail" aria-label="AI mode navigation">
-        ${['chat', 'briefing', 'inbox'].map((m) => {
-            const meta = MODE_META[m];
-            return x `
-            <button
-              class="gm-nav-item"
-              data-mode=${m}
-              aria-pressed=${mode === m ? 'true' : 'false'}
-              @click=${() => this._setMode(m)}
-              title=${meta.label}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                <path d=${meta.icon}></path>
-              </svg>
-              ${meta.label}
-            </button>
-          `;
-        })}
+        ${['chat', 'briefing', 'inbox'].map((m) => this._renderNavItem(m, mode))}
+        <div class="gm-nav-rail-bottom">
+          ${this._renderNavItem('settings', mode)}
+        </div>
       </nav>
     `;
     }
@@ -21740,14 +21906,36 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
       ></gm-inbox-panel>
     `;
     }
+    _renderSettingsPanel() {
+        return x `
+      <gm-settings-panel
+        style="flex:1;min-height:0;"
+        .draft=${this._settingsDraft}
+        @draft-change=${(e) => { this._settingsDraft = e.detail; }}
+      ></gm-settings-panel>
+    `;
+    }
+    async _saveSettings() {
+        await saveAiSettings(this._settingsDraft);
+    }
     _renderFooter(mode) {
+        if (mode === 'settings') {
+            return x `
+        <footer class="gm-footer">
+          <div class="gm-footer-actions">
+            <button class="md3-button tonal gm-save-settings-btn" @click=${this._saveSettings}>
+              Save Settings
+            </button>
+          </div>
+        </footer>
+      `;
+        }
         return x `
       <footer class="gm-footer">
         <p class="gm-disclaimer">
           AI-generated advice. Always verify with expert guidance before applying.
         </p>
         <div class="gm-footer-actions">
-          ${mode === 'chat' ? E : E}
           ${mode === 'briefing'
             ? x `<button class="md3-button tonal">Refresh Briefing</button>`
             : E}
@@ -21806,6 +21994,7 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
               ${mode === 'chat' ? this._renderChatPanel() : E}
               ${mode === 'briefing' ? this._renderBriefingPanel() : E}
               ${mode === 'inbox' ? this._renderInboxPanel() : E}
+              ${mode === 'settings' ? this._renderSettingsPanel() : E}
             </main>
           </div>
 
@@ -21940,6 +22129,11 @@ GrowMasterDialog.styles = [
         color: var(--ai-amber, #ff9800);
         background: rgba(255, 152, 0, 0.12);
       }
+      .gm-nav-rail-bottom {
+        margin-top: auto;
+        padding-top: 8px;
+        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+      }
 
       /* ── Content area ────────────────────────────────────────── */
       .gm-content {
@@ -22066,6 +22260,9 @@ __decorate([
 __decorate([
     n$5({ attribute: false })
 ], GrowMasterDialog.prototype, "hass", void 0);
+__decorate([
+    r$3()
+], GrowMasterDialog.prototype, "_settingsDraft", void 0);
 GrowMasterDialog = __decorate([
     t$2('grow-master-dialog')
 ], GrowMasterDialog);
@@ -123554,6 +123751,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (this.hass) {
             setHass(this.hass);
             this.store.updateHass(this.hass);
+            fetchAiStatus();
         }
         this.store.initializeSelectedDevice(this._config);
         this.store.actions.library.fetchStrains();

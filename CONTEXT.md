@@ -75,13 +75,22 @@ Declarative description of a ViewMode: `{ slots: ('header' | 'grid' | 'chart')[]
 ## AI / Growmaster
 
 **Growmaster Dialog** (`grow-master-dialog`)
-The full-screen AI assistant modal. Contains three panels — Chat, Briefing, and Inbox — navigated via a side rail. Opened by the Growmaster button in the card header.
+The full-screen AI assistant modal. Contains four panels — Chat, Briefing, Inbox, and Settings — navigated via a side rail. Opened by the Growmaster button in the card header. The Settings nav item sits at the bottom of the rail, visually separated from the three content panels, using a gear icon and no color accent.
 
 **Conversation Agent**
 A Home Assistant entity in the `conversation` domain (e.g. `conversation.claude`, `conversation.openai`) that the Growmaster uses to generate responses. Stored as `assistant_id` in the integration's `ai_settings` config entry options. When none is configured, the briefing reports `ai_available: false` and both the Chat and Briefing panels display an inline `ha-entity-picker` so the user can select and save an agent without leaving the dialog.
 
+**AI Enabled State**
+Component-level boolean (`ai_enabled`) stored in the integration's `ai_settings` config entry options. Applies to all growspaces equally — it is not per-growspace. Fetched once via `growspace_manager/get_ai_status` when the card first connects to hass and stored in the `aiEnabled$` atom (`atom<boolean | null>(null)`; `null` = not yet fetched). Updated to `true` immediately when the user saves a Conversation Agent via `save_ai_agent`. Chat and Inbox panels read from `aiEnabled$` directly to gate their content and show the agent selector — they do not derive this from the per-growspace briefing. The Briefing panel reads `ai_available` from the briefing response instead, since it only renders after a briefing is fetched.
+
 **AI Available**
-Boolean flag (`ai_available`) returned in every `AIBriefing` response. `false` when no Conversation Agent is configured or AI is disabled. Panels use this to gate their content and show the agent selector.
+`ai_available` field embedded in every `AIBriefing` response. Mirrors [[AI Enabled State]] but is carried per-briefing so the Briefing panel can gate its own content without a separate atom read.
+
+**Growmaster Settings Panel**
+The fourth panel in the [[Growmaster Dialog]], reached via the gear icon at the bottom of the nav rail. Exposes the nine user-facing fields from the integration's global `ai_settings` config entry options — all except `vision_debug_enabled`, which is a diagnostic flag reserved for the HA options flow. Fields are grouped into five sections: **Core** (`ai_enabled`, `assistant_id`), **Responses** (`notification_personality`, `max_response_length`), **Alerts** (`ai_auto_alerts`), **Vision** (`vision_checkup_enabled`), and **Briefings** (`briefing_interval_minutes`, `briefing_trigger_entities`, `ai_task_entity_id`). Changes are persisted via an explicit Save button rendered in the dialog footer when the Settings panel is active. The settings are global — they apply to all growspaces, not just the one the dialog was opened from.
+
+**AI Settings Draft**
+The in-flight, unsaved state of the [[Growmaster Settings Panel]] form. Lives in local component or atom state scoped to the dialog's lifetime. Draft values survive rail-tab switches within the same dialog session — switching from Settings to Chat and back preserves edits. The draft is discarded when the dialog closes. Nothing is written to the backend until the user explicitly hits Save.
 
 ## Localization
 

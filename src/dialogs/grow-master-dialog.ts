@@ -1,20 +1,22 @@
 import { LitElement, html, css, nothing } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox } from '@mdi/js';
+import { customElement, property, state } from 'lit/decorators.js';
+import { mdiClose, mdiBrain, mdiMicrophone, mdiNewspaper, mdiInbox, mdiCog } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { dialogStyles } from '../styles/dialog.styles';
-import { aiMode$, aiBriefing$, fetchBriefing } from '../slices/ai-insight';
+import { aiMode$, aiBriefing$, fetchBriefing, saveAiSettings, type AiSettingsDraft } from '../slices/ai-insight';
 import './chat-panel';
 import './briefing-panel';
 import './inbox-panel';
+import './gm-settings-panel';
 
-type AiMode = 'chat' | 'briefing' | 'inbox';
+type AiMode = 'chat' | 'briefing' | 'inbox' | 'settings';
 
 const MODE_META: Record<AiMode, { label: string; icon: string; token: string }> = {
   chat: { label: 'Chat', icon: mdiBrain, token: 'var(--ai-accent, #4caf50)' },
   briefing: { label: 'Briefing', icon: mdiNewspaper, token: 'var(--ai-violet, #9c27b0)' },
   inbox: { label: 'Inbox', icon: mdiInbox, token: 'var(--ai-amber, #ff9800)' },
+  settings: { label: 'Settings', icon: mdiCog, token: 'var(--secondary-text-color, rgba(255,255,255,0.6))' },
 };
 
 @customElement('grow-master-dialog')
@@ -25,6 +27,8 @@ export class GrowMasterDialog extends LitElement {
   @property({ type: String }) growspaceId: string | undefined;
   @property({ type: String }) growspaceName: string | undefined;
   @property({ attribute: false }) hass: HomeAssistant | undefined;
+
+  @state() private _settingsDraft: AiSettingsDraft = {};
 
   private get _growspaceId() { return this.growspaceId ?? ''; }
   private get _growspaceName() { return this.growspaceName ?? ''; }
@@ -155,6 +159,11 @@ export class GrowMasterDialog extends LitElement {
         color: var(--ai-amber, #ff9800);
         background: rgba(255, 152, 0, 0.12);
       }
+      .gm-nav-rail-bottom {
+        margin-top: auto;
+        padding-top: 8px;
+        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+      }
 
       /* ── Content area ────────────────────────────────────────── */
       .gm-content {
@@ -282,26 +291,31 @@ export class GrowMasterDialog extends LitElement {
     }
   }
 
+  private _renderNavItem(m: AiMode, mode: AiMode) {
+    const meta = MODE_META[m];
+    return html`
+      <button
+        class="gm-nav-item"
+        data-mode=${m}
+        aria-pressed=${mode === m ? 'true' : 'false'}
+        @click=${() => this._setMode(m)}
+        title=${meta.label}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d=${meta.icon}></path>
+        </svg>
+        ${meta.label}
+      </button>
+    `;
+  }
+
   private _renderNavRail(mode: AiMode) {
     return html`
       <nav class="gm-nav-rail" aria-label="AI mode navigation">
-        ${(['chat', 'briefing', 'inbox'] as AiMode[]).map((m) => {
-      const meta = MODE_META[m];
-      return html`
-            <button
-              class="gm-nav-item"
-              data-mode=${m}
-              aria-pressed=${mode === m ? 'true' : 'false'}
-              @click=${() => this._setMode(m)}
-              title=${meta.label}
-            >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                <path d=${meta.icon}></path>
-              </svg>
-              ${meta.label}
-            </button>
-          `;
-    })}
+        ${(['chat', 'briefing', 'inbox'] as AiMode[]).map((m) => this._renderNavItem(m, mode))}
+        <div class="gm-nav-rail-bottom">
+          ${this._renderNavItem('settings', mode)}
+        </div>
       </nav>
     `;
   }
@@ -338,14 +352,38 @@ export class GrowMasterDialog extends LitElement {
     `;
   }
 
+  private _renderSettingsPanel() {
+    return html`
+      <gm-settings-panel
+        style="flex:1;min-height:0;"
+        .draft=${this._settingsDraft}
+        @draft-change=${(e: CustomEvent<AiSettingsDraft>) => { this._settingsDraft = e.detail; }}
+      ></gm-settings-panel>
+    `;
+  }
+
+  private async _saveSettings() {
+    await saveAiSettings(this._settingsDraft);
+  }
+
   private _renderFooter(mode: AiMode) {
+    if (mode === 'settings') {
+      return html`
+        <footer class="gm-footer">
+          <div class="gm-footer-actions">
+            <button class="md3-button tonal gm-save-settings-btn" @click=${this._saveSettings}>
+              Save Settings
+            </button>
+          </div>
+        </footer>
+      `;
+    }
     return html`
       <footer class="gm-footer">
         <p class="gm-disclaimer">
           AI-generated advice. Always verify with expert guidance before applying.
         </p>
         <div class="gm-footer-actions">
-          ${mode === 'chat' ? nothing : nothing}
           ${mode === 'briefing'
         ? html`<button class="md3-button tonal">Refresh Briefing</button>`
         : nothing}
@@ -406,6 +444,7 @@ export class GrowMasterDialog extends LitElement {
               ${mode === 'chat' ? this._renderChatPanel() : nothing}
               ${mode === 'briefing' ? this._renderBriefingPanel() : nothing}
               ${mode === 'inbox' ? this._renderInboxPanel() : nothing}
+              ${mode === 'settings' ? this._renderSettingsPanel() : nothing}
             </main>
           </div>
 

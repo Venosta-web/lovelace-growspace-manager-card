@@ -48,11 +48,12 @@ import {
 export const aiInsight$ = atom<string | null>(null);
 export const isAiLoading$ = atom<boolean>(false);
 export const aiError$ = atom<string | null>(null);
+export const aiEnabled$ = atom<boolean | null>(null);
 export const conversationThreads$ = atom<Map<string, ConversationThread>>(new Map());
 export const activeThreadId$ = atom<Map<string, string | null>>(new Map());
 export const aiAlerts$ = atom<Map<string, TriageAlert[]>>(new Map());
 export const aiBriefing$ = atom<Map<string, AIBriefing>>(new Map());
-export const aiMode$ = atom<'chat' | 'briefing' | 'inbox'>('briefing');
+export const aiMode$ = atom<'chat' | 'briefing' | 'inbox' | 'settings'>('briefing');
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -298,6 +299,20 @@ export async function fetchBriefing(growspaceId: string, forceRefresh?: boolean)
 }
 
 /**
+ * Fetch the component-level AI enabled flag and store it in aiEnabled$.
+ * Silently ignores errors so the atom stays at its previous value.
+ */
+export async function fetchAiStatus(): Promise<void> {
+  const AiStatusSchema = z.object({ ai_enabled: z.boolean() });
+  try {
+    const result = await hassCall('growspace_manager/get_ai_status', {}, AiStatusSchema);
+    aiEnabled$.set(result.ai_enabled);
+  } catch {
+    // Silently ignore — leave aiEnabled$ unchanged
+  }
+}
+
+/**
  * Persist a conversation agent selection and enable AI in the integration.
  *
  * Saves the chosen entity ID to the backend config entry, then refreshes the
@@ -305,5 +320,22 @@ export async function fetchBriefing(growspaceId: string, forceRefresh?: boolean)
  */
 export async function saveAiAgent(agentEntityId: string, growspaceId: string): Promise<void> {
   await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, z.unknown());
+  aiEnabled$.set(true);
   await fetchBriefing(growspaceId, true);
+}
+
+export type AiSettingsDraft = {
+  ai_enabled?: boolean;
+  assistant_id?: string | null;
+  notification_personality?: string;
+  ai_auto_alerts?: boolean;
+  max_response_length?: number;
+  vision_checkup_enabled?: boolean;
+  ai_task_entity_id?: string | null;
+  briefing_interval_minutes?: number;
+  briefing_trigger_entities?: string[];
+};
+
+export async function saveAiSettings(draft: AiSettingsDraft): Promise<void> {
+  await hassCall('growspace_manager/save_ai_settings', draft as Record<string, unknown>, z.unknown());
 }
