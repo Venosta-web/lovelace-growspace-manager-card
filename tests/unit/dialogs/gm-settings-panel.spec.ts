@@ -103,6 +103,78 @@ describe('GmSettingsPanel — controls', () => {
     expect(changes[0]).toMatchObject({ ai_enabled: true });
   });
 
+  it('emits draft-change with numeric max_response_length when md3-number-input changes', async () => {
+    element.draft = {};
+    await element.updateComplete;
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    const field = element.shadowRoot?.querySelector('md3-number-input[data-field="max_response_length"]');
+    field?.dispatchEvent(new CustomEvent('change', { detail: '500', bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ max_response_length: 500 });
+  });
+
+  it('renders md3-switch for ai_auto_alerts and emits draft-change when toggled', async () => {
+    element.draft = { ai_auto_alerts: true };
+    await element.updateComplete;
+    const sw = element.shadowRoot?.querySelector('md3-switch[data-field="ai_auto_alerts"]');
+    expect(sw).toBeTruthy();
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    sw?.dispatchEvent(new CustomEvent('change', { detail: { checked: false }, bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ ai_auto_alerts: false });
+  });
+
+  it('renders md3-switch for vision_checkup_enabled and emits draft-change when toggled', async () => {
+    element.draft = { vision_checkup_enabled: false };
+    await element.updateComplete;
+    const sw = element.shadowRoot?.querySelector('md3-switch[data-field="vision_checkup_enabled"]');
+    expect(sw).toBeTruthy();
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    sw?.dispatchEvent(new CustomEvent('change', { detail: { checked: true }, bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ vision_checkup_enabled: true });
+  });
+
+  it('emits draft-change with numeric briefing_interval_minutes when md3-number-input changes', async () => {
+    element.draft = {};
+    await element.updateComplete;
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    const field = element.shadowRoot?.querySelector('md3-number-input[data-field="briefing_interval_minutes"]');
+    field?.dispatchEvent(new CustomEvent('change', { detail: '60', bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ briefing_interval_minutes: 60 });
+  });
+
+  it('emits draft-change with null ai_task_entity_id when picker clears', async () => {
+    element.draft = { ai_task_entity_id: 'ai_task.grow_tasks' };
+    await element.updateComplete;
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    const picker = element.shadowRoot?.querySelector('md3-entity-input[data-field="ai_task_entity_id"]');
+    picker?.dispatchEvent(new CustomEvent('change', { detail: null, bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ ai_task_entity_id: null });
+  });
+
+  it('emits draft-change with updated briefing_trigger_entities when md3-entities-input changes', async () => {
+    element.draft = {};
+    await element.updateComplete;
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    const picker = element.shadowRoot?.querySelector('md3-entities-input[data-field="briefing_trigger_entities"]');
+    picker?.dispatchEvent(new CustomEvent('change', { detail: ['sensor.vpd', 'sensor.temp'], bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ briefing_trigger_entities: ['sensor.vpd', 'sensor.temp'] });
+  });
+
+  it('emits draft-change with empty array for briefing_trigger_entities when picker clears', async () => {
+    element.draft = { briefing_trigger_entities: ['sensor.vpd'] };
+    await element.updateComplete;
+    const changes: any[] = [];
+    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
+    const picker = element.shadowRoot?.querySelector('md3-entities-input[data-field="briefing_trigger_entities"]');
+    picker?.dispatchEvent(new CustomEvent('change', { detail: null, bubbles: true, composed: true }));
+    expect(changes[0]).toMatchObject({ briefing_trigger_entities: [] });
+  });
+
   it('accepts hass as a property', async () => {
     const mockHass = { states: {} } as any;
     element.hass = mockHass;
