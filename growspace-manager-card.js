@@ -58381,87 +58381,6 @@ GrowspaceHeaderHeroUI = __decorate([
     t$2('growspace-header-hero-ui')
 ], GrowspaceHeaderHeroUI);
 
-let GrowspaceHeaderStagesUI = class GrowspaceHeaderStagesUI extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.problemPlants = [];
-    }
-    render() {
-        return x `
-      <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
-        <div class="stages-wrapper">
-          ${this.dominant
-            ? x `
-                <div class="gs-stage-pill">
-                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
-                    <path d="${this.dominant.icon}"></path>
-                  </svg>
-                  ${this.dominant.daysLabel}
-                </div>
-                <div class="gs-stage-pill">
-                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
-                    <path d="${this.dominant.icon}"></path>
-                  </svg>
-                  ${this.dominant.weeksLabel}
-                </div>
-              `
-            : E}
-          ${this.problemPlants
-            .slice(0, 2)
-            .map((name) => x ` <div class="gs-stage-pill alert">⚠ ${name}: needs attention</div> `)}
-        </div>
-      </scroll-container>
-    `;
-    }
-};
-GrowspaceHeaderStagesUI.styles = i$6 `
-    :host {
-      display: block;
-      min-width: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .gs-stage-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      width: fit-content;
-      backdrop-filter: blur(8px);
-      white-space: nowrap;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-
-    .gs-stage-pill.alert {
-      background: rgba(244, 67, 54, 0.08);
-      border-color: rgba(244, 67, 54, 0.3);
-      color: #ff8a80;
-    }
-
-    .stages-wrapper {
-      display: flex;
-      align-items: center;
-      height: 100%;
-    }
-  `;
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceHeaderStagesUI.prototype, "dominant", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceHeaderStagesUI.prototype, "problemPlants", void 0);
-GrowspaceHeaderStagesUI = __decorate([
-    t$2('growspace-header-stages-ui')
-], GrowspaceHeaderStagesUI);
-
 let FlowerFlipChip = class FlowerFlipChip extends i$3 {
     _buildTooltip() {
         const { plantNames, flowerStart, vegDayHours, flowerDayHours, autoLightTracking } = this.info;
@@ -58728,6 +58647,9 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
         ${this.dominant?.daysLabel
             ? x ` <span class="header-meta-stat">${this.dominant.daysLabel}</span> `
             : E}
+        ${this.dominant?.weeksLabel
+            ? x ` <span class="header-meta-stat">${this.dominant.weeksLabel}</span> `
+            : E}
         ${alertCount > 0
             ? x `
               <span class="header-meta-stat alert">
@@ -58798,14 +58720,6 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
             }));
         }}
           ></growspace-header-actions-ui>
-
-          <!-- Row 2 Left: Stages + Status -->
-          <div class="header-stage-area-wrapper">
-            <growspace-header-stages-ui
-              .dominant=${this.dominant}
-              .problemPlants=${this.problemPlants}
-            ></growspace-header-stages-ui>
-          </div>
 
           <!-- Row 2 Right: Secondary Chips & Inventory -->
           <div class="secondary-strip-container">

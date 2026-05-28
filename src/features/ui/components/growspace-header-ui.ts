@@ -10,7 +10,6 @@ import { headerStyles } from '../../../styles/header.styles';
 
 import './growspace-header-actions-ui';
 import './growspace-header-hero-ui';
-import './growspace-header-stages-ui';
 import './growspace-header-secondary-ui';
 
 @customElement('growspace-header-ui')
@@ -137,6 +136,9 @@ export class GrowspaceHeaderUI extends LitElement {
         ${this.dominant?.daysLabel
           ? html` <span class="header-meta-stat">${this.dominant.daysLabel}</span> `
           : nothing}
+        ${this.dominant?.weeksLabel
+          ? html` <span class="header-meta-stat">${this.dominant.weeksLabel}</span> `
+          : nothing}
         ${alertCount > 0
           ? html`
               <span class="header-meta-stat alert">
@@ -215,14 +217,6 @@ export class GrowspaceHeaderUI extends LitElement {
               );
             }}
           ></growspace-header-actions-ui>
-
-          <!-- Row 2 Left: Stages + Status -->
-          <div class="header-stage-area-wrapper">
-            <growspace-header-stages-ui
-              .dominant=${this.dominant}
-              .problemPlants=${this.problemPlants}
-            ></growspace-header-stages-ui>
-          </div>
 
           <!-- Row 2 Right: Secondary Chips & Inventory -->
           <div class="secondary-strip-container">
