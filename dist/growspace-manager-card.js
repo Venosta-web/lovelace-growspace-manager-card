@@ -19653,6 +19653,11 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         map.set(this.growspaceid, threadId);
         activeThreadId$.set(map);
     }
+    _newConversation() {
+        const map = new Map(activeThreadId$.get());
+        map.set(this.growspaceid, null);
+        activeThreadId$.set(map);
+    }
     _handleInput(e) {
         this._inputText = e.target.value;
     }
@@ -19742,6 +19747,13 @@ let GmChatPanel = class GmChatPanel extends i$3 {
             <div class="model-cap">AI cultivation assistant</div>
           </div>
         </div>
+
+        <button class="new-chat-btn" @click=${this._newConversation}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${mdiPlus}></path>
+          </svg>
+          New conversation
+        </button>
 
         ${pinned.length > 0 ? x `
           <div class="rail-section-label">Pinned</div>
@@ -20037,6 +20049,27 @@ GmChatPanel.styles = i$6 `
     .ai-model-card .model-info { flex: 1; }
     .ai-model-card .model-name { font-size: 0.85rem; font-weight: 500; }
     .ai-model-card .model-cap { font-size: 0.7rem; color: var(--secondary-text-color); }
+
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: none;
+      border: 1px dashed var(--divider-color, rgba(255,255,255,0.18));
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      font-family: inherit;
+      font-size: 0.8rem;
+      transition: background 150ms, color 150ms, border-color 150ms;
+    }
+    .new-chat-btn:hover {
+      background: rgba(76,175,80,0.08);
+      color: var(--ai-accent, #4caf50);
+      border-color: rgba(76,175,80,0.4);
+    }
 
     .rail-section-label {
       font-size: 0.68rem;
