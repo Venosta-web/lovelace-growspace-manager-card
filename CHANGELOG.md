@@ -1,3 +1,10 @@
+# [1.1.0-next.9](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.8...v1.1.0-next.9) (2026-05-29)
+
+
+### Features
+
+* add crop steering dialog and update state machine logic ([bdf7188](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bdf718862f5a1d275a6ab4ffefcbd1e19c8bc875))
+
 # [1.1.0-next.8](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.7...v1.1.0-next.8) (2026-05-29)
 
 
