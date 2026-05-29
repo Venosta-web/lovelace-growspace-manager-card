@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../src/features/plants/types';
+import type { SeedBatch, PollinationEvent } from '../../src/types';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import type { EnvSnapshot } from '../../src/slices/environment/index';
 import { createGrowspaceDevice } from '../../src/services/types';
@@ -234,6 +235,48 @@ export function anAIBriefing(overrides: Partial<AIBriefing> = {}): AIBriefing {
       aRecommendation({ impact: 'low', title: 'Good airflow', description: 'Air circulation is excellent.' }),
     ],
     ai_available: true,
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// aStrain
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// aSeedBatch
+// ---------------------------------------------------------------------------
+
+export function aSeedBatch(overrides: Partial<SeedBatch> = {}): SeedBatch {
+  return {
+    batch_id: 'batch-uuid-1',
+    strain_name: 'Blue Dream',
+    breeder: 'Humboldt Seed',
+    quantity: 10,
+    acquisition_date: '2026-01-15',
+    generation: 'F1',
+    lineage: '',
+    parent_1_strain: null,
+    parent_1_phenotype: null,
+    parent_2_strain: null,
+    parent_2_phenotype: null,
+    notes: '',
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// aPollinationEvent
+// ---------------------------------------------------------------------------
+
+export function aPollinationEvent(overrides: Partial<PollinationEvent> = {}): PollinationEvent {
+  return {
+    event_id: 'event-uuid-1',
+    date: '2026-03-10',
+    donor_plant_id: 'plant-donor-1',
+    receiver_plant_id: 'plant-receiver-1',
+    notes: '',
+    result_seed_batch_id: null,
     ...overrides,
   };
 }

@@ -490,13 +490,50 @@ describe('SOW_OPENED', () => {
 
 describe('SOW_CANCELLED', () => {
   it('resets list sub to idle', () => {
-    let sm = transition(createInitialSM(), {
+    const sm = transition(createInitialSM(), {
       type: 'SOW_OPENED',
       batchId: 'b1',
       defaultGrowspaceId: 'gs-main',
     });
     const next = transition(sm, { type: 'SOW_CANCELLED' });
     expect(next.views.list.sub.kind).toBe('idle');
+  });
+});
+
+describe('SOW_APPLY_REQUESTED', () => {
+  it('sets sow sub to applying', () => {
+    let sm = transition(createInitialSM(), {
+      type: 'SOW_OPENED',
+      batchId: 'b1',
+      defaultGrowspaceId: 'gs-main',
+    });
+    sm = transition(sm, { type: 'SOW_APPLY_REQUESTED' });
+    if (sm.views.list.sub.kind === 'sow') {
+      expect(sm.views.list.sub.sub.kind).toBe('applying');
+    }
+  });
+
+  it('is a no-op when list sub is not sow', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'SOW_APPLY_REQUESTED' });
+    expect(next.views.list.sub.kind).toBe('idle');
+  });
+});
+
+describe('SOW_APPLY_FAILED', () => {
+  it('resets sow sub back to idle without closing the form', () => {
+    let sm = transition(createInitialSM(), {
+      type: 'SOW_OPENED',
+      batchId: 'b1',
+      defaultGrowspaceId: 'gs-main',
+    });
+    sm = transition(sm, { type: 'SOW_APPLY_REQUESTED' });
+    const next = transition(sm, { type: 'SOW_APPLY_FAILED' });
+    expect(next.views.list.sub.kind).toBe('sow');
+    if (next.views.list.sub.kind === 'sow') {
+      expect(next.views.list.sub.sub.kind).toBe('idle');
+      expect(next.views.list.sub.batchId).toBe('b1');
+    }
   });
 });
 
@@ -542,7 +579,7 @@ describe('SET_TOAST', () => {
   });
 
   it('clears the toast when message is undefined', () => {
-    let sm = transition(createInitialSM(), { type: 'SET_TOAST', message: 'Saved!' });
+    const sm = transition(createInitialSM(), { type: 'SET_TOAST', message: 'Saved!' });
     const next = transition(sm, { type: 'SET_TOAST', message: undefined });
     expect(next.toast).toBeUndefined();
   });

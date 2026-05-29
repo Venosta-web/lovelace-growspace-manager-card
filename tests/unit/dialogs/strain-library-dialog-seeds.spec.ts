@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StrainLibraryDialog } from '../../../src/dialogs/strain-library-dialog';
 import { SeedsGeneticsTab } from '../../../src/dialogs/seeds-genetics-tab';
+import { transition } from '../../../src/dialogs/seeds-genetics-tab-sm';
 import { SeedBatch, PollinationEvent } from '../../../src/types';
 
 vi.mock('../../../src/utils/plant-utils', () => ({
@@ -50,6 +51,10 @@ const mockPollinationEvents: PollinationEvent[] = [
         result_seed_batch_id: 'b1',
     },
 ];
+
+function sm(el: SeedsGeneticsTab) {
+    return (el as any)._sm;
+}
 
 describe('StrainLibraryDialog - Seeds & Genetics Tab', () => {
     let element: StrainLibraryDialog;
@@ -222,7 +227,7 @@ describe('SeedsGeneticsTab', () => {
             addBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('add-batch');
+            expect(sm(seedsTab).activeView).toBe('add-batch');
         });
 
         it('navigates to log-pollination sub-view', async () => {
@@ -231,7 +236,7 @@ describe('SeedsGeneticsTab', () => {
             logBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('log-pollination');
+            expect(sm(seedsTab).activeView).toBe('log-pollination');
         });
 
         it('navigates to harvest sub-view on harvest button click', async () => {
@@ -241,14 +246,14 @@ describe('SeedsGeneticsTab', () => {
             harvestBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('harvest');
-            expect((seedsTab as any)._selectedEventId).toBe('evt-1');
+            expect(sm(seedsTab).activeView).toBe('harvest');
+            expect(sm(seedsTab).views.harvest.eventId).toBe('evt-1');
         });
     });
 
     describe('Add batch form', () => {
         beforeEach(async () => {
-            (seedsTab as any)._seedSubView = 'add-batch';
+            (seedsTab as any)._sm = transition(sm(seedsTab), { type: 'BEGIN_ADD_BATCH' });
             await seedsTab.updateComplete;
         });
 
@@ -265,7 +270,7 @@ describe('SeedsGeneticsTab', () => {
             backBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('list');
+            expect(sm(seedsTab).activeView).toBe('list');
         });
 
         it('navigates back to list via Cancel button', async () => {
@@ -274,8 +279,8 @@ describe('SeedsGeneticsTab', () => {
             cancelBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('list');
-            expect((seedsTab as any)._submitError).toBeNull();
+            expect(sm(seedsTab).activeView).toBe('list');
+            expect(sm(seedsTab).views['add-batch'].sub.kind).toBe('idle');
         });
 
         it('shows validation error when required fields are missing', async () => {
@@ -284,7 +289,7 @@ describe('SeedsGeneticsTab', () => {
             saveBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._submitError).toBeTruthy();
+            expect(sm(seedsTab).views['add-batch'].sub.kind).toBe('error');
             const errorEl = seedsTab.shadowRoot?.querySelector('.form-error');
             expect(errorEl).toBeTruthy();
         });
@@ -292,23 +297,26 @@ describe('SeedsGeneticsTab', () => {
         it('calls onAddSeedBatch and resets form on success', async () => {
             const onAddSeedBatch = vi.fn().mockResolvedValue(undefined);
             seedsTab.onAddSeedBatch = onAddSeedBatch;
-            (seedsTab as any)._batchForm = {
-                strain_name: 'Test Strain',
-                breeder: 'Test Breeder',
-                quantity: 5,
-                acquisition_date: '2026-01-01',
-                generation: 'F1',
-                parent_1_key: 'Parent A||Pheno1',
-                parent_2_key: 'Parent B||',
-                notes: 'test',
-            };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: {
+                    strainName: 'Test Strain',
+                    breeder: 'Test Breeder',
+                    quantity: 5,
+                    acquisitionDate: '2026-01-01',
+                    generation: 'F1',
+                    parent1Key: 'Parent A||Pheno1',
+                    parent2Key: 'Parent B||',
+                    notes: 'test',
+                },
+            });
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
             await seedsTab.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(onAddSeedBatch).toHaveBeenCalledWith({
                 strain_name: 'Test Strain',
@@ -322,30 +330,34 @@ describe('SeedsGeneticsTab', () => {
                 parent_2_phenotype: null,
                 notes: 'test',
             });
-            expect((seedsTab as any)._seedSubView).toBe('list');
+            expect(sm(seedsTab).activeView).toBe('list');
         });
 
         it('shows error message when onAddSeedBatch throws', async () => {
             seedsTab.onAddSeedBatch = vi.fn().mockRejectedValue(new Error('Network error'));
-            (seedsTab as any)._batchForm = {
-                strain_name: 'Test',
-                breeder: 'Breeder',
-                quantity: 1,
-                acquisition_date: '2026-01-01',
-                generation: 'F1',
-                parent_1_key: '',
-                parent_2_key: '',
-                notes: '',
-            };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: {
+                    strainName: 'Test',
+                    breeder: 'Breeder',
+                    quantity: 1,
+                    acquisitionDate: '2026-01-01',
+                    generation: 'F1',
+                },
+            });
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._submitError).toContain('Failed to save');
+            expect(sm(seedsTab).views['add-batch'].sub.kind).toBe('error');
+            const sub = sm(seedsTab).views['add-batch'].sub;
+            if (sub.kind === 'error') {
+                expect(sub.message).toContain('Failed to save');
+            }
         });
 
         it('calls onSeedDataChanged after successful submit', async () => {
@@ -353,15 +365,22 @@ describe('SeedsGeneticsTab', () => {
             const onAddSeedBatch = vi.fn().mockResolvedValue(undefined);
             seedsTab.onSeedDataChanged = onSeedDataChanged;
             seedsTab.onAddSeedBatch = onAddSeedBatch;
-            (seedsTab as any)._batchForm = {
-                strain_name: 'S', breeder: 'B', quantity: 1,
-                acquisition_date: '2026-01-01', generation: 'F1', lineage: 'X x Y', notes: '',
-            };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: {
+                    strainName: 'S',
+                    breeder: 'B',
+                    quantity: 1,
+                    acquisitionDate: '2026-01-01',
+                    generation: 'F1',
+                    notes: '',
+                },
+            });
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(onSeedDataChanged).toHaveBeenCalled();
         });
@@ -369,7 +388,7 @@ describe('SeedsGeneticsTab', () => {
 
     describe('Log pollination form', () => {
         beforeEach(async () => {
-            (seedsTab as any)._seedSubView = 'log-pollination';
+            (seedsTab as any)._sm = transition(sm(seedsTab), { type: 'BEGIN_LOG_POLLINATION' });
             await seedsTab.updateComplete;
         });
 
@@ -382,7 +401,7 @@ describe('SeedsGeneticsTab', () => {
             const backBtn = seedsTab.shadowRoot?.querySelector('.form-header .md3-button') as HTMLElement;
             backBtn?.click();
             await seedsTab.updateComplete;
-            expect((seedsTab as any)._seedSubView).toBe('list');
+            expect(sm(seedsTab).activeView).toBe('list');
         });
 
         it('shows validation error when required fields are missing', async () => {
@@ -390,24 +409,27 @@ describe('SeedsGeneticsTab', () => {
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
             await seedsTab.updateComplete;
-            expect((seedsTab as any)._submitError).toBeTruthy();
+            expect(sm(seedsTab).views['log-pollination'].sub.kind).toBe('error');
         });
 
         it('calls onLogPollination and resets form on success', async () => {
             const onLogPollination = vi.fn().mockResolvedValue(undefined);
             seedsTab.onLogPollination = onLogPollination;
-            (seedsTab as any)._pollinationForm = {
-                date: '2026-03-20',
-                donor_plant_id: 'plant-1',
-                receiver_plant_id: 'plant-2',
-                notes: '',
-            };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: {
+                    date: '2026-03-20',
+                    donorPlantId: 'plant-1',
+                    receiverPlantId: 'plant-2',
+                    notes: '',
+                },
+            });
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
             await seedsTab.updateComplete;
 
             expect(onLogPollination).toHaveBeenCalledWith({
@@ -416,33 +438,35 @@ describe('SeedsGeneticsTab', () => {
                 receiver_plant_id: 'plant-2',
                 notes: '',
             });
-            expect((seedsTab as any)._seedSubView).toBe('list');
+            expect(sm(seedsTab).activeView).toBe('list');
         });
 
         it('shows error when onLogPollination throws', async () => {
             seedsTab.onLogPollination = vi.fn().mockRejectedValue(new Error('fail'));
-            (seedsTab as any)._pollinationForm = {
-                date: '2026-03-20',
-                donor_plant_id: 'p1',
-                receiver_plant_id: 'p2',
-                notes: '',
-            };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { date: '2026-03-20', donorPlantId: 'p1', receiverPlantId: 'p2' },
+            });
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._submitError).toContain('Failed to save');
+            const sub = sm(seedsTab).views['log-pollination'].sub;
+            expect(sub.kind).toBe('error');
+            if (sub.kind === 'error') expect(sub.message).toContain('Failed to save');
         });
     });
 
     describe('Harvest form', () => {
         beforeEach(async () => {
-            (seedsTab as any)._seedSubView = 'harvest';
-            (seedsTab as any)._selectedEventId = 'evt-1';
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'BEGIN_HARVEST',
+                eventId: 'evt-1',
+            });
             await seedsTab.updateComplete;
         });
 
@@ -451,17 +475,20 @@ describe('SeedsGeneticsTab', () => {
             expect(form?.textContent).toContain('Harvest seeds');
         });
 
-        it('navigates back to list and clears selectedEventId', async () => {
+        it('navigates back to list and clears eventId', async () => {
             const backBtn = seedsTab.shadowRoot?.querySelector('.form-header .md3-button') as HTMLElement;
             backBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('list');
-            expect((seedsTab as any)._selectedEventId).toBeNull();
+            expect(sm(seedsTab).activeView).toBe('list');
+            expect(sm(seedsTab).views.harvest.eventId).toBe('');
         });
 
-        it('shows validation error when selectedEventId is missing', async () => {
-            (seedsTab as any)._selectedEventId = null;
+        it('shows validation error when eventId is missing', async () => {
+            (seedsTab as any)._sm = {
+                ...sm(seedsTab),
+                views: { ...sm(seedsTab).views, harvest: { ...sm(seedsTab).views.harvest, eventId: '' } },
+            };
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
@@ -469,19 +496,22 @@ describe('SeedsGeneticsTab', () => {
             saveBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._submitError).toBeTruthy();
+            expect(sm(seedsTab).views.harvest.sub.kind).toBe('error');
         });
 
         it('calls onHarvestSeeds and resets form on success', async () => {
             const onHarvestSeeds = vi.fn().mockResolvedValue(undefined);
             seedsTab.onHarvestSeeds = onHarvestSeeds;
-            (seedsTab as any)._harvestForm = { quantity: 15, notes: 'good yield' };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_HARVEST_DRAFT',
+                partial: { quantity: 15, notes: 'good yield' },
+            });
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
             await seedsTab.updateComplete;
 
             expect(onHarvestSeeds).toHaveBeenCalledWith({
@@ -489,26 +519,34 @@ describe('SeedsGeneticsTab', () => {
                 quantity: 15,
                 notes: 'good yield',
             });
-            expect((seedsTab as any)._seedSubView).toBe('list');
-            expect((seedsTab as any)._selectedEventId).toBeNull();
+            expect(sm(seedsTab).activeView).toBe('list');
+            expect(sm(seedsTab).views.harvest.eventId).toBe('');
         });
 
         it('shows error when onHarvestSeeds throws', async () => {
             seedsTab.onHarvestSeeds = vi.fn().mockRejectedValue(new Error('fail'));
-            (seedsTab as any)._harvestForm = { quantity: 5, notes: '' };
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'UPDATE_HARVEST_DRAFT',
+                partial: { quantity: 5, notes: '' },
+            });
             await seedsTab.updateComplete;
 
             const saveBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
                 .find(b => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn?.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._submitError).toContain('Failed to save');
+            const sub = sm(seedsTab).views.harvest.sub;
+            expect(sub.kind).toBe('error');
+            if (sub.kind === 'error') expect(sub.message).toContain('Failed to save');
         });
 
-        it('cancel button clears selectedEventId and submitError', async () => {
-            (seedsTab as any)._submitError = 'some error';
+        it('cancel button navigates back to list', async () => {
+            (seedsTab as any)._sm = transition(sm(seedsTab), {
+                type: 'SAVE_FAILED',
+                message: 'some error',
+            });
             await seedsTab.updateComplete;
 
             const cancelBtn = Array.from(seedsTab.shadowRoot?.querySelectorAll('.form-actions button') || [])
@@ -516,9 +554,8 @@ describe('SeedsGeneticsTab', () => {
             cancelBtn?.click();
             await seedsTab.updateComplete;
 
-            expect((seedsTab as any)._seedSubView).toBe('list');
-            expect((seedsTab as any)._selectedEventId).toBeNull();
-            expect((seedsTab as any)._submitError).toBeNull();
+            expect(sm(seedsTab).activeView).toBe('list');
+            expect(sm(seedsTab).views.harvest.eventId).toBe('');
         });
     });
 });

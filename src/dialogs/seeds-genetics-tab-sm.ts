@@ -124,6 +124,8 @@ export type SeedsEvent =
   | { type: 'SOW_OPENED'; batchId: string; defaultGrowspaceId: string }
   | { type: 'SOW_CANCELLED' }
   | { type: 'SOW_FIELD_CHANGED'; partial: { growspaceId?: string; quantity?: number } }
+  | { type: 'SOW_APPLY_REQUESTED' }
+  | { type: 'SOW_APPLY_FAILED' }
   // Delete confirmations
   | { type: 'DELETE_BATCH_REQUESTED'; batchId: string }
   | { type: 'DELETE_POLLINATION_REQUESTED'; eventId: string }
@@ -400,6 +402,24 @@ export function transition(sm: SeedsSM, event: SeedsEvent): SeedsSM {
 
     case 'SOW_CANCELLED':
       return { ...sm, views: { ...sm.views, list: { sub: { kind: 'idle' } } } };
+
+    case 'SOW_APPLY_REQUESTED': {
+      const sub = sm.views.list.sub;
+      if (sub.kind !== 'sow') return sm;
+      return {
+        ...sm,
+        views: { ...sm.views, list: { sub: { ...sub, sub: { kind: 'applying' } } } },
+      };
+    }
+
+    case 'SOW_APPLY_FAILED': {
+      const sub = sm.views.list.sub;
+      if (sub.kind !== 'sow') return sm;
+      return {
+        ...sm,
+        views: { ...sm.views, list: { sub: { ...sub, sub: { kind: 'idle' } } } },
+      };
+    }
 
     case 'SOW_FIELD_CHANGED': {
       const sub = sm.views.list.sub;

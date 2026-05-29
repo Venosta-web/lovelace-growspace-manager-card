@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SeedsGeneticsTab } from '../../../src/dialogs/seeds-genetics-tab';
+import { transition } from '../../../src/dialogs/seeds-genetics-tab-sm';
 import { SeedBatch, PollinationEvent, StrainEntry, GrowspaceDevice } from '../../../src/types';
 
 const mockStrains: StrainEntry[] = [
@@ -61,6 +62,10 @@ const mockPlants: GrowspaceDevice[] = [
     } as any,
 ];
 
+function sm(el: SeedsGeneticsTab) {
+    return (el as any)._sm;
+}
+
 describe('SeedsGeneticsTab Coverage', () => {
     let element: SeedsGeneticsTab;
 
@@ -70,7 +75,7 @@ describe('SeedsGeneticsTab Coverage', () => {
         element.seedBatches = [...mockSeedBatches];
         element.pollinationEvents = [...mockPollinationEvents];
         element.plants = [...mockPlants];
-        
+
         element.onUpdateSeedBatch = vi.fn().mockResolvedValue(undefined);
         element.onDeleteSeedBatch = vi.fn().mockResolvedValue(undefined);
         element.onSowSeeds = vi.fn().mockResolvedValue(undefined);
@@ -95,31 +100,30 @@ describe('SeedsGeneticsTab Coverage', () => {
             editBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._seedSubView).toBe('add-batch');
-            expect((element as any)._editingBatchId).toBe('b1');
-            expect((element as any)._batchForm.strain_name).toBe('Blue Dream');
+            expect(sm(element).activeView).toBe('add-batch');
+            expect(sm(element).views['add-batch'].editingBatchId).toBe('b1');
+            expect(sm(element).views['add-batch'].draft.strainName).toBe('Blue Dream');
 
             // Simulate saving the edit
             const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('.form-actions button') || [])
-                .find(b => b.textContent?.includes('Save')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(element.onUpdateSeedBatch).toHaveBeenCalled();
         });
 
         it('handles batch deletion confirmation', async () => {
-            // Initial delete click shows confirmation
             const deleteBtn = element.shadowRoot?.querySelector('.icon-btn.danger') as HTMLElement;
             deleteBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._confirmDeleteBatchId).toBe('b1');
-            
-            // Confirm delete
+            expect(sm(element).views.list.sub.kind).toBe('confirm-delete-batch');
+            expect(sm(element).views.list.sub.batchId).toBe('b1');
+
             const confirmBtn = element.shadowRoot?.querySelector('.icon-btn.danger[title="Confirm delete"]') as HTMLElement;
             confirmBtn.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(element.onDeleteSeedBatch).toHaveBeenCalledWith('b1');
             expect(element.onSeedDataChanged).toHaveBeenCalled();
@@ -134,36 +138,34 @@ describe('SeedsGeneticsTab Coverage', () => {
             cancelBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._confirmDeleteBatchId).toBeNull();
+            expect(sm(element).views.list.sub.kind).toBe('idle');
         });
 
         it('handles sowing seeds', async () => {
             const sowBtn = Array.from(element.shadowRoot?.querySelectorAll('.seed-batch-actions button') || [])
-                .find(b => b.textContent?.includes('Sow seeds')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Sow seeds')) as HTMLElement;
             sowBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._sowBatchId).toBe('b1');
+            expect(sm(element).views.list.sub.kind).toBe('sow');
+            expect(sm(element).views.list.sub.batchId).toBe('b1');
 
-            // Find form elements
             const select = element.shadowRoot?.querySelector('.sow-select') as HTMLSelectElement;
             const qtyInput = element.shadowRoot?.querySelector('.sow-qty') as HTMLInputElement;
             const plantBtn = Array.from(element.shadowRoot?.querySelectorAll('.sow-form button') || [])
-                .find(b => b.textContent?.includes('Plant')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Plant')) as HTMLElement;
 
-            // Change values
             select.value = 'gs-1';
             select.dispatchEvent(new Event('change'));
             qtyInput.value = '2';
             qtyInput.dispatchEvent(new Event('input'));
             await element.updateComplete;
 
-            expect((element as any)._sowGrowspaceId).toBe('gs-1');
-            expect((element as any)._sowQuantity).toBe(2);
+            expect(sm(element).views.list.sub.growspaceId).toBe('gs-1');
+            expect(sm(element).views.list.sub.quantity).toBe(2);
 
-            // Submit
             plantBtn.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(element.onSowSeeds).toHaveBeenCalledWith({
                 growspace_id: 'gs-1',
@@ -172,33 +174,33 @@ describe('SeedsGeneticsTab Coverage', () => {
                 seed_batch_id: 'b1',
                 generation: 'F1',
             });
-            expect((element as any)._sowBatchId).toBeNull();
+            expect(sm(element).views.list.sub.kind).toBe('idle');
         });
 
         it('toggles sow form off if clicked again', async () => {
             const sowBtn = Array.from(element.shadowRoot?.querySelectorAll('.seed-batch-actions button') || [])
-                .find(b => b.textContent?.includes('Sow seeds')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Sow seeds')) as HTMLElement;
             sowBtn.click();
             await element.updateComplete;
-            expect((element as any)._sowBatchId).toBe('b1');
+            expect(sm(element).views.list.sub.kind).toBe('sow');
 
             sowBtn.click();
             await element.updateComplete;
-            expect((element as any)._sowBatchId).toBeNull();
+            expect(sm(element).views.list.sub.kind).toBe('idle');
         });
 
         it('handles canceling sow form', async () => {
             const sowBtn = Array.from(element.shadowRoot?.querySelectorAll('.seed-batch-actions button') || [])
-                .find(b => b.textContent?.includes('Sow seeds')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Sow seeds')) as HTMLElement;
             sowBtn.click();
             await element.updateComplete;
 
             const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('.sow-form button') || [])
-                .find(b => b.textContent?.includes('Cancel')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Cancel')) as HTMLElement;
             cancelBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._sowBatchId).toBeNull();
+            expect(sm(element).views.list.sub.kind).toBe('idle');
         });
     });
 
@@ -208,14 +210,13 @@ describe('SeedsGeneticsTab Coverage', () => {
             editBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._seedSubView).toBe('log-pollination');
-            expect((element as any)._editingEventId).toBe('evt-1');
+            expect(sm(element).activeView).toBe('log-pollination');
+            expect(sm(element).views['log-pollination'].editingEventId).toBe('evt-1');
 
-            // Save edit
             const saveBtn = Array.from(element.shadowRoot?.querySelectorAll('.form-actions button') || [])
-                .find(b => b.textContent?.includes('Save')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Save')) as HTMLElement;
             saveBtn.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(element.onUpdatePollination).toHaveBeenCalled();
         });
@@ -225,11 +226,12 @@ describe('SeedsGeneticsTab Coverage', () => {
             deleteBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._confirmDeleteEventId).toBe('evt-1');
+            expect(sm(element).views.list.sub.kind).toBe('confirm-delete-pollination');
+            expect(sm(element).views.list.sub.eventId).toBe('evt-1');
 
             const confirmBtn = element.shadowRoot?.querySelector('.icon-btn.danger[title="Confirm delete"]') as HTMLElement;
             confirmBtn.click();
-            await new Promise(r => setTimeout(r, 0));
+            await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(element.onDeletePollination).toHaveBeenCalledWith('evt-1');
             expect(element.onSeedDataChanged).toHaveBeenCalled();
@@ -244,13 +246,13 @@ describe('SeedsGeneticsTab Coverage', () => {
             cancelBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._confirmDeleteEventId).toBeNull();
+            expect(sm(element).views.list.sub.kind).toBe('idle');
         });
     });
 
     describe('Form Input Handlers', () => {
         it('exercises all add-batch form handlers', async () => {
-            (element as any)._seedSubView = 'add-batch';
+            (element as any)._sm = transition(sm(element), { type: 'BEGIN_ADD_BATCH' });
             await element.updateComplete;
 
             const inputs = element.shadowRoot?.querySelectorAll('.form-view input');
@@ -284,36 +286,36 @@ describe('SeedsGeneticsTab Coverage', () => {
             notesInput.dispatchEvent(new Event('input'));
 
             await element.updateComplete;
-            const form = (element as any)._batchForm;
-            expect(form.strain_name).toBe('New Strain');
-            expect(form.breeder).toBe('New Breeder');
-            expect(form.quantity).toBe(10);
-            expect(form.acquisition_date).toBe('2026-05-01');
-            expect(form.generation).toBe('F2');
-            expect(form.parent_1_key).toBe('Zkittlez||P1');
-            expect(form.notes).toBe('some notes');
+            const draft = sm(element).views['add-batch'].draft;
+            expect(draft.strainName).toBe('New Strain');
+            expect(draft.breeder).toBe('New Breeder');
+            expect(draft.quantity).toBe(10);
+            expect(draft.acquisitionDate).toBe('2026-05-01');
+            expect(draft.generation).toBe('F2');
+            expect(draft.parent1Key).toBe('Zkittlez||P1');
+            expect(draft.notes).toBe('some notes');
 
             const parent2Select = element.shadowRoot?.querySelectorAll('.form-view select')[1] as HTMLSelectElement;
             parent2Select.value = 'Gelato 41||';
             parent2Select.dispatchEvent(new Event('change'));
             await element.updateComplete;
-            expect((element as any)._batchForm.parent_2_key).toBe('Gelato 41||');
+            expect(sm(element).views['add-batch'].draft.parent2Key).toBe('Gelato 41||');
         });
 
         it('handles canceling add batch form via footer button', async () => {
-            (element as any)._seedSubView = 'add-batch';
+            (element as any)._sm = transition(sm(element), { type: 'BEGIN_ADD_BATCH' });
             await element.updateComplete;
 
             const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('.form-actions button') || [])
-                .find(b => b.textContent?.includes('Cancel')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Cancel')) as HTMLElement;
             cancelBtn.click();
             await element.updateComplete;
 
-            expect((element as any)._seedSubView).toBe('list');
+            expect(sm(element).activeView).toBe('list');
         });
 
         it('exercises all log-pollination form handlers', async () => {
-            (element as any)._seedSubView = 'log-pollination';
+            (element as any)._sm = transition(sm(element), { type: 'BEGIN_LOG_POLLINATION' });
             await element.updateComplete;
 
             const inputs = element.shadowRoot?.querySelectorAll('.form-view input');
@@ -336,26 +338,28 @@ describe('SeedsGeneticsTab Coverage', () => {
             notesInput.dispatchEvent(new Event('input'));
 
             await element.updateComplete;
-            const form = (element as any)._pollinationForm;
-            expect(form.date).toBe('2026-06-01');
-            expect(form.donor_plant_id).toBe('p1');
-            expect(form.receiver_plant_id).toBe('p2');
-            expect(form.notes).toBe('pollination notes');
+            const draft = sm(element).views['log-pollination'].draft;
+            expect(draft.date).toBe('2026-06-01');
+            expect(draft.donorPlantId).toBe('p1');
+            expect(draft.receiverPlantId).toBe('p2');
+            expect(draft.notes).toBe('pollination notes');
 
-            // Test cancel button in log pollination
             const cancelBtn = Array.from(element.shadowRoot?.querySelectorAll('.form-actions button') || [])
-                .find(b => b.textContent?.includes('Cancel')) as HTMLElement;
+                .find((b: Element) => b.textContent?.includes('Cancel')) as HTMLElement;
             cancelBtn.click();
             await element.updateComplete;
-            expect((element as any)._seedSubView).toBe('list');
+            expect(sm(element).activeView).toBe('list');
         });
 
         it('exercises harvest form input handlers', async () => {
-            (element as any)._seedSubView = 'harvest';
+            (element as any)._sm = transition(sm(element), {
+                type: 'BEGIN_HARVEST',
+                eventId: 'evt-1',
+            });
             await element.updateComplete;
 
             const inputs = element.shadowRoot?.querySelectorAll('.form-view input');
-            
+
             const qtyInput = inputs?.[0] as HTMLInputElement;
             qtyInput.value = '50';
             qtyInput.dispatchEvent(new Event('input'));
@@ -365,18 +369,17 @@ describe('SeedsGeneticsTab Coverage', () => {
             notesInput.dispatchEvent(new Event('input'));
 
             await element.updateComplete;
-            const form = (element as any)._harvestForm;
-            expect(form.quantity).toBe(50);
-            expect(form.notes).toBe('harvest notes');
+            const draft = sm(element).views.harvest.draft;
+            expect(draft.quantity).toBe(50);
+            expect(draft.notes).toBe('harvest notes');
         });
     });
 
     describe('Sorting and Labels', () => {
         it('exercises strain sorting and breeder suggestions', async () => {
-            (element as any)._seedSubView = 'add-batch';
+            (element as any)._sm = transition(sm(element), { type: 'BEGIN_ADD_BATCH' });
             await element.updateComplete;
-            
-            // This just triggers the getter/render logic for sorting
+
             const options = element.shadowRoot?.querySelectorAll('datalist option');
             expect(options?.length).toBeGreaterThan(0);
         });
@@ -401,7 +404,7 @@ describe('SeedsGeneticsTab Coverage', () => {
             document.body.appendChild(el);
             await el.updateComplete;
 
-            expect((el as any)._seedSubView).toBe('log-pollination');
+            expect(sm(el).activeView).toBe('log-pollination');
 
             document.body.removeChild(el);
         });
@@ -420,7 +423,7 @@ describe('SeedsGeneticsTab Coverage', () => {
             document.body.appendChild(el);
             await el.updateComplete;
 
-            expect((el as any)._pollinationForm.receiver_plant_id).toBe('p2');
+            expect(sm(el).views['log-pollination'].draft.receiverPlantId).toBe('p2');
 
             document.body.removeChild(el);
         });
