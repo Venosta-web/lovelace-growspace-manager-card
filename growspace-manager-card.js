@@ -14495,7 +14495,7 @@ function defaultAddDraft(row, col) {
 function defaultTransplantDraft(row, col) {
     return { selectedPlantId: null, row, col };
 }
-function createInitialSM$4({ row, col }) {
+function createInitialSM$5({ row, col }) {
     return {
         activeTab: 'add',
         tabs: {
@@ -14508,7 +14508,7 @@ function createInitialSM$4({ row, col }) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$4(sm, event) {
+function transition$5(sm, event) {
     switch (event.type) {
         case 'TabSelected': {
             const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
@@ -14647,16 +14647,16 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.seedlingPlants = [];
         this.targetGrowspaceId = '';
         this.siblingPlants = [];
-        this._sm = createInitialSM$4({ row: 0, col: 0 });
+        this._sm = createInitialSM$5({ row: 0, col: 0 });
     }
     setInitialState(row, col, strain = '', phenotype = '') {
-        this._sm = createInitialSM$4({ row, col });
+        this._sm = createInitialSM$5({ row, col });
         if (strain) {
-            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
-            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+            this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+            this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
         }
         if (phenotype) {
-            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+            this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
         }
     }
     _close() {
@@ -14704,7 +14704,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 cure_start: d.cureStart,
                 addToLibrary: d.addToLibrary,
             };
-            this._sm = transition$4(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$5(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
         else {
@@ -14724,7 +14724,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 new_col: tabDraft.col + 1,
                 veg_start: today,
             };
-            this._sm = transition$4(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$5(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
     }
@@ -14799,7 +14799,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$4(this._sm, { type: 'TabSelected', tab: 'add' });
+            this._sm = transition$5(this._sm, { type: 'TabSelected', tab: 'add' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -14808,7 +14808,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$4(this._sm, { type: 'TabSelected', tab: 'clone' });
+            this._sm = transition$5(this._sm, { type: 'TabSelected', tab: 'clone' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
@@ -14817,7 +14817,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$4(this._sm, { type: 'TabSelected', tab: 'seedling' });
+            this._sm = transition$5(this._sm, { type: 'TabSelected', tab: 'seedling' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -14841,7 +14841,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                   <button
                     class="md3-button tonal"
                     @click=${addSub.kind === 'step-identity' ? this._close : () => {
-                this._sm = transition$4(this._sm, { type: 'WizardBacked' });
+                this._sm = transition$5(this._sm, { type: 'WizardBacked' });
             }}
                   >
                     ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
@@ -14851,7 +14851,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                         <button
                           class="md3-button primary"
                           @click=${() => {
-                    this._sm = transition$4(this._sm, { type: 'WizardAdvanced' });
+                    this._sm = transition$5(this._sm, { type: 'WizardAdvanced' });
                 }}
                           ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
                         >
@@ -14949,9 +14949,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             .value=${draft.strainQuery || draft.strain}
             placeholder="Search strain library…"
             @change=${(e) => {
-            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+            this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
             if (e.detail !== draft.strain) {
-                this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+                this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
             }
         }}
           ></md3-text-input>
@@ -14964,8 +14964,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       <div
                         class="strain-option"
                         @click=${() => {
-                    this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
-                    this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                    this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                    this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
                 }}
                       >
                         <span>${s}</span>
@@ -14986,7 +14986,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 label="Phenotype"
                 .value=${draft.phenotype}
                 .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+                @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
               ></md3-text-input>
             `
             : E}
@@ -15028,7 +15028,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           >
           <md3-switch
             .checked=${draft.addToLibrary}
-            @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
+            @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
             ?disabled=${!draft.strain}
           ></md3-switch>
         </div>
@@ -15057,15 +15057,15 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <button
             class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
             @click=${() => {
-            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
-            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+            this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+            this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
         }}
           >
             🌱 Seed
           </button>
           <button
             class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
-            @click=${() => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+            @click=${() => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
             ?disabled=${clonable.length === 0}
           >
             ✂️ Clone
@@ -15089,7 +15089,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       class="sibling-item ${isSelected ? 'selected' : ''}"
                       @click=${() => {
                     const today = new Date().toISOString().split('T')[0];
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'SiblingPlantSelected',
                         strain: p.attributes.strain || draft.strain,
                         phenotype: p.attributes.phenotype || draft.phenotype,
@@ -15137,12 +15137,12 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${draft.row + 1}
-            @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
             .value=${draft.col + 1}
-            @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
         </div>
       </div>
@@ -15163,28 +15163,28 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             return x `<md3-date-input
         label="Mother Start"
         .value=${draft.motherStart}
-        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('clone')) {
             return x `<md3-date-input
         label="Clone Start"
         .value=${draft.cloneStart}
-        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('dry')) {
             return x `<md3-date-input
         label="Dry Start"
         .value=${draft.dryStart}
-        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('cure')) {
             return x `<md3-date-input
         label="Cure Start"
         .value=${draft.cureStart}
-        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else {
@@ -15192,17 +15192,17 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         <md3-date-input
           label="Seedling Start"
           .value=${draft.seedlingStart}
-          @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Veg Start"
           .value=${draft.vegStart}
-          @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Flower Start"
           .value=${draft.flowerStart}
-          @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$5(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
         ></md3-date-input>
       `;
         }
@@ -15241,7 +15241,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 .value=${tabDraft.selectedPlantId || ''}
                 .options=${options}
                 @change=${(e) => {
-                this._sm = transition$4(this._sm, {
+                this._sm = transition$5(this._sm, {
                     type: 'DraftFieldChanged',
                     tab: stage,
                     field: 'selectedPlantId',
@@ -15285,7 +15285,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${tabDraft.row + 1}
-            @change=${(e) => (this._sm = transition$4(this._sm, {
+            @change=${(e) => (this._sm = transition$5(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'row',
@@ -15295,7 +15295,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Col"
             .value=${tabDraft.col + 1}
-            @change=${(e) => (this._sm = transition$4(this._sm, {
+            @change=${(e) => (this._sm = transition$5(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'col',
@@ -17013,7 +17013,7 @@ function defaultEnvironmentDraft() {
         visionLateOffset: 60,
     };
 }
-function defaultTabs$1() {
+function defaultTabs$2() {
     return {
         growspaces: { sub: { kind: 'idle' } },
         sensors: { sub: { kind: 'idle' } },
@@ -17106,10 +17106,10 @@ function envDraftFromDevice(device) {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$3(device) {
+function createInitialSM$4(device) {
     const sm = {
         activeTab: 'sensors',
-        tabs: defaultTabs$1(),
+        tabs: defaultTabs$2(),
         status: { kind: 'idle' },
         toast: undefined,
         environmentDraft: defaultEnvironmentDraft(),
@@ -17117,12 +17117,12 @@ function createInitialSM$3(device) {
     return sm;
 }
 /** Rebuild environmentDraft from device data (used on open and after RESET_FROM_DEVICE). */
-function applyDeviceToSM$1(sm, device) {
+function applyDeviceToSM$2(sm, device) {
     return { ...sm, environmentDraft: envDraftFromDevice(device) };
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$3(sm, event) {
+function transition$4(sm, event) {
     switch (event.type) {
         // ── Navigation ────────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -17322,7 +17322,7 @@ function transition$3(sm, event) {
         case 'SET_TOAST':
             return { ...sm, toast: event.message };
         case 'RESET_FROM_DEVICE':
-            return applyDeviceToSM$1(sm, event.device);
+            return applyDeviceToSM$2(sm, event.device);
         default:
             return sm;
     }
@@ -17367,7 +17367,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
         // ── Single SM ────────────────────────────────────────────────────────────
-        this._sm = createInitialSM$3();
+        this._sm = createInitialSM$4();
         // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
@@ -17378,7 +17378,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
-        this._sm = transition$3(this._sm, event);
+        this._sm = transition$4(this._sm, event);
     }
     get currentTab() {
         return this._sm.activeTab;
@@ -17391,7 +17391,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // through familiar names. The SM is the authoritative source of truth.
     get _d() { return this._sm.environmentDraft; }
     _setEnv(partial) {
-        this._sm = transition$3(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+        this._sm = transition$4(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     }
     get envSelectedId() { return this._d.selectedGrowspaceId; }
     set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
@@ -17713,9 +17713,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             }
             : {};
         this._sm = {
-            ...createInitialSM$3(),
+            ...createInitialSM$4(),
             activeTab: currentTab,
-            environmentDraft: { ...createInitialSM$3().environmentDraft, ...envPartial },
+            environmentDraft: { ...createInitialSM$4().environmentDraft, ...envPartial },
         };
         if (environmentData?.selectedGrowspaceId) {
             this._populateEditFields(environmentData.selectedGrowspaceId);
@@ -19828,25 +19828,302 @@ ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
 
+/**
+ * Crop Steering Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM. All interaction state for CropSteeringDialog lives here.
+ * The component calls `transition(sm, event)` and replaces its single `@state() _sm`.
+ *
+ * Structure:
+ *   DialogSM
+ *     .activeTab          — 'diagnostics' (read-only) | 'settings' (draft + phase confirm)
+ *     .status             — root-level tab-switch dirty guard
+ *     .toast              — transient feedback message
+ *     .tabs               — one typed state object per tab
+ */
+// ─── Default EC ranges ────────────────────────────────────────────────────────
+const EC_STAGES$1 = ['seedling', 'veg', 'flower_early', 'flower_mid', 'flower_late'];
+function defaultEcTargetRanges() {
+    return EC_STAGES$1.map((stage) => ({ stage, minEc: 0, maxEc: 0 }));
+}
+function ecRangesFromDevice(device) {
+    const ranges = device.irrigationConfig?.ecTargetRanges;
+    if (!ranges || ranges.length === 0)
+        return defaultEcTargetRanges();
+    return EC_STAGES$1.map((stage) => {
+        const found = ranges.find((r) => r.stage === stage);
+        return found ?? { stage, minEc: 0, maxEc: 0 };
+    });
+}
+function defaultTabs$1() {
+    return {
+        diagnostics: { sub: { kind: 'idle' } },
+        settings: {
+            draft: { phase: 'p2', ecTargetRanges: defaultEcTargetRanges() },
+            sub: { kind: 'idle' },
+        },
+    };
+}
+// ─── Initial state ────────────────────────────────────────────────────────────
+function createInitialSM$3(device) {
+    const sm = {
+        activeTab: 'diagnostics',
+        tabs: defaultTabs$1(),
+        status: { kind: 'idle' },
+        toast: undefined,
+    };
+    if (device) {
+        return applyDeviceToSM$1(sm, device);
+    }
+    return sm;
+}
+function applyDeviceToSM$1(sm, device) {
+    const phase = device.irrigationConfig?.activeSteeringPhase ??
+        sm.tabs.settings.draft.phase;
+    const ecTargetRanges = ecRangesFromDevice(device);
+    return {
+        ...sm,
+        tabs: {
+            ...sm.tabs,
+            settings: {
+                ...sm.tabs.settings,
+                draft: { phase, ecTargetRanges },
+            },
+        },
+    };
+}
+// ─── Dirty predicates ─────────────────────────────────────────────────────────
+function isSettingsDirty(sm, device) {
+    const d = sm.tabs.settings.draft;
+    const devicePhase = device.irrigationConfig?.activeSteeringPhase ?? 'p2';
+    if (d.phase !== devicePhase)
+        return true;
+    const deviceRanges = device.irrigationConfig?.ecTargetRanges ?? [];
+    if (deviceRanges.length === 0) {
+        return d.ecTargetRanges.some((r) => r.minEc !== 0 || r.maxEc !== 0);
+    }
+    return d.ecTargetRanges.some((dr) => {
+        const deviceRange = deviceRanges.find((r) => r.stage === dr.stage);
+        return !deviceRange || deviceRange.minEc !== dr.minEc || deviceRange.maxEc !== dr.maxEc;
+    });
+}
+function isActiveTabDirty$1(sm, device) {
+    if (sm.activeTab === 'settings')
+        return isSettingsDirty(sm, device);
+    return false;
+}
+// ─── Draft reset helper ───────────────────────────────────────────────────────
+function resetSettingsDraft(sm, device) {
+    const phase = device.irrigationConfig?.activeSteeringPhase ??
+        sm.tabs.settings.draft.phase;
+    return {
+        ...sm.tabs,
+        settings: {
+            draft: { phase, ecTargetRanges: ecRangesFromDevice(device) },
+            sub: { kind: 'idle' },
+        },
+    };
+}
+// ─── Convenience wrappers ─────────────────────────────────────────────────────
+function requestTabSwitch$1(sm, tab, device) {
+    if (sm.activeTab === tab)
+        return sm;
+    if (isActiveTabDirty$1(sm, device)) {
+        return transition$3(sm, { type: 'REQUEST_TAB', tab });
+    }
+    return transition$3(sm, { type: 'SWITCH_TAB', tab });
+}
+function discardAndSwitch$1(sm, device) {
+    if (sm.status.kind !== 'confirm-discard')
+        return sm;
+    const tabs = resetSettingsDraft(sm, device);
+    return {
+        ...sm,
+        activeTab: sm.status.pendingTab,
+        status: { kind: 'idle' },
+        tabs,
+    };
+}
+// ─── Transition ───────────────────────────────────────────────────────────────
+function transition$3(sm, event) {
+    switch (event.type) {
+        // ── Navigation ──────────────────────────────────────────────────────────
+        case 'REQUEST_TAB':
+            return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
+        case 'SWITCH_TAB':
+            return { ...sm, activeTab: event.tab, status: { kind: 'idle' } };
+        case 'DISCARD_AND_SWITCH': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            return { ...sm, activeTab: sm.status.pendingTab, status: { kind: 'idle' } };
+        }
+        case 'CANCEL_TAB_SWITCH':
+            return { ...sm, status: { kind: 'idle' } };
+        // ── Phase ────────────────────────────────────────────────────────────────
+        case 'REQUEST_PHASE_CHANGE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: {
+                        ...sm.tabs.settings,
+                        sub: { kind: 'confirm-phase', pending: event.phase },
+                    },
+                },
+            };
+        case 'CONFIRM_PHASE_CHANGE': {
+            const sub = sm.tabs.settings.sub;
+            if (sub.kind !== 'confirm-phase')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: {
+                        ...sm.tabs.settings,
+                        draft: { ...sm.tabs.settings.draft, phase: sub.pending },
+                        sub: { kind: 'phase-applying' },
+                    },
+                },
+            };
+        }
+        case 'CANCEL_PHASE_CHANGE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: { ...sm.tabs.settings, sub: { kind: 'idle' } },
+                },
+            };
+        case 'PHASE_SAVE_RESOLVED':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: { ...sm.tabs.settings, sub: { kind: 'idle' } },
+                },
+            };
+        case 'PHASE_SAVE_FAILED':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: {
+                        ...sm.tabs.settings,
+                        sub: { kind: 'error', source: 'phase', message: event.message },
+                    },
+                },
+            };
+        // ── EC Targets ───────────────────────────────────────────────────────────
+        case 'UPDATE_EC_TARGETS_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: {
+                        ...sm.tabs.settings,
+                        draft: { ...sm.tabs.settings.draft, ecTargetRanges: event.ranges },
+                    },
+                },
+            };
+        case 'SET_EC_APPLYING':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: {
+                        ...sm.tabs.settings,
+                        sub: event.applying ? { kind: 'ec-applying' } : { kind: 'idle' },
+                    },
+                },
+            };
+        case 'EC_SAVE_RESOLVED':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: { ...sm.tabs.settings, sub: { kind: 'idle' } },
+                },
+            };
+        case 'EC_SAVE_FAILED':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    settings: {
+                        ...sm.tabs.settings,
+                        sub: { kind: 'error', source: 'ec', message: event.message },
+                    },
+                },
+            };
+        // ── Global ───────────────────────────────────────────────────────────────
+        case 'SET_TOAST':
+            return { ...sm, toast: event.message };
+        case 'RESET_FROM_DEVICE':
+            return applyDeviceToSM$1(sm, event.device);
+        default:
+            return sm;
+    }
+}
+
 let CropSteeringDialog = class CropSteeringDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
         this.growspaceName = '';
+        this._sm = createInitialSM$3();
+    }
+    _device() {
+        if (!this.dialogState?.growspaceId)
+            return undefined;
+        return this.store.data.$devices
+            .get()
+            .find((d) => d.deviceId === this.dialogState?.growspaceId);
+    }
+    updated(changed) {
+        if (changed.has('open') && this.open) {
+            const device = this._device();
+            this._sm = createInitialSM$3(device);
+        }
+    }
+    _transition(event) {
+        this._sm = transition$3(this._sm, event);
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
+    _switchTab(tab) {
+        const device = this._device();
+        if (!device) {
+            this._transition({ type: 'SWITCH_TAB', tab });
+            return;
+        }
+        if (isActiveTabDirty$1(this._sm, device)) {
+            this._transition({ type: 'REQUEST_TAB', tab });
+        }
+        else {
+            this._transition({ type: 'SWITCH_TAB', tab });
+        }
+    }
+    _confirmDiscard() {
+        const device = this._device();
+        if (!device)
+            return;
+        this._sm = discardAndSwitch$1(this._sm, device);
+    }
+    _requestTabSwitch(tab) {
+        const device = this._device();
+        if (!device)
+            return;
+        this._sm = requestTabSwitch$1(this._sm, tab, device);
+    }
     _getEntityId() {
         if (!this.dialogState?.growspaceId)
             return undefined;
-        const gs = this.store.data.$devices
-            .get()
-            .find((d) => d.deviceId === this.dialogState?.growspaceId);
-        if (!gs)
+        const device = this._device();
+        if (!device)
             return undefined;
-        // Slugify exactly like metrics-utils
-        const slug = gs.name
+        const slug = device.name
             .toLowerCase()
             .replace(/\s+/g, '_')
             .replace(/[^\w-]+/g, '')
@@ -19876,9 +20153,7 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
       </div>
     `;
     }
-    render() {
-        if (!this.open || !this.dialogState)
-            return E;
+    _renderDiagnosticsTab() {
         const entityId = this._getEntityId();
         const stateObj = entityId ? this.hass.states[entityId] : undefined;
         const score = stateObj ? parseFloat(stateObj.state) : NaN;
@@ -19894,6 +20169,61 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
             trendIcon = mdiArrowDown;
             trendColor = 'var(--success-color, #4CAF50)';
         }
+        if (stateObj === undefined || isNaN(score)) {
+            return x `
+        <div style="text-align: center; padding: 40px; opacity: 0.7;">
+          <ha-svg-icon
+            .path=${mdiChartTimelineVariantShimmer}
+            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+          ></ha-svg-icon>
+          <p>Crop steering data is currently unavailable.</p>
+          <p style="font-size: 0.85rem;">
+            Ensure irrigation strategy is enabled and sensors are reporting data.
+          </p>
+        </div>
+      `;
+        }
+        return x `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div
+          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
+        >
+          <div style="font-size: 36px; font-weight: bold;">
+            ${score > 0 ? '+' : ''}${score.toFixed(2)}
+          </div>
+          <gs-help-tooltip
+            content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
+            placement="right"
+            label="Crop Steering Score"
+          ></gs-help-tooltip>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+          <div class="mode-badge mode-${mode}">${mode.toUpperCase()} MODE</div>
+          <gs-help-tooltip
+            content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
+            placement="right"
+            label="Steering Mode"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+
+      <div class="metric-grid">
+        ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
+        ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
+        ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
+        ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
+      </div>
+
+      <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
+        Vegetative steering drives growth with smaller, more frequent irrigations.
+        Generative steering promotes flowering and ripening through larger dry-backs.
+      </p>
+    `;
+    }
+    render() {
+        if (!this.open || !this.dialogState)
+            return E;
+        const sm = this._sm;
         return x `
       <gs-dialog
         .open=${this.open}
@@ -19910,55 +20240,9 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
         ></gs-help-tooltip>
 
         <div class="dialog-content">
-          ${stateObj === undefined || isNaN(score)
-            ? x `
-                <div style="text-align: center; padding: 40px; opacity: 0.7;">
-                  <ha-svg-icon
-                    .path=${mdiChartTimelineVariantShimmer}
-                    style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
-                  ></ha-svg-icon>
-                  <p>Crop steering data is currently unavailable.</p>
-                  <p style="font-size: 0.85rem;">
-                    Ensure irrigation strategy is enabled and sensors are reporting data.
-                  </p>
-                </div>
-              `
-            : x `
-                <div style="text-align: center; margin-bottom: 24px;">
-                  <div
-                    style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
-                  >
-                    <div style="font-size: 36px; font-weight: bold;">
-                      ${score > 0 ? '+' : ''}${score.toFixed(2)}
-                    </div>
-                    <gs-help-tooltip
-                      content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
-                      placement="right"
-                      label="Crop Steering Score"
-                    ></gs-help-tooltip>
-                  </div>
-                  <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-                    <div class="mode-badge mode-${mode}">${mode.toUpperCase()} MODE</div>
-                    <gs-help-tooltip
-                      content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
-                      placement="right"
-                      label="Steering Mode"
-                    ></gs-help-tooltip>
-                  </div>
-                </div>
-
-                <div class="metric-grid">
-                  ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
-                  ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
-                  ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
-                  ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
-                </div>
-
-                <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
-                  Vegetative steering drives growth with smaller, more frequent irrigations.
-                  Generative steering promotes flowering and ripening through larger dry-backs.
-                </p>
-              `}
+          ${sm.activeTab === 'diagnostics'
+            ? this._renderDiagnosticsTab()
+            : E}
         </div>
       </gs-dialog>
     `;
@@ -20035,6 +20319,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], CropSteeringDialog.prototype, "growspaceName", void 0);
+__decorate([
+    r$3()
+], CropSteeringDialog.prototype, "_sm", void 0);
 CropSteeringDialog = __decorate([
     t$2('crop-steering-dialog')
 ], CropSteeringDialog);
