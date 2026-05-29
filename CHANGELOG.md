@@ -1,3 +1,10 @@
+# [1.1.0-next.10](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.9...v1.1.0-next.10) (2026-05-29)
+
+
+### Features
+
+* implement breeder manager state machine and add corresponding unit tests ([619d384](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/619d384b40234ba68e6954e16a29f9b171b1ed05))
+
 # [1.1.0-next.9](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.8...v1.1.0-next.9) (2026-05-29)
 
 
