@@ -89,11 +89,12 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             element.open = true;
             await element.updateComplete;
             const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-            gsBreederManager._startEdit('B1', 'logo1');
-            expect(gsBreederManager?._editorState).toEqual({
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'B1', logo: 'logo1' });
+            expect(gsBreederManager?._sm.views.editor.draft).toEqual({
                 name: 'B1',
                 logo: 'logo1',
-                originalName: 'B1'
+                originalName: 'B1',
             });
         });
 
@@ -101,8 +102,9 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             element.open = true;
             await element.updateComplete;
             const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-            gsBreederManager._pendingDelete = 'B1';
-            expect(gsBreederManager?._pendingDelete).toBe('B1');
+            const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            gsBreederManager._sm = t(gsBreederManager._sm, { type: 'DELETE_REQUESTED', name: 'B1' });
+            expect(gsBreederManager?._sm.views.list.sub).toEqual({ kind: 'confirm-delete', name: 'B1' });
         });
 
         it('covers _handleSaveBreeder new branch (Line 2530)', async () => {
@@ -110,12 +112,15 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             await element.updateComplete;
             const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
             const spy = vi.spyOn(element, 'dispatchEvent');
-            gsBreederManager._editorState = { name: 'NewB', logo: 'L1', originalName: '' };
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
+            gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'NewB' });
+            gsBreederManager._sm = t(gsBreederManager._sm, { type: 'FIELD_CHANGED', field: 'logo', value: 'L1' });
             gsBreederManager._handleSave();
             await element.updateComplete;
 
             expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'save-breeder' }));
-            expect(gsBreederManager?._editorState).toBeNull();
+            expect(gsBreederManager?._sm.activeView).toBe('list');
             spy.mockRestore();
         });
 
@@ -123,9 +128,10 @@ describe('StrainLibraryDialog - Final Coverage', () => {
             element.open = true;
             await element.updateComplete;
             const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-            gsBreederManager._pendingDelete = 'B1';
-            gsBreederManager._pendingDelete = null;
-            expect(gsBreederManager?._pendingDelete).toBeNull();
+            const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            gsBreederManager._sm = t(gsBreederManager._sm, { type: 'DELETE_REQUESTED', name: 'B1' });
+            gsBreederManager._sm = t(gsBreederManager._sm, { type: 'CANCEL_DELETE' });
+            expect(gsBreederManager?._sm.views.list.sub.kind).toBe('idle');
         });
 
         it('covers _buildTreeNodes lineage, parents array, and pendingParents loops', () => {

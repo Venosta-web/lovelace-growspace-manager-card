@@ -14,6 +14,9 @@
  */
 
 import type { StrainEntry } from '../features/plants/types';
+import type { BreederDraft } from './gs-breeder-manager-sm';
+
+export type { BreederDraft };
 
 // ─── Status ───────────────────────────────────────────────────────────────────
 
@@ -24,12 +27,6 @@ export type Status =
   | { kind: 'error'; message: string };
 
 // ─── Sub-state ────────────────────────────────────────────────────────────────
-
-export interface BreederDraft {
-  name: string;
-  logo: string;
-  originalName: string;
-}
 
 export type SubState =
   | { kind: 'idle' }

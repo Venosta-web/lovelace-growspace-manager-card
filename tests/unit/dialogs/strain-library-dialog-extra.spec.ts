@@ -81,7 +81,7 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (breederCard as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._editorState).toBeTruthy();
+            expect(getBreederManager()?._sm.activeView).toBe('editor');
             expect(getBreederManagerSR()?.querySelector('.sd-content')?.textContent).toContain('Edit Breeder');
 
             // Click Back
@@ -89,14 +89,15 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (backBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._editorState).toBeNull();
+            expect(getBreederManager()?._sm.activeView).toBe('list');
         });
 
         it('should handle breeder logo upload', async () => {
             (element as any)._breederDialogOpen = true;
             await element.updateComplete;
 
-            getBreederManager()._startEdit('HSO', 'logo.jpg');
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'logo.jpg' });
             await getBreederManager()?.updateComplete;
 
             const uploadBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('button') || []) as HTMLElement[])
@@ -110,14 +111,15 @@ describe('StrainLibraryDialog Extra Coverage', () => {
 
             await new Promise(resolve => setTimeout(resolve, 0));
             expect(PlantUtils.compressImage).toHaveBeenCalledWith(file);
-            expect(getBreederManager()?._editorState.logo).toBe('base64string');
+            expect(getBreederManager()?._sm.views.editor.draft.logo).toBe('base64string');
         });
 
         it('should handle breeder logo removal', async () => {
             (element as any)._breederDialogOpen = true;
             await element.updateComplete;
 
-            getBreederManager()._startEdit('HSO', 'logo.jpg');
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'logo.jpg' });
             await getBreederManager()?.updateComplete;
 
             // Find remove logo button (error-color button in logo section)
@@ -125,22 +127,23 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (removeBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._editorState.logo).toBe('');
+            expect(getBreederManager()?._sm.views.editor.draft.logo).toBe('');
         });
 
         it('should handle breeder name input', async () => {
             (element as any)._breederDialogOpen = true;
             await element.updateComplete;
 
-            getBreederManager()._startEdit();
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
             await getBreederManager()?.updateComplete;
 
             const input = getBreederManagerSR()?.querySelector('.sd-input') as HTMLInputElement;
             input.value = 'Aha Seeds';
-            input.dispatchEvent(new Event('input'));
+            input.dispatchEvent(new InputEvent('input'));
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._editorState.name).toBe('Aha Seeds');
+            expect(getBreederManager()?._sm.views.editor.draft.name).toBe('Aha Seeds');
         });
 
         it('should enter breeder edit mode via pencil icon', async () => {
@@ -153,8 +156,8 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (editBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._editorState).toBeTruthy();
-            expect(getBreederManager()?._editorState.originalName).toBe('HSO');
+            expect(getBreederManager()?._sm.activeView).toBe('editor');
+            expect(getBreederManager()?._sm.views.editor.draft.originalName).toBe('HSO');
         });
 
         it('should cancel breeder deletion via list button', async () => {
@@ -168,7 +171,7 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (deleteBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._pendingDelete).toBe('HSO');
+            expect(getBreederManager()?._sm.views.list.sub).toEqual({ kind: 'confirm-delete', name: 'HSO' });
 
             // Cancel delete via confirmation dialog
             const cancelBtn = (Array.from(getBreederManagerSR()?.querySelectorAll('ha-dialog button') || []) as HTMLElement[])
@@ -176,17 +179,16 @@ describe('StrainLibraryDialog Extra Coverage', () => {
 
             (cancelBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
-            expect(getBreederManager()?._pendingDelete).toBeNull();
+            expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
         });
 
         it('should save new breeder', async () => {
             (element as any)._breederDialogOpen = true;
             await element.updateComplete;
 
-            getBreederManager()._startEdit();
-            await getBreederManager()?.updateComplete;
-
-            getBreederManager()._editorState = { ...getBreederManager()._editorState, name: 'New Breeder' };
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED' });
+            getBreederManager()._sm = t(getBreederManager()._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'New Breeder' });
             getBreederManager().requestUpdate?.();
             await getBreederManager()?.updateComplete;
 
@@ -206,17 +208,16 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             expect(saveSpy).toHaveBeenCalledWith(expect.objectContaining({
                 detail: { name: 'New Breeder', logo: '' }
             }));
-            expect(getBreederManager()?._editorState).toBeNull();
+            expect(getBreederManager()?._sm.activeView).toBe('list');
         });
 
         it('should update existing breeder', async () => {
             (element as any)._breederDialogOpen = true;
             await element.updateComplete;
 
-            getBreederManager()._startEdit('HSO', 'old_logo.jpg');
-            await getBreederManager()?.updateComplete;
-
-            getBreederManager()._editorState = { ...getBreederManager()._editorState, name: 'HSO Pro' };
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            getBreederManager()._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: 'old_logo.jpg' });
+            getBreederManager()._sm = t(getBreederManager()._sm, { type: 'FIELD_CHANGED', field: 'name', value: 'HSO Pro' });
             getBreederManager().requestUpdate?.();
             await getBreederManager()?.updateComplete;
 
@@ -245,7 +246,7 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             (deleteBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
 
-            expect(getBreederManager()?._pendingDelete).toBe('HSO');
+            expect(getBreederManager()?._sm.views.list.sub).toEqual({ kind: 'confirm-delete', name: 'HSO' });
 
             const confirmSpy = vi.fn();
             element.addEventListener('delete-breeder', confirmSpy);
@@ -259,14 +260,15 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             expect(confirmSpy).toHaveBeenCalledWith(expect.objectContaining({
                 detail: { name: 'HSO' }
             }));
-            expect(getBreederManager()?._pendingDelete).toBeNull();
+            expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
         });
 
         it('should cancel breeder deletion', async () => {
             (element as any)._breederDialogOpen = true;
             await element.updateComplete;
 
-            getBreederManager()._pendingDelete = 'HSO';
+            const { transition: t } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            getBreederManager()._sm = t(getBreederManager()._sm, { type: 'DELETE_REQUESTED', name: 'HSO' });
             getBreederManager().requestUpdate?.();
             await getBreederManager()?.updateComplete;
 
@@ -275,7 +277,7 @@ describe('StrainLibraryDialog Extra Coverage', () => {
 
             (cancelBtn as HTMLElement)?.click();
             await getBreederManager()?.updateComplete;
-            expect(getBreederManager()?._pendingDelete).toBeNull();
+            expect(getBreederManager()?._sm.views.list.sub.kind).toBe('idle');
         });
     });
 
@@ -285,7 +287,8 @@ describe('StrainLibraryDialog Extra Coverage', () => {
             await element.updateComplete;
 
             const gsBreederManager = element.shadowRoot?.querySelector('gs-breeder-manager') as any;
-            gsBreederManager._startEdit('HSO', '');
+            const { transition: t, createInitialSM } = await import('../../../src/dialogs/gs-breeder-manager-sm');
+            gsBreederManager._sm = t(createInitialSM(), { type: 'EDIT_REQUESTED', name: 'HSO', logo: '' });
             await gsBreederManager?.updateComplete;
 
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
