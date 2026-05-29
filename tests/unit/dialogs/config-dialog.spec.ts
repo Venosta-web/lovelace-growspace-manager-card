@@ -546,6 +546,8 @@ describe('ConfigDialog', () => {
             const listener = vi.fn();
             element.addEventListener('add-growspace-submit', listener);
 
+            // Must enter adding state before setting add draft fields
+            (element as any)._isAddingGrowspace = true;
             (element as any).addName = 'New GS';
             (element as any).addNotificationService = 'mobile_app_test';
 
@@ -557,11 +559,10 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle edit population when device is not found', () => {
-            (element as any).editName = 'Old Name';
+            // In the SM design, _populateEditFields is a no-op when device is not found.
+            // editSelectedId stays empty; no stale state leaks through.
             (element as any)._populateEditFields('non_existent_id');
-            // Should set ID but not update fields
-            expect((element as any).editSelectedId).toBe('non_existent_id');
-            expect((element as any).editName).toBe('Old Name');
+            expect((element as any).editSelectedId).toBe('');
         });
 
         it('should close dialog via header button', async () => {
@@ -826,12 +827,10 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle device not found in _populateEditFields', () => {
-            (element as any).editName = 'Original';
-            // Passing ID that doesn't exist in element.devices
+            // In the SM design, _populateEditFields is a no-op when device is not found.
+            // No stale state leaks; editSelectedId stays empty.
             (element as any)._populateEditFields('missing_id');
-            expect((element as any).editSelectedId).toBe('missing_id');
-            // edit_name should NOT change
-            expect((element as any).editName).toBe('Original');
+            expect((element as any).editSelectedId).toBe('');
         });
 
         it('should fallback to defaults in _populateEditFields if device properties missing', () => {
@@ -930,11 +929,12 @@ describe('ConfigDialog', () => {
         });
 
         it('should handle empty value in _handleEditSelection', () => {
+            // _handleEditSelection('') calls _populateEditFields('') which returns early,
+            // then _handleEnvGrowspaceChange resets the env draft.
+            // editSelectedId resets to idle (empty).
             (element as any).editSelectedId = 'old';
             (element as any)._handleEditSelection('');
             expect((element as any).editSelectedId).toBe('');
-            // Should also populate (reset) fields
-            expect((element as any).editName).toBe('');
         });
 
         it('should cancel delete growspace', () => {

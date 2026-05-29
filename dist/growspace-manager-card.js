@@ -8273,6 +8273,7 @@ const aiInsight$ = atom(null);
 const isAiLoading$ = atom(false);
 const aiError$ = atom(null);
 const aiEnabled$ = atom(null);
+const briefingError$ = atom(null);
 const conversationThreads$ = atom(new Map());
 const activeThreadId$ = atom(new Map());
 const aiAlerts$ = atom(new Map());
@@ -8557,12 +8558,18 @@ async function resolveAlert(alertId, note) {
 async function fetchBriefing(growspaceId, forceRefresh) {
     try {
         const briefing = await hassCall('growspace_manager/get_briefing', { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
+        briefingError$.set(null);
         const updated = new Map(aiBriefing$.get());
         updated.set(growspaceId, briefing);
         aiBriefing$.set(updated);
     }
-    catch {
-        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    catch (err) {
+        if (aiBriefing$.get().has(growspaceId)) {
+            showToast$1('Failed to regenerate briefing — please try again', 'error');
+        }
+        else {
+            briefingError$.set(err instanceof Error ? err.message : String(err));
+        }
     }
 }
 /**
@@ -16846,6 +16853,375 @@ SubareaConfigDialog = __decorate([
     t$2('subarea-config-dialog')
 ], SubareaConfigDialog);
 
+/**
+ * Config Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM. All interaction state for ConfigDialog lives here.
+ * The component calls `transition(sm, event)` and replaces its single `@state() _sm`.
+ *
+ * Structure:
+ *   ConfigDialogSM
+ *     .activeTab          — which tab is visible
+ *     .status             — root-level tab-switch confirm overlay
+ *     .toast              — transient message
+ *     .environmentDraft   — shared draft for sensors/climate/humidity/irrigation/vision tabs
+ *     .tabs               — per-tab sub-state
+ */
+// ─── Default draft ────────────────────────────────────────────────────────────
+function defaultEnvironmentDraft() {
+    return {
+        selectedGrowspaceId: '',
+        temperatureSensors: [],
+        humiditySensors: [],
+        vpdSensors: [],
+        co2Sensor: '',
+        lightSensors: [],
+        exhaustFanEntities: [],
+        circulationFanEntities: [],
+        stressThreshold: 0.8,
+        moldThreshold: 0.8,
+        humidifierEntities: [],
+        dehumidifierEntities: [],
+        humidifierControlEnabled: false,
+        dehumidifierControlEnabled: false,
+        humidifierThresholds: {},
+        dehumidifierThresholds: {},
+        soilMoistureSensor: '',
+        substrateTemperatureSensors: [],
+        phSensors: [],
+        feedEcSensors: [],
+        substrateEcSensors: [],
+        runoffEcSensors: [],
+        drainVolumeSensors: [],
+        irrigationFlowSensors: [],
+        powerSensors: [],
+        energySensors: [],
+        sensorGroups: [],
+        sensorCoordinates: {},
+        irrigationTanks: [],
+        cameraEntities: [],
+        lungroomTempSensors: [],
+        visionEnabled: false,
+        visionEarlyOffset: 60,
+        visionMidHours: 6,
+        visionLateOffset: 60,
+    };
+}
+function defaultTabs$1() {
+    return {
+        growspaces: { sub: { kind: 'idle' } },
+        sensors: { sub: { kind: 'idle' } },
+        climate: { sub: { kind: 'idle' } },
+        humidity: { sub: { kind: 'idle' } },
+        irrigation: { sub: { kind: 'idle' } },
+        tanks: { sub: { kind: 'idle' } },
+        vision: { sub: { kind: 'idle' } },
+        heatmap: { sub: { kind: 'idle' } },
+        subareas: { sub: { kind: 'idle' } },
+    };
+}
+/** Seed EnvironmentDraft from a GrowspaceDevice. */
+function envDraftFromDevice(device) {
+    const attrs = device.environmentAttributes ?? {};
+    const vc = attrs.visionCheckupConfig;
+    return {
+        selectedGrowspaceId: device.deviceId,
+        temperatureSensors: attrs.temperatureSensors?.length
+            ? attrs.temperatureSensors
+            : attrs.temperatureSensor
+                ? [attrs.temperatureSensor]
+                : [],
+        humiditySensors: attrs.humiditySensors?.length
+            ? attrs.humiditySensors
+            : attrs.humiditySensor
+                ? [attrs.humiditySensor]
+                : [],
+        vpdSensors: attrs.vpdSensors?.length
+            ? attrs.vpdSensors
+            : attrs.vpdSensor
+                ? [attrs.vpdSensor]
+                : [],
+        co2Sensor: attrs.co2Sensor ?? '',
+        lightSensors: attrs.lightSensors?.length
+            ? attrs.lightSensors
+            : attrs.lightSensor
+                ? [attrs.lightSensor]
+                : [],
+        exhaustFanEntities: attrs.exhaustFanEntities?.length
+            ? attrs.exhaustFanEntities
+            : attrs.exhaustEntity
+                ? [attrs.exhaustEntity]
+                : [],
+        circulationFanEntities: attrs.circulationFanEntities?.length
+            ? attrs.circulationFanEntities
+            : attrs.circulationFanEntity
+                ? [attrs.circulationFanEntity]
+                : [],
+        stressThreshold: 0.8,
+        moldThreshold: 0.8,
+        humidifierEntities: attrs.humidifierEntities?.length
+            ? attrs.humidifierEntities
+            : attrs.humidifierEntity
+                ? [attrs.humidifierEntity]
+                : [],
+        dehumidifierEntities: attrs.dehumidifierEntities?.length
+            ? attrs.dehumidifierEntities
+            : attrs.dehumidifierEntity
+                ? [attrs.dehumidifierEntity]
+                : [],
+        humidifierControlEnabled: attrs.humidifierControlEnabled ?? false,
+        dehumidifierControlEnabled: attrs.dehumidifierControlEnabled ?? false,
+        humidifierThresholds: attrs.humidifierThresholds ?? {},
+        dehumidifierThresholds: attrs.dehumidifierThresholds ?? {},
+        soilMoistureSensor: attrs.soilMoistureSensor ?? '',
+        substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
+        phSensors: attrs.phSensors ?? [],
+        feedEcSensors: attrs.feedEcSensors ?? [],
+        substrateEcSensors: attrs.substrateEcSensors ?? [],
+        runoffEcSensors: attrs.runoffEcSensors ?? [],
+        drainVolumeSensors: attrs.drainVolumeSensors ?? [],
+        irrigationFlowSensors: attrs.irrigationFlowSensors ?? [],
+        powerSensors: attrs.powerSensors ?? [],
+        energySensors: attrs.energySensors ?? [],
+        sensorGroups: attrs.sensorGroups ?? [],
+        sensorCoordinates: attrs.sensorCoordinates ?? {},
+        irrigationTanks: (attrs.irrigationTanks ?? []).map((t) => ({
+            sensorEntity: t.sensorEntity ?? '',
+            name: t.name ?? 'Tank',
+            volumeLiters: t.volumeLiters ?? null,
+            warningLevel: t.warningLevel ?? 30,
+        })),
+        cameraEntities: attrs.cameraEntities ?? [],
+        lungroomTempSensors: attrs.lungroomTempSensors ?? [],
+        visionEnabled: vc?.enabled ?? false,
+        visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
+        visionMidHours: vc?.mid_check_hours ?? 6,
+        visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+    };
+}
+/** Create the initial SM state, optionally seeded from a device. */
+function createInitialSM$1(device) {
+    const sm = {
+        activeTab: 'sensors',
+        tabs: defaultTabs$1(),
+        status: { kind: 'idle' },
+        toast: undefined,
+        environmentDraft: defaultEnvironmentDraft(),
+    };
+    return sm;
+}
+/** Rebuild environmentDraft from device data (used on open and after RESET_FROM_DEVICE). */
+function applyDeviceToSM$1(sm, device) {
+    return { ...sm, environmentDraft: envDraftFromDevice(device) };
+}
+// ─── Transition function ──────────────────────────────────────────────────────
+/** Pure state machine transition. Returns a new SM without mutating the input. */
+function transition$1(sm, event) {
+    switch (event.type) {
+        // ── Navigation ────────────────────────────────────────────────────────────
+        case 'REQUEST_TAB':
+            return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
+        case 'SWITCH_TAB':
+            return { ...sm, activeTab: event.tab, status: { kind: 'idle' } };
+        case 'DISCARD_AND_SWITCH': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            return {
+                ...sm,
+                activeTab: sm.status.pendingTab,
+                status: { kind: 'idle' },
+                tabs: { ...sm.tabs, growspaces: { sub: { kind: 'idle' } } },
+            };
+        }
+        case 'CANCEL_TAB_SWITCH':
+            return { ...sm, status: { kind: 'idle' } };
+        // ── Growspaces ────────────────────────────────────────────────────────────
+        case 'START_ADD_GROWSPACE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    growspaces: {
+                        sub: { kind: 'adding', name: '', rows: 4, plantsPerRow: 4, notificationService: '' },
+                    },
+                },
+            };
+        case 'UPDATE_ADD_DRAFT': {
+            const sub = sm.tabs.growspaces.sub;
+            if (sub.kind !== 'adding')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    growspaces: { sub: { ...sub, ...event.partial } },
+                },
+            };
+        }
+        case 'SELECT_GROWSPACE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    growspaces: {
+                        sub: {
+                            kind: 'editing',
+                            growspaceId: event.growspaceId,
+                            name: event.name,
+                            rows: event.rows,
+                            plantsPerRow: event.plantsPerRow,
+                            notificationService: event.notificationService,
+                        },
+                    },
+                },
+            };
+        case 'UPDATE_EDIT_DRAFT': {
+            const sub = sm.tabs.growspaces.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    growspaces: { sub: { ...sub, ...event.partial } },
+                },
+            };
+        }
+        case 'REQUEST_DELETE_GROWSPACE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    growspaces: {
+                        sub: { kind: 'confirm-delete', growspaceId: event.growspaceId, name: event.name },
+                    },
+                },
+            };
+        case 'CANCEL_GROWSPACES':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, growspaces: { sub: { kind: 'idle' } } },
+            };
+        // ── Environment ───────────────────────────────────────────────────────────
+        case 'UPDATE_ENV_DRAFT':
+            return {
+                ...sm,
+                environmentDraft: { ...sm.environmentDraft, ...event.partial },
+            };
+        // ── Tanks ─────────────────────────────────────────────────────────────────
+        case 'BEGIN_ADD_TANK':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    tanks: {
+                        sub: { kind: 'adding', sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30 },
+                    },
+                },
+            };
+        case 'BEGIN_EDIT_TANK':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    tanks: {
+                        sub: {
+                            kind: 'editing',
+                            index: event.index,
+                            sensorEntity: event.sensorEntity,
+                            name: event.name,
+                            volumeLiters: event.volumeLiters,
+                            warningLevel: event.warningLevel,
+                        },
+                    },
+                },
+            };
+        case 'UPDATE_TANK_DRAFT': {
+            const sub = sm.tabs.tanks.sub;
+            if (sub.kind !== 'adding' && sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, tanks: { sub: { ...sub, ...event.partial } } },
+            };
+        }
+        case 'CANCEL_TANK':
+            return { ...sm, tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } } };
+        case 'COMMIT_TANK': {
+            const sub = sm.tabs.tanks.sub;
+            if (sub.kind !== 'adding' && sub.kind !== 'editing')
+                return sm;
+            const tank = {
+                sensorEntity: sub.sensorEntity,
+                name: sub.name || 'Tank',
+                volumeLiters: sub.volumeLiters,
+                warningLevel: sub.warningLevel,
+            };
+            const existing = sm.environmentDraft.irrigationTanks;
+            const updatedTanks = sub.kind === 'editing'
+                ? existing.map((t, i) => (i === sub.index ? tank : t))
+                : [...existing, tank];
+            return {
+                ...sm,
+                environmentDraft: { ...sm.environmentDraft, irrigationTanks: updatedTanks },
+                tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
+            };
+        }
+        // ── Heatmap / sensor groups ───────────────────────────────────────────────
+        case 'BEGIN_EDIT_GROUP':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, heatmap: { sub: { kind: 'editing-group', group: event.group } } },
+            };
+        case 'CLOSE_GROUP_DIALOG':
+            return { ...sm, tabs: { ...sm.tabs, heatmap: { sub: { kind: 'idle' } } } };
+        // ── Subareas ──────────────────────────────────────────────────────────────
+        case 'BEGIN_ADD_SUBAREA':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, subareas: { sub: { kind: 'adding', name: '' } } },
+            };
+        case 'UPDATE_SUBAREA_NAME': {
+            const sub = sm.tabs.subareas.sub;
+            if (sub.kind !== 'adding')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, subareas: { sub: { ...sub, name: event.name } } },
+            };
+        }
+        case 'CANCEL_SUBAREA':
+            return { ...sm, tabs: { ...sm.tabs, subareas: { sub: { kind: 'idle' } } } };
+        case 'REQUEST_DELETE_SUBAREA':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    subareas: { sub: { kind: 'confirm-delete', subareaId: event.subareaId } },
+                },
+            };
+        case 'CANCEL_DELETE_SUBAREA':
+            return { ...sm, tabs: { ...sm.tabs, subareas: { sub: { kind: 'idle' } } } };
+        case 'BEGIN_EDIT_SUBAREA':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    subareas: { sub: { kind: 'editing-subarea', subarea: event.subarea } },
+                },
+            };
+        case 'CLOSE_SUBAREA_DIALOG':
+            return { ...sm, tabs: { ...sm.tabs, subareas: { sub: { kind: 'idle' } } } };
+        // ── Global ────────────────────────────────────────────────────────────────
+        case 'SET_TOAST':
+            return { ...sm, toast: event.message };
+        case 'RESET_FROM_DEVICE':
+            return applyDeviceToSM$1(sm, event.device);
+        default:
+            return sm;
+    }
+}
+
 // Unified stage list for the accordion — maps display id → both stage enums
 const HUMIDITY_STAGES = [
     {
@@ -16884,80 +17260,272 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.growspaceOptions = {};
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
-        this.currentTab = ConfigTab.SENSORS;
-        this._initialStateApplied = false;
-        // Add Growspace
-        this.addName = '';
-        this.addRows = 4;
-        this.addPlantsPerRow = 4;
-        this.addNotificationService = 'mobile_app_notify';
-        // Edit/Select Growspace
-        this.editSelectedId = '';
-        this.editName = '';
-        this.editRows = 0;
-        this.editPlantsPerRow = 0;
-        this.editNotificationService = '';
-        this._isAddingGrowspace = false;
-        this._showDeleteConfirm = false;
-        // Environment
-        this.envSelectedId = '';
-        this.envTemperatureSensors = [];
-        this.envHumiditySensors = [];
-        this.envVpdSensors = [];
-        this.envCo2Sensor = '';
-        this.envCirculationFanEntities = [];
-        this.envStressThreshold = 0.8;
-        this.envMoldThreshold = 0.8;
-        this.envLightSensors = [];
-        this.envExhaustFanEntities = [];
-        this.envHumidifierEntities = [];
-        this.envDehumidifierEntities = [];
-        this.envSoilMoistureSensor = '';
-        this.envDehumidifierControlEnabled = false;
-        this.envSubstrateTemperatureSensors = [];
-        this.envPhSensors = [];
-        this.envFeedEcSensors = [];
-        this.envSubstrateEcSensors = [];
-        this.envRunoffEcSensors = [];
-        this.envDrainVolumeSensors = [];
-        this.envIrrigationFlowSensors = [];
-        this.envPowerSensors = [];
-        this.envEnergySensors = [];
-        this.envDehumidifierThresholds = {};
-        this.envSensorCoordinates = {};
-        this.envIrrigationTanks = [];
-        // Tank editor
-        this._showTankForm = false;
-        this._editingTankIndex = null;
-        this._tankDraft = {
-            sensorEntity: '',
-            name: '',
-            volumeLiters: null,
-            warningLevel: 30,
-        };
-        // Vision Checkup
-        this.envVisionEnabled = false;
-        this.envVisionEarlyOffset = 60;
-        this.envVisionMidHours = 6;
-        this.envVisionLateOffset = 60;
-        this.envVisionCameraEntities = [];
-        this.envLungroomTempSensors = [];
-        // Humidifier Control
-        this.envHumidifierControlEnabled = false;
-        this.envHumidifierThresholds = {};
-        // Humidity accordion
-        this._openHumidityStageId = '';
-        // Sensor Groups
-        this.envSensorGroups = [];
-        this._showGroupDialog = false;
-        // Subareas
+        // ── Single SM ────────────────────────────────────────────────────────────
+        this._sm = createInitialSM$1();
+        // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
         this._subareasGrowspaceId = '';
-        this._showSubareaConfigDialog = false;
-        this._showAddSubarea = false;
-        this._newSubareaName = '';
-        this._deleteConfirmSubareaId = '';
+        // ── Humidity accordion (pure UI ephemeral state) ──────────────────────────
+        this._openHumidityStageId = '';
+        this._initialStateApplied = false;
+    }
+    /** Convenience: dispatch a SM transition and assign the result. */
+    _t(event) {
+        this._sm = transition$1(this._sm, event);
+    }
+    get currentTab() {
+        return this._sm.activeTab;
+    }
+    set currentTab(tab) {
+        this._sm = { ...this._sm, activeTab: tab };
+    }
+    // ── Legacy state accessors (delegate to SM) ───────────────────────────────
+    // These allow existing tests and external callers to read/write state
+    // through familiar names. The SM is the authoritative source of truth.
+    get _d() { return this._sm.environmentDraft; }
+    _setEnv(partial) {
+        this._sm = transition$1(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+    }
+    get envSelectedId() { return this._d.selectedGrowspaceId; }
+    set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
+    get envTemperatureSensors() { return this._d.temperatureSensors; }
+    set envTemperatureSensors(v) { this._setEnv({ temperatureSensors: v }); }
+    get envHumiditySensors() { return this._d.humiditySensors; }
+    set envHumiditySensors(v) { this._setEnv({ humiditySensors: v }); }
+    get envVpdSensors() { return this._d.vpdSensors; }
+    set envVpdSensors(v) { this._setEnv({ vpdSensors: v }); }
+    get envCo2Sensor() { return this._d.co2Sensor; }
+    set envCo2Sensor(v) { this._setEnv({ co2Sensor: v }); }
+    get envLightSensors() { return this._d.lightSensors; }
+    set envLightSensors(v) { this._setEnv({ lightSensors: v }); }
+    get envExhaustFanEntities() { return this._d.exhaustFanEntities; }
+    set envExhaustFanEntities(v) { this._setEnv({ exhaustFanEntities: v }); }
+    get envCirculationFanEntities() { return this._d.circulationFanEntities; }
+    set envCirculationFanEntities(v) { this._setEnv({ circulationFanEntities: v }); }
+    get envHumidifierEntities() { return this._d.humidifierEntities; }
+    set envHumidifierEntities(v) { this._setEnv({ humidifierEntities: v }); }
+    get envDehumidifierEntities() { return this._d.dehumidifierEntities; }
+    set envDehumidifierEntities(v) { this._setEnv({ dehumidifierEntities: v }); }
+    get envSoilMoistureSensor() { return this._d.soilMoistureSensor; }
+    set envSoilMoistureSensor(v) { this._setEnv({ soilMoistureSensor: v }); }
+    get envDehumidifierControlEnabled() { return this._d.dehumidifierControlEnabled; }
+    set envDehumidifierControlEnabled(v) { this._setEnv({ dehumidifierControlEnabled: v }); }
+    get envHumidifierControlEnabled() { return this._d.humidifierControlEnabled; }
+    set envHumidifierControlEnabled(v) { this._setEnv({ humidifierControlEnabled: v }); }
+    get envDehumidifierThresholds() { return this._d.dehumidifierThresholds; }
+    set envDehumidifierThresholds(v) { this._setEnv({ dehumidifierThresholds: v }); }
+    get envHumidifierThresholds() { return this._d.humidifierThresholds; }
+    set envHumidifierThresholds(v) { this._setEnv({ humidifierThresholds: v }); }
+    get envStressThreshold() { return this._d.stressThreshold; }
+    set envStressThreshold(v) { this._setEnv({ stressThreshold: v }); }
+    get envMoldThreshold() { return this._d.moldThreshold; }
+    set envMoldThreshold(v) { this._setEnv({ moldThreshold: v }); }
+    get envSensorGroups() { return this._d.sensorGroups; }
+    set envSensorGroups(v) { this._setEnv({ sensorGroups: v }); }
+    get envSensorCoordinates() { return this._d.sensorCoordinates; }
+    set envSensorCoordinates(v) { this._setEnv({ sensorCoordinates: v }); }
+    get envIrrigationTanks() { return this._d.irrigationTanks; }
+    set envIrrigationTanks(v) { this._setEnv({ irrigationTanks: v }); }
+    get envVisionCameraEntities() { return this._d.cameraEntities; }
+    set envVisionCameraEntities(v) { this._setEnv({ cameraEntities: v }); }
+    get envLungroomTempSensors() { return this._d.lungroomTempSensors; }
+    set envLungroomTempSensors(v) { this._setEnv({ lungroomTempSensors: v }); }
+    get envSubstrateTemperatureSensors() { return this._d.substrateTemperatureSensors; }
+    set envSubstrateTemperatureSensors(v) { this._setEnv({ substrateTemperatureSensors: v }); }
+    get envPhSensors() { return this._d.phSensors; }
+    set envPhSensors(v) { this._setEnv({ phSensors: v }); }
+    get envFeedEcSensors() { return this._d.feedEcSensors; }
+    set envFeedEcSensors(v) { this._setEnv({ feedEcSensors: v }); }
+    get envSubstrateEcSensors() { return this._d.substrateEcSensors; }
+    set envSubstrateEcSensors(v) { this._setEnv({ substrateEcSensors: v }); }
+    get envRunoffEcSensors() { return this._d.runoffEcSensors; }
+    set envRunoffEcSensors(v) { this._setEnv({ runoffEcSensors: v }); }
+    get envDrainVolumeSensors() { return this._d.drainVolumeSensors; }
+    set envDrainVolumeSensors(v) { this._setEnv({ drainVolumeSensors: v }); }
+    get envIrrigationFlowSensors() { return this._d.irrigationFlowSensors; }
+    set envIrrigationFlowSensors(v) { this._setEnv({ irrigationFlowSensors: v }); }
+    get envPowerSensors() { return this._d.powerSensors; }
+    set envPowerSensors(v) { this._setEnv({ powerSensors: v }); }
+    get envEnergySensors() { return this._d.energySensors; }
+    set envEnergySensors(v) { this._setEnv({ energySensors: v }); }
+    get envVisionEnabled() { return this._d.visionEnabled; }
+    set envVisionEnabled(v) { this._setEnv({ visionEnabled: v }); }
+    get envVisionEarlyOffset() { return this._d.visionEarlyOffset; }
+    set envVisionEarlyOffset(v) { this._setEnv({ visionEarlyOffset: v }); }
+    get envVisionMidHours() { return this._d.visionMidHours; }
+    set envVisionMidHours(v) { this._setEnv({ visionMidHours: v }); }
+    get envVisionLateOffset() { return this._d.visionLateOffset; }
+    set envVisionLateOffset(v) { this._setEnv({ visionLateOffset: v }); }
+    // Growspaces tab compat accessors
+    get _isAddingGrowspace() { return this._sm.tabs.growspaces.sub.kind === 'adding'; }
+    set _isAddingGrowspace(v) {
+        if (v) {
+            this._t({ type: 'START_ADD_GROWSPACE' });
+        }
+        else if (this._sm.tabs.growspaces.sub.kind === 'adding') {
+            this._t({ type: 'CANCEL_GROWSPACES' });
+        }
+    }
+    get _showDeleteConfirm() { return this._sm.tabs.growspaces.sub.kind === 'confirm-delete'; }
+    set _showDeleteConfirm(v) {
+        if (v) {
+            const sub = this._sm.tabs.growspaces.sub;
+            if (sub.kind === 'editing') {
+                this._t({ type: 'REQUEST_DELETE_GROWSPACE', growspaceId: sub.growspaceId, name: sub.name });
+            }
+        }
+        else {
+            this._t({ type: 'CANCEL_GROWSPACES' });
+        }
+    }
+    get editSelectedId() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'editing' ? sub.growspaceId : '';
+    }
+    set editSelectedId(id) {
+        if (!id) {
+            this._t({ type: 'CANCEL_GROWSPACES' });
+            return;
+        }
+        const device = this.devices?.find((d) => d.deviceId === id);
+        this._t({
+            type: 'SELECT_GROWSPACE',
+            growspaceId: id,
+            name: device?.name ?? '',
+            rows: device?.rows ?? 4,
+            plantsPerRow: device?.plantsPerRow ?? 4,
+            notificationService: device?.notificationTarget ?? '',
+        });
+    }
+    get editName() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'editing' ? sub.name : '';
+    }
+    set editName(v) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: v } }); }
+    get editRows() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'editing' ? sub.rows : 0;
+    }
+    set editRows(v) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { rows: v } }); }
+    get editPlantsPerRow() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'editing' ? sub.plantsPerRow : 0;
+    }
+    set editPlantsPerRow(v) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { plantsPerRow: v } }); }
+    get editNotificationService() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'editing' ? sub.notificationService : '';
+    }
+    set editNotificationService(v) { this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { notificationService: v } }); }
+    get addName() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'adding' ? sub.name : '';
+    }
+    set addName(v) {
+        if (this._sm.tabs.growspaces.sub.kind !== 'adding')
+            this._t({ type: 'START_ADD_GROWSPACE' });
+        this._t({ type: 'UPDATE_ADD_DRAFT', partial: { name: v } });
+    }
+    get addRows() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'adding' ? sub.rows : 4;
+    }
+    set addRows(v) {
+        if (this._sm.tabs.growspaces.sub.kind !== 'adding')
+            this._t({ type: 'START_ADD_GROWSPACE' });
+        this._t({ type: 'UPDATE_ADD_DRAFT', partial: { rows: v } });
+    }
+    get addPlantsPerRow() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'adding' ? sub.plantsPerRow : 4;
+    }
+    set addPlantsPerRow(v) {
+        if (this._sm.tabs.growspaces.sub.kind !== 'adding')
+            this._t({ type: 'START_ADD_GROWSPACE' });
+        this._t({ type: 'UPDATE_ADD_DRAFT', partial: { plantsPerRow: v } });
+    }
+    get addNotificationService() {
+        const sub = this._sm.tabs.growspaces.sub;
+        return sub.kind === 'adding' ? sub.notificationService : '';
+    }
+    set addNotificationService(v) {
+        if (this._sm.tabs.growspaces.sub.kind !== 'adding')
+            this._t({ type: 'START_ADD_GROWSPACE' });
+        this._t({ type: 'UPDATE_ADD_DRAFT', partial: { notificationService: v } });
+    }
+    // Heatmap / groups compat
+    get _showGroupDialog() { return this._sm.tabs.heatmap.sub.kind === 'editing-group'; }
+    set _showGroupDialog(v) {
+        if (v)
+            this._t({ type: 'BEGIN_EDIT_GROUP' });
+        else
+            this._t({ type: 'CLOSE_GROUP_DIALOG' });
+    }
+    get _editingGroup() {
+        const sub = this._sm.tabs.heatmap.sub;
+        return sub.kind === 'editing-group' ? sub.group : undefined;
+    }
+    set _editingGroup(g) {
+        this._t({ type: 'BEGIN_EDIT_GROUP', group: g });
+    }
+    // Subareas compat
+    get _showSubareaConfigDialog() { return this._sm.tabs.subareas.sub.kind === 'editing-subarea'; }
+    set _showSubareaConfigDialog(v) {
+        if (!v)
+            this._t({ type: 'CLOSE_SUBAREA_DIALOG' });
+    }
+    get _editingSubarea() {
+        const sub = this._sm.tabs.subareas.sub;
+        return sub.kind === 'editing-subarea' ? sub.subarea : undefined;
+    }
+    set _editingSubarea(subarea) {
+        if (subarea)
+            this._t({ type: 'BEGIN_EDIT_SUBAREA', subarea });
+        else
+            this._t({ type: 'CLOSE_SUBAREA_DIALOG' });
+    }
+    get _showAddSubarea() { return this._sm.tabs.subareas.sub.kind === 'adding'; }
+    set _showAddSubarea(v) {
+        if (v)
+            this._t({ type: 'BEGIN_ADD_SUBAREA' });
+        else
+            this._t({ type: 'CANCEL_SUBAREA' });
+    }
+    get _newSubareaName() {
+        const sub = this._sm.tabs.subareas.sub;
+        return sub.kind === 'adding' ? sub.name : '';
+    }
+    set _newSubareaName(v) {
+        if (this._sm.tabs.subareas.sub.kind !== 'adding')
+            this._t({ type: 'BEGIN_ADD_SUBAREA' });
+        this._t({ type: 'UPDATE_SUBAREA_NAME', name: v });
+    }
+    get _deleteConfirmSubareaId() {
+        const sub = this._sm.tabs.subareas.sub;
+        return sub.kind === 'confirm-delete' ? sub.subareaId : '';
+    }
+    set _deleteConfirmSubareaId(id) {
+        if (id)
+            this._t({ type: 'REQUEST_DELETE_SUBAREA', subareaId: id });
+        else
+            this._t({ type: 'CANCEL_DELETE_SUBAREA' });
+    }
+    // Tanks compat
+    get _showTankForm() { return this._sm.tabs.tanks.sub.kind !== 'idle'; }
+    get _editingTankIndex() {
+        const sub = this._sm.tabs.tanks.sub;
+        return sub.kind === 'editing' ? sub.index : null;
+    }
+    get _tankDraft() {
+        const sub = this._sm.tabs.tanks.sub;
+        if (sub.kind === 'adding' || sub.kind === 'editing') {
+            return { sensorEntity: sub.sensorEntity, name: sub.name, volumeLiters: sub.volumeLiters, warningLevel: sub.warningLevel };
+        }
+        return { sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30 };
+    }
+    set _tankDraft(v) {
+        this._t({ type: 'UPDATE_TANK_DRAFT', partial: v });
     }
     willUpdate(changedProperties) {
         if (changedProperties.has('environmentData') && this.environmentData) {
@@ -16981,139 +17549,155 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     setInitialState(currentTab = ConfigTab.SENSORS, environmentData) {
-        this.currentTab = currentTab;
-        if (environmentData) {
-            this.envSelectedId = environmentData.selectedGrowspaceId;
-            this.envTemperatureSensors = environmentData.temperatureSensors?.length
-                ? environmentData.temperatureSensors
-                : environmentData.temperatureSensor
-                    ? [environmentData.temperatureSensor]
-                    : [];
-            this.envHumiditySensors = environmentData.humiditySensors?.length
-                ? environmentData.humiditySensors
-                : environmentData.humiditySensor
-                    ? [environmentData.humiditySensor]
-                    : [];
-            this.envVpdSensors = environmentData.vpdSensors?.length
-                ? environmentData.vpdSensors
-                : environmentData.vpdSensor
-                    ? [environmentData.vpdSensor]
-                    : [];
-            this.envCo2Sensor = environmentData.co2Sensor;
-            this.envCirculationFanEntities = environmentData.circulationFanEntities || [];
-            this.envStressThreshold = environmentData.stressThreshold;
-            this.envMoldThreshold = environmentData.moldThreshold;
-            this.envLightSensors = environmentData.lightSensors || [];
-            this.envExhaustFanEntities = environmentData.exhaustFanEntities || [];
-            this.envHumidifierEntities = environmentData.humidifierEntities || [];
-            this.envDehumidifierEntities = environmentData.dehumidifierEntities || [];
-            this.envSoilMoistureSensor = environmentData.soilMoistureSensor;
-            this.envDehumidifierControlEnabled = environmentData.dehumidifierControlEnabled;
-            this.envDehumidifierThresholds = environmentData.dehumidifierThresholds || {};
-            this.envHumidifierControlEnabled = environmentData.humidifierControlEnabled;
-            this.envHumidifierThresholds = environmentData.humidifierThresholds || {};
-            this.envSensorGroups = environmentData.sensorGroups || [];
-            this.envSensorCoordinates = environmentData.sensorCoordinates || {};
-            this.envIrrigationTanks = environmentData.irrigationTanks || [];
-            this.envVisionCameraEntities = environmentData.cameraEntities ?? [];
-            this.envLungroomTempSensors = environmentData.lungroomTempSensors || [];
-            this.envSubstrateTemperatureSensors = environmentData.substrateTemperatureSensors || [];
-            this.envPhSensors = environmentData.phSensors || [];
-            this.envFeedEcSensors = environmentData.feedEcSensors || [];
-            this.envSubstrateEcSensors = environmentData.substrateEcSensors || [];
-            this.envRunoffEcSensors = environmentData.runoffEcSensors || [];
-            this.envDrainVolumeSensors = environmentData.drainVolumeSensors || [];
-            this.envIrrigationFlowSensors = environmentData.irrigationFlowSensors || [];
-            this.envPowerSensors = environmentData.powerSensors || [];
-            this.envEnergySensors = environmentData.energySensors || [];
-            if (environmentData.visionCheckupConfig) {
-                this.envVisionEnabled = environmentData.visionCheckupConfig.enabled;
-                this.envVisionEarlyOffset = environmentData.visionCheckupConfig.early_check_offset_minutes;
-                this.envVisionMidHours = environmentData.visionCheckupConfig.mid_check_hours;
-                this.envVisionLateOffset = environmentData.visionCheckupConfig.late_check_offset_minutes;
+        const vc = environmentData?.visionCheckupConfig;
+        const envPartial = environmentData
+            ? {
+                selectedGrowspaceId: environmentData.selectedGrowspaceId,
+                temperatureSensors: environmentData.temperatureSensors?.length
+                    ? environmentData.temperatureSensors
+                    : environmentData.temperatureSensor
+                        ? [environmentData.temperatureSensor]
+                        : [],
+                humiditySensors: environmentData.humiditySensors?.length
+                    ? environmentData.humiditySensors
+                    : environmentData.humiditySensor
+                        ? [environmentData.humiditySensor]
+                        : [],
+                vpdSensors: environmentData.vpdSensors?.length
+                    ? environmentData.vpdSensors
+                    : environmentData.vpdSensor
+                        ? [environmentData.vpdSensor]
+                        : [],
+                co2Sensor: environmentData.co2Sensor,
+                circulationFanEntities: environmentData.circulationFanEntities || [],
+                stressThreshold: environmentData.stressThreshold,
+                moldThreshold: environmentData.moldThreshold,
+                lightSensors: environmentData.lightSensors || [],
+                exhaustFanEntities: environmentData.exhaustFanEntities || [],
+                humidifierEntities: environmentData.humidifierEntities || [],
+                dehumidifierEntities: environmentData.dehumidifierEntities || [],
+                soilMoistureSensor: environmentData.soilMoistureSensor,
+                dehumidifierControlEnabled: environmentData.dehumidifierControlEnabled,
+                dehumidifierThresholds: environmentData.dehumidifierThresholds || {},
+                humidifierControlEnabled: environmentData.humidifierControlEnabled,
+                humidifierThresholds: environmentData.humidifierThresholds || {},
+                sensorGroups: environmentData.sensorGroups || [],
+                sensorCoordinates: environmentData.sensorCoordinates || {},
+                irrigationTanks: (environmentData.irrigationTanks || []).map((t) => ({
+                    sensorEntity: t.sensorEntity || '',
+                    name: t.name || 'Tank',
+                    volumeLiters: t.volumeLiters ?? null,
+                    warningLevel: t.warningLevel ?? 30,
+                })),
+                cameraEntities: environmentData.cameraEntities ?? [],
+                lungroomTempSensors: environmentData.lungroomTempSensors || [],
+                substrateTemperatureSensors: environmentData.substrateTemperatureSensors || [],
+                phSensors: environmentData.phSensors || [],
+                feedEcSensors: environmentData.feedEcSensors || [],
+                substrateEcSensors: environmentData.substrateEcSensors || [],
+                runoffEcSensors: environmentData.runoffEcSensors || [],
+                drainVolumeSensors: environmentData.drainVolumeSensors || [],
+                irrigationFlowSensors: environmentData.irrigationFlowSensors || [],
+                powerSensors: environmentData.powerSensors || [],
+                energySensors: environmentData.energySensors || [],
+                visionEnabled: vc?.enabled ?? false,
+                visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
+                visionMidHours: vc?.mid_check_hours ?? 6,
+                visionLateOffset: vc?.late_check_offset_minutes ?? 60,
             }
-            if (environmentData.selectedGrowspaceId) {
-                this._populateEditFields(environmentData.selectedGrowspaceId);
-            }
+            : {};
+        this._sm = {
+            ...createInitialSM$1(),
+            activeTab: currentTab,
+            environmentDraft: { ...createInitialSM$1().environmentDraft, ...envPartial },
+        };
+        if (environmentData?.selectedGrowspaceId) {
+            this._populateEditFields(environmentData.selectedGrowspaceId);
         }
-        if (this.currentTab === ConfigTab.SUBAREAS) {
+        if (currentTab === ConfigTab.SUBAREAS) {
             this._loadSubareas();
         }
     }
     _close() {
-        if (this._showGroupDialog || this._showSubareaConfigDialog)
+        const { heatmap, subareas } = this._sm.tabs;
+        if (heatmap.sub.kind === 'editing-group' || subareas.sub.kind === 'editing-subarea')
             return;
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _switchTab(tab) {
-        this.currentTab = tab;
+        this._t({ type: 'SWITCH_TAB', tab: tab });
         if (tab === ConfigTab.SUBAREAS) {
             this._loadSubareas();
         }
     }
     // ── Submit handlers ─────────────────────────────────────────────────────
     _submitAddGrowspace() {
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind !== 'adding')
+            return;
         this.dispatchEvent(new CustomEvent('add-growspace-submit', {
             detail: {
-                name: this.addName,
-                rows: this.addRows,
-                plantsPerRow: this.addPlantsPerRow,
-                notificationService: this.addNotificationService,
+                name: sub.name,
+                rows: sub.rows,
+                plantsPerRow: sub.plantsPerRow,
+                notificationService: sub.notificationService,
             },
             bubbles: true,
             composed: true,
         }));
     }
     _submitEnvironment() {
+        const d = this._sm.environmentDraft;
         this.dispatchEvent(new CustomEvent('configure-environment-submit', {
             detail: {
-                selectedGrowspaceId: this.envSelectedId,
-                temperatureSensors: this.envTemperatureSensors,
-                humiditySensors: this.envHumiditySensors,
-                vpdSensors: this.envVpdSensors,
-                co2Sensor: this.envCo2Sensor,
-                circulationFanEntities: this.envCirculationFanEntities,
-                stressThreshold: this.envStressThreshold,
-                moldThreshold: this.envMoldThreshold,
-                lightSensors: this.envLightSensors,
-                exhaustFanEntities: this.envExhaustFanEntities,
-                humidifierEntities: this.envHumidifierEntities,
-                humidifierThresholds: this.envHumidifierThresholds,
-                humidifierControlEnabled: this.envHumidifierControlEnabled,
-                dehumidifierEntities: this.envDehumidifierEntities,
-                dehumidifierThresholds: this.envDehumidifierThresholds,
-                soilMoistureSensor: this.envSoilMoistureSensor,
-                dehumidifierControlEnabled: this.envDehumidifierControlEnabled,
-                sensorGroups: this.envSensorGroups,
-                sensorCoordinates: this.envSensorCoordinates,
-                irrigationTanks: this.envIrrigationTanks,
-                cameraEntities: this.envVisionCameraEntities,
-                lungroomTempSensors: this.envLungroomTempSensors,
-                substrateTemperatureSensors: this.envSubstrateTemperatureSensors,
-                phSensors: this.envPhSensors,
-                feedEcSensors: this.envFeedEcSensors,
-                substrateEcSensors: this.envSubstrateEcSensors,
-                runoffEcSensors: this.envRunoffEcSensors,
-                drainVolumeSensors: this.envDrainVolumeSensors,
-                irrigationFlowSensors: this.envIrrigationFlowSensors,
-                powerSensors: this.envPowerSensors,
-                energySensors: this.envEnergySensors,
+                selectedGrowspaceId: d.selectedGrowspaceId,
+                temperatureSensors: d.temperatureSensors,
+                humiditySensors: d.humiditySensors,
+                vpdSensors: d.vpdSensors,
+                co2Sensor: d.co2Sensor,
+                circulationFanEntities: d.circulationFanEntities,
+                stressThreshold: d.stressThreshold,
+                moldThreshold: d.moldThreshold,
+                lightSensors: d.lightSensors,
+                exhaustFanEntities: d.exhaustFanEntities,
+                humidifierEntities: d.humidifierEntities,
+                humidifierThresholds: d.humidifierThresholds,
+                humidifierControlEnabled: d.humidifierControlEnabled,
+                dehumidifierEntities: d.dehumidifierEntities,
+                dehumidifierThresholds: d.dehumidifierThresholds,
+                soilMoistureSensor: d.soilMoistureSensor,
+                dehumidifierControlEnabled: d.dehumidifierControlEnabled,
+                sensorGroups: d.sensorGroups,
+                sensorCoordinates: d.sensorCoordinates,
+                irrigationTanks: d.irrigationTanks,
+                cameraEntities: d.cameraEntities,
+                lungroomTempSensors: d.lungroomTempSensors,
+                substrateTemperatureSensors: d.substrateTemperatureSensors,
+                phSensors: d.phSensors,
+                feedEcSensors: d.feedEcSensors,
+                substrateEcSensors: d.substrateEcSensors,
+                runoffEcSensors: d.runoffEcSensors,
+                drainVolumeSensors: d.drainVolumeSensors,
+                irrigationFlowSensors: d.irrigationFlowSensors,
+                powerSensors: d.powerSensors,
+                energySensors: d.energySensors,
             },
             bubbles: true,
             composed: true,
         }));
     }
     _submitVisionCheckupConfig() {
-        if (!this.envSelectedId)
+        const d = this._sm.environmentDraft;
+        if (!d.selectedGrowspaceId)
             return;
         this.dispatchEvent(new CustomEvent('vision-checkup-config-submit', {
             detail: {
-                growspaceId: this.envSelectedId,
+                growspaceId: d.selectedGrowspaceId,
                 visionCheckupConfig: {
-                    enabled: this.envVisionEnabled,
-                    early_check_offset_minutes: this.envVisionEarlyOffset,
-                    mid_check_hours: this.envVisionMidHours,
-                    late_check_offset_minutes: this.envVisionLateOffset,
+                    enabled: d.visionEnabled,
+                    early_check_offset_minutes: d.visionEarlyOffset,
+                    mid_check_hours: d.visionMidHours,
+                    late_check_offset_minutes: d.visionLateOffset,
                 },
             },
             bubbles: true,
@@ -17121,15 +17705,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }));
     }
     _submitEditGrowspace() {
-        if (!this.editSelectedId)
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind !== 'editing')
             return;
         this.dispatchEvent(new CustomEvent('edit-growspace-submit', {
             detail: {
-                growspaceId: this.editSelectedId,
-                name: this.editName,
-                rows: this.editRows,
-                plantsPerRow: this.editPlantsPerRow,
-                notificationService: this.editNotificationService,
+                growspaceId: sub.growspaceId,
+                name: sub.name,
+                rows: sub.rows,
+                plantsPerRow: sub.plantsPerRow,
+                notificationService: sub.notificationService,
             },
             bubbles: true,
             composed: true,
@@ -17137,47 +17722,47 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     _submitGrowspaceAndEnv() {
         this._submitEditGrowspace();
-        if (this.envTemperatureSensors.length > 0 && this.envHumiditySensors.length > 0) {
+        const d = this._sm.environmentDraft;
+        if (d.temperatureSensors.length > 0 && d.humiditySensors.length > 0) {
             this._submitEnvironment();
         }
     }
     _submitDeleteGrowspace() {
-        if (!this.editSelectedId)
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind !== 'editing')
             return;
-        this._showDeleteConfirm = true;
+        this._t({ type: 'REQUEST_DELETE_GROWSPACE', growspaceId: sub.growspaceId, name: sub.name });
     }
     _confirmDeleteGrowspace() {
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind !== 'confirm-delete')
+            return;
         this.dispatchEvent(new CustomEvent('delete-growspace-submit', {
-            detail: { growspace_id: this.editSelectedId },
+            detail: { growspace_id: sub.growspaceId },
             bubbles: true,
             composed: true,
         }));
-        this.editSelectedId = '';
-        this.editName = '';
-        this.editRows = 0;
-        this.editPlantsPerRow = 0;
-        this.editNotificationService = '';
-        this._showDeleteConfirm = false;
-        this._isAddingGrowspace = false;
+        this._t({ type: 'CANCEL_GROWSPACES' });
     }
     _cancelDeleteGrowspace() {
-        this._showDeleteConfirm = false;
+        this._t({ type: 'CANCEL_GROWSPACES' });
     }
     async _handleRemoveEnvironment() {
-        if (!this.envSelectedId)
+        const growspaceId = this._sm.environmentDraft.selectedGrowspaceId;
+        if (!growspaceId)
             return;
         const confirmed = window.confirm('Are you sure you want to remove the environment configuration for this growspace? This will disconnect all sensors and controllers from this growspace.');
         if (!confirmed)
             return;
         try {
             this.dispatchEvent(new CustomEvent('remove-environment-submit', {
-                detail: { growspace_id: this.envSelectedId },
+                detail: { growspace_id: growspaceId },
                 bubbles: true,
                 composed: true,
             }));
             setTimeout(() => {
-                if (this.envSelectedId) {
-                    this._handleEnvGrowspaceChange({ target: { value: this.envSelectedId } });
+                if (growspaceId) {
+                    this._handleEnvGrowspaceChange({ target: { value: growspaceId } });
                 }
             }, 1000);
         }
@@ -17187,31 +17772,35 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     // ── Growspace data helpers ───────────────────────────────────────────────
     _populateEditFields(growspaceId) {
-        this.editSelectedId = growspaceId;
-        if (growspaceId && this.devices) {
-            const device = this.devices.find((d) => d.deviceId === growspaceId);
-            if (device) {
-                this.editName = device.name;
-                this.editRows = device.rows || 4;
-                this.editPlantsPerRow = device.plantsPerRow || 4;
-                this.editNotificationService = device.notificationTarget || '';
-            }
+        if (!growspaceId) {
+            this._t({ type: 'CANCEL_GROWSPACES' });
+            return;
+        }
+        if (!this.devices)
+            return;
+        const device = this.devices.find((d) => d.deviceId === growspaceId);
+        if (device) {
+            this._t({
+                type: 'SELECT_GROWSPACE',
+                growspaceId,
+                name: device.name,
+                rows: device.rows || 4,
+                plantsPerRow: device.plantsPerRow || 4,
+                notificationService: device.notificationTarget || '',
+            });
         }
     }
     _handleEditSelection(growspaceId) {
-        this._isAddingGrowspace = false;
-        this._showDeleteConfirm = false;
-        this._populateEditFields(growspaceId);
+        if (!growspaceId) {
+            this._t({ type: 'CANCEL_GROWSPACES' });
+        }
+        else {
+            this._populateEditFields(growspaceId);
+        }
         this._handleEnvGrowspaceChange({ target: { value: growspaceId } });
     }
     _startAddGrowspace() {
-        this._isAddingGrowspace = true;
-        this._showDeleteConfirm = false;
-        this.editSelectedId = '';
-        this.addName = '';
-        this.addRows = 4;
-        this.addPlantsPerRow = 4;
-        this.addNotificationService = 'mobile_app_notify';
+        this._t({ type: 'START_ADD_GROWSPACE' });
     }
     _getMobileAppNotifyServices() {
         if (!this.hass?.services?.notify)
@@ -17297,101 +17886,81 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     // ── Threshold helpers ────────────────────────────────────────────────────
     _getThresholdValue(stage, cycle, point) {
-        return this.envDehumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+        return this._sm.environmentDraft.dehumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
     }
     _updateThreshold(stage, cycle, point, value) {
         if (isNaN(value))
             return;
-        const t = JSON.parse(JSON.stringify(this.envDehumidifierThresholds || {}));
+        const t = JSON.parse(JSON.stringify(this._sm.environmentDraft.dehumidifierThresholds || {}));
         if (!t[stage])
             t[stage] = {};
         if (!t[stage][cycle])
             t[stage][cycle] = { on: 0, off: 0 };
         t[stage][cycle][point] = value;
-        this.envDehumidifierThresholds = t;
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierThresholds: t } });
     }
     _getHumidifierThresholdValue(stage, cycle, point) {
-        return this.envHumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+        return this._sm.environmentDraft.humidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
     }
     _updateHumidifierThreshold(stage, cycle, point, value) {
         if (isNaN(value))
             return;
-        const t = JSON.parse(JSON.stringify(this.envHumidifierThresholds || {}));
+        const t = JSON.parse(JSON.stringify(this._sm.environmentDraft.humidifierThresholds || {}));
         if (!t[stage])
             t[stage] = {};
         if (!t[stage][cycle])
             t[stage][cycle] = { on: 0, off: 0 };
         t[stage][cycle][point] = value;
-        this.envHumidifierThresholds = t;
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humidifierThresholds: t } });
     }
     // ── Tank methods ─────────────────────────────────────────────────────────
     _openAddTank() {
-        this._tankDraft = { sensorEntity: '', name: '', volumeLiters: null, warningLevel: 30 };
-        this._editingTankIndex = null;
-        this._showTankForm = true;
+        this._t({ type: 'BEGIN_ADD_TANK' });
     }
     _editTank(index) {
-        const tank = this.envIrrigationTanks[index];
-        this._tankDraft = {
+        const tank = this._sm.environmentDraft.irrigationTanks[index];
+        this._t({
+            type: 'BEGIN_EDIT_TANK',
+            index,
             sensorEntity: tank.sensorEntity || '',
             name: tank.name || '',
             volumeLiters: tank.volumeLiters ?? null,
             warningLevel: tank.warningLevel ?? 30,
-        };
-        this._editingTankIndex = index;
-        this._showTankForm = true;
+        });
     }
     _deleteTank(index) {
-        this.envIrrigationTanks = this.envIrrigationTanks.filter((_, i) => i !== index);
+        const updated = this._sm.environmentDraft.irrigationTanks.filter((_, i) => i !== index);
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { irrigationTanks: updated } });
     }
     _saveTank() {
-        if (!this._tankDraft.sensorEntity.trim())
+        const sub = this._sm.tabs.tanks.sub;
+        if (sub.kind !== 'adding' && sub.kind !== 'editing')
             return;
-        const tank = {
-            sensorEntity: this._tankDraft.sensorEntity.trim(),
-            name: this._tankDraft.name.trim() || 'Tank',
-            volumeLiters: this._tankDraft.volumeLiters,
-            warningLevel: this._tankDraft.warningLevel,
-        };
-        if (this._editingTankIndex !== null) {
-            const updated = [...this.envIrrigationTanks];
-            updated[this._editingTankIndex] = tank;
-            this.envIrrigationTanks = updated;
-        }
-        else {
-            this.envIrrigationTanks = [...this.envIrrigationTanks, tank];
-        }
-        this._showTankForm = false;
-        this._editingTankIndex = null;
+        if (!sub.sensorEntity.trim())
+            return;
+        this._t({ type: 'COMMIT_TANK' });
     }
     _cancelTank() {
-        this._showTankForm = false;
-        this._editingTankIndex = null;
+        this._t({ type: 'CANCEL_TANK' });
     }
     // ── Sensor group methods ─────────────────────────────────────────────────
     _openAddGroup() {
-        this._editingGroup = undefined;
-        this._showGroupDialog = true;
+        this._t({ type: 'BEGIN_EDIT_GROUP' });
     }
     _editGroup(group) {
-        this._editingGroup = group;
-        this._showGroupDialog = true;
+        this._t({ type: 'BEGIN_EDIT_GROUP', group });
     }
     _deleteGroup(id) {
-        this.envSensorGroups = this.envSensorGroups.filter((g) => g.id !== id);
+        const updated = this._sm.environmentDraft.sensorGroups.filter((g) => g.id !== id);
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: updated } });
     }
     _handleSaveGroup(e) {
         const group = e.detail.group;
-        const index = this.envSensorGroups.findIndex((g) => g.id === group.id);
-        if (index >= 0) {
-            const next = [...this.envSensorGroups];
-            next[index] = group;
-            this.envSensorGroups = next;
-        }
-        else {
-            this.envSensorGroups = [...this.envSensorGroups, group];
-        }
-        this._showGroupDialog = false;
+        const groups = this._sm.environmentDraft.sensorGroups;
+        const index = groups.findIndex((g) => g.id === group.id);
+        const updated = index >= 0 ? groups.map((g, i) => (i === index ? group : g)) : [...groups, group];
+        this._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: updated } });
+        this._t({ type: 'CLOSE_GROUP_DIALOG' });
     }
     // ── Subarea methods ──────────────────────────────────────────────────────
     _getDataService() {
@@ -17400,7 +17969,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         return this._dataService;
     }
     async _loadSubareas() {
-        const growspaceId = this.envSelectedId || this.editSelectedId;
+        const envId = this._sm.environmentDraft.selectedGrowspaceId;
+        const gsSub = this._sm.tabs.growspaces.sub;
+        const editId = gsSub.kind === 'editing' ? gsSub.growspaceId : '';
+        const growspaceId = envId || editId;
         if (!growspaceId) {
             this._subareas = [];
             this._subareasGrowspaceId = '';
@@ -17420,13 +17992,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     async _handleAddSubarea() {
-        const name = this._newSubareaName.trim();
+        const sub = this._sm.tabs.subareas.sub;
+        const name = sub.kind === 'adding' ? sub.name.trim() : '';
         if (!name || !this._subareasGrowspaceId)
             return;
         try {
             await addSubarea(this._subareasGrowspaceId, name);
-            this._newSubareaName = '';
-            this._showAddSubarea = false;
+            this._t({ type: 'CANCEL_SUBAREA' });
             await this._loadSubareas();
         }
         catch (e) {
@@ -17434,18 +18006,17 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     _handleEditSubarea(subarea) {
-        this._editingSubarea = subarea;
-        this._showSubareaConfigDialog = true;
+        this._t({ type: 'BEGIN_EDIT_SUBAREA', subarea });
     }
     _handleDeleteSubarea(subareaId) {
-        this._deleteConfirmSubareaId = subareaId;
+        this._t({ type: 'REQUEST_DELETE_SUBAREA', subareaId });
     }
     async _confirmDeleteSubarea(subareaId) {
         if (!this._subareasGrowspaceId)
             return;
         try {
             await removeSubarea(this._subareasGrowspaceId, subareaId);
-            this._deleteConfirmSubareaId = '';
+            this._t({ type: 'CANCEL_DELETE_SUBAREA' });
             await this._loadSubareas();
         }
         catch (e) {
@@ -17454,134 +18025,60 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     _handleEnvGrowspaceChange(e) {
         const growspaceId = e.target.value;
-        this.envSelectedId = growspaceId;
         const device = this.devices.find((d) => d.deviceId === growspaceId);
-        if (device?.environmentAttributes) {
-            const attrs = device.environmentAttributes;
-            this.envTemperatureSensors = attrs.temperatureSensors?.length
-                ? attrs.temperatureSensors
-                : attrs.temperatureSensor
-                    ? [attrs.temperatureSensor]
-                    : [];
-            this.envHumiditySensors = attrs.humiditySensors?.length
-                ? attrs.humiditySensors
-                : attrs.humiditySensor
-                    ? [attrs.humiditySensor]
-                    : [];
-            this.envVpdSensors = attrs.vpdSensors?.length
-                ? attrs.vpdSensors
-                : attrs.vpdSensor
-                    ? [attrs.vpdSensor]
-                    : [];
-            this.envCo2Sensor = attrs.co2Sensor || '';
-            this.envSoilMoistureSensor = attrs.soilMoistureSensor || '';
-            this.envDehumidifierControlEnabled = attrs.dehumidifierControlEnabled || false;
-            this.envDehumidifierThresholds = attrs.dehumidifierThresholds || {};
-            this.envHumidifierControlEnabled = attrs.humidifierControlEnabled || false;
-            this.envHumidifierThresholds = attrs.humidifierThresholds || {};
-            this.envLightSensors = attrs.lightSensors?.length
-                ? attrs.lightSensors
-                : attrs.lightSensor
-                    ? [attrs.lightSensor]
-                    : [];
-            this.envExhaustFanEntities = attrs.exhaustFanEntities?.length
-                ? attrs.exhaustFanEntities
-                : attrs.exhaustEntity
-                    ? [attrs.exhaustEntity]
-                    : [];
-            this.envCirculationFanEntities = attrs.circulationFanEntities?.length
-                ? attrs.circulationFanEntities
-                : attrs.circulationFanEntity
-                    ? [attrs.circulationFanEntity]
-                    : [];
-            this.envHumidifierEntities = attrs.humidifierEntities?.length
-                ? attrs.humidifierEntities
-                : attrs.humidifierEntity
-                    ? [attrs.humidifierEntity]
-                    : [];
-            this.envDehumidifierEntities = attrs.dehumidifierEntities?.length
-                ? attrs.dehumidifierEntities
-                : attrs.dehumidifierEntity
-                    ? [attrs.dehumidifierEntity]
-                    : [];
-            this.envStressThreshold = 0.8;
-            this.envMoldThreshold = 0.8;
-            this.envVisionCameraEntities = attrs.cameraEntities ?? [];
-            this.envLungroomTempSensors = attrs.lungroomTempSensors || [];
-            if (attrs.visionCheckupConfig) {
-                this.envVisionEnabled = attrs.visionCheckupConfig.enabled;
-                this.envVisionEarlyOffset = attrs.visionCheckupConfig.early_check_offset_minutes;
-                this.envVisionMidHours = attrs.visionCheckupConfig.mid_check_hours;
-                this.envVisionLateOffset = attrs.visionCheckupConfig.late_check_offset_minutes;
-            }
-            else {
-                this.envVisionEnabled = false;
-                this.envVisionEarlyOffset = 60;
-                this.envVisionMidHours = 6;
-                this.envVisionLateOffset = 60;
-            }
-            this.envSubstrateTemperatureSensors = attrs.substrateTemperatureSensors || [];
-            this.envPhSensors = attrs.phSensors || [];
-            this.envFeedEcSensors = attrs.feedEcSensors || [];
-            this.envSubstrateEcSensors = attrs.substrateEcSensors || [];
-            this.envRunoffEcSensors = attrs.runoffEcSensors || [];
-            this.envDrainVolumeSensors = attrs.drainVolumeSensors || [];
-            this.envIrrigationFlowSensors = attrs.irrigationFlowSensors || [];
-            this.envPowerSensors = attrs.powerSensors || [];
-            this.envEnergySensors = attrs.energySensors || [];
-            this.envIrrigationTanks = (attrs.irrigationTanks || []).map((t) => ({
-                sensorEntity: t.sensorEntity || '',
-                name: t.name || 'Tank',
-                volumeLiters: t.volumeLiters ?? null,
-                warningLevel: t.warningLevel ?? 30,
-            }));
-            this._showTankForm = false;
-            this._editingTankIndex = null;
+        if (device) {
+            this._t({ type: 'RESET_FROM_DEVICE', device });
         }
         else {
-            this.envTemperatureSensors = [];
-            this.envHumiditySensors = [];
-            this.envVpdSensors = [];
-            this.envCo2Sensor = '';
-            this.envCirculationFanEntities = [];
-            this.envLightSensors = [];
-            this.envExhaustFanEntities = [];
-            this.envHumidifierEntities = [];
-            this.envDehumidifierEntities = [];
-            this.envSoilMoistureSensor = '';
-            this.envDehumidifierControlEnabled = false;
-            this.envDehumidifierThresholds = {};
-            this.envHumidifierControlEnabled = false;
-            this.envHumidifierThresholds = {};
-            this.envVisionEnabled = false;
-            this.envVisionEarlyOffset = 60;
-            this.envVisionMidHours = 6;
-            this.envVisionLateOffset = 60;
-            this.envVisionCameraEntities = [];
-            this.envLungroomTempSensors = [];
-            this.envSubstrateTemperatureSensors = [];
-            this.envPhSensors = [];
-            this.envFeedEcSensors = [];
-            this.envSubstrateEcSensors = [];
-            this.envRunoffEcSensors = [];
-            this.envDrainVolumeSensors = [];
-            this.envIrrigationFlowSensors = [];
-            this.envPowerSensors = [];
-            this.envEnergySensors = [];
-            this.envIrrigationTanks = [];
-            this._showTankForm = false;
-            this._editingTankIndex = null;
+            this._t({
+                type: 'UPDATE_ENV_DRAFT',
+                partial: {
+                    selectedGrowspaceId: growspaceId,
+                    temperatureSensors: [],
+                    humiditySensors: [],
+                    vpdSensors: [],
+                    co2Sensor: '',
+                    lightSensors: [],
+                    exhaustFanEntities: [],
+                    circulationFanEntities: [],
+                    humidifierEntities: [],
+                    dehumidifierEntities: [],
+                    soilMoistureSensor: '',
+                    dehumidifierControlEnabled: false,
+                    dehumidifierThresholds: {},
+                    humidifierControlEnabled: false,
+                    humidifierThresholds: {},
+                    visionEnabled: false,
+                    visionEarlyOffset: 60,
+                    visionMidHours: 6,
+                    visionLateOffset: 60,
+                    cameraEntities: [],
+                    lungroomTempSensors: [],
+                    substrateTemperatureSensors: [],
+                    phSensors: [],
+                    feedEcSensors: [],
+                    substrateEcSensors: [],
+                    runoffEcSensors: [],
+                    drainVolumeSensors: [],
+                    irrigationFlowSensors: [],
+                    powerSensors: [],
+                    energySensors: [],
+                    irrigationTanks: [],
+                },
+            });
+            this._t({ type: 'CANCEL_TANK' });
         }
     }
     // ── Section renderers ────────────────────────────────────────────────────
     _renderGrowspacesSection() {
-        if (this._showDeleteConfirm) {
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind === 'confirm-delete') {
             return x `
         <div class="cfg-master-detail" style="grid-template-columns:1fr;">
           <div class="detail-card" style="text-align:center;padding:40px 20px;">
             <h3 style="color:var(--error-color,#ff5252);">Delete Growspace?</h3>
             <p style="margin-bottom:30px;color:var(--secondary-text-color);">
-              Are you sure you want to delete "<strong>${this.editName}</strong>"?<br />
+              Are you sure you want to delete "<strong>${sub.name}</strong>"?<br />
               This will remove all associated plants and history.<br />
               This action cannot be undone.
             </p>
@@ -17589,6 +18086,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
       `;
         }
+        const editingId = sub.kind === 'editing' ? sub.growspaceId : '';
+        const isAdding = sub.kind === 'adding';
         return x `
       <div class="cfg-master-detail">
         <!-- Master list -->
@@ -17600,9 +18099,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </div>
           ${Object.entries(this.growspaceOptions).map(([id, name]) => x `
               <div
-                class="cfg-gs-row ${this.editSelectedId === id && !this._isAddingGrowspace
-            ? 'active'
-            : ''}"
+                class="cfg-gs-row ${editingId === id && !isAdding ? 'active' : ''}"
                 @click=${() => this._handleEditSelection(id)}
               >
                 <span class="gs-name">${name}</span>
@@ -17618,11 +18115,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
 
         <!-- Detail pane -->
         <div class="cfg-detail-pane">
-          ${this._isAddingGrowspace ? this._renderAddGrowspaceForm() : E}
-          ${!this._isAddingGrowspace && this.editSelectedId
-            ? this._renderEditGrowspaceForm()
-            : E}
-          ${!this._isAddingGrowspace && !this.editSelectedId
+          ${isAdding ? this._renderAddGrowspaceForm() : E}
+          ${!isAdding && editingId ? this._renderEditGrowspaceForm() : E}
+          ${!isAdding && !editingId
             ? x `
                 <div style="text-align:center;padding:40px 20px;color:var(--secondary-text-color);">
                   Select a growspace to edit, or click "Add Growspace" to create a new one.
@@ -17634,36 +18129,39 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     `;
     }
     _renderAddGrowspaceForm() {
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind !== 'adding')
+            return E;
         return x `
       <div class="detail-card">
         <h3>New Growspace</h3>
         <md3-text-input
           label="Growspace Name"
-          .value=${this.addName}
-          @change=${(e) => (this.addName = e.detail)}
+          .value=${sub.name}
+          @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { name: e.detail } })}
         ></md3-text-input>
         <div class="row-col-grid">
           <md3-number-input
             label="Rows"
-            .value=${this.addRows}
-            @change=${(e) => (this.addRows = parseInt(e.detail))}
+            .value=${sub.rows}
+            @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { rows: parseInt(e.detail) } })}
           ></md3-number-input>
           <md3-number-input
             label="Plants per Row"
-            .value=${this.addPlantsPerRow}
-            @change=${(e) => (this.addPlantsPerRow = parseInt(e.detail))}
+            .value=${sub.plantsPerRow}
+            @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { plantsPerRow: parseInt(e.detail) } })}
           ></md3-number-input>
         </div>
         <div class="md3-input-group">
           <label class="md3-label">Notification Service (Mobile App)</label>
           <select
             class="md3-input"
-            .value=${this.addNotificationService}
-            @change=${(e) => (this.addNotificationService = e.target.value)}
+            .value=${sub.notificationService}
+            @change=${(e) => this._t({ type: 'UPDATE_ADD_DRAFT', partial: { notificationService: e.target.value } })}
           >
             <option value="">None</option>
             ${this._getMobileAppNotifyServices().map((s) => x `
-                <option value="${s.value}" ?selected=${this.addNotificationService === s.value}>
+                <option value="${s.value}" ?selected=${sub.notificationService === s.value}>
                   ${s.label}
                 </option>
               `)}
@@ -17673,47 +18171,52 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     `;
     }
     _renderEditGrowspaceForm() {
+        const sub = this._sm.tabs.growspaces.sub;
+        if (sub.kind !== 'editing')
+            return E;
+        const d = this._sm.environmentDraft;
         return x `
       <div class="detail-card">
         <h3>Edit Details</h3>
         <md3-text-input
           label="Growspace Name"
-          .value=${this.editName}
-          @change=${(e) => (this.editName = e.detail)}
+          .value=${sub.name}
+          @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { name: e.detail } })}
         ></md3-text-input>
         <div class="row-col-grid">
           <md3-number-input
             label="Rows"
-            .value=${this.editRows}
-            @change=${(e) => (this.editRows = parseInt(e.detail))}
+            .value=${sub.rows}
+            @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { rows: parseInt(e.detail) } })}
           ></md3-number-input>
           <md3-number-input
             label="Plants per Row"
-            .value=${this.editPlantsPerRow}
-            @change=${(e) => (this.editPlantsPerRow = parseInt(e.detail))}
+            .value=${sub.plantsPerRow}
+            @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { plantsPerRow: parseInt(e.detail) } })}
           ></md3-number-input>
         </div>
         <div class="md3-input-group">
           <label class="md3-label">Notification Service (Mobile App)</label>
           <select
             class="md3-input"
-            .value=${this.editNotificationService}
-            @change=${(e) => (this.editNotificationService = e.target.value)}
+            .value=${sub.notificationService}
+            @change=${(e) => this._t({ type: 'UPDATE_EDIT_DRAFT', partial: { notificationService: e.target.value } })}
           >
             <option value="">None</option>
             ${this._getMobileAppNotifyServices().map((s) => x `
-                <option value="${s.value}" ?selected=${this.editNotificationService === s.value}>
+                <option value="${s.value}" ?selected=${sub.notificationService === s.value}>
                   ${s.label}
                 </option>
               `)}
           </select>
         </div>
-        ${this._renderMultiEntitySelect('Lung Room Temp Sensors', this.envLungroomTempSensors, ['sensor', 'input_number'], 'temperature', (v) => (this.envLungroomTempSensors = v))}
-        ${this._renderMultiEntitySelect('Area Camera', this.envVisionCameraEntities, ['camera'], null, (v) => (this.envVisionCameraEntities = v))}
+        ${this._renderMultiEntitySelect('Lung Room Temp Sensors', d.lungroomTempSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lungroomTempSensors: v } }))}
+        ${this._renderMultiEntitySelect('Area Camera', d.cameraEntities, ['camera'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: v } }))}
       </div>
     `;
     }
     _renderSensorsSection() {
+        const d = this._sm.environmentDraft;
         return x `
       <div class="detail-card">
         <div
@@ -17729,23 +18232,24 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
         <div class="form-section">
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Temperature Sensors', this.envTemperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => (this.envTemperatureSensors = v))}
-            ${this._renderMultiEntitySelect('Humidity Sensors', this.envHumiditySensors, ['sensor', 'input_number'], 'humidity', (v) => (this.envHumiditySensors = v))}
+            ${this._renderMultiEntitySelect('Temperature Sensors', d.temperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { temperatureSensors: v } }))}
+            ${this._renderMultiEntitySelect('Humidity Sensors', d.humiditySensors, ['sensor', 'input_number'], 'humidity', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humiditySensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('VPD Sensors (Optional)', this.envVpdSensors, ['sensor', 'input_number'], 'pressure', (v) => (this.envVpdSensors = v))}
-            ${this._renderEntitySelect('Soil Moisture Sensor', this.envSoilMoistureSensor, ['sensor', 'input_number'], 'moisture', (e) => (this.envSoilMoistureSensor = e.detail.value))}
+            ${this._renderMultiEntitySelect('VPD Sensors (Optional)', d.vpdSensors, ['sensor', 'input_number'], 'pressure', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdSensors: v } }))}
+            ${this._renderEntitySelect('Soil Moisture Sensor', d.soilMoistureSensor, ['sensor', 'input_number'], 'moisture', (e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { soilMoistureSensor: e.detail.value } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderEntitySelect('CO₂ Sensor', this.envCo2Sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => (this.envCo2Sensor = e.detail.value))}
-            ${this._renderMultiEntitySelect('Light Source / Sensor', this.envLightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (v) => (this.envLightSensors = v))}
+            ${this._renderEntitySelect('CO₂ Sensor', d.co2Sensor, ['sensor', 'input_number'], 'carbon_dioxide', (e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { co2Sensor: e.detail.value } }))}
+            ${this._renderMultiEntitySelect('Light Source / Sensor', d.lightSensors, ['switch', 'light', 'input_boolean', 'sensor'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { lightSensors: v } }))}
           </div>
-          ${this._renderMultiEntitySelect('Substrate Temperature Sensors', this.envSubstrateTemperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => (this.envSubstrateTemperatureSensors = v))}
+          ${this._renderMultiEntitySelect('Substrate Temperature Sensors', d.substrateTemperatureSensors, ['sensor', 'input_number'], 'temperature', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateTemperatureSensors: v } }))}
         </div>
       </div>
     `;
     }
     _renderClimateSection() {
+        const d = this._sm.environmentDraft;
         return x `
       <div class="detail-card">
         <div
@@ -17761,20 +18265,20 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
         <div class="form-section">
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Exhaust Fan / Switch', this.envExhaustFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => (this.envExhaustFanEntities = v))}
-            ${this._renderMultiEntitySelect('Circulation Fan / Switch', this.envCirculationFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (v) => (this.envCirculationFanEntities = v))}
+            ${this._renderMultiEntitySelect('Exhaust Fan / Switch', d.exhaustFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { exhaustFanEntities: v } }))}
+            ${this._renderMultiEntitySelect('Circulation Fan / Switch', d.circulationFanEntities, ['fan', 'switch', 'input_boolean', 'sensor', 'input_number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { circulationFanEntities: v } }))}
           </div>
           <div class="row-col-grid">
             <md3-number-input
               label="Stress Threshold %"
-              .value=${this.envStressThreshold}
-              @change=${(e) => (this.envStressThreshold = parseFloat(e.detail))}
+              .value=${d.stressThreshold}
+              @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { stressThreshold: parseFloat(e.detail) } })}
               step="0.01"
             ></md3-number-input>
             <md3-number-input
               label="Mold Threshold %"
-              .value=${this.envMoldThreshold}
-              @change=${(e) => (this.envMoldThreshold = parseFloat(e.detail))}
+              .value=${d.moldThreshold}
+              @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { moldThreshold: parseFloat(e.detail) } })}
               step="0.01"
             ></md3-number-input>
           </div>
@@ -17782,7 +18286,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             <button
               class="md3-button tonal error"
               @click=${this._handleRemoveEnvironment}
-              ?disabled=${!this.envSelectedId}
+              ?disabled=${!d.selectedGrowspaceId}
             >
               Remove Environment
             </button>
@@ -17818,23 +18322,23 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
         <div class="form-section">
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Humidifier', this.envHumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => (this.envHumidifierEntities = v))}
-            ${this._renderMultiEntitySelect('Dehumidifier', this.envDehumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (v) => (this.envDehumidifierEntities = v))}
+            ${this._renderMultiEntitySelect('Humidifier', this._sm.environmentDraft.humidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor', 'input_number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humidifierEntities: v } }))}
+            ${this._renderMultiEntitySelect('Dehumidifier', this._sm.environmentDraft.dehumidifierEntities, ['humidifier', 'switch', 'input_boolean', 'sensor', 'binary_sensor'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierEntities: v } }))}
           </div>
           <div class="row-col-grid">
             <label class="checkbox-label">
               <input
                 type="checkbox"
-                .checked=${this.envHumidifierControlEnabled}
-                @change=${(e) => (this.envHumidifierControlEnabled = e.target.checked)}
+                .checked=${this._sm.environmentDraft.humidifierControlEnabled}
+                @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { humidifierControlEnabled: e.target.checked } })}
               />
               Enable Humidifier Control
             </label>
             <label class="checkbox-label">
               <input
                 type="checkbox"
-                .checked=${this.envDehumidifierControlEnabled}
-                @change=${(e) => (this.envDehumidifierControlEnabled = e.target.checked)}
+                .checked=${this._sm.environmentDraft.dehumidifierControlEnabled}
+                @change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierControlEnabled: e.target.checked } })}
               />
               Enable Dehumidifier Control
             </label>
@@ -18022,20 +18526,20 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         </div>
         <div class="form-section">
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('pH Sensors', this.envPhSensors, ['sensor', 'input_number', 'number'], null, (v) => (this.envPhSensors = v))}
-            ${this._renderMultiEntitySelect('Feed EC Sensors', this.envFeedEcSensors, ['sensor', 'input_number', 'number'], null, (v) => (this.envFeedEcSensors = v))}
+            ${this._renderMultiEntitySelect('pH Sensors', this._sm.environmentDraft.phSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { phSensors: v } }))}
+            ${this._renderMultiEntitySelect('Feed EC Sensors', this._sm.environmentDraft.feedEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { feedEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Substrate EC Sensors', this.envSubstrateEcSensors, ['sensor', 'input_number', 'number'], null, (v) => (this.envSubstrateEcSensors = v))}
-            ${this._renderMultiEntitySelect('Runoff EC Sensors', this.envRunoffEcSensors, ['sensor', 'input_number', 'number'], null, (v) => (this.envRunoffEcSensors = v))}
+            ${this._renderMultiEntitySelect('Substrate EC Sensors', this._sm.environmentDraft.substrateEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateEcSensors: v } }))}
+            ${this._renderMultiEntitySelect('Runoff EC Sensors', this._sm.environmentDraft.runoffEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { runoffEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Drain Volume Sensors', this.envDrainVolumeSensors, ['sensor', 'input_number', 'number'], null, (v) => (this.envDrainVolumeSensors = v))}
-            ${this._renderMultiEntitySelect('Irrigation Flow Sensors', this.envIrrigationFlowSensors, ['sensor', 'input_number', 'number'], null, (v) => (this.envIrrigationFlowSensors = v))}
+            ${this._renderMultiEntitySelect('Drain Volume Sensors', this._sm.environmentDraft.drainVolumeSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { drainVolumeSensors: v } }))}
+            ${this._renderMultiEntitySelect('Irrigation Flow Sensors', this._sm.environmentDraft.irrigationFlowSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { irrigationFlowSensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Power Sensors', this.envPowerSensors, ['sensor', 'input_number', 'number'], 'power', (v) => (this.envPowerSensors = v))}
-            ${this._renderMultiEntitySelect('Energy Sensors', this.envEnergySensors, ['sensor', 'input_number', 'number'], 'energy', (v) => (this.envEnergySensors = v))}
+            ${this._renderMultiEntitySelect('Power Sensors', this._sm.environmentDraft.powerSensors, ['sensor', 'input_number', 'number'], 'power', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { powerSensors: v } }))}
+            ${this._renderMultiEntitySelect('Energy Sensors', this._sm.environmentDraft.energySensors, ['sensor', 'input_number', 'number'], 'energy', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { energySensors: v } }))}
           </div>
         </div>
       </div>
@@ -18069,14 +18573,14 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </button>
         </div>
 
-        ${this.envIrrigationTanks.length === 0 && !this._showTankForm
+        ${this._sm.environmentDraft.irrigationTanks.length === 0 && this._sm.tabs.tanks.sub.kind === 'idle'
             ? x `<div style="font-size:0.85rem;color:var(--secondary-text-color);padding:8px 0;">
               No tanks configured.
             </div>`
             : E}
 
         <div style="display:flex;flex-direction:column;gap:8px;">
-          ${this.envIrrigationTanks.map((tank, i) => x `
+          ${this._sm.environmentDraft.irrigationTanks.map((tank, i) => x `
               <div
                 style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:10px 12px;border-radius:8px;"
               >
@@ -18112,88 +18616,81 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             `)}
         </div>
 
-        ${this._showTankForm
+        ${this._sm.tabs.tanks.sub.kind !== 'idle'
             ? x `
-              <div
-                style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
-              >
-                <div class="md3-input-group">
-                  <label class="md3-label">Sensor Entity *</label>
-                  <input
-                    class="md3-input"
-                    list="${listId}"
-                    .value=${this._tankDraft.sensorEntity}
-                    @input=${(e) => {
-                this._tankDraft = {
-                    ...this._tankDraft,
-                    sensorEntity: e.target.value,
-                };
-            }}
-                    placeholder="Search entity..."
-                  />
-                  <datalist id="${listId}">
-                    ${entities.map((eid) => x `<option value="${eid}"></option>`)}
-                  </datalist>
-                </div>
-                <div class="md3-input-group">
-                  <label class="md3-label">Name</label>
-                  <input
-                    class="md3-input"
-                    type="text"
-                    .value=${this._tankDraft.name}
-                    @input=${(e) => {
-                this._tankDraft = {
-                    ...this._tankDraft,
-                    name: e.target.value,
-                };
-            }}
-                    placeholder="e.g. Main Tank"
-                  />
-                </div>
-                <div class="row-col-grid">
-                  <div class="md3-input-group">
-                    <label class="md3-label">Volume (L, optional)</label>
-                    <input
-                      class="md3-input"
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      .value=${this._tankDraft.volumeLiters != null
-                ? String(this._tankDraft.volumeLiters)
-                : ''}
-                      @input=${(e) => {
-                const v = e.target.value;
-                this._tankDraft = {
-                    ...this._tankDraft,
-                    volumeLiters: v === '' ? null : parseFloat(v),
-                };
-            }}
-                      placeholder="e.g. 100"
-                    />
+              ${(() => {
+                const tankSub = this._sm.tabs.tanks.sub;
+                if (tankSub.kind !== 'adding' && tankSub.kind !== 'editing')
+                    return E;
+                return x `
+                  <div
+                    style="margin-top:12px;background:rgba(255,255,255,0.04);border:1px solid var(--divider-color,rgba(255,255,255,0.15));border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:12px;"
+                  >
+                    <div class="md3-input-group">
+                      <label class="md3-label">Sensor Entity *</label>
+                      <input
+                        class="md3-input"
+                        list="${listId}"
+                        .value=${tankSub.sensorEntity}
+                        @input=${(e) => {
+                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { sensorEntity: e.target.value } });
+                }}
+                        placeholder="Search entity..."
+                      />
+                      <datalist id="${listId}">
+                        ${entities.map((eid) => x `<option value="${eid}"></option>`)}
+                      </datalist>
+                    </div>
+                    <div class="md3-input-group">
+                      <label class="md3-label">Name</label>
+                      <input
+                        class="md3-input"
+                        type="text"
+                        .value=${tankSub.name}
+                        @input=${(e) => {
+                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { name: e.target.value } });
+                }}
+                        placeholder="e.g. Main Tank"
+                      />
+                    </div>
+                    <div class="row-col-grid">
+                      <div class="md3-input-group">
+                        <label class="md3-label">Volume (L, optional)</label>
+                        <input
+                          class="md3-input"
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          .value=${tankSub.volumeLiters != null ? String(tankSub.volumeLiters) : ''}
+                          @input=${(e) => {
+                    const v = e.target.value;
+                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { volumeLiters: v === '' ? null : parseFloat(v) } });
+                }}
+                          placeholder="e.g. 100"
+                        />
+                      </div>
+                      <div class="md3-input-group">
+                        <label class="md3-label">Warning Level (%)</label>
+                        <input
+                          class="md3-input"
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="1"
+                          .value=${String(tankSub.warningLevel)}
+                          @input=${(e) => {
+                    this._t({ type: 'UPDATE_TANK_DRAFT', partial: { warningLevel: parseFloat(e.target.value) || 30 } });
+                }}
+                        />
+                      </div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
+                      <button class="md3-button tonal" @click=${this._cancelTank}>Cancel</button>
+                      <button class="md3-button primary" @click=${this._saveTank}>Save Tank</button>
+                    </div>
                   </div>
-                  <div class="md3-input-group">
-                    <label class="md3-label">Warning Level (%)</label>
-                    <input
-                      class="md3-input"
-                      type="number"
-                      min="0"
-                      max="100"
-                      step="1"
-                      .value=${String(this._tankDraft.warningLevel)}
-                      @input=${(e) => {
-                this._tankDraft = {
-                    ...this._tankDraft,
-                    warningLevel: parseFloat(e.target.value) || 30,
-                };
-            }}
-                    />
-                  </div>
-                </div>
-                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px;">
-                  <button class="md3-button tonal" @click=${this._cancelTank}>Cancel</button>
-                  <button class="md3-button primary" @click=${this._saveTank}>Save Tank</button>
-                </div>
-              </div>
+                `;
+            })()}
             `
             : E}
       </div>
@@ -18213,8 +18710,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </svg>
           <h3 style="margin:0;border:none;padding:0;">Vision Checkup</h3>
         </div>
-        ${this._renderMultiEntitySelect('Camera Entities', this.envVisionCameraEntities, ['camera'], null, (v) => (this.envVisionCameraEntities = v))}
-        ${this.envVisionCameraEntities.length === 0
+        ${this._renderMultiEntitySelect('Camera Entities', this._sm.environmentDraft.cameraEntities, ['camera'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { cameraEntities: v } }))}
+        ${this._sm.environmentDraft.cameraEntities.length === 0
             ? x `<p style="opacity:0.6;font-size:0.85rem;margin:8px 0 0;">
               Add camera entities above to enable vision checkups.
             </p>`
@@ -18223,36 +18720,36 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 <label class="checkbox-label">
                   <input
                     type="checkbox"
-                    .checked=${this.envVisionEnabled}
+                    .checked=${this._sm.environmentDraft.visionEnabled}
                     @change=${(e) => {
-                this.envVisionEnabled = e.target.checked;
+                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionEnabled: e.target.checked } });
             }}
                   />
                   Enable automatic vision checkups
                 </label>
                 <md3-number-input
                   label="Early check offset (min after lights on)"
-                  .value=${this.envVisionEarlyOffset}
+                  .value=${this._sm.environmentDraft.visionEarlyOffset}
                   @change=${(e) => {
-                this.envVisionEarlyOffset = Number(e.detail);
+                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionEarlyOffset: Number(e.detail) } });
             }}
                   min="1"
                 >
                 </md3-number-input>
                 <md3-number-input
                   label="Mid check (hours into light cycle)"
-                  .value=${this.envVisionMidHours}
+                  .value=${this._sm.environmentDraft.visionMidHours}
                   @change=${(e) => {
-                this.envVisionMidHours = Number(e.detail);
+                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionMidHours: Number(e.detail) } });
             }}
                   min="1"
                 >
                 </md3-number-input>
                 <md3-number-input
                   label="Late check offset (min before lights off)"
-                  .value=${this.envVisionLateOffset}
+                  .value=${this._sm.environmentDraft.visionLateOffset}
                   @change=${(e) => {
-                this.envVisionLateOffset = Number(e.detail);
+                this._t({ type: 'UPDATE_ENV_DRAFT', partial: { visionLateOffset: Number(e.detail) } });
             }}
                   min="1"
                 >
@@ -18279,13 +18776,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <h3>Sensor Groups</h3>
           <button class="md3-button tonal" @click=${this._openAddGroup}>Add Group</button>
         </div>
-        ${this.envSensorGroups.length === 0
+        ${this._sm.environmentDraft.sensorGroups.length === 0
             ? x `<div style="text-align:center;padding:20px;color:var(--secondary-text-color);">
               No sensor groups configured.
             </div>`
             : x `
               <div style="display:flex;flex-direction:column;gap:8px;">
-                ${this.envSensorGroups.map((group) => x `
+                ${this._sm.environmentDraft.sensorGroups.map((group) => x `
                     <div
                       style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
                     >
@@ -18329,7 +18826,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     `;
     }
     _renderSubareasSection() {
-        const growspaceId = this.envSelectedId || this.editSelectedId;
+        const envId = this._sm.environmentDraft.selectedGrowspaceId;
+        const gsSub = this._sm.tabs.growspaces.sub;
+        const growspaceId = envId || (gsSub.kind === 'editing' ? gsSub.growspaceId : '');
+        const subareasSub = this._sm.tabs.subareas.sub;
         if (!growspaceId) {
             return x `
         <div class="detail-card">
@@ -18348,10 +18848,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <h3 style="margin:0;">Subareas</h3>
           <button
             class="md3-button tonal"
-            @click=${() => {
-            this._showAddSubarea = true;
-            this._newSubareaName = '';
-        }}
+            @click=${() => this._t({ type: 'BEGIN_ADD_SUBAREA' })}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:6px;"
@@ -18363,7 +18860,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           </button>
         </div>
 
-        ${this._showAddSubarea
+        ${subareasSub.kind === 'adding'
             ? x `
               <div
                 style="display:flex;gap:8px;align-items:center;margin-bottom:16px;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;"
@@ -18372,8 +18869,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   class="md3-input"
                   style="flex:1;"
                   placeholder="Subarea name..."
-                  .value=${this._newSubareaName}
-                  @input=${(e) => (this._newSubareaName = e.target.value)}
+                  .value=${subareasSub.name}
+                  @input=${(e) => this._t({ type: 'UPDATE_SUBAREA_NAME', name: e.target.value })}
                   @keydown=${(e) => {
                 if (e.key === 'Enter')
                     this._handleAddSubarea();
@@ -18382,11 +18879,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 <button
                   class="md3-button primary"
                   @click=${this._handleAddSubarea}
-                  ?disabled=${!this._newSubareaName.trim()}
+                  ?disabled=${!subareasSub.name.trim()}
                 >
                   Add
                 </button>
-                <button class="md3-button tonal" @click=${() => (this._showAddSubarea = false)}>
+                <button class="md3-button tonal" @click=${() => this._t({ type: 'CANCEL_SUBAREA' })}>
                   Cancel
                 </button>
               </div>
@@ -18413,7 +18910,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                           </div>
                         </div>
                         <div style="display:flex;gap:4px;align-items:center;">
-                          ${this._deleteConfirmSubareaId === subarea.id
+                          ${subareasSub.kind === 'confirm-delete' && subareasSub.subareaId === subarea.id
                     ? x `
                                 <span
                                   style="font-size:0.85rem;color:var(--secondary-text-color);margin-right:4px;"
@@ -18428,7 +18925,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                                 </button>
                                 <button
                                   class="md3-button tonal"
-                                  @click=${() => (this._deleteConfirmSubareaId = '')}
+                                  @click=${() => this._t({ type: 'CANCEL_DELETE_SUBAREA' })}
                                   style="padding:6px 10px;min-width:auto;font-size:0.8rem;"
                                 >
                                   No
@@ -18493,36 +18990,36 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     render() {
         if (!this.open)
             return x ``;
-        if (this._showGroupDialog) {
+        const heatmapSub = this._sm.tabs.heatmap.sub;
+        const subareasSub = this._sm.tabs.subareas.sub;
+        if (heatmapSub.kind === 'editing-group') {
             return x `
         <sensor-group-dialog
           .open=${true}
           .hass=${this.hass}
-          .sensorGroup=${this._editingGroup}
+          .sensorGroup=${heatmapSub.group}
           @close=${(e) => {
                 e.stopPropagation();
-                this._showGroupDialog = false;
+                this._t({ type: 'CLOSE_GROUP_DIALOG' });
             }}
           @save-sensor-group=${this._handleSaveGroup}
         ></sensor-group-dialog>
       `;
         }
-        if (this._showSubareaConfigDialog && this._editingSubarea) {
+        if (subareasSub.kind === 'editing-subarea') {
             return x `
         <subarea-config-dialog
           .open=${true}
           .hass=${this.hass}
           .growspaceId=${this._subareasGrowspaceId}
-          .subarea=${this._editingSubarea}
+          .subarea=${subareasSub.subarea}
           @close=${(e) => {
                 e.stopPropagation();
-                this._showSubareaConfigDialog = false;
-                this._editingSubarea = undefined;
+                this._t({ type: 'CLOSE_SUBAREA_DIALOG' });
             }}
           @subarea-updated=${(e) => {
                 e.stopPropagation();
-                this._showSubareaConfigDialog = false;
-                this._editingSubarea = undefined;
+                this._t({ type: 'CLOSE_SUBAREA_DIALOG' });
                 this._loadSubareas();
             }}
         ></subarea-config-dialog>
@@ -18598,12 +19095,12 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                       <span class="cfg-context-label">Growspace</span>
                       <select
                         class="cfg-context-select"
-                        .value=${this.envSelectedId}
+                        .value=${this._sm.environmentDraft.selectedGrowspaceId}
                         @change=${this._handleEnvGrowspaceChange}
                       >
                         <option value="">Select...</option>
                         ${Object.entries(this.growspaceOptions).map(([id, name]) => x `
-                            <option value="${id}" ?selected=${id === this.envSelectedId}>
+                            <option value="${id}" ?selected=${id === this._sm.environmentDraft.selectedGrowspaceId}>
                               ${name}
                             </option>
                           `)}
@@ -18635,46 +19132,45 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <div class="button-group">
             <button class="md3-button tonal" @click=${this._close}>Cancel</button>
 
-            ${this.currentTab === ConfigTab.GROWSPACES && this._showDeleteConfirm
-            ? x `
+            ${(() => {
+            const gsSub = this._sm.tabs.growspaces.sub;
+            if (this.currentTab !== ConfigTab.GROWSPACES)
+                return E;
+            if (gsSub.kind === 'confirm-delete') {
+                return x `
                   <button class="md3-button tonal" @click=${this._cancelDeleteGrowspace}>
                     No, Keep It
                   </button>
                   <button class="md3-button primary error" @click=${this._confirmDeleteGrowspace}>
                     Confirm Delete
                   </button>
-                `
-            : E}
-            ${this.currentTab === ConfigTab.GROWSPACES &&
-            this._isAddingGrowspace &&
-            !this._showDeleteConfirm
-            ? x `
+                `;
+            }
+            if (gsSub.kind === 'adding') {
+                return x `
                   <button class="md3-button primary" @click=${this._submitAddGrowspace}>
                     Add Growspace
                   </button>
-                `
-            : E}
-            ${this.currentTab === ConfigTab.GROWSPACES &&
-            this.editSelectedId &&
-            !this._isAddingGrowspace &&
-            !this._showDeleteConfirm
-            ? x `
+                `;
+            }
+            if (gsSub.kind === 'editing') {
+                return x `
                   <button
                     class="md3-button tonal error"
                     @click=${this._submitDeleteGrowspace}
-                    ?disabled=${!this.editSelectedId}
                   >
                     ${this._icon(mdiDelete, 18)} Delete
                   </button>
                   <button
                     class="md3-button primary"
                     @click=${this._submitGrowspaceAndEnv}
-                    ?disabled=${!this.editSelectedId}
                   >
                     Save Changes
                   </button>
-                `
-            : E}
+                `;
+            }
+            return E;
+        })()}
             ${[
             ConfigTab.SENSORS,
             ConfigTab.CLIMATE,
@@ -19208,167 +19704,11 @@ __decorate([
     n$5({ attribute: false })
 ], ConfigDialog.prototype, "allowedTabs", void 0);
 __decorate([
-    n$5({ type: String })
-], ConfigDialog.prototype, "currentTab", void 0);
-__decorate([
     n$5({ attribute: false })
 ], ConfigDialog.prototype, "environmentData", void 0);
 __decorate([
     r$3()
-], ConfigDialog.prototype, "addName", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "addRows", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "addPlantsPerRow", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "addNotificationService", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "editSelectedId", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "editName", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "editRows", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "editPlantsPerRow", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "editNotificationService", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_isAddingGrowspace", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_showDeleteConfirm", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envSelectedId", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envTemperatureSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envHumiditySensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envVpdSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envCo2Sensor", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envCirculationFanEntities", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envStressThreshold", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envMoldThreshold", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envLightSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envExhaustFanEntities", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envHumidifierEntities", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envDehumidifierEntities", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envSoilMoistureSensor", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envDehumidifierControlEnabled", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envSubstrateTemperatureSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envPhSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envFeedEcSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envSubstrateEcSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envRunoffEcSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envDrainVolumeSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envIrrigationFlowSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envPowerSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envEnergySensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envDehumidifierThresholds", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envSensorCoordinates", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envIrrigationTanks", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_showTankForm", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_editingTankIndex", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_tankDraft", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envVisionEnabled", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envVisionEarlyOffset", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envVisionMidHours", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envVisionLateOffset", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envVisionCameraEntities", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envLungroomTempSensors", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envHumidifierControlEnabled", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envHumidifierThresholds", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_openHumidityStageId", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "envSensorGroups", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_showGroupDialog", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_editingGroup", void 0);
+], ConfigDialog.prototype, "_sm", void 0);
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "_subareas", void 0);
@@ -19377,22 +19717,7 @@ __decorate([
 ], ConfigDialog.prototype, "_subareasLoading", void 0);
 __decorate([
     r$3()
-], ConfigDialog.prototype, "_subareasGrowspaceId", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_showSubareaConfigDialog", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_editingSubarea", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_showAddSubarea", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_newSubareaName", void 0);
-__decorate([
-    r$3()
-], ConfigDialog.prototype, "_deleteConfirmSubareaId", void 0);
+], ConfigDialog.prototype, "_openHumidityStageId", void 0);
 ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
@@ -20601,6 +20926,7 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         this._agentSaveError = null;
         this._briefing = new libExports.StoreController(this, aiBriefing$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
+        this._error = new libExports.StoreController(this, briefingError$);
     }
     connectedCallback() {
         super.connectedCallback();
@@ -20619,6 +20945,16 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
         const thread = await startConversation(this.growspaceid, text);
         if (thread)
             aiMode$.set('chat');
+    }
+    _renderError(message) {
+        return x `
+      <div class="briefing-error">
+        <p>${message}</p>
+        <button class="briefing-error-retry" @click=${() => fetchBriefing(this.growspaceid)}>
+          Retry
+        </button>
+      </div>
+    `;
     }
     _renderLoading() {
         return x `
@@ -20864,10 +21200,12 @@ let GmBriefingPanel = class GmBriefingPanel extends i$3 {
     render() {
         const briefing = this._briefing.value.get(this.growspaceid) ?? null;
         const loading = this._loading.value;
+        const error = this._error.value;
         return x `
       ${this._renderRail()}
       <div class="briefing-content">
         ${!briefing && loading ? this._renderLoading() : E}
+        ${!briefing && !loading && error ? this._renderError(error) : E}
         ${briefing ? this._renderTabContent(briefing) : E}
       </div>
     `;
@@ -21261,6 +21599,34 @@ GmBriefingPanel.styles = i$6 `
       color: var(--error-color, #f44336);
     }
 
+    /* ── Error state ─────────────────────────────────────────────── */
+    .briefing-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 14px;
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--secondary-text-color);
+    }
+    .briefing-error p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--error-color, #f44336);
+    }
+    .briefing-error-retry {
+      font-size: 0.78rem;
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--primary-color, #2196f3);
+      color: #fff;
+    }
+
     /* ── Per-tab placeholder sections ────────────────────────────── */
     .tab-placeholder {
       display: flex;
@@ -21309,7 +21675,7 @@ GmBriefingPanel = __decorate([
 function formatRelative(ts) {
     const diff = Math.floor((Date.now() - ts * 1000) / 1000);
     if (diff < 60)
-        return `${diff}s ago`;
+        return 'just now';
     if (diff < 3600)
         return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400)
@@ -126598,7 +126964,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.3"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.4"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

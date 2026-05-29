@@ -22,7 +22,7 @@ import * as aiInsightMod from '../slices/ai-insight';
 const stubTags = ['ha-svg-icon', 'ha-icon'];
 for (const tag of stubTags) {
   if (!customElements.get(tag)) {
-    customElements.define(tag, class extends HTMLElement {});
+    customElements.define(tag, class extends HTMLElement { });
   }
 }
 
@@ -135,7 +135,7 @@ describe('GmInboxPanel — formatRelative timestamps', () => {
     await el.updateComplete;
 
     const time = el.shadowRoot!.querySelector<HTMLElement>('.inbox-row-time');
-    expect(time!.textContent).toMatch(/s ago/);
+    expect(time!.textContent).toMatch(/just now/);
   });
 
   it('shows minutes-ago label for an alert ~2 min old', async () => {
