@@ -663,7 +663,7 @@ export class GrowspaceDialogHost extends LitElement {
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}
-        @submit=${async (e: CustomEvent) => {
+        @add-growspace-submit=${async (e: CustomEvent) => {
         if (!this.store) return;
         try {
           await this.store.actions.growspace.add(e.detail);

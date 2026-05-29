@@ -1,3 +1,19 @@
+# Unit / Component Test Placement
+
+New tests go in one of two places depending on whether they touch the DOM:
+
+- **Pure module tests** (no `fixture()`, no Lit rendering) — co-locate next to the source
+  file: `src/foo/foo.test.ts`
+- **Component tests** (mount Lit elements via `fixture()`) — `tests/` in the matching
+  subfolder (`tests/components/`, `tests/dialogs/`, `tests/cards/`, etc.)
+
+`tests/unit/` holds legacy tests that predate this convention — don't add new tests there.
+
+The vitest config already picks up both patterns (`src/**/*.{test,spec}.ts` and
+`tests/{unit,cards,components}/**/*.{test,spec}.ts`).
+
+---
+
 # E2E Testing
 
 Playwright tests in `tests/e2e/` run against a **real Home Assistant instance** — not a

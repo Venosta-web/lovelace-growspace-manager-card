@@ -159,7 +159,7 @@ Time-based drain events that run regardless of Irrigation Mode. Always editable 
 Named, reusable curves that define how the target EC value should ramp over time (e.g. across a grow week range). Each curve is a list of `ECRampPoint` entries (week + target EC). Curves are stored globally (not per-growspace) and managed in the EC Ramp tab of the Irrigation Dialog. The tab is only visible when the growspace has a pump, an irrigation schedule, and at least one EC sensor. Saves are per-curve and immediate — curves do not participate in the Irrigation Dialog's unified footer Save.
 
 **Irrigation Dialog SM**
-A single root state machine that owns the Irrigation Dialog's interaction state. Tab (`schedules | steering | logs | ...`) is the top-level state; each tab has substates for editing rows and pending confirmations (e.g. Phase Window changes). Tab switches are guarded by per-tab "dirty" predicates. The dialog component renders the SM; data writes go through the Irrigation slice's mutators. Replaces the 35 sibling `@state()` flags in `irrigation-dialog.ts`. The same shape applies to the Config, Strain Editor, and Strain Library dialogs — a `DialogStateMachine` helper is to be extracted on the second use, not the first.
+A single root state machine that owns the Irrigation Dialog's interaction state. Tab (`schedules | steering | logs | ...`) is the top-level state; each tab has substates for editing rows and pending confirmations (e.g. Phase Window changes). Tab switches are guarded by per-tab "dirty" predicates. The dialog component renders the SM; data writes go through the Irrigation slice's mutators. Replaces the 35 sibling `@state()` flags in `irrigation-dialog.ts`. The same shape applies to the Config, Strain Editor, and Strain Library dialogs. The Config SM is the second use and the right moment to extract the shared `DialogStateMachine<TTab, TTabs>` generic type (type-level only — no shared runtime); the Config + helper land in the same PR. Strain Library and Strain Editor SMs land together because the library hosts the editor and their dirty predicates are coupled.
 
 ## Light Cycle Tracking
 
@@ -205,6 +205,17 @@ A persistent record of a multi-turn dialogue in Chat mode. Fields: `thread_id` (
 ## Suggested Action Card
 
 A UI element rendered inside an AI chat bubble when the backend returns a [[Suggested Action]]. Shows the action description, target entity, and two buttons: **Dismiss** (removes the card) and **Apply** (calls the HA service via the slice mutator). Only rendered when `suggestedAction` is present in the message.
+
+## Testing
+
+**Fixture Builder**
+Domain-keyed test helpers in `src/testing/fixtures.ts` that construct canonical instances of domain types with sensible defaults. Builders: `aPlant(overrides?)` → `PlantEntity`; `aGrowspace(overrides?)` → `{ growspaceId, name, rows, cols }` (a lightweight seed, not a HA entity); `anEnvSnapshot(overrides?)` → `EnvSnapshot`. All builders accept `Partial<T>` overrides merged into defaults — tests express only the delta that matters.
+
+**Card Test Harness**
+A setup-eliminator in `src/testing/render-card.ts`: `renderCard(tag, { hass, growspace, atoms })` → `{ element, query, click }`. Hides `customElements.define`, `vi.mock`, `fixture`, and atom pre-seeding boilerplate. Returns generic DOM helpers only — domain-named helpers (`clickChip`, `expectEnvGraph`) are defined locally in each card's test file. Includes `aHass(overrides?)` — a helper that builds a HA-shaped `hass` object (states, callService, callWS, etc.) with sensible defaults for card mounting. `aHass` is infrastructure, not a domain fixture — it does not belong in the [[Fixture Builder]] family.
+
+**Co-location Convention**
+Pure module tests (state machines, slices, utilities — anything that does not call `fixture()`) live next to their source file as `src/foo/foo.test.ts`. Tests that mount Lit components via `fixture()` live in `tests/`. The split is enforced by the rule: *if it touches the DOM, it goes in `tests/`*. Applies to new test files only — existing tests are not migrated.
 
 ## Build
 

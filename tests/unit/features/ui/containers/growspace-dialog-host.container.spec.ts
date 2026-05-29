@@ -808,6 +808,27 @@ describe('GrowspaceDialogHostContainer', () => {
         expect(mockStore.actions.snapshots.updateCheckupConfig).toHaveBeenCalledWith('g1', { enabled: true });
     });
 
+    it('should handle @add-growspace-submit on config-dialog', async () => {
+        mockStore.ui.$activeDialog.set({ type: 'CONFIG', payload: {} });
+        await element.updateComplete;
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('config-dialog');
+        dialog?.dispatchEvent(new CustomEvent('add-growspace-submit', {
+            detail: { name: 'Veg Room', rows: 4, plantsPerRow: 6, notificationService: 'mobile_app_phone' },
+            bubbles: true,
+            composed: true,
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(mockStore.actions.growspace.add).toHaveBeenCalledWith({
+            name: 'Veg Room',
+            rows: 4,
+            plantsPerRow: 6,
+            notificationService: 'mobile_app_phone',
+        });
+    });
+
     it('should handle @strain-created-at-source from add-plants source on strain-library-dialog', async () => {
         mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         await element.updateComplete;
@@ -1584,7 +1605,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 throw new Error('Config Error');
             });
 
-            configDialog?.dispatchEvent(new CustomEvent('submit', {
+            configDialog?.dispatchEvent(new CustomEvent('add-growspace-submit', {
                 detail: { name: 'New Room' },
                 bubbles: true, composed: true
             }));
@@ -2207,10 +2228,10 @@ describe('GrowspaceDialogHostContainer', () => {
             expect((element as any)._seedBatches).toEqual({});
         });
 
-        it('should handle @submit on CONFIG dialog (add growspace success)', async () => {
+        it('should handle @add-growspace-submit on CONFIG dialog (add growspace success)', async () => {
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
-            dialog?.dispatchEvent(new CustomEvent('submit', { detail: { name: 'New Room', rows: 3, plantsPerRow: 4 } }));
+            dialog?.dispatchEvent(new CustomEvent('add-growspace-submit', { detail: { name: 'New Room', rows: 3, plantsPerRow: 4 } }));
             await vi.waitFor(() => {
                 expect(mockStore.actions.growspace.add).toHaveBeenCalledWith(
                     expect.objectContaining({ name: 'New Room' })
@@ -2219,14 +2240,14 @@ describe('GrowspaceDialogHostContainer', () => {
             });
         });
 
-        it('should handle @submit on CONFIG with missing store (no-op guard)', async () => {
-            // Test the if (!this.store) return; guard in CONFIG submit
+        it('should handle @add-growspace-submit on CONFIG with missing store (no-op guard)', async () => {
+            // Test the if (!this.store) return; guard in CONFIG add-growspace-submit
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             // Temporarily remove store
             const origStore = element.store;
             (element as any).store = null;
-            dialog?.dispatchEvent(new CustomEvent('submit', { detail: { name: 'Room' } }));
+            dialog?.dispatchEvent(new CustomEvent('add-growspace-submit', { detail: { name: 'Room' } }));
             await new Promise(r => setTimeout(r, 50));
             (element as any).store = origStore;
             // No error thrown = guard worked
