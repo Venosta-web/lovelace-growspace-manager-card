@@ -4,7 +4,7 @@ import { html } from 'lit';
 import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
 import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
-import { createMockHass } from '../mocks/hass';
+import { aHass } from '../fixtures';
 import { setHass } from '../../src/services/hass-call';
 
 if (!customElements.get('growspace-manager-card')) {
@@ -23,7 +23,7 @@ describe('GrowspaceManagerCard', () => {
   let element: GrowspaceManagerCard;
 
   aroundEach(async (runTest) => {
-    const mockHass = createMockHass() as any;
+    const mockHass = aHass() as any;
     setHass(mockHass);
     element = await fixture<GrowspaceManagerCard>(
       html`<growspace-manager-card></growspace-manager-card>`

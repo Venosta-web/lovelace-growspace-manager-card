@@ -4,7 +4,7 @@ import { html } from 'lit';
 import { GrowspaceGridCard } from '../../src/cards/growspace-grid-card';
 import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
-import { createMockHass } from '../mocks/hass';
+import { aGrowspace, aHass } from '../fixtures';
 
 vi.mock('../../src/slices/grid-interaction', () => ({
     startTransplant: vi.fn(),
@@ -36,7 +36,7 @@ describe('GrowspaceGridCard', () => {
 
     aroundEach(async (runTest) => {
         element = await fixture<GrowspaceGridCard>(html`<growspace-grid-card></growspace-grid-card>`);
-        element.hass = createMockHass() as any;
+        element.hass = aHass({ growspaces: [aGrowspace()] }) as any;
         await runTest();
         vi.restoreAllMocks();
     });
