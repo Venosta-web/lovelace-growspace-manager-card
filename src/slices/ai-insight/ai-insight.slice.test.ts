@@ -28,6 +28,7 @@ import {
   isAiLoading$,
   aiError$,
   aiEnabled$,
+  briefingError$,
   dismissInsight,
   clearAiError,
   askGrowAdvice,
@@ -64,6 +65,7 @@ beforeEach(() => {
   isAiLoading$.set(false);
   aiError$.set(null);
   aiEnabled$.set(null);
+  briefingError$.set(null);
   conversationThreads$.set(new Map());
   activeThreadId$.set(new Map());
   aiAlerts$.set(new Map());
@@ -784,6 +786,35 @@ describe('fetchBriefing', () => {
       { growspace_id: 'gs1' },
       expect.anything()
     );
+  });
+
+  it('sets briefingError$ when fetch fails and no cached briefing exists', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('network failure'));
+
+    await fetchBriefing('gs1');
+
+    expect(briefingError$.get()).toBe('network failure');
+  });
+
+  it('clears briefingError$ on successful fetch', async () => {
+    briefingError$.set('old error');
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(briefingPayload);
+
+    await fetchBriefing('gs1');
+
+    expect(briefingError$.get()).toBeNull();
+  });
+
+  it('shows a toast and does NOT set briefingError$ when fetch fails but cached briefing exists', async () => {
+    aiBriefing$.set(new Map([['gs1', briefingPayload]]));
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('timeout'));
+    notification$.set(null);
+
+    await fetchBriefing('gs1', true);
+
+    expect(briefingError$.get()).toBeNull();
+    expect(notification$.get()).not.toBeNull();
+    expect(notification$.get()?.message).toContain('regenerate');
   });
 });
 

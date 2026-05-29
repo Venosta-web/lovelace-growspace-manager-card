@@ -53,6 +53,7 @@ export const aiInsight$ = atom<string | null>(null);
 export const isAiLoading$ = atom<boolean>(false);
 export const aiError$ = atom<string | null>(null);
 export const aiEnabled$ = atom<boolean | null>(null);
+export const briefingError$ = atom<string | null>(null);
 export const conversationThreads$ = atom<Map<string, ConversationThread>>(new Map());
 export const activeThreadId$ = atom<Map<string, string | null>>(new Map());
 export const aiAlerts$ = atom<Map<string, TriageAlert[]>>(new Map());
@@ -408,11 +409,16 @@ export async function fetchBriefing(growspaceId: string, forceRefresh?: boolean)
       { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) },
       AIBriefingSchema
     );
+    briefingError$.set(null);
     const updated = new Map(aiBriefing$.get());
     updated.set(growspaceId, briefing);
     aiBriefing$.set(updated);
-  } catch {
-    // Silently ignore — connection errors or schema mismatches leave existing data intact
+  } catch (err) {
+    if (aiBriefing$.get().has(growspaceId)) {
+      showToast('Failed to regenerate briefing — please try again', 'error');
+    } else {
+      briefingError$.set(err instanceof Error ? err.message : String(err));
+    }
   }
 }
 

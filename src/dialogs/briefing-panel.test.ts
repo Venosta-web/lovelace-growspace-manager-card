@@ -5,6 +5,7 @@ import {
   aiMode$,
   isAiLoading$,
   aiError$,
+  briefingError$,
   conversationThreads$,
   activeThreadId$,
   aiAlerts$,
@@ -73,6 +74,7 @@ beforeEach(() => {
   aiMode$.set('briefing');
   isAiLoading$.set(false);
   aiError$.set(null);
+  briefingError$.set(null);
   conversationThreads$.set(new Map());
   activeThreadId$.set(new Map());
   aiAlerts$.set(new Map());
@@ -434,5 +436,65 @@ describe('GmBriefingPanel — follow-up input', () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(aiMode$.get()).toBe('chat');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 10 — Error state
+// ---------------------------------------------------------------------------
+
+describe('GmBriefingPanel — error state', () => {
+  it('renders .briefing-error when briefingError$ is set and no briefing is cached', async () => {
+    briefingError$.set('network failure');
+
+    const el = await fixture<GmBriefingPanel>(html`
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.briefing-error')).not.toBeNull();
+  });
+
+  it('error state shows the error message text', async () => {
+    briefingError$.set('Connection refused');
+
+    const el = await fixture<GmBriefingPanel>(html`
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
+    `);
+    await el.updateComplete;
+
+    const errorEl = el.shadowRoot!.querySelector<HTMLElement>('.briefing-error');
+    expect(errorEl!.textContent).toContain('Connection refused');
+  });
+
+  it('error state has a Retry button that calls hassCall with get_briefing', async () => {
+    briefingError$.set('network failure');
+
+    const el = await fixture<GmBriefingPanel>(html`
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
+    `);
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.briefing-error-retry')!.click();
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(hassCallMod.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_briefing',
+      { growspace_id: 'gs1' },
+      expect.anything(),
+    );
+  });
+
+  it('does NOT render .briefing-error when briefingError$ is set but a cached briefing exists', async () => {
+    briefingError$.set('stale error');
+    aiBriefing$.set(new Map([['gs1', BRIEFING]]));
+
+    const el = await fixture<GmBriefingPanel>(html`
+      <gm-briefing-panel growspaceid="gs1"></gm-briefing-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.briefing-error')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.insight-head')).not.toBeNull();
   });
 });

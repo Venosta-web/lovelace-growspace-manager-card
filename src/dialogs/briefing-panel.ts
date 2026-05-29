@@ -7,6 +7,7 @@ import {
   aiBriefing$,
   isAiLoading$,
   aiMode$,
+  briefingError$,
   fetchBriefing,
   applyAction,
   startConversation,
@@ -27,6 +28,7 @@ export class GmBriefingPanel extends LitElement {
 
   private _briefing = new StoreController(this, aiBriefing$);
   private _loading = new StoreController(this, isAiLoading$);
+  private _error = new StoreController(this, briefingError$);
 
   connectedCallback() {
     super.connectedCallback();
@@ -423,6 +425,34 @@ export class GmBriefingPanel extends LitElement {
       color: var(--error-color, #f44336);
     }
 
+    /* ── Error state ─────────────────────────────────────────────── */
+    .briefing-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 14px;
+      padding: 32px 24px;
+      text-align: center;
+      color: var(--secondary-text-color);
+    }
+    .briefing-error p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--error-color, #f44336);
+    }
+    .briefing-error-retry {
+      font-size: 0.78rem;
+      padding: 6px 18px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--primary-color, #2196f3);
+      color: #fff;
+    }
+
     /* ── Per-tab placeholder sections ────────────────────────────── */
     .tab-placeholder {
       display: flex;
@@ -454,6 +484,17 @@ export class GmBriefingPanel extends LitElement {
     this._followUp = '';
     const thread = await startConversation(this.growspaceid, text);
     if (thread) aiMode$.set('chat');
+  }
+
+  private _renderError(message: string) {
+    return html`
+      <div class="briefing-error">
+        <p>${message}</p>
+        <button class="briefing-error-retry" @click=${() => fetchBriefing(this.growspaceid)}>
+          Retry
+        </button>
+      </div>
+    `;
   }
 
   private _renderLoading() {
@@ -704,11 +745,13 @@ export class GmBriefingPanel extends LitElement {
   render() {
     const briefing = this._briefing.value.get(this.growspaceid) ?? null;
     const loading = this._loading.value;
+    const error = this._error.value;
 
     return html`
       ${this._renderRail()}
       <div class="briefing-content">
         ${!briefing && loading ? this._renderLoading() : nothing}
+        ${!briefing && !loading && error ? this._renderError(error) : nothing}
         ${briefing ? this._renderTabContent(briefing) : nothing}
       </div>
     `;
