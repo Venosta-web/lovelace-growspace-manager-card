@@ -1,3 +1,10 @@
+# [1.1.0-next.8](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.7...v1.1.0-next.8) (2026-05-29)
+
+
+### Features
+
+* implement AddPlantDialog state machine for improved dialog logic and testability ([5317683](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/531768333926aa0ae9682aa7a91371364751042d))
+
 # [1.1.0-next.7](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.6...v1.1.0-next.7) (2026-05-29)
 
 
