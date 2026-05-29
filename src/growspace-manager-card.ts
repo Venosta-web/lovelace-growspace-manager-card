@@ -298,6 +298,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   };
 
   private _handleTransplantMode = () => {
+    this.store.ui.setEditMode(false);
     startTransplant();
   };
 
