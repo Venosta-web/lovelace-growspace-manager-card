@@ -448,7 +448,7 @@ describe('immutability', () => {
 
   it('unknown event type returns the same reference', () => {
     const sm = createInitialSM();
-    const next = transition(sm, { type: 'UNKNOWN_EVENT' } as Parameters<typeof transition>[1]);
+    const next = transition(sm, { type: 'UNKNOWN_EVENT' } as unknown as Parameters<typeof transition>[1]);
     expect(next).toBe(sm);
   });
 });
