@@ -98,7 +98,7 @@ const ALERT_AI: TriageAlert = {
 
 beforeEach(() => {
   aiAlerts$.set(new Map());
-  aiEnabled$.set(undefined);
+  aiEnabled$.set(null);
   vi.clearAllMocks();
   vi.mocked(aiInsightMod.fetchAlerts).mockReturnValue(undefined as unknown as Promise<void>);
 });
@@ -686,8 +686,8 @@ describe('GmInboxPanel — AI unavailable banner', () => {
     expect(el.shadowRoot!.querySelector('.ai-unavailable-banner')).toBeNull();
   });
 
-  it('does not render .ai-unavailable-banner when aiEnabled$ is undefined', async () => {
-    aiEnabled$.set(undefined);
+  it('does not render .ai-unavailable-banner when aiEnabled$ is null', async () => {
+    aiEnabled$.set(null);
 
     const el = await fixture<GmInboxPanel>(html`
       <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>

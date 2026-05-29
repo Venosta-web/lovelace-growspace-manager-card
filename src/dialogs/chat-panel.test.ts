@@ -7,6 +7,7 @@ import {
   aiError$,
   aiEnabled$,
 } from '../slices/ai-insight';
+import type { ConversationMessage } from '../slices/ai-insight/schema';
 /* eslint-disable import/no-duplicates */
 import './chat-panel';
 import { GmChatPanel } from './chat-panel';
@@ -24,7 +25,7 @@ import * as hassCallMod from '../services/hass-call';
 const stubTags = ['ha-dialog', 'ha-svg-icon', 'ha-icon', 'ha-entity-picker'];
 for (const tag of stubTags) {
   if (!customElements.get(tag)) {
-    customElements.define(tag, class extends HTMLElement {});
+    customElements.define(tag, class extends HTMLElement { });
   }
 }
 
@@ -36,14 +37,14 @@ const GS_ID = 'gs1';
 const THREAD_ID = 'thread-1';
 const NOW_S = Math.floor(Date.now() / 1000);
 
-const USER_MSG = {
-  role: 'user' as const,
+const USER_MSG: ConversationMessage = {
+  role: 'user',
   text: 'What is the current VPD?',
   timestamp: NOW_S - 300,
 };
 
-const AI_MSG = {
-  role: 'ai' as const,
+const AI_MSG: ConversationMessage = {
+  role: 'ai',
   text: 'VPD looks optimal at 1.2 kPa.',
   timestamp: NOW_S - 290,
   confidence: 0.9,
@@ -87,7 +88,7 @@ beforeEach(() => {
   aiError$.set(null);
   aiEnabled$.set(null);
   vi.clearAllMocks();
-  vi.mocked(hassCallMod.hassCall).mockReturnValue(new Promise(() => {}));
+  vi.mocked(hassCallMod.hassCall).mockReturnValue(new Promise(() => { }));
 });
 
 afterEach(() => {

@@ -63,7 +63,7 @@ export const TriageAlertSchema = z.object({
   type: z.string(),
   severity: z.enum(['info', 'warning', 'danger']).default('info'),
   title: z.string().optional(),
-  description: z.string().optional(),
+  description: z.string().nullable().optional(),
   bayesian_reasons: z.array(z.string()),
   ai_reasoning: z.string().nullable(),
   timestamp: z.number(),

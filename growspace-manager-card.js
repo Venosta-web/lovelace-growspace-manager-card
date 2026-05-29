@@ -8158,7 +8158,7 @@ const TriageAlertSchema = objectType({
     type: stringType(),
     severity: enumType(['info', 'warning', 'danger']).default('info'),
     title: stringType().optional(),
-    description: stringType().optional(),
+    description: stringType().nullable().optional(),
     bayesian_reasons: arrayType(stringType()),
     ai_reasoning: stringType().nullable(),
     timestamp: numberType(),
