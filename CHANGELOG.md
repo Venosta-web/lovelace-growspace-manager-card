@@ -1,3 +1,10 @@
+# [1.1.0-next.7](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.6...v1.1.0-next.7) (2026-05-29)
+
+
+### Features
+
+* add seeds genetics dialog and update transplant state machine to support idle entry point ([054c8b4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/054c8b4b426200f8ba8ae80aa8447927994cbfa1))
+
 # [1.1.0-next.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.5...v1.1.0-next.6) (2026-05-29)
 
 
