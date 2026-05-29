@@ -1,3 +1,11 @@
+# [1.1.0-next.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.3...v1.1.0-next.4) (2026-05-29)
+
+
+### Features
+
+* **inbox:** add Mark All Read button with click handler ([4e63ffe](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4e63ffef67cdd6ffb300a882d839cefc22995edf)), closes [#182](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/182)
+* update relative timestamp display and add visual regression tests for mark-all-read functionality ([66769b3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/66769b3da5dac9153c6f99621648494f86139ae9))
+
 # [1.1.0-next.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.2...v1.1.0-next.3) (2026-05-29)
 
 
