@@ -1,3 +1,10 @@
+# [1.1.0-next.6](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.5...v1.1.0-next.6) (2026-05-29)
+
+
+### Bug Fixes
+
+* disable edit mode when initiating transplant mode in grid and manager cards ([165556e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/165556eb0b4a274e8cd299eac83a93e7e5ac284b))
+
 # [1.1.0-next.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.4...v1.1.0-next.5) (2026-05-29)
 
 
