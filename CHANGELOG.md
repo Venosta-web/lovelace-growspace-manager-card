@@ -1,3 +1,10 @@
+# [1.1.0-next.5](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.4...v1.1.0-next.5) (2026-05-29)
+
+
+### Features
+
+* add briefingError state to GmBriefingPanel with retry functionality and UI handling ([4c4db3a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4c4db3ab177fb387b3e6d6d70758efa45fce5aa9))
+
 # [1.1.0-next.4](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.3...v1.1.0-next.4) (2026-05-29)
 
 
