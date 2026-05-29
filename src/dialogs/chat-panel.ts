@@ -17,8 +17,11 @@ import {
   saveAiAgent,
 } from '../slices/ai-insight';
 import type { ConversationThread, ConversationMessage, SuggestedAction } from '../slices/ai-insight/schema';
-
-type ContextChip = { id: string; label: string; type: 'growspace' | 'time-range' | 'sensor' };
+import {
+  createInitialSM,
+  transition,
+  type ChatSM,
+} from './chat-panel-sm';
 
 const SUGGESTION_PROMPTS = [
   'What is the current VPD?',
@@ -32,13 +35,7 @@ export class GmChatPanel extends LitElement {
   @property({ type: String }) growspacename = '';
   @property({ attribute: false }) hass: HomeAssistant | undefined;
 
-  @state() private _inputText = '';
-  @state() private _dismissedActions = new Set<number>();
-  @state() private _contextChips: ContextChip[] = [];
-  @state() private _pendingAttachment: string | null = null;
-  @state() private _selectedAgent = '';
-  @state() private _agentSaving = false;
-  @state() private _agentSaveError: string | null = null;
+  @state() private _sm: ChatSM = createInitialSM();
 
   private _activeThread = new StoreController(this, activeThreadId$);
   private _threads = new StoreController(this, conversationThreads$);
@@ -48,11 +45,11 @@ export class GmChatPanel extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
-    if (this.growspacename) {
-      this._contextChips = [
-        { id: 'growspace', label: this.growspacename, type: 'growspace' },
-      ];
-    }
+    this._sm = createInitialSM(this.growspacename || undefined);
+  }
+
+  private _dispatch(event: Parameters<typeof transition>[1]) {
+    this._sm = transition(this._sm, event);
   }
 
   static styles = css`
@@ -603,32 +600,39 @@ export class GmChatPanel extends LitElement {
   }
 
   private _setActiveThread(threadId: string) {
+    this._dispatch({ type: 'THREAD_SELECTED', threadId });
     const map = new Map(activeThreadId$.get());
     map.set(this.growspaceid, threadId);
     activeThreadId$.set(map);
   }
 
   private _newConversation() {
+    this._dispatch({ type: 'THREAD_SELECTED', threadId: null });
     const map = new Map(activeThreadId$.get());
     map.set(this.growspaceid, null);
     activeThreadId$.set(map);
   }
 
   private _handleInput(e: Event) {
-    this._inputText = (e.target as HTMLTextAreaElement).value;
+    this._dispatch({ type: 'COMPOSER_DRAFT_CHANGED', text: (e.target as HTMLTextAreaElement).value });
   }
 
   private async _send() {
-    const text = this._inputText.trim();
+    const text = this._sm.composerDraft.trim();
     if (!text) return;
-    this._inputText = '';
-    const attachment = this._pendingAttachment ?? undefined;
-    this._pendingAttachment = null;
+    const attachment = this._sm.pendingAttachment ?? undefined;
     const threadId = this._activeThread.value.get(this.growspaceid) ?? null;
-    if (threadId) {
-      await sendMessage(threadId, text, attachment);
-    } else {
-      await startConversation(this.growspaceid, text, attachment);
+    this._dispatch({ type: 'SEND_REQUESTED' });
+    try {
+      if (threadId) {
+        await sendMessage(threadId, text, attachment);
+      } else {
+        await startConversation(this.growspaceid, text, attachment);
+      }
+      this._dispatch({ type: 'SEND_RESOLVED' });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to send';
+      this._dispatch({ type: 'SEND_FAILED', message });
     }
   }
 
@@ -641,13 +645,13 @@ export class GmChatPanel extends LitElement {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      this._pendingAttachment = reader.result as string;
+      this._dispatch({ type: 'ATTACHMENT_SELECTED', dataUrl: reader.result as string });
     };
     reader.readAsDataURL(file);
   }
 
   private _removeAttachment() {
-    this._pendingAttachment = null;
+    this._dispatch({ type: 'ATTACHMENT_REMOVED' });
   }
 
   private async _clickPrompt(prompt: string) {
@@ -655,11 +659,11 @@ export class GmChatPanel extends LitElement {
   }
 
   private _clickSuggest(prompt: string) {
-    this._inputText = prompt;
+    this._dispatch({ type: 'COMPOSER_DRAFT_CHANGED', text: prompt });
   }
 
   private _removeCtxChip(id: string) {
-    this._contextChips = this._contextChips.filter((c) => c.id !== id);
+    this._dispatch({ type: 'CONTEXT_CHIP_REMOVED', id });
   }
 
   private _renderThreadRow(t: ConversationThread, activeId: string | null) {
@@ -774,7 +778,7 @@ export class GmChatPanel extends LitElement {
     const isUser = msg.role === 'user';
     const initials = 'U';
     const confLevel = this._confidenceLevel(msg.confidence);
-    const dismissed = this._dismissedActions.has(index);
+    const dismissed = this._sm.dismissedActionIndices.includes(index);
 
     return html`
       <div class="msg ${msg.role}">
@@ -832,12 +836,13 @@ export class GmChatPanel extends LitElement {
   }
 
   private _dismiss(index: number) {
-    this._dismissedActions = new Set([...this._dismissedActions, index]);
+    this._dispatch({ type: 'ACTION_DISMISSED', index });
   }
 
   private _renderComposer(disabled = false) {
-    const hasText = this._inputText.trim().length > 0;
-    const error = this._error.value;
+    const { composerDraft, contextChips, pendingAttachment, toast } = this._sm;
+    const hasText = composerDraft.trim().length > 0;
+    const error = this._error.value ?? (this._sm.status.kind === 'error' ? this._sm.status.message : null);
     return html`
       <div class="composer ${disabled ? 'composer--disabled' : ''}">
         <div class="suggest-strip">
@@ -845,9 +850,9 @@ export class GmChatPanel extends LitElement {
             <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
           `)}
         </div>
-        ${this._contextChips.length > 0 ? html`
+        ${contextChips.length > 0 ? html`
           <div class="composer-chips">
-            ${this._contextChips.map((chip) => html`
+            ${contextChips.map((chip) => html`
               <div class="ctx-chip" data-chip-id=${chip.id}>
                 ${chip.label}
                 <button class="remove-chip" aria-label="Remove ${chip.label}" @click=${() => this._removeCtxChip(chip.id)}>
@@ -859,9 +864,9 @@ export class GmChatPanel extends LitElement {
             `)}
           </div>
         ` : nothing}
-        ${this._pendingAttachment ? html`
+        ${pendingAttachment ? html`
           <div class="attachment-preview">
-            <img src=${this._pendingAttachment} alt="Attachment preview" />
+            <img src=${pendingAttachment} alt="Attachment preview" />
             <button class="remove-attachment" aria-label="Remove attachment" @click=${this._removeAttachment}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
                 <path d=${mdiClose}></path>
@@ -881,7 +886,7 @@ export class GmChatPanel extends LitElement {
             placeholder="Ask anything about your grow..."
             rows="1"
             ?disabled=${disabled}
-            .value=${this._inputText}
+            .value=${composerDraft}
             @input=${this._handleInput}
             @keydown=${(e: KeyboardEvent) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -897,6 +902,7 @@ export class GmChatPanel extends LitElement {
           </button>
         </div>
         ${error ? html`<div class="composer-error">${error}</div>` : nothing}
+        ${toast ? html`<div class="composer-error">${toast}</div>` : nothing}
       </div>
     `;
   }
@@ -934,19 +940,21 @@ export class GmChatPanel extends LitElement {
   }
 
   private async _saveAgent() {
-    if (!this._selectedAgent) return;
-    this._agentSaving = true;
-    this._agentSaveError = null;
+    if (!this._sm.agentDraft) return;
+    this._dispatch({ type: 'AGENT_SAVE_REQUESTED' });
     try {
-      await saveAiAgent(this._selectedAgent, this.growspaceid);
+      await saveAiAgent(this._sm.agentDraft, this.growspaceid);
+      this._dispatch({ type: 'AGENT_SAVE_RESOLVED' });
     } catch (err) {
-      this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
-    } finally {
-      this._agentSaving = false;
+      const message = err instanceof Error ? err.message : 'Failed to save agent';
+      this._dispatch({ type: 'AGENT_SAVE_FAILED', message });
     }
   }
 
   private _renderAgentSetup() {
+    const { agentDraft, agentStatus } = this._sm;
+    const isSaving = agentStatus.kind === 'saving';
+    const saveError = agentStatus.kind === 'error' ? agentStatus.message : null;
     return html`
       <div class="agent-setup-banner">
         <span class="agent-setup-label">No AI agent configured — select one to enable chat:</span>
@@ -954,19 +962,21 @@ export class GmChatPanel extends LitElement {
           <div class="agent-setup-picker">
             <ha-entity-picker
               .hass=${this.hass}
-              .value=${this._selectedAgent}
+              .value=${agentDraft}
               .includeDomains=${['conversation']}
               allow-custom-entity
-              @value-changed=${(e: CustomEvent) => { this._selectedAgent = e.detail.value ?? ''; }}
+              @value-changed=${(e: CustomEvent) => {
+                this._dispatch({ type: 'AGENT_DRAFT_CHANGED', entityId: e.detail.value ?? '' });
+              }}
             ></ha-entity-picker>
           </div>
           <button
             class="agent-save-btn"
-            ?disabled=${!this._selectedAgent || this._agentSaving}
+            ?disabled=${!agentDraft || isSaving}
             @click=${this._saveAgent}
-          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+          >${isSaving ? 'Saving…' : 'Enable AI'}</button>
         </div>
-        ${this._agentSaveError ? html`<div class="agent-setup-error">${this._agentSaveError}</div>` : nothing}
+        ${saveError ? html`<div class="agent-setup-error">${saveError}</div>` : nothing}
       </div>
     `;
   }

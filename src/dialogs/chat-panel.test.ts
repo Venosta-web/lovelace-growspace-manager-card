@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
+import { aGrowspace } from '../../tests/fixtures';
 import {
   activeThreadId$,
   conversationThreads$,
@@ -1029,5 +1030,48 @@ describe('GmChatPanel — relative timestamps in thread rail', () => {
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.thread-time')!.textContent).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 19 — Fixture Builder smoke test
+// ---------------------------------------------------------------------------
+
+describe('GmChatPanel — render-once smoke test (Fixture Builder)', () => {
+  it('renders without crashing when given a growspace from the Fixture Builder', async () => {
+    const gs = aGrowspace({ growspaceId: 'smoke-tent', name: 'Smoke Tent' });
+
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`,
+    );
+    await el.updateComplete;
+
+    expect(el.shadowRoot).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.chat-rail')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.chat-content')).not.toBeNull();
+  });
+
+  it('seeds the growspace context chip from growspacename prop', async () => {
+    const gs = aGrowspace({ name: 'Smoke Tent' });
+
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`,
+    );
+    await el.updateComplete;
+
+    const chip = el.shadowRoot!.querySelector('.ctx-chip');
+    expect(chip).not.toBeNull();
+    expect(chip!.textContent).toContain('Smoke Tent');
+  });
+
+  it('shows welcome state by default (no active thread)', async () => {
+    const gs = aGrowspace();
+
+    const el = await fixture<GmChatPanel>(
+      html`<gm-chat-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-chat-panel>`,
+    );
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.welcome')).not.toBeNull();
   });
 });
