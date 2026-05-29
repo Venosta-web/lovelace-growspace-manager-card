@@ -444,7 +444,7 @@ export class SeedsGeneticsTab extends LitElement {
       }
     }
     // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
-    if (plant_id.includes('||')) {
+    if (plant_id && plant_id.includes('||')) {
       const [strain, phenotype] = plant_id.split('||', 2);
       return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
     }
