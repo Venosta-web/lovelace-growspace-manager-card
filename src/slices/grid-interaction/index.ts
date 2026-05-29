@@ -9,7 +9,7 @@
  *                            confirming-water → selected; no-op while transplanting
  *   confirmWater()         — selected → confirming-water; no-op otherwise
  *   cancel()               — any → idle
- *   startTransplant()      — selected → transplanting; no-op otherwise
+ *   startTransplant()      — selected | idle → transplanting; no-op otherwise
  *   completeTransplant()   — transplanting → idle; no-op otherwise
  *
  * The type system (discriminated union) prevents callers from accessing fields
@@ -33,7 +33,7 @@ export type GridInteractionState =
   | { status: 'idle' }
   | { status: 'selected'; plantId: string }
   | { status: 'confirming-water'; plantId: string }
-  | { status: 'transplanting'; sourcePlantId: string };
+  | { status: 'transplanting'; sourcePlantId: string | null };
 
 // ---------------------------------------------------------------------------
 // Atom (public)
@@ -86,15 +86,19 @@ export function cancel(): void {
 }
 
 /**
- * Begin transplant mode from the currently selected plant.
+ * Begin transplant mode.
  *
  * - selected → transplanting { sourcePlantId: plantId }
+ * - idle     → transplanting { sourcePlantId: null }  (batch edit bar entry point)
  * - all other states → no-op
  */
 export function startTransplant(): void {
   const state = gridInteraction$.get();
-  if (state.status !== 'selected') return;
-  gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
+  if (state.status === 'selected') {
+    gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
+  } else if (state.status === 'idle') {
+    gridInteraction$.set({ status: 'transplanting', sourcePlantId: null });
+  }
 }
 
 /**

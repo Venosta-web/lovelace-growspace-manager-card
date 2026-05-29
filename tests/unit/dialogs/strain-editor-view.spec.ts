@@ -1,8 +1,37 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { StrainEditorView } from '../../../src/dialogs/strain-editor-view';
+import { createInitialSM, transition } from '../../../src/dialogs/strain-editor-view-sm';
 import { StrainEntry } from '../../../src/types';
 import { PlantUtils } from '../../../src/utils/plant-utils';
+
+// Convenience helpers to access/mutate the SM in tests
+function getSM(el: StrainEditorView) { return (el as any)._sm; }
+function setDraft(el: StrainEditorView, draft: Partial<StrainEntry>) {
+  (el as any)._sm = createInitialSM(draft);
+  el.requestUpdate();
+}
+function getSubKind(el: StrainEditorView) { return getSM(el).sub.kind; }
+function setSubState(el: StrainEditorView, sub: any) {
+  (el as any)._sm = { ...getSM(el), sub };
+  el.requestUpdate();
+}
+function getBreederDraft(el: StrainEditorView) {
+  const sub = getSM(el).sub;
+  return sub.kind === 'breeder-editing' ? sub.draft : null;
+}
+function setBreederDraft(el: StrainEditorView, draft: { name: string; logo: string; originalName: string }) {
+  (el as any)._sm = { ...getSM(el), sub: { kind: 'breeder-editing', draft } };
+  el.requestUpdate();
+}
+function getPendingDelete(el: StrainEditorView) {
+  const sub = getSM(el).sub;
+  return sub.kind === 'breeder-confirm-delete' ? sub.name : null;
+}
+function patchDraft(el: StrainEditorView, patch: Partial<StrainEntry>) {
+  (el as any)._sm = { ...getSM(el), draft: { ...getSM(el).draft, ...patch } };
+  el.requestUpdate();
+}
 
 vi.mock('../../../src/utils/plant-utils', () => ({
     PlantUtils: {
@@ -47,7 +76,7 @@ describe('StrainEditorView', () => {
             editorEl.editingStrain = strain;
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._editorState.strain).toBe('New Strain');
+            expect(getSM(editorEl).draft.strain).toBe('New Strain');
         });
     });
 
@@ -67,8 +96,8 @@ describe('StrainEditorView', () => {
             indicaInput.dispatchEvent(new Event('input'));
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._editorState.indica_percentage).toBe(70);
-            expect((editorEl as any)._editorState.sativa_percentage).toBe(30);
+            expect(getSM(editorEl).draft.indica_percentage).toBe(70);
+            expect(getSM(editorEl).draft.sativa_percentage).toBe(30);
         });
 
         it('should switch type', async () => {
@@ -76,7 +105,7 @@ describe('StrainEditorView', () => {
             (options?.[0] as HTMLElement).click();
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._editorState.type).toBe('Indica');
+            expect(getSM(editorEl).draft.type).toBe('Indica');
         });
 
         it('should handle image drop', async () => {
@@ -116,11 +145,11 @@ describe('StrainEditorView', () => {
 
             const overlay = editorEl.shadowRoot?.querySelector('.crop-overlay');
             expect(overlay).toBeTruthy();
-            expect((editorEl as any)._isCropping).toBe(true);
+            expect(getSubKind(editorEl)).toBe('cropping');
         });
 
         it('should change zoom via slider', async () => {
-            (editorEl as any)._isCropping = true;
+            setSubState(editorEl, { kind: 'cropping' });
             await editorEl.updateComplete;
 
             const slider = editorEl.shadowRoot?.querySelector('.crop-slider') as HTMLInputElement;
@@ -128,7 +157,7 @@ describe('StrainEditorView', () => {
             slider.value = '2';
             slider.dispatchEvent(new Event('input'));
 
-            expect((editorEl as any)._editorState.image_crop_meta.scale).toBe(2);
+            expect(getSM(editorEl).draft.image_crop_meta.scale).toBe(2);
         });
     });
 
@@ -176,7 +205,7 @@ describe('StrainEditorView', () => {
         it('should save and dispatch save-strain if strain name is present', async () => {
             await editorEl.updateComplete;
 
-            (editorEl as any)._editorState = { strain: 'New Strain' };
+            setDraft(editorEl, { strain: 'New Strain' });
 
             const listener = vi.fn();
             editorEl.addEventListener('save-strain', listener);
@@ -188,7 +217,7 @@ describe('StrainEditorView', () => {
         });
 
         it('should dispatch editor-back after save (no source)', async () => {
-            (editorEl as any)._editorState = { strain: 'New Strain' };
+            setDraft(editorEl, { strain: 'New Strain' });
 
             const backListener = vi.fn();
             editorEl.addEventListener('editor-back', backListener);
@@ -286,7 +315,7 @@ describe('StrainEditorView', () => {
     describe('Editor Logic Extended', () => {
         it('should handle generic editor changes', () => {
             (editorEl as any)._handleEditorChange('breeder', 'New Breeder');
-            expect((editorEl as any)._editorState.breeder).toBe('New Breeder');
+            expect(getSM(editorEl).draft.breeder).toBe('New Breeder');
         });
 
     });
@@ -333,8 +362,8 @@ describe('StrainEditorView', () => {
             track.dispatchEvent(clickEvent);
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._editorState.indica_percentage).toBe(25);
-            expect((editorEl as any)._editorState.sativa_percentage).toBe(75);
+            expect(getSM(editorEl).draft.indica_percentage).toBe(25);
+            expect(getSM(editorEl).draft.sativa_percentage).toBe(75);
         });
 
         it('should update sex via radio', async () => {
@@ -342,7 +371,7 @@ describe('StrainEditorView', () => {
             (radios?.[1] as HTMLElement).click();
             (radios?.[1] as HTMLInputElement).dispatchEvent(new Event('change'));
 
-            expect((editorEl as any)._editorState.sex).toBe('Regular');
+            expect(getSM(editorEl).draft.sex).toBe('Regular');
         });
 
     });
@@ -361,7 +390,7 @@ describe('StrainEditorView', () => {
 
             (input as HTMLInputElement).value = 'New Breeder';
             (input as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.breeder).toBe('New Breeder');
+            expect(getSM(editorEl).draft.breeder).toBe('New Breeder');
         });
 
         it('should update phenotype', () => {
@@ -370,7 +399,7 @@ describe('StrainEditorView', () => {
 
             (input as HTMLInputElement).value = '#2';
             (input as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.phenotype).toBe('#2');
+            expect(getSM(editorEl).draft.phenotype).toBe('#2');
         });
 
         it('should update strain name', () => {
@@ -379,7 +408,7 @@ describe('StrainEditorView', () => {
 
             (input as HTMLInputElement).value = 'New Strain';
             (input as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.strain).toBe('New Strain');
+            expect(getSM(editorEl).draft.strain).toBe('New Strain');
         });
 
         it('should update flowering days', () => {
@@ -388,23 +417,23 @@ describe('StrainEditorView', () => {
 
             (inputs[0] as HTMLInputElement).value = '55';
             (inputs[0] as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.flowering_days_min).toBe('55');
+            expect(getSM(editorEl).draft.flowering_days_min).toBe('55');
 
             (inputs[1] as HTMLInputElement).value = '65';
             (inputs[1] as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.flowering_days_max).toBe('65');
+            expect(getSM(editorEl).draft.flowering_days_max).toBe('65');
         });
 
         it('should update lineage', () => {
             (editorEl as any)._handleEditorChange('lineage', 'New Lineage');
-            expect((editorEl as any)._editorState.lineage).toBe('New Lineage');
+            expect(getSM(editorEl).draft.lineage).toBe('New Lineage');
         });
 
         it('should update description', () => {
             const textarea = editorEl.shadowRoot?.querySelector('textarea');
             (textarea as HTMLTextAreaElement).value = 'New Desc';
             (textarea as HTMLTextAreaElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.description).toBe('New Desc');
+            expect(getSM(editorEl).draft.description).toBe('New Desc');
         });
 
         it('should update hybrid inputs', async () => {
@@ -416,13 +445,13 @@ describe('StrainEditorView', () => {
 
             (inputs?.[0] as HTMLInputElement).value = '30';
             (inputs?.[0] as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.indica_percentage).toBe(30);
-            expect((editorEl as any)._editorState.sativa_percentage).toBe(70);
+            expect(getSM(editorEl).draft.indica_percentage).toBe(30);
+            expect(getSM(editorEl).draft.sativa_percentage).toBe(70);
 
             (inputs?.[1] as HTMLInputElement).value = '60';
             (inputs?.[1] as HTMLInputElement).dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.sativa_percentage).toBe(60);
-            expect((editorEl as any)._editorState.indica_percentage).toBe(40);
+            expect(getSM(editorEl).draft.sativa_percentage).toBe(60);
+            expect(getSM(editorEl).draft.indica_percentage).toBe(40);
         });
     });
 
@@ -439,13 +468,13 @@ describe('StrainEditorView', () => {
 
         it('should zoom via wheel', async () => {
             expect(viewport).toBeTruthy();
-            const initialScale = (editorEl as any)._editorState.image_crop_meta.scale;
+            const initialScale = getSM(editorEl).draft.image_crop_meta.scale;
 
             const wheelEvent = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true });
             viewport.dispatchEvent(wheelEvent);
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._editorState.image_crop_meta.scale).toBeLessThan(initialScale);
+            expect(getSM(editorEl).draft.image_crop_meta.scale).toBeLessThan(initialScale);
 
             const wheelEvent2 = new WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true });
             viewport.dispatchEvent(wheelEvent2);
@@ -462,7 +491,7 @@ describe('StrainEditorView', () => {
             const mouseup = new MouseEvent('mouseup', { clientX: 50, clientY: 50, bubbles: true });
             window.dispatchEvent(mouseup);
 
-            expect((editorEl as any)._editorState.image_crop_meta.x).not.toBe(10);
+            expect(getSM(editorEl).draft.image_crop_meta.x).not.toBe(10);
         });
 
         it('should prevent default on dragstart', () => {
@@ -478,7 +507,7 @@ describe('StrainEditorView', () => {
                 .find(b => b.textContent?.trim() === 'Done');
             (doneBtn as HTMLElement)?.click();
             await editorEl.updateComplete;
-            expect((editorEl as any)._isCropping).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('cropping');
         });
     });
 
@@ -499,11 +528,11 @@ describe('StrainEditorView', () => {
 
             indicaInput.value = '-10';
             indicaInput.dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.indica_percentage).toBe(0);
+            expect(getSM(editorEl).draft.indica_percentage).toBe(0);
 
             indicaInput.value = '110';
             indicaInput.dispatchEvent(new Event('input'));
-            expect((editorEl as any)._editorState.indica_percentage).toBe(100);
+            expect(getSM(editorEl).draft.indica_percentage).toBe(100);
         });
 
         it('should handle dragover event', async () => {
@@ -533,7 +562,7 @@ describe('StrainEditorView', () => {
         it('should return early in _handleSave if strain is missing (safety check)', async () => {
             await editorEl.updateComplete;
 
-            (editorEl as any)._editorState = { ...((editorEl as any)._editorState), strain: undefined };
+            setDraft(editorEl, { ...(getSM(editorEl).draft), strain: undefined });
 
             const listener = vi.fn();
             editorEl.addEventListener('save-strain', listener);
@@ -624,7 +653,7 @@ describe('StrainEditorView', () => {
         it('dispatches strain-created-at-source when source is set', async () => {
             editorEl.source = 'add-plant-dialog';
             editorEl.returnPayload = { extra: 'data' };
-            (editorEl as any)._editorState = { strain: 'Quick Strain', type: 'Indica' };
+            setDraft(editorEl, { strain: 'Quick Strain', type: 'Indica' });
             await editorEl.updateComplete;
 
             const sourceHandler = vi.fn();
@@ -648,9 +677,9 @@ describe('StrainEditorView', () => {
                 { key: 's1', strain: 'Blue Dream', phenotype: 'Pheno 1', breeder: 'HSO', breeder_logo: 'hso-logo', type: 'Hybrid' },
                 { key: 's2', strain: 'OG Kush', phenotype: 'Pheno 2', breeder: 'Dinafem', type: 'Hybrid' },
             ];
-            (editorEl as any)._editorState = { strain: '', type: 'Hybrid' };
+            setDraft(editorEl, { strain: '', type: 'Hybrid' });
             (editorEl as any)._handleEditorChange('breeder', 'HSO');
-            expect((editorEl as any)._editorState.breeder_logo).toBe('hso-logo');
+            expect(getSM(editorEl).draft.breeder_logo).toBe('hso-logo');
         });
 
         it('does not auto-fill logo if breeder name has no logo in library', async () => {
@@ -658,9 +687,9 @@ describe('StrainEditorView', () => {
                 { key: 's1', strain: 'Blue Dream', phenotype: 'Pheno 1', breeder: 'HSO', breeder_logo: 'hso-logo', type: 'Hybrid' },
                 { key: 's2', strain: 'OG Kush', phenotype: 'Pheno 2', breeder: 'Dinafem', type: 'Hybrid' },
             ];
-            (editorEl as any)._editorState = { strain: '', type: 'Hybrid' };
+            setDraft(editorEl, { strain: '', type: 'Hybrid' });
             (editorEl as any)._handleEditorChange('breeder', 'Dinafem');
-            expect((editorEl as any)._editorState.breeder_logo).toBeUndefined();
+            expect(getSM(editorEl).draft.breeder_logo).toBeUndefined();
         });
     });
 
@@ -668,7 +697,7 @@ describe('StrainEditorView', () => {
 
     describe('UI Interactions', () => {
         it('dispatches open-print-label', async () => {
-            (editorEl as any)._editorState = { strain: 'Quick Strain', breeder: 'HSO' };
+            setDraft(editorEl, { strain: 'Quick Strain', breeder: 'HSO' });
             const printHandler = vi.fn();
             editorEl.addEventListener('open-print-label', printHandler);
 
@@ -698,15 +727,15 @@ describe('StrainEditorView', () => {
         } as any);
 
         track.dispatchEvent(new MouseEvent('click', { clientX: 150, bubbles: true }));
-        expect((editorEl as any)._editorState.indica_percentage).toBe(100);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(100);
 
         track.dispatchEvent(new MouseEvent('click', { clientX: -50, bubbles: true }));
-        expect((editorEl as any)._editorState.indica_percentage).toBe(0);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(0);
     });
 
     it('should not render crop overlay if image is missing', async () => {
-        (editorEl as any)._editorState.image = '';
-        (editorEl as any)._isCropping = true;
+        patchDraft(editorEl, { image: '' });
+        setSubState(editorEl, { kind: 'cropping' });
         await editorEl.updateComplete;
 
         const overlay = editorEl.shadowRoot?.querySelector('.crop-overlay');
@@ -714,9 +743,8 @@ describe('StrainEditorView', () => {
     });
 
     it('should use default crop meta if missing in renderCropOverlay', async () => {
-        (editorEl as any)._editorState.image = 'test.jpg';
-        (editorEl as any)._editorState.image_crop_meta = undefined;
-        (editorEl as any)._isCropping = true;
+        patchDraft(editorEl, { image: 'test.jpg', image_crop_meta: undefined });
+        setSubState(editorEl, { kind: 'cropping' });
         await editorEl.updateComplete;
 
         const overlay = editorEl.shadowRoot?.querySelector('.crop-overlay');
@@ -726,7 +754,7 @@ describe('StrainEditorView', () => {
         const viewport = overlay?.querySelector('.crop-viewport');
         viewport?.dispatchEvent(wheelEvent);
 
-        expect((editorEl as any)._editorState.image_crop_meta.scale).toBeCloseTo(1.1);
+        expect(getSM(editorEl).draft.image_crop_meta.scale).toBeCloseTo(1.1);
     });
 
     it('should clamp indica input values and handle NaN', async () => {
@@ -741,17 +769,17 @@ describe('StrainEditorView', () => {
 
         indicaInput.value = '150';
         indicaInput.dispatchEvent(new Event('input'));
-        expect((editorEl as any)._editorState.indica_percentage).toBe(100);
-        expect((editorEl as any)._editorState.sativa_percentage).toBe(0);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(100);
+        expect(getSM(editorEl).draft.sativa_percentage).toBe(0);
 
         indicaInput.value = '-50';
         indicaInput.dispatchEvent(new Event('input'));
-        expect((editorEl as any)._editorState.indica_percentage).toBe(0);
-        expect((editorEl as any)._editorState.sativa_percentage).toBe(100);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(0);
+        expect(getSM(editorEl).draft.sativa_percentage).toBe(100);
 
         indicaInput.value = 'abc';
         indicaInput.dispatchEvent(new InputEvent('input'));
-        expect((editorEl as any)._editorState.indica_percentage).toBe(0);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(0);
     });
 
     it('should clamp sativa input values and handle NaN', async () => {
@@ -767,13 +795,13 @@ describe('StrainEditorView', () => {
 
         sativaInput.value = '150';
         sativaInput.dispatchEvent(new Event('input'));
-        expect((editorEl as any)._editorState.sativa_percentage).toBe(100);
-        expect((editorEl as any)._editorState.indica_percentage).toBe(0);
+        expect(getSM(editorEl).draft.sativa_percentage).toBe(100);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(0);
 
         sativaInput.value = '-50';
         sativaInput.dispatchEvent(new Event('input'));
-        expect((editorEl as any)._editorState.sativa_percentage).toBe(0);
-        expect((editorEl as any)._editorState.indica_percentage).toBe(100);
+        expect(getSM(editorEl).draft.sativa_percentage).toBe(0);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(100);
     });
 
     it('should handle missing file in drop and change events', async () => {
@@ -807,20 +835,20 @@ describe('StrainEditorView', () => {
 
         sativaInput.value = 'abc';
         sativaInput.dispatchEvent(new Event('input'));
-        expect((editorEl as any)._editorState.sativa_percentage).toBe(0);
-        expect((editorEl as any)._editorState.indica_percentage).toBe(100);
+        expect(getSM(editorEl).draft.sativa_percentage).toBe(0);
+        expect(getSM(editorEl).draft.indica_percentage).toBe(100);
     });
 
     // --- Print Label branch ---
 
     describe('Additional Coverage Edge Cases', () => {
         it('covers _handlePrintLabel branch', () => {
-            (editorEl as any)._editorState = { strain: '' };
+            setDraft(editorEl, { strain: '' });
             const dispatchSpy = vi.spyOn(editorEl, 'dispatchEvent');
             (editorEl as any)._handlePrintLabel();
             expect(dispatchSpy).not.toHaveBeenCalled();
 
-            (editorEl as any)._editorState = { strain: 'Test' };
+            setDraft(editorEl, { strain: 'Test' });
             (editorEl as any)._handlePrintLabel();
             expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'open-print-label' }));
             dispatchSpy.mockRestore();
@@ -858,16 +886,16 @@ describe('StrainEditorView', () => {
             await editorEl.updateComplete;
 
             (editorEl as any)._navigateToAncestor(mockAncestor);
-            expect((editorEl as any)._editorHistory.length).toBe(1);
-            expect((editorEl as any)._editorState.strain).toBe('Blue Dream Ancestor');
+            expect(getSM(editorEl).history.length).toBe(1);
+            expect(getSM(editorEl).draft.strain).toBe('Blue Dream Ancestor');
 
             (editorEl as any)._goBack();
-            expect((editorEl as any)._editorHistory.length).toBe(0);
-            expect((editorEl as any)._editorState.strain).toBe('Blue Dream');
+            expect(getSM(editorEl).history.length).toBe(0);
+            expect(getSM(editorEl).draft.strain).toBe('Blue Dream');
         });
 
         it('dispatches editor-back event when history is empty in _goBack', async () => {
-            (editorEl as any)._editorHistory = [];
+            (editorEl as any)._sm = { ...getSM(editorEl), history: [] };
             const backSpy = vi.fn();
             editorEl.addEventListener('editor-back', backSpy);
             (editorEl as any)._goBack();
@@ -932,7 +960,7 @@ describe('StrainEditorView', () => {
                 }
             } as any;
 
-            (editorEl as any)._lineageEditMode = true;
+            setSubState(editorEl, { kind: 'lineage-editing' });
             (editorEl as any)._lineageTree = mockTree;
             await editorEl.updateComplete;
 
@@ -973,7 +1001,7 @@ describe('StrainEditorView', () => {
             const detail = (importSpy.mock.calls[0][0] as any).detail;
             expect(detail.file).toBe(file);
             expect(detail.replace).toBe(false);
-            expect((editorEl as any)._importDialogOpen).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('importing');
         });
 
         it('clicks the back button and triggers _goBack', async () => {
@@ -998,7 +1026,7 @@ describe('StrainEditorView', () => {
             expect(seedfinderBtn).toBeTruthy();
 
             (seedfinderBtn as HTMLElement).click();
-            expect((editorEl as any)._seedfinderDialogOpen).toBe(true);
+            expect(getSubKind(editorEl)).toBe('seedfinder');
         });
 
         it('toggles lineage edit mode and loads strain tree', async () => {
@@ -1021,7 +1049,7 @@ describe('StrainEditorView', () => {
             // Toggle Edit tree mode ON
             await (editTreeBtn as HTMLElement).click();
             await editorEl.updateComplete;
-            expect((editorEl as any)._lineageEditMode).toBe(true);
+            expect(getSubKind(editorEl)).toBe('lineage-editing');
             expect(getTreeSpy).toHaveBeenCalledWith('Blue Dream');
 
             // Toggle View mode ON (Edit tree OFF)
@@ -1030,7 +1058,7 @@ describe('StrainEditorView', () => {
             expect(viewBtn).toBeTruthy();
             await (viewBtn as HTMLElement).click();
             await editorEl.updateComplete;
-            expect((editorEl as any)._lineageEditMode).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('lineage-editing');
         });
 
         it('returns early in lineage-change handler if strain or store is missing', async () => {
@@ -1040,7 +1068,7 @@ describe('StrainEditorView', () => {
             editorEl.editingStrain = editorEl.strains[0];
             await editorEl.updateComplete;
 
-            (editorEl as any)._lineageEditMode = true;
+            setSubState(editorEl, { kind: 'lineage-editing' });
             (editorEl as any)._lineageTree = { parents: [] };
             await editorEl.updateComplete;
 
@@ -1070,10 +1098,7 @@ describe('StrainEditorView', () => {
                     }
                 }
             } as any;
-            (editorEl as any)._editorState = {
-                strain: '',
-                phenotype: ''
-            };
+            patchDraft(editorEl, { strain: '', phenotype: '' });
             await editorEl.updateComplete;
 
             try {
@@ -1095,7 +1120,7 @@ describe('StrainEditorView', () => {
             editorEl.editingStrain = editorEl.strains[0];
             await editorEl.updateComplete;
 
-            (editorEl as any)._lineageEditMode = false;
+            setSubState(editorEl, { kind: 'idle' });
             (editorEl as any)._lineageTree = { parents: [{ name: 'OG Kush' }] };
             await editorEl.updateComplete;
 
@@ -1138,14 +1163,14 @@ describe('StrainEditorView', () => {
 
         it('starts breeder edit with custom or default state', () => {
             (editorEl as any)._startBreederEdit('Barney', 'logoUrl');
-            expect((editorEl as any)._breederEditorState).toEqual({
+            expect(getBreederDraft(editorEl)).toEqual({
                 name: 'Barney',
                 logo: 'logoUrl',
                 originalName: 'Barney'
             });
 
             (editorEl as any)._startBreederEdit();
-            expect((editorEl as any)._breederEditorState).toEqual({
+            expect(getBreederDraft(editorEl)).toEqual({
                 name: '',
                 logo: '',
                 originalName: ''
@@ -1154,7 +1179,7 @@ describe('StrainEditorView', () => {
 
         it('does not save breeder if state name is empty', () => {
             const dispatchSpy = vi.spyOn(editorEl, 'dispatchEvent');
-            (editorEl as any)._breederEditorState = { name: '  ', logo: 'logo', originalName: '' };
+            setBreederDraft(editorEl, { name: '  ', logo: 'logo', originalName: '' });
             (editorEl as any)._handleSaveBreeder();
             expect(dispatchSpy).not.toHaveBeenCalled();
             dispatchSpy.mockRestore();
@@ -1162,27 +1187,27 @@ describe('StrainEditorView', () => {
 
         it('saves new breeder if originalName is empty', () => {
             const dispatchSpy = vi.spyOn(editorEl, 'dispatchEvent');
-            (editorEl as any)._breederEditorState = { name: 'New Breeder', logo: 'newLogo', originalName: '' };
+            setBreederDraft(editorEl, { name: 'New Breeder', logo: 'newLogo', originalName: '' });
             (editorEl as any)._handleSaveBreeder();
             expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'save-breeder'
             }));
             const detail = (dispatchSpy.mock.calls[0][0] as any).detail;
             expect(detail).toEqual({ name: 'New Breeder', logo: 'newLogo' });
-            expect((editorEl as any)._breederEditorState).toBeNull();
+            expect(getBreederDraft(editorEl)).toBeNull();
             dispatchSpy.mockRestore();
         });
 
         it('updates existing breeder if originalName is present', () => {
             const dispatchSpy = vi.spyOn(editorEl, 'dispatchEvent');
-            (editorEl as any)._breederEditorState = { name: 'Updated Name', logo: 'updatedLogo', originalName: 'Old Breeder' };
+            setBreederDraft(editorEl, { name: 'Updated Name', logo: 'updatedLogo', originalName: 'Old Breeder' });
             (editorEl as any)._handleSaveBreeder();
             expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
                 type: 'update-breeder'
             }));
             const detail = (dispatchSpy.mock.calls[0][0] as any).detail;
             expect(detail).toEqual({ oldName: 'Old Breeder', newName: 'Updated Name', logo: 'updatedLogo' });
-            expect((editorEl as any)._breederEditorState).toBeNull();
+            expect(getBreederDraft(editorEl)).toBeNull();
             dispatchSpy.mockRestore();
         });
 
@@ -1190,10 +1215,10 @@ describe('StrainEditorView', () => {
             const dispatchSpy = vi.spyOn(editorEl, 'dispatchEvent');
             
             (editorEl as any)._handleDeleteBreeder('ToDelete');
-            expect((editorEl as any)._pendingDeleteBreeder).toBe('ToDelete');
+            expect(getPendingDelete(editorEl)).toBe('ToDelete');
 
             (editorEl as any)._cancelDeleteBreeder();
-            expect((editorEl as any)._pendingDeleteBreeder).toBeNull();
+            expect(getPendingDelete(editorEl)).toBeNull();
 
             (editorEl as any)._handleDeleteBreeder('ToDelete2');
             (editorEl as any)._confirmDeleteBreeder();
@@ -1202,34 +1227,34 @@ describe('StrainEditorView', () => {
             }));
             const detail = (dispatchSpy.mock.calls[0][0] as any).detail;
             expect(detail).toEqual({ name: 'ToDelete2' });
-            expect((editorEl as any)._pendingDeleteBreeder).toBeNull();
+            expect(getPendingDelete(editorEl)).toBeNull();
 
             dispatchSpy.mockRestore();
         });
 
         it('does not dispatch delete-breeder if no pending breeder', () => {
             const dispatchSpy = vi.spyOn(editorEl, 'dispatchEvent');
-            (editorEl as any)._pendingDeleteBreeder = null;
+            setSubState(editorEl, { kind: 'idle' });
             (editorEl as any)._confirmDeleteBreeder();
             expect(dispatchSpy).not.toHaveBeenCalled();
             dispatchSpy.mockRestore();
         });
 
         it('handles Seedfinder import and updates editorState', () => {
-            (editorEl as any)._editorState = { strain: 'Old Strain', breeder: 'Old Breeder' };
-            (editorEl as any)._seedfinderDialogOpen = true;
+            setDraft(editorEl, { strain: 'Old Strain', breeder: 'Old Breeder' });
+            setSubState(editorEl, { kind: 'seedfinder' });
 
             const importEvent = new CustomEvent('seedfinder-import', {
                 detail: { strain: 'Seedfinder Blue Dream', breeder: 'SF Breeder', flowered: 65 }
             });
             (editorEl as any)._handleSeedfinderImport(importEvent);
 
-            expect((editorEl as any)._editorState).toEqual({
+            expect(getSM(editorEl).draft).toEqual({
                 strain: 'Seedfinder Blue Dream',
                 breeder: 'SF Breeder',
                 flowered: 65
             });
-            expect((editorEl as any)._seedfinderDialogOpen).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('seedfinder');
         });
     });
 
@@ -1271,7 +1296,7 @@ describe('StrainEditorView', () => {
             await new Promise(resolve => setTimeout(resolve, 0));
 
             expect(PlantUtils.compressImage).toHaveBeenCalledWith(file);
-            expect((editorEl as any)._editorState.breeder_logo).toBe('compressed-base64');
+            expect(getSM(editorEl).draft.breeder_logo).toBe('compressed-base64');
         });
 
         it('handles file input change compression failure', async () => {
@@ -1297,7 +1322,7 @@ describe('StrainEditorView', () => {
         });
 
         it('clears breeder logo when delete logo button is clicked', async () => {
-            (editorEl as any)._editorState = { ...mockStrains[0], breeder_logo: 'some-logo' };
+            setDraft(editorEl, { ...mockStrains[0], breeder_logo: 'some-logo' });
             await editorEl.updateComplete;
 
             const buttons = Array.from(editorEl.shadowRoot?.querySelectorAll('button') || []);
@@ -1307,13 +1332,13 @@ describe('StrainEditorView', () => {
             deleteBtn?.click();
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._editorState.breeder_logo).toBe('');
+            expect(getSM(editorEl).draft.breeder_logo).toBe('');
         });
     });
 
     describe('Dialog Rendering and Interactions', () => {
         it('renders and interacts with the Import Dialog', async () => {
-            (editorEl as any)._importDialogOpen = true;
+            setSubState(editorEl, { kind: 'importing', replace: false });
             await editorEl.updateComplete;
 
             const overlay = editorEl.shadowRoot?.querySelector('ha-dialog');
@@ -1322,15 +1347,15 @@ describe('StrainEditorView', () => {
 
             const radioButtons = Array.from(overlay?.querySelectorAll('input[type="radio"]') || []) as HTMLInputElement[];
             expect(radioButtons.length).toBe(2);
-            expect((editorEl as any)._importReplace).toBe(false);
+            expect(getSubKind(editorEl) === 'importing' ? (getSM(editorEl).sub as any).replace : false).toBe(false);
             
             radioButtons[1].checked = true;
             radioButtons[1].dispatchEvent(new Event('change'));
-            expect((editorEl as any)._importReplace).toBe(true);
+            expect(getSubKind(editorEl) === 'importing' ? (getSM(editorEl).sub as any).replace : false).toBe(true);
 
             radioButtons[0].checked = true;
             radioButtons[0].dispatchEvent(new Event('change'));
-            expect((editorEl as any)._importReplace).toBe(false);
+            expect(getSubKind(editorEl) === 'importing' ? (getSM(editorEl).sub as any).replace : false).toBe(false);
 
             const selectBtn = Array.from(overlay?.querySelectorAll('button') || [])
                 .find(b => b.textContent?.includes('Select File'));
@@ -1344,13 +1369,11 @@ describe('StrainEditorView', () => {
                 .find(b => b.textContent?.includes('Cancel') || b.querySelector('svg'));
             expect(closeBtn).toBeTruthy();
             (closeBtn as HTMLElement).click();
-            expect((editorEl as any)._importDialogOpen).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('importing');
         });
 
         it('renders and interacts with Breeder Dialog - Breeder List mode', async () => {
-            (editorEl as any)._breederDialogOpen = true;
-            (editorEl as any)._breederEditorState = null;
-            (editorEl as any)._pendingDeleteBreeder = null;
+            setSubState(editorEl, { kind: 'breeder-list' });
             editorEl.strains = [
                 { key: '1', strain: 'Strain A', phenotype: '', breeder: 'Breeder A', breeder_logo: 'logoA', type: 'Indica' }
             ];
@@ -1367,18 +1390,18 @@ describe('StrainEditorView', () => {
             const breederCard = overlay?.querySelector('.breeder-card') as HTMLElement;
             expect(breederCard).toBeTruthy();
             breederCard.click();
-            expect((editorEl as any)._breederEditorState).toEqual({ name: 'Breeder A', logo: 'logoA', originalName: 'Breeder A' });
+            expect(getBreederDraft(editorEl)).toEqual({ name: 'Breeder A', logo: 'logoA', originalName: 'Breeder A' });
 
             const closeBtn = Array.from(overlay?.querySelectorAll('button') || [])
                 .find(b => b.textContent?.includes('Close') || b.querySelector('svg'));
             expect(closeBtn).toBeTruthy();
             (closeBtn as HTMLElement).click();
-            expect((editorEl as any)._breederDialogOpen).toBe(false);
+            expect(['breeder-list', 'breeder-editing', 'breeder-confirm-delete']).not.toContain(getSubKind(editorEl));
         });
 
         it('renders and interacts with Breeder Dialog - Breeder Editor mode', async () => {
-            (editorEl as any)._breederDialogOpen = true;
-            (editorEl as any)._breederEditorState = { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' };
+            setSubState(editorEl, { kind: 'breeder-list' });
+            setBreederDraft(editorEl, { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' });
             await editorEl.updateComplete;
 
             const overlay = editorEl.shadowRoot?.querySelector('ha-dialog');
@@ -1391,7 +1414,7 @@ describe('StrainEditorView', () => {
 
             nameInput.value = 'New Name';
             nameInput.dispatchEvent(new Event('input'));
-            expect((editorEl as any)._breederEditorState.name).toBe('New Name');
+            expect(getBreederDraft(editorEl)?.name).toBe('New Name');
 
             const logoBtn = Array.from(overlay?.querySelectorAll('button') || [])
                 .find(b => b.textContent?.includes('Change Logo') || b.textContent?.includes('Upload Logo'));
@@ -1407,7 +1430,7 @@ describe('StrainEditorView', () => {
             fileInput.dispatchEvent(new Event('change'));
             await new Promise(resolve => setTimeout(resolve, 0));
             expect(compressSpy).toHaveBeenCalled();
-            expect((editorEl as any)._breederEditorState.logo).toBe('new-compressed-logo');
+            expect(getBreederDraft(editorEl)?.logo).toBe('new-compressed-logo');
 
             const saveBtn = Array.from(overlay?.querySelectorAll('button') || [])
                 .find(b => b.textContent?.includes('Save Changes'));
@@ -1416,18 +1439,18 @@ describe('StrainEditorView', () => {
             (saveBtn as HTMLElement).click();
             expect(saveSpy).toHaveBeenCalled();
 
-            (editorEl as any)._breederEditorState = { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' };
+            setBreederDraft(editorEl, { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' });
             await editorEl.updateComplete;
             const cancelBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('ha-dialog button') || [])
                 .find(b => b.textContent?.includes('Cancel'));
             expect(cancelBtn).toBeTruthy();
             (cancelBtn as HTMLElement).click();
-            expect((editorEl as any)._breederEditorState).toBeNull();
+            expect(getBreederDraft(editorEl)).toBeNull();
         });
 
         it('clears breeder logo in Breeder Editor mode', async () => {
-            (editorEl as any)._breederDialogOpen = true;
-            (editorEl as any)._breederEditorState = { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' };
+            setSubState(editorEl, { kind: 'breeder-list' });
+            setBreederDraft(editorEl, { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' });
             await editorEl.updateComplete;
 
             const overlay = editorEl.shadowRoot?.querySelector('ha-dialog');
@@ -1438,11 +1461,11 @@ describe('StrainEditorView', () => {
             deleteLogoBtn?.click();
             await editorEl.updateComplete;
 
-            expect((editorEl as any)._breederEditorState.logo).toBe('');
+            expect(getBreederDraft(editorEl)?.logo).toBe('');
         });
 
         it('renders and interacts with Breeder Dialog - Delete Confirmation mode', async () => {
-            (editorEl as any)._pendingDeleteBreeder = 'Breeder to Delete';
+            setSubState(editorEl, { kind: 'breeder-confirm-delete', name: 'Breeder to Delete' });
             await editorEl.updateComplete;
 
             const overlay = editorEl.shadowRoot?.querySelector('ha-dialog');
@@ -1462,30 +1485,28 @@ describe('StrainEditorView', () => {
             expect(deleteSpy).toHaveBeenCalled();
             expect(deleteSpy.mock.calls[0][0].detail).toEqual({ name: 'Breeder to Delete' });
 
-            (editorEl as any)._pendingDeleteBreeder = 'Breeder to Delete';
+            setSubState(editorEl, { kind: 'breeder-confirm-delete', name: 'Breeder to Delete' });
             await editorEl.updateComplete;
             const cancelBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('ha-dialog button') || [])
                 .find(b => b.textContent?.includes('Cancel'));
             expect(cancelBtn).toBeTruthy();
             (cancelBtn as HTMLElement).click();
-            expect((editorEl as any)._pendingDeleteBreeder).toBeNull();
+            expect(getPendingDelete(editorEl)).toBeNull();
         });
 
         it('renders and interacts with Seedfinder Dialog', async () => {
-            (editorEl as any)._seedfinderDialogOpen = true;
+            setSubState(editorEl, { kind: 'seedfinder' });
             await editorEl.updateComplete;
 
             const seedfinderComponent = editorEl.shadowRoot?.querySelector('strain-import-dialog');
             expect(seedfinderComponent).toBeTruthy();
 
             seedfinderComponent?.dispatchEvent(new CustomEvent('close'));
-            expect((editorEl as any)._seedfinderDialogOpen).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('seedfinder');
         });
 
         it('triggers edit and delete breeder from the Breeder List', async () => {
-            (editorEl as any)._breederDialogOpen = true;
-            (editorEl as any)._breederEditorState = null;
-            (editorEl as any)._pendingDeleteBreeder = null;
+            setSubState(editorEl, { kind: 'breeder-list' });
             editorEl.strains = [
                 { key: '1', strain: 'Strain A', phenotype: '', breeder: 'Breeder A', breeder_logo: 'logoA', type: 'Indica' }
             ];
@@ -1510,8 +1531,8 @@ describe('StrainEditorView', () => {
         });
 
         it('supports Breeder Editor back button and logo file input click and handles compression error', async () => {
-            (editorEl as any)._breederDialogOpen = true;
-            (editorEl as any)._breederEditorState = { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' };
+            setSubState(editorEl, { kind: 'breeder-list' });
+            setBreederDraft(editorEl, { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' });
             await editorEl.updateComplete;
 
             const overlay = editorEl.shadowRoot?.querySelector('ha-dialog');
@@ -1522,10 +1543,10 @@ describe('StrainEditorView', () => {
                 .find(b => b.textContent?.includes('Back'));
             expect(backBtn).toBeTruthy();
             (backBtn as HTMLElement).click();
-            expect((editorEl as any)._breederEditorState).toBeNull();
+            expect(getBreederDraft(editorEl)).toBeNull();
 
             // Re-open editor state
-            (editorEl as any)._breederEditorState = { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' };
+            setBreederDraft(editorEl, { name: 'Edit Breeder', logo: 'some-logo', originalName: 'Original Breeder' });
             await editorEl.updateComplete;
 
             // 2. Click Logo button to trigger input file click
@@ -1553,8 +1574,7 @@ describe('StrainEditorView', () => {
         });
 
         it('renders empty breeder list state when no strains exist', async () => {
-            (editorEl as any)._breederDialogOpen = true;
-            (editorEl as any)._breederEditorState = null;
+            setSubState(editorEl, { kind: 'breeder-list' });
             editorEl.strains = [];
             await editorEl.updateComplete;
 
@@ -1584,7 +1604,7 @@ describe('StrainEditorView', () => {
         });
 
         it('_viewLineageInTree dispatches view-lineage with current editor state', () => {
-            (editorEl as any)._editorState = { strain: 'Gorilla Glue', phenotype: '#4' };
+            setDraft(editorEl, { strain: 'Gorilla Glue', phenotype: '#4' });
             const listener = vi.fn();
             editorEl.addEventListener('view-lineage', listener);
 
@@ -1601,7 +1621,7 @@ describe('StrainEditorView', () => {
         it('calls onSave prop instead of dispatching save-strain', async () => {
             const onSaveMock = vi.fn().mockResolvedValue(undefined);
             editorEl.onSave = onSaveMock;
-            (editorEl as any)._editorState = { strain: 'Callback Strain' };
+            setDraft(editorEl, { strain: 'Callback Strain' });
 
             const saveSpy = vi.fn();
             editorEl.addEventListener('save-strain', saveSpy);
@@ -1629,13 +1649,13 @@ describe('StrainEditorView', () => {
         it('downloads remote images and sets thumbnail when found', async () => {
             mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/local/downloaded.jpg' });
 
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Remote Strain',
                 images: [
                     { path: 'http://example.com/thumb.jpg', is_thumbnail: true },
                     { path: '/local/local.jpg', is_thumbnail: false },
                 ],
-            };
+            });
 
             const saveListener = vi.fn();
             editorEl.addEventListener('save-strain', saveListener);
@@ -1653,12 +1673,12 @@ describe('StrainEditorView', () => {
         it('promotes first image as thumbnail when no thumbnail present after download', async () => {
             mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/local/promoted.jpg' });
 
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Remote Strain',
                 images: [
                     { path: 'http://example.com/img1.jpg', is_thumbnail: false },
                 ],
-            };
+            });
 
             const saveListener = vi.fn();
             editorEl.addEventListener('save-strain', saveListener);
@@ -1674,15 +1694,15 @@ describe('StrainEditorView', () => {
             mockHass.connection.sendMessagePromise.mockRejectedValue(new Error('network error'));
             const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Fail Strain',
                 images: [{ path: 'http://example.com/fail.jpg', is_thumbnail: true }],
-            };
+            });
             editorEl.addEventListener('save-strain', vi.fn());
 
             await (editorEl as any)._handleSave();
 
-            expect((editorEl as any)._uploadingImage).toBe(false);
+            expect(getSM(editorEl).status.kind).not.toBe('applying');
             consoleSpy.mockRestore();
         });
     });
@@ -1698,7 +1718,7 @@ describe('StrainEditorView', () => {
 
         beforeEach(() => {
             editorEl.hass = mockHass as any;
-            (editorEl as any)._editorState = { strain: 'Test', phenotype: 'p1' };
+            setDraft(editorEl, { strain: 'Test', phenotype: 'p1' });
         });
 
         it('returns local images unchanged', async () => {
@@ -1735,27 +1755,27 @@ describe('StrainEditorView', () => {
 
     describe('_handleEditorChange image_crop_meta sync', () => {
         it('syncs crop_meta to the thumbnail image in the gallery', () => {
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Test',
                 images: [
                     { path: '/a.jpg', is_thumbnail: true, crop_meta: undefined },
                     { path: '/b.jpg', is_thumbnail: false },
                 ],
-            };
+            });
 
             const newMeta = { x: 20, y: 30, scale: 2 };
             (editorEl as any)._handleEditorChange('image_crop_meta', newMeta);
 
-            const images = (editorEl as any)._editorState.images;
+            const images = getSM(editorEl).draft.images;
             expect(images[0].crop_meta).toEqual(newMeta);
             expect(images[1].crop_meta).toBeUndefined();
         });
 
         it('does not modify images if field is not image_crop_meta', () => {
             const imgs = [{ path: '/a.jpg', is_thumbnail: true }];
-            (editorEl as any)._editorState = { strain: 'Test', images: imgs };
+            setDraft(editorEl, { strain: 'Test', images: imgs });
             (editorEl as any)._handleEditorChange('description', 'hello');
-            expect((editorEl as any)._editorState.images).toEqual(imgs);
+            expect(getSM(editorEl).draft.images).toEqual(imgs);
         });
     });
 
@@ -1763,8 +1783,8 @@ describe('StrainEditorView', () => {
 
     describe('_handleSeedfinderImport with images', () => {
         it('converts images array into gallery entries with first as thumbnail', () => {
-            (editorEl as any)._editorState = { strain: 'Base' };
-            (editorEl as any)._seedfinderDialogOpen = true;
+            setDraft(editorEl, { strain: 'Base' });
+            setSubState(editorEl, { kind: 'seedfinder' });
 
             const event = new CustomEvent('import', {
                 detail: {
@@ -1775,13 +1795,13 @@ describe('StrainEditorView', () => {
             });
             (editorEl as any)._handleSeedfinderImport(event);
 
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
             expect(state.images).toHaveLength(2);
             expect(state.images[0].is_thumbnail).toBe(true);
             expect(state.images[0].path).toBe('http://cdn.sf.com/1.jpg');
             expect(state.images[1].is_thumbnail).toBe(false);
             expect(state.image).toBe('http://cdn.sf.com/1.jpg');
-            expect((editorEl as any)._seedfinderDialogOpen).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('seedfinder');
         });
     });
 
@@ -1796,7 +1816,7 @@ describe('StrainEditorView', () => {
 
         beforeEach(() => {
             editorEl.hass = mockHass as any;
-            (editorEl as any)._editorState = { strain: 'Upload Test', phenotype: 'p1', images: [] };
+            setDraft(editorEl, { strain: 'Upload Test', phenotype: 'p1', images: [] });
         });
 
         it('uploads first image and sets it as thumbnail and main image', async () => {
@@ -1806,7 +1826,7 @@ describe('StrainEditorView', () => {
             const file = new File([''], 'photo.jpg', { type: 'image/jpeg' });
             await (editorEl as any)._handleGalleryUpload(file);
 
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
             expect(state.images).toHaveLength(1);
             expect(state.images[0].is_thumbnail).toBe(true);
             expect(state.images[0].path).toBe('/media/uploaded.jpg');
@@ -1814,19 +1834,19 @@ describe('StrainEditorView', () => {
         });
 
         it('uploads additional images without overriding main image', async () => {
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Upload Test',
                 phenotype: 'p1',
                 image: '/existing.jpg',
                 images: [{ path: '/existing.jpg', is_thumbnail: true }],
-            };
+            });
             mockHass.connection.sendMessagePromise.mockResolvedValue({ path: '/media/second.jpg' });
             vi.spyOn(PlantUtils, 'compressImage').mockResolvedValue('b64data');
 
             const file = new File([''], 'photo2.jpg', { type: 'image/jpeg' });
             await (editorEl as any)._handleGalleryUpload(file);
 
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
             expect(state.images).toHaveLength(2);
             expect(state.image).toBe('/existing.jpg');
         });
@@ -1836,7 +1856,7 @@ describe('StrainEditorView', () => {
 
     describe('_handleSetThumbnail', () => {
         beforeEach(() => {
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Gallery Test',
                 image: '/a.jpg',
                 images: [
@@ -1844,12 +1864,12 @@ describe('StrainEditorView', () => {
                     { path: '/b.jpg', is_thumbnail: false },
                     { path: '/c.jpg', is_thumbnail: false },
                 ],
-            };
+            });
         });
 
         it('sets the selected index as thumbnail and updates main image', () => {
             (editorEl as any)._handleSetThumbnail(1);
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
 
             expect(state.images[0].is_thumbnail).toBe(false);
             expect(state.images[1].is_thumbnail).toBe(true);
@@ -1858,9 +1878,11 @@ describe('StrainEditorView', () => {
         });
 
         it('copies crop_meta from selected image to main image', () => {
-            (editorEl as any)._editorState.images[1] = { path: '/b.jpg', is_thumbnail: false, crop_meta: { x: 50, y: 50, scale: 2 } };
+            const imgs = [...(getSM(editorEl).draft.images ?? [])];
+            imgs[1] = { path: '/b.jpg', is_thumbnail: false, crop_meta: { x: 50, y: 50, scale: 2 } };
+            patchDraft(editorEl, { images: imgs });
             (editorEl as any)._handleSetThumbnail(1);
-            expect((editorEl as any)._editorState.image_crop_meta).toEqual({ x: 50, y: 50, scale: 2 });
+            expect(getSM(editorEl).draft.image_crop_meta).toEqual({ x: 50, y: 50, scale: 2 });
         });
     });
 
@@ -1868,7 +1890,7 @@ describe('StrainEditorView', () => {
 
     describe('_handleRemoveGalleryImage', () => {
         beforeEach(() => {
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Gallery Test',
                 image: '/a.jpg',
                 images: [
@@ -1876,12 +1898,12 @@ describe('StrainEditorView', () => {
                     { path: '/b.jpg', is_thumbnail: false },
                     { path: '/c.jpg', is_thumbnail: false },
                 ],
-            };
+            });
         });
 
         it('removes a non-thumbnail image without changing the thumbnail', () => {
             (editorEl as any)._handleRemoveGalleryImage(1);
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
             expect(state.images).toHaveLength(2);
             expect(state.images.find((i: any) => i.path === '/b.jpg')).toBeUndefined();
             expect(state.image).toBe('/a.jpg');
@@ -1889,7 +1911,7 @@ describe('StrainEditorView', () => {
 
         it('removes thumbnail and promotes next image as thumbnail', () => {
             (editorEl as any)._handleRemoveGalleryImage(0);
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
             expect(state.images).toHaveLength(2);
             expect(state.images[0].is_thumbnail).toBe(true);
             expect(state.images[0].path).toBe('/b.jpg');
@@ -1897,9 +1919,9 @@ describe('StrainEditorView', () => {
         });
 
         it('clears image when last image is removed', () => {
-            (editorEl as any)._editorState.images = [{ path: '/a.jpg', is_thumbnail: true }];
+            getSM(editorEl).draft.images = [{ path: '/a.jpg', is_thumbnail: true }];
             (editorEl as any)._handleRemoveGalleryImage(0);
-            const state = (editorEl as any)._editorState;
+            const state = getSM(editorEl).draft;
             expect(state.images).toHaveLength(0);
             expect(state.image).toBe('');
         });
@@ -1909,14 +1931,14 @@ describe('StrainEditorView', () => {
 
     describe('Gallery UI interactions', () => {
         beforeEach(async () => {
-            (editorEl as any)._editorState = {
+            setDraft(editorEl, {
                 strain: 'Gallery Test',
                 image: '/a.jpg',
                 images: [
                     { path: '/a.jpg', is_thumbnail: true },
                     { path: '/b.jpg', is_thumbnail: false },
                 ],
-            };
+            });
             await editorEl.updateComplete;
         });
 
@@ -1950,30 +1972,30 @@ describe('StrainEditorView', () => {
             expect(cropBtn).toBeTruthy();
 
             cropBtn.click();
-            expect((editorEl as any)._isCropping).toBe(true);
+            expect(getSubKind(editorEl)).toBe('cropping');
         });
 
         it('clicking Add button opens the add-photo menu', async () => {
-            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('photo-menu');
             const addBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('.gallery-drop-area > button') || [])
                 .find(b => b.textContent?.includes('Add')) as HTMLElement;
             expect(addBtn).toBeTruthy();
             addBtn.click();
-            expect((editorEl as any)._showAddPhotoMenu).toBe(true);
+            expect(getSubKind(editorEl)).toBe('photo-menu');
         });
 
         it('clicking backdrop in add-photo menu closes the menu', async () => {
-            (editorEl as any)._showAddPhotoMenu = true;
+            setSubState(editorEl, { kind: 'photo-menu' });
             await editorEl.updateComplete;
 
             const backdrop = editorEl.shadowRoot?.querySelector('[style*="inset:0"]') as HTMLElement;
             expect(backdrop).toBeTruthy();
             backdrop.click();
-            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('photo-menu');
         });
 
         it('clicking Take Photo in menu triggers camera input click', async () => {
-            (editorEl as any)._showAddPhotoMenu = true;
+            setSubState(editorEl, { kind: 'photo-menu' });
             await editorEl.updateComplete;
 
             const cameraInput = editorEl.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement;
@@ -1986,11 +2008,11 @@ describe('StrainEditorView', () => {
             takePhotoBtn.click();
 
             expect(clickSpy).toHaveBeenCalled();
-            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('photo-menu');
         });
 
         it('clicking Choose from Library in menu triggers library input click', async () => {
-            (editorEl as any)._showAddPhotoMenu = true;
+            setSubState(editorEl, { kind: 'photo-menu' });
             await editorEl.updateComplete;
 
             const libraryInput = editorEl.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement;
@@ -2003,7 +2025,7 @@ describe('StrainEditorView', () => {
             libraryBtn.click();
 
             expect(clickSpy).toHaveBeenCalled();
-            expect((editorEl as any)._showAddPhotoMenu).toBe(false);
+            expect(getSubKind(editorEl)).not.toBe('photo-menu');
         });
     });
 });

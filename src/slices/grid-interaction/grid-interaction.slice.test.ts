@@ -172,9 +172,14 @@ describe('startTransplant()', () => {
     expect(state.sourcePlantId).toBe('plant-1');
   });
 
-  it('is a no-op when idle', () => {
+  it('transitions from idle to transplanting with null sourcePlantId (batch edit bar entry)', () => {
     startTransplant();
-    expect(gridInteraction$.get().status).toBe('idle');
+    const state = gridInteraction$.get() as Extract<
+      GridInteractionState,
+      { status: 'transplanting' }
+    >;
+    expect(state.status).toBe('transplanting');
+    expect(state.sourcePlantId).toBeNull();
   });
 
   it('is a no-op when confirming-water', () => {

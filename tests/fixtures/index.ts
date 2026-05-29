@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { PlantEntity, PlantAttributes } from '../../src/features/plants/types';
+import type { PlantEntity, PlantAttributes, StrainEntry } from '../../src/features/plants/types';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import type { EnvSnapshot } from '../../src/slices/environment/index';
 import { createGrowspaceDevice } from '../../src/services/types';
@@ -234,6 +234,27 @@ export function anAIBriefing(overrides: Partial<AIBriefing> = {}): AIBriefing {
       aRecommendation({ impact: 'low', title: 'Good airflow', description: 'Air circulation is excellent.' }),
     ],
     ai_available: true,
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// aStrain
+// ---------------------------------------------------------------------------
+
+export function aStrain(overrides: Partial<StrainEntry> = {}): StrainEntry {
+  return {
+    strain: 'OG Kush',
+    phenotype: 'A',
+    key: 'og-kush-a',
+    breeder: 'DNA Genetics',
+    type: 'Indica',
+    flowering_days_min: 56,
+    flowering_days_max: 63,
+    sativa_percentage: 30,
+    indica_percentage: 70,
+    description: 'Classic Indica-dominant strain.',
+    images: [],
     ...overrides,
   };
 }

@@ -32,6 +32,7 @@ import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/lineage-tree';
 import '../features/shared/ui/gs-help-tooltip';
+import { createInitialSM, transition, type StrainEditorSM } from './strain-editor-view-sm';
 
 @customElement('strain-editor-view')
 export class StrainEditorView extends LitElement {
@@ -43,29 +44,13 @@ export class StrainEditorView extends LitElement {
   @property({ attribute: false }) returnPayload?: unknown;
   @property({ attribute: false }) onSave?: (strain: Partial<StrainEntry>) => Promise<void>;
 
-  @state() private _editorState: Partial<StrainEntry> = {};
-  @state() private _editorHistory: Partial<StrainEntry>[] = [];
-  @state() private _isCropping = false;
-  @state() private _uploadingImage = false;
-  @state() private _saving = false;
-  @state() private _lineageEditMode = false;
+  @state() private _sm: StrainEditorSM = createInitialSM();
   @state() private _lineageTree: LineageNode | null = null;
-  @state() private _importDialogOpen = false;
-  @state() private _importReplace = false;
-  @state() private _seedfinderDialogOpen = false;
-  @state() private _breederDialogOpen = false;
-  @state() private _breederEditorState: {
-    name: string;
-    logo: string;
-    originalName: string;
-  } | null = null;
-  @state() private _pendingDeleteBreeder: string | null = null;
-  @state() private _showAddPhotoMenu = false;
 
   private _dispatchStateChange() {
     this.dispatchEvent(
       new CustomEvent('editing-strain-changed', {
-        detail: { strain: this._editorState },
+        detail: { strain: this._sm.draft },
         bubbles: true,
         composed: true,
       })
@@ -75,45 +60,41 @@ export class StrainEditorView extends LitElement {
   willUpdate(changedProps: PropertyValues) {
     super.willUpdate(changedProps);
     if (changedProps.has('editingStrain')) {
-      const currentKey = this._editorState?.key || this._editorState?.strain;
+      const currentKey = this._sm.draft?.key || this._sm.draft?.strain;
       const newKey = this.editingStrain?.key || this.editingStrain?.strain;
       if (currentKey !== newKey) {
-        this._openEditorFor(this.editingStrain);
-        this._editorHistory = [];
+        const draft = this.editingStrain
+          ? { ...this.editingStrain }
+          : {
+              strain: '',
+              phenotype: '',
+              breeder: '',
+              type: 'Hybrid',
+              flowering_days_min: 60,
+              flowering_days_max: 70,
+              lineage: '',
+              sex: 'Feminized',
+              description: '',
+              image: '',
+              images: [],
+              breeder_logo: '',
+              sativa_percentage: 50,
+              indica_percentage: 50,
+            };
+        // Preserve overlay sub-state across strain switches, but reset lineage-editing
+        // since lineage tree is strain-specific.
+        const sub = this._sm.sub.kind === 'lineage-editing' ? { kind: 'idle' as const } : this._sm.sub;
+        this._sm = { ...createInitialSM(draft), sub };
+        this._lineageTree = null;
+        this._dispatchStateChange();
       }
     }
-  }
-
-  private _openEditorFor(strain?: StrainEntry | Partial<StrainEntry>) {
-    if (strain) {
-      this._editorState = { ...strain };
-    } else {
-      this._editorState = {
-        strain: '',
-        phenotype: '',
-        breeder: '',
-        type: 'Hybrid',
-        flowering_days_min: 60,
-        flowering_days_max: 70,
-        lineage: '',
-        sex: 'Feminized',
-        description: '',
-        image: '',
-        images: [],
-        breeder_logo: '',
-        sativa_percentage: 50,
-        indica_percentage: 50,
-      };
-    }
-    this._lineageEditMode = false;
-    this._lineageTree = null;
-    this._dispatchStateChange();
   }
 
   private _viewLineageInTree() {
     this.dispatchEvent(
       new CustomEvent('view-lineage', {
-        detail: { strain: this._editorState },
+        detail: { strain: this._sm.draft },
         bubbles: true,
         composed: true,
       })
@@ -121,89 +102,88 @@ export class StrainEditorView extends LitElement {
   }
 
   private _navigateToAncestor(match: StrainEntry) {
-    this._editorHistory = [...this._editorHistory, { ...this._editorState }];
-    this._openEditorFor(match);
+    this._sm = transition(this._sm, { type: 'NavigateToRelated', strain: { ...match } });
+    this._lineageTree = null;
+    this._dispatchStateChange();
   }
 
   private _goBack() {
-    if (this._editorHistory.length > 0) {
-      const prev = this._editorHistory[this._editorHistory.length - 1];
-      this._editorHistory = this._editorHistory.slice(0, -1);
-      this._openEditorFor(prev);
+    if (this._sm.history.length > 0) {
+      this._sm = transition(this._sm, { type: 'NavigateBack' });
+      this._lineageTree = null;
+      this._dispatchStateChange();
     } else {
       this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
     }
   }
 
   private async _handleSave() {
-    if (!this._editorState.strain) return;
+    if (!this._sm.draft.strain) return;
 
-    const images = this._editorState.images ?? [];
-    const hasRemote = images.some((img) => img.path.startsWith('http'));
-    if (hasRemote) {
-      this._uploadingImage = true;
-      try {
+    this._sm = transition(this._sm, { type: 'SaveRequested' });
+
+    try {
+      const images = this._sm.draft.images ?? [];
+      const hasRemote = images.some((img) => img.path.startsWith('http'));
+      if (hasRemote) {
         const downloaded = await this._downloadRemoteImages(images);
-        this._editorState = { ...this._editorState, images: downloaded };
+        let updatedDraft = { ...this._sm.draft, images: downloaded };
         const thumb = downloaded.find((img) => img.is_thumbnail);
         if (thumb) {
-          this._editorState = {
-            ...this._editorState,
-            image: thumb.path,
-            image_crop_meta: thumb.crop_meta,
-          };
+          updatedDraft = { ...updatedDraft, image: thumb.path, image_crop_meta: thumb.crop_meta };
         } else if (downloaded.length > 0) {
           const promoted = downloaded.map((img, i) => ({ ...img, is_thumbnail: i === 0 }));
-          this._editorState = {
-            ...this._editorState,
+          updatedDraft = {
+            ...updatedDraft,
             images: promoted,
             image: promoted[0].path,
             image_crop_meta: promoted[0].crop_meta,
           };
         }
-      } finally {
-        this._uploadingImage = false;
+        this._sm = transition(this._sm, {
+          type: 'DraftFieldChanged',
+          field: 'images',
+          value: updatedDraft.images,
+        });
+        if (updatedDraft.image !== this._sm.draft.image) {
+          this._sm = transition(this._sm, {
+            type: 'DraftFieldChanged',
+            field: 'image',
+            value: updatedDraft.image,
+          });
+        }
       }
-    }
 
-    this._saving = true;
-    try {
+      const finalDraft = this._sm.draft;
       if (this.onSave) {
-        await this.onSave(this._editorState);
+        await this.onSave(finalDraft);
       } else {
         this.dispatchEvent(
-          new CustomEvent('save-strain', {
-            detail: this._editorState,
-            bubbles: true,
-            composed: true,
-          })
+          new CustomEvent('save-strain', { detail: finalDraft, bubbles: true, composed: true })
         );
       }
 
       if (this.source) {
         this.dispatchEvent(
           new CustomEvent('strain-created-at-source', {
-            detail: {
-              strain: this._editorState,
-              source: this.source,
-              returnPayload: this.returnPayload,
-            },
+            detail: { strain: finalDraft, source: this.source, returnPayload: this.returnPayload },
             bubbles: true,
             composed: true,
           })
         );
       }
 
-      this._editorHistory = [];
+      this._sm = transition(this._sm, { type: 'SaveResolved' });
       this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
-    } finally {
-      this._saving = false;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Save failed';
+      this._sm = transition(this._sm, { type: 'SaveFailed', message });
     }
   }
 
   private async _downloadRemoteImages(images: StrainGalleryImage[]): Promise<StrainGalleryImage[]> {
-    const strain = this._editorState.strain ?? 'unknown';
-    const phenotype = this._editorState.phenotype ?? 'default';
+    const strain = this._sm.draft.strain ?? 'unknown';
+    const phenotype = this._sm.draft.phenotype ?? 'default';
     const result: StrainGalleryImage[] = [];
     for (const img of images) {
       if (!img.path.startsWith('http')) {
@@ -242,29 +222,47 @@ export class StrainEditorView extends LitElement {
   }
 
   private _handleEditorChange(field: string, value: string | number | CropMeta | undefined) {
-    let newState = { ...this._editorState, [field]: value };
+    const newDraft = { ...this._sm.draft, [field]: value };
 
     if (field === 'breeder' && typeof value === 'string' && value.trim()) {
       const existing = this.strains.find(
         (s) => s.breeder?.toLowerCase() === value.trim().toLowerCase() && !!s.breeder_logo
       );
       if (existing) {
-        newState.breeder_logo = existing.breeder_logo;
+        newDraft.breeder_logo = existing.breeder_logo;
       }
     }
 
-    if (field === 'image_crop_meta' && newState.images?.length) {
-      newState.images = newState.images.map((img) =>
+    if (field === 'image_crop_meta' && newDraft.images?.length) {
+      newDraft.images = newDraft.images.map((img) =>
         img.is_thumbnail ? { ...img, crop_meta: value as CropMeta | undefined } : img
       );
     }
 
-    this._editorState = newState;
+    this._sm = transition(this._sm, {
+      type: 'DraftFieldChanged',
+      field: field as keyof StrainEntry,
+      value: newDraft[field as keyof typeof newDraft],
+    });
+    if (field === 'breeder' && newDraft.breeder_logo !== this._sm.draft.breeder_logo) {
+      this._sm = transition(this._sm, {
+        type: 'DraftFieldChanged',
+        field: 'breeder_logo',
+        value: newDraft.breeder_logo,
+      });
+    }
+    if (field === 'image_crop_meta' && newDraft.images) {
+      this._sm = transition(this._sm, {
+        type: 'DraftFieldChanged',
+        field: 'images',
+        value: newDraft.images,
+      });
+    }
     this._dispatchStateChange();
   }
 
   private _handlePrintLabel() {
-    const s = this._editorState;
+    const s = this._sm.draft;
     if (!s.strain) return;
 
     this.dispatchEvent(
@@ -283,7 +281,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private _toggleCropMode(active: boolean) {
-    this._isCropping = active;
+    this._sm = transition(this._sm, { type: active ? 'CropRequested' : 'CropExited' });
   }
 
   getCropStyle(path: string, meta?: CropMeta): string {
@@ -295,6 +293,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private _handleImportFile() {
+    const replace = this._sm.sub.kind === 'importing' ? this._sm.sub.replace : false;
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.zip';
@@ -302,11 +301,9 @@ export class StrainEditorView extends LitElement {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
         this.dispatchEvent(
-          new CustomEvent('import-library', {
-            detail: { file, replace: this._importReplace },
-          })
+          new CustomEvent('import-library', { detail: { file, replace } })
         );
-        this._importDialogOpen = false;
+        this._sm = transition(this._sm, { type: 'ImportCompleted' });
       }
     };
     input.click();
@@ -337,58 +334,54 @@ export class StrainEditorView extends LitElement {
   }
 
   private _startBreederEdit(name?: string, logo?: string) {
-    this._breederEditorState = {
-      name: name || '',
-      logo: logo || '',
-      originalName: name || '',
-    };
+    if (name) {
+      this._sm = transition(this._sm, {
+        type: 'BreederEditRequested',
+        name,
+        logo: logo ?? '',
+      });
+    } else {
+      this._sm = transition(this._sm, { type: 'BreederAddRequested' });
+    }
   }
 
   private _handleSaveBreeder() {
-    const state = this._breederEditorState;
-    if (!state || !state.name.trim()) return;
+    if (this._sm.sub.kind !== 'breeder-editing') return;
+    const draft = this._sm.sub.draft;
+    if (!draft.name.trim()) return;
 
-    const newName = state.name.trim();
-    const isEdit = !!state.originalName;
+    const newName = draft.name.trim();
+    const isEdit = !!draft.originalName;
 
     if (isEdit) {
       this.dispatchEvent(
         new CustomEvent('update-breeder', {
-          detail: {
-            oldName: state.originalName,
-            newName: newName,
-            logo: state.logo,
-          },
+          detail: { oldName: draft.originalName, newName, logo: draft.logo },
         })
       );
     } else {
       this.dispatchEvent(
-        new CustomEvent('save-breeder', {
-          detail: { name: newName, logo: state.logo },
-        })
+        new CustomEvent('save-breeder', { detail: { name: newName, logo: draft.logo } })
       );
     }
 
-    this._breederEditorState = null;
+    this._sm = transition(this._sm, { type: 'BreederSaved' });
   }
 
   private _handleDeleteBreeder(breederName: string) {
-    this._pendingDeleteBreeder = breederName;
+    this._sm = transition(this._sm, { type: 'BreederDeleteRequested', name: breederName });
   }
 
   private _confirmDeleteBreeder() {
-    if (this._pendingDeleteBreeder) {
-      this.dispatchEvent(
-        new CustomEvent('delete-breeder', {
-          detail: { name: this._pendingDeleteBreeder },
-        })
-      );
-      this._pendingDeleteBreeder = null;
-    }
+    if (this._sm.sub.kind !== 'breeder-confirm-delete') return;
+    this.dispatchEvent(
+      new CustomEvent('delete-breeder', { detail: { name: this._sm.sub.name } })
+    );
+    this._sm = transition(this._sm, { type: 'BreederDeleteConfirmed' });
   }
 
   private _cancelDeleteBreeder() {
-    this._pendingDeleteBreeder = null;
+    this._sm = transition(this._sm, { type: 'BreederDeleteCancelled' });
   }
 
   private _handleSeedfinderImport(e: CustomEvent): void {
@@ -399,26 +392,36 @@ export class StrainEditorView extends LitElement {
           is_thumbnail: i === 0,
         }))
       : undefined;
-    this._editorState = {
-      ...this._editorState,
+    const merged = {
+      ...this._sm.draft,
       ...data,
       ...(gallery ? { images: gallery, image: gallery[0].path } : {}),
     };
-    this._seedfinderDialogOpen = false;
+    // Apply merged fields individually via DraftFieldChanged
+    for (const [key, value] of Object.entries(merged)) {
+      if (merged[key as keyof typeof merged] !== this._sm.draft[key as keyof typeof this._sm.draft]) {
+        this._sm = transition(this._sm, {
+          type: 'DraftFieldChanged',
+          field: key as keyof StrainEntry,
+          value,
+        });
+      }
+    }
+    this._sm = transition(this._sm, { type: 'SeedfinderClosed' });
     this._dispatchStateChange();
     this.requestUpdate();
   }
 
   private _gallery(): StrainGalleryImage[] {
-    return this._editorState.images ?? [];
+    return this._sm.draft.images ?? [];
   }
 
   private async _handleGalleryUpload(file: File): Promise<void> {
-    this._uploadingImage = true;
+    this._sm = transition(this._sm, { type: 'SaveRequested' });
     try {
       const base64 = await PlantUtils.compressImage(file);
-      const strain = this._editorState.strain ?? 'unknown';
-      const phenotype = this._editorState.phenotype ?? 'default';
+      const strain = this._sm.draft.strain ?? 'unknown';
+      const phenotype = this._sm.draft.phenotype ?? 'default';
       const response = await this.hass.connection.sendMessagePromise<{ path: string }>({
         type: 'growspace_manager/upload_strain_image',
         strain,
@@ -429,27 +432,36 @@ export class StrainEditorView extends LitElement {
         ...this._gallery(),
         { path: response.path, is_thumbnail: this._gallery().length === 0 },
       ];
-      this._editorState = { ...this._editorState, images: gallery };
+      this._sm = transition(this._sm, {
+        type: 'DraftFieldChanged',
+        field: 'images',
+        value: gallery,
+      });
       if (gallery.length === 1) {
-        this._editorState = { ...this._editorState, image: response.path };
+        this._sm = transition(this._sm, {
+          type: 'DraftFieldChanged',
+          field: 'image',
+          value: response.path,
+        });
       }
       this._dispatchStateChange();
     } catch (err) {
       console.error('Gallery upload failed:', err);
     } finally {
-      this._uploadingImage = false;
+      this._sm = transition(this._sm, { type: 'SaveResolved' });
     }
   }
 
   private _handleSetThumbnail(index: number): void {
     const gallery = this._gallery().map((img, i) => ({ ...img, is_thumbnail: i === index }));
     const thumb = gallery[index];
-    this._editorState = {
-      ...this._editorState,
-      images: gallery,
-      image: thumb.path,
-      image_crop_meta: thumb.crop_meta,
-    };
+    this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
+    this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'image', value: thumb.path });
+    this._sm = transition(this._sm, {
+      type: 'DraftFieldChanged',
+      field: 'image_crop_meta',
+      value: thumb.crop_meta,
+    });
     this._dispatchStateChange();
   }
 
@@ -461,27 +473,34 @@ export class StrainEditorView extends LitElement {
       gallery[0] = { ...gallery[0], is_thumbnail: true };
     }
     const thumb = gallery.find((img) => img.is_thumbnail);
-    this._editorState = {
-      ...this._editorState,
-      images: gallery,
-      image: thumb?.path ?? '',
-      image_crop_meta: thumb?.crop_meta,
-    };
+    this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
+    this._sm = transition(this._sm, {
+      type: 'DraftFieldChanged',
+      field: 'image',
+      value: thumb?.path ?? '',
+    });
+    this._sm = transition(this._sm, {
+      type: 'DraftFieldChanged',
+      field: 'image_crop_meta',
+      value: thumb?.crop_meta,
+    });
     this._dispatchStateChange();
   }
 
   render() {
+    const sub = this._sm.sub;
     return html`
-      ${this.renderEditorView()} ${this._isCropping ? this.renderCropOverlay() : nothing}
-      ${this._importDialogOpen ? this.renderImportDialog() : nothing}
-      ${this._breederDialogOpen ? this.renderBreederDialog() : nothing}
-      ${this._pendingDeleteBreeder ? this.renderBreederDeleteConfirmation() : nothing}
-      ${this._seedfinderDialogOpen ? this.renderSeedfinderDialog() : nothing}
+      ${this.renderEditorView()}
+      ${sub.kind === 'cropping' ? this.renderCropOverlay() : nothing}
+      ${sub.kind === 'importing' ? this.renderImportDialog() : nothing}
+      ${sub.kind === 'breeder-list' || sub.kind === 'breeder-editing' ? this.renderBreederDialog() : nothing}
+      ${sub.kind === 'breeder-confirm-delete' ? this.renderBreederDeleteConfirmation() : nothing}
+      ${sub.kind === 'seedfinder' ? this.renderSeedfinderDialog() : nothing}
     `;
   }
 
   private renderEditorView(): TemplateResult {
-    const s = this._editorState;
+    const s = this._sm.draft;
     const isEdit =
       !!s.strain &&
       this.strains.some((ex) => ex.strain === s.strain && ex.phenotype === s.phenotype);
@@ -511,9 +530,8 @@ export class StrainEditorView extends LitElement {
             >
               <path d="${mdiArrowLeft}"></path>
             </svg>
-            ${this._editorHistory.length > 0
-              ? ((this._editorHistory[this._editorHistory.length - 1] as StrainEntry).strain ??
-                'Back')
+            ${this._sm.history.length > 0
+              ? ((this._sm.history[this._sm.history.length - 1] as StrainEntry).strain ?? 'Back')
               : 'Back'}
           </button>
           <h2 class="dialog-title">${isEdit ? 'Edit Strain' : 'Add New Strain'}</h2>
@@ -544,7 +562,7 @@ export class StrainEditorView extends LitElement {
                 <button
                   class="md3-button text"
                   style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
-                  @click=${() => (this._seedfinderDialogOpen = true)}
+                  @click=${() => { this._sm = transition(this._sm, { type: 'SeedfinderOpened' }); }}
                 >
                   <svg
                     style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
@@ -809,17 +827,20 @@ export class StrainEditorView extends LitElement {
                     class="sd-btn-text"
                     type="button"
                     @click=${async () => {
-                      this._lineageEditMode = !this._lineageEditMode;
-                      if (this._lineageEditMode && s.strain) {
+                      const entering = this._sm.sub.kind !== 'lineage-editing';
+                      this._sm = transition(this._sm, {
+                        type: entering ? 'LineageEditRequested' : 'LineageEditExited',
+                      });
+                      if (entering && s.strain) {
                         await this._loadStrainLineageTree(s.strain);
                       }
                     }}
                   >
-                    ${this._lineageEditMode ? 'View' : 'Edit tree'}
+                    ${this._sm.sub.kind === 'lineage-editing' ? 'View' : 'Edit tree'}
                   </button>
                 </div>
               </label>
-              ${this._lineageEditMode
+              ${this._sm.sub.kind === 'lineage-editing'
                 ? html`<lineage-tree-editor
                     .node=${this._lineageTree}
                     .strainEntries=${(this.strains ?? [])
@@ -929,22 +950,22 @@ export class StrainEditorView extends LitElement {
             : nothing}
           <button
             class="md3-button tonal"
-            ?disabled=${this._saving || this._uploadingImage}
+            ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => this._goBack()}
           >
             Cancel
           </button>
           <button
             class="md3-button primary"
-            ?disabled=${this._saving || this._uploadingImage}
+            ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => this._handleSave()}
           >
-            ${this._saving || this._uploadingImage
+            ${this._sm.status.kind === 'applying'
               ? html`
                   <span
                     style="width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px;flex-shrink:0;"
                   ></span>
-                  ${this._uploadingImage ? 'Uploading...' : 'Saving...'}
+                  Saving...
                 `
               : html`
                   <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
@@ -959,7 +980,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private renderCropOverlay(): TemplateResult | typeof nothing {
-    const s = this._editorState;
+    const s = this._sm.draft;
     if (!s.image) return nothing;
 
     const meta = s.image_crop_meta || { x: 50, y: 50, scale: 1 };
@@ -1056,7 +1077,7 @@ export class StrainEditorView extends LitElement {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) this._handleGalleryUpload(file);
       (e.target as HTMLInputElement).value = '';
-      this._showAddPhotoMenu = false;
+      this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
     };
 
     const handleDrop = (e: DragEvent) => {
@@ -1141,16 +1162,17 @@ export class StrainEditorView extends LitElement {
 
           <!-- Add button — opens choice menu -->
           <button
-            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this
-              ._uploadingImage
+            style="aspect-ratio:1; border-radius:8px; border:2px dashed rgba(255,255,255,0.2); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:${this._sm.status.kind === 'applying'
               ? 'wait'
               : 'pointer'}; color:var(--secondary-text-color); font-size:0.75rem; background:none;"
-            ?disabled=${this._uploadingImage}
+            ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => {
-              if (!this._uploadingImage) this._showAddPhotoMenu = true;
+              if (this._sm.status.kind !== 'applying') {
+                this._sm = transition(this._sm, { type: 'PhotoMenuToggled' });
+              }
             }}
           >
-            ${this._uploadingImage
+            ${this._sm.status.kind === 'applying'
               ? html`<div
                   style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.2);border-top-color:var(--accent-green);border-radius:50%;animation:spin 1s linear infinite;"
                 ></div>`
@@ -1189,13 +1211,11 @@ export class StrainEditorView extends LitElement {
           : nothing}
 
         <!-- Add-photo choice menu -->
-        ${this._showAddPhotoMenu
+        ${this._sm.sub.kind === 'photo-menu'
           ? html`
               <div
                 style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
-                @click=${() => {
-                  this._showAddPhotoMenu = false;
-                }}
+                @click=${() => { this._sm = transition(this._sm, { type: 'PhotoMenuClosed' }); }}
               ></div>
               <div
                 style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;"
@@ -1207,7 +1227,7 @@ export class StrainEditorView extends LitElement {
                   style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
                   @click=${(e: Event) => {
                     e.stopPropagation();
-                    this._showAddPhotoMenu = false;
+                    this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
                     (
                       this.shadowRoot?.getElementById('gallery-camera-input') as HTMLInputElement
                     )?.click();
@@ -1225,7 +1245,7 @@ export class StrainEditorView extends LitElement {
                   style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
                   @click=${(e: Event) => {
                     e.stopPropagation();
-                    this._showAddPhotoMenu = false;
+                    this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
                     (
                       this.shadowRoot?.getElementById('gallery-library-input') as HTMLInputElement
                     )?.click();
@@ -1247,9 +1267,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private renderImportDialog(): TemplateResult {
-    const close = () => {
-      this._importDialogOpen = false;
-    };
+    const close = () => { this._sm = transition(this._sm, { type: 'ImportCancelled' }); };
     return html`
       <ha-dialog
         open
@@ -1294,8 +1312,8 @@ export class StrainEditorView extends LitElement {
                 <input
                   type="radio"
                   name="import_mode"
-                  .checked=${!this._importReplace}
-                  @change=${() => (this._importReplace = false)}
+                  .checked=${this._sm.sub.kind === 'importing' && !this._sm.sub.replace}
+                  @change=${() => { if (this._sm.sub.kind === 'importing' && this._sm.sub.replace) this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -1312,8 +1330,8 @@ export class StrainEditorView extends LitElement {
                 <input
                   type="radio"
                   name="import_mode"
-                  .checked=${this._importReplace}
-                  @change=${() => (this._importReplace = true)}
+                  .checked=${this._sm.sub.kind === 'importing' && this._sm.sub.replace}
+                  @change=${() => { if (this._sm.sub.kind === 'importing' && !this._sm.sub.replace) this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -1342,10 +1360,7 @@ export class StrainEditorView extends LitElement {
 
   private renderBreederDialog(): TemplateResult {
     const breeders = this._getUniqueBreeders();
-    const close = () => {
-      this._breederDialogOpen = false;
-      this._breederEditorState = null;
-    };
+    const close = () => { this._sm = transition(this._sm, { type: 'BreederDialogClosed' }); };
 
     return html`
       <ha-dialog
@@ -1386,12 +1401,12 @@ export class StrainEditorView extends LitElement {
           </div>
 
           <div class="sd-content">
-            ${this._breederEditorState
+            ${this._sm.sub.kind === 'breeder-editing'
               ? this.renderBreederEditor()
               : this.renderBreederList(breeders)}
           </div>
 
-          ${!this._breederEditorState
+          ${this._sm.sub.kind !== 'breeder-editing'
             ? html`
                 <div class="sd-footer">
                   <span
@@ -1472,7 +1487,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private renderBreederEditor(): TemplateResult {
-    const state = this._breederEditorState!;
+    const state = (this._sm.sub as Extract<typeof this._sm.sub, { kind: 'breeder-editing' }>).draft;
     const isEdit = !!state.originalName;
     const affectedStrains = isEdit
       ? this.strains.filter((s) => s.breeder === state.originalName)
@@ -1483,7 +1498,11 @@ export class StrainEditorView extends LitElement {
       if (file) {
         PlantUtils.compressImage(file)
           .then((base64) => {
-            this._breederEditorState = { ...this._breederEditorState!, logo: base64 };
+            this._sm = transition(this._sm, {
+              type: 'BreederEditFieldChanged',
+              field: 'logo',
+              value: base64,
+            });
           })
           .catch((err) => console.error('Error compressing logo:', err));
       }
@@ -1495,7 +1514,7 @@ export class StrainEditorView extends LitElement {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => (this._breederEditorState = null)}
+            @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -1518,10 +1537,11 @@ export class StrainEditorView extends LitElement {
             placeholder="e.g. Royal Queen Seeds"
             .value=${state.name}
             @input=${(e: InputEvent) => {
-              this._breederEditorState = {
-                ...this._breederEditorState!,
-                name: (e.target as HTMLInputElement).value,
-              };
+              this._sm = transition(this._sm, {
+                type: 'BreederEditFieldChanged',
+                field: 'name',
+                value: (e.target as HTMLInputElement).value,
+              });
             }}
           />
         </div>
@@ -1568,7 +1588,7 @@ export class StrainEditorView extends LitElement {
                       class="md3-button text"
                       style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
                       @click=${() => {
-                        this._breederEditorState = { ...this._breederEditorState!, logo: '' };
+                        this._sm = transition(this._sm, { type: 'BreederEditFieldChanged', field: 'logo', value: '' });
                       }}
                     >
                       <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -1605,7 +1625,7 @@ export class StrainEditorView extends LitElement {
           : nothing}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => (this._breederEditorState = null)}>
+          <button class="md3-button tonal" @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}>
             Cancel
           </button>
           <button
@@ -1624,7 +1644,7 @@ export class StrainEditorView extends LitElement {
   }
 
   private renderBreederDeleteConfirmation(): TemplateResult {
-    const breederName = this._pendingDeleteBreeder!;
+    const breederName = (this._sm.sub as Extract<typeof this._sm.sub, { kind: 'breeder-confirm-delete' }>).name;
     const affectedCount = this.strains.filter((s) => s.breeder === breederName).length;
 
     return html`
@@ -1673,10 +1693,10 @@ export class StrainEditorView extends LitElement {
     return html`
       <strain-import-dialog
         .hass=${this.hass}
-        .open=${this._seedfinderDialogOpen}
-        .initialStrain=${this._editorState.strain}
-        .initialPheno=${this._editorState.phenotype}
-        @close=${() => (this._seedfinderDialogOpen = false)}
+        .open=${this._sm.sub.kind === 'seedfinder'}
+        .initialStrain=${this._sm.draft.strain}
+        .initialPheno=${this._sm.draft.phenotype}
+        @close=${() => { this._sm = transition(this._sm, { type: 'SeedfinderClosed' }); }}
         @import=${this._handleSeedfinderImport}
       ></strain-import-dialog>
     `;
