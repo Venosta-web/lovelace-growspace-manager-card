@@ -14458,154 +14458,302 @@ Md3Switch = __decorate([
     t$2('md3-switch')
 ], Md3Switch);
 
+/**
+ * Add Plant Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM, no hassCall. All interaction state for
+ * AddPlantDialog lives here. The component calls `transition(sm, event)`
+ * and replaces its single `@state() _sm`.
+ *
+ * Structure:
+ *   SM
+ *     .activeTab          — which tab is visible ('add' | 'clone' | 'seedling')
+ *     .status             — root-level async status
+ *     .toast              — transient message
+ *     .tabs               — one typed state object per tab (draft + sub)
+ */
+// ─── Initial state ────────────────────────────────────────────────────────────
+function defaultAddDraft(row, col) {
+    return {
+        strain: '',
+        strainQuery: '',
+        phenotype: '',
+        addToLibrary: false,
+        sourceType: 'seed',
+        siblingPlantId: null,
+        row,
+        col,
+        seedlingStart: '',
+        vegStart: '',
+        flowerStart: '',
+        motherStart: '',
+        cloneStart: '',
+        dryStart: '',
+        cureStart: '',
+    };
+}
+function defaultTransplantDraft(row, col) {
+    return { selectedPlantId: null, row, col };
+}
+function createInitialSM$4({ row, col }) {
+    return {
+        activeTab: 'add',
+        tabs: {
+            add: { draft: defaultAddDraft(row, col), sub: { kind: 'step-identity' } },
+            clone: { draft: defaultTransplantDraft(row, col), sub: { kind: 'idle' } },
+            seedling: { draft: defaultTransplantDraft(row, col), sub: { kind: 'idle' } },
+        },
+        status: { kind: 'idle' },
+        toast: undefined,
+    };
+}
+// ─── Transition ───────────────────────────────────────────────────────────────
+function transition$4(sm, event) {
+    switch (event.type) {
+        case 'TabSelected': {
+            const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
+            return {
+                ...sm,
+                activeTab: event.tab,
+                tabs: {
+                    ...sm.tabs,
+                    add: { ...sm.tabs.add, sub: addSub },
+                },
+            };
+        }
+        case 'WizardAdvanced': {
+            const { sub, draft } = sm.tabs.add;
+            if (sub.kind === 'step-identity') {
+                if (!draft.strain)
+                    return sm;
+                return setAddSub(sm, { kind: 'step-source' });
+            }
+            if (sub.kind === 'step-source') {
+                return setAddSub(sm, { kind: 'step-schedule' });
+            }
+            return sm;
+        }
+        case 'WizardBacked': {
+            const { sub } = sm.tabs.add;
+            if (sub.kind === 'step-source')
+                return setAddSub(sm, { kind: 'step-identity' });
+            if (sub.kind === 'step-schedule')
+                return setAddSub(sm, { kind: 'step-source' });
+            return sm;
+        }
+        case 'DraftFieldChanged': {
+            if (event.tab === 'add') {
+                return {
+                    ...sm,
+                    tabs: {
+                        ...sm.tabs,
+                        add: {
+                            ...sm.tabs.add,
+                            draft: { ...sm.tabs.add.draft, [event.field]: event.value },
+                        },
+                    },
+                };
+            }
+            if (event.tab === 'clone') {
+                return {
+                    ...sm,
+                    tabs: {
+                        ...sm.tabs,
+                        clone: {
+                            ...sm.tabs.clone,
+                            draft: { ...sm.tabs.clone.draft, [event.field]: event.value },
+                        },
+                    },
+                };
+            }
+            // seedling
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    seedling: {
+                        ...sm.tabs.seedling,
+                        draft: { ...sm.tabs.seedling.draft, [event.field]: event.value },
+                    },
+                },
+            };
+        }
+        case 'SiblingPlantSelected': {
+            const current = sm.tabs.add.draft;
+            const isDeselect = current.strain === event.strain &&
+                current.phenotype === event.phenotype &&
+                current.cloneStart === event.cloneStart &&
+                current.siblingPlantId !== null;
+            if (isDeselect) {
+                return {
+                    ...sm,
+                    tabs: {
+                        ...sm.tabs,
+                        add: {
+                            ...sm.tabs.add,
+                            draft: { ...current, siblingPlantId: null },
+                        },
+                    },
+                };
+            }
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    add: {
+                        ...sm.tabs.add,
+                        draft: {
+                            ...current,
+                            strain: event.strain,
+                            strainQuery: event.strain,
+                            phenotype: event.phenotype,
+                            cloneStart: event.cloneStart,
+                            siblingPlantId: event.strain,
+                        },
+                    },
+                },
+            };
+        }
+        case 'SaveRequested':
+            return { ...sm, status: { kind: 'applying' } };
+        case 'SaveResolved':
+            return { ...sm, status: { kind: 'done' } };
+        case 'SaveFailed':
+            return { ...sm, status: { kind: 'error', message: event.message }, toast: event.message };
+        case 'StatusReset':
+            return { ...sm, status: { kind: 'idle' } };
+        case 'SetToast':
+            return { ...sm, toast: event.message };
+        default:
+            return sm;
+    }
+}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setAddSub(sm, sub) {
+    return {
+        ...sm,
+        tabs: { ...sm.tabs, add: { ...sm.tabs.add, sub } },
+    };
+}
+
 let AddPlantDialog = class AddPlantDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.strainLibrary = [];
         this.growspaceName = '';
         this.open = false;
-        // Initialize with values passed via methods or defaults
-        this.strain = '';
-        this.phenotype = '';
-        this.addToLibrary = false;
-        this.row = 0;
-        this.col = 0;
-        // Date fields
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-        // Tab state for transplant functionality
-        this._activeTab = 'add';
-        this._selectedTransplantPlant = null;
-        // Wizard state (add tab only)
-        this._wizardStep = 1;
-        this._strainQuery = '';
-        this._sourceType = 'seed';
-        this._siblingPlant = null;
-        // Plants available for transplant (filtered by stage)
+        // Render-time args — not draft state
         this.clonePlants = [];
         this.seedlingPlants = [];
         this.targetGrowspaceId = '';
-        // Plants in the same growspace that can be cloned from (for F-13)
         this.siblingPlants = [];
+        this._sm = createInitialSM$4({ row: 0, col: 0 });
     }
-    // Provide a method to set initial data from parent if needed
     setInitialState(row, col, strain = '', phenotype = '') {
-        this.row = row;
-        this.col = col;
-        this.strain = strain;
-        this.phenotype = phenotype;
-        // resetting dates
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-        // reset wizard
-        this._wizardStep = 1;
-        this._strainQuery = strain;
-        this._sourceType = 'seed';
-        this._siblingPlant = null;
+        this._sm = createInitialSM$4({ row, col });
+        if (strain) {
+            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+        }
+        if (phenotype) {
+            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+        }
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _openStrainCreator() {
+        const { draft } = this._sm.tabs.add;
         this.dispatchEvent(new CustomEvent('create-new-strain', {
             bubbles: true,
             composed: true,
             detail: {
                 source: 'add-plant',
                 returnPayload: {
-                    row: this.row,
-                    col: this.col,
-                    strain: this.strain,
-                    phenotype: this.phenotype,
-                    seedling_start: this.seedling_start,
-                    veg_start: this.veg_start,
-                    flower_start: this.flower_start,
-                    mother_start: this.mother_start,
-                    clone_start: this.clone_start,
-                    dry_start: this.dry_start,
-                    cure_start: this.cure_start,
+                    row: draft.row,
+                    col: draft.col,
+                    strain: draft.strain,
+                    phenotype: draft.phenotype,
+                    seedling_start: draft.seedlingStart,
+                    veg_start: draft.vegStart,
+                    flower_start: draft.flowerStart,
+                    mother_start: draft.motherStart,
+                    clone_start: draft.cloneStart,
+                    dry_start: draft.dryStart,
+                    cure_start: draft.cureStart,
                 },
             },
         }));
     }
     _confirm() {
-        if (this._activeTab === 'add') {
-            // For clone source, ensure clone_start is set if not already
+        const { activeTab, tabs } = this._sm;
+        if (activeTab === 'add') {
             const today = new Date().toISOString().split('T')[0];
+            const d = tabs.add.draft;
             const payload = {
-                row: this.row + 1,
-                col: this.col + 1,
-                strain: this.strain,
-                phenotype: this.phenotype,
-                veg_start: this.veg_start,
-                flower_start: this.flower_start,
-                seedling_start: this._sourceType === 'seed' ? this.seedling_start || today : '',
-                mother_start: this.mother_start,
-                clone_start: this._sourceType === 'clone' ? this.clone_start || today : '',
-                dry_start: this.dry_start,
-                cure_start: this.cure_start,
-                addToLibrary: this.addToLibrary,
+                row: d.row + 1,
+                col: d.col + 1,
+                strain: d.strain,
+                phenotype: d.phenotype,
+                veg_start: d.vegStart,
+                flower_start: d.flowerStart,
+                seedling_start: d.sourceType === 'seed' ? d.seedlingStart || today : '',
+                mother_start: d.motherStart,
+                clone_start: d.sourceType === 'clone' ? d.cloneStart || today : '',
+                dry_start: d.dryStart,
+                cure_start: d.cureStart,
+                addToLibrary: d.addToLibrary,
             };
-            this.dispatchEvent(new CustomEvent('add-plant-submit', {
-                detail: payload,
-                bubbles: true,
-                composed: true,
-            }));
+            this._sm = transition$4(this._sm, { type: 'SaveRequested' });
+            this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
         else {
-            // Transplant mode
-            if (!this._selectedTransplantPlant)
+            const tabDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
+            if (!tabDraft.selectedPlantId)
                 return;
-            // Get today's date in YYYY-MM-DD format
+            const plants = activeTab === 'clone' ? this.clonePlants : this.seedlingPlants;
+            const plant = plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId);
+            if (!plant)
+                return;
             const today = new Date().toISOString().split('T')[0];
             const payload = {
-                plant_id: this._selectedTransplantPlant.attributes.plant_id,
-                source_growspace_id: this._selectedTransplantPlant.attributes.growspace_id,
+                plant_id: plant.attributes.plant_id,
+                source_growspace_id: plant.attributes.growspace_id,
                 target_growspace_id: this.targetGrowspaceId,
-                new_row: this.row + 1,
-                new_col: this.col + 1,
-                veg_start: today, // Auto-set veg_start to today
+                new_row: tabDraft.row + 1,
+                new_col: tabDraft.col + 1,
+                veg_start: today,
             };
-            this.dispatchEvent(new CustomEvent('transplant-plant-submit', {
-                detail: payload,
-                bubbles: true,
-                composed: true,
-            }));
+            this._sm = transition$4(this._sm, { type: 'SaveRequested' });
+            this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
     }
     render() {
-        console.log('[AddPlantDialog] render called, open:', this.open, 'strains:', this.strainLibrary?.length);
         if (!this.open)
             return x ``;
+        const { activeTab, tabs } = this._sm;
+        const addDraft = tabs.add.draft;
+        const addSub = tabs.add.sub;
         const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-        // Filter phenotypes based on selected strain
-        const relevantPhenotypes = this.strain
+        const relevantPhenotypes = addDraft.strain
             ? [
                 ...new Set(this.strainLibrary
-                    .filter((s) => s.strain === this.strain && s.phenotype)
+                    .filter((s) => s.strain === addDraft.strain && s.phenotype)
                     .map((s) => s.phenotype)),
             ].sort()
             : [];
-        const dialogTitle = this._activeTab === 'add'
+        const dialogTitle = activeTab === 'add'
             ? 'Add New Plant'
-            : this._activeTab === 'clone'
+            : activeTab === 'clone'
                 ? 'Transplant Clone'
                 : 'Transplant Seedling';
-        const dialogSubtitle = this._activeTab === 'add'
-            ? `Slot ${this.row + 1}–${this.col + 1}`
+        const dialogSubtitle = activeTab === 'add'
+            ? `Slot ${addDraft.row + 1}–${addDraft.col + 1}`
             : 'Select a plant to transplant to this location';
-        const isTransplant = this._activeTab !== 'add';
-        const isButtonDisabled = isTransplant && !this._selectedTransplantPlant;
+        const isTransplant = activeTab !== 'add';
+        const transplantDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
+        const isButtonDisabled = isTransplant && !transplantDraft.selectedPlantId;
+        const isOnLastStep = addSub.kind === 'step-schedule';
         return x `
       <ha-dialog
         open
@@ -14649,31 +14797,27 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <!-- TAB BAR -->
           <div class="tab-bar">
             <button
-              class="tab ${this._activeTab === 'add' ? 'active' : ''}"
+              class="tab ${activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-            this._activeTab = 'add';
-            this._selectedTransplantPlant = null;
-            this._wizardStep = 1;
+            this._sm = transition$4(this._sm, { type: 'TabSelected', tab: 'add' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
               New Plant
             </button>
             <button
-              class="tab ${this._activeTab === 'clone' ? 'active' : ''}"
+              class="tab ${activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-            this._activeTab = 'clone';
-            this._selectedTransplantPlant = null;
+            this._sm = transition$4(this._sm, { type: 'TabSelected', tab: 'clone' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
               Transplant Clone
             </button>
             <button
-              class="tab ${this._activeTab === 'seedling' ? 'active' : ''}"
+              class="tab ${activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-            this._activeTab = 'seedling';
-            this._selectedTransplantPlant = null;
+            this._sm = transition$4(this._sm, { type: 'TabSelected', tab: 'seedling' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -14682,30 +14826,34 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           </div>
 
           <!-- WIZARD STEP INDICATOR (add tab only) -->
-          ${this._activeTab === 'add' ? this._renderWizardSteps() : E}
+          ${activeTab === 'add' ? this._renderWizardSteps(addSub) : E}
 
           <div class="overview-grid">
-            ${this._activeTab === 'add'
-            ? this._renderWizardStep(uniqueStrains, relevantPhenotypes)
-            : this._renderTransplantForm(this._activeTab)}
+            ${activeTab === 'add'
+            ? this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
+            : this._renderTransplantForm(activeTab)}
           </div>
 
           <!-- ACTION BUTTONS -->
           <div class="button-group">
-            ${this._activeTab === 'add'
+            ${activeTab === 'add'
             ? x `
                   <button
                     class="md3-button tonal"
-                    @click=${this._wizardStep === 1 ? this._close : this._wizardBack}
+                    @click=${addSub.kind === 'step-identity' ? this._close : () => {
+                this._sm = transition$4(this._sm, { type: 'WizardBacked' });
+            }}
                   >
-                    ${this._wizardStep === 1 ? 'Cancel' : 'Back'}
+                    ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
                   </button>
-                  ${this._wizardStep < 3
+                  ${!isOnLastStep
                 ? x `
                         <button
                           class="md3-button primary"
-                          @click=${this._wizardNext}
-                          ?disabled=${this._wizardStep === 1 && !this.strain}
+                          @click=${() => {
+                    this._sm = transition$4(this._sm, { type: 'WizardAdvanced' });
+                }}
+                          ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
                         >
                           Continue
                           <svg
@@ -14749,26 +14897,14 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
       </ha-dialog>
     `;
     }
-    _wizardNext() {
-        if (this._wizardStep < 3)
-            this._wizardStep = (this._wizardStep + 1);
-    }
-    _wizardBack() {
-        if (this._wizardStep > 1) {
-            this._wizardStep = (this._wizardStep - 1);
-        }
-        else {
-            this._close();
-        }
-    }
-    _renderWizardSteps() {
+    _renderWizardSteps(sub) {
         const steps = ['Identity', 'Source', 'Schedule'];
+        const currentIndex = sub.kind === 'step-identity' ? 0 : sub.kind === 'step-source' ? 1 : 2;
         return x `
       <div class="wizard-steps">
         ${steps.map((label, i) => {
-            const stepNum = i + 1;
-            const isActive = stepNum === this._wizardStep;
-            const isDone = stepNum < this._wizardStep;
+            const isActive = i === currentIndex;
+            const isDone = i < currentIndex;
             return x `
             ${i > 0 ? x `<div class="wizard-connector ${isDone ? 'done' : ''}"></div>` : E}
             <div class="wizard-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}">
@@ -14777,7 +14913,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 ? x `<svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24">
                       <path d="${mdiCheck}"></path>
                     </svg>`
-                : stepNum}
+                : i + 1}
               </div>
               ${label}
             </div>
@@ -14786,36 +14922,37 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
       </div>
     `;
     }
-    _renderWizardStep(uniqueStrains, relevantPhenotypes) {
-        if (this._wizardStep === 1)
+    _renderWizardStep(sub, uniqueStrains, relevantPhenotypes) {
+        if (sub.kind === 'step-identity')
             return this._renderStep1Identity(uniqueStrains, relevantPhenotypes);
-        if (this._wizardStep === 2)
+        if (sub.kind === 'step-source')
             return this._renderStep2Source();
         return this._renderStep3Schedule();
     }
     _renderStep1Identity(uniqueStrains, relevantPhenotypes) {
-        const query = this._strainQuery.toLowerCase();
+        const { draft } = this._sm.tabs.add;
+        const query = draft.strainQuery.toLowerCase();
         const filtered = query
             ? uniqueStrains.filter((s) => s.toLowerCase().includes(query))
             : uniqueStrains.slice(0, 8);
-        const showDropdown = filtered.length > 0 && this._strainQuery !== this.strain;
-        const selectedEntry = this.strain
-            ? this.strainLibrary.find((s) => s.strain === this.strain)
+        const showDropdown = filtered.length > 0 && draft.strainQuery !== draft.strain;
+        const selectedEntry = draft.strain
+            ? this.strainLibrary.find((s) => s.strain === draft.strain)
             : null;
         return x `
       <div class="detail-card">
         <h3>What are you growing?</h3>
 
-        <!-- F-14: Strain typeahead -->
         <div class="strain-typeahead">
           <md3-text-input
             label="Strain *"
-            .value=${this._strainQuery || this.strain}
+            .value=${draft.strainQuery || draft.strain}
             placeholder="Search strain library…"
             @change=${(e) => {
-            this._strainQuery = e.detail;
-            if (e.detail !== this.strain)
-                this.strain = '';
+            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+            if (e.detail !== draft.strain) {
+                this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+            }
         }}
           ></md3-text-input>
           ${showDropdown
@@ -14827,8 +14964,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       <div
                         class="strain-option"
                         @click=${() => {
-                    this.strain = s;
-                    this._strainQuery = s;
+                    this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                    this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
                 }}
                       >
                         <span>${s}</span>
@@ -14843,13 +14980,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             : E}
         </div>
 
-        ${this.strain
+        ${draft.strain
             ? x `
               <md3-text-input
                 label="Phenotype"
-                .value=${this.phenotype}
+                .value=${draft.phenotype}
                 .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this.phenotype = e.detail)}
+                @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
               ></md3-text-input>
             `
             : E}
@@ -14890,9 +15027,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             >Add to Strain Library</span
           >
           <md3-switch
-            .checked=${this.addToLibrary}
-            @change=${(e) => (this.addToLibrary = e.target.checked)}
-            ?disabled=${!this.strain}
+            .checked=${draft.addToLibrary}
+            @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
+            ?disabled=${!draft.strain}
           ></md3-switch>
         </div>
       </div>
@@ -14911,31 +15048,31 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
     `;
     }
     _renderStep2Source() {
-        // F-13: Clone-from-sibling — plants in same growspace that are mothers/veg/flower
+        const { draft } = this._sm.tabs.add;
         const clonable = this.siblingPlants.filter((p) => ['mother', 'veg', 'flower', 'vegetative', 'flowering'].includes((p.state || p.attributes?.stage || '').toLowerCase()));
         return x `
       <div class="detail-card">
         <h3>Plant Source</h3>
         <div class="source-toggle">
           <button
-            class="source-btn ${this._sourceType === 'seed' ? 'active' : ''}"
+            class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
             @click=${() => {
-            this._sourceType = 'seed';
-            this._siblingPlant = null;
+            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+            this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
         }}
           >
             🌱 Seed
           </button>
           <button
-            class="source-btn ${this._sourceType === 'clone' ? 'active' : ''}"
-            @click=${() => (this._sourceType = 'clone')}
+            class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
+            @click=${() => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
             ?disabled=${clonable.length === 0}
           >
             ✂️ Clone
           </button>
         </div>
 
-        ${this._sourceType === 'clone' && clonable.length > 0
+        ${draft.sourceType === 'clone' && clonable.length > 0
             ? x `
               <div
                 style="font-size: 0.82rem; color: var(--secondary-text-color); margin-bottom: 8px;"
@@ -14944,22 +15081,20 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
               </div>
               <div class="sibling-list">
                 ${clonable.map((p) => {
-                const isSelected = this._siblingPlant?.attributes.plant_id === p.attributes.plant_id;
+                const isSelected = draft.siblingPlantId === p.attributes.plant_id;
                 const stage = p.state || p.attributes?.stage || 'unknown';
                 const days = p.attributes?.days_in_stage;
                 return x `
                     <div
                       class="sibling-item ${isSelected ? 'selected' : ''}"
                       @click=${() => {
-                    this._siblingPlant = isSelected ? null : p;
-                    if (!isSelected) {
-                        // Pre-fill identity from mother
-                        this.strain = p.attributes.strain || this.strain;
-                        this._strainQuery = this.strain;
-                        this.phenotype = p.attributes.phenotype || this.phenotype;
-                        // Set clone_start to today
-                        this.clone_start = new Date().toISOString().split('T')[0];
-                    }
+                    const today = new Date().toISOString().split('T')[0];
+                    this._sm = transition$4(this._sm, {
+                        type: 'SiblingPlantSelected',
+                        strain: p.attributes.strain || draft.strain,
+                        phenotype: p.attributes.phenotype || draft.phenotype,
+                        cloneStart: today,
+                    });
                 }}
                     >
                       <div>
@@ -14985,7 +15120,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
               </div>
             `
             : E}
-        ${this._sourceType === 'clone' && clonable.length === 0
+        ${draft.sourceType === 'clone' && clonable.length === 0
             ? x `
               <p
                 style="font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic;"
@@ -15001,72 +15136,73 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         <div class="row-col-grid">
           <md3-number-input
             label="Row"
-            .value=${this.row + 1}
-            @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+            .value=${draft.row + 1}
+            @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
-            .value=${this.col + 1}
-            @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+            .value=${draft.col + 1}
+            @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
         </div>
       </div>
     `;
     }
     _renderStep3Schedule() {
+        const { draft } = this._sm.tabs.add;
         return x `
       <div class="detail-card">
         <h3>Schedule</h3>
-        ${this.renderTimelineContent()}
+        ${this._renderTimelineContent(draft)}
       </div>
     `;
     }
-    renderTimelineContent() {
+    _renderTimelineContent(draft) {
         const name = this.growspaceName.toLowerCase();
         if (name.includes('mother')) {
             return x `<md3-date-input
         label="Mother Start"
-        .value=${this.mother_start}
-        @change=${(e) => (this.mother_start = e.detail)}
+        .value=${draft.motherStart}
+        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('clone')) {
             return x `<md3-date-input
         label="Clone Start"
-        .value=${this.clone_start}
-        @change=${(e) => (this.clone_start = e.detail)}
+        .value=${draft.cloneStart}
+        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('dry')) {
             return x `<md3-date-input
         label="Dry Start"
-        .value=${this.dry_start}
-        @change=${(e) => (this.dry_start = e.detail)}
+        .value=${draft.dryStart}
+        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('cure')) {
             return x `<md3-date-input
         label="Cure Start"
-        .value=${this.cure_start}
-        @change=${(e) => (this.cure_start = e.detail)}
+        .value=${draft.cureStart}
+        @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else {
             return x `
         <md3-date-input
           label="Seedling Start"
-          .value=${this.seedling_start}
-          @change=${(e) => (this.seedling_start = e.detail)}
+          .value=${draft.seedlingStart}
+          @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Veg Start"
-          .value=${this.veg_start}
-          @change=${(e) => (this.veg_start = e.detail)}
+          .value=${draft.vegStart}
+          @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Flower Start"
-          .value=${this.flower_start}
-          @change=${(e) => (this.flower_start = e.detail)}
+          .value=${draft.flowerStart}
+          @change=${(e) => (this._sm = transition$4(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
         ></md3-date-input>
       `;
         }
@@ -15075,7 +15211,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
         const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
         const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
-        // Build options for select with format: StrainName, Phenotype, Growspace, Col, Row, Days
+        const tabDraft = stage === 'clone' ? this._sm.tabs.clone.draft : this._sm.tabs.seedling.draft;
         const options = plants.map((p) => {
             const strain = p.attributes.strain || 'Unknown';
             const pheno = p.attributes.phenotype || '-';
@@ -15088,7 +15224,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 label: `Strain: ${strain}, Phenotype: ${pheno}, Growspace: ${growspace}, Col: ${col}, Row: ${row}, Days: ${days}`,
             };
         });
-        const selectedPlant = this._selectedTransplantPlant;
+        const selectedPlant = tabDraft.selectedPlantId
+            ? plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId) || null
+            : null;
         return x `
       <!-- SELECT PLANT CARD -->
       <div class="detail-card">
@@ -15100,12 +15238,17 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             : x `
               <md3-select
                 label="Select Plant"
-                .value=${selectedPlant?.attributes.plant_id || ''}
+                .value=${tabDraft.selectedPlantId || ''}
                 .options=${options}
                 @change=${(e) => {
-                const plantId = e.detail;
-                this._selectedTransplantPlant =
-                    plants.find((p) => p.attributes.plant_id === plantId) || null;
+                this._sm = transition$4(this._sm, {
+                    type: 'DraftFieldChanged',
+                    tab: stage,
+                    field: 'selectedPlantId',
+                    value: plants.find((p) => p.attributes.plant_id === e.detail)
+                        ? e.detail
+                        : null,
+                });
             }}
               ></md3-select>
             `}
@@ -15141,13 +15284,23 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         <div class="row-col-grid">
           <md3-number-input
             label="Row"
-            .value=${this.row + 1}
-            @change=${(e) => (this.row = parseInt(e.detail) - 1)}
+            .value=${tabDraft.row + 1}
+            @change=${(e) => (this._sm = transition$4(this._sm, {
+            type: 'DraftFieldChanged',
+            tab: stage,
+            field: 'row',
+            value: parseInt(e.detail) - 1,
+        }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
-            .value=${this.col + 1}
-            @change=${(e) => (this.col = parseInt(e.detail) - 1)}
+            .value=${tabDraft.col + 1}
+            @change=${(e) => (this._sm = transition$4(this._sm, {
+            type: 'DraftFieldChanged',
+            tab: stage,
+            field: 'col',
+            value: parseInt(e.detail) - 1,
+        }))}
           ></md3-number-input>
         </div>
         <p style="margin-top: 12px; font-size: 0.85rem; color: var(--secondary-text-color);">
@@ -15419,60 +15572,6 @@ __decorate([
     n$5({ type: Boolean, reflect: true })
 ], AddPlantDialog.prototype, "open", void 0);
 __decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "strain", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "phenotype", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "addToLibrary", void 0);
-__decorate([
-    n$5({ type: Number })
-], AddPlantDialog.prototype, "row", void 0);
-__decorate([
-    n$5({ type: Number })
-], AddPlantDialog.prototype, "col", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "veg_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "flower_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "seedling_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "mother_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "clone_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "dry_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "cure_start", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_activeTab", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_selectedTransplantPlant", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_wizardStep", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_strainQuery", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_sourceType", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_siblingPlant", void 0);
-__decorate([
     n$5({ type: Array })
 ], AddPlantDialog.prototype, "clonePlants", void 0);
 __decorate([
@@ -15484,6 +15583,9 @@ __decorate([
 __decorate([
     n$5({ type: Array })
 ], AddPlantDialog.prototype, "siblingPlants", void 0);
+__decorate([
+    r$3()
+], AddPlantDialog.prototype, "_sm", void 0);
 AddPlantDialog = __decorate([
     t$2('add-plant-dialog')
 ], AddPlantDialog);
@@ -17004,7 +17106,7 @@ function envDraftFromDevice(device) {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$2(device) {
+function createInitialSM$3(device) {
     const sm = {
         activeTab: 'sensors',
         tabs: defaultTabs$1(),
@@ -17020,7 +17122,7 @@ function applyDeviceToSM$1(sm, device) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$2(sm, event) {
+function transition$3(sm, event) {
     switch (event.type) {
         // ── Navigation ────────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -17265,7 +17367,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
         // ── Single SM ────────────────────────────────────────────────────────────
-        this._sm = createInitialSM$2();
+        this._sm = createInitialSM$3();
         // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
@@ -17276,7 +17378,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
-        this._sm = transition$2(this._sm, event);
+        this._sm = transition$3(this._sm, event);
     }
     get currentTab() {
         return this._sm.activeTab;
@@ -17289,7 +17391,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // through familiar names. The SM is the authoritative source of truth.
     get _d() { return this._sm.environmentDraft; }
     _setEnv(partial) {
-        this._sm = transition$2(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+        this._sm = transition$3(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     }
     get envSelectedId() { return this._d.selectedGrowspaceId; }
     set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
@@ -17611,9 +17713,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             }
             : {};
         this._sm = {
-            ...createInitialSM$2(),
+            ...createInitialSM$3(),
             activeTab: currentTab,
-            environmentDraft: { ...createInitialSM$2().environmentDraft, ...envPartial },
+            environmentDraft: { ...createInitialSM$3().environmentDraft, ...envPartial },
         };
         if (environmentData?.selectedGrowspaceId) {
             this._populateEditFields(environmentData.selectedGrowspaceId);
@@ -23956,7 +24058,7 @@ function defaultTabs() {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$1(device) {
+function createInitialSM$2(device) {
     const sm = {
         activeTab: 'schedules',
         tabs: defaultTabs(),
@@ -24210,7 +24312,7 @@ function resetActiveTabDraft(sm, device) {
 }
 // ─── Transition function ────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$1(sm, event) {
+function transition$2(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -24544,9 +24646,9 @@ function requestTabSwitch(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty(sm, device)) {
-        return transition$1(sm, { type: 'REQUEST_TAB', tab });
+        return transition$2(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$1(sm, { type: 'SWITCH_TAB', tab });
+    return transition$2(sm, { type: 'SWITCH_TAB', tab });
 }
 /**
  * Discard the active tab's draft (reset to device state) and switch to the pending tab.
@@ -24709,7 +24811,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.initialTab = undefined;
         this.scrollToField = undefined;
         /** Single reactive state atom. All 35 former @state() flags live here. */
-        this._sm = createInitialSM$1();
+        this._sm = createInitialSM$2();
         // ─── Tanks tab state ────────────────────────────────────────────────────
         this._editingTankIndex = null;
         this._tankDraft = null;
@@ -24797,14 +24899,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._fetchStageAnalytics();
             this._ecRampFetched = false;
             if (this.initialTab) {
-                this._sm = transition$1(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
+                this._sm = transition$2(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
         if (!this._visibleTabs.includes(this._sm.activeTab)) {
-            this._sm = transition$1(this._sm, { type: 'SWITCH_TAB', tab: 'schedules' });
+            this._sm = transition$2(this._sm, { type: 'SWITCH_TAB', tab: 'schedules' });
         }
         // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
         if (changedProps.has('_sm')) {
@@ -24840,7 +24942,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _initializeState() {
         if (!this.device)
             return;
-        this._sm = transition$1(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
+        this._sm = transition$2(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
     }
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
@@ -24882,7 +24984,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this._dataService)
             return;
         const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
-        this._sm = transition$1(this._sm, {
+        this._sm = transition$2(this._sm, {
             type: 'SET_STAGE_AGGREGATES',
             data: result?.stage_aggregates ?? null,
         });
@@ -24890,12 +24992,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _handleRunNow() {
         if (!this.device?.deviceId || !this.store)
             return;
-        this._sm = transition$1(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
+        this._sm = transition$2(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
         try {
             await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
         }
         finally {
-            this._sm = transition$1(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
+            this._sm = transition$2(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
         }
     }
     async _saveStrategy() {
@@ -24911,7 +25013,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _saveDrainConfig() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        this._sm = transition$1(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
+        this._sm = transition$2(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
         const d = this._sm.tabs.drain_ec.draft;
         try {
             await this._dataService.configureDrainMonitoring(this.device.deviceId, {
@@ -24924,7 +25026,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to save drain config');
         }
         finally {
-            this._sm = transition$1(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
+            this._sm = transition$2(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
         }
     }
     // ─── Schedule mutations ───────────────────────────────────────────────────
@@ -24932,7 +25034,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
         await addIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: formattedTime,
@@ -24948,7 +25050,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await addDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -24978,7 +25080,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$1(this._sm, {
+        this._sm = transition$2(this._sm, {
             type: 'BEGIN_ADD_IRRIGATION',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.irrigationDuration,
@@ -24989,14 +25091,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$1(this._sm, {
+        this._sm = transition$2(this._sm, {
             type: 'BEGIN_ADD_DRAIN',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.drainDuration,
         });
     }
     _startEditingIrrigationTime(timeStr, duration) {
-        this._sm = transition$1(this._sm, {
+        this._sm = transition$2(this._sm, {
             type: 'BEGIN_EDIT_IRRIGATION',
             originalTime: timeStr,
             originalDuration: duration,
@@ -25005,7 +25107,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         });
     }
     _startEditingDrainTime(timeStr, duration) {
-        this._sm = transition$1(this._sm, {
+        this._sm = transition$2(this._sm, {
             type: 'BEGIN_EDIT_DRAIN',
             originalTime: timeStr,
             originalDuration: duration,
@@ -25026,7 +25128,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
         await removeIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -25050,7 +25152,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
         await removeDrainTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -25066,7 +25168,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeIrrigationTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -25082,7 +25184,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -25094,18 +25196,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _close() {
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
-        this._sm = transition$1(this._sm, { type: 'SET_TOAST', message: undefined });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'SET_TOAST', message: undefined });
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _showErrorToast(message) {
-        this._sm = transition$1(this._sm, { type: 'SET_TOAST', message });
+        this._sm = transition$2(this._sm, { type: 'SET_TOAST', message });
         setTimeout(() => {
-            this._sm = transition$1(this._sm, { type: 'SET_TOAST', message: undefined });
+            this._sm = transition$2(this._sm, { type: 'SET_TOAST', message: undefined });
         }, 5000);
     }
     _updateStrategyField(field, value) {
-        this._sm = transition$1(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
+        this._sm = transition$2(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -25131,7 +25233,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Feed EC and Drain EC must be > 0');
             return;
         }
-        this._sm = transition$1(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
+        this._sm = transition$2(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
         try {
             await this._dataService.logDrainReading(this.device.deviceId, {
                 feedEc: d.logFeedEc,
@@ -25144,7 +25246,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to log drain reading');
         }
         finally {
-            this._sm = transition$1(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
+            this._sm = transition$2(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
         }
     }
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -25299,7 +25401,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   .iconPath=${mdiAlert}
                   stageColor="var(--warning-color, #ff9800)"
                   @close=${() => {
-                this._sm = transition$1(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$2(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                 >
                   <div style="padding:20px;">
@@ -25314,7 +25416,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     <button
                       class="md3-button tonal"
                       @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$2(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                     >
                       Stay
@@ -25942,12 +26044,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$1(this._sm, {
+                    this._sm = transition$2(this._sm, {
                         type: 'UPDATE_ADD_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$1(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
+                    this._sm = transition$2(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -25974,12 +26076,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$1(this._sm, {
+                        this._sm = transition$2(this._sm, {
                             type: 'UPDATE_ADD_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$1(this._sm, {
+                        this._sm = transition$2(this._sm, {
                             type: 'UPDATE_ADD_DRAIN',
                             duration: val,
                         });
@@ -26025,12 +26127,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$1(this._sm, {
+                    this._sm = transition$2(this._sm, {
                         type: 'UPDATE_EDIT_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$1(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
+                    this._sm = transition$2(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -26057,12 +26159,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$1(this._sm, {
+                        this._sm = transition$2(this._sm, {
                             type: 'UPDATE_EDIT_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$1(this._sm, {
+                        this._sm = transition$2(this._sm, {
                             type: 'UPDATE_EDIT_DRAIN',
                             duration: val,
                         });
@@ -26103,14 +26205,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _openAddTimeDialog(type) {
         if (type === 'irrigation') {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'BEGIN_ADD_IRRIGATION',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.irrigationDuration,
             });
         }
         else {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'BEGIN_ADD_DRAIN',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.drainDuration,
@@ -26118,22 +26220,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _cancelAddTime(_type) {
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
     }
     _cancelEditTime(_type) {
-        this._sm = transition$1(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_INLINE' });
     }
     _handlePhaseCardClick(phaseId) {
         if (this._sm.tabs.steering.phase === phaseId)
             return;
-        this._sm = transition$1(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
+        this._sm = transition$2(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
     }
     _confirmPhaseChange() {
-        this._sm = transition$1(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
+        this._sm = transition$2(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
         this._saveSettings();
     }
     _cancelPhaseChange() {
-        this._sm = transition$1(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
+        this._sm = transition$2(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     _renderSteeringTab(_color) {
@@ -26291,7 +26393,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP1ToP2"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
               @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP1ToP2: e.target.checked },
             });
@@ -26309,7 +26411,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP2ToP3"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
               @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP2ToP3: e.target.checked },
             });
@@ -26327,7 +26429,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="haltOnRunoffEc"
               .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
               @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null },
             });
@@ -26346,7 +26448,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const v = parseFloat(e.detail ?? e.target.value);
                 if (!isNaN(v))
-                    this._sm = transition$1(this._sm, {
+                    this._sm = transition$2(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { haltOnRunoffEcThreshold: v },
                     });
@@ -26398,13 +26500,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div class="section-header"><h3>Pump Configuration</h3></div>
         <div class="section-content">
           ${this._renderEntitySelect('Irrigation Pump', this._sm.tabs.schedules.draft.irrigationPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { irrigationPumpEntity: e.target.value },
             });
         })}
           ${this._renderEntitySelect('Drain Pump (Optional)', this._sm.tabs.schedules.draft.drainPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { drainPumpEntity: e.target.value },
             });
@@ -26436,7 +26538,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { soilTriggerPercent: v ? parseFloat(v) : null },
             });
@@ -26456,7 +26558,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
             });
@@ -26476,7 +26578,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
             });
@@ -26494,7 +26596,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'No cycles between lights-off and lights-on',
                 get: () => this._sm.tabs.config.draft.skipDuringDark,
                 set: (v) => {
-                    this._sm = transition$1(this._sm, {
+                    this._sm = transition$2(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { skipDuringDark: v },
                     });
@@ -26505,7 +26607,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Halt cycles when any tank is below warning level',
                 get: () => this._sm.tabs.config.draft.pauseOnLowTank,
                 set: (v) => {
-                    this._sm = transition$1(this._sm, {
+                    this._sm = transition$2(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { pauseOnLowTank: v },
                     });
@@ -26516,7 +26618,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Record start, duration, and moisture delta per cycle',
                 get: () => this._sm.tabs.config.draft.logToLogbook,
                 set: (v) => {
-                    this._sm = transition$1(this._sm, {
+                    this._sm = transition$2(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { logToLogbook: v },
                     });
@@ -27415,7 +27517,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <md3-switch
             .checked=${drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { enabled: e.target.checked },
             });
@@ -27430,7 +27532,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             min="0.1"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
             });
@@ -27444,7 +27546,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="5"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
             });
@@ -27466,7 +27568,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedEc: parseFloat(e.detail) || 0 },
             });
@@ -27478,7 +27580,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainEc: parseFloat(e.detail) || 0 },
             });
@@ -27490,7 +27592,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedVolume: parseInt(e.detail) || 0 },
             });
@@ -27502,7 +27604,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainVolume: parseInt(e.detail) || 0 },
             });
@@ -27675,7 +27777,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.minEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
             });
@@ -27693,7 +27795,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.maxEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
             });
@@ -33774,6 +33876,322 @@ StrainImportDialog = __decorate([
     t$2('strain-import-dialog')
 ], StrainImportDialog);
 
+/**
+ * Seeds & Genetics Tab State Machine
+ *
+ * Pure module — no Lit, no DOM, no hassCall, no hass.states.
+ * All interaction state for SeedsGeneticsTab lives here.
+ * The component calls `transition(sm, event)` and replaces its single `@state() _sm`.
+ *
+ * Structure:
+ *   SeedsSM
+ *     .activeView  — which sub-view is visible
+ *     .views       — one typed state object per sub-view (draft + sub-state)
+ *     .status      — root-level overlay (always idle — no discard guard)
+ *     .toast       — transient message
+ */
+// ─── Default drafts ───────────────────────────────────────────────────────────
+function defaultBatchDraft() {
+    return {
+        strainName: '',
+        breeder: '',
+        quantity: 1,
+        acquisitionDate: '',
+        generation: 'F1',
+        parent1Key: '',
+        parent2Key: '',
+        notes: '',
+    };
+}
+function defaultPollinationDraft() {
+    return {
+        date: '',
+        donorPlantId: '',
+        receiverPlantId: '',
+        notes: '',
+        donorActivePlantsOnly: true,
+    };
+}
+function defaultHarvestDraft() {
+    return { quantity: 1, notes: '' };
+}
+function defaultViews() {
+    return {
+        list: { sub: { kind: 'idle' } },
+        'add-batch': { editingBatchId: null, draft: defaultBatchDraft(), sub: { kind: 'idle' } },
+        'log-pollination': {
+            editingEventId: null,
+            draft: defaultPollinationDraft(),
+            sub: { kind: 'idle' },
+        },
+        harvest: { eventId: '', draft: defaultHarvestDraft(), sub: { kind: 'idle' } },
+    };
+}
+function createInitialSM$1(seed) {
+    const views = defaultViews();
+    let activeView = 'list';
+    if (seed?.initialView === 'log-pollination') {
+        activeView = 'log-pollination';
+        if (seed.prefilledReceiverId) {
+            views['log-pollination'] = {
+                ...views['log-pollination'],
+                draft: { ...views['log-pollination'].draft, receiverPlantId: seed.prefilledReceiverId },
+            };
+        }
+    }
+    return { activeView, views, status: { kind: 'idle' }, toast: undefined };
+}
+// ─── Validation helpers ───────────────────────────────────────────────────────
+function validateBatchDraft(draft) {
+    if (!draft.strainName || !draft.breeder || !draft.acquisitionDate || !draft.generation) {
+        return 'Please fill in all required fields.';
+    }
+    return undefined;
+}
+function validatePollinationDraft(draft) {
+    if (!draft.donorPlantId || !draft.receiverPlantId || !draft.date) {
+        return 'Please fill in all required fields.';
+    }
+    return undefined;
+}
+function validateHarvestDraft(draft, eventId) {
+    if (!eventId || !draft.quantity) {
+        return 'Please fill in all required fields.';
+    }
+    return undefined;
+}
+// ─── Transition function ──────────────────────────────────────────────────────
+/** Pure state machine transition. Returns a new SM without mutating the input. */
+function transition$1(sm, event) {
+    switch (event.type) {
+        // ── Navigation ──────────────────────────────────────────────────────────
+        case 'BEGIN_ADD_BATCH':
+            return {
+                ...sm,
+                activeView: 'add-batch',
+                views: {
+                    ...sm.views,
+                    'add-batch': { editingBatchId: null, draft: defaultBatchDraft(), sub: { kind: 'idle' } },
+                },
+            };
+        case 'BEGIN_EDIT_BATCH':
+            return {
+                ...sm,
+                activeView: 'add-batch',
+                views: {
+                    ...sm.views,
+                    'add-batch': {
+                        editingBatchId: event.batchId,
+                        draft: event.draft,
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        case 'BEGIN_LOG_POLLINATION':
+            return {
+                ...sm,
+                activeView: 'log-pollination',
+                views: {
+                    ...sm.views,
+                    'log-pollination': {
+                        editingEventId: null,
+                        draft: defaultPollinationDraft(),
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        case 'BEGIN_EDIT_POLLINATION':
+            return {
+                ...sm,
+                activeView: 'log-pollination',
+                views: {
+                    ...sm.views,
+                    'log-pollination': {
+                        editingEventId: event.eventId,
+                        draft: event.draft,
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        case 'BEGIN_HARVEST':
+            return {
+                ...sm,
+                activeView: 'harvest',
+                views: {
+                    ...sm.views,
+                    harvest: { eventId: event.eventId, draft: defaultHarvestDraft(), sub: { kind: 'idle' } },
+                },
+            };
+        case 'NAVIGATE_BACK': {
+            const views = { ...sm.views };
+            if (sm.activeView === 'add-batch') {
+                views['add-batch'] = {
+                    editingBatchId: null,
+                    draft: defaultBatchDraft(),
+                    sub: { kind: 'idle' },
+                };
+            }
+            else if (sm.activeView === 'log-pollination') {
+                views['log-pollination'] = {
+                    editingEventId: null,
+                    draft: defaultPollinationDraft(),
+                    sub: { kind: 'idle' },
+                };
+            }
+            else if (sm.activeView === 'harvest') {
+                views.harvest = { eventId: '', draft: defaultHarvestDraft(), sub: { kind: 'idle' } };
+            }
+            return { ...sm, activeView: 'list', views };
+        }
+        // ── Draft updates ────────────────────────────────────────────────────────
+        case 'UPDATE_BATCH_DRAFT':
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    'add-batch': {
+                        ...sm.views['add-batch'],
+                        draft: { ...sm.views['add-batch'].draft, ...event.partial },
+                    },
+                },
+            };
+        case 'UPDATE_POLLINATION_DRAFT':
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    'log-pollination': {
+                        ...sm.views['log-pollination'],
+                        draft: { ...sm.views['log-pollination'].draft, ...event.partial },
+                    },
+                },
+            };
+        case 'UPDATE_HARVEST_DRAFT':
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    harvest: {
+                        ...sm.views.harvest,
+                        draft: { ...sm.views.harvest.draft, ...event.partial },
+                    },
+                },
+            };
+        // ── Async lifecycle ──────────────────────────────────────────────────────
+        case 'SAVE_REQUESTED': {
+            const view = sm.activeView;
+            if (view === 'list')
+                return sm;
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    [view]: { ...sm.views[view], sub: { kind: 'applying' } },
+                },
+            };
+        }
+        case 'SAVE_RESOLVED': {
+            if (sm.activeView === 'list')
+                return sm;
+            return transition$1(sm, { type: 'NAVIGATE_BACK' });
+        }
+        case 'SAVE_FAILED': {
+            const view = sm.activeView;
+            if (view === 'list')
+                return sm;
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    [view]: { ...sm.views[view], sub: { kind: 'error', message: event.message } },
+                },
+            };
+        }
+        // ── Sow form ─────────────────────────────────────────────────────────────
+        case 'SOW_OPENED':
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    list: {
+                        sub: {
+                            kind: 'sow',
+                            batchId: event.batchId,
+                            growspaceId: event.defaultGrowspaceId,
+                            quantity: 1,
+                            sub: { kind: 'idle' },
+                        },
+                    },
+                },
+            };
+        case 'SOW_CANCELLED':
+            return { ...sm, views: { ...sm.views, list: { sub: { kind: 'idle' } } } };
+        case 'SOW_APPLY_REQUESTED': {
+            const sub = sm.views.list.sub;
+            if (sub.kind !== 'sow')
+                return sm;
+            return {
+                ...sm,
+                views: { ...sm.views, list: { sub: { ...sub, sub: { kind: 'applying' } } } },
+            };
+        }
+        case 'SOW_APPLY_FAILED': {
+            const sub = sm.views.list.sub;
+            if (sub.kind !== 'sow')
+                return sm;
+            return {
+                ...sm,
+                views: { ...sm.views, list: { sub: { ...sub, sub: { kind: 'idle' } } } },
+            };
+        }
+        case 'SOW_FIELD_CHANGED': {
+            const sub = sm.views.list.sub;
+            if (sub.kind !== 'sow')
+                return sm;
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    list: {
+                        sub: {
+                            ...sub,
+                            ...(event.partial.growspaceId !== undefined && {
+                                growspaceId: event.partial.growspaceId,
+                            }),
+                            ...(event.partial.quantity !== undefined && { quantity: event.partial.quantity }),
+                        },
+                    },
+                },
+            };
+        }
+        // ── Delete confirmations ─────────────────────────────────────────────────
+        case 'DELETE_BATCH_REQUESTED':
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    list: { sub: { kind: 'confirm-delete-batch', batchId: event.batchId } },
+                },
+            };
+        case 'DELETE_POLLINATION_REQUESTED':
+            return {
+                ...sm,
+                views: {
+                    ...sm.views,
+                    list: { sub: { kind: 'confirm-delete-pollination', eventId: event.eventId } },
+                },
+            };
+        case 'DELETE_CONFIRMED':
+        case 'DELETE_CANCELLED':
+            return { ...sm, views: { ...sm.views, list: { sub: { kind: 'idle' } } } };
+        // ── Global ───────────────────────────────────────────────────────────────
+        case 'SET_TOAST':
+            return { ...sm, toast: event.message };
+        default:
+            return sm;
+    }
+}
+
 let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     constructor() {
         super(...arguments);
@@ -33781,46 +34199,133 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         this.seedBatches = [];
         this.pollinationEvents = [];
         this.plants = [];
-        this._seedSubView = 'list';
-        this._editingBatchId = null;
-        this._editingEventId = null;
-        this._confirmDeleteEventId = null;
-        this._confirmDeleteBatchId = null;
-        this._sowBatchId = null;
-        this._sowGrowspaceId = '';
-        this._sowQuantity = 1;
-        this._sowSubmitting = false;
-        this._submitError = null;
-        this._selectedEventId = null;
-        this._batchForm = {
-            strain_name: '',
-            breeder: '',
-            quantity: 1,
-            acquisition_date: '',
-            generation: 'F1',
-            parent_1_key: '',
-            parent_2_key: '',
-            notes: '',
+        this._sm = createInitialSM$1();
+        this._submitAddBatch = async () => {
+            const view = this._sm.views['add-batch'];
+            const { draft, editingBatchId } = view;
+            const error = validateBatchDraft(draft);
+            if (error) {
+                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                return;
+            }
+            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            const resolveKey = (key) => {
+                if (!key)
+                    return { strain: null, phenotype: null };
+                const [strain, phenotype] = key.split('||', 2);
+                return { strain: strain || null, phenotype: phenotype || null };
+            };
+            const p1 = resolveKey(draft.parent1Key);
+            const p2 = resolveKey(draft.parent2Key);
+            try {
+                if (editingBatchId) {
+                    await this.onUpdateSeedBatch?.({
+                        batch_id: editingBatchId,
+                        strain_name: draft.strainName,
+                        breeder: draft.breeder,
+                        quantity: draft.quantity,
+                        acquisition_date: draft.acquisitionDate,
+                        generation: draft.generation,
+                        parent_1_strain: p1.strain,
+                        parent_1_phenotype: p1.phenotype,
+                        parent_2_strain: p2.strain,
+                        parent_2_phenotype: p2.phenotype,
+                        notes: draft.notes,
+                    });
+                }
+                else {
+                    await this.onAddSeedBatch?.({
+                        strain_name: draft.strainName,
+                        breeder: draft.breeder,
+                        quantity: draft.quantity,
+                        acquisition_date: draft.acquisitionDate,
+                        generation: draft.generation,
+                        parent_1_strain: p1.strain,
+                        parent_1_phenotype: p1.phenotype,
+                        parent_2_strain: p2.strain,
+                        parent_2_phenotype: p2.phenotype,
+                        notes: draft.notes,
+                    });
+                }
+                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this.onSeedDataChanged?.();
+            }
+            catch (e) {
+                console.error('Failed to save seed batch', e);
+                this._sm = transition$1(this._sm, {
+                    type: 'SAVE_FAILED',
+                    message: 'Failed to save. Please check your connection and try again.',
+                });
+            }
         };
-        this._pollinationForm = {
-            date: '',
-            donor_plant_id: '',
-            receiver_plant_id: '',
-            notes: '',
+        this._submitLogPollination = async () => {
+            const view = this._sm.views['log-pollination'];
+            const { draft, editingEventId } = view;
+            const error = validatePollinationDraft(draft);
+            if (error) {
+                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                return;
+            }
+            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            try {
+                if (editingEventId) {
+                    await this.onUpdatePollination?.({
+                        event_id: editingEventId,
+                        date: draft.date,
+                        donor_plant_id: draft.donorPlantId,
+                        receiver_plant_id: draft.receiverPlantId,
+                        notes: draft.notes,
+                    });
+                }
+                else {
+                    await this.onLogPollination?.({
+                        date: draft.date,
+                        donor_plant_id: draft.donorPlantId,
+                        receiver_plant_id: draft.receiverPlantId,
+                        notes: draft.notes,
+                    });
+                }
+                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this.onSeedDataChanged?.();
+            }
+            catch (e) {
+                console.error('Failed to log pollination', e);
+                this._sm = transition$1(this._sm, {
+                    type: 'SAVE_FAILED',
+                    message: 'Failed to save. Please check your connection and try again.',
+                });
+            }
         };
-        this._harvestForm = { quantity: 1, notes: '' };
-        this._donorActivePlantsOnly = true;
+        this._submitHarvestSeeds = async () => {
+            const view = this._sm.views.harvest;
+            const { draft, eventId } = view;
+            const error = validateHarvestDraft(draft, eventId);
+            if (error) {
+                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                return;
+            }
+            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            try {
+                await this.onHarvestSeeds?.({ event_id: eventId, quantity: draft.quantity, notes: draft.notes });
+                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this.onSeedDataChanged?.();
+            }
+            catch (e) {
+                console.error('Failed to harvest seeds', e);
+                this._sm = transition$1(this._sm, {
+                    type: 'SAVE_FAILED',
+                    message: 'Failed to save. Please check your connection and try again.',
+                });
+            }
+        };
     }
     connectedCallback() {
         super.connectedCallback();
         if (this.initialSubView === 'log-pollination') {
-            this._seedSubView = 'log-pollination';
-            if (this.prefilledReceiverId) {
-                this._pollinationForm = {
-                    ...this._pollinationForm,
-                    receiver_plant_id: this.prefilledReceiverId,
-                };
-            }
+            this._sm = createInitialSM$1({
+                initialView: 'log-pollination',
+                prefilledReceiverId: this.prefilledReceiverId,
+            });
         }
     }
     get _flowerVegPlants() {
@@ -33856,15 +34361,17 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         return plant_id;
     }
     render() {
-        if (this._seedSubView === 'add-batch')
+        const { activeView } = this._sm;
+        if (activeView === 'add-batch')
             return this._renderAddBatchForm();
-        if (this._seedSubView === 'log-pollination')
+        if (activeView === 'log-pollination')
             return this._renderLogPollinationForm();
-        if (this._seedSubView === 'harvest')
+        if (activeView === 'harvest')
             return this._renderHarvestForm();
         return this._renderSeedList();
     }
     _renderSeedList() {
+        const listSub = this._sm.views.list.sub;
         return x `
       <div class="dialog-header">
         <div class="dialog-icon">
@@ -33894,19 +34401,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button filled"
               @click=${() => {
-            this._editingBatchId = null;
-            this._batchForm = {
-                strain_name: '',
-                breeder: '',
-                quantity: 1,
-                acquisition_date: '',
-                generation: 'F1',
-                parent_1_key: '',
-                parent_2_key: '',
-                notes: '',
-            };
-            this._submitError = null;
-            this._seedSubView = 'add-batch';
+            this._sm = transition$1(this._sm, { type: 'BEGIN_ADD_BATCH' });
         }}
             >
               Add batch
@@ -33914,213 +34409,14 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           </div>
           ${this.seedBatches.length === 0
             ? x `<p class="empty-state">No seed batches yet.</p>`
-            : this.seedBatches.map((b) => x `
-                  <div class="seed-batch-card">
-                    <div class="seed-batch-card-header">
-                      <div class="seed-batch-name">${b.strain_name}</div>
-                      <button
-                        class="seed-batch-edit-btn"
-                        title="Edit batch"
-                        @click=${() => {
-                const p1Key = b.parent_1_strain
-                    ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
-                    : '';
-                const p2Key = b.parent_2_strain
-                    ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
-                    : '';
-                this._batchForm = {
-                    strain_name: b.strain_name,
-                    breeder: b.breeder,
-                    quantity: b.quantity,
-                    acquisition_date: b.acquisition_date,
-                    generation: b.generation,
-                    parent_1_key: p1Key,
-                    parent_2_key: p2Key,
-                    notes: b.notes ?? '',
-                };
-                this._editingBatchId = b.batch_id;
-                this._submitError = null;
-                this._seedSubView = 'add-batch';
-            }}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16">
-                          <path d="${mdiPencil}"></path>
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="seed-batch-meta">
-                      ${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}
-                    </div>
-                    ${b.parent_1_strain || b.parent_2_strain
-                ? x `
-                          <div class="seed-batch-parents">
-                            ${b.parent_1_strain
-                    ? x `<span class="seed-batch-parent-chip"
-                                  >♀
-                                  ${b.parent_1_strain}${b.parent_1_phenotype
-                        ? ` (${b.parent_1_phenotype})`
-                        : ''}</span
-                                >`
-                    : E}
-                            ${b.parent_1_strain && b.parent_2_strain
-                    ? x `<span class="seed-batch-parent-sep">×</span>`
-                    : E}
-                            ${b.parent_2_strain
-                    ? x `<span class="seed-batch-parent-chip"
-                                  >♂
-                                  ${b.parent_2_strain}${b.parent_2_phenotype
-                        ? ` (${b.parent_2_phenotype})`
-                        : ''}</span
-                                >`
-                    : E}
-                          </div>
-                        `
-                : E}
-                    ${b.lineage
-                ? x `<div class="seed-batch-lineage">${b.lineage}</div>`
-                : E}
-                    ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
-                    <div class="seed-batch-actions">
-                      <button
-                        class="md3-button tonal"
-                        style="font-size:12px;"
-                        @click=${() => {
-                if (this._sowBatchId === b.batch_id) {
-                    this._sowBatchId = null;
-                }
-                else {
-                    this._sowBatchId = b.batch_id;
-                    this._sowQuantity = 1;
-                    this._sowGrowspaceId = this.plants[0]?.deviceId ?? '';
-                }
-                this._confirmDeleteBatchId = null;
-            }}
-                      >
-                        🌱 Sow seeds
-                      </button>
-                      ${this._confirmDeleteBatchId === b.batch_id
-                ? x `
-                            <span style="font-size:12px; color:var(--secondary-text-color);"
-                              >Delete?</span
-                            >
-                            <button
-                              class="icon-btn danger"
-                              title="Confirm delete"
-                              @click=${async () => {
-                    await this.onDeleteSeedBatch?.(b.batch_id);
-                    this._confirmDeleteBatchId = null;
-                    this.onSeedDataChanged?.();
-                }}
-                            >
-                              <svg viewBox="0 0 24 24" width="16" height="16">
-                                <path d="${mdiCheck}"></path>
-                              </svg>
-                            </button>
-                            <button
-                              class="icon-btn"
-                              title="Cancel"
-                              @click=${() => {
-                    this._confirmDeleteBatchId = null;
-                }}
-                            >
-                              <svg viewBox="0 0 24 24" width="16" height="16">
-                                <path d="${mdiClose}"></path>
-                              </svg>
-                            </button>
-                          `
-                : x `
-                            <button
-                              class="icon-btn danger"
-                              title="Delete batch"
-                              @click=${() => {
-                    this._confirmDeleteBatchId = b.batch_id;
-                    this._sowBatchId = null;
-                }}
-                            >
-                              <svg viewBox="0 0 24 24" width="16" height="16">
-                                <path d="${mdiDelete}"></path>
-                              </svg>
-                            </button>
-                          `}
-                    </div>
-                    ${this._sowBatchId === b.batch_id
-                ? x `
-                          <div class="sow-form">
-                            <select
-                              class="sow-select"
-                              .value=${this._sowGrowspaceId}
-                              @change=${(e) => {
-                    this._sowGrowspaceId = e.target.value;
-                }}
-                            >
-                              ${this.plants.map((g) => x `
-                                  <option
-                                    value=${g.deviceId}
-                                    ?selected=${g.deviceId === this._sowGrowspaceId}
-                                  >
-                                    ${g.name}
-                                  </option>
-                                `)}
-                            </select>
-                            <input
-                              type="number"
-                              class="sow-qty"
-                              min="1"
-                              max=${b.quantity}
-                              .value=${String(this._sowQuantity)}
-                              @input=${(e) => {
-                    this._sowQuantity = Number(e.target.value);
-                }}
-                              placeholder="Seeds"
-                            />
-                            <button
-                              class="md3-button filled"
-                              style="font-size:12px;"
-                              ?disabled=${this._sowSubmitting || !this._sowGrowspaceId}
-                              @click=${async () => {
-                    if (!this._sowGrowspaceId)
-                        return;
-                    this._sowSubmitting = true;
-                    try {
-                        await this.onSowSeeds?.({
-                            growspace_id: this._sowGrowspaceId,
-                            strain: b.strain_name,
-                            amount: this._sowQuantity,
-                            seed_batch_id: b.batch_id,
-                            generation: b.generation,
-                        });
-                        this._sowBatchId = null;
-                        this.onSeedDataChanged?.();
-                    }
-                    finally {
-                        this._sowSubmitting = false;
-                    }
-                }}
-                            >
-                              ${this._sowSubmitting ? 'Planting…' : 'Plant'}
-                            </button>
-                            <button
-                              class="md3-button text"
-                              style="font-size:12px;"
-                              @click=${() => {
-                    this._sowBatchId = null;
-                }}
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        `
-                : E}
-                  </div>
-                `)}
+            : this.seedBatches.map((b) => this._renderSeedBatchCard(b, listSub))}
 
           <div class="seeds-header">
             <h3>Pollination log</h3>
             <button
               class="md3-button tonal"
               @click=${() => {
-            this._donorActivePlantsOnly = true;
-            this._seedSubView = 'log-pollination';
+            this._sm = transition$1(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
         }}
             >
               Log pollination
@@ -34128,99 +34424,318 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           </div>
           ${this.pollinationEvents.length === 0
             ? x `<p class="empty-state">No pollination events yet.</p>`
-            : this.pollinationEvents.map((e) => x `
-                  <div class="pollination-card">
-                    <div class="pollination-card-header">
-                      <div class="pollination-date">${e.date}</div>
-                      <div class="pollination-card-actions">
-                        <button
-                          class="icon-btn"
-                          title="Edit"
-                          @click=${() => {
-                this._editingEventId = e.event_id;
-                this._donorActivePlantsOnly = !e.donor_plant_id.includes('||');
-                this._pollinationForm = {
-                    date: e.date,
-                    donor_plant_id: e.donor_plant_id,
-                    receiver_plant_id: e.receiver_plant_id,
-                    notes: e.notes ?? '',
-                };
-                this._seedSubView = 'log-pollination';
-            }}
-                        >
-                          <svg viewBox="0 0 24 24" width="16" height="16">
-                            <path d="${mdiPencil}"></path>
-                          </svg>
-                        </button>
-                        ${this._confirmDeleteEventId === e.event_id
-                ? x `
-                              <span class="delete-confirm-text">Delete?</span>
-                              <button
-                                class="icon-btn danger"
-                                title="Confirm delete"
-                                @click=${async () => {
-                    await this.onDeletePollination?.(e.event_id);
-                    this._confirmDeleteEventId = null;
-                    this.onSeedDataChanged?.();
-                }}
-                              >
-                                <svg viewBox="0 0 24 24" width="16" height="16">
-                                  <path d="${mdiCheck}"></path>
-                                </svg>
-                              </button>
-                              <button
-                                class="icon-btn"
-                                title="Cancel"
-                                @click=${() => {
-                    this._confirmDeleteEventId = null;
-                }}
-                              >
-                                <svg viewBox="0 0 24 24" width="16" height="16">
-                                  <path d="${mdiClose}"></path>
-                                </svg>
-                              </button>
-                            `
-                : x `
-                              <button
-                                class="icon-btn danger"
-                                title="Delete"
-                                @click=${() => {
-                    this._confirmDeleteEventId = e.event_id;
-                }}
-                              >
-                                <svg viewBox="0 0 24 24" width="16" height="16">
-                                  <path d="${mdiDelete}"></path>
-                                </svg>
-                              </button>
-                            `}
-                      </div>
-                    </div>
-                    <div class="pollination-plants">
-                      ♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀
-                      ${this._getPlantLabel(e.receiver_plant_id)}
-                    </div>
-                    ${e.notes ? x `<div class="pollination-notes">${e.notes}</div>` : E}
-                    ${e.result_seed_batch_id
-                ? x `<span class="badge success">Seeds harvested</span>`
-                : x `
-                          <button
-                            class="md3-button tonal"
-                            @click=${() => {
-                    this._selectedEventId = e.event_id;
-                    this._seedSubView = 'harvest';
-                }}
-                          >
-                            Harvest seeds
-                          </button>
-                        `}
-                  </div>
-                `)}
+            : this.pollinationEvents.map((e) => this._renderPollinationCard(e, listSub))}
         </div>
       </div>
     `;
     }
+    _renderSeedBatchCard(b, listSub) {
+        const isSowOpen = listSub.kind === 'sow' && listSub.batchId === b.batch_id;
+        const isDeleteConfirm = listSub.kind === 'confirm-delete-batch' && listSub.batchId === b.batch_id;
+        return x `
+      <div class="seed-batch-card">
+        <div class="seed-batch-card-header">
+          <div class="seed-batch-name">${b.strain_name}</div>
+          <button
+            class="seed-batch-edit-btn"
+            title="Edit batch"
+            @click=${() => {
+            const draft = {
+                strainName: b.strain_name,
+                breeder: b.breeder,
+                quantity: b.quantity,
+                acquisitionDate: b.acquisition_date,
+                generation: b.generation,
+                parent1Key: b.parent_1_strain
+                    ? `${b.parent_1_strain}||${b.parent_1_phenotype ?? ''}`
+                    : '',
+                parent2Key: b.parent_2_strain
+                    ? `${b.parent_2_strain}||${b.parent_2_phenotype ?? ''}`
+                    : '',
+                notes: b.notes ?? '',
+            };
+            this._sm = transition$1(this._sm, {
+                type: 'BEGIN_EDIT_BATCH',
+                batchId: b.batch_id,
+                draft,
+            });
+        }}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16">
+              <path d="${mdiPencil}"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="seed-batch-meta">
+          ${b.breeder} · ${b.generation} · ${b.quantity} seeds · ${b.acquisition_date}
+        </div>
+        ${b.parent_1_strain || b.parent_2_strain
+            ? x `
+              <div class="seed-batch-parents">
+                ${b.parent_1_strain
+                ? x `<span class="seed-batch-parent-chip"
+                      >♀
+                      ${b.parent_1_strain}${b.parent_1_phenotype
+                    ? ` (${b.parent_1_phenotype})`
+                    : ''}</span
+                    >`
+                : E}
+                ${b.parent_1_strain && b.parent_2_strain
+                ? x `<span class="seed-batch-parent-sep">×</span>`
+                : E}
+                ${b.parent_2_strain
+                ? x `<span class="seed-batch-parent-chip"
+                      >♂
+                      ${b.parent_2_strain}${b.parent_2_phenotype
+                    ? ` (${b.parent_2_phenotype})`
+                    : ''}</span
+                    >`
+                : E}
+              </div>
+            `
+            : E}
+        ${b.lineage ? x `<div class="seed-batch-lineage">${b.lineage}</div>` : E}
+        ${b.notes ? x `<div class="seed-batch-notes">${b.notes}</div>` : E}
+        <div class="seed-batch-actions">
+          <button
+            class="md3-button tonal"
+            style="font-size:12px;"
+            @click=${() => {
+            if (isSowOpen) {
+                this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+            }
+            else {
+                this._sm = transition$1(this._sm, {
+                    type: 'SOW_OPENED',
+                    batchId: b.batch_id,
+                    defaultGrowspaceId: this.plants[0]?.deviceId ?? '',
+                });
+            }
+        }}
+          >
+            🌱 Sow seeds
+          </button>
+          ${isDeleteConfirm
+            ? x `
+                <span style="font-size:12px; color:var(--secondary-text-color);">Delete?</span>
+                <button
+                  class="icon-btn danger"
+                  title="Confirm delete"
+                  @click=${async () => {
+                await this.onDeleteSeedBatch?.(b.batch_id);
+                this._sm = transition$1(this._sm, { type: 'DELETE_CONFIRMED' });
+                this.onSeedDataChanged?.();
+            }}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path d="${mdiCheck}"></path>
+                  </svg>
+                </button>
+                <button
+                  class="icon-btn"
+                  title="Cancel"
+                  @click=${() => {
+                this._sm = transition$1(this._sm, { type: 'DELETE_CANCELLED' });
+            }}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path d="${mdiClose}"></path>
+                  </svg>
+                </button>
+              `
+            : x `
+                <button
+                  class="icon-btn danger"
+                  title="Delete batch"
+                  @click=${() => {
+                this._sm = transition$1(this._sm, {
+                    type: 'DELETE_BATCH_REQUESTED',
+                    batchId: b.batch_id,
+                });
+            }}
+                >
+                  <svg viewBox="0 0 24 24" width="16" height="16">
+                    <path d="${mdiDelete}"></path>
+                  </svg>
+                </button>
+              `}
+        </div>
+        ${isSowOpen && listSub.kind === 'sow'
+            ? x `
+              <div class="sow-form">
+                <select
+                  class="sow-select"
+                  .value=${listSub.growspaceId}
+                  @change=${(e) => {
+                this._sm = transition$1(this._sm, {
+                    type: 'SOW_FIELD_CHANGED',
+                    partial: { growspaceId: e.target.value },
+                });
+            }}
+                >
+                  ${this.plants.map((g) => x `
+                      <option value=${g.deviceId} ?selected=${g.deviceId === listSub.growspaceId}>
+                        ${g.name}
+                      </option>
+                    `)}
+                </select>
+                <input
+                  type="number"
+                  class="sow-qty"
+                  min="1"
+                  max=${b.quantity}
+                  .value=${String(listSub.quantity)}
+                  @input=${(e) => {
+                this._sm = transition$1(this._sm, {
+                    type: 'SOW_FIELD_CHANGED',
+                    partial: { quantity: Number(e.target.value) },
+                });
+            }}
+                  placeholder="Seeds"
+                />
+                <button
+                  class="md3-button filled"
+                  style="font-size:12px;"
+                  ?disabled=${listSub.sub.kind === 'applying' || !listSub.growspaceId}
+                  @click=${async () => {
+                if (!listSub.growspaceId || listSub.kind !== 'sow')
+                    return;
+                this._sm = transition$1(this._sm, { type: 'SOW_APPLY_REQUESTED' });
+                try {
+                    await this.onSowSeeds?.({
+                        growspace_id: listSub.growspaceId,
+                        strain: b.strain_name,
+                        amount: listSub.quantity,
+                        seed_batch_id: b.batch_id,
+                        generation: b.generation,
+                    });
+                    this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                    this.onSeedDataChanged?.();
+                }
+                catch {
+                    this._sm = transition$1(this._sm, { type: 'SOW_APPLY_FAILED' });
+                }
+            }}
+                >
+                  ${listSub.sub.kind === 'applying' ? 'Planting…' : 'Plant'}
+                </button>
+                <button
+                  class="md3-button text"
+                  style="font-size:12px;"
+                  @click=${() => {
+                this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+            }}
+                >
+                  Cancel
+                </button>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    _renderPollinationCard(e, listSub) {
+        const isDeleteConfirm = listSub.kind === 'confirm-delete-pollination' && listSub.eventId === e.event_id;
+        return x `
+      <div class="pollination-card">
+        <div class="pollination-card-header">
+          <div class="pollination-date">${e.date}</div>
+          <div class="pollination-card-actions">
+            <button
+              class="icon-btn"
+              title="Edit"
+              @click=${() => {
+            const draft = {
+                date: e.date,
+                donorPlantId: e.donor_plant_id,
+                receiverPlantId: e.receiver_plant_id,
+                notes: e.notes ?? '',
+                donorActivePlantsOnly: !e.donor_plant_id.includes('||'),
+            };
+            this._sm = transition$1(this._sm, {
+                type: 'BEGIN_EDIT_POLLINATION',
+                eventId: e.event_id,
+                draft,
+            });
+        }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16">
+                <path d="${mdiPencil}"></path>
+              </svg>
+            </button>
+            ${isDeleteConfirm
+            ? x `
+                  <span class="delete-confirm-text">Delete?</span>
+                  <button
+                    class="icon-btn danger"
+                    title="Confirm delete"
+                    @click=${async () => {
+                await this.onDeletePollination?.(e.event_id);
+                this._sm = transition$1(this._sm, { type: 'DELETE_CONFIRMED' });
+                this.onSeedDataChanged?.();
+            }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="${mdiCheck}"></path>
+                    </svg>
+                  </button>
+                  <button
+                    class="icon-btn"
+                    title="Cancel"
+                    @click=${() => {
+                this._sm = transition$1(this._sm, { type: 'DELETE_CANCELLED' });
+            }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="${mdiClose}"></path>
+                    </svg>
+                  </button>
+                `
+            : x `
+                  <button
+                    class="icon-btn danger"
+                    title="Delete"
+                    @click=${() => {
+                this._sm = transition$1(this._sm, {
+                    type: 'DELETE_POLLINATION_REQUESTED',
+                    eventId: e.event_id,
+                });
+            }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16">
+                      <path d="${mdiDelete}"></path>
+                    </svg>
+                  </button>
+                `}
+          </div>
+        </div>
+        <div class="pollination-plants">
+          ♂ ${this._getPlantLabel(e.donor_plant_id)} × ♀
+          ${this._getPlantLabel(e.receiver_plant_id)}
+        </div>
+        ${e.notes ? x `<div class="pollination-notes">${e.notes}</div>` : E}
+        ${e.result_seed_batch_id
+            ? x `<span class="badge success">Seeds harvested</span>`
+            : x `
+              <button
+                class="md3-button tonal"
+                @click=${() => {
+                this._sm = transition$1(this._sm, {
+                    type: 'BEGIN_HARVEST',
+                    eventId: e.event_id,
+                });
+            }}
+              >
+                Harvest seeds
+              </button>
+            `}
+      </div>
+    `;
+    }
     _renderAddBatchForm() {
-        const isEditing = this._editingBatchId !== null;
+        const view = this._sm.views['add-batch'];
+        const { draft, sub, editingBatchId } = view;
+        const isEditing = editingBatchId !== null;
         const uniqueBreeders = [
             ...new Set(this.strains.map((s) => s.breeder).filter(Boolean)),
         ].sort();
@@ -34240,8 +34755,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._seedSubView = 'list';
-            this._editingBatchId = null;
+            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -34252,12 +34766,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Strain name
           <input
             type="text"
-            .value=${this._batchForm.strain_name}
+            .value=${draft.strainName}
             @input=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                strain_name: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { strainName: e.target.value },
+            });
         }}
           />
         </label>
@@ -34266,12 +34780,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <input
             type="text"
             list="batch-breeder-suggestions"
-            .value=${this._batchForm.breeder}
+            .value=${draft.breeder}
             @input=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                breeder: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { breeder: e.target.value },
+            });
         }}
           />
         </label>
@@ -34280,12 +34794,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <input
             type="number"
             min="1"
-            .value=${String(this._batchForm.quantity)}
+            .value=${String(draft.quantity)}
             @input=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                quantity: parseInt(e.target.value) || 1,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { quantity: parseInt(e.target.value) || 1 },
+            });
         }}
           />
         </label>
@@ -34293,12 +34807,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Acquisition date
           <input
             type="date"
-            .value=${this._batchForm.acquisition_date}
+            .value=${draft.acquisitionDate}
             @input=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                acquisition_date: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { acquisitionDate: e.target.value },
+            });
         }}
           />
         </label>
@@ -34307,12 +34821,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <input
             type="text"
             placeholder="F1, S1, BX1…"
-            .value=${this._batchForm.generation}
+            .value=${draft.generation}
             @input=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                generation: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { generation: e.target.value },
+            });
         }}
           />
         </label>
@@ -34320,14 +34834,14 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Parent 1
           <select
             @change=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                parent_1_key: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { parent1Key: e.target.value },
+            });
         }}
           >
             <option value="">— none —</option>
-            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_1_key === o.key}>
+            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${draft.parent1Key === o.key}>
                   ${o.label}
                 </option>`)}
           </select>
@@ -34336,14 +34850,14 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Parent 2
           <select
             @change=${(e) => {
-            this._batchForm = {
-                ...this._batchForm,
-                parent_2_key: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { parent2Key: e.target.value },
+            });
         }}
           >
             <option value="">— none —</option>
-            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${this._batchForm.parent_2_key === o.key}>
+            ${strainOptions.map((o) => x `<option value="${o.key}" ?selected=${draft.parent2Key === o.key}>
                   ${o.label}
                 </option>`)}
           </select>
@@ -34352,30 +34866,39 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Notes
           <input
             type="text"
-            .value=${this._batchForm.notes}
+            .value=${draft.notes}
             @input=${(e) => {
-            this._batchForm = { ...this._batchForm, notes: e.target.value };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_BATCH_DRAFT',
+                partial: { notes: e.target.value },
+            });
         }}
           />
         </label>
-        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
+        ${sub.kind === 'error' ? x `<p class="form-error">${sub.message}</p>` : E}
         <div class="form-actions">
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._seedSubView = 'list';
-            this._editingBatchId = null;
-            this._submitError = null;
+            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
           </button>
-          <button class="md3-button filled" @click=${this._submitAddBatch}>Save</button>
+          <button
+            class="md3-button filled"
+            ?disabled=${sub.kind === 'applying'}
+            @click=${this._submitAddBatch}
+          >
+            Save
+          </button>
         </div>
       </div>
     `;
     }
     _renderLogPollinationForm() {
+        const view = this._sm.views['log-pollination'];
+        const { draft, sub, editingEventId } = view;
         const eligiblePlants = this._flowerVegPlants;
         const libraryDonorOptions = this.strains
             .slice()
@@ -34384,7 +34907,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             key: `${s.strain}||${s.phenotype}`,
             label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
         }));
-        const donorOptions = this._donorActivePlantsOnly
+        const donorOptions = draft.donorActivePlantsOnly
             ? eligiblePlants.map((p) => ({ key: p.plant_id, label: p.label }))
             : libraryDonorOptions;
         return x `
@@ -34393,31 +34916,23 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._seedSubView = 'list';
-            this._editingEventId = null;
-            this._donorActivePlantsOnly = true;
-            this._pollinationForm = {
-                date: '',
-                donor_plant_id: '',
-                receiver_plant_id: '',
-                notes: '',
-            };
+            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
           </button>
-          <h3>${this._editingEventId ? 'Edit pollination' : 'Log pollination'}</h3>
+          <h3>${editingEventId ? 'Edit pollination' : 'Log pollination'}</h3>
         </div>
         <label
           >Date
           <input
             type="date"
-            .value=${this._pollinationForm.date}
+            .value=${draft.date}
             @input=${(e) => {
-            this._pollinationForm = {
-                ...this._pollinationForm,
-                date: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { date: e.target.value },
+            });
         }}
           />
         </label>
@@ -34425,18 +34940,15 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Donor plant (male / pollen donor)
           <select
             @change=${(e) => {
-            this._pollinationForm = {
-                ...this._pollinationForm,
-                donor_plant_id: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { donorPlantId: e.target.value },
+            });
         }}
           >
             <option value="">— select plant —</option>
             ${donorOptions.map((o) => x `
-                <option
-                  value="${o.key}"
-                  ?selected=${this._pollinationForm.donor_plant_id === o.key}
-                >
+                <option value="${o.key}" ?selected=${draft.donorPlantId === o.key}>
                   ${o.label}
                 </option>
               `)}
@@ -34445,10 +34957,15 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         <label class="checkbox-label">
           <input
             type="checkbox"
-            .checked=${this._donorActivePlantsOnly}
+            .checked=${draft.donorActivePlantsOnly}
             @change=${(e) => {
-            this._donorActivePlantsOnly = e.target.checked;
-            this._pollinationForm = { ...this._pollinationForm, donor_plant_id: '' };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: {
+                    donorActivePlantsOnly: e.target.checked,
+                    donorPlantId: '',
+                },
+            });
         }}
           />
           Active plants only
@@ -34457,18 +34974,15 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Receiver plant (female / seed bearer)
           <select
             @change=${(e) => {
-            this._pollinationForm = {
-                ...this._pollinationForm,
-                receiver_plant_id: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { receiverPlantId: e.target.value },
+            });
         }}
           >
             <option value="">— select plant —</option>
             ${eligiblePlants.map((p) => x `
-                <option
-                  value="${p.plant_id}"
-                  ?selected=${this._pollinationForm.receiver_plant_id === p.plant_id}
-                >
+                <option value="${p.plant_id}" ?selected=${draft.receiverPlantId === p.plant_id}>
                   ${p.label}
                 </option>
               `)}
@@ -34478,40 +34992,46 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Notes
           <input
             type="text"
-            .value=${this._pollinationForm.notes}
+            .value=${draft.notes}
             @input=${(e) => {
-            this._pollinationForm = {
-                ...this._pollinationForm,
-                notes: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_POLLINATION_DRAFT',
+                partial: { notes: e.target.value },
+            });
         }}
           />
         </label>
-        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
+        ${sub.kind === 'error' ? x `<p class="form-error">${sub.message}</p>` : E}
         <div class="form-actions">
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._seedSubView = 'list';
-            this._submitError = null;
+            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
           </button>
-          <button class="md3-button filled" @click=${this._submitLogPollination}>Save</button>
+          <button
+            class="md3-button filled"
+            ?disabled=${sub.kind === 'applying'}
+            @click=${this._submitLogPollination}
+          >
+            Save
+          </button>
         </div>
       </div>
     `;
     }
     _renderHarvestForm() {
+        const view = this._sm.views.harvest;
+        const { draft, sub } = view;
         return x `
       <div class="form-view">
         <div class="form-header">
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._seedSubView = 'list';
-            this._selectedEventId = null;
+            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -34523,12 +35043,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <input
             type="number"
             min="1"
-            .value=${String(this._harvestForm.quantity)}
+            .value=${String(draft.quantity)}
             @input=${(e) => {
-            this._harvestForm = {
-                ...this._harvestForm,
-                quantity: parseInt(e.target.value) || 1,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_HARVEST_DRAFT',
+                partial: { quantity: parseInt(e.target.value) || 1 },
+            });
         }}
           />
         </label>
@@ -34536,153 +35056,35 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Notes
           <input
             type="text"
-            .value=${this._harvestForm.notes}
+            .value=${draft.notes}
             @input=${(e) => {
-            this._harvestForm = {
-                ...this._harvestForm,
-                notes: e.target.value,
-            };
+            this._sm = transition$1(this._sm, {
+                type: 'UPDATE_HARVEST_DRAFT',
+                partial: { notes: e.target.value },
+            });
         }}
           />
         </label>
-        ${this._submitError ? x `<p class="form-error">${this._submitError}</p>` : E}
+        ${sub.kind === 'error' ? x `<p class="form-error">${sub.message}</p>` : E}
         <div class="form-actions">
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._seedSubView = 'list';
-            this._selectedEventId = null;
-            this._submitError = null;
+            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
           </button>
-          <button class="md3-button filled" @click=${this._submitHarvestSeeds}>Save</button>
+          <button
+            class="md3-button filled"
+            ?disabled=${sub.kind === 'applying'}
+            @click=${this._submitHarvestSeeds}
+          >
+            Save
+          </button>
         </div>
       </div>
     `;
-    }
-    async _submitAddBatch() {
-        const f = this._batchForm;
-        if (!f.strain_name || !f.breeder || !f.acquisition_date || !f.generation) {
-            this._submitError = 'Please fill in all required fields.';
-            return;
-        }
-        this._submitError = null;
-        const resolveKey = (key) => {
-            if (!key)
-                return { strain: null, phenotype: null };
-            const [strain, phenotype] = key.split('||', 2);
-            return { strain: strain || null, phenotype: phenotype || null };
-        };
-        const p1 = resolveKey(f.parent_1_key);
-        const p2 = resolveKey(f.parent_2_key);
-        try {
-            if (this._editingBatchId) {
-                await this.onUpdateSeedBatch?.({
-                    batch_id: this._editingBatchId,
-                    strain_name: f.strain_name,
-                    breeder: f.breeder,
-                    quantity: f.quantity,
-                    acquisition_date: f.acquisition_date,
-                    generation: f.generation,
-                    parent_1_strain: p1.strain,
-                    parent_1_phenotype: p1.phenotype,
-                    parent_2_strain: p2.strain,
-                    parent_2_phenotype: p2.phenotype,
-                    notes: f.notes,
-                });
-            }
-            else {
-                await this.onAddSeedBatch?.({
-                    strain_name: f.strain_name,
-                    breeder: f.breeder,
-                    quantity: f.quantity,
-                    acquisition_date: f.acquisition_date,
-                    generation: f.generation,
-                    parent_1_strain: p1.strain,
-                    parent_1_phenotype: p1.phenotype,
-                    parent_2_strain: p2.strain,
-                    parent_2_phenotype: p2.phenotype,
-                    notes: f.notes,
-                });
-            }
-            this._seedSubView = 'list';
-            this._editingBatchId = null;
-            this._batchForm = {
-                strain_name: '',
-                breeder: '',
-                quantity: 1,
-                acquisition_date: '',
-                generation: 'F1',
-                parent_1_key: '',
-                parent_2_key: '',
-                notes: '',
-            };
-            this.onSeedDataChanged?.();
-        }
-        catch (e) {
-            console.error('Failed to save seed batch', e);
-            this._submitError = 'Failed to save. Please check your connection and try again.';
-        }
-    }
-    async _submitLogPollination() {
-        const f = this._pollinationForm;
-        if (!f.donor_plant_id || !f.receiver_plant_id || !f.date) {
-            this._submitError = 'Please fill in all required fields.';
-            return;
-        }
-        this._submitError = null;
-        try {
-            if (this._editingEventId) {
-                await this.onUpdatePollination?.({
-                    event_id: this._editingEventId,
-                    date: f.date,
-                    donor_plant_id: f.donor_plant_id,
-                    receiver_plant_id: f.receiver_plant_id,
-                    notes: f.notes,
-                });
-                this._editingEventId = null;
-            }
-            else {
-                await this.onLogPollination?.({
-                    date: f.date,
-                    donor_plant_id: f.donor_plant_id,
-                    receiver_plant_id: f.receiver_plant_id,
-                    notes: f.notes,
-                });
-            }
-            this._seedSubView = 'list';
-            this._pollinationForm = { date: '', donor_plant_id: '', receiver_plant_id: '', notes: '' };
-            this.onSeedDataChanged?.();
-        }
-        catch (e) {
-            console.error('Failed to log pollination', e);
-            this._submitError = 'Failed to save. Please check your connection and try again.';
-        }
-    }
-    async _submitHarvestSeeds() {
-        const f = this._harvestForm;
-        if (!this._selectedEventId || !f.quantity) {
-            this._submitError = 'Please fill in all required fields.';
-            return;
-        }
-        this._submitError = null;
-        try {
-            await this.onHarvestSeeds?.({
-                event_id: this._selectedEventId,
-                quantity: f.quantity,
-                notes: f.notes,
-            });
-            this._seedSubView = 'list';
-            this._selectedEventId = null;
-            this._harvestForm = { quantity: 1, notes: '' };
-            this.onSeedDataChanged?.();
-        }
-        catch (e) {
-            console.error('Failed to harvest seeds', e);
-            this._submitError = 'Failed to save. Please check your connection and try again.';
-        }
     }
 };
 SeedsGeneticsTab.styles = [
@@ -35029,49 +35431,7 @@ __decorate([
 ], SeedsGeneticsTab.prototype, "prefilledReceiverId", void 0);
 __decorate([
     r$3()
-], SeedsGeneticsTab.prototype, "_seedSubView", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_editingBatchId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_editingEventId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_confirmDeleteEventId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_confirmDeleteBatchId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_sowBatchId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_sowGrowspaceId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_sowQuantity", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_sowSubmitting", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_submitError", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_selectedEventId", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_batchForm", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_pollinationForm", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_harvestForm", void 0);
-__decorate([
-    r$3()
-], SeedsGeneticsTab.prototype, "_donorActivePlantsOnly", void 0);
+], SeedsGeneticsTab.prototype, "_sm", void 0);
 SeedsGeneticsTab = __decorate([
     t$2('seeds-genetics-tab')
 ], SeedsGeneticsTab);
@@ -127065,7 +127425,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.6"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.7"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
