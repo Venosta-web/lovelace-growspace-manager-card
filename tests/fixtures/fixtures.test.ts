@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aPlant, aGrowspace, anEnvSnapshot } from '.';
+import { aPlant, aGrowspace, anEnvSnapshot, aGrowspaceDevice } from '.';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import { EnvSnapshotSchema } from '../../src/slices/environment/schema';
 
@@ -43,9 +43,14 @@ describe('anEnvSnapshot', () => {
     expect(() => EnvSnapshotSchema.parse(anEnvSnapshot())).not.toThrow();
   });
 
-  it('defaults irrigation/substrate fields to null', () => {
+  it('defaults substrate sensor group to realistic readings', () => {
     const snap = anEnvSnapshot();
-    expect(snap.soilMoisture).toBeNull();
+    expect(snap.soilMoisture).toEqual({ avg: 65, perSensor: [65], entityIds: ['sensor.test_tent_soil_moisture'] });
+    expect(snap.substrateTemperature).toEqual({ avg: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] });
+  });
+
+  it('defaults irrigation monitoring fields to null', () => {
+    const snap = anEnvSnapshot();
     expect(snap.feedEc).toBeNull();
     expect(snap.runoffEc).toBeNull();
     expect(snap.energy).toBeNull();
@@ -61,5 +66,30 @@ describe('anEnvSnapshot', () => {
     expect(snap.vpdStatus).toBe('warning');
     expect(snap.soilMoisture?.avg).toBe(45);
     expect(() => EnvSnapshotSchema.parse(snap)).not.toThrow();
+  });
+});
+
+describe('aGrowspaceDevice', () => {
+  it('returns a GrowspaceDevice with required fields', () => {
+    const device = aGrowspaceDevice();
+    expect(device.deviceId).toBe('test_tent');
+    expect(device.name).toBe('Test Tent');
+    expect(device.plants).toEqual([]);
+    expect(device.rows).toBe(3);
+    expect(device.plantsPerRow).toBe(3);
+  });
+
+  it('merges overrides', () => {
+    const device = aGrowspaceDevice({ deviceId: 'veg_room', name: 'Veg Room', rows: 4, plantsPerRow: 5 });
+    expect(device.deviceId).toBe('veg_room');
+    expect(device.name).toBe('Veg Room');
+    expect(device.rows).toBe(4);
+    expect(device.plantsPerRow).toBe(5);
+  });
+
+  it('has a valid irrigationConfig by default', () => {
+    const device = aGrowspaceDevice();
+    expect(device.irrigationConfig).toBeDefined();
+    expect(device.irrigationConfig.irrigationTimes).toEqual([]);
   });
 });

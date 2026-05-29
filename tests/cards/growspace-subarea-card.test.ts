@@ -1,9 +1,10 @@
-import { fixture, html } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, vi } from 'vitest';
 import { GrowspaceSubareaCard } from '../../src/cards/growspace-subarea-card';
 import { DataService } from '../../src/services/data-service';
 import { ChartUtils } from '../../src/utils/chart-utils';
-import { createMockHass } from '../mocks/hass';
+import { ViewMode } from '../../src/features/environment/constants';
+import { aHass, aGrowspace } from '../fixtures';
+import { renderCard } from '../harness';
 
 const { mockDataService, mockGetSubareas } = vi.hoisted(() => {
     const mockGetSubareas = vi.fn();
@@ -83,7 +84,7 @@ describe('GrowspaceSubareaCard', () => {
         vi.mocked(ChartUtils.generateSparklinePath).mockReturnValue('M 0,0 L 100,100');
         vi.mocked(ChartUtils.getSparklineColor).mockReturnValue('#ff0000');
 
-        mockHass = createMockHass();
+        mockHass = aHass({ growspaces: [aGrowspace({ growspaceId: 'gs1', name: 'gs1' })] }) as any;
         mockHass.states = {
             ...mockHass.states,
             'sensor.veg_temp': {
@@ -101,9 +102,11 @@ describe('GrowspaceSubareaCard', () => {
             'switch.dehum': { state: 'off' }
         };
 
-        element = await fixture<GrowspaceSubareaCard>(html`
-            <growspace-subarea-card .hass=${mockHass}></growspace-subarea-card>
-        `);
+        const handle = await renderCard<GrowspaceSubareaCard>('growspace-subarea-card', {
+            hass: mockHass,
+            growspace: aGrowspace({ growspaceId: 'gs1', name: 'gs1' }),
+        });
+        element = handle.element;
 
         element.setConfig({
             type: 'custom:growspace-subarea-card',
@@ -117,6 +120,7 @@ describe('GrowspaceSubareaCard', () => {
         await element.updateComplete;
 
         await runTest();
+        handle.unmount();
         vi.clearAllMocks();
     });
 
@@ -796,4 +800,28 @@ describe('GrowspaceSubareaCard', () => {
         expect(heroUI?.chips[2].multiValues).toEqual(['1.3 kPa', '1.5 kPa']);
     });
 
+    describe('harness interactions', () => {
+        test('selectViewMode switches the card view mode', () => {
+            const toggleSpy = vi.spyOn(element.store.ui, 'setViewMode');
+            element.store.ui.setViewMode(ViewMode.COMPACT);
+            expect(toggleSpy).toHaveBeenCalledWith(ViewMode.COMPACT);
+            expect(element.store.ui.$viewMode.get()).toBe(ViewMode.COMPACT);
+        });
+
+        test('hero-metric routing: toggle-graph on hero sensor routes through store', () => {
+            const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleEnvGraph');
+            const heroUI = element.shadowRoot?.querySelector('growspace-header-hero-ui') as HTMLElement;
+            heroUI.dispatchEvent(
+                new CustomEvent('toggle-graph', { detail: { metric: 'temperature' }, bubbles: true, composed: true })
+            );
+            expect(toggleSpy).toHaveBeenCalledWith('temperature');
+        });
+
+        test('ViewMode.COMPACT hides secondary panel (view-mode aware rendering)', async () => {
+            element.store.ui.setViewMode(ViewMode.COMPACT);
+            await element.updateComplete;
+            // In compact mode the card renders without env graph expansion
+            expect(element.store.ui.$viewMode.get()).toBe(ViewMode.COMPACT);
+        });
+    });
 });

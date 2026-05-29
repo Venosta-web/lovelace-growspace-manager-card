@@ -2,6 +2,8 @@ import { vi } from 'vitest';
 import type { PlantEntity, PlantAttributes } from '../../src/features/plants/types';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import type { EnvSnapshot } from '../../src/slices/environment/index';
+import { createGrowspaceDevice } from '../../src/services/types';
+import type { GrowspaceDevice } from '../../src/services/types';
 
 // ---------------------------------------------------------------------------
 // aPlant
@@ -83,8 +85,8 @@ const defaultEnvSnapshot: EnvSnapshot = {
   hasLightSensor: false,
   dli: null,
   optimalConditions: { isOptimal: true, reasons: [] },
-  soilMoisture: null,
-  substrateTemperature: null,
+  soilMoisture: { avg: 65, perSensor: [65], entityIds: ['sensor.test_tent_soil_moisture'] },
+  substrateTemperature: { avg: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] },
   ph: null,
   feedEc: null,
   substrateEc: null,
@@ -146,6 +148,20 @@ export function aHass({ growspaces = [aGrowspace()] }: AHassOptions = {}) {
       },
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// aGrowspaceDevice
+// ---------------------------------------------------------------------------
+
+export function aGrowspaceDevice(
+  overrides: Partial<GrowspaceDevice> & { deviceId?: string; name?: string } = {}
+): GrowspaceDevice {
+  return createGrowspaceDevice({
+    deviceId: 'test_tent',
+    name: 'Test Tent',
+    ...overrides,
+  });
 }
 
 function buildGrowspaceStates(gs: GrowspaceSeed): Record<string, any> {

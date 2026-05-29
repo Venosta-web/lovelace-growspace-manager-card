@@ -46770,7 +46770,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}
-        @submit=${async (e) => {
+        @add-growspace-submit=${async (e) => {
             if (!this.store)
                 return;
             try {
