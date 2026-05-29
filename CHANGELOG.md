@@ -1,3 +1,10 @@
+# [1.1.0-next.11](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.10...v1.1.0-next.11) (2026-05-29)
+
+
+### Features
+
+* implement responsive inbox panel with dedicated mobile variant and updated tests ([74b0e6e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/74b0e6e92cfefba185949229fad873f5ffea0959))
+
 # [1.1.0-next.10](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.9...v1.1.0-next.10) (2026-05-29)
 
 
