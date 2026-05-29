@@ -723,3 +723,76 @@ describe('GmInboxPanel — setFilter clears selection', () => {
     expect(el.shadowRoot!.querySelector('.inbox-no-selection')).not.toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Slice 15 — Mark All Read
+// ---------------------------------------------------------------------------
+
+describe('GmInboxPanel — mark all read', () => {
+  it('renders a "Mark all read" button in .inbox-rail-footer', async () => {
+    aiAlerts$.set(new Map([['gs1', [ALERT_DANGER, ALERT_WARNING]]]));
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.inbox-rail-footer .mark-all-read-btn');
+    expect(btn).not.toBeNull();
+    expect(btn!.textContent?.trim()).toBe('Mark all read');
+  });
+
+  it('clicking "Mark all read" removes all unread dots from the filtered list', async () => {
+    aiAlerts$.set(new Map([['gs1', [ALERT_DANGER, ALERT_WARNING]]]));
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelectorAll('.inbox-unread-dot').length).toBe(2);
+
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.mark-all-read-btn')!.click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelectorAll('.inbox-unread-dot').length).toBe(0);
+  });
+
+  it('"Mark all read" button is disabled when all visible alerts are already read', async () => {
+    aiAlerts$.set(new Map([['gs1', [ALERT_DANGER]]]));
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.inbox-row')!.click();
+    await el.updateComplete;
+
+    const btn = el.shadowRoot!.querySelector<HTMLButtonElement>('.mark-all-read-btn');
+    expect(btn!.disabled).toBe(true);
+  });
+
+  it('"Mark all read" only marks alerts in the current filter as read', async () => {
+    aiAlerts$.set(new Map([['gs1', [ALERT_DANGER, ALERT_WARNING]]]));
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid="gs1"></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    // Switch to Action filter (danger only)
+    const pills = el.shadowRoot!.querySelectorAll<HTMLButtonElement>('.inbox-filter-pill');
+    pills[1].click();
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLButtonElement>('.mark-all-read-btn')!.click();
+    await el.updateComplete;
+
+    // Switch back to All — warning alert should still be unread
+    pills[0].click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelectorAll('.inbox-unread-dot').length).toBe(1);
+  });
+});

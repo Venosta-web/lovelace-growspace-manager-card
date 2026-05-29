@@ -84,6 +84,14 @@ export class GmInboxPanel extends LitElement {
     return all.length;
   }
 
+  private _markAllRead() {
+    this._readIds = new Set([...this._readIds, ...this._filtered.map((a) => a.id)]);
+  }
+
+  private get _hasUnread(): boolean {
+    return this._filtered.some((a) => !this._readIds.has(a.id));
+  }
+
   static styles = css`
     :host {
       display: flex;
@@ -232,6 +240,37 @@ export class GmInboxPanel extends LitElement {
       color: var(--secondary-text-color);
       margin-top: 4px;
       opacity: 0.7;
+    }
+
+    /* ── Rail footer ───────────────────────────────────────── */
+    .inbox-rail-footer {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .mark-all-read-btn {
+      background: none;
+      border: none;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 150ms, background 150ms;
+    }
+
+    .mark-all-read-btn:hover:not(:disabled) {
+      color: var(--primary-text-color, #fff);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .mark-all-read-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
     }
 
     /* ── AI unavailable banner ──────────────────────────────── */
@@ -718,6 +757,18 @@ export class GmInboxPanel extends LitElement {
     `;
   }
 
+  private _renderRailFooter() {
+    return html`
+      <div class="inbox-rail-footer">
+        <button
+          class="mark-all-read-btn"
+          ?disabled=${!this._hasUnread}
+          @click=${this._markAllRead}
+        >Mark all read</button>
+      </div>
+    `;
+  }
+
   render() {
     const aiAvailable = this._aiEnabled.value;
     return html`
@@ -726,6 +777,7 @@ export class GmInboxPanel extends LitElement {
           ${aiAvailable === false ? this._renderAiUnavailableBanner() : nothing}
           ${this._renderFilterStrip()}
           ${this._renderAlertList()}
+          ${this._renderRailFooter()}
         </div>
         ${this._renderDetailPane()}
       </div>

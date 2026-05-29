@@ -8417,7 +8417,7 @@ async function fetchConversationThreads(growspaceId) {
  * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
  */
 async function startConversation(growspaceId, text, imageEntityId) {
-    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    const userMessage = { role: 'user', text, timestamp: Math.floor(Date.now() / 1000) };
     try {
         const raw = await hassCall('growspace_manager/start_conversation', {
             growspace_id: growspaceId,
@@ -8456,7 +8456,7 @@ async function startConversation(growspaceId, text, imageEntityId) {
 async function sendMessage(threadId, text, imageEntityId) {
     const existingThread = conversationThreads$.get().get(threadId);
     const growspaceId = existingThread?.growspace_id ?? '';
-    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    const userMessage = { role: 'user', text, timestamp: Math.floor(Date.now() / 1000) };
     try {
         const raw = await hassCall('growspace_manager/send_message', {
             conversation_id: threadId,
@@ -21378,6 +21378,12 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             return all.filter((a) => a.severity === 'warning').length;
         return all.length;
     }
+    _markAllRead() {
+        this._readIds = new Set([...this._readIds, ...this._filtered.map((a) => a.id)]);
+    }
+    get _hasUnread() {
+        return this._filtered.some((a) => !this._readIds.has(a.id));
+    }
     _renderFilterStrip() {
         const filters = [
             { key: 'all', label: 'All' },
@@ -21550,6 +21556,17 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
       </div>
     `;
     }
+    _renderRailFooter() {
+        return x `
+      <div class="inbox-rail-footer">
+        <button
+          class="mark-all-read-btn"
+          ?disabled=${!this._hasUnread}
+          @click=${this._markAllRead}
+        >Mark all read</button>
+      </div>
+    `;
+    }
     render() {
         const aiAvailable = this._aiEnabled.value;
         return x `
@@ -21558,6 +21575,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
           ${aiAvailable === false ? this._renderAiUnavailableBanner() : E}
           ${this._renderFilterStrip()}
           ${this._renderAlertList()}
+          ${this._renderRailFooter()}
         </div>
         ${this._renderDetailPane()}
       </div>
@@ -21712,6 +21730,37 @@ GmInboxPanel.styles = i$6 `
       color: var(--secondary-text-color);
       margin-top: 4px;
       opacity: 0.7;
+    }
+
+    /* ── Rail footer ───────────────────────────────────────── */
+    .inbox-rail-footer {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .mark-all-read-btn {
+      background: none;
+      border: none;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 150ms, background 150ms;
+    }
+
+    .mark-all-read-btn:hover:not(:disabled) {
+      color: var(--primary-text-color, #fff);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .mark-all-read-btn:disabled {
+      opacity: 0.35;
+      cursor: default;
     }
 
     /* ── AI unavailable banner ──────────────────────────────── */
@@ -22034,7 +22083,7 @@ let Md3EntityInput = class Md3EntityInput extends i$3 {
         this.label = '';
         this.value = '';
         this.domains = [];
-        this._listId = `entity-list-${Math.random().toString(36).substr(2, 9)}`;
+        this._listId = `entity-list-${Math.random().toString(36).slice(2, 11)}`;
     }
     _getEntities() {
         if (!this.hass)
@@ -22102,7 +22151,7 @@ let Md3EntitiesInput = class Md3EntitiesInput extends i$3 {
         this.label = '';
         this.value = [];
         this.domains = [];
-        this._listId = `entities-list-${Math.random().toString(36).substr(2, 9)}`;
+        this._listId = `entities-list-${Math.random().toString(36).slice(2, 11)}`;
     }
     _getEntities() {
         if (!this.hass)
@@ -33430,7 +33479,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             }
         }
         // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
-        if (plant_id.includes('||')) {
+        if (plant_id && plant_id.includes('||')) {
             const [strain, phenotype] = plant_id.split('||', 2);
             return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
         }
@@ -126549,7 +126598,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.0.31-alpha.1"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.3"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
