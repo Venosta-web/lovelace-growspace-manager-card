@@ -9,10 +9,20 @@ import type { GrowspaceSeed } from '../fixtures';
 export interface RenderCardOptions {
   hass: Record<string, any>;
   growspace: GrowspaceSeed;
+  config?: Record<string, any>;
   atoms?: {
     gridInteraction?: GridInteractionState;
   };
 }
+
+export type BriefingTab = 'morning-briefing' | 'risk-watch' | 'going-well' | '7-day-forecast';
+
+const BRIEFING_TAB_INDICES: Record<BriefingTab, number> = {
+  'morning-briefing': 0,
+  'risk-watch': 1,
+  'going-well': 2,
+  '7-day-forecast': 3,
+};
 
 export interface CardHandle<T extends HTMLElement = HTMLElement> {
   element: T;
@@ -21,12 +31,14 @@ export interface CardHandle<T extends HTMLElement = HTMLElement> {
   expectEnvGraph(metric: string): void;
   clickPlantCell(row: number, col: number): void;
   selectViewMode(mode: ViewMode): void;
+  selectBriefingTab(tab: BriefingTab): void;
+  toggleLogbookView(): void;
   unmount(): void;
 }
 
 export async function renderCard<T extends HTMLElement = HTMLElement>(
   tag: string,
-  { hass, growspace, atoms }: RenderCardOptions
+  { hass, growspace, config, atoms }: RenderCardOptions
 ): Promise<CardHandle<T>> {
   if (atoms?.gridInteraction !== undefined) {
     gridInteraction$.set(atoms.gridInteraction);
@@ -35,7 +47,8 @@ export async function renderCard<T extends HTMLElement = HTMLElement>(
   setHass(hass as any);
 
   const element = await fixture<T>(`<${tag}></${tag}>`);
-  (element as any).setConfig({ type: `custom:${tag}`, default_growspace: growspace.growspaceId });
+  const cardConfig = config ?? { type: `custom:${tag}`, default_growspace: growspace.growspaceId };
+  (element as any).setConfig(cardConfig);
   (element as any).hass = hass;
   await (element as any).updateComplete;
 
@@ -70,6 +83,25 @@ export async function renderCard<T extends HTMLElement = HTMLElement>(
 
     selectViewMode(mode: ViewMode) {
       (element as any).store?.ui?.setViewMode(mode);
+    },
+
+    selectBriefingTab(tab: BriefingTab) {
+      const idx = BRIEFING_TAB_INDICES[tab];
+      const panel =
+        (element.shadowRoot?.querySelector('gm-briefing-panel') as any) ?? element;
+      const root = panel.shadowRoot ?? panel;
+      const buttons = root.querySelectorAll<HTMLButtonElement>('.v1-nav-item');
+      if (buttons[idx]) {
+        buttons[idx].click();
+      } else {
+        (panel as any)._activeTab = idx;
+        (panel as any).requestUpdate?.();
+      }
+    },
+
+    toggleLogbookView() {
+      const inactiveTab = element.shadowRoot?.querySelector<HTMLElement>('.tab:not(.active)');
+      inactiveTab?.click();
     },
 
     unmount() {

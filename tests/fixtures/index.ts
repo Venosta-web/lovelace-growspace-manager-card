@@ -3,7 +3,9 @@ import type { PlantEntity, PlantAttributes } from '../../src/features/plants/typ
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import type { EnvSnapshot } from '../../src/slices/environment/index';
 import { createGrowspaceDevice } from '../../src/services/types';
-import type { GrowspaceDevice } from '../../src/services/types';
+import type { GrowspaceDevice, IrrigationConfig } from '../../src/services/types';
+import type { ECRampPoint, ECRampCurve } from '../../src/schemas/api-schema';
+import type { Recommendation, AIBriefing } from '../../src/slices/ai-insight/schema';
 
 // ---------------------------------------------------------------------------
 // aPlant
@@ -87,14 +89,14 @@ const defaultEnvSnapshot: EnvSnapshot = {
   optimalConditions: { isOptimal: true, reasons: [] },
   soilMoisture: { avg: 65, perSensor: [65], entityIds: ['sensor.test_tent_soil_moisture'] },
   substrateTemperature: { avg: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] },
-  ph: null,
-  feedEc: null,
-  substrateEc: null,
-  runoffEc: null,
-  drainVolume: null,
-  irrigationFlow: null,
-  power: null,
-  energy: null,
+  ph: { avg: 6.2, perSensor: [6.2], entityIds: ['sensor.test_tent_ph'] },
+  feedEc: { avg: 1.8, perSensor: [1.8], entityIds: ['sensor.test_tent_feed_ec'] },
+  substrateEc: { avg: 2.1, perSensor: [2.1], entityIds: ['sensor.test_tent_substrate_ec'] },
+  runoffEc: { avg: 1.9, perSensor: [1.9], entityIds: ['sensor.test_tent_runoff_ec'] },
+  drainVolume: { avg: 0.5, perSensor: [0.5], entityIds: ['sensor.test_tent_drain_volume'] },
+  irrigationFlow: { avg: 2.3, perSensor: [2.3], entityIds: ['sensor.test_tent_irrigation_flow'] },
+  power: { avg: 420, perSensor: [420], entityIds: ['sensor.test_tent_power'] },
+  energy: { avg: 5.6, perSensor: [5.6], entityIds: ['sensor.test_tent_energy'] },
 };
 
 export function anEnvSnapshot(overrides: Partial<EnvSnapshot> = {}): EnvSnapshot {
@@ -162,6 +164,78 @@ export function aGrowspaceDevice(
     name: 'Test Tent',
     ...overrides,
   });
+}
+
+// ---------------------------------------------------------------------------
+// anECRampPoint
+// ---------------------------------------------------------------------------
+
+export function anECRampPoint(overrides: Partial<ECRampPoint> = {}): ECRampPoint {
+  return { day: 1, target_ec: 0.8, ...overrides };
+}
+
+// ---------------------------------------------------------------------------
+// anECRampCurve
+// ---------------------------------------------------------------------------
+
+export function anECRampCurve(overrides: Partial<ECRampCurve> = {}): ECRampCurve {
+  return {
+    id: 'test-curve',
+    name: 'Test Curve',
+    stage: 'flower',
+    points: [anECRampPoint(), anECRampPoint({ day: 14, target_ec: 1.4 })],
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// anIrrigationConfig
+// ---------------------------------------------------------------------------
+
+export function anIrrigationConfig(overrides: Partial<IrrigationConfig> = {}): IrrigationConfig {
+  return {
+    irrigationTimes: [],
+    drainTimes: [],
+    soilTriggerPercent: 30,
+    dailyVolumeCapLiters: 2,
+    maxCyclesPerDay: 4,
+    skipDuringDark: true,
+    pauseOnLowTank: true,
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// aRecommendation
+// ---------------------------------------------------------------------------
+
+export function aRecommendation(overrides: Partial<Recommendation> = {}): Recommendation {
+  return {
+    title: 'Check VPD',
+    description: 'VPD is slightly elevated — consider raising humidity.',
+    impact: 'medium',
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// anAIBriefing
+// ---------------------------------------------------------------------------
+
+export function anAIBriefing(overrides: Partial<AIBriefing> = {}): AIBriefing {
+  return {
+    generated_at: 1717000000,
+    summary_text: 'All systems nominal. Plants are progressing well.',
+    headline: 'Morning Briefing',
+    confidence: 0.9,
+    kpis: [],
+    recommendations: [
+      aRecommendation({ impact: 'high', title: 'Adjust pH', description: 'pH is outside target range.' }),
+      aRecommendation({ impact: 'low', title: 'Good airflow', description: 'Air circulation is excellent.' }),
+    ],
+    ai_available: true,
+    ...overrides,
+  };
 }
 
 function buildGrowspaceStates(gs: GrowspaceSeed): Record<string, any> {

@@ -1,7 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { aPlant, aGrowspace, anEnvSnapshot, aGrowspaceDevice } from '.';
+import {
+  aPlant,
+  aGrowspace,
+  anEnvSnapshot,
+  aGrowspaceDevice,
+  anECRampPoint,
+  anECRampCurve,
+  anIrrigationConfig,
+  aRecommendation,
+  anAIBriefing,
+} from '.';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import { EnvSnapshotSchema } from '../../src/slices/environment/schema';
+import { AIBriefingSchema, RecommendationSchema } from '../../src/slices/ai-insight/schema';
 
 describe('aPlant', () => {
   it('returns a PlantEntity with required fields', () => {
@@ -49,11 +60,16 @@ describe('anEnvSnapshot', () => {
     expect(snap.substrateTemperature).toEqual({ avg: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] });
   });
 
-  it('defaults irrigation monitoring fields to null', () => {
+  it('defaults irrigation monitoring group to realistic sensor readings', () => {
     const snap = anEnvSnapshot();
-    expect(snap.feedEc).toBeNull();
-    expect(snap.runoffEc).toBeNull();
-    expect(snap.energy).toBeNull();
+    expect(snap.feedEc?.avg).toBe(1.8);
+    expect(snap.runoffEc?.avg).toBe(1.9);
+    expect(snap.ph?.avg).toBe(6.2);
+    expect(snap.substrateEc?.avg).toBe(2.1);
+    expect(snap.drainVolume?.avg).toBe(0.5);
+    expect(snap.irrigationFlow?.avg).toBe(2.3);
+    expect(snap.power?.avg).toBe(420);
+    expect(snap.energy?.avg).toBe(5.6);
   });
 
   it('merges overrides and still passes schema', () => {
@@ -91,5 +107,81 @@ describe('aGrowspaceDevice', () => {
     const device = aGrowspaceDevice();
     expect(device.irrigationConfig).toBeDefined();
     expect(device.irrigationConfig.irrigationTimes).toEqual([]);
+  });
+});
+
+describe('anECRampPoint', () => {
+  it('returns a point with day and target_ec', () => {
+    const point = anECRampPoint();
+    expect(point.day).toBe(1);
+    expect(point.target_ec).toBe(0.8);
+  });
+
+  it('merges overrides', () => {
+    const point = anECRampPoint({ day: 7, target_ec: 1.2 });
+    expect(point.day).toBe(7);
+    expect(point.target_ec).toBe(1.2);
+  });
+});
+
+describe('anECRampCurve', () => {
+  it('returns a curve with id, name, stage and points', () => {
+    const curve = anECRampCurve();
+    expect(curve.id).toBe('test-curve');
+    expect(curve.name).toBe('Test Curve');
+    expect(curve.stage).toBe('flower');
+    expect(curve.points.length).toBeGreaterThan(0);
+  });
+
+  it('merges overrides without clobbering points', () => {
+    const pts = [anECRampPoint({ day: 3, target_ec: 1.0 })];
+    const curve = anECRampCurve({ id: 'custom', points: pts });
+    expect(curve.id).toBe('custom');
+    expect(curve.points).toHaveLength(1);
+  });
+});
+
+describe('anIrrigationConfig', () => {
+  it('returns a config with empty schedule lists by default', () => {
+    const cfg = anIrrigationConfig();
+    expect(cfg.irrigationTimes).toEqual([]);
+    expect(cfg.drainTimes).toEqual([]);
+  });
+
+  it('merges overrides', () => {
+    const cfg = anIrrigationConfig({ soilTriggerPercent: 25, maxCyclesPerDay: 6 });
+    expect(cfg.soilTriggerPercent).toBe(25);
+    expect(cfg.maxCyclesPerDay).toBe(6);
+    expect(cfg.irrigationTimes).toEqual([]);
+  });
+});
+
+describe('aRecommendation', () => {
+  it('passes RecommendationSchema validation', () => {
+    expect(() => RecommendationSchema.parse(aRecommendation())).not.toThrow();
+  });
+
+  it('supports filtering by impact', () => {
+    const high = aRecommendation({ impact: 'high' });
+    const low = aRecommendation({ impact: 'low' });
+    expect(high.impact).toBe('high');
+    expect(low.impact).toBe('low');
+  });
+});
+
+describe('anAIBriefing', () => {
+  it('passes AIBriefingSchema validation', () => {
+    expect(() => AIBriefingSchema.parse(anAIBriefing())).not.toThrow();
+  });
+
+  it('includes at least one high-impact recommendation by default', () => {
+    const briefing = anAIBriefing();
+    expect(briefing.recommendations.some((r) => r.impact === 'high')).toBe(true);
+  });
+
+  it('merges overrides', () => {
+    const briefing = anAIBriefing({ ai_available: false, summary_text: 'AI offline' });
+    expect(briefing.ai_available).toBe(false);
+    expect(briefing.summary_text).toBe('AI offline');
   });
 });

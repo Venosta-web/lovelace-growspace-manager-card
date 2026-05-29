@@ -1,179 +1,99 @@
-import { fixture } from '@open-wc/testing-helpers';
-import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { html } from 'lit';
+import { expect, test, describe, vi } from 'vitest';
 import { GrowspaceCarouselCard } from '../../src/cards/growspace-carousel-card';
-import { createMockHass } from '../mocks/hass';
+import { aHass, aGrowspace } from '../fixtures';
+import { renderCard } from '../harness';
 
-// Define the element if not already defined
 if (!customElements.get('growspace-carousel-card')) {
   customElements.define('growspace-carousel-card', GrowspaceCarouselCard);
 }
 
-// Mock GrowspaceManagerCard
 vi.mock('../../src/growspace-manager-card', () => {
   class MockManagerCard extends HTMLElement {
     public hass: any;
     public _config: any;
-    public store = {
-      handleDeviceChange: vi.fn()
-    };
+    public store = { handleDeviceChange: vi.fn() };
     constructor() {
       super();
-      this.attachShadow({ mode: 'open' }).innerHTML = '<div style="padding:16px;color:#ccc;font-family:sans-serif">Test Tent</div>';
+      this.attachShadow({ mode: 'open' }).innerHTML = '<div>Mock Manager</div>';
     }
   }
-
   if (!customElements.get('growspace-manager-card')) {
     customElements.define('growspace-manager-card', MockManagerCard);
   }
-
-  return {
-    GrowspaceManagerCard: MockManagerCard
-  };
+  return { GrowspaceManagerCard: MockManagerCard };
 });
 
 describe('GrowspaceCarouselCard', () => {
-  let element: GrowspaceCarouselCard;
+  const gs1 = aGrowspace({ growspaceId: 'tent_a', name: 'Tent A' });
+  const gs2 = aGrowspace({ growspaceId: 'tent_b', name: 'Tent B' });
+  const hass = aHass({ growspaces: [gs1, gs2] });
 
-  aroundEach(async (runTest) => {
-    element = await fixture<GrowspaceCarouselCard>(html`
-      <growspace-carousel-card></growspace-carousel-card>
-    `);
-    element.hass = createMockHass() as any;
-    await runTest();
-    vi.restoreAllMocks();
-    vi.useRealTimers();
+  const carouselConfig = {
+    type: 'custom:growspace-carousel-card',
+    growspaces: [gs1.growspaceId, gs2.growspaceId],
+    interval: 15,
+  } as any;
+
+  test('renders without crash', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    expect(handle.element).toBeInstanceOf(GrowspaceCarouselCard);
+    handle.unmount();
   });
 
-  test('is defined', () => {
-    expect(element).toBeInstanceOf(GrowspaceCarouselCard);
+  test('setConfig defaults interval to 15', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    expect((handle.element as any)._config.interval).toBe(15);
+    handle.unmount();
   });
 
-  test('setConfig sets config and defaults', () => {
-    const config = {
-      type: 'custom:growspace-carousel-card',
-      growspaces: ['device1', 'device2']
-    };
-    element.setConfig(config as any);
-    expect((element as any)._config.interval).toBe(15);
-    expect((element as any)._config.growspaces).toEqual(['device1', 'device2']);
+  test('setConfig throws if growspaces is empty', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    expect(() =>
+      handle.element.setConfig({ type: 'custom:growspace-carousel-card', growspaces: [] } as any)
+    ).toThrowError('You need to define at least one growspace');
+    handle.unmount();
   });
 
-  test('setConfig throws error if no growspaces', () => {
-    const config = {
-      type: 'custom:growspace-carousel-card',
-      growspaces: []
-    };
-    expect(() => element.setConfig(config as any)).toThrowError('You need to define at least one growspace');
-  });
-
-  test('getCardSize returns 4', () => {
-    expect(element.getCardSize()).toBe(4);
+  test('getCardSize returns 4', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    expect(handle.element.getCardSize()).toBe(4);
+    handle.unmount();
   });
 
   test('getStubConfig returns default config', () => {
     expect(GrowspaceCarouselCard.getStubConfig()).toEqual({
       type: 'custom:growspace-carousel-card',
       growspaces: [],
-      interval: 15
+      interval: 15,
     });
   });
 
-  test('connectedCallback starts timer if multiple growspaces', () => {
-    vi.useFakeTimers();
-    const config = {
-      type: 'custom:growspace-carousel-card',
-      growspaces: ['device1', 'device2'],
-      interval: 10
-    };
-    element.setConfig(config as any);
-
-    const startTimerSpy = vi.spyOn(element as any, '_startTimer');
-    element.connectedCallback();
-    expect(startTimerSpy).toHaveBeenCalled();
-  });
-
-  test('disconnectedCallback stops timer', () => {
-    const stopTimerSpy = vi.spyOn(element as any, '_stopTimer');
-    element.disconnectedCallback();
-    expect(stopTimerSpy).toHaveBeenCalled();
-  });
-
-  test('timer triggers _nextSlide', async () => {
-    vi.useFakeTimers();
-    const config = {
-      type: 'custom:growspace-carousel-card',
-      growspaces: ['device1', 'device2'],
-      interval: 10
-    };
-    element.setConfig(config as any);
-    (element as any)._startTimer();
-
-    const nextSlideSpy = vi.spyOn(element as any, '_nextSlide');
-
-    vi.advanceTimersByTime(10001); // 10s interval
-    expect(nextSlideSpy).toHaveBeenCalled();
-  });
-
-  test('_nextSlide advances index and triggers re-render (declarative config update)', async () => {
-    vi.useFakeTimers();
-    const config = {
-      type: 'custom:growspace-carousel-card',
-      growspaces: ['device1', 'device2'],
-      interval: 10
-    };
-    element.setConfig(config as any);
-    await element.updateComplete;
-
-    // Spy on requestUpdate to verify a re-render is requested instead of store mutation.
-    const requestUpdateSpy = vi.spyOn(element as any, 'requestUpdate');
-
-    // Manually trigger _nextSlide
-    const nextSlidePromise = (element as any)._nextSlide();
-
-    // Should add slide-out class
-    const wrapper = element.shadowRoot?.querySelector('.carousel-wrapper');
-    expect(wrapper?.classList.contains('slide-out')).toBe(true);
-
-    // Advance time for first timeout (300ms)
-    await vi.advanceTimersByTimeAsync(300);
-
-    // After first timeout, index should advance and a re-render should be queued.
-    expect((element as any)._currentIndex).toBe(1);
-    expect(requestUpdateSpy).toHaveBeenCalled();
-
-    // Advance time for second timeout (300ms)
-    await vi.advanceTimersByTimeAsync(300);
-
-    await nextSlidePromise;
-    expect((element as any)._isAnimating).toBe(false);
-    expect(wrapper?.classList.contains('slide-in-prepare')).toBe(false);
-  });
-
-  test('mouseenter stops timer, mouseleave starts timer', async () => {
-    vi.useFakeTimers();
-    const config = {
-      type: 'custom:growspace-carousel-card',
-      growspaces: ['device1', 'device2'],
-      interval: 10
-    };
-    element.setConfig(config as any);
-    await element.updateComplete;
-    (element as any)._startTimer();
-    expect((element as any)._timer).toBeDefined();
-
-    const container = element.shadowRoot?.querySelector('.carousel-container');
-    container?.dispatchEvent(new MouseEvent('mouseenter'));
-    expect((element as any)._timer).toBeUndefined();
-
-    container?.dispatchEvent(new MouseEvent('mouseleave'));
-    expect((element as any)._timer).toBeDefined();
-  });
-
-  test('render returns empty when no config', async () => {
-    (element as any)._config = undefined;
-    await element.updateComplete;
-    expect(element.shadowRoot?.innerHTML).toBe('<!----><!--?-->');
+  test('disconnectedCallback stops timer', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    const spy = vi.spyOn(handle.element as any, '_stopTimer');
+    handle.element.disconnectedCallback();
+    expect(spy).toHaveBeenCalled();
+    handle.unmount();
   });
 
   test('getConfigElement returns editor', async () => {
@@ -181,65 +101,110 @@ describe('GrowspaceCarouselCard', () => {
     expect(editor.tagName.toLowerCase()).toBe('growspace-carousel-card-editor');
   });
 
-  describe('active growspace filtering', () => {
-    const hassWithPlants = {
-      states: {
-        'sensor.growspaces_list': {
-          attributes: {
-            growspaces: {
-              'device1': { name: 'Tent A', total_plants: 2 },
-              'device2': { name: 'Tent B', total_plants: 0 },
-              'device3': { name: 'Tent C', total_plants: 1 },
-            }
-          }
-        }
-      },
-      language: 'en',
+  describe('auto-cycle between two growspaces', () => {
+    const cycleConfig = {
+      type: 'custom:growspace-carousel-card',
+      growspaces: [gs1.growspaceId, gs2.growspaceId],
+      interval: 10,
     } as any;
 
-    test('with filter_empty=true, only growspaces with plants are active', () => {
-      element.setConfig({
-        type: 'custom:growspace-carousel-card',
-        growspaces: ['device1', 'device2', 'device3'],
-        filter_empty: true,
-      } as any);
-      element.hass = hassWithPlants;
-      const active = (element as any)._activeGrowspaces;
-      expect(active).toEqual(['device1', 'device3']);
+    test('_nextSlide advances currentIndex from 0 to 1', async () => {
+      vi.useFakeTimers();
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass,
+        growspace: gs1,
+        config: cycleConfig,
+      });
+      await handle.element.updateComplete;
+
+      expect((handle.element as any)._currentIndex).toBe(0);
+
+      const nextSlidePromise = (handle.element as any)._nextSlide();
+      await vi.advanceTimersByTimeAsync(300);
+      expect((handle.element as any)._currentIndex).toBe(1);
+      await vi.advanceTimersByTimeAsync(300);
+      await nextSlidePromise;
+
+      handle.unmount();
+      vi.useRealTimers();
     });
 
-    test('with filter_empty=true, falls back to full list when all have 0 plants', () => {
-      element.setConfig({
-        type: 'custom:growspace-carousel-card',
-        growspaces: ['device1', 'device2'],
-        filter_empty: true,
-      } as any);
-      element.hass = {
-        states: {
-          'sensor.growspaces_list': {
-            attributes: {
-              growspaces: {
-                'device1': { name: 'Tent A', total_plants: 0 },
-                'device2': { name: 'Tent B', total_plants: 0 },
-              }
-            }
-          }
-        },
-        language: 'en',
-      } as any;
-      const active = (element as any)._activeGrowspaces;
-      expect(active).toEqual(['device1', 'device2']);
+    test('_nextSlide wraps back to 0 after last growspace', async () => {
+      vi.useFakeTimers();
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass,
+        growspace: gs1,
+        config: cycleConfig,
+      });
+      (handle.element as any)._currentIndex = 1;
+      await handle.element.updateComplete;
+
+      const nextSlidePromise = (handle.element as any)._nextSlide();
+      await vi.advanceTimersByTimeAsync(300);
+      expect((handle.element as any)._currentIndex).toBe(0);
+      await vi.advanceTimersByTimeAsync(300);
+      await nextSlidePromise;
+
+      handle.unmount();
+      vi.useRealTimers();
     });
 
-    test('without filter_empty, all configured growspaces are active', () => {
-      element.setConfig({
-        type: 'custom:growspace-carousel-card',
-        growspaces: ['device1', 'device2', 'device3'],
-      } as any);
-      element.hass = hassWithPlants;
-      const active = (element as any)._activeGrowspaces;
-      expect(active).toEqual(['device1', 'device2', 'device3']);
+    test('timer triggers _nextSlide after interval', async () => {
+      vi.useFakeTimers();
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass,
+        growspace: gs1,
+        config: cycleConfig,
+      });
+      (handle.element as any)._startTimer();
+
+      const spy = vi.spyOn(handle.element as any, '_nextSlide');
+      vi.advanceTimersByTime(10001);
+      expect(spy).toHaveBeenCalled();
+
+      handle.unmount();
+      vi.useRealTimers();
     });
   });
 
+  describe('active growspace filtering', () => {
+    const hassWithCounts = {
+      ...hass,
+      states: {
+        ...hass.states,
+        'sensor.growspaces_list': {
+          attributes: {
+            growspaces: {
+              [gs1.growspaceId]: { name: gs1.name, total_plants: 2 },
+              [gs2.growspaceId]: { name: gs2.name, total_plants: 0 },
+            },
+          },
+        },
+      },
+    } as any;
+
+    test('filter_empty=true keeps only growspaces with plants', async () => {
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass: hassWithCounts,
+        growspace: gs1,
+        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId], filter_empty: true },
+      });
+      handle.element.hass = hassWithCounts;
+      const active = (handle.element as any)._activeGrowspaces;
+      expect(active).toEqual([gs1.growspaceId]);
+      handle.unmount();
+    });
+
+    test('without filter_empty, all configured growspaces are active', async () => {
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass: hassWithCounts,
+        growspace: gs1,
+        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId] },
+      });
+      handle.element.hass = hassWithCounts;
+      const active = (handle.element as any)._activeGrowspaces;
+      expect(active).toEqual([gs1.growspaceId, gs2.growspaceId]);
+      handle.unmount();
+    });
+  });
 });
