@@ -280,7 +280,7 @@ export async function sendMessage(
 ): Promise<void> {
   const existingThread = conversationThreads$.get().get(threadId);
   const growspaceId = existingThread?.growspace_id ?? '';
-  const userMessage = { role: 'user' as const, text, timestamp: Date.now() };
+  const userMessage = { role: 'user' as const, text, timestamp: Math.floor(Date.now() / 1000) };
   try {
     const raw = await hassCall(
       'growspace_manager/send_message',
