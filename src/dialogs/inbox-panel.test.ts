@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { aiAlerts$, aiEnabled$ } from '../slices/ai-insight';
 import type { TriageAlert } from '../slices/ai-insight/schema';
+import { aGrowspace } from '../../tests/fixtures';
 /* eslint-disable import/no-duplicates */
 import './inbox-panel';
 import { GmInboxPanel } from './inbox-panel';
@@ -543,7 +544,7 @@ describe('GmInboxPanel — detail pane suggested actions', () => {
     expect(rows[0].textContent).toContain('Lower temp to 24°C');
   });
 
-  it('Apply button calls applyAction with the action payload', async () => {
+  it('Apply button enters confirming state, then calls applyAction on confirm', async () => {
     aiAlerts$.set(new Map([['gs1', [ALERT_DANGER]]]));
 
     const el = await fixture<GmInboxPanel>(html`
@@ -554,6 +555,11 @@ describe('GmInboxPanel — detail pane suggested actions', () => {
     await el.updateComplete;
 
     el.shadowRoot!.querySelector<HTMLElement>('.apply-btn')!.click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.confirm-overlay')).not.toBeNull();
+
+    el.shadowRoot!.querySelector<HTMLElement>('.confirm-apply-btn')!.click();
     await new Promise((r) => setTimeout(r, 20));
 
     expect(aiInsightMod.applyAction).toHaveBeenCalledWith(ALERT_DANGER.suggested_actions![0]);
@@ -794,5 +800,24 @@ describe('GmInboxPanel — mark all read', () => {
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelectorAll('.inbox-unread-dot').length).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 16 — Fixture Builder smoke test
+// ---------------------------------------------------------------------------
+
+describe('GmInboxPanel — render-once smoke test (Fixture Builder)', () => {
+  it('renders without crashing when given a growspace from the Fixture Builder', async () => {
+    const gs = aGrowspace({ growspaceId: 'smoke-tent', name: 'Smoke Tent' });
+
+    const el = await fixture<GmInboxPanel>(html`
+      <gm-inbox-panel growspaceid=${gs.growspaceId} growspacename=${gs.name}></gm-inbox-panel>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.inbox-shell')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.inbox-rail')).not.toBeNull();
   });
 });

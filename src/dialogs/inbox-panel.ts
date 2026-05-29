@@ -4,9 +4,13 @@ import { repeat } from 'lit/directives/repeat.js';
 import { mdiInbox } from '@mdi/js';
 import { StoreController } from '@nanostores/lit';
 import { aiAlerts$, aiEnabled$, fetchAlerts, resolveAlert, applyAction } from '../slices/ai-insight';
-import type { TriageAlert, SuggestedAction } from '../slices/ai-insight/schema';
-
-type InboxFilter = 'all' | 'action' | 'watch';
+import type { TriageAlert } from '../slices/ai-insight/schema';
+import {
+  createInitialSM,
+  transition,
+  type InboxSM,
+  type InboxFilter,
+} from './inbox-panel-sm';
 
 function formatRelative(ts: number): string {
   const diff = Math.floor((Date.now() - ts * 1000) / 1000);
@@ -21,11 +25,7 @@ export class GmInboxPanel extends LitElement {
   @property({ type: String }) growspaceid = '';
   @property({ type: String }) growspacename = '';
 
-  @state() private _filter: InboxFilter = 'all';
-  @state() private _selectedId: string | null = null;
-  @state() private _readIds = new Set<string>();
-  @state() private _showNoteInput = false;
-  @state() private _noteText = '';
+  @state() private _sm: InboxSM = createInitialSM();
 
   private _alerts = new StoreController(this, aiAlerts$);
   private _aiEnabled = new StoreController(this, aiEnabled$);
@@ -40,41 +40,17 @@ export class GmInboxPanel extends LitElement {
     return Array.isArray(raw) ? raw : [];
   }
 
-  private get _filtered(): TriageAlert[] {
+  private _filtered(): TriageAlert[] {
     const all = this._alertsForGs().filter((a) => !a.resolved);
-    if (this._filter === 'action') return all.filter((a) => a.severity === 'danger');
-    if (this._filter === 'watch') return all.filter((a) => a.severity === 'warning');
+    if (this._sm.activeFilter === 'action') return all.filter((a) => a.severity === 'danger');
+    if (this._sm.activeFilter === 'watch') return all.filter((a) => a.severity === 'warning');
     return all;
   }
 
-  private get _selected(): TriageAlert | undefined {
-    return this._selectedId
-      ? this._alertsForGs().find((a) => a.id === this._selectedId)
+  private _selected(): TriageAlert | undefined {
+    return this._sm.selectedId
+      ? this._alertsForGs().find((a) => a.id === this._sm.selectedId)
       : undefined;
-  }
-
-  private _selectAlert(id: string) {
-    this._selectedId = id;
-    this._readIds = new Set([...this._readIds, id]);
-    this._showNoteInput = false;
-    this._noteText = '';
-  }
-
-  private _setFilter(f: InboxFilter) {
-    this._filter = f;
-    this._selectedId = null;
-    this._showNoteInput = false;
-  }
-
-  private async _resolve(alert: TriageAlert, note?: string) {
-    await resolveAlert(alert.id, note);
-    this._selectedId = null;
-    this._showNoteInput = false;
-    this._noteText = '';
-  }
-
-  private async _applyAction(action: SuggestedAction) {
-    await applyAction(action);
   }
 
   private _countFor(f: InboxFilter): number {
@@ -84,12 +60,35 @@ export class GmInboxPanel extends LitElement {
     return all.length;
   }
 
-  private _markAllRead() {
-    this._readIds = new Set([...this._readIds, ...this._filtered.map((a) => a.id)]);
+  private get _hasUnread(): boolean {
+    return this._filtered().some((a) => !this._sm.readIds.has(a.id));
   }
 
-  private get _hasUnread(): boolean {
-    return this._filtered.some((a) => !this._readIds.has(a.id));
+  private async _handleResolve() {
+    const note = this._sm.status.kind === 'adding-note' ? this._sm.status.text : undefined;
+    const alertId = this._sm.selectedId;
+    if (!alertId) return;
+    this._sm = transition(this._sm, { type: 'ResolveRequested' });
+    try {
+      await resolveAlert(alertId, note);
+      this._sm = transition(this._sm, { type: 'SaveResolved' });
+      this._sm = transition(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
+    } catch (e) {
+      this._sm = transition(this._sm, { type: 'SaveFailed', message: String(e) });
+    }
+  }
+
+  private async _handleApplyConfirmed() {
+    if (this._sm.status.kind !== 'confirming') return;
+    const action = this._sm.status.action;
+    this._sm = transition(this._sm, { type: 'ActionApplyConfirmed' });
+    try {
+      await applyAction(action);
+      this._sm = transition(this._sm, { type: 'SaveResolved' });
+      this._sm = transition(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
+    } catch (e) {
+      this._sm = transition(this._sm, { type: 'SaveFailed', message: String(e) });
+    }
   }
 
   static styles = css`
@@ -492,6 +491,49 @@ export class GmInboxPanel extends LitElement {
       background: rgba(76, 175, 80, 0.25);
     }
 
+    /* ── Confirm overlay ────────────────────────────────────── */
+    .confirm-overlay {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .confirm-overlay-label {
+      font-size: 0.85rem;
+      color: var(--primary-text-color, #fff);
+    }
+
+    .confirm-overlay-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .confirm-cancel-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+      color: var(--primary-text-color, #fff);
+    }
+
+    .confirm-apply-btn {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success-color, #4caf50);
+      border: 1px solid var(--success-color, #4caf50);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+    }
+
     /* ── Action ribbon ──────────────────────────────────────── */
     .action-ribbon {
       display: flex;
@@ -561,6 +603,30 @@ export class GmInboxPanel extends LitElement {
       font-family: inherit;
       font-size: 0.82rem;
     }
+
+    /* ── Error banner ───────────────────────────────────────── */
+    .error-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: rgba(244, 67, 54, 0.1);
+      border: 1px solid rgba(244, 67, 54, 0.3);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: var(--error-color, #f44336);
+    }
+
+    .error-dismiss-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+      padding: 2px 6px;
+    }
   `;
 
   private _renderFilterStrip() {
@@ -576,8 +642,8 @@ export class GmInboxPanel extends LitElement {
           ({ key, label }) => html`
             <button
               class="inbox-filter-pill"
-              aria-pressed=${this._filter === key ? 'true' : 'false'}
-              @click=${() => this._setFilter(key)}
+              aria-pressed=${this._sm.activeFilter === key ? 'true' : 'false'}
+              @click=${() => { this._sm = transition(this._sm, { type: 'FilterSelected', filter: key }); }}
             >
               ${label}
               <span class="pill-count">${this._countFor(key)}</span>
@@ -589,7 +655,7 @@ export class GmInboxPanel extends LitElement {
   }
 
   private _renderAlertList() {
-    const items = this._filtered;
+    const items = this._filtered();
 
     if (items.length === 0) {
       return html`
@@ -608,12 +674,12 @@ export class GmInboxPanel extends LitElement {
           items,
           (a) => a.id,
           (a) => {
-            const isRead = this._readIds.has(a.id);
+            const isRead = this._sm.readIds.has(a.id);
             return html`
               <div
                 class="inbox-row"
-                aria-selected=${this._selectedId === a.id ? 'true' : 'false'}
-                @click=${() => this._selectAlert(a.id)}
+                aria-selected=${this._sm.selectedId === a.id ? 'true' : 'false'}
+                @click=${() => { this._sm = transition(this._sm, { type: 'AlertSelected', id: a.id }); }}
               >
                 <div
                   class="inbox-severity-bar"
@@ -638,7 +704,8 @@ export class GmInboxPanel extends LitElement {
   }
 
   private _renderDetailPane() {
-    const alert = this._selected;
+    const { status } = this._sm;
+    const alert = this._selected();
 
     if (!alert) {
       return html`<div class="inbox-no-selection">Select an alert to view details</div>`;
@@ -658,6 +725,19 @@ export class GmInboxPanel extends LitElement {
             <span class="inbox-detail-time">${formatRelative(alert.timestamp)}</span>
           </div>
         </div>
+
+        <!-- Error banner -->
+        ${status.kind === 'error'
+          ? html`
+              <div class="error-banner">
+                ${status.message}
+                <button
+                  class="error-dismiss-btn"
+                  @click=${() => { this._sm = transition(this._sm, { type: 'ErrorDismissed' }); }}
+                >Dismiss</button>
+              </div>
+            `
+          : nothing}
 
         <!-- Reasoning -->
         <div class="reasoning">
@@ -705,11 +785,30 @@ export class GmInboxPanel extends LitElement {
                     <div class="reco-row-body">${action.description}</div>
                     <button
                       class="apply-btn"
-                      @click=${() => this._applyAction(action)}
+                      @click=${() => { this._sm = transition(this._sm, { type: 'ActionApplyRequested', action }); }}
                     >Apply</button>
                   </div>
                 `
               )}
+            `
+          : nothing}
+
+        <!-- Confirm overlay (suggested action) -->
+        ${status.kind === 'confirming'
+          ? html`
+              <div class="confirm-overlay">
+                <div class="confirm-overlay-label">Apply: ${status.action.description}?</div>
+                <div class="confirm-overlay-actions">
+                  <button
+                    class="confirm-cancel-btn"
+                    @click=${() => { this._sm = transition(this._sm, { type: 'ActionApplyCancelled' }); }}
+                  >Cancel</button>
+                  <button
+                    class="confirm-apply-btn"
+                    @click=${() => this._handleApplyConfirmed()}
+                  >Confirm</button>
+                </div>
+              </div>
             `
           : nothing}
 
@@ -718,30 +817,35 @@ export class GmInboxPanel extends LitElement {
           <span class="action-ribbon-hint">
             Resolved manually? Tell Grow Master what you did.
           </span>
-          ${this._showNoteInput
+          ${status.kind === 'adding-note'
             ? html`
                 <div class="note-area">
                   <input
                     class="note-input"
                     type="text"
                     placeholder="Add a note…"
-                    .value=${this._noteText}
-                    @input=${(e: Event) => { this._noteText = (e.target as HTMLInputElement).value; }}
+                    .value=${status.text}
+                    @input=${(e: Event) => {
+                      this._sm = transition(this._sm, {
+                        type: 'NoteChanged',
+                        text: (e.target as HTMLInputElement).value,
+                      });
+                    }}
                   />
                   <button
                     class="note-submit-btn"
-                    @click=${() => this._resolve(alert, this._noteText)}
+                    @click=${() => this._handleResolve()}
                   >Submit</button>
                 </div>
               `
             : html`
                 <button
                   class="add-note-btn"
-                  @click=${() => { this._showNoteInput = true; }}
+                  @click=${() => { this._sm = transition(this._sm, { type: 'AddNoteOpened' }); }}
                 >Add note</button>
                 <button
                   class="resolve-btn"
-                  @click=${() => this._resolve(alert)}
+                  @click=${() => this._handleResolve()}
                 >Resolve</button>
               `}
         </div>
@@ -763,7 +867,12 @@ export class GmInboxPanel extends LitElement {
         <button
           class="mark-all-read-btn"
           ?disabled=${!this._hasUnread}
-          @click=${this._markAllRead}
+          @click=${() => {
+            this._sm = transition(this._sm, {
+              type: 'MarkAllRead',
+              ids: this._filtered().map((a) => a.id),
+            });
+          }}
         >Mark all read</button>
       </div>
     `;
