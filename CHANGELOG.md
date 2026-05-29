@@ -1,3 +1,31 @@
+# [1.1.0-next.3](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.2...v1.1.0-next.3) (2026-05-29)
+
+
+### Bug Fixes
+
+* handle rate_limited errors in AI services by displaying a UI toast instead of throwing exceptions ([fda3404](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fda34044a994f688290cbdef40a2d6fbbe4f1ca0))
+* make description field nullable in AI insight schema ([eaaf64a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/eaaf64a93335839f0a99ca888ffe6da6fc48b91b))
+* prevent redundant controller initialization in GrowspaceDialogHost with an idempotency guard and added unit tests. ([083f3cb](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/083f3cb3ef9f32a64d02481bb1e814a821de1680))
+* set min-height to 90vh in grow-master-dialog to prevent layout collapse ([9e0cb40](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9e0cb40340797cb95765ec0a7b778e6775f2b61b))
+* update ec_target_ranges property keys to match API schema in growspace-adapter unit tests ([e6a8eed](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e6a8eed403b5f64db3f846fdb132449259fd5679))
+
+
+### Features
+
+* add image attachment support, error handling, and message bubble thumbnails to chat panel ([fc8cb5e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fc8cb5e80b5eeed9a3efa2a0a2c3bd816844fe9a))
+* add new conversation button to chat panel with reset functionality ([2409da3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2409da3605ffed9949106c1d28810154e1737105))
+* add refresh briefing action and pass growspace identifiers to dialog host ([8422994](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/84229940e66e0f94baf30ce18b0df5aecf664d42))
+* add settings panel and navigation to grow-master-dialog with configuration save support ([b5ddbb2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b5ddbb26b7b8eee21f503d61dd5a1a803674c4ac))
+* add strain import dialog and update related unit tests ([483a2d9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/483a2d9ff0add45685135a73af77860a1d6c49b4))
+* add UI handling for unconfigured AI agent across chat, briefing, and inbox panels ([5b740b1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5b740b129886d54aecbd26fdefe70205477ffdc7))
+* implement AI agent configuration flow with entity picker in briefing and chat panels ([971249d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/971249d8c830b0aa7bc5e35b45211c84de7dd9f5))
+* implement AI chat panel with mode-switching UI and add cross-reference support for pollination donors ([399a363](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/399a363e9d8b0b5eeb1812fdba3b31959c88dea1))
+* implement conversation thread pinning and automatic eviction for AI insight chats ([85a0515](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/85a05158c6d480562eb63c7337f9668fb24c2bcb))
+* implement conversation, alert management, and briefing functionality in AI insight slice ([58fec35](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/58fec356846036228a5f3c83cc391cc4b94ce1f5))
+* implement inbox and briefing panels with associated test coverage and UI components ([b339578](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b339578281f8c67e7aefc2d9c6ee113a87ab1b3d))
+* implement tab navigation logic and add unit tests for briefing panel ([a10335f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a10335f3ac85a89d56bd4b3eef439a519fb89211))
+* implement three-mode AI shell with chat, briefing, and inbox support in GrowMasterDialog ([67a59b8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/67a59b881791088e3bffa80ee5cd3bbfe273fd18))
+
 # [1.1.0-next.2](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.1...v1.1.0-next.2) (2026-05-27)
 
 
