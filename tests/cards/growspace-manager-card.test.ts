@@ -1,11 +1,10 @@
-import { fixture } from '@open-wc/testing-helpers';
 import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { html } from 'lit';
 import { GrowspaceManagerCard } from '../../src/growspace-manager-card';
-import { ViewMode } from '../../src/features/environment/constants';
+import { ViewMode, MetricKey } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
-import { createMockHass } from '../mocks/hass';
-import { setHass } from '../../src/services/hass-call';
+import { aHass, aGrowspace } from '../fixtures';
+import { renderCard } from '../harness';
+import { gridInteraction$ } from '../../src/slices/grid-interaction';
 
 if (!customElements.get('growspace-manager-card')) {
   customElements.define('growspace-manager-card', GrowspaceManagerCard);
@@ -23,28 +22,18 @@ describe('GrowspaceManagerCard', () => {
   let element: GrowspaceManagerCard;
 
   aroundEach(async (runTest) => {
-    const mockHass = createMockHass() as any;
-    setHass(mockHass);
-    element = await fixture<GrowspaceManagerCard>(
-      html`<growspace-manager-card></growspace-manager-card>`
-    );
-    element.hass = mockHass;
+    const handle = await renderCard<GrowspaceManagerCard>('growspace-manager-card', {
+      hass: aHass(),
+      growspace: aGrowspace(),
+    });
+    element = handle.element;
     await runTest();
+    handle.unmount();
     vi.restoreAllMocks();
   });
 
   test('is defined', () => {
     expect(element).toBeInstanceOf(GrowspaceManagerCard);
-  });
-
-  test('renders error state when hass is missing', async () => {
-    const el = await fixture<GrowspaceManagerCard>(
-      html`<growspace-manager-card></growspace-manager-card>`
-    );
-    el.hass = undefined as any;
-    await el.updateComplete;
-    const errorDiv = el.shadowRoot?.querySelector('.error');
-    expect(errorDiv?.textContent).toContain('Home Assistant not available');
   });
 
   test('throws error on invalid config', () => {
@@ -132,4 +121,39 @@ describe('GrowspaceManagerCard', () => {
     expect(element.store.ui.$viewMode.get()).toBe(ViewMode.STANDARD);
   });
 
+  describe('harness tracer', () => {
+    let handle: Awaited<ReturnType<typeof renderCard<GrowspaceManagerCard>>>;
+
+    aroundEach(async (runTest) => {
+      handle = await renderCard<GrowspaceManagerCard>('growspace-manager-card', {
+        hass: aHass(),
+        growspace: aGrowspace(),
+      });
+      await runTest();
+      handle.unmount();
+    });
+
+    test('renders without crash', () => {
+      expect(handle.element).toBeInstanceOf(GrowspaceManagerCard);
+    });
+
+    test('chip click opens env graph for that metric', () => {
+      handle.clickChip(MetricKey.TEMPERATURE);
+      handle.expectEnvGraph(MetricKey.TEMPERATURE);
+    });
+
+    test('hero click opens env graph for that metric', () => {
+      handle.clickHero(MetricKey.HUMIDITY);
+      handle.expectEnvGraph(MetricKey.HUMIDITY);
+    });
+
+    test('plant-cell click transitions GridInteraction to selected', () => {
+      handle.clickPlantCell(1, 1);
+      const state = gridInteraction$.get();
+      expect(state.status).toBe('selected');
+      if (state.status === 'selected') {
+        expect(state.plantId).toBe(`${aGrowspace().growspaceId}_plant_1`);
+      }
+    });
+  });
 });

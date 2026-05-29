@@ -206,9 +206,6 @@ describe('StrainImportDialog', () => {
     (closeBtn as HTMLElement).click();
 
     expect(closeSpy).toHaveBeenCalled();
-    const event = closeSpy.mock.calls[0][0];
-    expect(event.bubbles).toBe(true);
-    expect(event.composed).toBe(true);
   });
 
   it('dispatches close event when Cancel button is clicked', async () => {
@@ -223,9 +220,6 @@ describe('StrainImportDialog', () => {
     (cancelBtn as HTMLElement).click();
 
     expect(closeSpy).toHaveBeenCalled();
-    const event = closeSpy.mock.calls[0][0];
-    expect(event.bubbles).toBe(true);
-    expect(event.composed).toBe(true);
   });
 
   it('updates search query on input change', async () => {

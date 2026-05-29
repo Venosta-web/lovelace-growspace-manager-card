@@ -1,6 +1,24 @@
-import { BaseAPI } from '../base-api';
+import { BaseAPI, WSError } from '../base-api';
 import { GrowAdviceResponse } from '../../types';
 import { DOMAIN, SERVICES } from '../../constants';
+
+function toWSError(err: unknown): WSError {
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    'message' in err &&
+    typeof (err as Record<string, unknown>).code === 'string'
+  ) {
+    const { code, message } = err as { code: string; message: string };
+    const knownCodes = ['coordinator_not_ready', 'entity_not_found', 'validation_failed', 'internal_error', 'rate_limited'];
+    return new WSError(
+      (knownCodes.includes(code) ? code : 'internal_error') as WSError['code'],
+      message
+    );
+  }
+  return new WSError('internal_error', err instanceof Error ? err.message : String(err));
+}
 
 /**
  * API service for AI assistant operations.
@@ -28,8 +46,7 @@ export class AIAPI extends BaseAPI {
       });
     } catch (err: unknown) {
       console.error('[AIAPI:askGrowAdvice] Error:', err);
-      const message = err instanceof Error ? err.message : 'Failed to get advice';
-      throw new Error(message);
+      throw toWSError(err);
     }
   }
 
@@ -48,7 +65,7 @@ export class AIAPI extends BaseAPI {
       });
     } catch (err) {
       console.error('[AIAPI:analyzeAllGrowspaces] Error:', err);
-      throw err;
+      throw toWSError(err);
     }
   }
 

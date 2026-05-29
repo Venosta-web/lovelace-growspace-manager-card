@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { GrowspaceUIStore } from './ui-store';
+import { showToast, notification$ } from '../../slices/ui';
 
 describe('GrowspaceUIStore.$cardViewState includes selectedPlants', () => {
   let store: GrowspaceUIStore;
@@ -48,5 +49,31 @@ describe('GrowspaceUIStore.$cardViewState includes selectedPlants', () => {
   it('cardViewState.overlayMode updates when $gridOverlayMode changes', () => {
     store.setGridOverlayMode('vpd' as any);
     expect(store.$cardViewState.get().overlayMode).toBe('vpd');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Shared notification atom — slices/ui.showToast must reach the toast container
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceUIStore.$notification is the same atom as slices/ui notification$', () => {
+  let store: GrowspaceUIStore;
+
+  beforeEach(() => {
+    store = new GrowspaceUIStore();
+    notification$.set(null);
+    store.$notification.set(null);
+  });
+
+  it('store.$notification and notification$ are the same atom — slice showToast is visible to the toast container', () => {
+    showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+    expect(store.$notification.get()).not.toBeNull();
+    expect(store.$notification.get()?.message).toContain('rate limit');
+  });
+
+  it('store.showToast updates notification$ that the slice can also read', () => {
+    store.showToast('Test toast', 'success');
+    expect(notification$.get()).not.toBeNull();
+    expect(notification$.get()?.message).toBe('Test toast');
   });
 });

@@ -150,6 +150,7 @@ var mdiGauge = "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10
 var mdiHairDryer = "M22 9A4.32 4.32 0 0 1 19.78 8.45A3.4 3.4 0 0 0 18 8V7A4.32 4.32 0 0 1 20.22 7.55A3.4 3.4 0 0 0 22 8M22 6A3.4 3.4 0 0 1 20.22 5.55A4.32 4.32 0 0 0 18 5V6A3.4 3.4 0 0 1 19.78 6.45A4.32 4.32 0 0 0 22 7M22 10A3.4 3.4 0 0 1 20.22 9.55A4.32 4.32 0 0 0 18 9V10A3.4 3.4 0 0 1 19.78 10.45A4.32 4.32 0 0 0 22 11M10 12.73A70.39 70.39 0 0 0 17 11V4S10.5 2 7.5 2A5.5 5.5 0 0 0 6.12 12.82L7 19H8A3 3 0 0 0 9.46 21.33A3.15 3.15 0 0 1 11 24H12A4.12 4.12 0 0 0 10.09 20.55C9.39 20 9 19.63 9 19H10M7.5 10A2.5 2.5 0 1 1 10 7.5A2.5 2.5 0 0 1 7.5 10Z";
 var mdiImage = "M8.5,13.5L11,16.5L14.5,12L19,18H5M21,19V5C21,3.89 20.1,3 19,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19Z";
 var mdiImageMultiple = "M22,16V4A2,2 0 0,0 20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16M11,12L13.03,14.71L16,11L20,16H8M2,6V20A2,2 0 0,0 4,22H18V20H4V6";
+var mdiInbox = "M19,15H15A3,3 0 0,1 12,18A3,3 0 0,1 9,15H5V5H19M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z";
 var mdiInformation = "M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";
 var mdiInformationOutline = "M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z";
 var mdiLeaf = "M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z";
@@ -159,11 +160,17 @@ var mdiLightningBolt = "M11 15H6L13 1V9H18L11 23V15Z";
 var mdiLink = "M3.9,12C3.9,10.29 5.29,8.9 7,8.9H11V7H7A5,5 0 0,0 2,12A5,5 0 0,0 7,17H11V15.1H7C5.29,15.1 3.9,13.71 3.9,12M8,13H16V11H8V13M17,7H13V8.9H17C18.71,8.9 20.1,10.29 20.1,12C20.1,13.71 18.71,15.1 17,15.1H13V17H17A5,5 0 0,0 22,12A5,5 0 0,0 17,7Z";
 var mdiLoading = "M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z";
 var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z";
+var mdiMessageOutline = "M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2M20 16H5.2L4 17.2V4H20V16Z";
+var mdiMicrophone = "M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z";
 var mdiMinus = "M19,13H5V11H19V13Z";
+var mdiNewspaper = "M20,11H4V8H20M20,15H13V13H20M20,19H13V17H20M11,19H4V13H11M20.33,4.67L18.67,3L17,4.67L15.33,3L13.67,4.67L12,3L10.33,4.67L8.67,3L7,4.67L5.33,3L3.67,4.67L2,3V19A2,2 0 0,0 4,21H20A2,2 0 0,0 22,19V3L20.33,4.67Z";
 var mdiNoteOutline = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
+var mdiPaperclip = "M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z";
 var mdiPencil = "M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z";
 var mdiPh = "M13 7V17H15V13H17V17H19V7H17V11H15V7H13M11 15V13C11 11.9 10.11 11 9 11H5V21H7V17H9C10.11 17 11 16.11 11 15M9 15H7V13H9V15Z";
+var mdiPin = "M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z";
+var mdiPinOff = "M2,5.27L3.28,4L20,20.72L18.73,22L12.8,16.07V22H11.2V16H6V14L8,12V11.27L2,5.27M16,12L18,14V16H17.82L8,6.18V4H7V2H17V4H16V12Z";
 var mdiPlus = "M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z";
 var mdiPlusBoxMultiple = "M19,11H15V15H13V11H9V9H13V5H15V9H19M20,2H8A2,2 0 0,0 6,4V16A2,2 0 0,0 8,18H20A2,2 0 0,0 22,16V4A2,2 0 0,0 20,2M4,6H2V20A2,2 0 0,0 4,22H18V20H4V6Z";
 var mdiPrinter = "M18,3H6V7H18M19,12A1,1 0 0,1 18,11A1,1 0 0,1 19,10A1,1 0 0,1 20,11A1,1 0 0,1 19,12M16,19H8V14H16M19,8H5A3,3 0 0,0 2,11V17H6V21H18V17H22V11A3,3 0 0,0 19,8Z";
@@ -1054,6 +1061,7 @@ const KNOWN_ERROR_CODES = new Set([
     'entity_not_found',
     'validation_failed',
     'internal_error',
+    'rate_limited',
 ]);
 function toErrorCode(raw) {
     return KNOWN_ERROR_CODES.has(raw) ? raw : 'internal_error';
@@ -6776,6 +6784,18 @@ class IrrigationAPI extends BaseAPI {
     }
 }
 
+function toWSError(err) {
+    if (typeof err === 'object' &&
+        err !== null &&
+        'code' in err &&
+        'message' in err &&
+        typeof err.code === 'string') {
+        const { code, message } = err;
+        const knownCodes = ['coordinator_not_ready', 'entity_not_found', 'validation_failed', 'internal_error', 'rate_limited'];
+        return new WSError((knownCodes.includes(code) ? code : 'internal_error'), message);
+    }
+    return new WSError('internal_error', err instanceof Error ? err.message : String(err));
+}
 /**
  * API service for AI assistant operations.
  * Handles grow advice, analysis, and strain recommendations via AI.
@@ -6803,8 +6823,7 @@ class AIAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[AIAPI:askGrowAdvice] Error:', err);
-            const message = err instanceof Error ? err.message : 'Failed to get advice';
-            throw new Error(message);
+            throw toWSError(err);
         }
     }
     /**
@@ -6823,7 +6842,7 @@ class AIAPI extends BaseAPI {
         }
         catch (err) {
             console.error('[AIAPI:analyzeAllGrowspaces] Error:', err);
-            throw err;
+            throw toWSError(err);
         }
     }
     /**
@@ -7185,6 +7204,7 @@ async function hassCall(command, params, schema) {
                 'entity_not_found',
                 'validation_failed',
                 'internal_error',
+                'rate_limited',
             ].includes(code)
                 ? code
                 : 'internal_error'), message);
@@ -7939,6 +7959,650 @@ const hassContext = n$4('hass');
 const configContext = n$4('config');
 const strainLibraryContext = n$4('strain-library');
 const storeContext = n$4('store');
+
+/**
+ * GridInteraction slice — store-driven interaction state machine for Plant Grid Cells.
+ *
+ * Public API (atom):
+ *   gridInteraction$   — read: current interaction state (discriminated union)
+ *
+ * Public API (transitions):
+ *   select(plantId)        — idle → selected; selected(same) → idle; selected(other) → selected(other);
+ *                            confirming-water → selected; no-op while transplanting
+ *   confirmWater()         — selected → confirming-water; no-op otherwise
+ *   cancel()               — any → idle
+ *   startTransplant()      — selected → transplanting; no-op otherwise
+ *   completeTransplant()   — transplanting → idle; no-op otherwise
+ *
+ * The type system (discriminated union) prevents callers from accessing fields
+ * that don't exist on a given status — e.g. `plantId` is absent on `idle`.
+ * Runtime guards make illegal transitions no-ops so callers never need to
+ * pre-check the current status.
+ *
+ * This slice owns no backend calls — all state is local UI-only.
+ * Cross-slice side-effects (Plant mutations, Grid optimistic updates) are
+ * triggered by action modules that call transition functions here then call
+ * the relevant Plant / Grid slice mutators.
+ */
+// ---------------------------------------------------------------------------
+// Atom (public)
+// ---------------------------------------------------------------------------
+/** Current interaction state for the Plant Grid. */
+const gridInteraction$ = atom({ status: 'idle' });
+// ---------------------------------------------------------------------------
+// Transitions (public)
+// ---------------------------------------------------------------------------
+/**
+ * Select a plant cell.
+ *
+ * - idle            → selected { plantId }
+ * - selected(same)  → idle  (toggle: deselects the cell)
+ * - selected(other) → selected { plantId }  (switch selection)
+ * - confirming-water → selected { plantId }  (aborts confirmation)
+ * - transplanting   → no-op  (source plant is locked during transplant)
+ */
+function select(plantId) {
+    const state = gridInteraction$.get();
+    if (state.status === 'transplanting')
+        return;
+    if (state.status === 'selected' && state.plantId === plantId) {
+        gridInteraction$.set({ status: 'idle' });
+        return;
+    }
+    gridInteraction$.set({ status: 'selected', plantId });
+}
+/**
+ * Cancel the current interaction and return to idle.
+ * Safe to call from any state.
+ */
+function cancel() {
+    gridInteraction$.set({ status: 'idle' });
+}
+/**
+ * Begin transplant mode from the currently selected plant.
+ *
+ * - selected → transplanting { sourcePlantId: plantId }
+ * - all other states → no-op
+ */
+function startTransplant() {
+    const state = gridInteraction$.get();
+    if (state.status !== 'selected')
+        return;
+    gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
+}
+
+/**
+ * UI slice — atoms and mutators for global UI state.
+ *
+ * Public API (atoms):
+ *   viewMode$               — read: active view mode (standard/compact/header/heatmap)
+ *   isLoading$              — read: whether the card is in a loading state
+ *   activeDialog$           — read: currently open dialog (NONE when closed)
+ *   isEditMode$             — read: whether edit mode is active
+ *   selectedPlants$         — read: set of selected plant IDs
+ *   focusedPlantIndex$      — read: keyboard-focused plant index (-1 = none)
+ *   menuOpen$               — read: whether the card menu is open
+ *   notification$           — read: active toast notification (null = none)
+ *   error$                  — read: global error string (null = none)
+ *   defaultApplied$         — read: whether the card config default was applied
+ *   gridOverlayMode$        — read: active grid overlay mode
+ *   language$               — read: active UI language code
+ *   pendingDeepLinkPlantId$ — read: plant ID awaiting deep-link navigation (null = none)
+ *   flowerFlipDismissed$    — read: map of growspace ID → dismissed flower-flip date
+ *   isCompactView$          — computed: true when viewMode is COMPACT
+ *   cardViewState$          — computed: combined view-state object for card subscription
+ *
+ * Public API (mutators):
+ *   setViewMode()           — switch the active view mode
+ *   setGridOverlayMode()    — switch the active grid overlay
+ *   setIsLoading()          — toggle loading state
+ *   openDialog()            — set the active dialog
+ *   closeDialog()           — reset dialog to NONE
+ *   setEditMode()           — enter/exit edit mode (clears selection on exit)
+ *   togglePlantSelection()  — add/remove a plant from the selection set
+ *   selectAllPlants()       — replace the selection with all provided IDs
+ *   clearPlantSelection()   — empty the selection
+ *   deselectPlants()        — remove specific plant IDs from the selection
+ *   setFocusedPlantIndex()  — set the keyboard-focus index
+ *   setMenuOpen()           — open/close the card menu
+ *   showToast()             — display a toast notification
+ *   clearToast()            — dismiss the current toast
+ *   setDefaultApplied()     — mark the config default as applied
+ *   setError()              — set or clear the global error
+ *   setLanguage()           — change the UI language
+ *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
+ *   dismissFlowerFlip()     — record a dismissed flower-flip notification
+ *
+ * This slice owns no backend calls — all state is local UI-only.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const viewMode$ = atom(ViewMode.STANDARD);
+const notification$ = atom(null);
+atom(GridOverlayMode.NONE);
+/** Map of growspace ID → flower-flip start date that the user has dismissed. */
+atom(_loadFlowerFlipDismissed());
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+function _loadFlowerFlipDismissed() {
+    try {
+        const raw = localStorage.getItem('growspace.flowerFlipDismissed');
+        if (raw)
+            return JSON.parse(raw);
+    }
+    catch {
+        // Ignore — localStorage unavailable (SSR / test environments).
+    }
+    return {};
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/** Switch the active view mode (standard / compact / header / heatmap). */
+function setViewMode(mode) {
+    viewMode$.set(mode);
+}
+/** Display a toast notification. Defaults to type 'info'. */
+function showToast$1(message, type = 'info', action) {
+    notification$.set({ message, type, ...({}) });
+}
+
+/**
+ * AIInsight slice — zod schemas for backend response validation.
+ *
+ * GrowAdviceResponseSchema validates the payload returned by the
+ * ask_grow_advice and analyze_all_growspaces HA services.
+ *
+ * New schemas cover the conversation, triage-alert, and briefing
+ * WebSocket commands added in issue #159.
+ */
+// The backend returns either a plain string or a nested { response: string }
+// object (sometimes double-nested). We accept both shapes and let the slice
+// extract the text.
+const responseBody = unionType([
+    stringType(),
+    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
+]);
+const GrowAdviceResponseSchema = unionType([
+    stringType(),
+    objectType({ response: responseBody }),
+    recordType(unknownType()),
+]);
+// ---------------------------------------------------------------------------
+// SuggestedAction
+// ---------------------------------------------------------------------------
+const SuggestedActionSchema = objectType({
+    service: stringType(),
+    target_entity_id: stringType(),
+    service_data: recordType(unknownType()),
+    description: stringType(),
+    confidence: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// KPI (shared by TriageAlert and AIBriefing)
+// ---------------------------------------------------------------------------
+const KPISchema = objectType({
+    label: stringType(),
+    value: unionType([numberType(), stringType()]),
+    unit: stringType().optional(),
+    delta: stringType().optional(),
+});
+// ---------------------------------------------------------------------------
+// TriageAlert
+// ---------------------------------------------------------------------------
+const TriageAlertSchema = objectType({
+    id: stringType(),
+    growspace_id: stringType(),
+    type: stringType(),
+    severity: enumType(['info', 'warning', 'danger']).default('info'),
+    title: stringType().optional(),
+    description: stringType().nullable().optional(),
+    bayesian_reasons: arrayType(stringType()),
+    ai_reasoning: stringType().nullable(),
+    timestamp: numberType(),
+    resolved: booleanType(),
+    resolution_note: stringType().nullable(),
+    confidence: numberType().optional(),
+    suggested_actions: arrayType(SuggestedActionSchema).optional(),
+    kpis: arrayType(KPISchema).optional(),
+    snapshot_entity_id: stringType().nullable().optional(),
+});
+// ---------------------------------------------------------------------------
+// ResolveAck
+// ---------------------------------------------------------------------------
+const ResolveAckSchema = objectType({
+    success: booleanType(),
+    alert_id: stringType(),
+});
+// ---------------------------------------------------------------------------
+// ConversationMessage
+// ---------------------------------------------------------------------------
+const SensorSnapshotItemSchema = objectType({
+    label: stringType(),
+    value: stringType(),
+    unit: stringType(),
+    delta: stringType().optional(),
+});
+const CitationSchema = objectType({
+    label: stringType(),
+    source: enumType(['sensor', 'logbook']),
+});
+const ConversationMessageSchema = objectType({
+    role: enumType(['user', 'ai']),
+    text: stringType(),
+    timestamp: numberType().nonnegative(),
+    suggestedAction: objectType({
+        service: stringType(),
+        target_entity_id: stringType(),
+        service_data: recordType(unknownType()),
+        description: stringType(),
+        confidence: numberType().optional(),
+    })
+        .optional(),
+    confidence: numberType().optional(),
+    imageEntityId: stringType().optional(),
+    sensorSnapshot: arrayType(SensorSnapshotItemSchema).optional(),
+    citations: arrayType(CitationSchema).optional(),
+});
+// ---------------------------------------------------------------------------
+// ConversationThread
+// ---------------------------------------------------------------------------
+const MAX_PINNED_THREADS = 10;
+const MAX_RECENT_THREADS = 20;
+const ConversationThreadSchema = objectType({
+    thread_id: stringType(),
+    growspace_id: stringType(),
+    messages: arrayType(ConversationMessageSchema),
+    pinned: booleanType().default(false),
+    updated_at: numberType().nonnegative().default(0),
+});
+// ---------------------------------------------------------------------------
+// AIBriefing
+// ---------------------------------------------------------------------------
+const RecommendationSchema = objectType({
+    title: stringType(),
+    description: stringType(),
+    impact: enumType(['high', 'medium', 'low']),
+    suggested_action: SuggestedActionSchema.optional(),
+    action_type: enumType(['apply', 'plan', 'remind']).optional(),
+});
+const AIBriefingSchema = objectType({
+    generated_at: numberType().nonnegative(),
+    summary_text: stringType(),
+    headline: stringType().optional(),
+    confidence: numberType().optional(),
+    drawn_from: stringType().optional(),
+    kpis: arrayType(KPISchema),
+    recommendations: arrayType(RecommendationSchema),
+    ai_available: booleanType(),
+});
+
+/**
+ * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
+ *
+ * Public API (atoms):
+ *   aiInsight$            — last AI response text (null if none loaded yet)
+ *   isAiLoading$          — whether an AI request is in-flight
+ *   aiError$              — error message from the last failed request (null = none)
+ *   conversationThreads$  — conversation threads keyed by thread ID
+ *   activeThreadId$       — ID of the currently active thread (null = none)
+ *   aiAlerts$             — triage alerts fetched from the backend
+ *   aiBriefing$           — latest AI briefing (null = none fetched yet)
+ *   aiMode$               — current AI panel mode
+ *
+ * Public API (mutators):
+ *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
+ *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
+ *   dismissInsight()                     — clear the current insight and any error
+ *   clearAiError()                       — clear only the error without touching the insight
+ *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
+ *   sendMessage(threadId, text, imageEntityId?)          — append a message to an existing thread
+ *   applyAction(suggestedAction)                         — execute a suggested service action
+ *   fetchAlerts(growspaceId?)                            — fetch triage alerts from the backend
+ *   resolveAlert(alertId, note?)                         — mark an alert as resolved
+ *   fetchBriefing(forceRefresh?)                         — fetch the latest AI briefing
+ *
+ * Zod schemas are in ./schema.ts and private to this module.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+const aiInsight$ = atom(null);
+const isAiLoading$ = atom(false);
+const aiError$ = atom(null);
+const aiEnabled$ = atom(null);
+const conversationThreads$ = atom(new Map());
+const activeThreadId$ = atom(new Map());
+const aiAlerts$ = atom(new Map());
+const aiBriefing$ = atom(new Map());
+const aiMode$ = atom('briefing');
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+/**
+ * Extract a plain text string from a GrowAdviceResponse, which the backend
+ * may return as a string or as a nested `{ response: string }` object.
+ */
+function _extractText(raw) {
+    if (typeof raw === 'string')
+        return raw;
+    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
+        const inner = raw.response;
+        if (typeof inner === 'string')
+            return inner;
+        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
+            const deepInner = inner.response;
+            if (typeof deepInner === 'string')
+                return deepInner;
+        }
+        return JSON.stringify(inner);
+    }
+    return JSON.stringify(raw);
+}
+// ---------------------------------------------------------------------------
+// Mutators (public)
+// ---------------------------------------------------------------------------
+/**
+ * Ask the AI for cultivation advice about a specific growspace.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function askGrowAdvice(growspaceId, userQuery) {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return;
+        }
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Request an AI analysis that covers all growspaces at once.
+ *
+ * Sets isAiLoading$ to true for the duration of the call.
+ * On success: stores the response text in aiInsight$.
+ * On failure: stores the error message in aiError$ and re-throws.
+ */
+async function analyzeAllGrowspaces() {
+    isAiLoading$.set(true);
+    aiError$.set(null);
+    try {
+        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
+        aiInsight$.set(_extractText(raw));
+    }
+    catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return;
+        }
+        const message = err instanceof Error ? err.message : String(err);
+        aiError$.set(message);
+        throw err;
+    }
+    finally {
+        isAiLoading$.set(false);
+    }
+}
+/**
+ * Clear the current insight and any error state.
+ * Use this when the user dismisses the AI response panel.
+ */
+function dismissInsight() {
+    aiInsight$.set(null);
+    aiError$.set(null);
+}
+// ---------------------------------------------------------------------------
+// Conversation mutators
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Thread persistence helpers (private)
+// ---------------------------------------------------------------------------
+function _evictThreads(threads, growspaceId) {
+    const gsThreads = [...threads.values()].filter((t) => t.growspace_id === growspaceId);
+    const pinned = gsThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+    const recent = gsThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+    const keep = new Set([
+        ...pinned.slice(0, MAX_PINNED_THREADS),
+        ...recent.slice(0, MAX_RECENT_THREADS),
+    ].map((t) => t.thread_id));
+    const result = new Map(threads);
+    for (const [id, t] of result) {
+        if (t.growspace_id === growspaceId && !keep.has(id))
+            result.delete(id);
+    }
+    return result;
+}
+async function _saveConversationThreads(growspaceId) {
+    const threads = [...conversationThreads$.get().values()].filter((t) => t.growspace_id === growspaceId);
+    await hassCall('growspace_manager/save_conversation_threads', { growspace_id: growspaceId, threads }, unknownType());
+}
+// ---------------------------------------------------------------------------
+// Thread persistence (public)
+// ---------------------------------------------------------------------------
+async function fetchConversationThreads(growspaceId) {
+    try {
+        const ThreadsResponseSchema = arrayType(ConversationThreadSchema);
+        const fetched = await hassCall('growspace_manager/get_conversation_threads', { growspace_id: growspaceId }, ThreadsResponseSchema);
+        const updated = new Map(conversationThreads$.get());
+        for (const [id, t] of updated) {
+            if (t.growspace_id === growspaceId)
+                updated.delete(id);
+        }
+        for (const t of fetched)
+            updated.set(t.thread_id, t);
+        conversationThreads$.set(updated);
+    }
+    catch {
+        // Silently ignore — leave existing data intact
+    }
+}
+/**
+ * Start a new AI conversation thread for a growspace.
+ *
+ * Creates the thread entry in conversationThreads$ and sets activeThreadId$.
+ */
+async function startConversation(growspaceId, text, imageEntityId) {
+    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    try {
+        const raw = await hassCall('growspace_manager/start_conversation', {
+            growspace_id: growspaceId,
+            message: text,
+            ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+        }, ConversationThreadSchema);
+        const thread = {
+            ...raw,
+            messages: [userMessage, ...raw.messages],
+            pinned: false,
+            updated_at: Date.now(),
+        };
+        let threads = new Map(conversationThreads$.get());
+        threads.set(thread.thread_id, thread);
+        threads = _evictThreads(threads, growspaceId);
+        conversationThreads$.set(threads);
+        const activeMap = new Map(activeThreadId$.get());
+        activeMap.set(growspaceId, thread.thread_id);
+        activeThreadId$.set(activeMap);
+        await _saveConversationThreads(growspaceId);
+        return thread;
+    }
+    catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return undefined;
+        }
+        throw err;
+    }
+}
+/**
+ * Send a message in an existing conversation thread.
+ *
+ * Appends the AI response message to the thread. Other threads are unchanged.
+ */
+async function sendMessage(threadId, text, imageEntityId) {
+    const existingThread = conversationThreads$.get().get(threadId);
+    const growspaceId = existingThread?.growspace_id ?? '';
+    const userMessage = { role: 'user', text, timestamp: Date.now() };
+    try {
+        const raw = await hassCall('growspace_manager/send_message', {
+            conversation_id: threadId,
+            growspace_id: growspaceId,
+            message: text,
+            ...(imageEntityId ? { image_entities: [imageEntityId] } : {}),
+        }, ConversationThreadSchema);
+        const threads = new Map(conversationThreads$.get());
+        const existing = threads.get(threadId);
+        const existingMessages = existing?.messages ?? [];
+        threads.set(raw.thread_id, {
+            ...raw,
+            messages: [...existingMessages, userMessage, ...raw.messages],
+            pinned: existing?.pinned ?? false,
+            updated_at: Date.now(),
+        });
+        conversationThreads$.set(threads);
+        await _saveConversationThreads(growspaceId);
+    }
+    catch (err) {
+        if (err instanceof WSError && err.code === 'rate_limited') {
+            showToast$1('AI rate limit reached — please wait a moment before trying again', 'error');
+            return;
+        }
+        throw err;
+    }
+}
+async function togglePin(threadId) {
+    const threads = new Map(conversationThreads$.get());
+    const thread = threads.get(threadId);
+    if (!thread)
+        return;
+    if (!thread.pinned) {
+        const pinnedCount = [...threads.values()].filter((t) => t.growspace_id === thread.growspace_id && t.pinned).length;
+        if (pinnedCount >= MAX_PINNED_THREADS) {
+            showToast$1(`Pinned limit reached (${MAX_PINNED_THREADS}). Unpin a conversation to pin this one.`, 'info');
+            return;
+        }
+    }
+    threads.set(threadId, { ...thread, pinned: !thread.pinned });
+    conversationThreads$.set(threads);
+    await _saveConversationThreads(thread.growspace_id);
+}
+/**
+ * Execute a suggested service action.
+ *
+ * Calls the HA service specified in the action payload.
+ */
+async function applyAction(action) {
+    await callService(action.service, action.target_entity_id, action.service_data);
+}
+// ---------------------------------------------------------------------------
+// Alert mutators
+// ---------------------------------------------------------------------------
+/**
+ * Fetch triage alerts for a specific growspace and store them in aiAlerts$
+ * keyed by growspaceId. Other growspaces' alerts are unaffected.
+ */
+async function fetchAlerts(growspaceId) {
+    const AlertsResponseSchema = TriageAlertSchema.array();
+    try {
+        const alerts = await hassCall('growspace_manager/get_ai_alerts', { growspace_id: growspaceId }, AlertsResponseSchema);
+        const updated = new Map(aiAlerts$.get());
+        updated.set(growspaceId, alerts);
+        aiAlerts$.set(updated);
+    }
+    catch {
+        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    }
+}
+/**
+ * Mark an alert as resolved. Searches across all growspaces in aiAlerts$,
+ * patches the matching alert, and calls the backend to persist the resolution.
+ */
+async function resolveAlert(alertId, note) {
+    await hassCall('growspace_manager/resolve_ai_alert', { alert_id: alertId, ...(note ? { resolution_note: note } : {}) }, ResolveAckSchema);
+    const currentMap = aiAlerts$.get();
+    const updated = new Map(currentMap);
+    for (const [gsId, alerts] of updated) {
+        const idx = alerts.findIndex((a) => a.id === alertId);
+        if (idx !== -1) {
+            const patched = [...alerts];
+            patched[idx] = { ...alerts[idx], resolved: true, resolution_note: note ?? null };
+            updated.set(gsId, patched);
+            break;
+        }
+    }
+    aiAlerts$.set(updated);
+}
+// ---------------------------------------------------------------------------
+// Briefing mutators
+// ---------------------------------------------------------------------------
+/**
+ * Fetch the AI briefing for a specific growspace and store it in aiBriefing$
+ * keyed by growspaceId. Other growspaces' briefings are unaffected.
+ * Pass forceRefresh=true to bypass the backend cache.
+ */
+async function fetchBriefing(growspaceId, forceRefresh) {
+    try {
+        const briefing = await hassCall('growspace_manager/get_briefing', { growspace_id: growspaceId, ...(forceRefresh ? { force_refresh: true } : {}) }, AIBriefingSchema);
+        const updated = new Map(aiBriefing$.get());
+        updated.set(growspaceId, briefing);
+        aiBriefing$.set(updated);
+    }
+    catch {
+        // Silently ignore — connection errors or schema mismatches leave existing data intact
+    }
+}
+/**
+ * Fetch the component-level AI enabled flag and store it in aiEnabled$.
+ * Silently ignores errors so the atom stays at its previous value.
+ */
+async function fetchAiStatus() {
+    const AiStatusSchema = objectType({ ai_enabled: booleanType() });
+    try {
+        const result = await hassCall('growspace_manager/get_ai_status', {}, AiStatusSchema);
+        aiEnabled$.set(result.ai_enabled);
+    }
+    catch {
+        // Silently ignore — leave aiEnabled$ unchanged
+    }
+}
+/**
+ * Persist a conversation agent selection and enable AI in the integration.
+ *
+ * Saves the chosen entity ID to the backend config entry, then refreshes the
+ * briefing atom so panels drop their unconfigured state without a page reload.
+ */
+async function saveAiAgent(agentEntityId, growspaceId) {
+    await hassCall('growspace_manager/save_ai_agent', { agent_id: agentEntityId }, unknownType());
+    aiEnabled$.set(true);
+    await fetchBriefing(growspaceId, true);
+}
+async function saveAiSettings(draft) {
+    await hassCall('growspace_manager/save_ai_settings', draft, unknownType());
+}
+/**
+ * Fetch the current AI settings from the integration config entry.
+ *
+ * Returns the full ai_settings dict so the Growmaster Settings Panel can
+ * pre-populate its draft when the settings tab is opened.
+ */
+async function fetchAiSettings() {
+    const result = await hassCall('growspace_manager/get_ai_settings', {}, recordType(unknownType()));
+    return result;
+}
 
 /**
  * mutate primitive — owns optimistic updates, undo stack, and sync trigger.
@@ -18944,38 +19608,2980 @@ CropSteeringDialog = __decorate([
     t$2('crop-steering-dialog')
 ], CropSteeringDialog);
 
+const SUGGESTION_PROMPTS = [
+    'What is the current VPD?',
+    'How can I optimize my environment?',
+    'Are there any plant stress indicators?',
+];
+let GmChatPanel = class GmChatPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceid = '';
+        this.growspacename = '';
+        this._inputText = '';
+        this._dismissedActions = new Set();
+        this._contextChips = [];
+        this._pendingAttachment = null;
+        this._selectedAgent = '';
+        this._agentSaving = false;
+        this._agentSaveError = null;
+        this._activeThread = new libExports.StoreController(this, activeThreadId$);
+        this._threads = new libExports.StoreController(this, conversationThreads$);
+        this._loading = new libExports.StoreController(this, isAiLoading$);
+        this._error = new libExports.StoreController(this, aiError$);
+        this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (this.growspacename) {
+            this._contextChips = [
+                { id: 'growspace', label: this.growspacename, type: 'growspace' },
+            ];
+        }
+    }
+    _getActiveThread() {
+        const activeMap = this._activeThread.value;
+        if (!(activeMap instanceof Map))
+            return undefined;
+        const threadId = activeMap.get(this.growspaceid) ?? null;
+        if (!threadId)
+            return undefined;
+        return this._threads.value.get(threadId);
+    }
+    _setActiveThread(threadId) {
+        const map = new Map(activeThreadId$.get());
+        map.set(this.growspaceid, threadId);
+        activeThreadId$.set(map);
+    }
+    _newConversation() {
+        const map = new Map(activeThreadId$.get());
+        map.set(this.growspaceid, null);
+        activeThreadId$.set(map);
+    }
+    _handleInput(e) {
+        this._inputText = e.target.value;
+    }
+    async _send() {
+        const text = this._inputText.trim();
+        if (!text)
+            return;
+        this._inputText = '';
+        const attachment = this._pendingAttachment ?? undefined;
+        this._pendingAttachment = null;
+        const threadId = this._activeThread.value.get(this.growspaceid) ?? null;
+        if (threadId) {
+            await sendMessage(threadId, text, attachment);
+        }
+        else {
+            await startConversation(this.growspaceid, text, attachment);
+        }
+    }
+    _openFilePicker() {
+        this.shadowRoot.querySelector('input[type="file"]')?.click();
+    }
+    _onFileSelected(e) {
+        const file = e.target.files?.[0];
+        if (!file)
+            return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            this._pendingAttachment = reader.result;
+        };
+        reader.readAsDataURL(file);
+    }
+    _removeAttachment() {
+        this._pendingAttachment = null;
+    }
+    async _clickPrompt(prompt) {
+        await startConversation(this.growspaceid, prompt);
+    }
+    _clickSuggest(prompt) {
+        this._inputText = prompt;
+    }
+    _removeCtxChip(id) {
+        this._contextChips = this._contextChips.filter((c) => c.id !== id);
+    }
+    _renderThreadRow(t, activeId) {
+        const firstMsg = t.messages[0];
+        const isActive = t.thread_id === activeId;
+        return x `
+      <button
+        class="thread-row"
+        data-thread-id=${t.thread_id}
+        aria-pressed=${isActive ? 'true' : 'false'}
+        @click=${() => this._setActiveThread(t.thread_id)}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;margin-top:2px">
+          <path d=${mdiMessageOutline}></path>
+        </svg>
+        <div style="flex:1;min-width:0;">
+          <div class="thread-title">${firstMsg?.text ?? 'New conversation'}</div>
+          <div class="thread-time">${this._relTime(firstMsg?.timestamp)}</div>
+        </div>
+        <button
+          class="pin-btn ${t.pinned ? 'pinned' : ''}"
+          aria-label=${t.pinned ? 'Unpin conversation' : 'Pin conversation'}
+          @click=${(e) => { e.stopPropagation(); togglePin(t.thread_id); }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${t.pinned ? mdiPinOff : mdiPin}></path>
+          </svg>
+        </button>
+      </button>
+    `;
+    }
+    _renderThreadRail() {
+        const allThreads = [...this._threads.value.values()].filter((t) => t.growspace_id === this.growspaceid);
+        const pinned = allThreads.filter((t) => t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+        const recent = allThreads.filter((t) => !t.pinned).sort((a, b) => b.updated_at - a.updated_at);
+        const activeMap = this._activeThread.value;
+        const activeId = (activeMap instanceof Map ? activeMap.get(this.growspaceid) : null) ?? null;
+        return x `
+      <div class="chat-rail">
+        <div class="ai-model-card">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
+            <path d=${mdiBrain}></path>
+          </svg>
+          <div class="model-info">
+            <div class="model-name">Grow Master</div>
+            <div class="model-cap">AI cultivation assistant</div>
+          </div>
+        </div>
+
+        <button class="new-chat-btn" @click=${this._newConversation}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${mdiPlus}></path>
+          </svg>
+          New conversation
+        </button>
+
+        ${pinned.length > 0 ? x `
+          <div class="rail-section-label">Pinned</div>
+          <div class="rail-recent">
+            ${c(pinned, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
+          </div>
+        ` : E}
+
+        ${recent.length > 0 ? x `
+          <div class="rail-section-label">Recent</div>
+          <div class="rail-recent">
+            ${c(recent, (t) => t.thread_id, (t) => this._renderThreadRow(t, activeId))}
+          </div>
+        ` : E}
+      </div>
+    `;
+    }
+    _relTime(ts) {
+        if (!ts)
+            return '';
+        const diff = Date.now() / 1000 - ts;
+        if (diff < 60)
+            return 'just now';
+        if (diff < 3600)
+            return `${Math.floor(diff / 60)}m ago`;
+        if (diff < 86400)
+            return `${Math.floor(diff / 3600)}h ago`;
+        return `${Math.floor(diff / 86400)}d ago`;
+    }
+    _renderWelcome(aiUnavailable) {
+        return x `
+      <div class="welcome">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-accent,#4caf50)">
+          <path d=${mdiBrain}></path>
+        </svg>
+        <h3 class="welcome-title">Good morning, grower</h3>
+        <p class="welcome-lede">Ask me anything about your grow — I'll analyze your data and suggest actions.</p>
+        <div class="prompt-grid">
+          ${SUGGESTION_PROMPTS.concat('What nutrients should I adjust?').map((p) => x `
+            <button class="prompt-card" ?disabled=${aiUnavailable} @click=${() => this._clickPrompt(p)}>${p}</button>
+          `)}
+        </div>
+      </div>
+      ${this._renderComposer(aiUnavailable)}
+    `;
+    }
+    _confidenceLevel(conf) {
+        if (conf === undefined)
+            return 'high';
+        if (conf >= 0.8)
+            return 'high';
+        if (conf >= 0.5)
+            return 'mid';
+        return 'low';
+    }
+    _renderMessage(msg, index) {
+        const isUser = msg.role === 'user';
+        const initials = 'U';
+        const confLevel = this._confidenceLevel(msg.confidence);
+        const dismissed = this._dismissedActions.has(index);
+        return x `
+      <div class="msg ${msg.role}">
+        <div class="msg-avatar">
+          ${isUser ? initials : x `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiBrain}></path>
+            </svg>
+          `}
+        </div>
+        <div class="msg-bubble">
+          ${!isUser ? x `
+            <div class="msg-meta">
+              <span class="msg-label">Grow Master</span>
+              ${msg.confidence !== undefined ? x `
+                <span class="conf ${confLevel === 'mid' ? 'mid' : ''}">${Math.round(msg.confidence * 100)}%</span>
+              ` : E}
+            </div>
+          ` : E}
+          ${msg.imageEntityId ? x `
+            <img class="msg-image" src=${msg.imageEntityId} alt="Attached image" />
+          ` : E}
+          ${msg.text}
+          ${msg.sensorSnapshot && msg.sensorSnapshot.length > 0 ? x `
+            <div class="data-snap">
+              ${msg.sensorSnapshot.map((s) => x `
+                <div class="snap-cell">
+                  <div class="snap-value">${s.value}</div>
+                  <div class="snap-unit">${s.unit}</div>
+                  ${s.delta ? x `<div class="snap-delta">${s.delta}</div>` : E}
+                </div>
+              `)}
+            </div>
+          ` : E}
+          ${msg.suggestedAction && !dismissed ? x `
+            <div class="act-card">
+              <div class="act-title">${msg.suggestedAction.description}</div>
+              <div class="act-desc">${msg.suggestedAction.service}</div>
+              <div class="act-buttons">
+                <button class="apply-btn" @click=${() => applyAction(msg.suggestedAction)}>Apply</button>
+                <button class="dismiss-btn" @click=${() => this._dismiss(index)}>Dismiss</button>
+              </div>
+            </div>
+          ` : E}
+          ${msg.citations && msg.citations.length > 0 ? x `
+            <div class="cite-row">
+              ${msg.citations.map((c) => x `
+                <span class="cite-chip">${c.label}</span>
+              `)}
+            </div>
+          ` : E}
+        </div>
+      </div>
+    `;
+    }
+    _dismiss(index) {
+        this._dismissedActions = new Set([...this._dismissedActions, index]);
+    }
+    _renderComposer(disabled = false) {
+        const hasText = this._inputText.trim().length > 0;
+        const error = this._error.value;
+        return x `
+      <div class="composer ${disabled ? 'composer--disabled' : ''}">
+        <div class="suggest-strip">
+          ${SUGGESTION_PROMPTS.map((p) => x `
+            <button class="suggest-chip" @click=${() => this._clickSuggest(p)}>${p}</button>
+          `)}
+        </div>
+        ${this._contextChips.length > 0 ? x `
+          <div class="composer-chips">
+            ${this._contextChips.map((chip) => x `
+              <div class="ctx-chip" data-chip-id=${chip.id}>
+                ${chip.label}
+                <button class="remove-chip" aria-label="Remove ${chip.label}" @click=${() => this._removeCtxChip(chip.id)}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d=${mdiClose}></path>
+                  </svg>
+                </button>
+              </div>
+            `)}
+          </div>
+        ` : E}
+        ${this._pendingAttachment ? x `
+          <div class="attachment-preview">
+            <img src=${this._pendingAttachment} alt="Attachment preview" />
+            <button class="remove-attachment" aria-label="Remove attachment" @click=${this._removeAttachment}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                <path d=${mdiClose}></path>
+              </svg>
+            </button>
+          </div>
+        ` : E}
+        <div class="composer-input">
+          <input type="file" accept="image/*" @change=${this._onFileSelected} />
+          <button class="attach-btn" aria-label="Attach image" ?disabled=${disabled} @click=${this._openFilePicker}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiPaperclip}></path>
+            </svg>
+          </button>
+          <textarea
+            class="composer-textarea"
+            placeholder="Ask anything about your grow..."
+            rows="1"
+            ?disabled=${disabled}
+            .value=${this._inputText}
+            @input=${this._handleInput}
+            @keydown=${(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this._send();
+            }
+        }}
+          ></textarea>
+          <button class="send" ?disabled=${!hasText || disabled} @click=${this._send} aria-label="Send">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${mdiSend}></path>
+            </svg>
+          </button>
+        </div>
+        ${error ? x `<div class="composer-error">${error}</div>` : E}
+      </div>
+    `;
+    }
+    _renderThread(thread, aiUnavailable) {
+        const isLoading = this._loading.value;
+        return x `
+      <div class="chat-area">
+        <div class="thread-header">
+          <span class="thread-breadcrumb">Chat / ${thread.messages[0]?.text?.slice(0, 40) ?? 'Conversation'}</span>
+          <button
+            class="pin-btn ${thread.pinned ? 'pinned' : ''}"
+            aria-label=${thread.pinned ? 'Unpin conversation' : 'Pin conversation'}
+            title=${thread.pinned ? 'Unpin' : 'Pin this conversation'}
+            @click=${() => togglePin(thread.thread_id)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d=${thread.pinned ? mdiPinOff : mdiPin}></path>
+            </svg>
+          </button>
+        </div>
+        <div class="chat-scroll">
+          ${thread.messages.map((msg, i) => this._renderMessage(msg, i))}
+          ${isLoading ? x `
+            <div class="typing">
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+              <div class="typing-dot"></div>
+            </div>
+          ` : E}
+        </div>
+        ${this._renderComposer(aiUnavailable)}
+      </div>
+    `;
+    }
+    async _saveAgent() {
+        if (!this._selectedAgent)
+            return;
+        this._agentSaving = true;
+        this._agentSaveError = null;
+        try {
+            await saveAiAgent(this._selectedAgent, this.growspaceid);
+        }
+        catch (err) {
+            this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
+        }
+        finally {
+            this._agentSaving = false;
+        }
+    }
+    _renderAgentSetup() {
+        return x `
+      <div class="agent-setup-banner">
+        <span class="agent-setup-label">No AI agent configured — select one to enable chat:</span>
+        <div class="agent-setup-row">
+          <div class="agent-setup-picker">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._selectedAgent}
+              .includeDomains=${['conversation']}
+              allow-custom-entity
+              @value-changed=${(e) => { this._selectedAgent = e.detail.value ?? ''; }}
+            ></ha-entity-picker>
+          </div>
+          <button
+            class="agent-save-btn"
+            ?disabled=${!this._selectedAgent || this._agentSaving}
+            @click=${this._saveAgent}
+          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+        </div>
+        ${this._agentSaveError ? x `<div class="agent-setup-error">${this._agentSaveError}</div>` : E}
+      </div>
+    `;
+    }
+    render() {
+        const thread = this._getActiveThread();
+        const aiUnavailable = this._aiEnabled.value === false;
+        return x `
+      ${this._renderThreadRail()}
+      <div class="chat-content">
+        ${aiUnavailable ? this._renderAgentSetup() : E}
+        ${thread ? this._renderThread(thread, aiUnavailable) : this._renderWelcome(aiUnavailable)}
+      </div>
+    `;
+    }
+};
+GmChatPanel.styles = i$6 `
+    :host {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Rail ─────────────────────────────────────────────────── */
+    .chat-rail {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 8px;
+      border-right: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      overflow-y: auto;
+    }
+
+    .ai-model-card {
+      background: rgba(255,255,255,0.04);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ai-model-card .model-info { flex: 1; }
+    .ai-model-card .model-name { font-size: 0.85rem; font-weight: 500; }
+    .ai-model-card .model-cap { font-size: 0.7rem; color: var(--secondary-text-color); }
+
+    .new-chat-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: none;
+      border: 1px dashed var(--divider-color, rgba(255,255,255,0.18));
+      cursor: pointer;
+      color: var(--secondary-text-color);
+      font-family: inherit;
+      font-size: 0.8rem;
+      transition: background 150ms, color 150ms, border-color 150ms;
+    }
+    .new-chat-btn:hover {
+      background: rgba(76,175,80,0.08);
+      color: var(--ai-accent, #4caf50);
+      border-color: rgba(76,175,80,0.4);
+    }
+
+    .rail-section-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--secondary-text-color);
+      padding: 0 4px;
+      margin-top: 8px;
+    }
+
+    .rail-recent { display: flex; flex-direction: column; gap: 2px; }
+
+    .thread-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 8px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-text-color);
+      font-family: inherit;
+      text-align: left;
+      width: 100%;
+      transition: background 150ms;
+    }
+    .thread-row:hover { background: rgba(255,255,255,0.05); }
+    .thread-row[aria-pressed='true'] {
+      background: rgba(76,175,80,0.12);
+      color: var(--ai-accent, #4caf50);
+    }
+    .thread-title {
+      font-size: 0.78rem;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+    .thread-time { font-size: 0.68rem; color: var(--secondary-text-color); margin-top: 2px; }
+
+    /* ── Content area ─────────────────────────────────────────── */
+    .chat-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Welcome ──────────────────────────────────────────────── */
+    .welcome {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      gap: 12px;
+      text-align: center;
+    }
+    .welcome-title { font-size: 1.3rem; font-weight: 500; margin: 0; }
+    .welcome-lede { font-size: 0.9rem; color: var(--secondary-text-color); margin: 0; }
+
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 16px;
+    }
+    .prompt-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      color: var(--primary-text-color);
+      text-align: left;
+      font-family: inherit;
+      transition: background 150ms, border-color 150ms;
+    }
+    .prompt-card:hover {
+      background: rgba(76,175,80,0.1);
+      border-color: var(--ai-accent, #4caf50);
+    }
+
+    /* ── Thread header ────────────────────────────────────────── */
+    .thread-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      flex-shrink: 0;
+    }
+    .thread-breadcrumb { flex: 1; font-size: 0.85rem; color: var(--secondary-text-color); }
+
+    /* ── Chat area ────────────────────────────────────────────── */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .chat-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Messages ─────────────────────────────────────────────── */
+    .msg {
+      display: flex;
+      gap: 10px;
+      max-width: 85%;
+    }
+    .msg.user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .msg.ai { align-self: flex-start; }
+
+    .msg-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .msg.ai .msg-avatar { color: var(--ai-accent, #4caf50); }
+
+    .msg-bubble {
+      background: rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+    .msg.user .msg-bubble {
+      background: rgba(76,175,80,0.18);
+      border-radius: 12px 4px 12px 12px;
+    }
+    .msg.ai .msg-bubble { border-radius: 4px 12px 12px 12px; }
+
+    .msg-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .msg-label { font-size: 0.75rem; font-weight: 600; }
+    .conf {
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 20px;
+      background: rgba(76,175,80,0.25);
+      color: var(--ai-accent, #4caf50);
+    }
+    .conf.mid {
+      background: rgba(255,152,0,0.25);
+      color: var(--ai-amber, #ff9800);
+    }
+
+    /* ── Data snap ────────────────────────────────────────────── */
+    .data-snap {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .snap-cell { text-align: center; }
+    .snap-value { font-size: 1rem; font-weight: 600; }
+    .snap-unit { font-size: 0.7rem; color: var(--secondary-text-color); }
+    .snap-delta { font-size: 0.68rem; color: var(--ai-accent, #4caf50); }
+
+    /* ── Action card ──────────────────────────────────────────── */
+    .act-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .act-title { font-size: 0.82rem; font-weight: 600; }
+    .act-desc { font-size: 0.8rem; color: var(--secondary-text-color); }
+    .act-buttons { display: flex; gap: 8px; margin-top: 4px; }
+    .apply-btn, .dismiss-btn {
+      font-size: 0.78rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .apply-btn {
+      background: var(--ai-accent, #4caf50);
+      color: #fff;
+    }
+    .dismiss-btn {
+      background: rgba(255,255,255,0.08);
+      color: var(--primary-text-color);
+    }
+
+    /* ── Citations ────────────────────────────────────────────── */
+    .cite-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .cite-chip {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.07);
+      color: var(--secondary-text-color);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
+
+    /* ── Typing indicator ─────────────────────────────────────── */
+    .typing {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      color: var(--secondary-text-color);
+    }
+    .typing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: bounce 1.2s ease-in-out infinite;
+    }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    /* ── Composer ─────────────────────────────────────────────── */
+    .composer {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 10px 16px 12px;
+      border-top: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
+    .suggest-strip {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .suggest-chip {
+      flex-shrink: 0;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+      background: rgba(255,255,255,0.05);
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: background 150ms;
+    }
+    .suggest-chip:hover { background: rgba(76,175,80,0.12); }
+
+    .composer-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .ctx-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      padding: 3px 8px 3px 10px;
+      border-radius: 20px;
+      background: rgba(76,175,80,0.12);
+      border: 1px solid rgba(76,175,80,0.3);
+      color: var(--ai-accent, #4caf50);
+    }
+    .remove-chip {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: inherit;
+      display: flex;
+      align-items: center;
+      padding: 0;
+      opacity: 0.7;
+      line-height: 1;
+    }
+
+    .composer-input {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .composer-textarea {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+      border-radius: 12px;
+      padding: 10px 12px;
+      color: var(--primary-text-color, #fff);
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: none;
+      min-height: 40px;
+      max-height: 140px;
+      line-height: 1.4;
+      box-sizing: border-box;
+    }
+    .composer-textarea:focus {
+      outline: none;
+      border-color: rgba(76,175,80,0.5);
+    }
+    .send {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--ai-accent, #4caf50);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .send:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── Attach button ────────────────────────────────────────── */
+    .attach-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: none;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.15));
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--secondary-text-color);
+      transition: background 150ms, color 150ms;
+    }
+    .attach-btn:hover { background: rgba(255,255,255,0.07); color: var(--primary-text-color); }
+
+    input[type='file'] { display: none; }
+
+    /* ── Attachment preview ───────────────────────────────────── */
+    .attachment-preview {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0;
+    }
+    .attachment-preview img {
+      width: 64px;
+      height: 64px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.12));
+    }
+    .remove-attachment {
+      background: rgba(255,255,255,0.08);
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+    }
+
+    /* ── Agent setup banner ───────────────────────────────────── */
+    .agent-setup-banner {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px 16px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      flex-shrink: 0;
+    }
+    .agent-setup-label {
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+    }
+    .agent-setup-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .agent-setup-picker {
+      flex: 1;
+    }
+    .agent-save-btn {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-amber, #ff9800);
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-setup-error {
+      font-size: 0.72rem;
+      color: var(--error-color, #f44336);
+    }
+
+    .composer--disabled {
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    /* ── Composer error ───────────────────────────────────────── */
+    .composer-error {
+      font-size: 0.78rem;
+      color: var(--error-color, #f44336);
+      padding: 4px 2px 0;
+    }
+
+    /* ── Pin button ──────────────────────────────────────────── */
+    .pin-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-text-color, rgba(255,255,255,0.4));
+      display: flex;
+      align-items: center;
+      padding: 2px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 150ms, color 150ms;
+    }
+    .thread-row:hover .pin-btn,
+    .thread-header .pin-btn { opacity: 1; }
+    .pin-btn.pinned { color: var(--ai-accent, #4caf50); opacity: 1; }
+    .pin-btn:hover { color: var(--primary-text-color, #fff); }
+
+    /* ── Message image thumbnail ──────────────────────────────── */
+    .msg-image {
+      display: block;
+      max-width: 200px;
+      border-radius: 8px;
+      margin-top: 6px;
+      border: 1px solid var(--divider-color, rgba(255,255,255,0.1));
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GmChatPanel.prototype, "growspaceid", void 0);
+__decorate([
+    n$5({ type: String })
+], GmChatPanel.prototype, "growspacename", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GmChatPanel.prototype, "hass", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_inputText", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_dismissedActions", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_contextChips", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_pendingAttachment", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_selectedAgent", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_agentSaving", void 0);
+__decorate([
+    r$3()
+], GmChatPanel.prototype, "_agentSaveError", void 0);
+GmChatPanel = __decorate([
+    t$2('gm-chat-panel')
+], GmChatPanel);
+
+let GmBriefingPanel = class GmBriefingPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceid = '';
+        this._followUp = '';
+        this._activeTab = 0;
+        this._selectedAgent = '';
+        this._agentSaving = false;
+        this._agentSaveError = null;
+        this._briefing = new libExports.StoreController(this, aiBriefing$);
+        this._loading = new libExports.StoreController(this, isAiLoading$);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (!aiBriefing$.get().get(this.growspaceid)) {
+            fetchBriefing(this.growspaceid);
+        }
+    }
+    async _regenerate() {
+        await fetchBriefing(this.growspaceid, true);
+    }
+    async _submitFollowUp() {
+        const text = this._followUp.trim();
+        if (!text)
+            return;
+        this._followUp = '';
+        const thread = await startConversation(this.growspaceid, text);
+        if (thread)
+            aiMode$.set('chat');
+    }
+    _renderLoading() {
+        return x `
+      <div class="briefing-loading">
+        <svg class="briefing-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2a10 10 0 1 0 10 10" stroke-linecap="round"/>
+        </svg>
+        Fetching briefing…
+      </div>
+    `;
+    }
+    _renderRail() {
+        const BRIEFING_ITEMS = [
+            'Morning briefing',
+            'Risk watch',
+            "What's going well",
+            '7-day forecast',
+        ];
+        return x `
+      <aside class="briefing-rail">
+        <div class="rail-section-label">Briefings</div>
+        ${BRIEFING_ITEMS.map((label, i) => x `
+          <button
+            class="v1-nav-item"
+            aria-pressed=${this._activeTab === i ? 'true' : 'false'}
+            @click=${() => { this._activeTab = i; }}
+          >
+            ${label}
+          </button>
+        `)}
+      </aside>
+    `;
+    }
+    _renderChart() {
+        return x `
+      <div class="evidence-card">
+        <div class="evidence-title">VPD + Canopy Temp · 24h</div>
+        <svg class="evidence-chart" viewBox="0 0 400 80" preserveAspectRatio="none" aria-hidden="true">
+          <!-- target band -->
+          <rect x="0" y="20" width="400" height="20" fill="rgba(76,175,80,0.08)" />
+          <!-- VPD line (purple) -->
+          <polyline
+            points="0,40 50,35 100,30 150,28 200,25 250,30 300,22 350,18 400,20"
+            fill="none" stroke="var(--ai-violet,#9c27b0)" stroke-width="2"
+          />
+          <!-- canopy temp line (amber) -->
+          <polyline
+            points="0,60 50,55 100,50 150,52 200,48 250,44 300,46 350,40 400,38"
+            fill="none" stroke="var(--ai-amber,#ff9800)" stroke-width="2"
+          />
+          <!-- spike marker -->
+          <circle cx="300" cy="22" r="4" fill="var(--error-color,#f44336)" />
+        </svg>
+        <div class="evidence-legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--ai-violet,#9c27b0)"></div>VPD
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:var(--ai-amber,#ff9800)"></div>Canopy temp
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background:rgba(76,175,80,0.4)"></div>Target band
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderReco(reco) {
+        return x `
+      <div class="reco-row">
+        <div class="reco-body">
+          <p class="reco-title">${reco.title}</p>
+          <p class="reco-desc">${reco.description}</p>
+          <div class="reco-footer">
+            <span class="impact-badge" data-impact=${reco.impact}>${reco.impact}</span>
+            ${reco.suggested_action
+            ? x `<button class="reco-apply" @click=${() => applyAction(reco.suggested_action)}>Apply</button>`
+            : E}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    async _saveAgent() {
+        if (!this._selectedAgent)
+            return;
+        this._agentSaving = true;
+        this._agentSaveError = null;
+        try {
+            await saveAiAgent(this._selectedAgent, this.growspaceid);
+        }
+        catch (err) {
+            this._agentSaveError = err instanceof Error ? err.message : 'Failed to save agent';
+        }
+        finally {
+            this._agentSaving = false;
+        }
+    }
+    _renderAiUnavailable() {
+        return x `
+      <div class="agent-setup">
+        <h3>No AI agent configured</h3>
+        <p>Select a conversation agent to enable AI-powered briefings.</p>
+        <div class="agent-setup-row">
+          <div class="agent-setup-picker">
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._selectedAgent}
+              .includeDomains=${['conversation']}
+              allow-custom-entity
+              @value-changed=${(e) => { this._selectedAgent = e.detail.value ?? ''; }}
+            ></ha-entity-picker>
+          </div>
+          <button
+            class="agent-save-btn"
+            ?disabled=${!this._selectedAgent || this._agentSaving}
+            @click=${this._saveAgent}
+          >${this._agentSaving ? 'Saving…' : 'Enable AI'}</button>
+        </div>
+        ${this._agentSaveError ? x `<div class="agent-setup-error">${this._agentSaveError}</div>` : E}
+      </div>
+    `;
+    }
+    _renderRiskWatch(briefing) {
+        if (!briefing.ai_available)
+            return this._renderAiUnavailable();
+        const risks = briefing.recommendations.filter((r) => r.impact === 'high');
+        return x `
+      <div class="risk-watch-content v1-content-scroll">
+        <div class="reco-section-title">High-impact risks · ${risks.length}</div>
+        ${risks.length
+            ? risks.map((r) => this._renderReco(r))
+            : x `<p class="tab-placeholder">No high-impact risks flagged.</p>`}
+      </div>
+    `;
+    }
+    _renderGoingWell(briefing) {
+        if (!briefing.ai_available)
+            return this._renderAiUnavailable();
+        const good = briefing.recommendations.filter((r) => r.impact === 'low');
+        return x `
+      <div class="going-well-content v1-content-scroll">
+        <div class="reco-section-title">What's going well · ${good.length}</div>
+        ${good.length
+            ? good.map((r) => this._renderReco(r))
+            : x `<p class="tab-placeholder">Nothing flagged as low-impact — keep it up!</p>`}
+      </div>
+    `;
+    }
+    _renderForecast() {
+        return x `
+      <div class="forecast-content tab-placeholder">
+        <h3>7-day forecast</h3>
+        <p>Predictive forecast coming soon.</p>
+      </div>
+    `;
+    }
+    _renderBriefing(briefing) {
+        const ts = new Date(briefing.generated_at * 1000).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+        return x `
+      <header class="briefing-header">
+        <span class="briefing-breadcrumb">Briefing · ${ts}</span>
+        <button class="briefing-regenerate" @click=${this._regenerate}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <path d=${mdiRefresh}></path>
+          </svg>
+          Regenerate
+        </button>
+      </header>
+      <div class="v1-content-scroll">
+        <!-- TL;DR card -->
+        <div class="insight-head">
+          <div class="insight-head-top">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="color:var(--ai-violet,#9c27b0);flex-shrink:0">
+              <path d=${mdiBrain}></path>
+            </svg>
+            <h3>${briefing.headline ?? 'Morning Briefing'}</h3>
+          </div>
+          ${briefing.confidence !== undefined ? x `
+            <div class="conf-meter">
+              <div class="conf-bar">
+                <div class="conf-fill" style="width:${Math.round(briefing.confidence * 100)}%"></div>
+              </div>
+              ${Math.round(briefing.confidence * 100)}% confidence
+            </div>
+          ` : E}
+          ${briefing.drawn_from ? x `<div class="drawn-from">Drawn from ${briefing.drawn_from}</div>` : E}
+          <p>${briefing.summary_text}</p>
+        </div>
+
+        <!-- KPI row -->
+        <div class="kpi-row">
+          ${briefing.kpis.map((kpi) => x `
+            <div class="kpi-card">
+              <div class="kpi-label">${kpi.label}</div>
+              <div class="kpi-value">
+                ${kpi.value}<span class="kpi-unit">${kpi.unit ?? ''}</span>
+              </div>
+              ${kpi.delta ? x `<div class="kpi-delta">${kpi.delta}</div>` : E}
+            </div>
+          `)}
+        </div>
+
+        <!-- Evidence chart -->
+        ${this._renderChart()}
+
+        <!-- Recommendations -->
+        <div class="reco-section-title">
+          Recommendations · ${briefing.recommendations.length} actionable
+        </div>
+        ${briefing.recommendations.map((r) => this._renderReco(r))}
+      </div>
+
+      <!-- Follow-up input -->
+      <div class="follow-up-wrap">
+        <input
+          class="follow-up"
+          type="text"
+          placeholder="Ask a follow-up question…"
+          .value=${this._followUp}
+          @input=${(e) => { this._followUp = e.target.value; }}
+          @keydown=${(e) => {
+            if (e.key === 'Enter')
+                this._submitFollowUp();
+        }}
+        />
+      </div>
+    `;
+    }
+    _renderTabContent(briefing) {
+        if (!briefing.ai_available)
+            return this._renderAiUnavailable();
+        switch (this._activeTab) {
+            case 1: return this._renderRiskWatch(briefing);
+            case 2: return this._renderGoingWell(briefing);
+            case 3: return this._renderForecast();
+            default: return this._renderBriefing(briefing);
+        }
+    }
+    render() {
+        const briefing = this._briefing.value.get(this.growspaceid) ?? null;
+        const loading = this._loading.value;
+        return x `
+      ${this._renderRail()}
+      <div class="briefing-content">
+        ${!briefing && loading ? this._renderLoading() : E}
+        ${briefing ? this._renderTabContent(briefing) : E}
+      </div>
+    `;
+    }
+};
+GmBriefingPanel.styles = i$6 `
+    :host {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Rail ─────────────────────────────────────────────────── */
+    .briefing-rail {
+      width: 220px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 8px;
+      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      overflow-y: auto;
+    }
+
+    .rail-section-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--secondary-text-color);
+      padding: 0 4px;
+      margin-top: 8px;
+    }
+
+    .v1-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-text-color);
+      font-size: 0.82rem;
+      font-family: inherit;
+      text-align: left;
+      width: 100%;
+      transition: background 150ms;
+    }
+    .v1-nav-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .v1-nav-item[aria-pressed='true'] {
+      background: rgba(156, 39, 176, 0.14);
+      color: var(--ai-violet, #9c27b0);
+    }
+
+    /* ── Content ──────────────────────────────────────────────── */
+    .briefing-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .briefing-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      flex-shrink: 0;
+    }
+    .briefing-breadcrumb {
+      flex: 1;
+      font-size: 0.82rem;
+      color: var(--secondary-text-color);
+    }
+    .briefing-regenerate {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      padding: 5px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      background: none;
+      cursor: pointer;
+      color: var(--primary-text-color);
+      font-family: inherit;
+      transition: background 150ms;
+    }
+    .briefing-regenerate:hover {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .v1-content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Loading ──────────────────────────────────────────────── */
+    .briefing-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      color: var(--secondary-text-color);
+      font-size: 0.9rem;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+    .briefing-spinner {
+      animation: spin 1s linear infinite;
+      width: 22px;
+      height: 22px;
+    }
+
+    /* ── TL;DR (insight-head) ─────────────────────────────────── */
+    .insight-head {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 14px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .insight-head-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .insight-head h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      flex: 1;
+      line-height: 1.3;
+    }
+    .insight-head p {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--secondary-text-color);
+    }
+    .insight-head p em {
+      font-style: normal;
+      color: var(--primary-text-color);
+      font-weight: 500;
+    }
+    .conf-meter {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+    }
+    .conf-bar {
+      height: 4px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      width: 60px;
+      overflow: hidden;
+    }
+    .conf-fill {
+      height: 100%;
+      background: var(--ai-violet, #9c27b0);
+      border-radius: 4px;
+    }
+    .drawn-from {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+      opacity: 0.7;
+    }
+
+    /* ── KPI row ──────────────────────────────────────────────── */
+    .kpi-row {
+      display: flex;
+      gap: 10px;
+    }
+    .kpi-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .kpi-label {
+      font-size: 0.72rem;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-value {
+      font-size: 1.3rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .kpi-unit {
+      font-size: 0.72rem;
+      color: var(--secondary-text-color);
+      font-weight: 400;
+      margin-left: 2px;
+    }
+    .kpi-delta {
+      font-size: 0.72rem;
+      color: var(--ai-accent, #4caf50);
+    }
+
+    /* ── Evidence card ────────────────────────────────────────── */
+    .evidence-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 14px;
+      padding: 14px 16px;
+    }
+    .evidence-title {
+      font-size: 0.78rem;
+      color: var(--secondary-text-color);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .evidence-chart {
+      width: 100%;
+      height: 80px;
+    }
+    .evidence-legend {
+      display: flex;
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* ── Recommendations ──────────────────────────────────────── */
+    .reco-section-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .reco-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+    }
+    .reco-body { flex: 1; }
+    .reco-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin: 0 0 3px;
+    }
+    .reco-desc {
+      font-size: 0.8rem;
+      color: var(--secondary-text-color);
+      margin: 0;
+    }
+    .reco-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .impact-badge {
+      font-size: 0.68rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .impact-badge[data-impact='high'] {
+      background: rgba(244, 67, 54, 0.2);
+      color: var(--error-color, #f44336);
+    }
+    .impact-badge[data-impact='medium'] {
+      background: rgba(255, 152, 0, 0.2);
+      color: var(--ai-amber, #ff9800);
+    }
+    .impact-badge[data-impact='low'] {
+      background: rgba(33, 150, 243, 0.2);
+      color: var(--primary-color, #2196f3);
+    }
+    .reco-apply {
+      font-size: 0.75rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-violet, #9c27b0);
+      color: #fff;
+    }
+
+    /* ── Follow-up ────────────────────────────────────────────── */
+    .follow-up-wrap {
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      padding: 10px 16px 12px;
+      flex-shrink: 0;
+    }
+    .follow-up {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 20px;
+      padding: 9px 16px;
+      color: var(--primary-text-color, #fff);
+      font-family: inherit;
+      font-size: 0.88rem;
+      box-sizing: border-box;
+    }
+    .follow-up:focus {
+      outline: none;
+      border-color: rgba(156, 39, 176, 0.5);
+    }
+
+    /* ── Agent setup ──────────────────────────────────────────────── */
+    .agent-setup {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 14px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .agent-setup h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .agent-setup p {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--secondary-text-color);
+    }
+    .agent-setup-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      max-width: 400px;
+    }
+    .agent-setup-picker {
+      flex: 1;
+    }
+    .agent-save-btn {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      background: var(--ai-violet, #9c27b0);
+      color: #fff;
+      transition: opacity 150ms;
+    }
+    .agent-save-btn:disabled { opacity: 0.4; cursor: default; }
+    .agent-setup-error {
+      font-size: 0.72rem;
+      color: var(--error-color, #f44336);
+    }
+
+    /* ── Per-tab placeholder sections ────────────────────────────── */
+    .tab-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: 12px;
+      color: var(--secondary-text-color);
+      font-size: 0.9rem;
+      padding: 32px 20px;
+      text-align: center;
+    }
+    .tab-placeholder h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--primary-text-color);
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GmBriefingPanel.prototype, "growspaceid", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GmBriefingPanel.prototype, "hass", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_followUp", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_activeTab", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_selectedAgent", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_agentSaving", void 0);
+__decorate([
+    r$3()
+], GmBriefingPanel.prototype, "_agentSaveError", void 0);
+GmBriefingPanel = __decorate([
+    t$2('gm-briefing-panel')
+], GmBriefingPanel);
+
+function formatRelative(ts) {
+    const diff = Math.floor((Date.now() - ts * 1000) / 1000);
+    if (diff < 60)
+        return `${diff}s ago`;
+    if (diff < 3600)
+        return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400)
+        return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+}
+let GmInboxPanel = class GmInboxPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.growspaceid = '';
+        this.growspacename = '';
+        this._filter = 'all';
+        this._selectedId = null;
+        this._readIds = new Set();
+        this._showNoteInput = false;
+        this._noteText = '';
+        this._alerts = new libExports.StoreController(this, aiAlerts$);
+        this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        fetchAlerts(this.growspaceid);
+    }
+    _alertsForGs() {
+        const raw = this._alerts.value?.get(this.growspaceid);
+        return Array.isArray(raw) ? raw : [];
+    }
+    get _filtered() {
+        const all = this._alertsForGs().filter((a) => !a.resolved);
+        if (this._filter === 'action')
+            return all.filter((a) => a.severity === 'danger');
+        if (this._filter === 'watch')
+            return all.filter((a) => a.severity === 'warning');
+        return all;
+    }
+    get _selected() {
+        return this._selectedId
+            ? this._alertsForGs().find((a) => a.id === this._selectedId)
+            : undefined;
+    }
+    _selectAlert(id) {
+        this._selectedId = id;
+        this._readIds = new Set([...this._readIds, id]);
+        this._showNoteInput = false;
+        this._noteText = '';
+    }
+    _setFilter(f) {
+        this._filter = f;
+        this._selectedId = null;
+        this._showNoteInput = false;
+    }
+    async _resolve(alert, note) {
+        await resolveAlert(alert.id, note);
+        this._selectedId = null;
+        this._showNoteInput = false;
+        this._noteText = '';
+    }
+    async _applyAction(action) {
+        await applyAction(action);
+    }
+    _countFor(f) {
+        const all = this._alertsForGs().filter((a) => !a.resolved);
+        if (f === 'action')
+            return all.filter((a) => a.severity === 'danger').length;
+        if (f === 'watch')
+            return all.filter((a) => a.severity === 'warning').length;
+        return all.length;
+    }
+    _renderFilterStrip() {
+        const filters = [
+            { key: 'all', label: 'All' },
+            { key: 'action', label: 'Action' },
+            { key: 'watch', label: 'Watch' },
+        ];
+        return x `
+      <div class="inbox-filters">
+        ${filters.map(({ key, label }) => x `
+            <button
+              class="inbox-filter-pill"
+              aria-pressed=${this._filter === key ? 'true' : 'false'}
+              @click=${() => this._setFilter(key)}
+            >
+              ${label}
+              <span class="pill-count">${this._countFor(key)}</span>
+            </button>
+          `)}
+      </div>
+    `;
+    }
+    _renderAlertList() {
+        const items = this._filtered;
+        if (items.length === 0) {
+            return x `
+        <div class="inbox-empty">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+            <path d="${mdiInbox}"></path>
+          </svg>
+          <p>No alerts</p>
+        </div>
+      `;
+        }
+        return x `
+      <div class="inbox-list">
+        ${c(items, (a) => a.id, (a) => {
+            const isRead = this._readIds.has(a.id);
+            return x `
+              <div
+                class="inbox-row"
+                aria-selected=${this._selectedId === a.id ? 'true' : 'false'}
+                @click=${() => this._selectAlert(a.id)}
+              >
+                <div
+                  class="inbox-severity-bar"
+                  data-severity=${a.severity ?? 'info'}
+                ></div>
+                <div class="inbox-row-body">
+                  <div class="inbox-row-title">
+                    ${!isRead ? x `<span class="inbox-unread-dot"></span>` : E}
+                    ${a.title ?? a.type}
+                  </div>
+                  ${a.description
+                ? x `<div class="inbox-row-desc">${a.description}</div>`
+                : E}
+                  <div class="inbox-row-time">${formatRelative(a.timestamp)}</div>
+                </div>
+              </div>
+            `;
+        })}
+      </div>
+    `;
+    }
+    _renderDetailPane() {
+        const alert = this._selected;
+        if (!alert) {
+            return x `<div class="inbox-no-selection">Select an alert to view details</div>`;
+        }
+        const hasAiReasoning = !!alert.ai_reasoning;
+        return x `
+      <div class="inbox-detail">
+        <!-- Header -->
+        <div class="inbox-detail-head">
+          <h3>${alert.title ?? alert.type}</h3>
+          <div class="inbox-detail-meta">
+            <span class="inbox-severity-pill" data-severity=${alert.severity ?? 'info'}>
+              ${alert.severity ?? 'info'}
+            </span>
+            <span class="inbox-detail-time">${formatRelative(alert.timestamp)}</span>
+          </div>
+        </div>
+
+        <!-- Reasoning -->
+        <div class="reasoning">
+          <div class="reasoning-label">Why I flagged this</div>
+          ${hasAiReasoning
+            ? x `<div class="reasoning-text">${alert.ai_reasoning}</div>`
+            : alert.bayesian_reasons.map((r) => x `<div class="reasoning-bayesian-item">${r}</div>`)}
+        </div>
+
+        <!-- Evidence photo (only when AI reasoning is present) -->
+        ${hasAiReasoning
+            ? x `
+              <div class="photo-evid">
+                <div class="photo-evid-label">Evidence snapshot</div>
+                <div class="photo-evid-placeholder">Camera snapshot unavailable</div>
+              </div>
+            `
+            : E}
+
+        <!-- KPI row -->
+        ${alert.kpis && alert.kpis.length > 0
+            ? x `
+              <div class="kpi-row">
+                ${alert.kpis.map((k) => x `
+                    <div class="kpi-card">
+                      <div class="kpi-card-label">${k.label}</div>
+                      <div class="kpi-card-value">${k.value}${k.unit ? x ` <small>${k.unit}</small>` : E}</div>
+                    </div>
+                  `)}
+              </div>
+            `
+            : E}
+
+        <!-- Suggested actions -->
+        ${alert.suggested_actions && alert.suggested_actions.length > 0
+            ? x `
+              <div class="reco-section-label">Suggested actions</div>
+              ${alert.suggested_actions.map((action) => x `
+                  <div class="reco-row">
+                    <div class="reco-row-body">${action.description}</div>
+                    <button
+                      class="apply-btn"
+                      @click=${() => this._applyAction(action)}
+                    >Apply</button>
+                  </div>
+                `)}
+            `
+            : E}
+
+        <!-- Action ribbon -->
+        <div class="action-ribbon">
+          <span class="action-ribbon-hint">
+            Resolved manually? Tell Grow Master what you did.
+          </span>
+          ${this._showNoteInput
+            ? x `
+                <div class="note-area">
+                  <input
+                    class="note-input"
+                    type="text"
+                    placeholder="Add a note…"
+                    .value=${this._noteText}
+                    @input=${(e) => { this._noteText = e.target.value; }}
+                  />
+                  <button
+                    class="note-submit-btn"
+                    @click=${() => this._resolve(alert, this._noteText)}
+                  >Submit</button>
+                </div>
+              `
+            : x `
+                <button
+                  class="add-note-btn"
+                  @click=${() => { this._showNoteInput = true; }}
+                >Add note</button>
+                <button
+                  class="resolve-btn"
+                  @click=${() => this._resolve(alert)}
+                >Resolve</button>
+              `}
+        </div>
+      </div>
+    `;
+    }
+    _renderAiUnavailableBanner() {
+        return x `
+      <div class="ai-unavailable-banner">
+        AI reasoning unavailable — alerts shown without enrichment.
+      </div>
+    `;
+    }
+    render() {
+        const aiAvailable = this._aiEnabled.value;
+        return x `
+      <div class="inbox-shell">
+        <div class="inbox-rail">
+          ${aiAvailable === false ? this._renderAiUnavailableBanner() : E}
+          ${this._renderFilterStrip()}
+          ${this._renderAlertList()}
+        </div>
+        ${this._renderDetailPane()}
+      </div>
+    `;
+    }
+};
+GmInboxPanel.styles = i$6 `
+    :host {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .inbox-shell {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Rail ───────────────────────────────────────────────── */
+    .inbox-rail {
+      width: 280px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      overflow: hidden;
+    }
+
+    /* ── Filter strip ──────────────────────────────────────── */
+    .inbox-filters {
+      display: flex;
+      gap: 6px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      flex-shrink: 0;
+    }
+
+    .inbox-filter-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: none;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      font-size: 0.78rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 150ms, color 150ms;
+    }
+
+    .inbox-filter-pill[aria-pressed='true'] {
+      background: rgba(255, 152, 0, 0.15);
+      color: var(--ai-amber, #ff9800);
+      border-color: var(--ai-amber, #ff9800);
+    }
+
+    .pill-count {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0 5px;
+      font-size: 0.7rem;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* ── Alert list ─────────────────────────────────────────── */
+    .inbox-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .inbox-row {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 10px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      position: relative;
+      transition: background 150ms;
+    }
+
+    .inbox-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .inbox-row[aria-selected='true'] {
+      background: rgba(255, 152, 0, 0.08);
+    }
+
+    .inbox-severity-bar {
+      width: 3px;
+      border-radius: 2px;
+      margin-right: 10px;
+      flex-shrink: 0;
+      background: var(--secondary-text-color);
+    }
+
+    .inbox-severity-bar[data-severity='danger'] {
+      background: var(--error-color, #f44336);
+    }
+
+    .inbox-severity-bar[data-severity='warning'] {
+      background: var(--warning-color, #ff9800);
+    }
+
+    .inbox-severity-bar[data-severity='info'] {
+      background: var(--success-color, #4caf50);
+    }
+
+    .inbox-row-body {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .inbox-row-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .inbox-unread-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
+    }
+
+    .inbox-row-desc {
+      font-size: 0.78rem;
+      color: var(--secondary-text-color);
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .inbox-row-time {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+      margin-top: 4px;
+      opacity: 0.7;
+    }
+
+    /* ── AI unavailable banner ──────────────────────────────── */
+    .ai-unavailable-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255, 152, 0, 0.08);
+      border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+      font-size: 0.78rem;
+      color: var(--ai-amber, #ff9800);
+      flex-shrink: 0;
+    }
+
+    /* ── Empty state ────────────────────────────────────────── */
+    .inbox-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 8px;
+      color: var(--secondary-text-color);
+      padding: 24px;
+      text-align: center;
+    }
+
+    .inbox-empty svg {
+      opacity: 0.3;
+    }
+
+    /* ── Detail pane ────────────────────────────────────────── */
+    .inbox-detail {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .inbox-no-selection {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+      opacity: 0.5;
+    }
+
+    /* ── Detail header ──────────────────────────────────────── */
+    .inbox-detail-head {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .inbox-detail-head h3 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    .inbox-detail-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .inbox-severity-pill {
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .inbox-severity-pill[data-severity='danger'] {
+      background: rgba(244, 67, 54, 0.15);
+      color: #f44336;
+    }
+
+    .inbox-severity-pill[data-severity='warning'] {
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+    }
+
+    .inbox-severity-pill[data-severity='info'] {
+      background: rgba(76, 175, 80, 0.15);
+      color: #4caf50;
+    }
+
+    .inbox-detail-time {
+      font-size: 0.78rem;
+      color: var(--secondary-text-color);
+    }
+
+    /* ── Reasoning ──────────────────────────────────────────── */
+    .reasoning {
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+
+    .reasoning-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--secondary-text-color);
+      margin-bottom: 8px;
+    }
+
+    .reasoning-text {
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .reasoning-bayesian-item {
+      font-size: 0.85rem;
+      line-height: 1.5;
+      padding: 2px 0;
+    }
+
+    .reasoning-bayesian-item::before {
+      content: '• ';
+    }
+
+    /* ── Evidence photo ─────────────────────────────────────── */
+    .photo-evid {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .photo-evid-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--secondary-text-color);
+    }
+
+    .photo-evid-placeholder {
+      width: 100%;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--secondary-text-color);
+      font-size: 0.8rem;
+    }
+
+    /* ── KPI cards ──────────────────────────────────────────── */
+    .kpi-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .kpi-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .kpi-card-label {
+      font-size: 0.7rem;
+      color: var(--secondary-text-color);
+      text-transform: uppercase;
+    }
+
+    .kpi-card-value {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ── Suggested actions ──────────────────────────────────── */
+    .reco-section-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--secondary-text-color);
+    }
+
+    .reco-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+    }
+
+    .reco-row-body {
+      flex: 1;
+      font-size: 0.85rem;
+    }
+
+    .apply-btn {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success-color, #4caf50);
+      border: none;
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+    }
+
+    .apply-btn:hover {
+      background: rgba(76, 175, 80, 0.25);
+    }
+
+    /* ── Action ribbon ──────────────────────────────────────── */
+    .action-ribbon {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-ribbon-hint {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--secondary-text-color);
+      min-width: 160px;
+    }
+
+    .add-note-btn,
+    .resolve-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-family: inherit;
+      color: var(--primary-text-color, #fff);
+    }
+
+    .resolve-btn {
+      background: rgba(76, 175, 80, 0.12);
+      color: var(--success-color, #4caf50);
+      border-color: var(--success-color, #4caf50);
+    }
+
+    .resolve-btn:hover {
+      background: rgba(76, 175, 80, 0.22);
+    }
+
+    /* ── Note input ─────────────────────────────────────────── */
+    .note-area {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    .note-input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.88rem;
+      resize: none;
+    }
+
+    .note-submit-btn {
+      background: rgba(76, 175, 80, 0.15);
+      color: var(--success-color, #4caf50);
+      border: 1px solid var(--success-color, #4caf50);
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.82rem;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GmInboxPanel.prototype, "growspaceid", void 0);
+__decorate([
+    n$5({ type: String })
+], GmInboxPanel.prototype, "growspacename", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_filter", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_selectedId", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_readIds", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_showNoteInput", void 0);
+__decorate([
+    r$3()
+], GmInboxPanel.prototype, "_noteText", void 0);
+GmInboxPanel = __decorate([
+    t$2('gm-inbox-panel')
+], GmInboxPanel);
+
+let Md3EntityInput = class Md3EntityInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.domains = [];
+        this._listId = `entity-list-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    _getEntities() {
+        if (!this.hass)
+            return [];
+        return Object.keys(this.hass.states || {})
+            .filter((eid) => {
+            if (this.domains.length === 0)
+                return true;
+            return this.domains.includes(eid.split('.')[0]);
+        })
+            .sort();
+    }
+    _handleChange(e) {
+        const val = e.target.value;
+        this.value = val;
+        this.dispatchEvent(new CustomEvent('change', { detail: val || null, bubbles: true, composed: true }));
+    }
+    render() {
+        const entities = this._getEntities();
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          class="md3-input"
+          list="${this._listId}"
+          .value=${this.value}
+          placeholder="Search entity..."
+          @change=${this._handleChange}
+        />
+        <datalist id="${this._listId}">
+          ${entities.map((eid) => x `<option value="${eid}"></option>`)}
+        </datalist>
+      </div>
+    `;
+    }
+};
+Md3EntityInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5()
+], Md3EntityInput.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3EntityInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3EntityInput.prototype, "domains", void 0);
+__decorate([
+    n$5({ attribute: false })
+], Md3EntityInput.prototype, "hass", void 0);
+Md3EntityInput = __decorate([
+    t$2('md3-entity-input')
+], Md3EntityInput);
+
+let Md3EntitiesInput = class Md3EntitiesInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = [];
+        this.domains = [];
+        this._listId = `entities-list-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    _getEntities() {
+        if (!this.hass)
+            return [];
+        return Object.keys(this.hass.states || {})
+            .filter((eid) => {
+            if (this.domains.length === 0)
+                return true;
+            return this.domains.includes(eid.split('.')[0]);
+        })
+            .sort();
+    }
+    _remove(val) {
+        const next = this.value.filter((v) => v !== val);
+        this.value = next;
+        this.dispatchEvent(new CustomEvent('change', { detail: next, bubbles: true, composed: true }));
+    }
+    _handleAdd(e) {
+        const input = e.target;
+        const val = input.value.trim();
+        if (val && !this.value.includes(val)) {
+            const next = [...this.value, val];
+            this.value = next;
+            this.dispatchEvent(new CustomEvent('change', { detail: next, bubbles: true, composed: true }));
+        }
+        input.value = '';
+    }
+    render() {
+        const entities = this._getEntities();
+        return x `
+      ${this.label ? x `<span class="label">${this.label}</span>` : ''}
+      <div class="multi-select-box">
+        ${this.value.map((val) => x `
+            <div class="chip">
+              ${val}
+              <span class="chip-remove" @click=${() => this._remove(val)}>×</span>
+            </div>
+          `)}
+        <input
+          class="search-input"
+          list="${this._listId}"
+          placeholder="Add entity..."
+          @change=${this._handleAdd}
+        />
+      </div>
+      <datalist id="${this._listId}">
+        ${entities.map((eid) => x `<option value="${eid}"></option>`)}
+      </datalist>
+    `;
+    }
+};
+Md3EntitiesInput.styles = i$6 `
+    :host {
+      display: block;
+      width: 100%;
+    }
+    .label {
+      font-size: 0.75rem;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      display: block;
+      margin-bottom: 4px;
+    }
+    .multi-select-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 4px 4px 0 0;
+      border-bottom: 1px solid var(--primary-text-color, rgba(255, 255, 255, 0.4));
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      padding: 8px;
+      min-height: 40px;
+      box-sizing: border-box;
+    }
+    .multi-select-box:focus-within {
+      border-bottom: 2px solid var(--primary-color, rgba(255, 255, 255, 0.6));
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
+      border-radius: 16px;
+      padding: 2px 10px;
+      font-size: 0.85rem;
+      gap: 4px;
+    }
+    .chip-remove {
+      cursor: pointer;
+      font-weight: bold;
+      opacity: 0.7;
+      line-height: 1;
+    }
+    .chip-remove:hover {
+      opacity: 1;
+    }
+    .search-input {
+      flex: 1;
+      min-width: 80px;
+      border: none;
+      background: transparent;
+      color: var(--primary-text-color);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 2px 0;
+      outline: none;
+    }
+  `;
+__decorate([
+    n$5()
+], Md3EntitiesInput.prototype, "label", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3EntitiesInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3EntitiesInput.prototype, "domains", void 0);
+__decorate([
+    n$5({ attribute: false })
+], Md3EntitiesInput.prototype, "hass", void 0);
+Md3EntitiesInput = __decorate([
+    t$2('md3-entities-input')
+], Md3EntitiesInput);
+
+const PERSONALITY_OPTIONS = [
+    'Standard',
+    'Scientific',
+    'Chill Stoner',
+    'Strict Coach',
+    'Pirate',
+];
+let GmSettingsPanel = class GmSettingsPanel extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.draft = {};
+    }
+    _emit() {
+        this.dispatchEvent(new CustomEvent('draft-change', {
+            detail: { ...this.draft },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    _patch(update) {
+        this.draft = { ...this.draft, ...update };
+        this._emit();
+    }
+    render() {
+        const d = this.draft;
+        return x `
+      <!-- Core -->
+      <div class="section">
+        <div class="section-heading">Core</div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Enable AI</div>
+          </div>
+          <md3-switch
+            data-field="ai_enabled"
+            .checked=${d.ai_enabled ?? false}
+            @change=${(e) => this._patch({ ai_enabled: e.detail.checked })}
+          ></md3-switch>
+        </div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Conversation Agent</div>
+            <div class="field-hint">HA conversation entity to use</div>
+          </div>
+          <md3-entity-input
+            data-field="assistant_id"
+            label="Conversation Agent"
+            .hass=${this.hass}
+            .value=${d.assistant_id ?? ''}
+            .domains=${['conversation']}
+            @change=${(e) => this._patch({ assistant_id: e.detail ?? null })}
+          ></md3-entity-input>
+        </div>
+      </div>
+
+      <!-- Responses -->
+      <div class="section">
+        <div class="section-heading">Responses</div>
+        <div class="field-row">
+          <div class="field-label">Personality</div>
+          <md3-select
+            data-field="notification_personality"
+            .value=${d.notification_personality ?? 'Standard'}
+            .options=${PERSONALITY_OPTIONS}
+            @change=${(e) => this._patch({ notification_personality: e.detail })}
+          ></md3-select>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Max Response Length</div>
+          <md3-number-input
+            data-field="max_response_length"
+            label="Characters"
+            .value=${d.max_response_length ?? 250}
+            @change=${(e) => this._patch({ max_response_length: Number(e.detail) })}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div class="section">
+        <div class="section-heading">Alerts</div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Auto Alerts</div>
+            <div class="field-hint">Enrich triage alerts with AI reasoning</div>
+          </div>
+          <md3-switch
+            data-field="ai_auto_alerts"
+            .checked=${d.ai_auto_alerts ?? true}
+            @change=${(e) => this._patch({ ai_auto_alerts: e.detail.checked })}
+          ></md3-switch>
+        </div>
+      </div>
+
+      <!-- Vision -->
+      <div class="section">
+        <div class="section-heading">Vision</div>
+        <div class="field-row">
+          <div>
+            <div class="field-label">Vision Checkups</div>
+            <div class="field-hint">AI plant health checkups via camera</div>
+          </div>
+          <md3-switch
+            data-field="vision_checkup_enabled"
+            .checked=${d.vision_checkup_enabled ?? false}
+            @change=${(e) => this._patch({ vision_checkup_enabled: e.detail.checked })}
+          ></md3-switch>
+        </div>
+      </div>
+
+      <!-- Briefings -->
+      <div class="section">
+        <div class="section-heading">Briefings</div>
+        <div class="field-row">
+          <div class="field-label">Briefing Interval (minutes)</div>
+          <md3-number-input
+            data-field="briefing_interval_minutes"
+            label="Minutes"
+            .min=${5}
+            .max=${1440}
+            .value=${d.briefing_interval_minutes ?? 30}
+            @change=${(e) => this._patch({ briefing_interval_minutes: Number(e.detail) })}
+          ></md3-number-input>
+        </div>
+        <div class="field-row">
+          <div class="field-label">AI Task Entity</div>
+          <md3-entity-input
+            data-field="ai_task_entity_id"
+            label="AI Task Entity"
+            .hass=${this.hass}
+            .value=${d.ai_task_entity_id ?? ''}
+            .domains=${['ai_task']}
+            @change=${(e) => this._patch({ ai_task_entity_id: e.detail ?? null })}
+          ></md3-entity-input>
+        </div>
+        <div class="field-row">
+          <div class="field-label">Trigger Entities</div>
+          <md3-entities-input
+            data-field="briefing_trigger_entities"
+            label="Trigger Entities"
+            .hass=${this.hass}
+            .value=${d.briefing_trigger_entities ?? []}
+            @change=${(e) => this._patch({ briefing_trigger_entities: e.detail ?? [] })}
+          ></md3-entities-input>
+        </div>
+      </div>
+    `;
+    }
+};
+GmSettingsPanel.styles = i$6 `
+    :host {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 20px 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .section-heading {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      margin-bottom: 8px;
+    }
+    .section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .field-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .field-label {
+      font-size: 0.9rem;
+      color: var(--primary-text-color);
+    }
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      margin-top: 2px;
+    }
+    md3-entity-input,
+    md3-entities-input,
+    md3-select,
+    md3-number-input {
+      flex: 1;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], GmSettingsPanel.prototype, "draft", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GmSettingsPanel.prototype, "hass", void 0);
+GmSettingsPanel = __decorate([
+    t$2('gm-settings-panel')
+], GmSettingsPanel);
+
+const MODE_META = {
+    chat: { label: 'Chat', icon: mdiBrain, token: 'var(--ai-accent, #4caf50)' },
+    briefing: { label: 'Briefing', icon: mdiNewspaper, token: 'var(--ai-violet, #9c27b0)' },
+    inbox: { label: 'Inbox', icon: mdiInbox, token: 'var(--ai-amber, #ff9800)' },
+    settings: { label: 'Settings', icon: mdiCog, token: 'var(--secondary-text-color, rgba(255,255,255,0.6))' },
+};
 let GrowMasterDialog = class GrowMasterDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        // Props from parent
         this.isStressed = false;
-        this.isLoading = false;
-        this.response = null;
-        this.userQuery = '';
+        this._settingsDraft = {};
+        this._aiMode = new libExports.StoreController(this, aiMode$);
+    }
+    get _growspaceId() { return this.growspaceId ?? ''; }
+    get _growspaceName() { return this.growspaceName ?? ''; }
+    updated(changedProperties) {
+        super.updated(changedProperties);
+        if (changedProperties.has('open') && this.open) {
+            fetchConversationThreads(this._growspaceId);
+            if (!aiBriefing$.get().get(this._growspaceId)) {
+                fetchBriefing(this._growspaceId);
+            }
+            if (aiMode$.get() === 'settings') {
+                fetchAiSettings().then((settings) => {
+                    this._settingsDraft = { ...settings };
+                });
+            }
+        }
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
-    _analyze() {
-        this.dispatchEvent(new CustomEvent('analyze-growspace', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
+    _setMode(mode) {
+        aiMode$.set(mode);
+        if (mode === 'briefing' && !aiBriefing$.get().get(this._growspaceId)) {
+            fetchBriefing(this._growspaceId);
+        }
+        if (mode === 'settings') {
+            fetchAiSettings().then((settings) => {
+                this._settingsDraft = { ...settings };
+            });
+        }
     }
-    _analyzeAll() {
-        this.dispatchEvent(new CustomEvent('analyze-all-growspaces', {
-            detail: { query: this.userQuery },
-            bubbles: true,
-            composed: true,
-        }));
+    _renderNavItem(m, mode) {
+        const meta = MODE_META[m];
+        return x `
+      <button
+        class="gm-nav-item"
+        data-mode=${m}
+        aria-pressed=${mode === m ? 'true' : 'false'}
+        @click=${() => this._setMode(m)}
+        title=${meta.label}
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+          <path d=${meta.icon}></path>
+        </svg>
+        ${meta.label}
+      </button>
+    `;
+    }
+    _renderNavRail(mode) {
+        return x `
+      <nav class="gm-nav-rail" aria-label="AI mode navigation">
+        ${['chat', 'briefing', 'inbox'].map((m) => this._renderNavItem(m, mode))}
+        <div class="gm-nav-rail-bottom">
+          ${this._renderNavItem('settings', mode)}
+        </div>
+      </nav>
+    `;
+    }
+    _renderChatPanel() {
+        return x `
+      <gm-chat-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId ?? ''}
+        growspacename=${this._growspaceName ?? ''}
+        .hass=${this.hass}
+      ></gm-chat-panel>
+    `;
+    }
+    _renderBriefingPanel() {
+        return x `
+      <gm-briefing-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId}
+        growspacename=${this._growspaceName}
+        .hass=${this.hass}
+      ></gm-briefing-panel>
+    `;
+    }
+    _renderInboxPanel() {
+        return x `
+      <gm-inbox-panel
+        style="flex:1;min-height:0;overflow:hidden;"
+        growspaceid=${this._growspaceId}
+        growspacename=${this._growspaceName}
+      ></gm-inbox-panel>
+    `;
+    }
+    _renderSettingsPanel() {
+        return x `
+      <gm-settings-panel
+        style="flex:1;min-height:0;"
+        .draft=${this._settingsDraft}
+        .hass=${this.hass}
+        @draft-change=${(e) => { this._settingsDraft = e.detail; }}
+      ></gm-settings-panel>
+    `;
+    }
+    async _saveSettings() {
+        await saveAiSettings(this._settingsDraft);
+    }
+    _renderFooter(mode) {
+        if (mode === 'settings') {
+            return x `
+        <footer class="gm-footer">
+          <div class="gm-footer-actions">
+            <button class="md3-button tonal gm-save-settings-btn" @click=${this._saveSettings}>
+              Save Settings
+            </button>
+          </div>
+        </footer>
+      `;
+        }
+        return x `
+      <footer class="gm-footer">
+        <p class="gm-disclaimer">
+          AI-generated advice. Always verify with expert guidance before applying.
+        </p>
+        <div class="gm-footer-actions">
+          ${mode === 'briefing'
+            ? x `<button class="md3-button tonal" @click=${() => fetchBriefing(this._growspaceId, true)}>Refresh Briefing</button>`
+            : E}
+          ${mode === 'inbox'
+            ? x `<button class="md3-button tonal">Mark All Read</button>`
+            : E}
+          <button class="gm-mic-btn" disabled aria-label="Voice input (unavailable)" title="Voice input coming soon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="${mdiMicrophone}"></path>
+            </svg>
+          </button>
+        </div>
+      </footer>
+    `;
     }
     render() {
         if (!this.open)
             return x ``;
-        const borderColor = this.isStressed ? '#FF9800' : '#4CAF50';
+        const mode = this._aiMode.value;
+        const meta = MODE_META[mode];
         const title = this.personality ? `Ask the ${this.personality}` : 'Ask the Grow Master';
+        const subtitle = this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal';
         return x `
       <ha-dialog
         open
@@ -18984,83 +22590,40 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
         without-header
         .scrimClickAction=${''}
         .escapeKeyAction=${'close'}
-        width="large"
+        width="full"
       >
-        <div class="glass-dialog-container" style="border-color: ${borderColor}">
-          <div class="dialog-header">
-            <div class="dialog-icon" style="color: ${borderColor}">
+        <div class="glass-dialog-container gm-shell">
+          <!-- Header -->
+          <header class="gm-header dialog-header">
+            <div class="gm-header-icon dialog-icon" data-mode=${mode}>
               <svg style="width:28px;height:28px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiBrain}"></path>
+                <path d=${meta.icon}></path>
               </svg>
             </div>
-            <div class="dialog-title-group">
-              <h2 class="dialog-title">${title}</h2>
-              <div class="dialog-subtitle">
-                ${this.isStressed ? 'Warning: Plant Stress Detected' : 'All systems normal'}
-              </div>
+            <div class="gm-header-title-group dialog-title-group">
+              <h2 class="gm-header-title dialog-title">${title}</h2>
+              <div class="gm-header-subtitle dialog-subtitle">${subtitle}</div>
             </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width:auto; padding:8px;"
-            >
+            <button class="gm-close-btn md3-button text" @click=${this._close} aria-label="Close">
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
               </svg>
             </button>
+          </header>
+
+          <!-- Body: rail + content -->
+          <div class="gm-body">
+            ${this._renderNavRail(mode)}
+            <main class="gm-content ${mode === 'chat' ? 'no-pad' : ''}">
+              ${mode === 'chat' ? this._renderChatPanel() : E}
+              ${mode === 'briefing' ? this._renderBriefingPanel() : E}
+              ${mode === 'inbox' ? this._renderInboxPanel() : E}
+              ${mode === 'settings' ? this._renderSettingsPanel() : E}
+            </main>
           </div>
 
-          <div class="content-padding">
-            <!-- Input Area -->
-            <div class="md3-input-group">
-              <textarea
-                class="sd-textarea"
-                placeholder="Ask about this growspace..."
-                .value=${this.userQuery}
-                @input=${(e) => (this.userQuery = e.target.value)}
-                style="min-height: 80px;"
-              ></textarea>
-            </div>
-
-            <!-- Action -->
-            <div class="button-group" style="padding: 12px 0; justify-content: flex-end;">
-              <button
-                class="md3-button tonal"
-                @click=${this._analyzeAll}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                Analyze All
-              </button>
-              <button
-                class="md3-button primary"
-                @click=${this._analyze}
-                ?disabled=${this.isLoading}
-                style="opacity: ${this.isLoading ? 0.7 : 1}"
-              >
-                ${this.isLoading ? 'Analyzing...' : 'Analyze Environment'}
-              </button>
-            </div>
-
-            <!-- Response Area -->
-            ${this.isLoading
-            ? x `
-                  <div class="gm-loading">
-                    <svg class="spinner" viewBox="0 0 24 24">
-                      <path d="${mdiLoading}" fill="currentColor"></path>
-                    </svg>
-                    <span>Consulting the archives...</span>
-                  </div>
-                `
-            : E}
-            ${!this.isLoading && this.response
-            ? x `
-                  <div class="gm-response-box" style="border: 2px solid ${borderColor};">
-                    ${this.response}
-                  </div>
-                `
-            : E}
-          </div>
+          <!-- Footer -->
+          ${this._renderFooter(mode)}
         </div>
       </ha-dialog>
     `;
@@ -19069,7 +22632,158 @@ let GrowMasterDialog = class GrowMasterDialog extends i$3 {
 GrowMasterDialog.styles = [
     dialogStyles,
     i$6 `
-      /* Specific overrides or additions */
+      /* ── Shell layout ────────────────────────────────────────── */
+      .gm-shell {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        min-height: 90vh;
+        max-height: 90vh;
+        overflow: hidden;
+      }
+
+      /* ── Header ──────────────────────────────────────────────── */
+      .gm-header {
+        display: flex;
+        align-items: center;
+        padding: 16px 24px;
+        gap: 12px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
+      .gm-header-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .gm-header-icon[data-mode='chat'] {
+        color: var(--ai-accent, #4caf50);
+      }
+      .gm-header-icon[data-mode='briefing'] {
+        color: var(--ai-violet, #9c27b0);
+      }
+      .gm-header-icon[data-mode='inbox'] {
+        color: var(--ai-amber, #ff9800);
+      }
+      .gm-header-title-group {
+        flex: 1;
+      }
+      .gm-header-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+      .gm-header-subtitle {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        margin-top: 2px;
+        color: var(--secondary-text-color);
+      }
+      .gm-close-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--primary-text-color, #fff);
+        padding: 8px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gm-close-btn:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      /* ── Body (rail + content) ───────────────────────────────── */
+      .gm-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      /* ── Nav rail ────────────────────────────────────────────── */
+      .gm-nav-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 8px;
+        border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
+        width: 72px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+      .gm-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-size: 0.6875rem;
+        font-family: inherit;
+        width: 56px;
+        transition: background var(--md3-motion-duration-short4, 200ms),
+          color var(--md3-motion-duration-short4, 200ms);
+      }
+      .gm-nav-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .gm-nav-item[aria-pressed='true'][data-mode='chat'] {
+        color: var(--ai-accent, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
+      }
+      .gm-nav-item[aria-pressed='true'][data-mode='briefing'] {
+        color: var(--ai-violet, #9c27b0);
+        background: rgba(156, 39, 176, 0.12);
+      }
+      .gm-nav-item[aria-pressed='true'][data-mode='inbox'] {
+        color: var(--ai-amber, #ff9800);
+        background: rgba(255, 152, 0, 0.12);
+      }
+      .gm-nav-rail-bottom {
+        margin-top: auto;
+        padding-top: 8px;
+        border-top: 1px solid var(--divider-color, rgba(255,255,255,0.08));
+      }
+
+      /* ── Content area ────────────────────────────────────────── */
+      .gm-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .gm-content.no-pad {
+        padding: 0;
+        overflow: hidden;
+      }
+
+      /* ── Panels ──────────────────────────────────────────────── */
+      .gm-panel-chat,
+      .gm-panel-briefing,
+      .gm-panel-inbox {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        flex: 1;
+      }
+
+      /* ── Legacy chat widgets (preserved) ─────────────────────── */
       .gm-response-box {
         background: rgba(255, 255, 255, 0.05);
         border-radius: 16px;
@@ -19098,7 +22812,6 @@ GrowMasterDialog.styles = [
         width: 24px;
         height: 24px;
       }
-
       .sd-textarea {
         width: 100%;
         background: rgba(255, 255, 255, 0.05);
@@ -19116,12 +22829,40 @@ GrowMasterDialog.styles = [
         background: rgba(255, 255, 255, 0.08);
       }
 
-      .content-padding {
-        padding: 24px;
-        overflow-y: auto;
-        flex: 1;
+      /* ── Footer ──────────────────────────────────────────────── */
+      .gm-footer {
         display: flex;
-        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 20px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
+      .gm-disclaimer {
+        flex: 1;
+        font-size: 0.75rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.45));
+        line-height: 1.3;
+      }
+      .gm-footer-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .gm-mic-btn {
+        background: none;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: 50%;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: not-allowed;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.3));
+        opacity: 0.45;
       }
     `,
 ];
@@ -19135,14 +22876,17 @@ __decorate([
     n$5({ type: String })
 ], GrowMasterDialog.prototype, "personality", void 0);
 __decorate([
-    n$5({ type: Boolean })
-], GrowMasterDialog.prototype, "isLoading", void 0);
+    n$5({ type: String })
+], GrowMasterDialog.prototype, "growspaceId", void 0);
 __decorate([
     n$5({ type: String })
-], GrowMasterDialog.prototype, "response", void 0);
+], GrowMasterDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowMasterDialog.prototype, "hass", void 0);
 __decorate([
     r$3()
-], GrowMasterDialog.prototype, "userQuery", void 0);
+], GrowMasterDialog.prototype, "_settingsDraft", void 0);
 GrowMasterDialog = __decorate([
     t$2('grow-master-dialog')
 ], GrowMasterDialog);
@@ -29178,7 +32922,7 @@ let StrainImportDialog = class StrainImportDialog extends i$3 {
         this._close();
     }
     _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+        this.dispatchEvent(new CustomEvent('close'));
     }
     render() {
         if (!this.open)
@@ -29646,6 +33390,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             notes: '',
         };
         this._harvestForm = { quantity: 1, notes: '' };
+        this._donorActivePlantsOnly = true;
     }
     connectedCallback() {
         super.connectedCallback();
@@ -29683,6 +33428,11 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
                 }
             }
+        }
+        // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
+        if (plant_id.includes('||')) {
+            const [strain, phenotype] = plant_id.split('||', 2);
+            return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
         }
         return plant_id;
     }
@@ -29950,6 +33700,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button tonal"
               @click=${() => {
+            this._donorActivePlantsOnly = true;
             this._seedSubView = 'log-pollination';
         }}
             >
@@ -29968,6 +33719,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                           title="Edit"
                           @click=${() => {
                 this._editingEventId = e.event_id;
+                this._donorActivePlantsOnly = !e.donor_plant_id.includes('||');
                 this._pollinationForm = {
                     date: e.date,
                     donor_plant_id: e.donor_plant_id,
@@ -30206,6 +33958,16 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     }
     _renderLogPollinationForm() {
         const eligiblePlants = this._flowerVegPlants;
+        const libraryDonorOptions = this.strains
+            .slice()
+            .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
+            .map((s) => ({
+            key: `${s.strain}||${s.phenotype}`,
+            label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
+        }));
+        const donorOptions = this._donorActivePlantsOnly
+            ? eligiblePlants.map((p) => ({ key: p.plant_id, label: p.label }))
+            : libraryDonorOptions;
         return x `
       <div class="form-view">
         <div class="form-header">
@@ -30214,6 +33976,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             @click=${() => {
             this._seedSubView = 'list';
             this._editingEventId = null;
+            this._donorActivePlantsOnly = true;
             this._pollinationForm = {
                 date: '',
                 donor_plant_id: '',
@@ -30250,15 +34013,26 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         }}
           >
             <option value="">— select plant —</option>
-            ${eligiblePlants.map((p) => x `
+            ${donorOptions.map((o) => x `
                 <option
-                  value="${p.plant_id}"
-                  ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}
+                  value="${o.key}"
+                  ?selected=${this._pollinationForm.donor_plant_id === o.key}
                 >
-                  ${p.label}
+                  ${o.label}
                 </option>
               `)}
           </select>
+        </label>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            .checked=${this._donorActivePlantsOnly}
+            @change=${(e) => {
+            this._donorActivePlantsOnly = e.target.checked;
+            this._pollinationForm = { ...this._pollinationForm, donor_plant_id: '' };
+        }}
+          />
+          Active plants only
         </label>
         <label
           >Receiver plant (female / seed bearer)
@@ -30759,6 +34533,23 @@ SeedsGeneticsTab.styles = [
       .form-view select:focus {
         border-color: var(--accent-green, #4caf50);
       }
+      .checkbox-label {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px !important;
+        font-weight: 400 !important;
+        color: var(--primary-text-color) !important;
+        cursor: pointer;
+        margin-top: -4px;
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px !important;
+        padding: 0 !important;
+        accent-color: var(--accent-green, #4caf50);
+        cursor: pointer;
+      }
       .form-actions {
         display: flex;
         justify-content: flex-end;
@@ -30859,6 +34650,9 @@ __decorate([
 __decorate([
     r$3()
 ], SeedsGeneticsTab.prototype, "_harvestForm", void 0);
+__decorate([
+    r$3()
+], SeedsGeneticsTab.prototype, "_donorActivePlantsOnly", void 0);
 SeedsGeneticsTab = __decorate([
     t$2('seeds-genetics-tab')
 ], SeedsGeneticsTab);
@@ -42500,19 +46294,23 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             this._initControllers();
         }
     }
+    willUpdate(changed) {
+        super.willUpdate(changed);
+        if (changed.has('store')) {
+            this._initControllers();
+        }
+    }
     updated(changed) {
         super.updated(changed);
         if (changed.has('hass') && this.hass) {
             setHass(this.hass);
         }
-        if (changed.has('store')) {
-            this._initControllers();
-        }
     }
     _initControllers() {
         if (!this.store)
             return;
-        // Always create a new controller if the store changes
+        if (this._controllersInitialized)
+            return;
         this._dialogHostController = new libExports.StoreController(this, this.store.$dialogHostState);
         this._controllersInitialized = true;
     }
@@ -42972,7 +46770,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}
-        @submit=${async (e) => {
+        @add-growspace-submit=${async (e) => {
             if (!this.store)
                 return;
             try {
@@ -43112,8 +46910,11 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         return x `
       <grow-master-dialog
         .open=${true}
+        .hass=${this.hass}
         .isStressed=${isStressed}
         .personality=${personality}
+        .growspaceId=${dialogState.growspaceId}
+        .growspaceName=${selectedDeviceData?.name || ''}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}
@@ -54184,7 +57985,6 @@ let GrowspaceHeaderHeroUI = class GrowspaceHeaderHeroUI extends i$3 {
         const isVpd = chip.key === 'vpd';
         let vpdSegments = [];
         if (isVpd && this.device) {
-            this.historyCache?.vpd;
             const lightHistory = this.historyCache?.light || [];
             const overviewEntity = this.device.overviewEntityId
                 ? this.hass?.states[this.device.overviewEntityId]
@@ -54581,87 +58381,6 @@ GrowspaceHeaderHeroUI = __decorate([
     t$2('growspace-header-hero-ui')
 ], GrowspaceHeaderHeroUI);
 
-let GrowspaceHeaderStagesUI = class GrowspaceHeaderStagesUI extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.problemPlants = [];
-    }
-    render() {
-        return x `
-      <scroll-container .scrollAmount=${100} containerClass="stages-scroll-area">
-        <div class="stages-wrapper">
-          ${this.dominant
-            ? x `
-                <div class="gs-stage-pill">
-                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
-                    <path d="${this.dominant.icon}"></path>
-                  </svg>
-                  ${this.dominant.daysLabel}
-                </div>
-                <div class="gs-stage-pill">
-                  <svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor">
-                    <path d="${this.dominant.icon}"></path>
-                  </svg>
-                  ${this.dominant.weeksLabel}
-                </div>
-              `
-            : E}
-          ${this.problemPlants
-            .slice(0, 2)
-            .map((name) => x ` <div class="gs-stage-pill alert">⚠ ${name}: needs attention</div> `)}
-        </div>
-      </scroll-container>
-    `;
-    }
-};
-GrowspaceHeaderStagesUI.styles = i$6 `
-    :host {
-      display: block;
-      min-width: 0;
-      width: 100%;
-      height: 100%;
-    }
-
-    .gs-stage-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      background: var(--secondary-background-color, rgba(255, 255, 255, 0.1));
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      width: fit-content;
-      backdrop-filter: blur(8px);
-      white-space: nowrap;
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-
-    .gs-stage-pill.alert {
-      background: rgba(244, 67, 54, 0.08);
-      border-color: rgba(244, 67, 54, 0.3);
-      color: #ff8a80;
-    }
-
-    .stages-wrapper {
-      display: flex;
-      align-items: center;
-      height: 100%;
-    }
-  `;
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceHeaderStagesUI.prototype, "dominant", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceHeaderStagesUI.prototype, "problemPlants", void 0);
-GrowspaceHeaderStagesUI = __decorate([
-    t$2('growspace-header-stages-ui')
-], GrowspaceHeaderStagesUI);
-
 let FlowerFlipChip = class FlowerFlipChip extends i$3 {
     _buildTooltip() {
         const { plantNames, flowerStart, vegDayHours, flowerDayHours, autoLightTracking } = this.info;
@@ -54928,6 +58647,9 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
         ${this.dominant?.daysLabel
             ? x ` <span class="header-meta-stat">${this.dominant.daysLabel}</span> `
             : E}
+        ${this.dominant?.weeksLabel
+            ? x ` <span class="header-meta-stat">${this.dominant.weeksLabel}</span> `
+            : E}
         ${alertCount > 0
             ? x `
               <span class="header-meta-stat alert">
@@ -54998,14 +58720,6 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
             }));
         }}
           ></growspace-header-actions-ui>
-
-          <!-- Row 2 Left: Stages + Status -->
-          <div class="header-stage-area-wrapper">
-            <growspace-header-stages-ui
-              .dominant=${this.dominant}
-              .problemPlants=${this.problemPlants}
-            ></growspace-header-stages-ui>
-          </div>
 
           <!-- Row 2 Right: Secondary Chips & Inventory -->
           <div class="secondary-strip-container">
@@ -55674,150 +59388,6 @@ class LibraryExportReadyEvent extends CustomEvent {
     }
 }
 LibraryExportReadyEvent.TYPE = 'library-export-ready';
-
-/**
- * GridInteraction slice — store-driven interaction state machine for Plant Grid Cells.
- *
- * Public API (atom):
- *   gridInteraction$   — read: current interaction state (discriminated union)
- *
- * Public API (transitions):
- *   select(plantId)        — idle → selected; selected(same) → idle; selected(other) → selected(other);
- *                            confirming-water → selected; no-op while transplanting
- *   confirmWater()         — selected → confirming-water; no-op otherwise
- *   cancel()               — any → idle
- *   startTransplant()      — selected → transplanting; no-op otherwise
- *   completeTransplant()   — transplanting → idle; no-op otherwise
- *
- * The type system (discriminated union) prevents callers from accessing fields
- * that don't exist on a given status — e.g. `plantId` is absent on `idle`.
- * Runtime guards make illegal transitions no-ops so callers never need to
- * pre-check the current status.
- *
- * This slice owns no backend calls — all state is local UI-only.
- * Cross-slice side-effects (Plant mutations, Grid optimistic updates) are
- * triggered by action modules that call transition functions here then call
- * the relevant Plant / Grid slice mutators.
- */
-// ---------------------------------------------------------------------------
-// Atom (public)
-// ---------------------------------------------------------------------------
-/** Current interaction state for the Plant Grid. */
-const gridInteraction$ = atom({ status: 'idle' });
-// ---------------------------------------------------------------------------
-// Transitions (public)
-// ---------------------------------------------------------------------------
-/**
- * Select a plant cell.
- *
- * - idle            → selected { plantId }
- * - selected(same)  → idle  (toggle: deselects the cell)
- * - selected(other) → selected { plantId }  (switch selection)
- * - confirming-water → selected { plantId }  (aborts confirmation)
- * - transplanting   → no-op  (source plant is locked during transplant)
- */
-function select(plantId) {
-    const state = gridInteraction$.get();
-    if (state.status === 'transplanting')
-        return;
-    if (state.status === 'selected' && state.plantId === plantId) {
-        gridInteraction$.set({ status: 'idle' });
-        return;
-    }
-    gridInteraction$.set({ status: 'selected', plantId });
-}
-/**
- * Cancel the current interaction and return to idle.
- * Safe to call from any state.
- */
-function cancel() {
-    gridInteraction$.set({ status: 'idle' });
-}
-/**
- * Begin transplant mode from the currently selected plant.
- *
- * - selected → transplanting { sourcePlantId: plantId }
- * - all other states → no-op
- */
-function startTransplant() {
-    const state = gridInteraction$.get();
-    if (state.status !== 'selected')
-        return;
-    gridInteraction$.set({ status: 'transplanting', sourcePlantId: state.plantId });
-}
-
-/**
- * UI slice — atoms and mutators for global UI state.
- *
- * Public API (atoms):
- *   viewMode$               — read: active view mode (standard/compact/header/heatmap)
- *   isLoading$              — read: whether the card is in a loading state
- *   activeDialog$           — read: currently open dialog (NONE when closed)
- *   isEditMode$             — read: whether edit mode is active
- *   selectedPlants$         — read: set of selected plant IDs
- *   focusedPlantIndex$      — read: keyboard-focused plant index (-1 = none)
- *   menuOpen$               — read: whether the card menu is open
- *   notification$           — read: active toast notification (null = none)
- *   error$                  — read: global error string (null = none)
- *   defaultApplied$         — read: whether the card config default was applied
- *   gridOverlayMode$        — read: active grid overlay mode
- *   language$               — read: active UI language code
- *   pendingDeepLinkPlantId$ — read: plant ID awaiting deep-link navigation (null = none)
- *   flowerFlipDismissed$    — read: map of growspace ID → dismissed flower-flip date
- *   isCompactView$          — computed: true when viewMode is COMPACT
- *   cardViewState$          — computed: combined view-state object for card subscription
- *
- * Public API (mutators):
- *   setViewMode()           — switch the active view mode
- *   setGridOverlayMode()    — switch the active grid overlay
- *   setIsLoading()          — toggle loading state
- *   openDialog()            — set the active dialog
- *   closeDialog()           — reset dialog to NONE
- *   setEditMode()           — enter/exit edit mode (clears selection on exit)
- *   togglePlantSelection()  — add/remove a plant from the selection set
- *   selectAllPlants()       — replace the selection with all provided IDs
- *   clearPlantSelection()   — empty the selection
- *   deselectPlants()        — remove specific plant IDs from the selection
- *   setFocusedPlantIndex()  — set the keyboard-focus index
- *   setMenuOpen()           — open/close the card menu
- *   showToast()             — display a toast notification
- *   clearToast()            — dismiss the current toast
- *   setDefaultApplied()     — mark the config default as applied
- *   setError()              — set or clear the global error
- *   setLanguage()           — change the UI language
- *   setPendingDeepLink()    — set or clear the pending deep-link plant ID
- *   dismissFlowerFlip()     — record a dismissed flower-flip notification
- *
- * This slice owns no backend calls — all state is local UI-only.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-const viewMode$ = atom(ViewMode.STANDARD);
-atom(GridOverlayMode.NONE);
-/** Map of growspace ID → flower-flip start date that the user has dismissed. */
-atom(_loadFlowerFlipDismissed());
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-function _loadFlowerFlipDismissed() {
-    try {
-        const raw = localStorage.getItem('growspace.flowerFlipDismissed');
-        if (raw)
-            return JSON.parse(raw);
-    }
-    catch {
-        // Ignore — localStorage unavailable (SSR / test environments).
-    }
-    return {};
-}
-// ---------------------------------------------------------------------------
-// Mutators (public)
-// ---------------------------------------------------------------------------
-/** Switch the active view mode (standard / compact / header / heatmap). */
-function setViewMode(mode) {
-    viewMode$.set(mode);
-}
 
 /**
  * LayoutSpec — declarative layout configuration for each ViewMode.
@@ -57255,6 +60825,11 @@ const variables = i$6 `
     --gm-error-color: var(--error-color, #f44336);
     --gm-ipm-color: #9c27b0;
     --gm-phi-color: #ff9800;
+
+    /* AI Assistant Panel Colors */
+    --ai-accent: #4caf50; /* Chat mode — Vitality Green */
+    --ai-violet: #9c27b0; /* Briefing mode */
+    --ai-amber: #ff9800; /* Inbox mode */
 
     /* Strain Dialog */
     --strain-dialog-bg: var(--ha-card-background, #1e1e1e);
@@ -115053,7 +118628,8 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         this.fetchHistory();
         // Initial Scene Update & Render Trigger
         this.updateScene();
-        this.requestUpdate(); // Trigger second render to populate panels with now-ready meshes
+        // Defer so the second render is scheduled outside the completed update cycle (avoids Lit change-in-update warning).
+        Promise.resolve().then(() => this.requestUpdate());
     }
     updateScene() {
         if (!this.device || !this.sceneManager)
@@ -116677,7 +120253,7 @@ class GrowspaceUIStore {
         this.$selectedPlants = atom(new Set());
         this.$focusedPlantIndex = atom(-1);
         this.$menuOpen = atom(false);
-        this.$notification = atom(null);
+        this.$notification = notification$;
         this.$error = atom(null);
         this.$defaultApplied = atom(false);
         this.$gridOverlayMode = atom(GridOverlayMode.NONE);
@@ -118774,8 +122350,18 @@ async function analyzeGrowspace(ctx, query, all) {
         return text;
     }
     catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
         const d = ctx.ui.$activeDialog.get();
+        if (e instanceof WSError && e.code === 'rate_limited') {
+            ctx.ui.showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+            if (d.type === 'GROW_MASTER') {
+                ctx.ui.setActiveDialog({
+                    type: 'GROW_MASTER',
+                    payload: { ...d.payload, isLoading: false },
+                });
+            }
+            return;
+        }
+        const error = e instanceof Error ? e.message : 'Unknown error';
         if (d.type === 'GROW_MASTER') {
             ctx.ui.setActiveDialog({
                 type: 'GROW_MASTER',
@@ -120570,6 +124156,7 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
         if (this.hass) {
             setHass(this.hass);
             this.store.updateHass(this.hass);
+            fetchAiStatus();
         }
         this.store.initializeSelectedDevice(this._config);
         this.store.actions.library.fetchStrains();
@@ -121166,128 +124753,6 @@ __decorate([
 GrowspaceAnalyticsCard = __decorate([
     t$2('growspace-analytics-card')
 ], GrowspaceAnalyticsCard);
-
-/**
- * AIInsight slice — zod schemas for backend response validation.
- *
- * GrowAdviceResponseSchema validates the payload returned by the
- * ask_grow_advice and analyze_all_growspaces HA services.
- */
-// The backend returns either a plain string or a nested { response: string }
-// object (sometimes double-nested). We accept both shapes and let the slice
-// extract the text.
-const responseBody = unionType([
-    stringType(),
-    objectType({ response: unionType([stringType(), recordType(unknownType())]) }),
-]);
-const GrowAdviceResponseSchema = unionType([
-    stringType(),
-    objectType({ response: responseBody }),
-    recordType(unknownType()),
-]);
-
-/**
- * AIInsight slice — atoms and mutators for AI-powered cultivation insights.
- *
- * Public API (atoms):
- *   aiInsight$      — read: last AI response text (null if none loaded yet)
- *   isAiLoading$    — read: whether an AI request is in-flight
- *   aiError$        — read: error message from the last failed request (null = none)
- *
- * Public API (mutators):
- *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
- *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
- *   dismissInsight()                     — clear the current insight and any error
- *   clearAiError()                       — clear only the error without touching the insight
- *
- * Zod schemas are in ./schema.ts and private to this module.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-const aiInsight$ = atom(null);
-const isAiLoading$ = atom(false);
-const aiError$ = atom(null);
-// ---------------------------------------------------------------------------
-// Private helpers
-// ---------------------------------------------------------------------------
-/**
- * Extract a plain text string from a GrowAdviceResponse, which the backend
- * may return as a string or as a nested `{ response: string }` object.
- */
-function _extractText(raw) {
-    if (typeof raw === 'string')
-        return raw;
-    if (typeof raw === 'object' && raw !== null && 'response' in raw) {
-        const inner = raw.response;
-        if (typeof inner === 'string')
-            return inner;
-        if (typeof inner === 'object' && inner !== null && 'response' in inner) {
-            const deepInner = inner.response;
-            if (typeof deepInner === 'string')
-                return deepInner;
-        }
-        return JSON.stringify(inner);
-    }
-    return JSON.stringify(raw);
-}
-// ---------------------------------------------------------------------------
-// Mutators (public)
-// ---------------------------------------------------------------------------
-/**
- * Ask the AI for cultivation advice about a specific growspace.
- *
- * Sets isAiLoading$ to true for the duration of the call.
- * On success: stores the response text in aiInsight$.
- * On failure: stores the error message in aiError$ and re-throws.
- */
-async function askGrowAdvice(growspaceId, userQuery) {
-    isAiLoading$.set(true);
-    aiError$.set(null);
-    try {
-        const raw = await callServiceReturning('growspace_manager', 'ask_grow_advice', { growspace_id: growspaceId, user_query: userQuery }, GrowAdviceResponseSchema);
-        aiInsight$.set(_extractText(raw));
-    }
-    catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        aiError$.set(message);
-        throw err;
-    }
-    finally {
-        isAiLoading$.set(false);
-    }
-}
-/**
- * Request an AI analysis that covers all growspaces at once.
- *
- * Sets isAiLoading$ to true for the duration of the call.
- * On success: stores the response text in aiInsight$.
- * On failure: stores the error message in aiError$ and re-throws.
- */
-async function analyzeAllGrowspaces() {
-    isAiLoading$.set(true);
-    aiError$.set(null);
-    try {
-        const raw = await callServiceReturning('growspace_manager', 'analyze_all_growspaces', {}, GrowAdviceResponseSchema);
-        aiInsight$.set(_extractText(raw));
-    }
-    catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        aiError$.set(message);
-        throw err;
-    }
-    finally {
-        isAiLoading$.set(false);
-    }
-}
-/**
- * Clear the current insight and any error state.
- * Use this when the user dismisses the AI response panel.
- */
-function dismissInsight() {
-    aiInsight$.set(null);
-    aiError$.set(null);
-}
 
 let GrowspaceAiInsightCard = class GrowspaceAiInsightCard extends i$3 {
     constructor() {

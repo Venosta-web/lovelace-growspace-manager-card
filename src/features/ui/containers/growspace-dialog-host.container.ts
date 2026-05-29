@@ -106,8 +106,8 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _initControllers(): void {
     if (!this.store) return;
+    if (this._controllersInitialized) return;
 
-    // Always create a new controller if the store changes
     this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
     this._controllersInitialized = true;
   }
@@ -663,7 +663,7 @@ export class GrowspaceDialogHost extends LitElement {
         .environmentData=${dialogState.environmentData}
         .growspaceOptions=${growspaceOptions}
         @close=${() => this._closeDialogIfActive('CONFIG')}
-        @submit=${async (e: CustomEvent) => {
+        @add-growspace-submit=${async (e: CustomEvent) => {
         if (!this.store) return;
         try {
           await this.store.actions.growspace.add(e.detail);
@@ -816,8 +816,11 @@ export class GrowspaceDialogHost extends LitElement {
     return html`
       <grow-master-dialog
         .open=${true}
+        .hass=${this.hass}
         .isStressed=${isStressed}
         .personality=${personality}
+        .growspaceId=${dialogState.growspaceId}
+        .growspaceName=${selectedDeviceData?.name || ''}
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}

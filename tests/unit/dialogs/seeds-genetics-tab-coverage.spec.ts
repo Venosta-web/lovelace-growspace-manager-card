@@ -331,7 +331,7 @@ describe('SeedsGeneticsTab Coverage', () => {
             receiverSelect.value = 'p2';
             receiverSelect.dispatchEvent(new Event('change'));
 
-            const notesInput = inputs?.[1] as HTMLInputElement;
+            const notesInput = inputs?.[2] as HTMLInputElement;
             notesInput.value = 'pollination notes';
             notesInput.dispatchEvent(new Event('input'));
 

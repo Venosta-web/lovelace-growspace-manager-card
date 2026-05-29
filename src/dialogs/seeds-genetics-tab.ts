@@ -99,6 +99,7 @@ export class SeedsGeneticsTab extends LitElement {
     notes: '',
   };
   @state() private _harvestForm = { quantity: 1, notes: '' };
+  @state() private _donorActivePlantsOnly = true;
 
   connectedCallback(): void {
     super.connectedCallback();
@@ -380,6 +381,23 @@ export class SeedsGeneticsTab extends LitElement {
       .form-view select:focus {
         border-color: var(--accent-green, #4caf50);
       }
+      .checkbox-label {
+        flex-direction: row !important;
+        align-items: center;
+        gap: 8px !important;
+        font-weight: 400 !important;
+        color: var(--primary-text-color) !important;
+        cursor: pointer;
+        margin-top: -4px;
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px !important;
+        padding: 0 !important;
+        accent-color: var(--accent-green, #4caf50);
+        cursor: pointer;
+      }
       .form-actions {
         display: flex;
         justify-content: flex-end;
@@ -424,6 +442,11 @@ export class SeedsGeneticsTab extends LitElement {
           return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
         }
       }
+    }
+    // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
+    if (plant_id && plant_id.includes('||')) {
+      const [strain, phenotype] = plant_id.split('||', 2);
+      return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
     }
     return plant_id;
   }
@@ -692,6 +715,7 @@ export class SeedsGeneticsTab extends LitElement {
             <button
               class="md3-button tonal"
               @click=${() => {
+                this._donorActivePlantsOnly = true;
                 this._seedSubView = 'log-pollination';
               }}
             >
@@ -711,6 +735,7 @@ export class SeedsGeneticsTab extends LitElement {
                           title="Edit"
                           @click=${() => {
                             this._editingEventId = e.event_id;
+                            this._donorActivePlantsOnly = !e.donor_plant_id.includes('||');
                             this._pollinationForm = {
                               date: e.date,
                               donor_plant_id: e.donor_plant_id,
@@ -960,6 +985,16 @@ export class SeedsGeneticsTab extends LitElement {
 
   private _renderLogPollinationForm(): TemplateResult {
     const eligiblePlants = this._flowerVegPlants;
+    const libraryDonorOptions = this.strains
+      .slice()
+      .sort((a, b) => `${a.strain} ${a.phenotype}`.localeCompare(`${b.strain} ${b.phenotype}`))
+      .map((s) => ({
+        key: `${s.strain}||${s.phenotype}`,
+        label: s.phenotype ? `${s.strain} (${s.phenotype})` : s.strain,
+      }));
+    const donorOptions = this._donorActivePlantsOnly
+      ? eligiblePlants.map((p) => ({ key: p.plant_id, label: p.label }))
+      : libraryDonorOptions;
 
     return html`
       <div class="form-view">
@@ -969,6 +1004,7 @@ export class SeedsGeneticsTab extends LitElement {
             @click=${() => {
               this._seedSubView = 'list';
               this._editingEventId = null;
+              this._donorActivePlantsOnly = true;
               this._pollinationForm = {
                 date: '',
                 donor_plant_id: '',
@@ -1005,17 +1041,28 @@ export class SeedsGeneticsTab extends LitElement {
             }}
           >
             <option value="">— select plant —</option>
-            ${eligiblePlants.map(
-              (p) => html`
+            ${donorOptions.map(
+              (o) => html`
                 <option
-                  value="${p.plant_id}"
-                  ?selected=${this._pollinationForm.donor_plant_id === p.plant_id}
+                  value="${o.key}"
+                  ?selected=${this._pollinationForm.donor_plant_id === o.key}
                 >
-                  ${p.label}
+                  ${o.label}
                 </option>
               `
             )}
           </select>
+        </label>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            .checked=${this._donorActivePlantsOnly}
+            @change=${(e: Event) => {
+              this._donorActivePlantsOnly = (e.target as HTMLInputElement).checked;
+              this._pollinationForm = { ...this._pollinationForm, donor_plant_id: '' };
+            }}
+          />
+          Active plants only
         </label>
         <label
           >Receiver plant (female / seed bearer)

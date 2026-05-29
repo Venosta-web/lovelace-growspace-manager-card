@@ -5,6 +5,7 @@ import { provide } from '@lit/context';
 import { hassContext, configContext, strainLibraryContext, storeContext } from './lib/context';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 import { setHass } from './services/hass-call';
+import { fetchAiStatus } from './slices/ai-insight';
 import { setMutateListener, undo, canUndo } from './services/mutate';
 import { selectedDeviceId$ } from './slices/grid';
 
@@ -74,6 +75,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
     if (this.hass) {
       setHass(this.hass);
       this.store.updateHass(this.hass);
+      fetchAiStatus();
     }
     this.store.initializeSelectedDevice(this._config);
     this.store.actions.library.fetchStrains();
