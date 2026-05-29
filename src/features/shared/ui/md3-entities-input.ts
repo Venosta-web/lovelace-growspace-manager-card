@@ -9,7 +9,7 @@ export class Md3EntitiesInput extends LitElement {
   @property({ type: Array }) domains: string[] = [];
   @property({ attribute: false }) hass: HomeAssistant | undefined;
 
-  private _listId = `entities-list-${Math.random().toString(36).substr(2, 9)}`;
+  private _listId = `entities-list-${Math.random().toString(36).slice(2, 11)}`;
 
   static styles = css`
     :host {
