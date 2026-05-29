@@ -226,6 +226,17 @@ A setup-eliminator in `src/testing/render-card.ts`: `renderCard(tag, { hass, gro
 **Co-location Convention**
 Pure module tests (state machines, slices, utilities — anything that does not call `fixture()`) live next to their source file as `src/foo/foo.test.ts`. Tests that mount Lit components via `fixture()` live in `tests/`. The split is enforced by the rule: *if it touches the DOM, it goes in `tests/`*. Applies to new test files only — existing tests are not migrated.
 
+## Seeds & Genetics
+
+**Seed Batch**
+A recorded inventory entry for a batch of cannabis seeds. Fields: `batch_id`, `strain_name`, `breeder`, `quantity`, `acquisition_date`, `generation` (e.g. F1, S1, BX1), optional parent strains (`parent_1_strain`, `parent_1_phenotype`, `parent_2_strain`, `parent_2_phenotype`), optional `lineage` string, optional `notes`. Can be sown into a growspace to create plants. Linked to a [[Pollination Event]] via `result_seed_batch_id` when seeds are harvested from that event.
+
+**Pollination Event**
+A recorded cross-pollination between a donor plant (male / pollen donor) and a receiver plant (female / seed bearer). Fields: `event_id`, `date`, `donor_plant_id`, `receiver_plant_id`, optional `notes`, optional `result_seed_batch_id` (set when seeds are harvested from this event). The donor can be an active plant (identified by `plant_id`) or a strain-library entry (identified by `"strain||phenotype"` key).
+
+**Seeds-Genetics Tab SM**
+The state machine for `seeds-genetics-tab.ts`, extracted into `seeds-genetics-tab-sm.ts`. Owns the tab's interaction state: `activeView` (the active sub-view), `views` (one typed state object per sub-view), `status` (`{ kind: 'idle' }` — no discard guard), and `toast`. Sub-views: `list | add-batch | log-pollination | harvest`. `add-batch` handles both creating and editing a [[Seed Batch]], discriminated by `editingBatchId: string | null` in the view state. `log-pollination` handles both creating and editing a [[Pollination Event]], discriminated by `editingEventId: string | null`. Delete confirmations and the inline Sow form live in the list view's `sub` discriminated union. Async lifecycle (`applying | error`) lives in each sub-view's `sub` — not at root. Validation logic lives in exported pure helpers (`validateBatchDraft`, `validatePollinationDraft`, `validateHarvestDraft`) — not in `transition()`. Does not satisfy [[DialogStateMachine]].
+
 ## Build
 
 **`__VERSION__`**
