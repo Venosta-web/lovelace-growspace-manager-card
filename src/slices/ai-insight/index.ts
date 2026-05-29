@@ -233,7 +233,7 @@ export async function startConversation(
   text: string,
   imageEntityId?: string
 ): Promise<ConversationThread | undefined> {
-  const userMessage = { role: 'user' as const, text, timestamp: Date.now() };
+  const userMessage = { role: 'user' as const, text, timestamp: Math.floor(Date.now() / 1000) };
   try {
     const raw = await hassCall(
       'growspace_manager/start_conversation',
