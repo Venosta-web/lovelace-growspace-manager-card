@@ -29,8 +29,12 @@
 
 import { atom } from 'nanostores';
 import type { PlantEntity } from '../../features/plants/types';
+import { z } from 'zod';
 import { mutate } from '../../services/mutate';
-import { callService } from '../../services/hass-call';
+import { hassCall } from '../../services/hass-call';
+
+const wsVoid = (cmd: string, params: Record<string, unknown>): Promise<void> =>
+  hassCall(cmd, params, z.unknown()).then(() => undefined);
 import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../grid';
 
 // ---------------------------------------------------------------------------
@@ -122,7 +126,7 @@ export async function waterPlant(
       type: 'waterPlant',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'water_plant', payload),
+      apply: () => wsVoid('growspace_manager/water_plant', payload),
     },
     _growspaceIdFor(plantId)
   );
@@ -156,7 +160,7 @@ export async function addPlant(params: {
       type: 'addPlant',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'add_plant', payload),
+      apply: () => wsVoid('growspace_manager/add_plant', payload),
     },
     params.growspace_id
   );
@@ -190,7 +194,7 @@ export async function addPlants(params: {
       type: 'addPlants',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'add_plants', payload),
+      apply: () => wsVoid('growspace_manager/add_plants', payload),
     },
     params.growspace_id
   );
@@ -216,7 +220,7 @@ export async function updatePlant(
       optimistic: () => plants$.set(patched),
       inverse: () => plants$.set(originalList),
       apply: () =>
-        callService('growspace_manager', 'update_plant', { plant_id: plantId, ...updates }),
+        wsVoid('growspace_manager/update_plant', { plant_id: plantId, ...updates }),
     },
     _growspaceIdFor(plantId)
   );
@@ -247,7 +251,7 @@ export async function deletePlant(plantId: string): Promise<void> {
         plants$.set(originalList);
         removeOptimisticDeletedPlantId(plantId);
       },
-      apply: () => callService('growspace_manager', 'remove_plant', { plant_id: plantId }),
+      apply: () => wsVoid('growspace_manager/remove_plant', { plant_id: plantId }),
     },
     _growspaceIdFor(plantId)
   );
@@ -292,7 +296,7 @@ export async function harvestPlant(
       type: 'harvestPlant',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'harvest_plant', payload),
+      apply: () => wsVoid('growspace_manager/harvest_plant', payload),
     },
     _growspaceIdFor(plantId)
   );
@@ -335,7 +339,7 @@ export async function movePlantToGrowspace(
       inverse: () => {
         removeOptimisticDeletedPlantId(plantId);
       },
-      apply: () => callService('growspace_manager', service, payload),
+      apply: () => wsVoid(`growspace_manager/${service}`, payload),
     },
     sourceGrowspaceId
   );
@@ -361,10 +365,7 @@ export async function swapPlants(plantId1: string, plantId2: string): Promise<vo
       optimistic: () => plants$.set(swapped),
       inverse: () => plants$.set(originalList),
       apply: () =>
-        callService('growspace_manager', 'switch_plants', {
-          plant1_id: plantId1,
-          plant2_id: plantId2,
-        }),
+        wsVoid('growspace_manager/switch_plants', { plant1_id: plantId1, plant2_id: plantId2 }),
     },
     _growspaceIdFor(plantId1)
   );
@@ -392,7 +393,7 @@ export async function takeClone(
       type: 'takeClone',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'take_clone', payload),
+      apply: () => wsVoid('growspace_manager/take_clone', payload),
     },
     _growspaceIdFor(plantId)
   );
@@ -423,7 +424,7 @@ export async function printLabel(params: {
   if (params.deviceId !== undefined) payload.device_id = params.deviceId;
   if (params.preview !== undefined) payload.preview = params.preview;
 
-  await callService('growspace_manager', 'print_label', payload);
+  await hassCall('growspace_manager/print_label', payload, z.unknown());
 }
 
 /**
@@ -446,10 +447,7 @@ export async function saveHarvestMetrics(
       optimistic: () => {},
       inverse: () => {},
       apply: () =>
-        callService('growspace_manager', 'update_harvest_metrics', {
-          plant_id: plantId,
-          ...metrics,
-        }),
+        wsVoid('growspace_manager/update_harvest_metrics', { plant_id: plantId, ...metrics }),
     },
     _growspaceIdFor(plantId)
   );
@@ -477,7 +475,7 @@ export async function scorePlant(
       type: 'scorePlant',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'score_plant', payload),
+      apply: () => wsVoid('growspace_manager/score_plant', payload),
     },
     _growspaceIdFor(plantId)
   );
@@ -503,7 +501,7 @@ export async function logDryingWeight(
       type: 'logDryingWeight',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'log_drying_weight', payload),
+      apply: () => wsVoid('growspace_manager/log_drying_weight', payload),
     },
     _growspaceIdFor(plantId)
   );
@@ -529,7 +527,7 @@ export async function logMoistureReading(
       type: 'logMoistureReading',
       optimistic: () => {},
       inverse: () => {},
-      apply: () => callService('growspace_manager', 'log_moisture_reading', payload),
+      apply: () => wsVoid('growspace_manager/log_moisture_reading', payload),
     },
     _growspaceIdFor(plantId)
   );
@@ -549,10 +547,7 @@ export async function setVisualTag(plantId: string, visualTag: string | null): P
       optimistic: () => {},
       inverse: () => {},
       apply: () =>
-        callService('growspace_manager', 'set_visual_tag', {
-          plant_id: plantId,
-          visual_tag: visualTag,
-        }),
+        wsVoid('growspace_manager/set_visual_tag', { plant_id: plantId, visual_tag: visualTag }),
     },
     _growspaceIdFor(plantId)
   );
