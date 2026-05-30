@@ -115,7 +115,7 @@ A dot-separated string in the format `section.key`, resolved by the `localize()`
 ## Store
 
 **GrowspaceDataStore**
-Nanostores-based reactive store holding plant data, nutrient inventory, and irrigation config for a growspace. Uses lazy initialization — only activates when it has subscribers.
+Nanostores-based reactive store holding plant data (devices, strain library, config) for a growspace. Uses lazy initialization — only activates when it has subscribers. Nutrient domain data (presets, IPM presets, inventory, EC ramp curves) has been migrated to the [[Nutrient Slice]] and is no longer stored here.
 
 ## Architecture
 

@@ -21,49 +21,52 @@ customElements.define('ha-svg-icon', HaSvgIconMock);
 
 describe('CropSteeringDialog', () => {
     let element: CropSteeringDialog;
-
-    const mockDevice: GrowspaceDevice = {
-        deviceId: 'gs_123',
-        name: 'Flower Tent 1',
-        type: GrowspaceType.NORMAL,
-        rows: 4,
-        plantsPerRow: 4,
-        plants: [],
-        grid: {},
-        biologicalMetrics: {} as any,
-        environmentAttributes: {} as any,
-        stats: {} as any,
-        irrigationConfig: {} as any
-    };
-
-    const mockStore = {
-        ui: {
-            closeDialog: vi.fn()
-        },
-        data: {
-            $devices: {
-                get: () => [mockDevice]
-            }
-        }
-    };
-
-    const mockHass = {
-        states: {
-            'sensor.flower_tent_1_crop_steering': {
-                state: '0.45',
-                attributes: {
-                    steering_mode: 'generative',
-                    dryback_percent: 15,
-                    peak_vwc: 45,
-                    trough_vwc: 30,
-                    ec_trend: 'rising'
-                }
-            }
-        },
-        localize: (key: string) => key
-    };
+    let mockDevice: GrowspaceDevice;
+    let mockStore: any;
+    let mockHass: any;
 
     beforeEach(async () => {
+        mockDevice = {
+            deviceId: 'gs_123',
+            name: 'Flower Tent 1',
+            type: GrowspaceType.NORMAL,
+            rows: 4,
+            plantsPerRow: 4,
+            plants: [],
+            grid: {},
+            biologicalMetrics: {} as any,
+            environmentAttributes: {} as any,
+            stats: {} as any,
+            irrigationConfig: {} as any
+        };
+
+        mockStore = {
+            ui: {
+                closeDialog: vi.fn()
+            },
+            data: {
+                $devices: {
+                    get: () => [mockDevice]
+                }
+            }
+        };
+
+        mockHass = {
+            states: {
+                'sensor.flower_tent_1_crop_steering': {
+                    state: '0.45',
+                    attributes: {
+                        steering_mode: 'generative',
+                        dryback_percent: 15,
+                        peak_vwc: 45,
+                        trough_vwc: 30,
+                        ec_trend: 'rising'
+                    }
+                }
+            },
+            localize: (key: string) => key
+        };
+
         element = new CropSteeringDialog();
         (element as any).store = mockStore;
         (element as any).hass = mockHass;
@@ -196,6 +199,161 @@ describe('CropSteeringDialog', () => {
         it('should return undefined if growspace not found', () => {
             element.dialogState = { growspaceId: 'nonexistent' };
             expect((element as any)._getEntityId()).toBeUndefined();
+        });
+
+        it('should return undefined if dialogState or growspaceId is missing', () => {
+            element.dialogState = undefined;
+            expect((element as any)._getEntityId()).toBeUndefined();
+
+            element.dialogState = {} as any;
+            expect((element as any)._getEntityId()).toBeUndefined();
+        });
+    });
+
+    describe('_device private method', () => {
+        it('should return undefined if dialogState is missing', () => {
+            element.dialogState = undefined;
+            expect((element as any)._device()).toBeUndefined();
+        });
+
+        it('should return undefined if growspaceId is missing', () => {
+            element.dialogState = {} as any;
+            expect((element as any)._device()).toBeUndefined();
+        });
+
+        it('should return the device if growspaceId matches a device in the store', () => {
+            element.dialogState = { growspaceId: 'gs_123' };
+            expect((element as any)._device()).toBe(mockDevice);
+        });
+    });
+
+    describe('_renderMetricCard help branch', () => {
+        it('should render without help tooltip if help parameter is omitted or empty', () => {
+            const cardOmitted = (element as any)._renderMetricCard('Title', 'Value', 'icon', 'color');
+            expect(cardOmitted.values).toContain('');
+
+            const cardEmpty = (element as any)._renderMetricCard('Title', 'Value', 'icon', 'color', '');
+            expect(cardEmpty.values).toContain('');
+        });
+    });
+
+    describe('Diagnostics Tab branch coverage', () => {
+        it('should not prefix with plus sign if score is zero or negative', async () => {
+            mockHass.states['sensor.flower_tent_1_crop_steering'].state = '-0.85';
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const scoreDiv = element.shadowRoot?.querySelector('div[style*="font-size: 36px"]');
+            expect(scoreDiv?.textContent?.trim()).toBe('-0.85'); // No "+" prefix
+        });
+
+        it('should handle missing ec_trend gracefully', async () => {
+            delete (mockHass.states['sensor.flower_tent_1_crop_steering'].attributes as any).ec_trend;
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const trendCard = Array.from(element.shadowRoot?.querySelectorAll('.metric-card')!).find(c => c.querySelector('.metric-label')?.textContent?.trim().startsWith('EC Trend'));
+            expect(trendCard?.querySelector('.metric-value')?.textContent?.trim()).toBe('STABLE');
+        });
+
+        it('should fallback to 0% if metric attributes are missing', async () => {
+            mockHass.states['sensor.flower_tent_1_crop_steering'].attributes = {
+                steering_mode: 'generative',
+                ec_trend: 'rising'
+            }; // Omit dryback_percent, peak_vwc, trough_vwc
+            element.requestUpdate();
+            await element.updateComplete;
+
+            const cards = element.shadowRoot?.querySelectorAll('.metric-card');
+            expect(cards?.length).toBe(4);
+
+            const drybackCard = Array.from(cards!).find(c => c.querySelector('.metric-label')?.textContent?.trim().startsWith('Dry-back'));
+            const peakCard = Array.from(cards!).find(c => c.querySelector('.metric-label')?.textContent?.trim().startsWith('Peak'));
+            const troughCard = Array.from(cards!).find(c => c.querySelector('.metric-label')?.textContent?.trim().startsWith('Trough'));
+
+            expect(drybackCard?.querySelector('.metric-value')?.textContent?.trim()).toBe('0%');
+            expect(peakCard?.querySelector('.metric-value')?.textContent?.trim()).toBe('0%');
+            expect(troughCard?.querySelector('.metric-value')?.textContent?.trim()).toBe('0%');
+        });
+    });
+
+    describe('Private state machine helper methods', () => {
+        it('should transition the state machine correctly via _transition', () => {
+            expect((element as any)._sm.toast).toBeUndefined();
+            (element as any)._transition({ type: 'SET_TOAST', message: 'Test Toast Message' });
+            expect((element as any)._sm.toast).toBe('Test Toast Message');
+        });
+
+        describe('_switchTab', () => {
+            it('should switch tab directly when device is nonexistent', () => {
+                element.dialogState = { growspaceId: 'nonexistent' };
+                (element as any)._switchTab('settings');
+                expect((element as any)._sm.activeTab).toBe('settings');
+            });
+
+            it('should switch tab directly when device exists but tab is not dirty', () => {
+                (element as any)._switchTab('settings');
+                expect((element as any)._sm.activeTab).toBe('settings');
+            });
+
+            it('should request tab switch when device exists and active tab is dirty', () => {
+                // First switch to settings tab so it's the active tab
+                (element as any)._switchTab('settings');
+                expect((element as any)._sm.activeTab).toBe('settings');
+
+                // Make the settings tab dirty by changing the draft phase
+                (element as any)._sm.tabs.settings.draft.phase = 'p3'; // device default or config is usually 'p2' or undefined
+
+                // Try to switch back to diagnostics
+                (element as any)._switchTab('diagnostics');
+
+                // It should request a tab switch (pending tab status) rather than switching immediately
+                expect((element as any)._sm.activeTab).toBe('settings');
+                expect((element as any)._sm.status.kind).toBe('confirm-discard');
+                expect((element as any)._sm.status.pendingTab).toBe('diagnostics');
+            });
+        });
+
+        describe('_confirmDiscard', () => {
+            it('should do nothing when device is nonexistent', () => {
+                element.dialogState = { growspaceId: 'nonexistent' };
+                const initialSm = { ...((element as any)._sm) };
+                (element as any)._confirmDiscard();
+                expect((element as any)._sm).toEqual(initialSm);
+            });
+
+            it('should discard changes and switch tab when device exists', () => {
+                // Set activeSteeringPhase on device so it resets to it
+                mockDevice.irrigationConfig = { activeSteeringPhase: 'p2' } as any;
+
+                // Set up pending switch status
+                (element as any)._sm.status = { kind: 'confirm-discard', pendingTab: 'settings' };
+                (element as any)._sm.tabs.settings.draft.phase = 'p3'; // changed draft
+
+                (element as any)._confirmDiscard();
+
+                expect((element as any)._sm.status.kind).toBe('idle');
+                expect((element as any)._sm.activeTab).toBe('settings');
+                // The draft should be reset to device value
+                expect((element as any)._sm.tabs.settings.draft.phase).toBe('p2');
+
+                // Reset back to empty to avoid side effects in other tests
+                mockDevice.irrigationConfig = {} as any;
+            });
+        });
+
+        describe('_requestTabSwitch', () => {
+            it('should do nothing when device is nonexistent', () => {
+                element.dialogState = { growspaceId: 'nonexistent' };
+                const initialSm = { ...((element as any)._sm) };
+                (element as any)._requestTabSwitch('settings');
+                expect((element as any)._sm).toEqual(initialSm);
+            });
+
+            it('should request tab switch when device exists', () => {
+                (element as any)._requestTabSwitch('settings');
+                expect((element as any)._sm.activeTab).toBe('settings');
+            });
         });
     });
 });
