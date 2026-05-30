@@ -1457,12 +1457,12 @@ export class IrrigationDialog extends LitElement {
         <select class="md3-input" .value=${value} @change=${changeHandler}>
           <option value="">None</option>
           ${entities.map(
-            (e) => html`
+      (e) => html`
               <option value="${e.entity_id}" ?selected=${e.entity_id === value}>
                 ${e.attributes.friendly_name || e.entity_id} (${e.entity_id})
               </option>
             `
-          )}
+    )}
         </select>
       </div>
     `;
@@ -1515,19 +1515,19 @@ export class IrrigationDialog extends LitElement {
               <div class="v1-content-scroll">
                 ${this._renderActiveTab(dialogColor)}
                 ${this._setupHints.length > 0
-                  ? html`
+        ? html`
                       <div class="setup-hints">
                         ${this._setupHints.map(
-                          (h) => html`
+          (h) => html`
                             <div class="setup-hint">
                               <span class="hint-icon">${h.icon}</span>
                               <span>${h.text}</span>
                             </div>
                           `
-                        )}
+        )}
                       </div>
                     `
-                  : nothing}
+        : nothing}
               </div>
             </div>
           </div>
@@ -1538,27 +1538,27 @@ export class IrrigationDialog extends LitElement {
               <span
                 >Last cycle
                 ${this.device?.lastCycleTimestamp
-                  ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    })
-                  : '—'}</span
+        ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+        : '—'}</span
               >
               <span class="sep">·</span>
               <span
                 >Next
                 ${this.device?.nextScheduledCycle
-                  ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    })
-                  : '—'}</span
+        ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
+        : '—'}</span
               >
             </div>
             <div class="dlg-footer-actions">
@@ -1581,24 +1581,24 @@ export class IrrigationDialog extends LitElement {
           </div>
 
           ${this._sm.toast
-            ? html`
+        ? html`
                 <div class="toast-notification error">
                   <span class="toast-message">${this._sm.toast}</span>
                 </div>
               `
-            : ''}
+        : ''}
 
           <!-- Discard-changes confirmation -->
           ${this._sm.status.kind === 'confirm-discard'
-            ? html`
+        ? html`
                 <gs-dialog
                   .open=${true}
                   heading="Discard Changes?"
                   .iconPath=${mdiAlert}
                   stageColor="var(--warning-color, #ff9800)"
                   @close=${() => {
-                    this._sm = transition(this._sm, { type: 'CANCEL_TAB_SWITCH' });
-                  }}
+            this._sm = transition(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+          }}
                 >
                   <div style="padding:20px;">
                     <p style="margin:0 0 12px 0;">
@@ -1612,23 +1612,23 @@ export class IrrigationDialog extends LitElement {
                     <button
                       class="md3-button tonal"
                       @click=${() => {
-                        this._sm = transition(this._sm, { type: 'CANCEL_TAB_SWITCH' });
-                      }}
+            this._sm = transition(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+          }}
                     >
                       Stay
                     </button>
                     <button
                       class="md3-button primary"
                       @click=${() => {
-                        this._sm = discardAndSwitch(this._sm, this.device!);
-                      }}
+            this._sm = discardAndSwitch(this._sm, this.device!);
+          }}
                     >
                       Discard &amp; Switch
                     </button>
                   </div>
                 </gs-dialog>
               `
-            : nothing}
+        : nothing}
         </div>
       </gs-dialog>
     `;
@@ -1638,16 +1638,16 @@ export class IrrigationDialog extends LitElement {
     let lastGroup = '';
     return html`
       ${nav.map((item) => {
-        const showCap = item.group !== lastGroup;
-        lastGroup = item.group;
-        return html`
+      const showCap = item.group !== lastGroup;
+      lastGroup = item.group;
+      return html`
           ${showCap ? html`<div class="v1-rail-caps">${item.group}</div>` : nothing}
           <div
             class="v1-nav-item ${this._sm.activeTab === item.id ? 'active' : ''}"
             data-tab="${item.id}"
             @click=${() => {
-              this._sm = requestTabSwitch(this._sm, item.id as TabId, this.device!);
-            }}
+          this._sm = requestTabSwitch(this._sm, item.id as TabId, this.device!);
+        }}
           >
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="flex-shrink:0;">
               <path d="${item.icon}" />
@@ -1656,7 +1656,7 @@ export class IrrigationDialog extends LitElement {
             ${item.badge != null ? html`<span class="nav-badge">${item.badge}</span>` : nothing}
           </div>
         `;
-      })}
+    })}
     `;
   }
 
@@ -1879,11 +1879,11 @@ export class IrrigationDialog extends LitElement {
               </div>
             </div>
             ${phases.phases.map(
-              (p) => html`
+      (p) => html`
                 <div
                   class="cs-phase-block"
                   style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-                  100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
+        100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
                 >
                   <div class="cs-phase-num" style="color:${p.color};">
                     ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
@@ -1893,7 +1893,7 @@ export class IrrigationDialog extends LitElement {
                   </div>
                 </div>
               `
-            )}
+    )}
             <div
               class="cs-phase-block dark"
               style="left:${pctAt(lightsOffMin)}%;width:${100 - pctAt(lightsOffMin)}%;"
@@ -1910,49 +1910,49 @@ export class IrrigationDialog extends LitElement {
             <div
               class="cs-photoperiod"
               style="left:${pctAt(lightsOnMin)}%;width:${((lightsOffMin - lightsOnMin) / day) *
-              100}%;"
+      100}%;"
             ></div>
 
             ${phases.phases.map(
-              (p) => html`
+        (p) => html`
                 <div
                   class="cs-phase-bg"
                   style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-                  100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
+          100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
                 >
                   <span class="cs-phase-bg-lbl" style="color:${p.color}cc;">${p.label}</span>
                 </div>
               `
-            )}
+      )}
             ${Array.from({ length: 24 }, (_, h) => h).map(
-              (h) => html`
+        (h) => html`
                 <div
                   class="grid-v ${h % 6 === 0 ? 'major' : ''}"
                   style="left:${pctAt(h * 60)}%;"
                 ></div>
                 ${h % 3 === 0
-                  ? html`
+            ? html`
                       <span class="x-label" style="left:${pctAt(h * 60)}%;"
                         >${h.toString().padStart(2, '0')}:00</span
                       >
                     `
-                  : nothing}
+            : nothing}
               `
-            )}
+      )}
             ${shots.map((shot) => {
-              const [shh, smm] = shot.time.split(':').map(Number);
-              const startMin = shh * 60 + smm;
-              const leftPct = pctAt(startMin);
-              const widthPct = (shot.duration / 86400) * 100;
-              const isPast = startMin < nowMinutes;
-              return html`
+        const [shh, smm] = shot.time.split(':').map(Number);
+        const startMin = shh * 60 + smm;
+        const leftPct = pctAt(startMin);
+        const widthPct = (shot.duration / 86400) * 100;
+        const isPast = startMin < nowMinutes;
+        return html`
                 <div
                   class="cs-event ${isPast ? 'completed' : ''}"
                   style="left:${leftPct}%;width:max(${widthPct}%,4px);background:${color};box-shadow:0 0 0 1px ${color}99,0 2px 4px ${color}55;"
                   title="${shot.time.substring(0, 5)} · ${shot.duration}s"
                 ></div>
               `;
-            })}
+      })}
 
             <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
           </div>
@@ -2011,16 +2011,16 @@ export class IrrigationDialog extends LitElement {
           <!-- Phase legend -->
           <div class="cs-legend">
             ${phases.phases.map(
-              (p) => html`
+        (p) => html`
                 <span class="cs-leg-chip">
                   <span class="cs-leg-dot" style="background:${p.color};"></span>
                   <strong>${p.label}</strong> ${p.name}${p.id === 'p2'
-                    ? html` · ${p2ShotCount} shots`
-                    : nothing}
+            ? html` · ${p2ShotCount} shots`
+            : nothing}
                   · ${p.target}
                 </span>
               `
-            )}
+      )}
             <span class="cs-leg-chip">
               <span
                 style="width:8px;height:8px;border-radius:50%;background:rgba(255,235,59,0.85);flex-shrink:0;"
@@ -2031,12 +2031,12 @@ export class IrrigationDialog extends LitElement {
           </div>
 
           ${shots.length === 0
-            ? html`
+        ? html`
                 <p style="font-size:0.8rem;opacity:0.6;text-align:center;margin-top:4px;">
                   No shots computed — check lights-on time and interval in the Steering tab.
                 </p>
               `
-            : nothing}
+        : nothing}
         </div>
       </div>
     `;
@@ -2061,9 +2061,9 @@ export class IrrigationDialog extends LitElement {
                   href="#"
                   style="color:#4CAF50;margin-left:4px;"
                   @click=${(e: Event) => {
-                    e.preventDefault();
-                    this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
-                  }}
+            e.preventDefault();
+            this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
+          }}
                   >Open Crop Steering →</a
                 >
               </div>
@@ -2072,20 +2072,20 @@ export class IrrigationDialog extends LitElement {
           `
         : html`
             ${this._renderScheduleSection(
-              'Irrigation Schedule',
-              this.device?.irrigationConfig?.irrigationTimes || [],
-              schedulesDraft.irrigationDuration,
-              'irrigation',
-              color
-            )}
+          'Irrigation Schedule',
+          this.device?.irrigationConfig?.irrigationTimes || [],
+          schedulesDraft.irrigationDuration,
+          'irrigation',
+          color
+        )}
           `}
       ${this._renderScheduleSection(
-        'Drain Schedule',
-        drainTimes,
-        schedulesDraft.drainDuration,
-        'drain',
-        '#FF9800'
-      )}
+          'Drain Schedule',
+          drainTimes,
+          schedulesDraft.drainDuration,
+          'drain',
+          '#FF9800'
+        )}
       ${!isCropSteering
         ? html`
             <div class="info-banner nudge-card">
@@ -2102,9 +2102,9 @@ export class IrrigationDialog extends LitElement {
                   href="#"
                   style="color:var(--stage-color,${color});margin-left:4px;"
                   @click=${(e: Event) => {
-                    e.preventDefault();
-                    this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
-                  }}
+            e.preventDefault();
+            this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
+          }}
                   >Open Crop Steering →</a
                 >
               </div>
@@ -2148,8 +2148,8 @@ export class IrrigationDialog extends LitElement {
             <h3 style="margin:0;">${title}</h3>
             <gs-help-tooltip
               content=${type === 'irrigation'
-                ? 'Each block is a scheduled irrigation event. Click a block to edit it, or click anywhere on the track to add a new one.'
-                : 'Each block is a scheduled drain event. Run drain after irrigation to remove excess runoff.'}
+        ? 'Each block is a scheduled irrigation event. Click a block to edit it, or click anywhere on the track to add a new one.'
+        : 'Each block is a scheduled drain event. Run drain after irrigation to remove excess runoff.'}
               placement="top"
               label=${title}
             ></gs-help-tooltip>
@@ -2171,38 +2171,38 @@ export class IrrigationDialog extends LitElement {
           class="${type}-time-bar timeline-track"
           style="border-color:${color}40;"
           @click=${(e: MouseEvent) => {
-            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-            if (type === 'irrigation')
-              this._startAddingIrrigationTime(e.clientX - rect.left, rect.width);
-            else this._startAddingDrainTime(e.clientX - rect.left, rect.width);
-          }}
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        if (type === 'irrigation')
+          this._startAddingIrrigationTime(e.clientX - rect.left, rect.width);
+        else this._startAddingDrainTime(e.clientX - rect.left, rect.width);
+      }}
         >
           ${Array.from({ length: 25 }, (_, i) => i).map(
-            (h) => html`
+        (h) => html`
               <div
                 class="grid-v ${h % 6 === 0 ? 'major' : ''}"
                 style="left:${(h / 24) * 100}%;"
               ></div>
               ${h % 3 === 0
-                ? html`
+            ? html`
                     <span class="x-label" style="left:${(h / 24) * 100}%;">
                       ${h.toString().padStart(2, '0')}:00
                     </span>
                   `
-                : nothing}
+            : nothing}
             `
-          )}
+      )}
 
           <!-- Event blocks -->
           ${validTimes.map((t) => {
-            const timeStr = (t.time || t.start_time)!;
-            const [hh, mm] = timeStr.split(':').map(Number);
-            const startMin = hh * 60 + (mm || 0);
-            const dur = t.duration || t.duration_seconds || defaultDuration;
-            const leftPct = (startMin / 1440) * 100;
-            const widthPct = (dur / 86400) * 100;
-            const isPast = startMin < nowMinutes;
-            return html`
+        const timeStr = (t.time || t.start_time)!;
+        const [hh, mm] = timeStr.split(':').map(Number);
+        const startMin = hh * 60 + (mm || 0);
+        const dur = t.duration || t.duration_seconds || defaultDuration;
+        const leftPct = (startMin / 1440) * 100;
+        const widthPct = (dur / 86400) * 100;
+        const isPast = startMin < nowMinutes;
+        return html`
               <div
                 class="timeline-event ${isPast ? 'completed' : ''}"
                 style="
@@ -2212,16 +2212,16 @@ export class IrrigationDialog extends LitElement {
                   box-shadow: 0 0 0 1px ${color}99, 0 2px 6px ${color}55;
                 "
                 @click=${(e: Event) => {
-                  e.stopPropagation();
-                  if (type === 'irrigation') this._startEditingIrrigationTime(timeStr, dur);
-                  else this._startEditingDrainTime(timeStr, dur);
-                }}
+            e.stopPropagation();
+            if (type === 'irrigation') this._startEditingIrrigationTime(timeStr, dur);
+            else this._startEditingDrainTime(timeStr, dur);
+          }}
                 title="${timeStr.substring(0, 5)} · ${dur}s"
               >
                 <span class="event-lbl">${timeStr.substring(0, 5)}</span>
               </div>
             `;
-          })}
+      })}
 
           <!-- Now line -->
           <div class="now-line" style="left:${(nowMinutes / 1440) * 100}%;"></div>
@@ -2230,15 +2230,15 @@ export class IrrigationDialog extends LitElement {
         <!-- Time chips -->
         <div class="time-chips">
           ${validTimes.map((t) => {
-            const timeStr = (t.time || t.start_time)!;
-            const [hh, mm] = timeStr.split(':').map(Number);
-            const startMin = hh * 60 + (mm || 0);
-            const dur = t.duration || t.duration_seconds || defaultDuration;
-            const isPast = startMin < nowMinutes;
-            return html`
+        const timeStr = (t.time || t.start_time)!;
+        const [hh, mm] = timeStr.split(':').map(Number);
+        const startMin = hh * 60 + (mm || 0);
+        const dur = t.duration || t.duration_seconds || defaultDuration;
+        const isPast = startMin < nowMinutes;
+        return html`
               <span class="time-chip ${chipClass}">
                 ${isPast
-                  ? html`
+            ? html`
                       <svg
                         style="width:12px;height:12px;fill:#4caf50;flex-shrink:0;"
                         viewBox="0 0 24 24"
@@ -2246,23 +2246,23 @@ export class IrrigationDialog extends LitElement {
                         <path d="${MDI_CHECK}"></path>
                       </svg>
                     `
-                  : nothing}
+            : nothing}
                 ${timeStr.substring(0, 5)}
                 <span class="chip-dur">· ${Math.max(1, Math.round(dur / 60))}m</span>
                 <button
                   class="chip-remove"
                   @click=${(e: Event) => {
-                    e.stopPropagation();
-                    if (type === 'irrigation') this._removeIrrigationTime(timeStr).catch(() => {});
-                    else this._removeDrainTime(timeStr).catch(() => {});
-                  }}
+            e.stopPropagation();
+            if (type === 'irrigation') this._removeIrrigationTime(timeStr).catch(() => { });
+            else this._removeDrainTime(timeStr).catch(() => { });
+          }}
                   title="Remove"
                 >
                   ×
                 </button>
               </span>
             `;
-          })}
+      })}
           <button class="time-chip new-chip" @click=${() => this._openAddTimeDialog(type)}>
             + New
           </button>
@@ -2270,7 +2270,7 @@ export class IrrigationDialog extends LitElement {
 
         <!-- Add overlay -->
         ${addingTime
-          ? html`
+        ? html`
               <div class="overlay-backdrop" @click=${() => this._cancelAddTime(type)}>
                 <div
                   class="detail-card"
@@ -2283,27 +2283,27 @@ export class IrrigationDialog extends LitElement {
                     type="time"
                     .value=${addingTime.time}
                     @change=${(e: CustomEvent) => {
-                      const val = (e.target as HTMLInputElement).value || e.detail;
-                      if (type === 'irrigation')
-                        this._sm = transition(this._sm, {
-                          type: 'UPDATE_ADD_IRRIGATION',
-                          time: val,
-                        });
-                      else this._sm = transition(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
-                    }}
+            const val = (e.target as HTMLInputElement).value || e.detail;
+            if (type === 'irrigation')
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_ADD_IRRIGATION',
+                time: val,
+              });
+            else this._sm = transition(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
+          }}
                   ></md3-text-input>
                   <div
                     style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
                   >
                     <span
                       >${type === 'irrigation'
-                        ? 'Shot Duration (seconds)'
-                        : 'Drain Duration (seconds)'}</span
+            ? 'Shot Duration (seconds)'
+            : 'Drain Duration (seconds)'}</span
                     >
                     <gs-help-tooltip
                       content=${type === 'irrigation'
-                        ? 'How long the irrigation pump runs per shot. Typical: 15–120 seconds.'
-                        : 'How long the drain pump runs. Too short = waterlogging.'}
+            ? 'How long the irrigation pump runs per shot. Typical: 15–120 seconds.'
+            : 'How long the drain pump runs. Too short = waterlogging.'}
                       placement="right"
                       label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
                     ></gs-help-tooltip>
@@ -2313,20 +2313,20 @@ export class IrrigationDialog extends LitElement {
                     .value=${addingTime.duration}
                     .min=${1}
                     @change=${(e: CustomEvent) => {
-                      const val = parseInt(e.detail);
-                      if (!isNaN(val)) {
-                        if (type === 'irrigation')
-                          this._sm = transition(this._sm, {
-                            type: 'UPDATE_ADD_IRRIGATION',
-                            duration: val,
-                          });
-                        else
-                          this._sm = transition(this._sm, {
-                            type: 'UPDATE_ADD_DRAIN',
-                            duration: val,
-                          });
-                      }
-                    }}
+            const val = parseInt(e.detail);
+            if (!isNaN(val)) {
+              if (type === 'irrigation')
+                this._sm = transition(this._sm, {
+                  type: 'UPDATE_ADD_IRRIGATION',
+                  duration: val,
+                });
+              else
+                this._sm = transition(this._sm, {
+                  type: 'UPDATE_ADD_DRAIN',
+                  duration: val,
+                });
+            }
+          }}
                   ></md3-number-input>
                   <div class="button-group">
                     <button class="md3-button tonal" @click=${() => this._cancelAddTime(type)}>
@@ -2335,13 +2335,13 @@ export class IrrigationDialog extends LitElement {
                     <button
                       class="md3-button primary"
                       @click=${() => {
-                        if (type === 'irrigation')
-                          this._addIrrigationTime(addingTime.time, addingTime.duration).catch(
-                            () => {}
-                          );
-                        else
-                          this._addDrainTime(addingTime.time, addingTime.duration).catch(() => {});
-                      }}
+            if (type === 'irrigation')
+              this._addIrrigationTime(addingTime.time, addingTime.duration).catch(
+                () => { }
+              );
+            else
+              this._addDrainTime(addingTime.time, addingTime.duration).catch(() => { });
+          }}
                       style="background:${color};"
                     >
                       Add Schedule
@@ -2350,11 +2350,11 @@ export class IrrigationDialog extends LitElement {
                 </div>
               </div>
             `
-          : ''}
+        : ''}
 
         <!-- Edit overlay -->
         ${editingTime
-          ? html`
+        ? html`
               <div class="overlay-backdrop" @click=${() => this._cancelEditTime(type)}>
                 <div
                   class="detail-card"
@@ -2367,28 +2367,28 @@ export class IrrigationDialog extends LitElement {
                     type="time"
                     .value=${editingTime.time}
                     @change=${(e: CustomEvent) => {
-                      const val = (e.target as HTMLInputElement).value || e.detail;
-                      if (type === 'irrigation')
-                        this._sm = transition(this._sm, {
-                          type: 'UPDATE_EDIT_IRRIGATION',
-                          time: val,
-                        });
-                      else
-                        this._sm = transition(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
-                    }}
+            const val = (e.target as HTMLInputElement).value || e.detail;
+            if (type === 'irrigation')
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_EDIT_IRRIGATION',
+                time: val,
+              });
+            else
+              this._sm = transition(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
+          }}
                   ></md3-text-input>
                   <div
                     style="display:flex;align-items:center;gap:4px;margin-bottom:4px;font-size:0.875rem;color:var(--secondary-text-color);"
                   >
                     <span
                       >${type === 'irrigation'
-                        ? 'Shot Duration (seconds)'
-                        : 'Drain Duration (seconds)'}</span
+            ? 'Shot Duration (seconds)'
+            : 'Drain Duration (seconds)'}</span
                     >
                     <gs-help-tooltip
                       content=${type === 'irrigation'
-                        ? 'How long the irrigation pump runs per shot.'
-                        : 'How long the drain pump runs.'}
+            ? 'How long the irrigation pump runs per shot.'
+            : 'How long the drain pump runs.'}
                       placement="right"
                       label=${type === 'irrigation' ? 'Shot Duration' : 'Drain Duration'}
                     ></gs-help-tooltip>
@@ -2398,28 +2398,28 @@ export class IrrigationDialog extends LitElement {
                     .value=${editingTime.duration}
                     .min=${1}
                     @change=${(e: CustomEvent) => {
-                      const val = parseInt(e.detail);
-                      if (!isNaN(val)) {
-                        if (type === 'irrigation')
-                          this._sm = transition(this._sm, {
-                            type: 'UPDATE_EDIT_IRRIGATION',
-                            duration: val,
-                          });
-                        else
-                          this._sm = transition(this._sm, {
-                            type: 'UPDATE_EDIT_DRAIN',
-                            duration: val,
-                          });
-                      }
-                    }}
+            const val = parseInt(e.detail);
+            if (!isNaN(val)) {
+              if (type === 'irrigation')
+                this._sm = transition(this._sm, {
+                  type: 'UPDATE_EDIT_IRRIGATION',
+                  duration: val,
+                });
+              else
+                this._sm = transition(this._sm, {
+                  type: 'UPDATE_EDIT_DRAIN',
+                  duration: val,
+                });
+            }
+          }}
                   ></md3-number-input>
                   <div class="edit-dialog-buttons">
                     <button
                       class="md3-button delete-button"
                       @click=${() =>
-                        type === 'irrigation'
-                          ? this._deleteIrrigationTimeFromEdit()
-                          : this._deleteDrainTimeFromEdit()}
+            type === 'irrigation'
+              ? this._deleteIrrigationTimeFromEdit()
+              : this._deleteDrainTimeFromEdit()}
                     >
                       Delete
                     </button>
@@ -2431,9 +2431,9 @@ export class IrrigationDialog extends LitElement {
                       <button
                         class="md3-button primary"
                         @click=${() =>
-                          type === 'irrigation'
-                            ? this._saveEditedIrrigationTime()
-                            : this._saveEditedDrainTime()}
+            type === 'irrigation'
+              ? this._saveEditedIrrigationTime()
+              : this._saveEditedDrainTime()}
                         style="background:${color};"
                       >
                         Save Changes
@@ -2443,7 +2443,7 @@ export class IrrigationDialog extends LitElement {
                 </div>
               </div>
             `
-          : ''}
+        : ''}
       </div>
     `;
   }
@@ -2502,28 +2502,28 @@ export class IrrigationDialog extends LitElement {
         </div>
         <div class="phase-grid">
           ${(
-            [
-              {
-                id: 'p1',
-                label: 'P1',
-                name: 'Saturation',
-                desc: 'Bring substrate to field capacity through frequent short shots.',
-              },
-              {
-                id: 'p2',
-                label: 'P2',
-                name: 'Maintenance',
-                desc: 'Maintain EC and irrigate to plant uptake — runoff target.',
-              },
-              {
-                id: 'p3',
-                label: 'P3',
-                name: 'Dryback',
-                desc: 'Final stretch of the photoperiod — controlled substrate dry.',
-              },
-            ] as const
-          ).map(
-            (p) => html`
+        [
+          {
+            id: 'p1',
+            label: 'P1',
+            name: 'Saturation',
+            desc: 'Bring substrate to field capacity through frequent short shots.',
+          },
+          {
+            id: 'p2',
+            label: 'P2',
+            name: 'Maintenance',
+            desc: 'Maintain EC and irrigate to plant uptake — runoff target.',
+          },
+          {
+            id: 'p3',
+            label: 'P3',
+            name: 'Dryback',
+            desc: 'Final stretch of the photoperiod — controlled substrate dry.',
+          },
+        ] as const
+      ).map(
+        (p) => html`
               <div
                 class="phase-card ${this._sm.tabs.steering.phase === p.id ? 'active' : ''}"
                 @click=${() => this._handlePhaseCardClick(p.id)}
@@ -2533,7 +2533,7 @@ export class IrrigationDialog extends LitElement {
                 <div class="phase-desc">${p.desc}</div>
               </div>
             `
-          )}
+      )}
         </div>
       </div>
 
@@ -2553,12 +2553,12 @@ export class IrrigationDialog extends LitElement {
             data-field="enabled"
             .checked=${this._sm.tabs.steering.draft.enabled}
             @change=${(e: Event) =>
-              this._updateStrategyField('enabled', (e.target as HTMLInputElement).checked)}
+        this._updateStrategyField('enabled', (e.target as HTMLInputElement).checked)}
           ></md3-switch>
         </div>
 
         ${(this.device?.environmentAttributes?.lightSensors?.length ?? 0) > 0
-          ? html`
+        ? html`
               <div
                 style="grid-column:span 2;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;"
               >
@@ -2567,14 +2567,14 @@ export class IrrigationDialog extends LitElement {
                   data-field="autoLightTracking"
                   .checked=${!!this._sm.tabs.steering.draft.autoLightTracking}
                   @change=${(e: Event) =>
-                    this._updateStrategyField(
-                      'autoLightTracking',
-                      (e.target as HTMLInputElement).checked
-                    )}
+            this._updateStrategyField(
+              'autoLightTracking',
+              (e.target as HTMLInputElement).checked
+            )}
                 ></md3-switch>
               </div>
             `
-          : ''}
+        : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div
@@ -2586,13 +2586,13 @@ export class IrrigationDialog extends LitElement {
             label="Target VWC (%)"
             .value=${this._sm.tabs.steering.draft.targetVwcPercent}
             @change=${(e: CustomEvent) =>
-              this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
+        this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
           ></md3-number-input>
           <md3-number-input
             label="Dryback (%)"
             .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
             @change=${(e: CustomEvent) =>
-              this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+        this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
@@ -2604,30 +2604,30 @@ export class IrrigationDialog extends LitElement {
               data-scroll-target="lightsOnTime"
               .value=${this._sm.tabs.steering.draft.lightsOnTime}
               @change=${(e: CustomEvent) =>
-                this._updateStrategyField(
-                  'lightsOnTime',
-                  (e.target as HTMLInputElement).value || e.detail
-                )}
+        this._updateStrategyField(
+          'lightsOnTime',
+          (e.target as HTMLInputElement).value || e.detail
+        )}
             ></md3-text-input>
             ${this._sm.tabs.steering.draft.detectedLightsOnTime
-              ? html`
+        ? html`
                   <span class="auto-lights-badge"
                     >auto: ${this._sm.tabs.steering.draft.detectedLightsOnTime}</span
                   >
                 `
-              : ''}
+        : ''}
           </div>
           <md3-number-input
             label="P0 Duration (min)"
             .value=${this._sm.tabs.steering.draft.p0DurationMinutes}
             @change=${(e: CustomEvent) =>
-              this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
+        this._updateStrategyField('p0DurationMinutes', parseInt(e.detail))}
           ></md3-number-input>
           <md3-number-input
             label="P2 Stop Buffer (min)"
             .value=${this._sm.tabs.steering.draft.p2StopBeforeLightsOffMinutes}
             @change=${(e: CustomEvent) =>
-              this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
+        this._updateStrategyField('p2StopBeforeLightsOffMinutes', parseInt(e.detail))}
           ></md3-number-input>
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
@@ -2636,13 +2636,13 @@ export class IrrigationDialog extends LitElement {
             label="Shot Duration (sec)"
             .value=${this._sm.tabs.steering.draft.shotDurationSeconds}
             @change=${(e: CustomEvent) =>
-              this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
+        this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
           ></md3-number-input>
           <md3-number-input
             label="Shot Interval (min)"
             .value=${this._sm.tabs.steering.draft.shotIntervalMinutes}
             @change=${(e: CustomEvent) =>
-              this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
+        this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
           ></md3-number-input>
         </div>
       </div>
@@ -2662,11 +2662,11 @@ export class IrrigationDialog extends LitElement {
               data-field="autoAdvanceP1ToP2"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
               @change=${(e: Event) => {
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { autoAdvanceP1ToP2: (e.target as any).checked },
-                });
-              }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { autoAdvanceP1ToP2: (e.target as any).checked },
+        });
+      }}
             ></md3-switch>
           </div>
         </div>
@@ -2680,11 +2680,11 @@ export class IrrigationDialog extends LitElement {
               data-field="autoAdvanceP2ToP3"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
               @change=${(e: Event) => {
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { autoAdvanceP2ToP3: (e.target as any).checked },
-                });
-              }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { autoAdvanceP2ToP3: (e.target as any).checked },
+        });
+      }}
             ></md3-switch>
           </div>
         </div>
@@ -2698,15 +2698,15 @@ export class IrrigationDialog extends LitElement {
               data-field="haltOnRunoffEc"
               .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
               @change=${(e: Event) => {
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { haltOnRunoffEcThreshold: (e.target as any).checked ? 4.0 : null },
-                });
-              }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { haltOnRunoffEcThreshold: (e.target as any).checked ? 4.0 : null },
+        });
+      }}
             ></md3-switch>
           </div>
           ${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null
-            ? html`
+        ? html`
                 <div style="margin-top:10px;">
                   <md3-number-input
                     data-field="haltOnRunoffEcValue"
@@ -2715,17 +2715,17 @@ export class IrrigationDialog extends LitElement {
                     step="0.1"
                     .value=${String(this._sm.tabs.config.draft.haltOnRunoffEcThreshold)}
                     @change=${(e: CustomEvent) => {
-                      const v = parseFloat(e.detail ?? (e.target as any).value);
-                      if (!isNaN(v))
-                        this._sm = transition(this._sm, {
-                          type: 'UPDATE_CONFIG_DRAFT',
-                          partial: { haltOnRunoffEcThreshold: v },
-                        });
-                    }}
+            const v = parseFloat(e.detail ?? (e.target as any).value);
+            if (!isNaN(v))
+              this._sm = transition(this._sm, {
+                type: 'UPDATE_CONFIG_DRAFT',
+                partial: { haltOnRunoffEcThreshold: v },
+              });
+          }}
                   ></md3-number-input>
                 </div>
               `
-            : nothing}
+        : nothing}
         </div>
       </div>
 
@@ -2743,8 +2743,8 @@ export class IrrigationDialog extends LitElement {
             <strong>${this._sm.tabs.steering.phase.toUpperCase()}</strong> to
             <strong
               >${this._sm.tabs.steering.sub.kind === 'confirm-phase'
-                ? (this._sm.tabs.steering.sub as { pending: string }).pending.toUpperCase()
-                : ''}</strong
+        ? (this._sm.tabs.steering.sub as { pending: string }).pending.toUpperCase()
+        : ''}</strong
             >?
           </p>
           <p style="margin: 0; font-size: 0.9rem; opacity: 0.8; line-height: 1.4;">
@@ -2771,27 +2771,27 @@ export class IrrigationDialog extends LitElement {
         <div class="section-header"><h3>Pump Configuration</h3></div>
         <div class="section-content">
           ${this._renderEntitySelect(
-            'Irrigation Pump',
-            this._sm.tabs.schedules.draft.irrigationPumpEntity,
-            ['switch', 'input_boolean'],
-            (e) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_SCHEDULES_DRAFT',
-                partial: { irrigationPumpEntity: (e.target as HTMLSelectElement).value },
-              });
-            }
-          )}
+      'Irrigation Pump',
+      this._sm.tabs.schedules.draft.irrigationPumpEntity,
+      ['switch', 'input_boolean'],
+      (e) => {
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_SCHEDULES_DRAFT',
+          partial: { irrigationPumpEntity: (e.target as HTMLSelectElement).value },
+        });
+      }
+    )}
           ${this._renderEntitySelect(
-            'Drain Pump (Optional)',
-            this._sm.tabs.schedules.draft.drainPumpEntity,
-            ['switch', 'input_boolean'],
-            (e) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_SCHEDULES_DRAFT',
-                partial: { drainPumpEntity: (e.target as HTMLSelectElement).value },
-              });
-            }
-          )}
+      'Drain Pump (Optional)',
+      this._sm.tabs.schedules.draft.drainPumpEntity,
+      ['switch', 'input_boolean'],
+      (e) => {
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_SCHEDULES_DRAFT',
+          partial: { drainPumpEntity: (e.target as HTMLSelectElement).value },
+        });
+      }
+    )}
         </div>
       </div>
 
@@ -2814,16 +2814,16 @@ export class IrrigationDialog extends LitElement {
               max="100"
               step="1"
               .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
-                ? String(this._sm.tabs.config.draft.soilTriggerPercent)
-                : ''}
+        ? String(this._sm.tabs.config.draft.soilTriggerPercent)
+        : ''}
               placeholder="Off"
               @change=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { soilTriggerPercent: v ? parseFloat(v) : null },
-                });
-              }}
+        const v = (e.target as HTMLInputElement).value;
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { soilTriggerPercent: v ? parseFloat(v) : null },
+        });
+      }}
             />
           </div>
           <div class="md3-input-group">
@@ -2834,16 +2834,16 @@ export class IrrigationDialog extends LitElement {
               min="0"
               step="0.1"
               .value=${this._sm.tabs.config.draft.dailyVolumeCapLiters != null
-                ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters)
-                : ''}
+        ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters)
+        : ''}
               placeholder="Off"
               @change=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
-                });
-              }}
+        const v = (e.target as HTMLInputElement).value;
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
+        });
+      }}
             />
           </div>
           <div class="md3-input-group">
@@ -2854,16 +2854,16 @@ export class IrrigationDialog extends LitElement {
               min="0"
               step="1"
               .value=${this._sm.tabs.config.draft.maxCyclesPerDay != null
-                ? String(this._sm.tabs.config.draft.maxCyclesPerDay)
-                : ''}
+        ? String(this._sm.tabs.config.draft.maxCyclesPerDay)
+        : ''}
               placeholder="Off"
               @change=${(e: Event) => {
-                const v = (e.target as HTMLInputElement).value;
-                this._sm = transition(this._sm, {
-                  type: 'UPDATE_CONFIG_DRAFT',
-                  partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
-                });
-              }}
+        const v = (e.target as HTMLInputElement).value;
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
+        });
+      }}
             />
           </div>
         </div>
@@ -2872,41 +2872,41 @@ export class IrrigationDialog extends LitElement {
       <div class="detail-card">
         <h3 style="margin:0 0 14px;">Behaviour</h3>
         ${[
-          {
-            label: 'Skip During Dark Period',
-            desc: 'No cycles between lights-off and lights-on',
-            get: () => this._sm.tabs.config.draft.skipDuringDark,
-            set: (v: boolean) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { skipDuringDark: v },
-              });
-            },
+        {
+          label: 'Skip During Dark Period',
+          desc: 'No cycles between lights-off and lights-on',
+          get: () => this._sm.tabs.config.draft.skipDuringDark,
+          set: (v: boolean) => {
+            this._sm = transition(this._sm, {
+              type: 'UPDATE_CONFIG_DRAFT',
+              partial: { skipDuringDark: v },
+            });
           },
-          {
-            label: 'Pause on Tank Low',
-            desc: 'Halt cycles when any tank is below warning level',
-            get: () => this._sm.tabs.config.draft.pauseOnLowTank,
-            set: (v: boolean) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { pauseOnLowTank: v },
-              });
-            },
+        },
+        {
+          label: 'Pause on Tank Low',
+          desc: 'Halt cycles when any tank is below warning level',
+          get: () => this._sm.tabs.config.draft.pauseOnLowTank,
+          set: (v: boolean) => {
+            this._sm = transition(this._sm, {
+              type: 'UPDATE_CONFIG_DRAFT',
+              partial: { pauseOnLowTank: v },
+            });
           },
-          {
-            label: 'Log to Logbook',
-            desc: 'Record start, duration, and moisture delta per cycle',
-            get: () => this._sm.tabs.config.draft.logToLogbook,
-            set: (v: boolean) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { logToLogbook: v },
-              });
-            },
+        },
+        {
+          label: 'Log to Logbook',
+          desc: 'Record start, duration, and moisture delta per cycle',
+          get: () => this._sm.tabs.config.draft.logToLogbook,
+          set: (v: boolean) => {
+            this._sm = transition(this._sm, {
+              type: 'UPDATE_CONFIG_DRAFT',
+              partial: { logToLogbook: v },
+            });
           },
-        ].map(
-          (row) => html`
+        },
+      ].map(
+        (row) => html`
             <div class="stub-row" style="margin-bottom:8px;">
               <div>
                 <div class="stub-row-label">${row.label}</div>
@@ -2915,12 +2915,12 @@ export class IrrigationDialog extends LitElement {
               <md3-switch
                 .checked=${row.get()}
                 @change=${(e: CustomEvent) => {
-                  row.set((e.target as any).checked);
-                }}
+            row.set((e.target as any).checked);
+          }}
               ></md3-switch>
             </div>
           `
-        )}
+      )}
       </div>
 
       <div class="detail-card">
@@ -2969,8 +2969,8 @@ export class IrrigationDialog extends LitElement {
           ${tanks.map((tank: any, i: number) => this._renderTankRow(tank, i))}
         </div>
         ${this._editingTankIndex !== null && this._tankDraft !== null
-          ? this._renderTankEditForm()
-          : nothing}
+        ? this._renderTankEditForm()
+        : nothing}
       </div>
     `;
   }
@@ -2990,11 +2990,11 @@ export class IrrigationDialog extends LitElement {
             list="tank-edit-sensor-datalist"
             .value=${draft.sensorEntity}
             @input=${(e: Event) => {
-              this._tankDraft = {
-                ...this._tankDraft!,
-                sensorEntity: (e.target as HTMLInputElement).value,
-              };
-            }}
+        this._tankDraft = {
+          ...this._tankDraft!,
+          sensorEntity: (e.target as HTMLInputElement).value,
+        };
+      }}
             placeholder="Search entity..."
           />
           <datalist id="tank-edit-sensor-datalist">
@@ -3008,11 +3008,11 @@ export class IrrigationDialog extends LitElement {
             type="text"
             .value=${draft.name}
             @input=${(e: Event) => {
-              this._tankDraft = {
-                ...this._tankDraft!,
-                name: (e.target as HTMLInputElement).value,
-              };
-            }}
+        this._tankDraft = {
+          ...this._tankDraft!,
+          name: (e.target as HTMLInputElement).value,
+        };
+      }}
             placeholder="e.g. Main Tank"
           />
         </div>
@@ -3025,12 +3025,12 @@ export class IrrigationDialog extends LitElement {
               min="0"
               .value=${draft.volumeLiters !== null ? String(draft.volumeLiters) : ''}
               @input=${(e: Event) => {
-                const v = parseFloat((e.target as HTMLInputElement).value);
-                this._tankDraft = {
-                  ...this._tankDraft!,
-                  volumeLiters: isNaN(v) ? null : v,
-                };
-              }}
+        const v = parseFloat((e.target as HTMLInputElement).value);
+        this._tankDraft = {
+          ...this._tankDraft!,
+          volumeLiters: isNaN(v) ? null : v,
+        };
+      }}
               placeholder="e.g. 200"
             />
           </div>
@@ -3043,12 +3043,12 @@ export class IrrigationDialog extends LitElement {
               max="100"
               .value=${String(draft.warningLevel)}
               @input=${(e: Event) => {
-                const v = parseInt((e.target as HTMLInputElement).value, 10);
-                this._tankDraft = {
-                  ...this._tankDraft!,
-                  warningLevel: isNaN(v) ? 30 : v,
-                };
-              }}
+        const v = parseInt((e.target as HTMLInputElement).value, 10);
+        this._tankDraft = {
+          ...this._tankDraft!,
+          warningLevel: isNaN(v) ? 30 : v,
+        };
+      }}
             />
           </div>
         </div>
@@ -3087,24 +3087,24 @@ export class IrrigationDialog extends LitElement {
         <div class="tank-row-stat">
           <div class="tank-row-pct" style="color:${color};">
             ${tank.fillLevel !== null && tank.fillLevel !== undefined
-              ? `${pct.toFixed(0)}%`
-              : 'N/A'}
+        ? `${pct.toFixed(0)}%`
+        : 'N/A'}
             ${isWarning ? html`<span style="margin-left:4px;">⚠️</span>` : nothing}
           </div>
           ${depletionLabel || tank.hoursRemaining != null
-            ? html`
+        ? html`
                 <div class="tank-row-sub">
                   ${depletionLabel
-                    ? html`${depletionLabel}${tank.hoursRemaining != null ? ' · ' : ''}`
-                    : nothing}
+            ? html`${depletionLabel}${tank.hoursRemaining != null ? ' · ' : ''}`
+            : nothing}
                   ${tank.hoursRemaining != null
-                    ? (tank.hoursRemaining >= 48
-                        ? Math.floor(tank.hoursRemaining / 24) + 'd'
-                        : Math.round(tank.hoursRemaining) + 'h') + ' left'
-                    : nothing}
+            ? (tank.hoursRemaining >= 48
+              ? Math.floor(tank.hoursRemaining / 24) + 'd'
+              : Math.round(tank.hoursRemaining) + 'h') + ' left'
+            : nothing}
                 </div>
               `
-            : nothing}
+        : nothing}
           <button
             class="md3-button text tank-edit-btn"
             style="padding:4px;min-width:auto;margin-top:4px;"
@@ -3154,7 +3154,7 @@ export class IrrigationDialog extends LitElement {
     const avgTankLevel =
       tanksWithData.length > 0
         ? tanksWithData.reduce((s: number, t: any) => s + (t.fillLevel ?? 0), 0) /
-          tanksWithData.length
+        tanksWithData.length
         : null;
     const warningTanks = tanks.filter((t: any) => t.isWarning);
 
@@ -3225,21 +3225,21 @@ export class IrrigationDialog extends LitElement {
 
     const lastCycle = this.device?.lastCycleTimestamp
       ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
       : null;
     const nextCycle = this.device?.nextScheduledCycle
       ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
       : null;
     const cyclesToday = this.device?.cyclesToday ?? 0;
     const volToday = this.device?.volumeDispensedToday ?? 0;
@@ -3254,17 +3254,17 @@ export class IrrigationDialog extends LitElement {
               >
                 ${kpiCard('Cycles today', String(cyclesToday), '', '#4fc3f7')}
                 ${kpiCard(
-                  'Dispensed today',
-                  volToday > 0 ? volToday.toFixed(2) : '—',
-                  volToday > 0 ? 'L' : '',
-                  '#81c784'
-                )}
+          'Dispensed today',
+          volToday > 0 ? volToday.toFixed(2) : '—',
+          volToday > 0 ? 'L' : '',
+          '#81c784'
+        )}
                 ${lastCycle
-                  ? kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)')
-                  : kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
+            ? kpiCard('Last cycle', lastCycle, '', 'rgba(255,255,255,0.7)')
+            : kpiCard('Last cycle', '—', '', 'rgba(255,255,255,0.4)')}
                 ${nextCycle
-                  ? kpiCard('Next cycle', nextCycle, '', '#ce93d8')
-                  : kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
+            ? kpiCard('Next cycle', nextCycle, '', '#ce93d8')
+            : kpiCard('Next cycle', '—', '', 'rgba(255,255,255,0.4)')}
               </div>
             </div>
           `
@@ -3277,43 +3277,43 @@ export class IrrigationDialog extends LitElement {
                 style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;"
               >
                 ${wu?.litersToday != null
-                  ? kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
-                  : kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
+            ? kpiCard('Liters today', wu.litersToday.toFixed(1), 'L', '#4fc3f7')
+            : kpiCard('Liters today', '—', '', 'rgba(255,255,255,0.4)')}
                 ${wu?.litersPerPlantPerDay != null
-                  ? kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
-                  : kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
+            ? kpiCard('Per plant / day', wu.litersPerPlantPerDay.toFixed(2), 'L', '#81c784')
+            : kpiCard('Per plant / day', '—', '', 'rgba(255,255,255,0.4)')}
                 ${wu?.waterEfficiency != null
-                  ? kpiCard(
-                      'Water efficiency',
-                      (wu.waterEfficiency * 100).toFixed(0),
-                      '%',
-                      wu.waterEfficiency >= 0.85
-                        ? '#4caf50'
-                        : wu.waterEfficiency >= 0.65
-                          ? '#FF9800'
-                          : '#f44336',
-                      wu.waterEfficiency >= 0.85
-                        ? 'Excellent'
-                        : wu.waterEfficiency >= 0.65
-                          ? 'Good'
-                          : 'Review schedule'
-                    )
-                  : kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
+            ? kpiCard(
+              'Water efficiency',
+              (wu.waterEfficiency * 100).toFixed(0),
+              '%',
+              wu.waterEfficiency >= 0.85
+                ? '#4caf50'
+                : wu.waterEfficiency >= 0.65
+                  ? '#FF9800'
+                  : '#f44336',
+              wu.waterEfficiency >= 0.85
+                ? 'Excellent'
+                : wu.waterEfficiency >= 0.65
+                  ? 'Good'
+                  : 'Review schedule'
+            )
+            : kpiCard('Water efficiency', '—', '', 'rgba(255,255,255,0.4)')}
                 ${avgRunoff !== null
-                  ? kpiCard(
-                      'Avg runoff',
-                      avgRunoff.toFixed(1),
-                      '%',
-                      '#ce93d8',
-                      `from ${readingsWithVolumes.length} reading${readingsWithVolumes.length !== 1 ? 's' : ''}`
-                    )
-                  : kpiCard(
-                      'Avg runoff',
-                      '—',
-                      '',
-                      'rgba(255,255,255,0.4)',
-                      'Log volumes in Drain EC tab'
-                    )}
+            ? kpiCard(
+              'Avg runoff',
+              avgRunoff.toFixed(1),
+              '%',
+              '#ce93d8',
+              `from ${readingsWithVolumes.length} reading${readingsWithVolumes.length !== 1 ? 's' : ''}`
+            )
+            : kpiCard(
+              'Avg runoff',
+              '—',
+              '',
+              'rgba(255,255,255,0.4)',
+              'Log volumes in Drain EC tab'
+            )}
               </div>
             </div>
           `
@@ -3326,30 +3326,30 @@ export class IrrigationDialog extends LitElement {
               >
                 <h3 style="margin:0;">Tank Levels</h3>
                 ${warningTanks.length > 0
-                  ? html`
+            ? html`
                       <span
                         style="background:rgba(244,67,54,0.2);color:#f44336;border:1px solid rgba(244,67,54,0.4);border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;"
                       >
                         ⚠ ${warningTanks.length} tank${warningTanks.length > 1 ? 's' : ''} low
                       </span>
                     `
-                  : avgTankLevel !== null
-                    ? html`
+            : avgTankLevel !== null
+              ? html`
                         <span style="font-size:0.82rem;opacity:0.5;"
                           >Avg ${avgTankLevel.toFixed(0)}%</span
                         >
                       `
-                    : nothing}
+              : nothing}
               </div>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 ${tanks.map((tank: any) => {
-                  const pct = tank.fillLevel ?? 0;
-                  const c = tank.isWarning
-                    ? '#f44336'
-                    : (tank.hoursRemaining ?? 999) < 24
-                      ? '#FF9800'
-                      : '#4caf50';
-                  return html`
+                const pct = tank.fillLevel ?? 0;
+                const c = tank.isWarning
+                  ? '#f44336'
+                  : (tank.hoursRemaining ?? 999) < 24
+                    ? '#FF9800'
+                    : '#4caf50';
+                return html`
                     <div>
                       <div
                         style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:4px;"
@@ -3364,14 +3364,14 @@ export class IrrigationDialog extends LitElement {
                       >
                         <div
                           style="height:100%;width:${Math.max(
-                            0,
-                            Math.min(100, pct)
-                          )}%;background:${c};border-radius:3px;transition:width 0.4s ease;"
+                  0,
+                  Math.min(100, pct)
+                )}%;background:${c};border-radius:3px;transition:width 0.4s ease;"
                         ></div>
                       </div>
                     </div>
                   `;
-                })}
+              })}
               </div>
             </div>
           `
@@ -3392,23 +3392,23 @@ export class IrrigationDialog extends LitElement {
                 style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;"
               >
                 ${kpiCard(
-                  'Consumed today',
-                  tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—',
-                  tankLitersToday > 0 ? 'L' : '',
-                  '#4fc3f7'
-                )}
+          'Consumed today',
+          tankLitersToday > 0 ? tankLitersToday.toFixed(1) : '—',
+          tankLitersToday > 0 ? 'L' : '',
+          '#4fc3f7'
+        )}
                 ${kpiCard(
-                  'Last 7 days',
-                  tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—',
-                  tankLiters7d > 0 ? 'L' : '',
-                  '#81c784'
-                )}
+          'Last 7 days',
+          tankLiters7d > 0 ? tankLiters7d.toFixed(1) : '—',
+          tankLiters7d > 0 ? 'L' : '',
+          '#81c784'
+        )}
                 ${kpiCard(
-                  'Avg per day',
-                  tankAvgPerDay > 0 ? tankAvgPerDay.toFixed(1) : '—',
-                  tankAvgPerDay > 0 ? 'L/day' : '',
-                  '#ce93d8'
-                )}
+          'Avg per day',
+          tankAvgPerDay > 0 ? tankAvgPerDay.toFixed(1) : '—',
+          tankAvgPerDay > 0 ? 'L/day' : '',
+          '#ce93d8'
+        )}
               </div>
               <div style="margin-bottom:6px;">
                 <div
@@ -3420,21 +3420,21 @@ export class IrrigationDialog extends LitElement {
                   style="display:flex;align-items:flex-end;gap:1px;height:60px;background:rgba(255,255,255,0.03);border-radius:6px;padding:6px 4px 0;"
                 >
                   ${consumptionBuckets24h.map((b) => {
-                    const hp = (b.liters / maxBucketLiters) * 100;
-                    const label = new Date(b.start).toLocaleTimeString(undefined, {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    });
-                    return html`
+          const hp = (b.liters / maxBucketLiters) * 100;
+          const label = new Date(b.start).toLocaleTimeString(undefined, {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+          return html`
                       <div
                         title="${label} — ${b.liters.toFixed(2)} L"
                         style="flex:1;height:${Math.max(2, hp)}%;background:${b.liters > 0
-                          ? '#4fc3f7'
-                          : 'rgba(255,255,255,0.06)'};border-radius:2px 2px 0 0;min-width:0;"
+              ? '#4fc3f7'
+              : 'rgba(255,255,255,0.06)'};border-radius:2px 2px 0 0;min-width:0;"
                       ></div>
                     `;
-                  })}
+        })}
                 </div>
                 <div
                   style="display:flex;justify-content:space-between;font-size:0.68rem;opacity:0.45;margin-top:4px;padding:0 2px;"
@@ -3443,7 +3443,7 @@ export class IrrigationDialog extends LitElement {
                 </div>
               </div>
               ${recentRefills.length > 0
-                ? html`
+            ? html`
                     <div style="margin-top:16px;">
                       <div
                         style="font-size:0.78rem;opacity:0.55;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;"
@@ -3452,28 +3452,28 @@ export class IrrigationDialog extends LitElement {
                       </div>
                       <div style="display:flex;flex-direction:column;gap:4px;">
                         ${recentRefills.map(
-                          (ev: any) => html`
+              (ev: any) => html`
                             <div
                               style="display:flex;justify-content:space-between;align-items:center;background:rgba(129,199,132,0.08);border-radius:6px;padding:5px 10px;font-size:0.82rem;"
                             >
                               <span style="opacity:0.65;"
                                 >${new Date(ev.timestamp).toLocaleString(undefined, {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}</span
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}</span
                               >
                               <span style="color:#81c784;font-weight:600;"
                                 >+${ev.liters.toFixed(1)} L</span
                               >
                             </div>
                           `
-                        )}
+            )}
                       </div>
                     </div>
                   `
-                : nothing}
+            : nothing}
             </div>
           `
         : nothing}
@@ -3489,10 +3489,10 @@ export class IrrigationDialog extends LitElement {
                     Irrigation
                   </div>
                   ${csShots.length === 0
-                    ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+            ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
                         No strategy configured
                       </p>`
-                    : html`
+            : html`
                         <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
                           ${csShots.length}
                           <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
@@ -3505,9 +3505,9 @@ export class IrrigationDialog extends LitElement {
                             href="#"
                             style="color:#4CAF50;"
                             @click=${(e: Event) => {
-                              e.preventDefault();
-                              this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
-                            }}
+                e.preventDefault();
+                this._sm = requestTabSwitch(this._sm, 'steering', this.device!);
+              }}
                             >edit in Steering →</a
                           >
                         </div>
@@ -3521,10 +3521,10 @@ export class IrrigationDialog extends LitElement {
                             </div>
                           `)}
                           ${csShots.length > 5
-                            ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
                                 +${csShots.length - 5} more
                               </div>`
-                            : nothing}
+                : nothing}
                         </div>
                       `}
                 </div>
@@ -3535,10 +3535,10 @@ export class IrrigationDialog extends LitElement {
                     Drain
                   </div>
                   ${totalDrain === 0
-                    ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+            ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
                         No events scheduled
                       </p>`
-                    : html`
+            : html`
                         <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
                           ${totalDrain}
                           <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
@@ -3546,15 +3546,15 @@ export class IrrigationDialog extends LitElement {
                           >
                         </div>
                         ${drainDuration
-                          ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
                               ${drainDuration}s per event
                             </div>`
-                          : nothing}
+                : nothing}
                         <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
                           ${drainTimes.slice(0, 5).map((t: IrrigationTime) => {
-                            const time = t.time ?? t.start_time ?? '';
-                            const dur = t.duration ?? t.duration_seconds ?? drainDuration;
-                            return html`
+                  const time = t.time ?? t.start_time ?? '';
+                  const dur = t.duration ?? t.duration_seconds ?? drainDuration;
+                  return html`
                               <div
                                 style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
                               >
@@ -3562,12 +3562,12 @@ export class IrrigationDialog extends LitElement {
                                 <span style="opacity:0.5;">${dur}s</span>
                               </div>
                             `;
-                          })}
+                })}
                           ${totalDrain > 5
-                            ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
                                 +${totalDrain - 5} more
                               </div>`
-                            : nothing}
+                : nothing}
                         </div>
                       `}
                 </div>
@@ -3586,10 +3586,10 @@ export class IrrigationDialog extends LitElement {
                       Irrigation
                     </div>
                     ${totalIrrig === 0
-                      ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+              ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
                           No events scheduled
                         </p>`
-                      : html`
+              : html`
                           <div style="font-size:1.3rem;font-weight:700;color:#4fc3f7;">
                             ${totalIrrig}
                             <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
@@ -3597,15 +3597,15 @@ export class IrrigationDialog extends LitElement {
                             >
                           </div>
                           ${irrigDuration
-                            ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                  ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
                                 ${irrigDuration}s per event
                               </div>`
-                            : nothing}
+                  : nothing}
                           <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
                             ${irrigTimes.slice(0, 5).map((t: IrrigationTime) => {
-                              const time = t.time ?? t.start_time ?? '';
-                              const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
-                              return html`
+                    const time = t.time ?? t.start_time ?? '';
+                    const dur = t.duration ?? t.duration_seconds ?? irrigDuration;
+                    return html`
                                 <div
                                   style="display:flex;justify-content:space-between;background:rgba(79,195,247,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
                                 >
@@ -3613,12 +3613,12 @@ export class IrrigationDialog extends LitElement {
                                   <span style="opacity:0.5;">${dur}s</span>
                                 </div>
                               `;
-                            })}
+                  })}
                             ${totalIrrig > 5
-                              ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                  ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
                                   +${totalIrrig - 5} more
                                 </div>`
-                              : nothing}
+                  : nothing}
                           </div>
                         `}
                   </div>
@@ -3629,10 +3629,10 @@ export class IrrigationDialog extends LitElement {
                       Drain
                     </div>
                     ${totalDrain === 0
-                      ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
+              ? html`<p style="opacity:0.5;font-size:0.85rem;margin:0;">
                           No events scheduled
                         </p>`
-                      : html`
+              : html`
                           <div style="font-size:1.3rem;font-weight:700;color:#a5d6a7;">
                             ${totalDrain}
                             <span style="font-size:0.85rem;font-weight:400;opacity:0.7;"
@@ -3640,15 +3640,15 @@ export class IrrigationDialog extends LitElement {
                             >
                           </div>
                           ${drainDuration
-                            ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
+                  ? html`<div style="font-size:0.82rem;opacity:0.6;margin-top:2px;">
                                 ${drainDuration}s per event
                               </div>`
-                            : nothing}
+                  : nothing}
                           <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;">
                             ${drainTimes.slice(0, 5).map((t: IrrigationTime) => {
-                              const time = t.time ?? t.start_time ?? '';
-                              const dur = t.duration ?? t.duration_seconds ?? drainDuration;
-                              return html`
+                    const time = t.time ?? t.start_time ?? '';
+                    const dur = t.duration ?? t.duration_seconds ?? drainDuration;
+                    return html`
                                 <div
                                   style="display:flex;justify-content:space-between;background:rgba(165,214,167,0.08);border-radius:6px;padding:4px 10px;font-size:0.8rem;"
                                 >
@@ -3656,12 +3656,12 @@ export class IrrigationDialog extends LitElement {
                                   <span style="opacity:0.5;">${dur}s</span>
                                 </div>
                               `;
-                            })}
+                  })}
                             ${totalDrain > 5
-                              ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
+                  ? html`<div style="font-size:0.75rem;opacity:0.4;text-align:center;">
                                   +${totalDrain - 5} more
                                 </div>`
-                              : nothing}
+                  : nothing}
                           </div>
                         `}
                   </div>
@@ -3670,15 +3670,15 @@ export class IrrigationDialog extends LitElement {
             `
           : nothing}
       ${this._sm.tabs.water_analytics.stageAggregates &&
-      Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0
+        Object.keys(this._sm.tabs.water_analytics.stageAggregates).length > 0
         ? html`
             <div class="detail-card">
               <h3 style="margin:0 0 14px;">Water Usage by Growth Stage</h3>
               <div style="display:flex;flex-direction:column;gap:8px;">
                 ${Object.entries(this._sm.tabs.water_analytics.stageAggregates)
-                  .sort(([, a], [, b]) => b - a)
-                  .map(
-                    ([stage, liters]) => html`
+            .sort(([, a], [, b]) => b - a)
+            .map(
+              ([stage, liters]) => html`
                       <div
                         style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.04);border-radius:8px;padding:8px 14px;font-size:0.88rem;"
                       >
@@ -3686,7 +3686,7 @@ export class IrrigationDialog extends LitElement {
                         <span style="color:#4fc3f7;font-weight:600;">${liters.toFixed(1)} L</span>
                       </div>
                     `
-                  )}
+            )}
               </div>
             </div>
           `
@@ -3701,7 +3701,7 @@ export class IrrigationDialog extends LitElement {
                 <span style="font-size:0.8rem;opacity:0.5;">from drain EC readings</span>
               </div>
               ${readingsWithVolumes.length === 0
-                ? html`
+            ? html`
                     <p style="opacity:0.6;text-align:center;padding:20px 0;font-size:0.9rem;">
                       No volume data logged yet.<br />
                       <span style="font-size:0.8rem;opacity:0.7;"
@@ -3709,7 +3709,7 @@ export class IrrigationDialog extends LitElement {
                       >
                     </p>
                   `
-                : html`
+            : html`
                     <div
                       style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;background:rgba(255,255,255,0.04);border-radius:10px;padding:12px 16px;font-size:0.88rem;"
                     >
@@ -3729,10 +3729,10 @@ export class IrrigationDialog extends LitElement {
                         <div style="opacity:0.5;font-size:0.75rem;">Avg runoff</div>
                         <div
                           style="font-weight:700;color:${avgRunoff !== null &&
-                          avgRunoff >= 15 &&
-                          avgRunoff <= 35
-                            ? '#4caf50'
-                            : '#FF9800'};"
+                avgRunoff >= 15 &&
+                avgRunoff <= 35
+                ? '#4caf50'
+                : '#FF9800'};"
                         >
                           ${avgRunoff !== null ? avgRunoff.toFixed(1) + '%' : '—'}
                         </div>
@@ -3757,20 +3757,20 @@ export class IrrigationDialog extends LitElement {
                         </thead>
                         <tbody>
                           ${readingsWithVolumes.map((r: any) => {
-                            const runoff = r.feedVolumeMl
-                              ? (r.drainVolumeMl! / r.feedVolumeMl!) * 100
-                              : null;
-                            const delta = r.drainEc - r.feedEc;
-                            const runoffOk = runoff !== null && runoff >= 10 && runoff <= 40;
-                            return html`
+                  const runoff = r.feedVolumeMl
+                    ? (r.drainVolumeMl! / r.feedVolumeMl!) * 100
+                    : null;
+                  const delta = r.drainEc - r.feedEc;
+                  const runoffOk = runoff !== null && runoff >= 10 && runoff <= 40;
+                  return html`
                               <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
                                 <td style="padding:5px 8px;opacity:0.65;">
                                   ${new Date(r.timestamp).toLocaleString(undefined, {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                  })}
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
                                 </td>
                                 <td style="text-align:right;padding:5px 8px;">${r.feedVolumeMl}</td>
                                 <td style="text-align:right;padding:5px 8px;">
@@ -3778,8 +3778,8 @@ export class IrrigationDialog extends LitElement {
                                 </td>
                                 <td
                                   style="text-align:right;padding:5px 8px;font-weight:600;color:${runoffOk
-                                    ? '#4caf50'
-                                    : '#FF9800'};"
+                      ? '#4caf50'
+                      : '#FF9800'};"
                                 >
                                   ${runoff !== null ? runoff.toFixed(1) + '%' : '—'}
                                 </td>
@@ -3788,7 +3788,7 @@ export class IrrigationDialog extends LitElement {
                                 </td>
                               </tr>
                             `;
-                          })}
+                })}
                         </tbody>
                       </table>
                     </div>
@@ -3860,14 +3860,14 @@ export class IrrigationDialog extends LitElement {
           <div>
             <div style="font-weight:600;font-size:1rem;">${statusText}</div>
             ${lastReading
-              ? html`
+        ? html`
                   <div style="font-size:0.8rem;opacity:0.6;margin-top:2px;">
                     Last reading: Feed ${lastReading.feedEc.toFixed(2)} → Drain
                     ${lastReading.drainEc.toFixed(2)} mS/cm at
                     ${new Date(lastReading.timestamp).toLocaleString()}
                   </div>
                 `
-              : nothing}
+        : nothing}
           </div>
         </div>
       </div>
@@ -3878,8 +3878,8 @@ export class IrrigationDialog extends LitElement {
         >
           <h3 style="margin:0;">Monitoring Configuration</h3>
           ${this._sm.tabs.drain_ec.sub.kind === 'saving'
-            ? html`<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>`
-            : nothing}
+        ? html`<span style="font-size:0.8rem;opacity:0.6;">Saving…</span>`
+        : nothing}
         </div>
         <p style="font-size:0.82rem;opacity:0.7;margin-bottom:20px;">
           Alert when drain EC exceeds feed EC by more than the max delta.
@@ -3891,11 +3891,11 @@ export class IrrigationDialog extends LitElement {
           <md3-switch
             .checked=${drainDraft.enabled}
             @change=${(e: Event) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { enabled: (e.target as HTMLInputElement).checked },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { enabled: (e.target as HTMLInputElement).checked },
+        });
+      }}
           ></md3-switch>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -3906,11 +3906,11 @@ export class IrrigationDialog extends LitElement {
             min="0.1"
             ?disabled=${!drainDraft.enabled}
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
+        });
+      }}
           ></md3-number-input>
           <md3-number-input
             label="Target Runoff (%)"
@@ -3920,11 +3920,11 @@ export class IrrigationDialog extends LitElement {
             step="5"
             ?disabled=${!drainDraft.enabled}
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
+        });
+      }}
           ></md3-number-input>
         </div>
       </div>
@@ -3942,11 +3942,11 @@ export class IrrigationDialog extends LitElement {
             step="0.1"
             min="0"
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logFeedEc: parseFloat(e.detail) || 0 },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { logFeedEc: parseFloat(e.detail) || 0 },
+        });
+      }}
           ></md3-number-input>
           <md3-number-input
             label="Drain EC (mS/cm)"
@@ -3954,11 +3954,11 @@ export class IrrigationDialog extends LitElement {
             step="0.1"
             min="0"
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logDrainEc: parseFloat(e.detail) || 0 },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { logDrainEc: parseFloat(e.detail) || 0 },
+        });
+      }}
           ></md3-number-input>
           <md3-number-input
             label="Feed Volume (mL) — optional"
@@ -3966,11 +3966,11 @@ export class IrrigationDialog extends LitElement {
             step="100"
             min="0"
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logFeedVolume: parseInt(e.detail) || 0 },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { logFeedVolume: parseInt(e.detail) || 0 },
+        });
+      }}
           ></md3-number-input>
           <md3-number-input
             label="Drain Volume (mL) — optional"
@@ -3978,15 +3978,15 @@ export class IrrigationDialog extends LitElement {
             step="100"
             min="0"
             @change=${(e: CustomEvent) => {
-              this._sm = transition(this._sm, {
-                type: 'UPDATE_DRAIN_EC_DRAFT',
-                partial: { logDrainVolume: parseInt(e.detail) || 0 },
-              });
-            }}
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_DRAIN_EC_DRAFT',
+          partial: { logDrainVolume: parseInt(e.detail) || 0 },
+        });
+      }}
           ></md3-number-input>
         </div>
         ${drainDraft.logFeedEc > 0 && drainDraft.logDrainEc > 0
-          ? html`
+        ? html`
               <div
                 style="background:rgba(255,255,255,0.05);border-radius:8px;padding:10px 16px;margin-bottom:16px;display:flex;gap:24px;align-items:center;font-size:0.9rem;"
               >
@@ -3994,35 +3994,35 @@ export class IrrigationDialog extends LitElement {
                   >EC Delta:
                   <strong
                     style="color:${drainDraft.logDrainEc - drainDraft.logFeedEc >
-                    drainDraft.maxEcDelta
-                      ? '#f44336'
-                      : '#4caf50'}"
+            drainDraft.maxEcDelta
+            ? '#f44336'
+            : '#4caf50'}"
                   >
                     Δ${(drainDraft.logDrainEc - drainDraft.logFeedEc).toFixed(2)} mS/cm
                   </strong></span
                 >
                 ${drainDraft.logFeedVolume > 0 && drainDraft.logDrainVolume > 0
-                  ? html`
+            ? html`
                       <span
                         >Runoff:
                         <strong
                           >${((drainDraft.logDrainVolume / drainDraft.logFeedVolume) * 100).toFixed(
-                            1
-                          )}%</strong
+              1
+            )}%</strong
                         ></span
                       >
                     `
-                  : nothing}
+            : nothing}
               </div>
             `
-          : nothing}
+        : nothing}
         <button
           class="md3-button primary"
           style="background:#FF9800;"
           @click=${this._logDrainReadingNow}
           ?disabled=${this._sm.tabs.drain_ec.sub.kind === 'logging' ||
-          drainDraft.logFeedEc <= 0 ||
-          drainDraft.logDrainEc <= 0}
+      drainDraft.logFeedEc <= 0 ||
+      drainDraft.logDrainEc <= 0}
         >
           ${this._sm.tabs.drain_ec.sub.kind === 'logging' ? 'Logging…' : 'Log Reading'}
         </button>
@@ -4036,10 +4036,10 @@ export class IrrigationDialog extends LitElement {
           <span style="font-size:0.8rem;opacity:0.5;">${readings.length} total</span>
         </div>
         ${recent.length === 0
-          ? html`
+        ? html`
               <p style="opacity:0.6;text-align:center;padding:20px 0;">No readings logged yet.</p>
             `
-          : html`
+        : html`
               <div style="overflow-x:auto;">
                 <table style="width:100%;border-collapse:collapse;font-size:0.88rem;">
                   <thead>
@@ -4053,30 +4053,30 @@ export class IrrigationDialog extends LitElement {
                   </thead>
                   <tbody>
                     ${recent.map((r: DrainECReading) => {
-                      const delta = r.drainEc - r.feedEc;
-                      const overThreshold = drainDraft.enabled && delta > drainDraft.maxEcDelta;
-                      const runoffPct =
-                        r.feedVolumeMl && r.drainVolumeMl
-                          ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
-                          : '—';
-                      return html`
+          const delta = r.drainEc - r.feedEc;
+          const overThreshold = drainDraft.enabled && delta > drainDraft.maxEcDelta;
+          const runoffPct =
+            r.feedVolumeMl && r.drainVolumeMl
+              ? ((r.drainVolumeMl / r.feedVolumeMl) * 100).toFixed(1) + '%'
+              : '—';
+          return html`
                         <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
                           <td style="padding:6px 8px;opacity:0.7;">
                             ${new Date(r.timestamp).toLocaleString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
                           </td>
                           <td style="text-align:right;padding:6px 8px;">${r.feedEc.toFixed(2)}</td>
                           <td style="text-align:right;padding:6px 8px;">${r.drainEc.toFixed(2)}</td>
                           <td
                             style="text-align:right;padding:6px 8px;color:${overThreshold
-                              ? '#f44336'
-                              : delta > drainDraft.maxEcDelta * 0.7
-                                ? '#FF9800'
-                                : '#4caf50'};font-weight:500;"
+              ? '#f44336'
+              : delta > drainDraft.maxEcDelta * 0.7
+                ? '#FF9800'
+                : '#4caf50'};font-weight:500;"
                           >
                             ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}
                           </td>
@@ -4085,7 +4085,7 @@ export class IrrigationDialog extends LitElement {
                           </td>
                         </tr>
                       `;
-                    })}
+        })}
                   </tbody>
                 </table>
               </div>
@@ -4136,7 +4136,7 @@ export class IrrigationDialog extends LitElement {
           </thead>
           <tbody>
             ${this._sm.tabs.ec_targets.draft.map(
-              (range, idx) => html`
+      (range, idx) => html`
                 <tr
                   class="ec-target-row"
                   style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));"
@@ -4156,14 +4156,14 @@ export class IrrigationDialog extends LitElement {
                       style="width:90px;"
                       .value=${String(range.minEc)}
                       @input=${(e: Event) => {
-                        const val = parseFloat((e.target as HTMLInputElement).value) || 0;
-                        this._sm = transition(this._sm, {
-                          type: 'UPDATE_EC_TARGETS_DRAFT',
-                          ranges: this._sm.tabs.ec_targets.draft.map((r, i) =>
-                            i === idx ? { ...r, minEc: val } : r
-                          ),
-                        });
-                      }}
+          const val = parseFloat((e.target as HTMLInputElement).value) || 0;
+          this._sm = transition(this._sm, {
+            type: 'UPDATE_EC_TARGETS_DRAFT',
+            ranges: this._sm.tabs.ec_targets.draft.map((r, i) =>
+              i === idx ? { ...r, minEc: val } : r
+            ),
+          });
+        }}
                     />
                   </td>
                   <td style="padding:8px;">
@@ -4176,19 +4176,19 @@ export class IrrigationDialog extends LitElement {
                       style="width:90px;"
                       .value=${String(range.maxEc)}
                       @input=${(e: Event) => {
-                        const val = parseFloat((e.target as HTMLInputElement).value) || 0;
-                        this._sm = transition(this._sm, {
-                          type: 'UPDATE_EC_TARGETS_DRAFT',
-                          ranges: this._sm.tabs.ec_targets.draft.map((r, i) =>
-                            i === idx ? { ...r, maxEc: val } : r
-                          ),
-                        });
-                      }}
+          const val = parseFloat((e.target as HTMLInputElement).value) || 0;
+          this._sm = transition(this._sm, {
+            type: 'UPDATE_EC_TARGETS_DRAFT',
+            ranges: this._sm.tabs.ec_targets.draft.map((r, i) =>
+              i === idx ? { ...r, maxEc: val } : r
+            ),
+          });
+        }}
                     />
                   </td>
                 </tr>
               `
-            )}
+    )}
           </tbody>
         </table>
       </div>
@@ -4235,11 +4235,11 @@ export class IrrigationDialog extends LitElement {
     return html`
       <div class="tab-section">
         ${this._ecRampError
-          ? html`<div class="error-bar">${this._ecRampError}</div>`
-          : nothing}
+        ? html`<div class="error-bar">${this._ecRampError}</div>`
+        : nothing}
         ${this._ecRampView === 'LIST'
-          ? this._renderEcRampList()
-          : this._renderEcRampEdit()}
+        ? this._renderEcRampList()
+        : this._renderEcRampEdit()}
       </div>
     `;
   }
@@ -4269,24 +4269,24 @@ export class IrrigationDialog extends LitElement {
     return html`
       <div class="curves-list">
         ${curveList.map(
-          (curve) => html`
+      (curve) => html`
             <div class="curve-item" @click=${() => this._ecRampEditCurve(curve)}>
               <div class="curve-info">
                 <div class="curve-name">${curve.name}</div>
                 <div class="curve-details">
                   ${curve.points.length} point${curve.points.length !== 1 ? 's' : ''} • Day
                   ${Math.min(...curve.points.map((p) => p.day))}–${Math.max(
-                    ...curve.points.map((p) => p.day)
-                  )}
+        ...curve.points.map((p) => p.day)
+      )}
                 </div>
               </div>
               <div class="curve-actions">
                 <button
                   class="md3-button icon"
                   @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this._ecRampEditCurve(curve);
-                  }}
+          e.stopPropagation();
+          this._ecRampEditCurve(curve);
+        }}
                   title="Edit"
                 >
                   <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
@@ -4294,9 +4294,9 @@ export class IrrigationDialog extends LitElement {
                 <button
                   class="md3-button icon"
                   @click=${(e: Event) => {
-                    e.stopPropagation();
-                    this._ecRampDeleteCurve(curve.id).catch(() => undefined);
-                  }}
+          e.stopPropagation();
+          this._ecRampDeleteCurve(curve.id).catch(() => undefined);
+        }}
                   title="Delete"
                   style="color: var(--error-color);"
                 >
@@ -4305,7 +4305,7 @@ export class IrrigationDialog extends LitElement {
               </div>
             </div>
           `
-        )}
+    )}
       </div>
       <div class="button-group" style="margin-top: 16px;">
         <button class="md3-button primary" @click=${this._ecRampStartNew}>
@@ -4330,21 +4330,21 @@ export class IrrigationDialog extends LitElement {
               label="Curve Name"
               .value=${curve.name ?? ''}
               @change=${(e: CustomEvent) =>
-                (this._ecRampEditingCurve = { ...curve, name: e.detail })}
+        (this._ecRampEditingCurve = { ...curve, name: e.detail })}
               placeholder="e.g. Veg Ramp, Bloom Progression"
             ></md3-text-input>
             <md3-select
               label="Growth Stage"
               .value=${curve.stage ?? 'flower'}
               .options=${[
-                { label: 'Seedling', value: 'seedling' },
-                { label: 'Mother', value: 'mother' },
-                { label: 'Vegetative', value: 'veg' },
-                { label: 'Flower', value: 'flower' },
-                { label: 'Cure', value: 'cure' },
-              ]}
+        { label: 'Seedling', value: 'seedling' },
+        { label: 'Mother', value: 'mother' },
+        { label: 'Vegetative', value: 'veg' },
+        { label: 'Flower', value: 'flower' },
+        { label: 'Cure', value: 'cure' },
+      ]}
               @change=${(e: CustomEvent) =>
-                (this._ecRampEditingCurve = { ...curve, stage: e.detail })}
+        (this._ecRampEditingCurve = { ...curve, stage: e.detail })}
             ></md3-select>
           </div>
         </div>
@@ -4359,22 +4359,22 @@ export class IrrigationDialog extends LitElement {
           </div>
           <div class="points-list">
             ${points.map(
-              (point: ECRampPoint, index: number) => html`
+          (point: ECRampPoint, index: number) => html`
                 <div class="point-row">
                   <md3-number-input
                     label="Day"
                     .value=${point.day}
                     @change=${(e: CustomEvent) =>
-                      this._ecRampUpdatePoint(index, { day: parseInt(e.detail) || 0 })}
+              this._ecRampUpdatePoint(index, { day: parseInt(e.detail) || 0 })}
                     min="0"
                   ></md3-number-input>
                   <md3-number-input
                     label="Target EC (mS/cm)"
                     .value=${point.target_ec}
                     @change=${(e: CustomEvent) =>
-                      this._ecRampUpdatePoint(index, {
-                        target_ec: parseFloat(e.detail) || 0,
-                      })}
+              this._ecRampUpdatePoint(index, {
+                target_ec: parseFloat(e.detail) || 0,
+              })}
                     min="0"
                     step="0.1"
                   ></md3-number-input>
@@ -4388,7 +4388,7 @@ export class IrrigationDialog extends LitElement {
                   </button>
                 </div>
               `
-            )}
+        )}
           </div>
         </div>
       </div>
@@ -4397,10 +4397,10 @@ export class IrrigationDialog extends LitElement {
         <button
           class="md3-button tonal"
           @click=${() => {
-            this._ecRampView = 'LIST';
-            this._ecRampEditingCurve = null;
-            this._ecRampError = null;
-          }}
+        this._ecRampView = 'LIST';
+        this._ecRampEditingCurve = null;
+        this._ecRampError = null;
+      }}
         >
           <ha-svg-icon .path=${mdiArrowLeft} style="margin-right: 8px;"></ha-svg-icon>
           Back

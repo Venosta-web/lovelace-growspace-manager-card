@@ -4,6 +4,15 @@ import type { VisionCheckupConfig } from '../../slices/camera';
 
 export type { VisionCheckupConfig };
 
+export interface VisionCheckupResult {
+  severity: string;
+  check_type: string;
+  timestamp: string;
+  analysis: string;
+  issues_detected: string[];
+  recommendations: string[];
+}
+
 export interface AddPlantDialogState {
   row: number;
   col: number;

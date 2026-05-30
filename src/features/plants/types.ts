@@ -45,6 +45,7 @@ export enum GrowspaceType {
   NORMAL = 'normal',
   MOTHER = 'mother',
   CLONE = 'clone',
+  FLOWER = 'flower',
   DRY = 'dry',
   CURE = 'cure',
   VEG = 'veg',

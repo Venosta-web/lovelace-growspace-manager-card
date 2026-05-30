@@ -3,6 +3,10 @@ import {
   GrowspaceAPIResponseSchema,
   GrowspaceAPICollectionSchema,
 } from '../slices/growspace/schema';
+import type {
+  GrowspaceAPISchemaResponse,
+  GrowspaceAPICollection,
+} from '../slices/growspace/schema';
 
 export { GrowspaceAPIResponseSchema, GrowspaceAPICollectionSchema };
 export type {

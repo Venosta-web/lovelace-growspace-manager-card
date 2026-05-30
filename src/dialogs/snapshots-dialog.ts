@@ -270,7 +270,7 @@ export class SnapshotsDialog extends LitElement {
                           <strong style="font-size:0.85rem;">Issues detected</strong>
                           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
                             ${r.issues_detected.map(
-                              (i) =>
+                              (i: string) =>
                                 html`<span
                                   class="issue-chip"
                                   style="background:rgba(244,67,54,0.15);color:var(--error-color,#f44336);border-radius:10px;padding:2px 10px;font-size:0.8rem;"
@@ -287,7 +287,7 @@ export class SnapshotsDialog extends LitElement {
                           <strong style="font-size:0.85rem;">Recommendations</strong>
                           <ol style="margin:8px 0 0 16px;padding:0;">
                             ${r.recommendations.map(
-                              (rec) =>
+                              (rec: string) =>
                                 html`<li
                                   class="recommendation-item"
                                   style="margin-bottom:4px;font-size:0.9rem;"
