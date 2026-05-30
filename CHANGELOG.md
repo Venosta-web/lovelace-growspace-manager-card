@@ -1,3 +1,10 @@
+# [1.1.0-next.13](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.12...v1.1.0-next.13) (2026-05-30)
+
+
+### Features
+
+* add library-tag and field-hint styles and update button color variables in seeds-genetics-tab ([5d33dfd](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5d33dfd894285077363301c11ed1c6742a0a70f5))
+
 # [1.1.0-next.12](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.11...v1.1.0-next.12) (2026-05-30)
 
 
