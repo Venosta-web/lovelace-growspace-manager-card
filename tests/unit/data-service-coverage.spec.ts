@@ -23,6 +23,22 @@ vi.mock('../../src/slices/nutrient', () => ({
   removeECRampCurve: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../src/slices/growspace', () => ({
+  growspaceDevices$: { get: vi.fn(() => null), set: vi.fn() },
+  getGrowspaceDevices: vi.fn().mockReturnValue([]),
+  fetchGrowspaceData: vi.fn().mockResolvedValue(undefined),
+  addGrowspace: vi.fn().mockResolvedValue(undefined),
+  updateGrowspace: vi.fn().mockResolvedValue(undefined),
+  removeGrowspace: vi.fn().mockResolvedValue(undefined),
+  configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  setDehumidifierControl: vi.fn().mockResolvedValue(undefined),
+  removeEnvironment: vi.fn().mockResolvedValue(undefined),
+  resetWaterTracking: vi.fn().mockResolvedValue(undefined),
+  updateSensorCoordinates: vi.fn().mockResolvedValue(undefined),
+  exportGrowReport: vi.fn().mockResolvedValue(undefined),
+  fetchGrowReport: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Strain operations now go through slices/strain, not StrainAPI
 vi.mock('../../src/slices/strain', () => ({
   fetchStrainLibrary: vi.fn().mockResolvedValue([]),
@@ -40,6 +56,7 @@ vi.mock('../../src/slices/strain', () => ({
 
 import * as strainSlice from '../../src/slices/strain';
 import * as nutrientSlice from '../../src/slices/nutrient';
+import * as growspaceSlice from '../../src/slices/growspace';
 
 describe('DataService Coverage Gap Fill', () => {
     let service: DataService;
@@ -135,13 +152,11 @@ describe('DataService Coverage Gap Fill', () => {
             service.removeGrowspace('g1');
             expect(removeSpy).toHaveBeenCalled();
 
-            const configSpy = vi.spyOn((service as any)._growspaceAPI, 'configureEnvironment');
             service.configureEnvironment({ growspaceId: 'g1' } as any);
-            expect(configSpy).toHaveBeenCalled();
+            expect(growspaceSlice.configureEnvironment).toHaveBeenCalled();
 
-            const setDehumSpy = vi.spyOn((service as any)._growspaceAPI, 'setDehumidifierControl');
             service.setDehumidifierControl('g1', true);
-            expect(setDehumSpy).toHaveBeenCalled();
+            expect(growspaceSlice.setDehumidifierControl).toHaveBeenCalled();
         });
 
         it('should delegate Strain API calls to strain slice', async () => {

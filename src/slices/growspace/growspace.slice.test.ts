@@ -10,6 +10,11 @@ import {
   updateGrowspace,
   exportGrowReport,
   fetchGrowReport,
+  removeEnvironment,
+  resetWaterTracking,
+  setDehumidifierControl,
+  updateSensorCoordinates,
+  configureEnvironment,
 } from './index';
 
 vi.mock('../../services/hass-call', () => ({
@@ -212,5 +217,115 @@ describe('updateGrowspace', () => {
     );
 
     expect(growspaceDevices$.get()![0].name).toBe('Original');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// removeEnvironment
+// ---------------------------------------------------------------------------
+
+describe('removeEnvironment', () => {
+  it('calls remove_environment service with growspace_id', async () => {
+    await removeEnvironment('gs1');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'remove_environment',
+      { growspace_id: 'gs1' }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resetWaterTracking
+// ---------------------------------------------------------------------------
+
+describe('resetWaterTracking', () => {
+  it('calls reset_water_tracking service with growspace_id', async () => {
+    await resetWaterTracking('gs1');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'reset_water_tracking',
+      { growspace_id: 'gs1' }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setDehumidifierControl
+// ---------------------------------------------------------------------------
+
+describe('setDehumidifierControl', () => {
+  it('calls set_dehumidifier_control service with growspace_id and enabled flag', async () => {
+    await setDehumidifierControl('gs1', true);
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_dehumidifier_control',
+      { growspace_id: 'gs1', enabled: true }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateSensorCoordinates
+// ---------------------------------------------------------------------------
+
+describe('updateSensorCoordinates', () => {
+  it('sends update_sensor_coordinates WS command with rounded coordinates', async () => {
+    await updateSensorCoordinates('gs1', 'sensor.temp', 1.6, 2.4, 3.9);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_sensor_coordinates',
+      { growspace_id: 'gs1', entity_id: 'sensor.temp', x: 2, y: 2, z: 4, rotation: undefined },
+      expect.anything()
+    );
+  });
+
+  it('includes rotation when provided', async () => {
+    await updateSensorCoordinates('gs1', 'sensor.temp', 0, 0, 0, 45.7);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_sensor_coordinates',
+      expect.objectContaining({ rotation: 46 }),
+      expect.anything()
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// configureEnvironment
+// ---------------------------------------------------------------------------
+
+describe('configureEnvironment', () => {
+  it('calls configure_environment service with growspace_id and mapped snake_case fields', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      temperatureSensors: ['sensor.temp'],
+      humiditySensors: ['sensor.hum'],
+      vegDayHours: 18,
+      controlDehumidifier: true,
+    });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'configure_environment',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        temperature_sensors: ['sensor.temp'],
+        humidity_sensors: ['sensor.hum'],
+        veg_day_hours: 18,
+        control_dehumidifier: true,
+      })
+    );
+  });
+
+  it('omits fields that are undefined or empty arrays', async () => {
+    await configureEnvironment({ growspaceId: 'gs1', temperatureSensors: [] });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).not.toHaveProperty('temperature_sensors');
+    expect(payload).not.toHaveProperty('humidity_sensors');
   });
 });

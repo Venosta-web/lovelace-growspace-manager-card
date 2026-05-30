@@ -2,6 +2,14 @@ import { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceAPIResponse } from './types';
 
 import { GrowspaceAPI } from './api/growspace-api';
+import {
+  configureEnvironment as growspaceSliceConfigureEnvironment,
+  setDehumidifierControl as growspaceSliceSetDehumidifierControl,
+  removeEnvironment as growspaceSliceRemoveEnvironment,
+  resetWaterTracking as growspaceSliceResetWaterTracking,
+  updateSensorCoordinates as growspaceSliceUpdateSensorCoordinates,
+} from '../slices/growspace';
+import { setHass } from './hass-call';
 import { HistoryAPI } from './api/history-api';
 import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
@@ -70,6 +78,7 @@ export class DataService {
 
     if (hass) {
       this.hass = hass;
+      setHass(hass);
     }
   }
 
@@ -86,6 +95,7 @@ export class DataService {
       this._reportAPI,
       this._geneticsAPI,
     ].forEach((api) => api.updateHass(hass));
+    setHass(hass);
   }
 
   // ── Growspace ────────────────────────────────────────────────────────────
@@ -105,15 +115,15 @@ export class DataService {
 
   removeGrowspace = (growspaceId: string) => this._growspaceAPI.removeGrowspace(growspaceId);
 
-  configureEnvironment = (data: Parameters<GrowspaceAPI['configureEnvironment']>[0]) =>
-    this._growspaceAPI.configureEnvironment(data);
+  configureEnvironment = (data: Parameters<typeof growspaceSliceConfigureEnvironment>[0]) =>
+    growspaceSliceConfigureEnvironment(data);
 
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>
-    this._growspaceAPI.setDehumidifierControl(growspaceId, enabled);
+    growspaceSliceSetDehumidifierControl(growspaceId, enabled);
 
-  removeEnvironment = (growspaceId: string) => this._growspaceAPI.removeEnvironment(growspaceId);
+  removeEnvironment = (growspaceId: string) => growspaceSliceRemoveEnvironment(growspaceId);
 
-  resetWaterTracking = (growspaceId: string) => this._growspaceAPI.resetWaterTracking(growspaceId);
+  resetWaterTracking = (growspaceId: string) => growspaceSliceResetWaterTracking(growspaceId);
 
   updateSensorCoordinates = (
     growspaceId: string,
@@ -122,7 +132,7 @@ export class DataService {
     y: number,
     z: number,
     rotation?: number
-  ) => this._growspaceAPI.updateSensorCoordinates(growspaceId, entityId, x, y, z, rotation);
+  ) => growspaceSliceUpdateSensorCoordinates(growspaceId, entityId, x, y, z, rotation);
 
   // ── Strain (delegated to slices/strain) ──────────────────────────────────
 
