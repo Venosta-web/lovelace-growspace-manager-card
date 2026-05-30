@@ -333,12 +333,15 @@ export class HarvestScoringDialog extends LitElement {
     try {
       if (mode === 'save') {
         if (!isScoringEmpty(this._sm)) {
-          await this.store.actions.plant.scorePhenotype(plantId, this._sm.tabs.scoring.draft);
+          await this.store.actions.plant.scorePhenotype(
+            plantId,
+            this._sm.tabs.scoring.draft as unknown as Record<string, number | null>
+          );
         }
         const metrics = parseMetrics(this._sm.tabs.metrics.draft);
         await this.store.actions.plant.harvest(
           plant,
-          Object.keys(metrics).length > 0 ? metrics : undefined
+          Object.keys(metrics).length > 0 ? (metrics as Record<string, unknown>) : undefined
         );
       } else {
         await this.store.actions.plant.harvest(plant);
