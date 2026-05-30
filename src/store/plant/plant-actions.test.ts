@@ -118,7 +118,7 @@ describe('updatePlantFromDialog', () => {
       plant,
       editedAttributes: { strain: 'Blue Dream' } as any,
       selectedPlantIds: [],
-      activeTab: 'info',
+      activeTab: 'dashboard',
     });
 
     expect((ctx.dataService as any).updatePlant).toHaveBeenCalledOnce();
@@ -132,7 +132,7 @@ describe('updatePlantFromDialog', () => {
       plant,
       editedAttributes: { strain: 'Gelato' } as any,
       selectedPlantIds: ['plant-1', 'plant-2', 'plant-3'],
-      activeTab: 'info',
+      activeTab: 'dashboard',
     });
 
     expect((ctx.dataService as any).updatePlant).toHaveBeenCalledTimes(3);
@@ -146,7 +146,7 @@ describe('updatePlantFromDialog', () => {
       plant,
       editedAttributes: {} as any,
       selectedPlantIds: ['plant-1', 'plant-2'],
-      activeTab: 'info',
+      activeTab: 'dashboard',
     });
 
     expect((ctx.ui as any).clearPlantSelection).toHaveBeenCalled();
