@@ -16,8 +16,13 @@ import {
   sowSeed,
   setPlantSex,
   unlinkSeedBatch,
+  harvestSeeds,
+  getStrainLineageTree,
+  updateStrainLineageTree,
+  importStrainLineageTree,
 } from './index';
 import type { SeedBatch, PollinationEvent } from '../../types';
+import { LineageNodeSchema } from './schema';
 
 vi.mock('../../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -402,5 +407,194 @@ describe('seedBatches$', () => {
 describe('pollinationEvents$', () => {
   it('defaults to an empty array', () => {
     expect(pollinationEvents$.get()).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// LineageNodeSchema
+// ---------------------------------------------------------------------------
+
+describe('LineageNodeSchema', () => {
+  it('validates a simple valid lineage node', () => {
+    const node = {
+      id: 'node-1',
+      name: 'OG Kush',
+      type: 'plant',
+      phenotype: 'Piney',
+      generation: 'F1',
+    };
+    const parsed = LineageNodeSchema.safeParse(node);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data).toEqual(node);
+    }
+  });
+
+  it('validates a recursive valid lineage node with multiple levels of parents', () => {
+    const recursiveNode = {
+      id: 'child',
+      name: 'Blue Dream Cross',
+      type: 'plant',
+      parents: [
+        {
+          id: 'parent-1',
+          name: 'Blue Dream',
+          type: 'strain',
+          parents: [
+            {
+              id: 'grandparent-1',
+              name: 'Super Silver Haze',
+              type: 'strain',
+            },
+            {
+              id: 'grandparent-2',
+              name: 'Blueberry',
+              type: 'strain',
+            }
+          ]
+        },
+        {
+          id: 'parent-2',
+          name: 'Unknown Male',
+          type: 'seed_batch',
+        }
+      ]
+    };
+    const parsed = LineageNodeSchema.safeParse(recursiveNode);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data).toEqual(recursiveNode);
+    }
+  });
+
+  it('rejects an invalid node missing required properties', () => {
+    const invalidNode = {
+      name: 'No ID or Type',
+    };
+    const parsed = LineageNodeSchema.safeParse(invalidNode);
+    expect(parsed.success).toBe(false);
+  });
+
+  it('rejects an invalid node with incorrect type enum', () => {
+    const invalidNode = {
+      id: 'invalid-1',
+      name: 'Wrong Type',
+      type: 'flower', // invalid enum, should be plant/seed_batch/strain
+    };
+    const parsed = LineageNodeSchema.safeParse(invalidNode);
+    expect(parsed.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// harvestSeeds
+// ---------------------------------------------------------------------------
+
+describe('harvestSeeds', () => {
+  it('calls callService with harvest_seeds and the payload', async () => {
+    const payload = {
+      event_id: 'event-123',
+      quantity: 50,
+      notes: 'Beautiful seeds harvested',
+    };
+    await harvestSeeds(payload);
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'harvest_seeds',
+      payload
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('harvest error'));
+
+    await expect(
+      harvestSeeds({ event_id: 'event-123', quantity: 10 })
+    ).rejects.toThrow('harvest error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getStrainLineageTree
+// ---------------------------------------------------------------------------
+
+describe('getStrainLineageTree', () => {
+  it('calls hassCall with get_strain_lineage_tree WS command and returns result', async () => {
+    const node = { id: 's1', name: 'Blue Dream', type: 'strain' as const, parents: [] };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(node);
+
+    const result = await getStrainLineageTree('Blue Dream');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_strain_lineage_tree',
+      { strain_name: 'Blue Dream' },
+      LineageNodeSchema
+    );
+    expect(result).toEqual(node);
+  });
+
+  it('returns null when hassCall fails', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS fail'));
+
+    const result = await getStrainLineageTree('Blue Dream');
+
+    expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateStrainLineageTree
+// ---------------------------------------------------------------------------
+
+describe('updateStrainLineageTree', () => {
+  it('calls hassCall with update_strain_lineage_tree WS command and returns result', async () => {
+    const parents = [{ name: 'Parent Strain', source: 'library' as const }];
+    const response = { lineage: 'custom lineage representation' };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(response);
+
+    const result = await updateStrainLineageTree('Blue Dream', parents);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_strain_lineage_tree',
+      { strain_name: 'Blue Dream', parents },
+      expect.anything()
+    );
+    expect(result).toEqual(response);
+  });
+
+  it('re-throws when hassCall fails', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS fail'));
+
+    await expect(
+      updateStrainLineageTree('Blue Dream', [])
+    ).rejects.toThrow('WS fail');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// importStrainLineageTree
+// ---------------------------------------------------------------------------
+
+describe('importStrainLineageTree', () => {
+  it('calls hassCall with import_strain_lineage_tree WS command', async () => {
+    const tree = { name: 'Direct Strain' };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
+
+    await importStrainLineageTree('Blue Dream', tree);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/import_strain_lineage_tree',
+      { strain_name: 'Blue Dream', tree },
+      expect.anything()
+    );
+  });
+
+  it('re-throws when hassCall fails', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS fail'));
+
+    await expect(
+      importStrainLineageTree('Blue Dream', {})
+    ).rejects.toThrow('WS fail');
   });
 });
