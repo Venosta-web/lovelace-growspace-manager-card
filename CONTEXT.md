@@ -60,6 +60,9 @@ Clicks on Plant Grid Cells dispatch actions through the nanostores-based UI stor
 **Graph Toggle Interaction**
 Clicks on Hero Cards and Chips call `_toggleEnvGraph` / `_toggleMetricGraph`, which open or close the Env Graph inline. This interaction is internal to each card — not exposed as a Lovelace action.
 
+**Chip Graph Linking**
+Dragging one Chip onto another calls `store.history.linkGraphs(source, target)`, which groups the two metrics so their Env Graphs open together. This is not a visual chip reorder — no chip position state exists. In the test harness `CardHandle`, this interaction is exposed as `linkChips(from, to)` (not `dragChip`) to accurately reflect the domain behavior rather than the DOM gesture.
+
 ## View Modes
 
 **ViewMode** (`src/features/environment/constants.ts`)

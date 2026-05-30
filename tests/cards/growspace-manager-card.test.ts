@@ -155,5 +155,16 @@ describe('GrowspaceManagerCard', () => {
         expect(state.plantId).toBe(`${aGrowspace().growspaceId}_plant_1`);
       }
     });
+
+    test('linkChips groups two metrics in linkedGraphGroups', () => {
+      handle.linkChips(MetricKey.TEMPERATURE, MetricKey.HUMIDITY);
+      const groups: string[][] = handle.element.store.history.$linkedGraphGroups.get();
+      expect(groups.some((g) => g.includes(MetricKey.TEMPERATURE) && g.includes(MetricKey.HUMIDITY))).toBe(true);
+    });
+
+    test('openGrowmaster opens the Growmaster Dialog', () => {
+      handle.openGrowmaster();
+      handle.expectGrowmasterOpen();
+    });
   });
 });

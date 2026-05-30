@@ -33,6 +33,9 @@ export interface CardHandle<T extends HTMLElement = HTMLElement> {
   selectViewMode(mode: ViewMode): void;
   selectBriefingTab(tab: BriefingTab): void;
   toggleLogbookView(): void;
+  linkChips(from: string, to: string): void;
+  openGrowmaster(): void;
+  expectGrowmasterOpen(): void;
   unmount(): void;
 }
 
@@ -102,6 +105,19 @@ export async function renderCard<T extends HTMLElement = HTMLElement>(
     toggleLogbookView() {
       const inactiveTab = element.shadowRoot?.querySelector<HTMLElement>('.tab:not(.active)');
       inactiveTab?.click();
+    },
+
+    linkChips(from: string, to: string) {
+      (element as any).store?.history.linkGraphs(from, to);
+    },
+
+    openGrowmaster() {
+      (element as any).store?.actions.ui.openGrowMasterDialog(growspace.growspaceId);
+    },
+
+    expectGrowmasterOpen() {
+      const dialog = (element as any).store?.ui.$activeDialog.get();
+      expect(dialog?.type).toBe('GROW_MASTER');
     },
 
     unmount() {
