@@ -135,6 +135,14 @@ describe('GrowspaceViewStandard', () => {
         expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
     });
 
+    it('should keep edit mode banner visible when transplant mode is active', async () => {
+        element.isEditMode = false;
+        gridInteraction$.set({ status: 'transplanting', sourcePlantId: null });
+        element.requestUpdate();
+        await element.updateComplete;
+        expect(element.shadowRoot?.querySelector('growspace-edit-mode-banner')).toBeTruthy();
+    });
+
     it('should show transplant source panel when gridInteraction$ is transplanting', async () => {
         devicesAtom.set([
             {

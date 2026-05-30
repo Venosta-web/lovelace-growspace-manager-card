@@ -117,7 +117,7 @@ export class GrowspaceViewStandard extends LitElement {
 
       <growspace-analytics .device=${this.device}></growspace-analytics>
 
-      ${this.isEditMode
+      ${this.isEditMode || this._gridInteractionController?.value?.status === 'transplanting'
         ? html`
             <growspace-edit-mode-banner
               .selectedCount=${this.selectedCount}
