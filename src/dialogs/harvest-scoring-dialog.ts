@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
@@ -8,10 +8,20 @@ import type { HomeAssistant } from 'custom-card-helpers';
 import type { HarvestScoringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/gs-help-tooltip';
+import {
+  createInitialSM,
+  transition,
+  isScoringEmpty,
+  parseMetrics,
+  type SM,
+  type TabId,
+  type ScoringDraft,
+  type MetricsDraft,
+} from './harvest-scoring-dialog-sm';
 
 /** Score dimension descriptor */
 interface ScoreDimension {
-  key: 'vigor' | 'internodal_spacing' | 'terpene_intensity' | 'resin' | 'mold_resistance';
+  key: keyof ScoringDraft;
   label: string;
   description: string;
   emoji: string;
@@ -50,8 +60,6 @@ const SCORE_DIMENSIONS: ScoreDimension[] = [
   },
 ];
 
-type Scores = Record<string, number | null>;
-
 @customElement('harvest-scoring-dialog')
 export class HarvestScoringDialog extends LitElement {
   @consume({ context: hassContext, subscribe: true })
@@ -63,27 +71,36 @@ export class HarvestScoringDialog extends LitElement {
   @property({ type: Boolean }) public open = false;
   @property({ attribute: false }) public dialogState: HarvestScoringDialogState | undefined;
 
-  @state() private _scores: Scores = {
-    vigor: null,
-    internodal_spacing: null,
-    terpene_intensity: null,
-    resin: null,
-    mold_resistance: null,
-  };
-  @state() private _isSubmitting = false;
-
-  // Yield metrics
-  @state() private _wetWeight: string = '';
-  @state() private _dryWeight: string = '';
-  @state() private _trimWeight: string = '';
-  // Lab results
-  @state() private _thcPercentage: string = '';
-  @state() private _cbdPercentage: string = '';
-  @state() private _terpeneProfile: string = '';
+  @state() private _sm: SM = createInitialSM();
 
   static styles = [
     dialogStyles,
     css`
+      .tab-bar {
+        display: flex;
+        gap: 4px;
+        padding: 0 24px;
+        border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      }
+
+      .tab-btn {
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        opacity: 0.6;
+        padding: 10px 16px;
+        transition: opacity 0.15s, border-color 0.15s;
+      }
+
+      .tab-btn.active {
+        border-bottom-color: var(--primary-color, #4caf50);
+        opacity: 1;
+      }
+
       .score-grid {
         display: flex;
         flex-direction: column;
@@ -240,102 +257,96 @@ export class HarvestScoringDialog extends LitElement {
         resize: vertical;
         min-height: 48px;
       }
+
+      .confirm-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px 24px;
+        background: rgba(255, 152, 0, 0.08);
+        border-top: 1px solid rgba(255, 152, 0, 0.2);
+      }
+
+      .confirm-text {
+        font-size: 0.85rem;
+        opacity: 0.8;
+      }
+
+      .error-banner {
+        padding: 12px 24px;
+        background: rgba(244, 67, 54, 0.12);
+        border-top: 1px solid rgba(244, 67, 54, 0.3);
+        font-size: 0.85rem;
+        color: var(--error-color, #f44336);
+      }
     `,
   ];
 
-  protected willUpdate(changedProps: Map<string, unknown>): void {
+  protected override willUpdate(changedProps: Map<string, unknown>): void {
     if (changedProps.has('open') && this.open) {
-      this._resetScores();
+      this._sm = createInitialSM(this.dialogState);
     }
   }
 
-  private _resetScores(): void {
-    const ds = this.dialogState;
-    this._scores = {
-      vigor: ds?.vigor ?? null,
-      internodal_spacing: ds?.internodal_spacing ?? null,
-      terpene_intensity: ds?.terpene_intensity ?? null,
-      resin: ds?.resin ?? null,
-      mold_resistance: ds?.mold_resistance ?? null,
-    };
-    // Reset yield/lab fields
-    this._wetWeight = '';
-    this._dryWeight = '';
-    this._trimWeight = '';
-    this._thcPercentage = '';
-    this._cbdPercentage = '';
-    this._terpeneProfile = '';
+  private _transition(event: Parameters<typeof transition>[1]): void {
+    this._sm = transition(this._sm, event);
   }
 
-  private _setScore(key: string, value: number): void {
-    // Clicking the same star a second time clears the score
-    const current = this._scores[key];
-    this._scores = { ...this._scores, [key]: current === value ? null : value };
+  private _selectTab(tab: TabId): void {
+    this._transition({ type: 'TabSelected', tab });
   }
 
-  /** Saves scores to the backend (optional step – harvest always proceeds). */
-  private async _submitAndHarvest(): Promise<void> {
-    if (!this.dialogState || this._isSubmitting) return;
-    this._isSubmitting = true;
+  private _setScore(key: keyof ScoringDraft, star: number): void {
+    const current = this._sm.tabs.scoring.draft[key];
+    this._transition({
+      type: 'DraftFieldChanged',
+      tab: 'scoring',
+      field: key,
+      value: current === star ? null : star,
+    });
+  }
+
+  private _setMetricField(field: keyof MetricsDraft, value: string): void {
+    this._transition({ type: 'DraftFieldChanged', tab: 'metrics', field, value });
+  }
+
+  private _handleSaveClicked(): void {
+    this._transition({ type: 'SaveRequested' });
+  }
+
+  private _handleSkipClicked(): void {
+    this._transition({ type: 'SkipRequested' });
+  }
+
+  private _handleHarvestCancelled(): void {
+    this._transition({ type: 'HarvestCancelled' });
+  }
+
+  private async _handleHarvestConfirmed(): Promise<void> {
+    if (this._sm.status.kind !== 'confirming' || !this.dialogState) return;
+    const mode = this._sm.status.mode;
+    this._transition({ type: 'HarvestConfirmed' });
 
     const plant = this.dialogState.plant;
     const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
 
     try {
-      // 1. Save scores if any are set
-      const hasAnyScore = Object.values(this._scores).some((v) => v !== null);
-      if (hasAnyScore) {
-        await this.store.actions.plant.scorePhenotype(plantId, {
-          vigor: this._scores.vigor as number | null,
-          internodal_spacing: this._scores.internodal_spacing as number | null,
-          terpene_intensity: this._scores.terpene_intensity as number | null,
-          resin: this._scores.resin as number | null,
-          mold_resistance: this._scores.mold_resistance as number | null,
-        });
+      if (mode === 'save') {
+        if (!isScoringEmpty(this._sm)) {
+          await this.store.actions.plant.scorePhenotype(plantId, this._sm.tabs.scoring.draft);
+        }
+        const metrics = parseMetrics(this._sm.tabs.metrics.draft);
+        await this.store.actions.plant.harvest(
+          plant,
+          Object.keys(metrics).length > 0 ? metrics : undefined
+        );
+      } else {
+        await this.store.actions.plant.harvest(plant);
       }
-
-      // 2. Build yield/lab metrics (only include non-empty values)
-      const metrics: {
-        wet_weight?: number;
-        dry_weight?: number;
-        trim_weight?: number;
-        thc_percentage?: number;
-        cbd_percentage?: number;
-        terpene_profile?: string;
-      } = {};
-      const parseF = (v: string) => (v.trim() !== '' ? parseFloat(v) : undefined);
-      const ww = parseF(this._wetWeight);
-      const dw = parseF(this._dryWeight);
-      const tw = parseF(this._trimWeight);
-      const thc = parseF(this._thcPercentage);
-      const cbd = parseF(this._cbdPercentage);
-      if (ww != null && !isNaN(ww)) metrics.wet_weight = ww;
-      if (dw != null && !isNaN(dw)) metrics.dry_weight = dw;
-      if (tw != null && !isNaN(tw)) metrics.trim_weight = tw;
-      if (thc != null && !isNaN(thc)) metrics.thc_percentage = thc;
-      if (cbd != null && !isNaN(cbd)) metrics.cbd_percentage = cbd;
-      if (this._terpeneProfile.trim()) metrics.terpene_profile = this._terpeneProfile.trim();
-
-      // 3. Harvest the plant, passing metrics directly to the service
-      const hasMetrics = Object.keys(metrics).length > 0;
-      await this.store.actions.plant.harvest(plant, hasMetrics ? metrics : undefined);
-
-      // Note: Delay, refresh data and close are handled by the action module
+      this._transition({ type: 'SaveResolved' });
       this._dispatchClose();
-    } finally {
-      this._isSubmitting = false;
-    }
-  }
-
-  private async _skipAndHarvest(): Promise<void> {
-    if (!this.dialogState || this._isSubmitting || !this.store) return;
-    this._isSubmitting = true;
-    try {
-      // No scoring – just harvest
-      await this.store.actions.plant.harvest(this.dialogState.plant);
-      this._dispatchClose();
-    } finally {
-      this._isSubmitting = false;
+    } catch (e) {
+      this._transition({ type: 'SaveFailed', message: e instanceof Error ? e.message : 'Harvest failed' });
     }
   }
 
@@ -343,7 +354,7 @@ export class HarvestScoringDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
-  protected render(): TemplateResult {
+  protected override render(): TemplateResult {
     if (!this.open) return html`${nothing}`;
 
     const plant = this.dialogState?.plant;
@@ -351,6 +362,8 @@ export class HarvestScoringDialog extends LitElement {
     const phenotype = plant?.attributes?.phenotype;
     const stage = plant?.attributes?.stage || 'flower';
     const subtitle = [strainName, phenotype].filter(Boolean).join(' — ');
+    const sm = this._sm;
+    const isBusy = sm.status.kind === 'applying';
 
     return html`
       <ha-dialog
@@ -387,7 +400,7 @@ export class HarvestScoringDialog extends LitElement {
               @click=${this._dispatchClose}
               style="min-width: auto; padding: 8px;"
               aria-label="Close"
-              ?disabled=${this._isSubmitting}
+              ?disabled=${isBusy}
             >
               <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
                 <path d="${mdiClose}"></path>
@@ -395,153 +408,198 @@ export class HarvestScoringDialog extends LitElement {
             </button>
           </div>
 
-          <hr class="divider" />
-
-          <!-- SCORE GRID -->
-          <div class="dialog-content-grid" style="display:block; padding: 24px;">
-            <div class="score-grid">
-              ${SCORE_DIMENSIONS.map((dim) => this._renderScoreRow(dim))}
-            </div>
-            <p class="skip-hint">All fields are optional — you can harvest without scoring.</p>
+          <!-- TAB BAR -->
+          <div class="tab-bar">
+            <button
+              class="tab-btn ${sm.activeTab === 'scoring' ? 'active' : ''}"
+              @click=${() => this._selectTab('scoring')}
+              ?disabled=${isBusy}
+            >Scoring</button>
+            <button
+              class="tab-btn ${sm.activeTab === 'metrics' ? 'active' : ''}"
+              @click=${() => this._selectTab('metrics')}
+              ?disabled=${isBusy}
+            >Yield &amp; Lab</button>
           </div>
 
-          <hr class="divider" />
+          <!-- TAB CONTENT -->
+          ${sm.activeTab === 'scoring' ? this._renderScoringTab() : this._renderMetricsTab()}
 
-          <!-- YIELD METRICS -->
-          <div class="metrics-section">
-            <p class="metrics-section-title">Yield metrics</p>
-            <div class="metrics-grid">
-              <div class="metric-field">
-                <label for="wet-weight">Wet weight (g)</label>
-                <input
-                  id="wet-weight"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  placeholder="e.g. 120"
-                  .value=${this._wetWeight}
-                  @input=${(e: InputEvent) => {
-                    this._wetWeight = (e.target as HTMLInputElement).value;
-                  }}
-                  ?disabled=${this._isSubmitting}
-                />
-              </div>
-              <div class="metric-field">
-                <label for="dry-weight">Dry weight (g)</label>
-                <input
-                  id="dry-weight"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  placeholder="e.g. 28"
-                  .value=${this._dryWeight}
-                  @input=${(e: InputEvent) => {
-                    this._dryWeight = (e.target as HTMLInputElement).value;
-                  }}
-                  ?disabled=${this._isSubmitting}
-                />
-              </div>
-              <div class="metric-field">
-                <label for="trim-weight">Trim weight (g)</label>
-                <input
-                  id="trim-weight"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  placeholder="e.g. 5"
-                  .value=${this._trimWeight}
-                  @input=${(e: InputEvent) => {
-                    this._trimWeight = (e.target as HTMLInputElement).value;
-                  }}
-                  ?disabled=${this._isSubmitting}
-                />
-              </div>
-            </div>
-          </div>
-
-          <hr class="divider" />
-
-          <!-- LAB RESULTS -->
-          <div class="metrics-section">
-            <p class="metrics-section-title">Lab results</p>
-            <div class="metrics-grid">
-              <div class="metric-field">
-                <label for="thc-pct">THC (%)</label>
-                <input
-                  id="thc-pct"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="e.g. 24.5"
-                  .value=${this._thcPercentage}
-                  @input=${(e: InputEvent) => {
-                    this._thcPercentage = (e.target as HTMLInputElement).value;
-                  }}
-                  ?disabled=${this._isSubmitting}
-                />
-              </div>
-              <div class="metric-field">
-                <label for="cbd-pct">CBD (%)</label>
-                <input
-                  id="cbd-pct"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="e.g. 0.3"
-                  .value=${this._cbdPercentage}
-                  @input=${(e: InputEvent) => {
-                    this._cbdPercentage = (e.target as HTMLInputElement).value;
-                  }}
-                  ?disabled=${this._isSubmitting}
-                />
-              </div>
-              <div class="metric-field terpene-field">
-                <label for="terpene-profile">Terpene profile</label>
-                <textarea
-                  id="terpene-profile"
-                  rows="2"
-                  placeholder="e.g. myrcene, limonene, caryophyllene"
-                  .value=${this._terpeneProfile}
-                  @input=${(e: InputEvent) => {
-                    this._terpeneProfile = (e.target as HTMLTextAreaElement).value;
-                  }}
-                  ?disabled=${this._isSubmitting}
-                ></textarea>
-              </div>
-            </div>
-          </div>
-
-          <hr class="divider" />
+          <!-- ERROR BANNER -->
+          ${sm.status.kind === 'error'
+            ? html`<div class="error-banner">${sm.status.message}</div>`
+            : nothing}
 
           <!-- ACTIONS -->
-          <div
-            style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; flex-wrap:wrap;"
-          >
-            <button
-              class="md3-button outlined"
-              @click=${this._skipAndHarvest}
-              ?disabled=${this._isSubmitting}
-            >
-              Skip scoring & harvest
-            </button>
-            <button
-              class="md3-button filled"
-              style="background: linear-gradient(135deg, #388e3c, #4caf50);"
-              @click=${this._submitAndHarvest}
-              ?disabled=${this._isSubmitting}
-            >
-              ${this._isSubmitting ? 'Harvesting…' : '🌾 Save & harvest'}
-            </button>
-          </div>
+          ${sm.status.kind === 'confirming'
+            ? this._renderConfirmBar()
+            : this._renderActionBar()}
         </div>
       </ha-dialog>
     `;
   }
 
-  private _renderScoreRow(dim: ScoreDimension): TemplateResult {
-    const currentScore = this._scores[dim.key] as number | null;
+  private _renderScoringTab(): TemplateResult {
+    const sm = this._sm;
+    const isBusy = sm.status.kind === 'applying';
+    return html`
+      <div class="dialog-content-grid" style="display:block; padding: 24px;">
+        <div class="score-grid">
+          ${SCORE_DIMENSIONS.map((dim) => this._renderScoreRow(dim, isBusy))}
+        </div>
+        <p class="skip-hint">All fields are optional — you can harvest without scoring.</p>
+      </div>
+    `;
+  }
+
+  private _renderMetricsTab(): TemplateResult {
+    const { draft } = this._sm.tabs.metrics;
+    const isBusy = this._sm.status.kind === 'applying';
+    return html`
+      <!-- YIELD METRICS -->
+      <div class="metrics-section">
+        <p class="metrics-section-title">Yield metrics</p>
+        <div class="metrics-grid">
+          <div class="metric-field">
+            <label for="wet-weight">Wet weight (g)</label>
+            <input
+              id="wet-weight"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="e.g. 120"
+              .value=${draft.wetWeight}
+              @input=${(e: InputEvent) => this._setMetricField('wetWeight', (e.target as HTMLInputElement).value)}
+              ?disabled=${isBusy}
+            />
+          </div>
+          <div class="metric-field">
+            <label for="dry-weight">Dry weight (g)</label>
+            <input
+              id="dry-weight"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="e.g. 28"
+              .value=${draft.dryWeight}
+              @input=${(e: InputEvent) => this._setMetricField('dryWeight', (e.target as HTMLInputElement).value)}
+              ?disabled=${isBusy}
+            />
+          </div>
+          <div class="metric-field">
+            <label for="trim-weight">Trim weight (g)</label>
+            <input
+              id="trim-weight"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="e.g. 5"
+              .value=${draft.trimWeight}
+              @input=${(e: InputEvent) => this._setMetricField('trimWeight', (e.target as HTMLInputElement).value)}
+              ?disabled=${isBusy}
+            />
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider" />
+
+      <!-- LAB RESULTS -->
+      <div class="metrics-section">
+        <p class="metrics-section-title">Lab results</p>
+        <div class="metrics-grid">
+          <div class="metric-field">
+            <label for="thc-pct">THC (%)</label>
+            <input
+              id="thc-pct"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="e.g. 24.5"
+              .value=${draft.thcPercentage}
+              @input=${(e: InputEvent) => this._setMetricField('thcPercentage', (e.target as HTMLInputElement).value)}
+              ?disabled=${isBusy}
+            />
+          </div>
+          <div class="metric-field">
+            <label for="cbd-pct">CBD (%)</label>
+            <input
+              id="cbd-pct"
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="e.g. 0.3"
+              .value=${draft.cbdPercentage}
+              @input=${(e: InputEvent) => this._setMetricField('cbdPercentage', (e.target as HTMLInputElement).value)}
+              ?disabled=${isBusy}
+            />
+          </div>
+          <div class="metric-field terpene-field">
+            <label for="terpene-profile">Terpene profile</label>
+            <textarea
+              id="terpene-profile"
+              rows="2"
+              placeholder="e.g. myrcene, limonene, caryophyllene"
+              .value=${draft.terpeneProfile}
+              @input=${(e: InputEvent) => this._setMetricField('terpeneProfile', (e.target as HTMLTextAreaElement).value)}
+              ?disabled=${isBusy}
+            ></textarea>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderConfirmBar(): TemplateResult {
+    return html`
+      <div class="confirm-bar">
+        <p class="confirm-text">
+          Harvest is permanent and cannot be undone. Confirm to proceed.
+        </p>
+        <div style="display:flex; justify-content:flex-end; gap:12px;">
+          <button class="md3-button outlined" @click=${this._handleHarvestCancelled}>Cancel</button>
+          <button
+            class="md3-button filled"
+            style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+            @click=${this._handleHarvestConfirmed}
+          >
+            Confirm harvest
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderActionBar(): TemplateResult {
+    const sm = this._sm;
+    const isBusy = sm.status.kind === 'applying';
+    return html`
+      <div
+        style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding: 16px 24px; flex-wrap:wrap;"
+      >
+        <button
+          class="md3-button outlined"
+          @click=${this._handleSkipClicked}
+          ?disabled=${isBusy}
+        >
+          Skip scoring &amp; harvest
+        </button>
+        <button
+          class="md3-button filled"
+          style="background: linear-gradient(135deg, #388e3c, #4caf50);"
+          @click=${this._handleSaveClicked}
+          ?disabled=${isBusy}
+        >
+          ${isBusy ? 'Harvesting…' : '🌾 Save & harvest'}
+        </button>
+      </div>
+    `;
+  }
+
+  private _renderScoreRow(dim: ScoreDimension, disabled: boolean): TemplateResult {
+    const currentScore = this._sm.tabs.scoring.draft[dim.key];
     return html`
       <div class="score-row">
         <div class="score-header">
@@ -559,7 +617,7 @@ export class HarvestScoringDialog extends LitElement {
                 class="star-btn ${currentScore !== null && star <= currentScore ? 'active' : ''}"
                 aria-label="Set ${dim.label} score to ${star}"
                 @click=${() => this._setScore(dim.key, star)}
-                ?disabled=${this._isSubmitting}
+                ?disabled=${disabled}
               >
                 ⭐
               </button>

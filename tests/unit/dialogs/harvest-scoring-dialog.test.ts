@@ -1,238 +1,201 @@
+/**
+ * Render-once smoke test for HarvestScoringDialog.
+ *
+ * Confirms the component mounts, renders its shadow DOM without crashing, and
+ * wires up the SM correctly. Behavioral coverage lives in the pure SM tests
+ * at src/dialogs/harvest-scoring-dialog-sm.test.ts.
+ */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HarvestScoringDialog } from '../../../src/dialogs/harvest-scoring-dialog';
 import '../../../src/dialogs/harvest-scoring-dialog';
+import { aPlant, aHass } from '../../fixtures';
 
-// Mock ha-dialog if not already defined
 if (!customElements.get('ha-dialog')) {
-    class HaDialogMock extends HTMLElement {
-        open = false;
-        heading = '';
-        hideActions = false;
-        scrimClickAction = '';
-        escapeKeyAction = '';
-    }
-    customElements.define('ha-dialog', HaDialogMock);
+  class HaDialogMock extends HTMLElement {
+    open = false;
+    heading = '';
+    hideActions = false;
+    scrimClickAction = '';
+    escapeKeyAction = '';
+  }
+  customElements.define('ha-dialog', HaDialogMock);
+}
+
+function makeMockStore() {
+  return {
+    actions: {
+      plant: {
+        scorePhenotype: vi.fn().mockResolvedValue({}),
+        harvest: vi.fn().mockResolvedValue({}),
+      },
+    },
+  };
 }
 
 describe('HarvestScoringDialog', () => {
-    let element: HarvestScoringDialog;
-    let mockStore: any;
-    let mockDataService: any;
-    let mockUi: any;
+  let element: HarvestScoringDialog;
+  let mockStore: ReturnType<typeof makeMockStore>;
 
-    beforeEach(async () => {
-        mockDataService = {
-            scorePlant: vi.fn().mockResolvedValue({}),
-            harvestPlant: vi.fn().mockResolvedValue({}),
-        };
+  beforeEach(async () => {
+    mockStore = makeMockStore();
+    element = document.createElement('harvest-scoring-dialog') as HarvestScoringDialog;
+    (element as any).store = mockStore;
+    (element as any).hass = aHass();
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
 
-        mockUi = {
-            closeDialog: vi.fn(),
-            showToast: vi.fn(),
-        };
+  afterEach(() => {
+    if (element?.isConnected) document.body.removeChild(element);
+    vi.restoreAllMocks();
+  });
 
-        mockStore = {
-            dataService: mockDataService,
-            ui: mockUi,
-            refreshData: vi.fn().mockResolvedValue({}),
-            showToast: vi.fn(),
-            actions: {
-                plant: {
-                    scorePhenotype: vi.fn().mockResolvedValue({}),
-                    harvest: vi.fn().mockResolvedValue({}),
-                }
-            }
-        };
+  it('renders nothing when closed', async () => {
+    element.open = false;
+    await element.updateComplete;
+    expect(element.shadowRoot?.innerHTML).toContain('<!--');
+  });
 
-        element = document.createElement('harvest-scoring-dialog') as HarvestScoringDialog;
-        (element as any).store = mockStore;
-        (element as any).hass = {
-            states: {},
-            connection: { sendMessagePromise: vi.fn() },
-        } as any;
+  it('renders the dialog when open with a plant', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('ha-dialog')).not.toBeNull();
+  });
 
-        document.body.appendChild(element);
-        await element.updateComplete;
-    });
+  it('renders the tab bar with scoring and metrics tabs', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn');
+    expect(tabs?.length).toBe(2);
+  });
 
-    afterEach(() => {
-        if (element && element.isConnected) {
-            document.body.removeChild(element);
-        }
-        vi.restoreAllMocks();
-        vi.useRealTimers();
-    });
+  it('renders score rows on the scoring tab', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+    const rows = element.shadowRoot?.querySelectorAll('.score-row');
+    expect(rows?.length).toBeGreaterThan(0);
+  });
 
-    const flush = () => new Promise(resolve => setTimeout(resolve, 50));
+  it('switches to metrics tab on click', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    tabs[1].click();
+    await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('#wet-weight')).not.toBeNull();
+  });
 
-    it('should show and hide when open property changes', async () => {
-        element.open = false;
-        await element.updateComplete;
-        expect(element.shadowRoot?.innerHTML).toContain('<!--');
+  it('shows confirmation bar when save is requested', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
 
-        element.dialogState = {
-            plant: { entity_id: 'sensor.p1', attributes: { strain: 'OG' } } as any
-        };
-        element.open = true;
-        await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('ha-dialog')).toBeTruthy();
-    });
+    const saveBtn = element.shadowRoot?.querySelector('.md3-button.filled') as HTMLButtonElement;
+    saveBtn.click();
+    await element.updateComplete;
 
-    it('should set scores via star clicks', async () => {
-        element.dialogState = { plant: { entity_id: 'p1' } as any };
-        element.open = true;
-        await element.updateComplete;
+    expect(element.shadowRoot?.querySelector('.confirm-bar')).not.toBeNull();
+  });
 
-        const star2 = element.shadowRoot?.querySelectorAll('.star-btn')[1] as HTMLElement;
-        star2.click();
-        await element.updateComplete;
-        expect((element as any)._scores.vigor).toBe(2);
+  it('returns to action bar when harvest is cancelled', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
 
-        // Click again to toggle
-        star2.click();
-        await element.updateComplete;
-        expect((element as any)._scores.vigor).toBe(null);
-    });
+    const saveBtn = element.shadowRoot?.querySelector('.md3-button.filled') as HTMLButtonElement;
+    saveBtn.click();
+    await element.updateComplete;
 
-    it('should handle all numeric inputs', async () => {
-        element.open = true;
-        element.dialogState = { plant: { entity_id: 'p1' } as any };
-        await element.updateComplete;
+    const cancelBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.outlined') as HTMLButtonElement;
+    cancelBtn.click();
+    await element.updateComplete;
 
-        const inputs = [
-            { id: '#wet-weight', val: '10', prop: '_wetWeight' },
-            { id: '#dry-weight', val: '20', prop: '_dryWeight' },
-            { id: '#trim-weight', val: '30', prop: '_trimWeight' },
-            { id: '#thc-pct', val: '25', prop: '_thcPercentage' },
-            { id: '#cbd-pct', val: '1', prop: '_cbdPercentage' },
-        ];
+    expect(element.shadowRoot?.querySelector('.confirm-bar')).toBeNull();
+  });
 
-        for (const input of inputs) {
-            const el = element.shadowRoot?.querySelector(input.id) as HTMLInputElement;
-            el.value = input.val;
-            el.dispatchEvent(new Event('input'));
-            expect((element as any)[input.prop]).toBe(input.val);
-        }
+  it('resets SM state when dialog reopens', async () => {
+    element.dialogState = { plant: aPlant({ vigor: 5 } as any) };
+    element.open = true;
+    await element.updateComplete;
 
-        const terpene = element.shadowRoot?.querySelector('#terpene-profile') as HTMLTextAreaElement;
-        terpene.value = 'Citrus';
-        terpene.dispatchEvent(new Event('input'));
-        expect((element as any)._terpeneProfile).toBe('Citrus');
-    });
+    element.open = false;
+    await element.updateComplete;
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
 
-    it('should submit form and call services', async () => {
-        element.dialogState = {
-            plant: {
-                entity_id: 'sensor.p1',
-                attributes: { plant_id: 'real_p1', stage: 'flower' }
-            } as any
-        };
-        element.open = true;
-        await element.updateComplete;
+    // SM should be fresh on reopen
+    const sm = (element as any)._sm;
+    expect(sm.status.kind).toBe('idle');
+    expect(sm.activeTab).toBe('scoring');
+  });
 
-        (element as any)._wetWeight = '100';
-        (element as any)._setScore('vigor', 4);
+  it('dispatches close event', async () => {
+    const spy = vi.fn();
+    element.addEventListener('close', spy);
+    (element as any)._dispatchClose();
+    expect(spy).toHaveBeenCalledOnce();
+  });
 
-        await (element as any)._submitAndHarvest();
+  it('calls store harvest on confirmed save flow', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
 
-        expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalled();
-        expect(mockStore.actions.plant.harvest).toHaveBeenCalledWith(
-            expect.objectContaining({ entity_id: 'sensor.p1' }),
-            expect.objectContaining({ wet_weight: 100 })
-        );
-        
-        const closeSpy = vi.fn();
-        element.addEventListener('close', closeSpy);
-        await (element as any)._dispatchClose();
-        expect(closeSpy).toHaveBeenCalled();
-    });
+    // Click save → confirming
+    const saveBtn = element.shadowRoot?.querySelector('.md3-button.filled') as HTMLButtonElement;
+    saveBtn.click();
+    await element.updateComplete;
 
-    it('should handle harvest error in submit', async () => {
-        mockStore.actions.plant.harvest.mockResolvedValue(false);
-        element.dialogState = { plant: { entity_id: 'p1' } as any };
-        element.open = true;
-        await element.updateComplete;
+    // Click confirm harvest
+    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    confirmBtn.click();
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 20));
 
-        await (element as any)._submitAndHarvest();
-        // Toast is now handled by the action module, but if it propagates to the component's (non-existent) catch, it won't be shown by the component.
-        // However, the action module itself calls showToast.
-        // If we want to verify the action module was called, we already did.
-        // If we want to verify the toast was shown, we should check mockStore.showToast.
-        // Note: the component DOES NOT have a catch block anymore, so if the action throws,
-        // it must be caught inside the action.
-    });
+    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+  });
 
-    it('should skip scoring and harvest directly', async () => {
-        const plant = { entity_id: 'p1' } as any;
-        element.dialogState = { plant };
-        element.open = true;
-        await element.updateComplete;
+  it('calls store harvest on confirmed skip flow', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
 
-        (element as any)._skipAndHarvest();
-        expect(mockStore.actions.plant.harvest).toHaveBeenCalledWith(plant);
-    });
+    // Click skip → confirming
+    const skipBtn = element.shadowRoot?.querySelector('.md3-button.outlined') as HTMLButtonElement;
+    skipBtn.click();
+    await element.updateComplete;
 
-    it('should handle skip error', async () => {
-        mockStore.actions.plant.harvest.mockResolvedValue(false);
-        element.dialogState = { plant: { entity_id: 'p1' } as any };
-        element.open = true;
-        await element.updateComplete;
+    // Click confirm
+    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    confirmBtn.click();
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 20));
 
-        (element as any)._skipAndHarvest();
-        await flush(); 
-        // Component has no catch block, so mockStore.showToast won't be called by the component.
-        // The action's showToast is what we would verify if we weren't mocking the action itself.
-    });
+    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+    expect(mockStore.actions.plant.scorePhenotype).not.toHaveBeenCalled();
+  });
 
-    it('should dispatch close event', async () => {
-        const spy = vi.fn();
-        element.addEventListener('close', spy);
-        (element as any)._dispatchClose();
-        expect(spy).toHaveBeenCalled();
-    });
+  it('shows error banner when harvest fails', async () => {
+    mockStore.actions.plant.harvest.mockRejectedValueOnce(new Error('Network error'));
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
 
-    it('should render score rows', async () => {
-        element.dialogState = { plant: { entity_id: 'p1' } as any };
-        element.open = true;
-        await element.updateComplete;
+    const saveBtn = element.shadowRoot?.querySelector('.md3-button.filled') as HTMLButtonElement;
+    saveBtn.click();
+    await element.updateComplete;
+    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    confirmBtn.click();
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 50));
+    await element.updateComplete;
 
-        const rows = element.shadowRoot?.querySelectorAll('.score-row');
-        expect(rows?.length).toBeGreaterThan(0);
-    });
-
-    it('should resolve plant_id correctly', async () => {
-        element.dialogState = {
-            plant: { entity_id: 'sensor.abc', attributes: {} } as any
-        };
-        element.open = true;
-        await element.updateComplete;
-
-        await (element as any)._submitAndHarvest();
-        expect(mockStore.actions.plant.harvest).toHaveBeenCalledWith(
-            expect.objectContaining({ entity_id: 'sensor.abc' }),
-            undefined
-        );
-    });
-
-    it('should return early in _submitAndHarvest if already submitting or no state', async () => {
-        element.dialogState = undefined;
-        await (element as any)._submitAndHarvest();
-        expect(mockStore.actions.plant.harvest).not.toHaveBeenCalled();
-
-        element.dialogState = { plant: { entity_id: 'p1' } as any };
-        (element as any)._isSubmitting = true;
-        await (element as any)._submitAndHarvest();
-        expect(mockStore.actions.plant.harvest).not.toHaveBeenCalled();
-    });
-
-    it('should return early in _skipAndHarvest if already submitting or no state or no store', async () => {
-        element.dialogState = undefined;
-        (element as any)._skipAndHarvest();
-        expect(mockStore.actions.plant.harvest).not.toHaveBeenCalled();
-
-        (element as any)._isSubmitting = false;
-        (element as any).store = undefined;
-        (element as any)._skipAndHarvest();
-        expect(mockStore.actions.plant.harvest).not.toHaveBeenCalled();
-    });
+    expect(element.shadowRoot?.querySelector('.error-banner')).not.toBeNull();
+  });
 });
