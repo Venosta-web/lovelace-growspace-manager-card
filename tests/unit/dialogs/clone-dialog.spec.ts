@@ -1,8 +1,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CloneDialog } from '../../../src/dialogs/clone-dialog';
-import { GrowspaceUIStore } from '../../../src/store/ui/ui-store';
-import { GrowspaceStore } from '../../../src/store/core/growspace-store';
 
 describe('CloneDialog', () => {
     let element: CloneDialog;
