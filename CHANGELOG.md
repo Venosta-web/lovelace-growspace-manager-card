@@ -1,3 +1,15 @@
+# [1.1.0-next.14](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.13...v1.1.0-next.14) (2026-05-30)
+
+
+### Bug Fixes
+
+* ensure edit mode banner remains visible during transplant mode ([51e2985](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/51e2985150823775819159fb702817d1df087822))
+
+
+### Features
+
+* add support to toggle transplant mode and update edit banner visibility ([78f881b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/78f881bc17629d2e35c8e37b7674238a78a2ac3e))
+
 # [1.1.0-next.13](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.12...v1.1.0-next.13) (2026-05-30)
 
 
