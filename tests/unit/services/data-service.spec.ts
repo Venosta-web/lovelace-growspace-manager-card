@@ -21,16 +21,24 @@ vi.mock('../../../src/services/api/growspace-api', () => ({
     this.configureDrainMonitoring = vi.fn();
   }),
 }));
-vi.mock('../../../src/services/api/nutrient-api', () => ({
-  NutrientAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
-    this.updateHass = vi.fn();
-    this.fetchNutrientPresets = vi.fn();
-    this.fetchNutrientInventory = vi.fn();
-    this.updateNutrientStock = vi.fn();
-    this.addNutrientPreset = vi.fn();
-    this.updateNutrientPreset = vi.fn();
-    this.deleteNutrientPreset = vi.fn();
-  }),
+vi.mock('../../../src/slices/nutrient', () => ({
+  nutrientPresets$: { get: vi.fn(() => null), set: vi.fn() },
+  ipmPresets$: { get: vi.fn(() => null), set: vi.fn() },
+  nutrientInventory$: { get: vi.fn(() => null), set: vi.fn() },
+  ecRampCurves$: { get: vi.fn(() => null), set: vi.fn() },
+  fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
+  fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+  updateNutrientStock: vi.fn().mockResolvedValue(undefined),
+  removeNutrientStock: vi.fn().mockResolvedValue(undefined),
+  fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
+  saveIPMPreset: vi.fn().mockResolvedValue(undefined),
+  removeIPMPreset: vi.fn().mockResolvedValue(undefined),
+  saveNutrientPreset: vi.fn().mockResolvedValue(undefined),
+  removeNutrientPreset: vi.fn().mockResolvedValue(undefined),
+  applyIPM: vi.fn().mockResolvedValue(undefined),
+  fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
+  saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+  removeECRampCurve: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../../../src/services/api/history-api', () => ({
   HistoryAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
@@ -121,8 +129,8 @@ vi.mock('../../../src/services/api/genetics-api', () => ({
 
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceAPI } from '../../../src/services/api/growspace-api';
-import { NutrientAPI } from '../../../src/services/api/nutrient-api';
 import { HistoryAPI } from '../../../src/services/api/history-api';
+import * as nutrientSlice from '../../../src/slices/nutrient';
 import { PlantAPI } from '../../../src/services/api/plant-api';
 import { IrrigationAPI } from '../../../src/services/api/irrigation-api';
 import { AIAPI } from '../../../src/services/api/ai-api';
@@ -192,17 +200,15 @@ describe('DataService Delegation', () => {
     });
   });
 
-  describe('NutrientAPI delegation', () => {
-    it('delegates fetchNutrientPresets', () => {
-      const instance = vi.mocked(NutrientAPI).mock.instances[0];
+  describe('Nutrient slice delegation', () => {
+    it('delegates fetchNutrientPresets to nutrient slice', () => {
       dataService.fetchNutrientPresets();
-      expect(instance.fetchNutrientPresets).toHaveBeenCalled();
+      expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalled();
     });
 
-    it('delegates updateNutrientStock', () => {
-      const instance = vi.mocked(NutrientAPI).mock.instances[0];
+    it('delegates updateNutrientStock to nutrient slice', () => {
       dataService.updateNutrientStock('n1', 'Nutrient', 100, 1000);
-      expect(instance.updateNutrientStock).toHaveBeenCalledWith('n1', 'Nutrient', 100, 1000);
+      expect(nutrientSlice.updateNutrientStock).toHaveBeenCalledWith('n1', 'Nutrient', 100, 1000);
     });
   });
 

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GrowspaceHistoryStore } from './history-store';
 import type { DataService } from '../../services/data-service';
 import type { GrowspaceDataStore } from '../core/data-store';
+import type { GrowspaceDevice } from '../../types';
 import { atom } from 'nanostores';
 
 const makeStore = () => {
@@ -95,5 +96,92 @@ describe('GrowspaceHistoryStore.$headerHistoryState', () => {
     expect(store.$headerHistoryState.get().linkedGraphGroups).toEqual([
       ['temperature', 'humidity'],
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Transport behavior tests (migrated from tests/unit/services/api/history-api.spec.ts)
+// These tests verify store-observable behavior, not DataService internals.
+// ---------------------------------------------------------------------------
+
+const TEMP_ENTITY = 'sensor.tent1_temperature';
+
+const makeTransportStore = (getHistoryStats: ReturnType<typeof vi.fn>) => {
+  const mockDataService = {
+    getHistoryStats,
+    hass: { states: {} },
+  } as unknown as DataService;
+
+  const device = {
+    deviceId: 'dev1',
+    name: 'Tent 1',
+    environmentAttributes: { temperatureSensor: TEMP_ENTITY },
+  } as unknown as GrowspaceDevice;
+
+  const mockDataStore = { $devices: atom<GrowspaceDevice[]>([device]) } as unknown as GrowspaceDataStore;
+  const $selectedDevice = atom<string | null>('dev1');
+  return new GrowspaceHistoryStore(mockDataService, mockDataStore, $selectedDevice);
+};
+
+describe('GrowspaceHistoryStore - history transport', () => {
+  beforeEach(() => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+  });
+
+  it('fetch success: $historyCache is populated and $historyLoaded becomes true', async () => {
+    const point = { entity_id: TEMP_ENTITY, state: '22', last_changed: '2024-01-01T00:00:00Z', last_updated: '2024-01-01T00:00:00Z', attributes: {} };
+    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [point] });
+    const store = makeTransportStore(getHistoryStats);
+
+    await store.loadHistoryOnDemand();
+
+    expect(store.$historyCache.get()['temperature']).toHaveLength(1);
+    expect(store.$historyCache.get()['temperature'][0].state).toBe('22');
+    expect(store.$historyLoaded.get()).toBe(true);
+    expect(store.$historyLoading.get()).toBe(false);
+  });
+
+  it('WS fallback to REST: store receives data when getHistoryStats falls back internally', async () => {
+    // DataService.getHistoryStats resolves via REST fallback — the store only sees the resolved value
+    const point = { entity_id: TEMP_ENTITY, state: '18', last_changed: '2024-01-02T00:00:00Z', last_updated: '2024-01-02T00:00:00Z', attributes: {} };
+    const getHistoryStats = vi.fn().mockResolvedValue({ [TEMP_ENTITY]: [point] });
+    const store = makeTransportStore(getHistoryStats);
+
+    await store.loadHistoryOnDemand();
+
+    expect(store.$historyCache.get()['temperature']).toHaveLength(1);
+    expect(store.$historyLoaded.get()).toBe(true);
+  });
+
+  it('fetch error: $historyError is set and $historyLoaded stays false', async () => {
+    const getHistoryStats = vi.fn().mockRejectedValue(new Error('Transport failure'));
+    const store = makeTransportStore(getHistoryStats);
+
+    await store.loadHistoryOnDemand();
+
+    expect(store.$historyError.get()).toContain('Transport failure');
+    expect(store.$historyLoaded.get()).toBe(false);
+    expect(store.$historyLoading.get()).toBe(false);
+  });
+
+  it('loadHistoryOnDemand is a no-op when already loaded', async () => {
+    const getHistoryStats = vi.fn().mockResolvedValue({});
+    const store = makeTransportStore(getHistoryStats);
+    store.$historyLoaded.set(true);
+
+    await store.loadHistoryOnDemand();
+
+    expect(getHistoryStats).not.toHaveBeenCalled();
+  });
+
+  it('loadHistoryOnDemand is a no-op when already loading', async () => {
+    const getHistoryStats = vi.fn().mockResolvedValue({});
+    const store = makeTransportStore(getHistoryStats);
+    store.$historyLoading.set(true);
+
+    await store.loadHistoryOnDemand();
+
+    expect(getHistoryStats).not.toHaveBeenCalled();
   });
 });

@@ -4,6 +4,12 @@ import {
   fetchStrainLibrary as strainSliceFetchLibrary,
   setStrainLibrary,
 } from '../../slices/strain';
+import {
+  nutrientPresets$,
+  ipmPresets$,
+  nutrientInventory$,
+  ecRampCurves$,
+} from '../../slices/nutrient';
 
 export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = false) {
   // Requires hass to be present in store (usually via dataService or just check store)
@@ -77,16 +83,11 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
   console.log('[LibraryActions] Fetching nutrient presets from server (Force: %s)', force);
 
   try {
-    const result = await ctx.dataService.fetchNutrientPresets();
+    await ctx.dataService.fetchNutrientPresets();
+    const result = nutrientPresets$.get();
     if (result) {
       ctx.data.setNutrientPresets(result);
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data: result,
-        })
-      );
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
     console.error('Failed to fetch nutrient presets:', e);
@@ -116,16 +117,11 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
   console.log('[LibraryActions] Fetching IPM presets from server (Force: %s)', force);
 
   try {
-    const result = await ctx.dataService.fetchIPMPresets();
+    await ctx.dataService.fetchIPMPresets();
+    const result = ipmPresets$.get();
     if (result) {
       ctx.data.setIPMPresets(result);
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data: result,
-        })
-      );
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
     console.error('Failed to fetch IPM presets:', e);
@@ -151,16 +147,11 @@ export async function fetchNutrientInventory(ctx: ActionContext, force: boolean 
   }
 
   try {
-    const result = await ctx.dataService.fetchNutrientInventory();
+    await ctx.dataService.fetchNutrientInventory();
+    const result = nutrientInventory$.get();
     if (result) {
       ctx.data.setNutrientInventory(result);
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data: result,
-        })
-      );
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
     console.error('Failed to fetch nutrient inventory:', e);
@@ -218,16 +209,11 @@ export async function fetchECRampCurves(ctx: ActionContext, force: boolean = fal
   console.log('[LibraryActions] Fetching EC ramp curves from server (Force: %s)', force);
 
   try {
-    const result = await ctx.dataService.fetchECRampCurves();
+    await ctx.dataService.fetchECRampCurves();
+    const result = ecRampCurves$.get();
     if (result) {
       ctx.data.setECRampCurves(result);
-      localStorage.setItem(
-        CACHE_KEY,
-        JSON.stringify({
-          timestamp: Date.now(),
-          data: result,
-        })
-      );
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
     console.error('Failed to fetch EC ramp curves:', e);

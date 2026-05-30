@@ -2,7 +2,6 @@ import { HomeAssistant } from 'custom-card-helpers';
 import type { GrowspaceAPIResponse } from './types';
 
 import { GrowspaceAPI } from './api/growspace-api';
-import { NutrientAPI } from './api/nutrient-api';
 import { HistoryAPI } from './api/history-api';
 import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
@@ -11,6 +10,22 @@ import {
   captureSnapshot as cameraSliceCaptureSnapshot,
   getSnapshots as cameraSliceGetSnapshots,
 } from '../slices/camera';
+import {
+  fetchNutrientPresets as nutrientSliceFetchPresets,
+  fetchNutrientInventory as nutrientSliceFetchInventory,
+  updateNutrientStock as nutrientSliceUpdateStock,
+  removeNutrientStock as nutrientSliceRemoveStock,
+  fetchIPMPresets as nutrientSliceFetchIPMPresets,
+  saveIPMPreset as nutrientSliceSaveIPMPreset,
+  removeIPMPreset as nutrientSliceRemoveIPMPreset,
+  saveNutrientPreset as nutrientSliceSavePreset,
+  removeNutrientPreset as nutrientSliceRemovePreset,
+  applyIPM as nutrientSliceApplyIPM,
+  fetchECRampCurves as nutrientSliceFetchECRampCurves,
+  saveECRampCurve as nutrientSliceSaveECRampCurve,
+  removeECRampCurve as nutrientSliceRemoveECRampCurve,
+  type ECRampPoint,
+} from '../slices/nutrient';
 import {
   fetchStrainLibrary as strainSliceFetchLibrary,
   addStrain as strainSliceAdd,
@@ -36,7 +51,6 @@ export class DataService {
   public hass!: HomeAssistant;
 
   private _growspaceAPI: GrowspaceAPI;
-  private _nutrientAPI: NutrientAPI;
   private _historyAPI: HistoryAPI;
   private _plantAPI: PlantAPI;
   private _irrigationAPI: IrrigationAPI;
@@ -46,7 +60,6 @@ export class DataService {
   private _geneticsAPI: GeneticsAPI;
   constructor(hass?: HomeAssistant) {
     this._growspaceAPI = new GrowspaceAPI(hass);
-    this._nutrientAPI = new NutrientAPI(hass);
     this._historyAPI = new HistoryAPI(hass);
     this._plantAPI = new PlantAPI(hass);
     this._irrigationAPI = new IrrigationAPI(hass);
@@ -65,7 +78,6 @@ export class DataService {
     this.hass = hass;
     [
       this._growspaceAPI,
-      this._nutrientAPI,
       this._historyAPI,
       this._plantAPI,
       this._irrigationAPI,
@@ -138,37 +150,37 @@ export class DataService {
   importStrainLineageTree = (strain_name: string, tree: Record<string, unknown>) =>
     this._geneticsAPI.importStrainLineageTree(strain_name, tree);
 
-  // ── Nutrient ─────────────────────────────────────────────────────────────
+  // ── Nutrient (delegated to slices/nutrient) ──────────────────────────────
 
-  fetchNutrientPresets = () => this._nutrientAPI.fetchNutrientPresets();
+  fetchNutrientPresets = () => nutrientSliceFetchPresets();
 
-  fetchNutrientInventory = () => this._nutrientAPI.fetchNutrientInventory();
+  fetchNutrientInventory = () => nutrientSliceFetchInventory();
 
   updateNutrientStock = (nutrientId: string, name: string, currentMl: number, initialMl: number) =>
-    this._nutrientAPI.updateNutrientStock(nutrientId, name, currentMl, initialMl);
+    nutrientSliceUpdateStock(nutrientId, name, currentMl, initialMl);
 
-  removeNutrientStock = (nutrientId: string) => this._nutrientAPI.removeNutrientStock(nutrientId);
+  removeNutrientStock = (nutrientId: string) => nutrientSliceRemoveStock(nutrientId);
 
-  fetchIPMPresets = () => this._nutrientAPI.fetchIPMPresets();
+  fetchIPMPresets = () => nutrientSliceFetchIPMPresets();
 
-  saveIPMPreset = (data: Parameters<NutrientAPI['saveIPMPreset']>[0]) =>
-    this._nutrientAPI.saveIPMPreset(data);
+  saveIPMPreset = (data: Parameters<typeof nutrientSliceSaveIPMPreset>[0]) =>
+    nutrientSliceSaveIPMPreset(data);
 
-  removeIPMPreset = (presetId: string) => this._nutrientAPI.removeIPMPreset(presetId);
+  removeIPMPreset = (presetId: string) => nutrientSliceRemoveIPMPreset(presetId);
 
-  saveNutrientPreset = (data: Parameters<NutrientAPI['saveNutrientPreset']>[0]) =>
-    this._nutrientAPI.saveNutrientPreset(data);
+  saveNutrientPreset = (data: Parameters<typeof nutrientSliceSavePreset>[0]) =>
+    nutrientSliceSavePreset(data);
 
-  removeNutrientPreset = (presetId: string) => this._nutrientAPI.removeNutrientPreset(presetId);
+  removeNutrientPreset = (presetId: string) => nutrientSliceRemovePreset(presetId);
 
-  applyIPM = (data: Parameters<NutrientAPI['applyIPM']>[0]) => this._nutrientAPI.applyIPM(data);
+  applyIPM = (data: Parameters<typeof nutrientSliceApplyIPM>[0]) => nutrientSliceApplyIPM(data);
 
-  fetchECRampCurves = () => this._nutrientAPI.fetchECRampCurves();
+  fetchECRampCurves = () => nutrientSliceFetchECRampCurves();
 
-  saveECRampCurve = (data: Parameters<NutrientAPI['saveECRampCurve']>[0]) =>
-    this._nutrientAPI.saveECRampCurve(data);
+  saveECRampCurve = (data: { curve_id?: string; name: string; stage?: string; points: ECRampPoint[] }) =>
+    nutrientSliceSaveECRampCurve(data);
 
-  removeECRampCurve = (curveId: string) => this._nutrientAPI.removeECRampCurve(curveId);
+  removeECRampCurve = (curveId: string) => nutrientSliceRemoveECRampCurve(curveId);
 
   // ── History ──────────────────────────────────────────────────────────────
 

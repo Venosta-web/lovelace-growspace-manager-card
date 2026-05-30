@@ -1,7 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DataService } from '../../src/services/data-service';
 import { HomeAssistant } from 'custom-card-helpers';
-import { WS_TYPE_GET_DATA, WS_TYPE_GET_NUTRIENT_INVENTORY } from '../../src/constants';
+import { WS_TYPE_GET_DATA } from '../../src/constants';
+
+vi.mock('../../src/slices/nutrient', () => ({
+  nutrientPresets$: { get: vi.fn(() => null), set: vi.fn() },
+  ipmPresets$: { get: vi.fn(() => null), set: vi.fn() },
+  nutrientInventory$: { get: vi.fn(() => null), set: vi.fn() },
+  ecRampCurves$: { get: vi.fn(() => null), set: vi.fn() },
+  fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
+  fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+  updateNutrientStock: vi.fn().mockResolvedValue(undefined),
+  removeNutrientStock: vi.fn().mockResolvedValue(undefined),
+  fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
+  saveIPMPreset: vi.fn().mockResolvedValue(undefined),
+  removeIPMPreset: vi.fn().mockResolvedValue(undefined),
+  saveNutrientPreset: vi.fn().mockResolvedValue(undefined),
+  removeNutrientPreset: vi.fn().mockResolvedValue(undefined),
+  applyIPM: vi.fn().mockResolvedValue(undefined),
+  fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
+  saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+  removeECRampCurve: vi.fn().mockResolvedValue(undefined),
+}));
 
 // Strain operations now go through slices/strain, not StrainAPI
 vi.mock('../../src/slices/strain', () => ({
@@ -19,6 +39,7 @@ vi.mock('../../src/slices/strain', () => ({
 }));
 
 import * as strainSlice from '../../src/slices/strain';
+import * as nutrientSlice from '../../src/slices/nutrient';
 
 describe('DataService Coverage Gap Fill', () => {
     let service: DataService;
@@ -90,19 +111,9 @@ describe('DataService Coverage Gap Fill', () => {
     });
 
     describe('fetchNutrientInventory', () => {
-        it('should strictly return parsed data on success', async () => {
-            const mockInventory = {
-                nutrients: {
-                    'n1': { id: 'n1', name: 'N1', type: 'Bottle', current_ml: 100, initial_ml: 1000 }
-                }
-            };
-            (mockHass.connection.sendMessagePromise as any).mockResolvedValue(mockInventory);
-
-            const result = await service.fetchNutrientInventory();
-            expect(result).toEqual(mockInventory);
-            expect(mockHass.connection.sendMessagePromise).toHaveBeenCalledWith({
-                type: WS_TYPE_GET_NUTRIENT_INVENTORY
-            });
+        it('delegates to nutrient slice', async () => {
+            await service.fetchNutrientInventory();
+            expect(nutrientSlice.fetchNutrientInventory).toHaveBeenCalled();
         });
     });
 
@@ -155,42 +166,33 @@ describe('DataService Coverage Gap Fill', () => {
             expect(strainSlice.clearStrainLibrary).toHaveBeenCalled();
         });
 
-        it('should delegate Nutrient API calls', async () => {
-            const fetchPresetsSpy = vi.spyOn((service as any)._nutrientAPI, 'fetchNutrientPresets');
+        it('should delegate Nutrient calls to nutrient slice', async () => {
             service.fetchNutrientPresets();
-            expect(fetchPresetsSpy).toHaveBeenCalled();
+            expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalled();
 
-            const updateStockSpy = vi.spyOn((service as any)._nutrientAPI, 'updateNutrientStock');
             service.updateNutrientStock('n1', 'N1', 100, 1000);
-            expect(updateStockSpy).toHaveBeenCalled();
+            expect(nutrientSlice.updateNutrientStock).toHaveBeenCalledWith('n1', 'N1', 100, 1000);
 
-            const removeStockSpy = vi.spyOn((service as any)._nutrientAPI, 'removeNutrientStock');
             service.removeNutrientStock('n1');
-            expect(removeStockSpy).toHaveBeenCalled();
+            expect(nutrientSlice.removeNutrientStock).toHaveBeenCalledWith('n1');
 
-            const fetchIPMSpy = vi.spyOn((service as any)._nutrientAPI, 'fetchIPMPresets');
             service.fetchIPMPresets();
-            expect(fetchIPMSpy).toHaveBeenCalled();
+            expect(nutrientSlice.fetchIPMPresets).toHaveBeenCalled();
 
-            const saveIPMSpy = vi.spyOn((service as any)._nutrientAPI, 'saveIPMPreset');
-            service.saveIPMPreset({ name: 'IPM1', type: 'Foliar', items: [] });
-            expect(saveIPMSpy).toHaveBeenCalled();
+            service.saveIPMPreset({ name: 'IPM1', type: 'foliar', items: [] });
+            expect(nutrientSlice.saveIPMPreset).toHaveBeenCalled();
 
-            const removeIPMSpy = vi.spyOn((service as any)._nutrientAPI, 'removeIPMPreset');
             service.removeIPMPreset('ipm1');
-            expect(removeIPMSpy).toHaveBeenCalled();
+            expect(nutrientSlice.removeIPMPreset).toHaveBeenCalledWith('ipm1');
 
-            const saveNutrientSpy = vi.spyOn((service as any)._nutrientAPI, 'saveNutrientPreset');
             service.saveNutrientPreset({ name: 'Base', nutrients: [] });
-            expect(saveNutrientSpy).toHaveBeenCalled();
+            expect(nutrientSlice.saveNutrientPreset).toHaveBeenCalled();
 
-            const removeNutrientSpy = vi.spyOn((service as any)._nutrientAPI, 'removeNutrientPreset');
             service.removeNutrientPreset('p1');
-            expect(removeNutrientSpy).toHaveBeenCalled();
+            expect(nutrientSlice.removeNutrientPreset).toHaveBeenCalledWith('p1');
 
-            const applyIPMSpy = vi.spyOn((service as any)._nutrientAPI, 'applyIPM');
             service.applyIPM({ preset_id: 'p1' });
-            expect(applyIPMSpy).toHaveBeenCalled();
+            expect(nutrientSlice.applyIPM).toHaveBeenCalled();
         });
 
         it('should delegate History API calls', async () => {
