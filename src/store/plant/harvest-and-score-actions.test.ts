@@ -1,18 +1,40 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { saveHarvestMetrics, scorePhenotype } from '../../../../src/store/plant/plant-actions';
-import { makeFakeCtx } from '../../helpers/fake-ctx';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { saveHarvestMetrics, scorePhenotype } from './plant-actions';
+import type { ActionContext } from '../core/action-context';
+
+function makeContext() {
+  const showToast = vi.fn();
+  const dataService = new Proxy({}, {
+    get(target: any, prop) {
+      if (!(prop in target)) {
+        target[prop] = vi.fn().mockResolvedValue(undefined);
+      }
+      return target[prop];
+    },
+  });
+  return {
+    dataService,
+    ui: { showToast } as unknown as ActionContext['ui'],
+    refreshData: vi.fn().mockResolvedValue(undefined),
+    closeDialog: vi.fn(),
+    undoRedoManager: {} as any,
+    optimisticManager: {} as any,
+    data: {} as any,
+    grid: {} as any,
+  } satisfies ActionContext;
+}
 
 describe('saveHarvestMetrics', () => {
-  let ctx: ReturnType<typeof makeFakeCtx>;
+  let ctx: ReturnType<typeof makeContext>;
 
   beforeEach(() => {
-    ctx = makeFakeCtx();
+    ctx = makeContext();
   });
 
   it('calls dataService, shows success toast, and refreshes', async () => {
     await saveHarvestMetrics(ctx, 'plant-1', { wet_weight: 120, dry_weight: 28 });
 
-    expect(ctx.dataService.updateHarvestMetrics).toHaveBeenCalledWith({
+    expect((ctx.dataService as any).updateHarvestMetrics).toHaveBeenCalledWith({
       plant_id: 'plant-1',
       wet_weight: 120,
       dry_weight: 28,
@@ -25,7 +47,7 @@ describe('saveHarvestMetrics', () => {
   });
 
   it('shows error toast and rethrows on failure', async () => {
-    ctx.dataService.updateHarvestMetrics.mockRejectedValue(new Error('boom'));
+    (ctx.dataService as any).updateHarvestMetrics.mockRejectedValue(new Error('boom'));
 
     await expect(saveHarvestMetrics(ctx, 'p', { wet_weight: 10 })).rejects.toThrow('boom');
 
@@ -36,23 +58,23 @@ describe('saveHarvestMetrics', () => {
   it('skips dataService call when metrics object is empty', async () => {
     await saveHarvestMetrics(ctx, 'p', {});
 
-    expect(ctx.dataService.updateHarvestMetrics).not.toHaveBeenCalled();
+    expect((ctx.dataService as any).updateHarvestMetrics).not.toHaveBeenCalled();
     expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });
 
 describe('scorePhenotype', () => {
-  let ctx: ReturnType<typeof makeFakeCtx>;
+  let ctx: ReturnType<typeof makeContext>;
 
   beforeEach(() => {
-    ctx = makeFakeCtx();
+    ctx = makeContext();
   });
 
   it('calls dataService, toasts success, and refreshes', async () => {
     await scorePhenotype(ctx, 'p', { vigor: 4, aroma: 5 });
 
-    expect(ctx.dataService.scorePlant).toHaveBeenCalledWith({
+    expect((ctx.dataService as any).scorePlant).toHaveBeenCalledWith({
       plant_id: 'p',
       vigor: 4,
       aroma: 5,
@@ -64,7 +86,7 @@ describe('scorePhenotype', () => {
   it('no-ops when all scores are null', async () => {
     await scorePhenotype(ctx, 'p', { vigor: null, aroma: null });
 
-    expect(ctx.dataService.scorePlant).not.toHaveBeenCalled();
+    expect((ctx.dataService as any).scorePlant).not.toHaveBeenCalled();
     expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
     expect(ctx.refreshData).not.toHaveBeenCalled();
   });
@@ -72,11 +94,11 @@ describe('scorePhenotype', () => {
   it('no-ops when scores object is empty', async () => {
     await scorePhenotype(ctx, 'p', {});
 
-    expect(ctx.dataService.scorePlant).not.toHaveBeenCalled();
+    expect((ctx.dataService as any).scorePlant).not.toHaveBeenCalled();
   });
 
   it('shows error toast and rethrows on failure', async () => {
-    ctx.dataService.scorePlant.mockRejectedValue(new Error('score boom'));
+    (ctx.dataService as any).scorePlant.mockRejectedValue(new Error('score boom'));
 
     await expect(scorePhenotype(ctx, 'p', { vigor: 3 })).rejects.toThrow('score boom');
 
@@ -87,8 +109,7 @@ describe('scorePhenotype', () => {
   it('calls with only non-null scores mixed in', async () => {
     await scorePhenotype(ctx, 'p', { vigor: 4, aroma: null, structure: 3 });
 
-    // Should call despite some null values — hasValue = true because vigor=4, structure=3
-    expect(ctx.dataService.scorePlant).toHaveBeenCalledWith({
+    expect((ctx.dataService as any).scorePlant).toHaveBeenCalledWith({
       plant_id: 'p',
       vigor: 4,
       aroma: null,
