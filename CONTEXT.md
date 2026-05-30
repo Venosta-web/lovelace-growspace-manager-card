@@ -250,7 +250,13 @@ Pure module tests (state machines, slices, utilities — anything that does not 
 A recorded inventory entry for a batch of cannabis seeds. Fields: `batch_id`, `strain_name`, `breeder`, `quantity`, `acquisition_date`, `generation` (e.g. F1, S1, BX1), optional parent strains (`parent_1_strain`, `parent_1_phenotype`, `parent_2_strain`, `parent_2_phenotype`), optional `lineage` string, optional `notes`. Can be sown into a growspace to create plants. Linked to a [[Pollination Event]] via `result_seed_batch_id` when seeds are harvested from that event.
 
 **Pollination Event**
-A recorded cross-pollination between a donor plant (male / pollen donor) and a receiver plant (female / seed bearer). Fields: `event_id`, `date`, `donor_plant_id`, `receiver_plant_id`, optional `notes`, optional `result_seed_batch_id` (set when seeds are harvested from this event). The donor can be an active plant (identified by `plant_id`) or a strain-library entry (identified by `"strain||phenotype"` key).
+A recorded cross-pollination between a donor plant (male / pollen donor) and a receiver plant (female / seed bearer). Fields: `event_id`, `date`, `donor_plant_id`, `receiver_plant_id`, optional `notes`, optional `result_seed_batch_id` (set when seeds are harvested from this event). The donor is either a [[Live Donor]] or a [[Library Donor]].
+
+**Live Donor**
+A pollination donor identified by a live plant's UUID (`plant_id`). The plant is currently tracked in a growspace and appears in the plants list. Distinguished from a [[Library Donor]] by the absence of `||` in the `donor_plant_id`.
+
+**Library Donor**
+A pollination donor identified by a strain library entry using the `"strain||phenotype"` key format. Used to record genetic lineage from a pollen source that is not tracked as a live plant. Distinguished from a [[Live Donor]] by the presence of `||` in the `donor_plant_id`.
 
 **Seeds-Genetics Tab SM**
 The state machine for `seeds-genetics-tab.ts`, extracted into `seeds-genetics-tab-sm.ts`. Owns the tab's interaction state: `activeView` (the active sub-view), `views` (one typed state object per sub-view), `status` (`{ kind: 'idle' }` — no discard guard), and `toast`. Sub-views: `list | add-batch | log-pollination | harvest`. `add-batch` handles both creating and editing a [[Seed Batch]], discriminated by `editingBatchId: string | null` in the view state. `log-pollination` handles both creating and editing a [[Pollination Event]], discriminated by `editingEventId: string | null`. Delete confirmations and the inline Sow form live in the list view's `sub` discriminated union. Async lifecycle (`applying | error`) lives in each sub-view's `sub` — not at root. Validation logic lives in exported pure helpers (`validateBatchDraft`, `validatePollinationDraft`, `validateHarvestDraft`) — not in `transition()`. Does not satisfy [[DialogStateMachine]].
