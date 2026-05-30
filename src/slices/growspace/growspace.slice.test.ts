@@ -144,6 +144,16 @@ describe('exportGrowReport', () => {
     );
   });
 
+  it('calls export_grow_report service with pdf format when specified', async () => {
+    await exportGrowReport('gs1', 'pdf');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'export_grow_report',
+      { growspace_id: 'gs1', format: 'pdf' }
+    );
+  });
+
   it('propagates errors from callService', async () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('export failed'));
 

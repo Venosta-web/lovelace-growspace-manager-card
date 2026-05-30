@@ -974,7 +974,7 @@ export class IrrigationDialog extends LitElement {
   // ─── Visibility ───────────────────────────────────────────────────────────
 
   private get _visibleTabs(): TabId[] {
-    const tabs: TabId[] = ['schedules'];
+    const tabs: TabId[] = [];
     const env = this.device?.environmentAttributes;
 
     const hasSoilMoisture =
@@ -984,6 +984,8 @@ export class IrrigationDialog extends LitElement {
       this.device?.irrigationConfig?.irrigationPumpEntity ||
       this.device?.irrigationConfig?.drainPumpEntity
     );
+
+    if (hasPump) tabs.push('schedules');
 
     if ((hasSoilMoisture || hasStrategy) && hasPump) {
       tabs.push('steering');
@@ -1006,8 +1008,7 @@ export class IrrigationDialog extends LitElement {
       (env?.phSensors?.length ?? 0) > 0;
     if (drainEnabled || hasDrainReadings || hasEcSensors) tabs.push('drain_ec');
 
-    // EC Targets: always visible (stub — backend support coming)
-    tabs.push('ec_targets');
+    if (hasEcSensors) tabs.push('ec_targets');
 
     // EC Ramp: visible when pump + at least one schedule + at least one EC sensor
     const hasEcSensorsForRamp =
@@ -1022,9 +1023,14 @@ export class IrrigationDialog extends LitElement {
 
   private get _setupHints(): Array<{ icon: string; text: string }> {
     const hints: Array<{ icon: string; text: string }> = [];
-    const env = this.device?.environmentAttributes;
     const visible = this._visibleTabs;
 
+    if (!visible.includes('schedules')) {
+      hints.push({
+        icon: '🚰',
+        text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules.',
+      });
+    }
     if (!visible.includes('steering')) {
       const hasPump = !!(
         this.device?.irrigationConfig?.irrigationPumpEntity ||
@@ -1054,6 +1060,12 @@ export class IrrigationDialog extends LitElement {
         text: 'Configure EC/pH sensors or enable drain monitoring to track nutrient runoff.',
       });
     }
+    if (!visible.includes('ec_targets')) {
+      hints.push({
+        icon: '🎯',
+        text: 'Configure an EC sensor in Environment Settings to set EC targets per growth stage.',
+      });
+    }
     return hints;
   }
 
@@ -1072,7 +1084,7 @@ export class IrrigationDialog extends LitElement {
       this._dataService = new DataService(this.hass);
     }
     if (!this._visibleTabs.includes(this._sm.activeTab)) {
-      this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'schedules' });
+      this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
     }
 
     // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
@@ -1436,7 +1448,7 @@ export class IrrigationDialog extends LitElement {
   private _getEntities(domains: string[]) {
     if (!this.hass?.states) return [];
     return Object.values(this.hass.states)
-      .filter((s) => domains.includes(s.entity_id.split('.')[0]))
+      .filter((s) => s.entity_id && domains.includes(s.entity_id.split('.')[0]))
       .sort((a, b) =>
         (a.attributes.friendly_name || a.entity_id).localeCompare(
           b.attributes.friendly_name || b.entity_id

@@ -74,10 +74,10 @@ export async function updateGrowspace(data: {
   );
 }
 
-export async function exportGrowReport(growspaceId: string): Promise<void> {
+export async function exportGrowReport(growspaceId: string, format: 'json' | 'pdf' = 'json'): Promise<void> {
   await callService('growspace_manager', 'export_grow_report', {
     growspace_id: growspaceId,
-    format: 'json',
+    format,
   });
 }
 

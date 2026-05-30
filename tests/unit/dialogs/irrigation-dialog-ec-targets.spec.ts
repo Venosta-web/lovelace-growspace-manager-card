@@ -81,7 +81,7 @@ const baseDevice: GrowspaceDevice = {
   plants: [],
   grid: {},
   biologicalMetrics: {} as any,
-  environmentAttributes: {} as any,
+  environmentAttributes: { feedEcSensors: ['sensor.feed_ec'] } as any,
   stats: {} as any,
   waterUsage: { litersToday: 0 } as any,
   drainConfig: null as any,

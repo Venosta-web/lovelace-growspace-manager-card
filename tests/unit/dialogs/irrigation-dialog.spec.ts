@@ -1199,7 +1199,7 @@ describe('IrrigationDialog', () => {
             expect(labels).not.toContain('Tanks');
         });
 
-        it('should fallback to schedules when current tab is hidden', async () => {
+        it('should fallback to config when current tab is hidden', async () => {
             // Start on tanks tab (index 3 with all features)
             const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
             (tabs?.[3] as HTMLElement).click();
@@ -1213,7 +1213,7 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._sm.activeTab).toBe('schedules');
+            expect((element as any)._sm.activeTab).toBe('config');
         });
     });
 
@@ -1413,7 +1413,7 @@ describe('IrrigationDialog', () => {
             expect(labels).toContain('Water Analytics');
         });
 
-        it('should fallback to Schedules tab if active tab becomes hidden', async () => {
+        it('should fallback to Config tab if active tab becomes hidden', async () => {
             // Start with all capabilities
             element.device = { ...mockDevice };
             (element as any)._sm = { ...(element as any)._sm, activeTab: 'tanks' };
@@ -1427,7 +1427,7 @@ describe('IrrigationDialog', () => {
             } as any;
             await element.updateComplete;
 
-            expect((element as any)._sm.activeTab).toBe('schedules');
+            expect((element as any)._sm.activeTab).toBe('config');
         });
     });
 
@@ -1610,7 +1610,7 @@ describe('IrrigationDialog', () => {
             return {
                 ...JSON.parse(JSON.stringify(mockDevice)),
                 irrigationStrategy: steeringStrategy,
-                irrigationConfig: { irrigationTimes: [], drainTimes: [] },
+                irrigationConfig: { irrigationTimes: [], drainTimes: [], irrigationPumpEntity: 'switch.pump' },
                 ...overrides,
             };
         }

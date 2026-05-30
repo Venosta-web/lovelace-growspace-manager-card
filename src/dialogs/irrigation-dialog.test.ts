@@ -147,12 +147,12 @@ describe('IrrigationDialog – Run Now button', () => {
 // ---------------------------------------------------------------------------
 
 describe('IrrigationDialog – initialTab', () => {
-  it('defaults to the schedules tab when no initialTab is given', async () => {
+  it('defaults to the config tab when no initialTab is given and no pump is configured', async () => {
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._sm.activeTab).toBe('schedules');
+    expect((el as any)._sm.activeTab).toBe('config');
   });
 
   it('activates the given initialTab when the dialog opens', async () => {
@@ -169,7 +169,7 @@ describe('IrrigationDialog – initialTab', () => {
       <irrigation-dialog .open=${false} .initialTab=${'config'}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._sm.activeTab).toBe('schedules');
+    expect((el as any)._sm.activeTab).toBe('config');
 
     el.open = true;
     await el.updateComplete;
@@ -177,12 +177,12 @@ describe('IrrigationDialog – initialTab', () => {
   });
 
   it('does not change tab when initialTab is not a visible tab', async () => {
-    // 'steering' requires device with pump + soil moisture sensor; without device it falls back to schedules
+    // 'steering' requires device with pump + soil moisture sensor; without device it falls back to config
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true} .initialTab=${'steering'}></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect((el as any)._sm.activeTab).toBe('schedules');
+    expect((el as any)._sm.activeTab).toBe('config');
   });
 });
 
