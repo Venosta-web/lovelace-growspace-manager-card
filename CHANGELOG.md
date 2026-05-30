@@ -1,3 +1,10 @@
+# [1.1.0-next.12](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.11...v1.1.0-next.12) (2026-05-30)
+
+
+### Features
+
+* remove Mark All Read button and add no-pad class to inbox layout with accompanying tests ([13ee296](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/13ee2968ef163cfdca961530710b1982223b8b91))
+
 # [1.1.0-next.11](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.10...v1.1.0-next.11) (2026-05-29)
 
 
