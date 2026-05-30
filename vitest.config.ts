@@ -31,7 +31,7 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             enabled: true,
-            clean: false,
+            clean: true,
             reporter: ['text', 'json', 'html'],
             include: ['src/**/*.ts'],
             exclude: ['src/**/*.spec.ts', 'src/types.ts']

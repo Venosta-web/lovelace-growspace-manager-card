@@ -38,14 +38,6 @@ export function toggleHeaderExpansion(ctx: ActionContext) {
   }
 }
 
-export function handleKeyboardNavigation(_ctx: ActionContext, _key: string) {
-  // Currently delegates to keyboard-actions, maybe we merge or keep delegating
-  // But since we are unifying, we might just call the logic here or keep it simple.
-  // For now, let's just use the existing keyboardActions logic if possible,
-  // but the existing one needs context logic.
-  // Let's defer this specific one or just keep it in store since it's simple delegation.
-}
-
 export function togglePlantSelection(ctx: ActionContext, plantOrId: string | PlantEntity) {
   const plantId = typeof plantOrId === 'string' ? plantOrId : plantOrId.attributes.plant_id || '';
   if (!plantId) return;
