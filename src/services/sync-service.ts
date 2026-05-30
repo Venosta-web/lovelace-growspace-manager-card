@@ -17,6 +17,7 @@ export class SyncService {
   private _isFetchingWS = false;
   private _lastHassRef: HomeAssistant | undefined;
   private _watchedEntities = new Set<string>();
+  private _cache: Record<string, GrowspaceAPIResponse> = {};
   /** Per-card config — not shared across card instances. */
   private _cardConfig: GrowspaceManagerCardConfig = {} as GrowspaceManagerCardConfig;
 
@@ -45,8 +46,7 @@ export class SyncService {
     this.dataService.updateHass(hass);
 
     // If cache empty, fetch initial
-    const currentCache = this.dataStore.$wsDataCache.get();
-    if (Object.keys(currentCache).length === 0 && !this._isFetchingWS) {
+    if (Object.keys(this._cache).length === 0 && !this._isFetchingWS) {
       this.refreshGrowspaceData();
       this._lastHassRef = hass;
       return;
@@ -92,9 +92,7 @@ export class SyncService {
 
     try {
       const data = await this.dataService.fetchGrowspaceData();
-      this.dataStore.setWsDataCache(
-        (data as unknown as Record<string, GrowspaceAPIResponse>) || {}
-      );
+      this._cache = (data as unknown as Record<string, GrowspaceAPIResponse>) || {};
       this.updateDevicesState();
     } catch (e) {
       console.error('Failed to fetch growspace data', e);
@@ -109,7 +107,7 @@ export class SyncService {
    * Also updates the list of watched entities for optimization.
    */
   public updateDevicesState(): void {
-    const devices = this.dataService.getGrowspaceDevices(this.dataStore.$wsDataCache.get());
+    const devices = this.dataService.getGrowspaceDevices(this._cache);
     const currentDevices = this.dataStore.$devices.get();
 
     if (!this._areDeviceArraysEqual(currentDevices, devices)) {

@@ -47,57 +47,8 @@ export class GrowspaceSharedStore {
     }
   }
 
-  private _handleEvent(event: unknown): void {
-    const haEvent = event as { data?: { event_type?: string; data?: Record<string, unknown> } };
-
-    if (
-      !haEvent.data ||
-      typeof haEvent.data.event_type !== 'string' ||
-      typeof haEvent.data.data !== 'object'
-    ) {
-      console.warn('[GrowspaceSharedStore] Received malformed growspace event', event);
-      return;
-    }
-
-    const { event_type, data } = haEvent.data;
-
-    if (event_type === 'plant_added' || event_type === 'plant_updated') {
-      this._handlePlantUpdate(data.plant);
-    } else if (event_type === 'plant_removed') {
-      this._handlePlantRemoval(data.plant_id as string, data.growspace_id as string | undefined);
-    } else if (event_type === 'growspace_manager_updated') {
-      this.dataService.invalidateCache();
-      this.data.$staleCounter.set(this.data.$staleCounter.get() + 1);
-    }
-  }
-
-  private _handlePlantUpdate(plantData: unknown): void {
-    const data = plantData as {
-      plant_id?: string;
-      growspace_id?: string;
-      attributes?: { growspace_id?: string };
-      row?: number;
-      col?: number;
-    };
-    const plantId = data?.plant_id;
-
-    if (!plantId) {
-      console.warn('[GrowspaceSharedStore] Plant update event missing plant_id', plantData);
-      return;
-    }
-
-    this.data.removePlantFromWsCache(plantId);
-
-    const gsId = data.growspace_id || data.attributes?.growspace_id;
-    if (gsId && typeof data.row === 'number' && typeof data.col === 'number') {
-      const correctKey = `position_${data.row}_${data.col}`;
-      this.data.updateWsDataCacheGrid(gsId, (grid) => {
-        grid[correctKey] = plantData;
-      });
-    }
-  }
-
-  private _handlePlantRemoval(plantId: string, growspaceId?: string): void {
-    this.data.removePlantFromWsCache(plantId, growspaceId);
+  private _handleEvent(_event: unknown): void {
+    this.dataService.invalidateCache();
+    this.data.$staleCounter.set(this.data.$staleCounter.get() + 1);
   }
 }

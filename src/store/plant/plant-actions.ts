@@ -368,10 +368,7 @@ export async function handlePlantDrop(
       }
     };
 
-    // 1. Update Cache
-    ctx.data.updateWsDataCacheGrid(growspaceId, updateGridLogic);
-
-    // 2. Update Devices Atom (for immediate UI Reactivity)
+    // Update Devices Atom (for immediate UI Reactivity)
     const devices = ctx.data.$devices.get();
     const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
     if (deviceIdx >= 0) {

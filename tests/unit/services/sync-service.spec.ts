@@ -9,7 +9,7 @@ import { setEnvSnapshot } from '../../../src/slices/environment';
 import { setPlants } from '../../../src/slices/plant';
 import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../../../src/slices/irrigation';
 import { HomeAssistant } from 'custom-card-helpers';
-import { GrowspaceDevice, GrowspaceManagerCardConfig, GrowspaceAPIResponse, PlantEntity } from '../../../src/types';
+import { GrowspaceDevice, GrowspaceManagerCardConfig, PlantEntity } from '../../../src/types';
 import { atom } from 'nanostores';
 
 vi.mock('../../../src/slices/device-state', () => ({
@@ -49,10 +49,6 @@ describe('SyncService Unit Tests', () => {
 
     dataStore = {
       $devices: atom<GrowspaceDevice[]>([]),
-      $wsDataCache: atom<Record<string, GrowspaceAPIResponse>>({}),
-      setWsDataCache: vi.fn((cache: Record<string, GrowspaceAPIResponse>) => {
-        dataStore.$wsDataCache.set(cache);
-      }),
       setDevices: vi.fn((devices: GrowspaceDevice[]) => {
         dataStore.$devices.set(devices);
       }),
@@ -136,7 +132,7 @@ describe('SyncService Unit Tests', () => {
 
     it('updates devices state directly when cache is not empty and no watched entities exist', () => {
       const mockHass: HomeAssistant = { states: {} } as any;
-      dataStore.$wsDataCache.set({ some_key: {} as any });
+      (syncService as any)._cache = { some_key: {} as any };
       const updateDevicesSpy = vi.spyOn(syncService, 'updateDevicesState');
 
       syncService.updateHass(mockHass);
@@ -165,7 +161,7 @@ describe('SyncService Unit Tests', () => {
       const watched = (syncService as any)._watchedEntities as Set<string>;
       watched.add('sensor.temp');
       (syncService as any)._lastHassRef = mockHass1;
-      dataStore.$wsDataCache.set({ some_key: {} as any });
+      (syncService as any)._cache = { some_key: {} as any };
 
       const updateDevicesSpy = vi.spyOn(syncService, 'updateDevicesState');
 
@@ -189,7 +185,7 @@ describe('SyncService Unit Tests', () => {
       const watched = (syncService as any)._watchedEntities as Set<string>;
       watched.add('sensor.temp');
       (syncService as any)._lastHassRef = mockHass1;
-      dataStore.$wsDataCache.set({ some_key: {} as any });
+      (syncService as any)._cache = { some_key: {} as any };
 
       const updateDevicesSpy = vi.spyOn(syncService, 'updateDevicesState');
 
@@ -213,7 +209,7 @@ describe('SyncService Unit Tests', () => {
       const watched = (syncService as any)._watchedEntities as Set<string>;
       watched.add('sensor.temp');
       (syncService as any)._lastHassRef = mockHass1;
-      dataStore.$wsDataCache.set({ some_key: {} as any });
+      (syncService as any)._cache = { some_key: {} as any };
 
       const updateDevicesSpy = vi.spyOn(syncService, 'updateDevicesState');
 
@@ -237,7 +233,7 @@ describe('SyncService Unit Tests', () => {
       const watched = (syncService as any)._watchedEntities as Set<string>;
       watched.add('sensor.temp');
       (syncService as any)._lastHassRef = mockHass1;
-      dataStore.$wsDataCache.set({ some_key: {} as any });
+      (syncService as any)._cache = { some_key: {} as any };
 
       const updateDevicesSpy = vi.spyOn(syncService, 'updateDevicesState');
 
@@ -299,7 +295,7 @@ describe('SyncService Unit Tests', () => {
 
       await syncService.refreshGrowspaceData();
 
-      expect(dataStore.setWsDataCache).toHaveBeenCalledWith(mockResult);
+      expect((syncService as any)._cache).toBe(mockResult);
       expect(updateDevicesSpy).toHaveBeenCalled();
       expect(uiStore.setIsLoading).toHaveBeenCalledWith(false);
     });
@@ -310,7 +306,7 @@ describe('SyncService Unit Tests', () => {
 
       await syncService.refreshGrowspaceData();
 
-      expect(dataStore.setWsDataCache).toHaveBeenCalledWith({});
+      expect((syncService as any)._cache).toEqual({});
     });
 
     it('handles throw inside fetchGrowspaceData gracefully', async () => {
