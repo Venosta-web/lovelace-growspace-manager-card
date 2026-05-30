@@ -156,6 +156,75 @@ describe('fetchStrainLibrary', () => {
 
     expect(strainLibrary$.get()).toEqual([original]);
   });
+
+  it('selects the gallery thumbnail when is_thumbnail is true', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        Strain: {
+          meta: {},
+          phenotypes: {
+            default: {
+              images: [
+                { path: '/local/thumb.jpg', is_thumbnail: true },
+                { path: '/local/other.jpg', is_thumbnail: false },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    await fetchStrainLibrary();
+    const [entry] = strainLibrary$.get();
+    expect(entry.image).toBe('/local/thumb.jpg');
+  });
+
+  it('falls back to first gallery image when no thumbnail is flagged', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        Strain: {
+          meta: {},
+          phenotypes: {
+            default: {
+              images: [
+                { path: '/local/first.jpg', is_thumbnail: false },
+                { path: '/local/second.jpg', is_thumbnail: false },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    await fetchStrainLibrary();
+    const [entry] = strainLibrary$.get();
+    expect(entry.image).toBe('/local/first.jpg');
+  });
+
+  it('skips a strain literally named "response"', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        response: { meta: {}, phenotypes: { default: {} } },
+        RealStrain: { meta: {}, phenotypes: { default: {} } },
+      },
+    });
+
+    await fetchStrainLibrary();
+    const library = strainLibrary$.get();
+    expect(library).toHaveLength(1);
+    expect(library[0].strain).toBe('RealStrain');
+  });
+
+  it('emits no entries for a strain with no phenotypes', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      strains: {
+        NoPhenoStrain: { meta: { breeder: 'X' } },
+      },
+    });
+
+    await fetchStrainLibrary();
+    expect(strainLibrary$.get()).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -337,6 +406,27 @@ describe('importStrainLibrary', () => {
     } as unknown as Response);
 
     await expect(importStrainLibrary(file, false)).rejects.toThrow('Duplicate strains');
+  });
+
+  it('throws with statusText when the error response body is empty', async () => {
+    const file = new File(['x'], 'x.json', { type: 'application/json' });
+    vi.mocked(hassCallModule.callFetch).mockResolvedValueOnce({
+      ok: false,
+      text: async () => '',
+      statusText: 'Internal Server Error',
+    } as unknown as Response);
+
+    await expect(importStrainLibrary(file, false)).rejects.toThrow('Internal Server Error');
+  });
+
+  it('throws "Unknown import error" when success is false with no error field', async () => {
+    const file = new File(['x'], 'x.json', { type: 'application/json' });
+    vi.mocked(hassCallModule.callFetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: false }),
+    } as unknown as Response);
+
+    await expect(importStrainLibrary(file, false)).rejects.toThrow('Unknown import error');
   });
 });
 
