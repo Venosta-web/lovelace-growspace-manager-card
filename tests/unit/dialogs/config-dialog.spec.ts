@@ -79,7 +79,8 @@ describe('ConfigDialog', () => {
                     'persistent_notification': {}
                 }
             },
-            localize: (key: string) => `[${key}]`
+            localize: (key: string) => `[${key}]`,
+            callService: vi.fn().mockResolvedValue(undefined)
         };
         element.hass = mockHass;
 
