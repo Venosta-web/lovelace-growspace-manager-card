@@ -1,6 +1,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
-import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema, ECRampPointSchema, ECRampCurvesSchema } from '../../../src/schemas/api-schema';
+import { NutrientPresetsSchema, IPMPresetsSchema, validateGrowspaceResponse, validateGrowspaceCollection, validateStrainLibrary, HistoryPointSchema, GrowspaceAPIResponseSchema, ECRampPointSchema, ECRampCurvesSchema, StrainPhenotypeSchema, StrainDataSchema } from '../../../src/schemas/api-schema';
 
 describe('API Schemas', () => {
     describe('NutrientPresetsSchema', () => {
@@ -305,4 +305,109 @@ describe('API Schemas', () => {
             expect(result).toEqual({});
         });
     });
+
+    describe('StrainPhenotypeSchema', () => {
+        it('should transform nullish fields to undefined', () => {
+            const input = {
+                description: null,
+                image_path: null,
+                image_crop_meta: null,
+                flower_days_min: null,
+                flower_days_max: null,
+            };
+            const result = StrainPhenotypeSchema.parse(input);
+            expect(result.description).toBeUndefined();
+            expect(result.image_path).toBeUndefined();
+            expect(result.image_crop_meta).toBeUndefined();
+            expect(result.flower_days_min).toBeUndefined();
+            expect(result.flower_days_max).toBeUndefined();
+        });
+
+        it('should preserve valid values', () => {
+            const input = {
+                description: 'Sweet and fruity',
+                image_path: '/images/strain1.jpg',
+                image_crop_meta: { x: 10, y: 20, scale: 1.5 },
+                flower_days_min: 55,
+                flower_days_max: 65,
+            };
+            const result = StrainPhenotypeSchema.parse(input);
+            expect(result.description).toBe('Sweet and fruity');
+            expect(result.image_path).toBe('/images/strain1.jpg');
+            expect(result.image_crop_meta).toEqual({ x: 10, y: 20, scale: 1.5 });
+            expect(result.flower_days_min).toBe(55);
+            expect(result.flower_days_max).toBe(65);
+        });
+
+        it('should handle undefined / missing fields', () => {
+            const input = {};
+            const result = StrainPhenotypeSchema.parse(input);
+            expect(result.description).toBeUndefined();
+            expect(result.image_path).toBeUndefined();
+            expect(result.image_crop_meta).toBeUndefined();
+            expect(result.flower_days_min).toBeUndefined();
+            expect(result.flower_days_max).toBeUndefined();
+        });
+    });
+
+    describe('StrainDataSchema', () => {
+        it('should transform nullish meta fields to undefined', () => {
+            const input = {
+                meta: {
+                    breeder: null,
+                    breeder_logo: null,
+                    type: null,
+                    lineage: null,
+                    sex: null,
+                    sativa_percentage: null,
+                    indica_percentage: null,
+                }
+            };
+            const result = StrainDataSchema.parse(input);
+            expect(result.meta.breeder).toBeUndefined();
+            expect(result.meta.breeder_logo).toBeUndefined();
+            expect(result.meta.type).toBeUndefined();
+            expect(result.meta.lineage).toBeUndefined();
+            expect(result.meta.sex).toBeUndefined();
+            expect(result.meta.sativa_percentage).toBeUndefined();
+            expect(result.meta.indica_percentage).toBeUndefined();
+        });
+
+        it('should preserve valid values', () => {
+            const input = {
+                meta: {
+                    breeder: 'Barneys Farm',
+                    breeder_logo: '/logos/barneys.png',
+                    type: 'Hybrid',
+                    lineage: 'LSD x Super Lemon Haze',
+                    sex: 'Feminized',
+                    sativa_percentage: 60,
+                    indica_percentage: 40,
+                }
+            };
+            const result = StrainDataSchema.parse(input);
+            expect(result.meta.breeder).toBe('Barneys Farm');
+            expect(result.meta.breeder_logo).toBe('/logos/barneys.png');
+            expect(result.meta.type).toBe('Hybrid');
+            expect(result.meta.lineage).toBe('LSD x Super Lemon Haze');
+            expect(result.meta.sex).toBe('Feminized');
+            expect(result.meta.sativa_percentage).toBe(60);
+            expect(result.meta.indica_percentage).toBe(40);
+        });
+
+        it('should handle undefined / missing meta fields', () => {
+            const input = {
+                meta: {}
+            };
+            const result = StrainDataSchema.parse(input);
+            expect(result.meta.breeder).toBeUndefined();
+            expect(result.meta.breeder_logo).toBeUndefined();
+            expect(result.meta.type).toBeUndefined();
+            expect(result.meta.lineage).toBeUndefined();
+            expect(result.meta.sex).toBeUndefined();
+            expect(result.meta.sativa_percentage).toBeUndefined();
+            expect(result.meta.indica_percentage).toBeUndefined();
+        });
+    });
 });
+
