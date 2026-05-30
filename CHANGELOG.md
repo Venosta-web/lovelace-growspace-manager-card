@@ -1,3 +1,10 @@
+# [1.1.0-next.15](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.14...v1.1.0-next.15) (2026-05-30)
+
+
+### Features
+
+* implement Genetics slice with schemas and tests while consolidating legacy API modules ([17a584f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/17a584f5eaf3beaaa3aba8470ff759858533aa2c))
+
 # [1.1.0-next.14](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.13...v1.1.0-next.14) (2026-05-30)
 
 
