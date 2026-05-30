@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ConfigDialog } from '../../../src/dialogs/config-dialog';
 import { ConfigTab } from '../../../src/constants';
 import { html, render } from 'lit';
 import { mdiViewDashboard } from '@mdi/js';
+import * as growspaceSlice from '../../../src/slices/growspace/index';
 
 // Mock components
 if (!customElements.get('md3-number-input')) {
@@ -10,6 +11,11 @@ if (!customElements.get('md3-number-input')) {
         set value(v: any) { this.setAttribute('value', v); }
     });
 }
+
+vi.mock('../../../src/slices/growspace/index', async (importOriginal) => {
+    const actual = await importOriginal<typeof growspaceSlice>();
+    return { ...actual, setDehumidifierControl: vi.fn().mockResolvedValue(undefined) };
+});
 
 describe('ConfigDialog Interactions', () => {
     let element: ConfigDialog;
@@ -19,6 +25,11 @@ describe('ConfigDialog Interactions', () => {
         element.open = true; // MUST SET OPEN
         document.body.appendChild(element);
         await element.updateComplete;
+    });
+
+    afterEach(() => {
+        element.remove();
+        vi.clearAllMocks();
     });
 
     it('should switch tabs when header buttons are clicked', async () => {
@@ -82,5 +93,31 @@ describe('ConfigDialog Interactions', () => {
             input.dispatchEvent(new CustomEvent('change', { detail: '70' }));
             // Threshold update logic is internal, but this hits the branch
         }
+    });
+
+    it('configure-environment-submit payload does not include dehumidifierControlEnabled', async () => {
+        element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
+        await element.updateComplete;
+
+        const listener = vi.fn();
+        element.addEventListener('configure-environment-submit', listener);
+        (element as any)._submitEnvironment();
+
+        expect(listener).toHaveBeenCalledOnce();
+        expect(listener.mock.calls[0][0].detail).not.toHaveProperty('dehumidifierControlEnabled');
+    });
+
+    it('toggling dehumidifier control checkbox calls setDehumidifierControl immediately', async () => {
+        element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
+        await element.updateComplete;
+
+        const checkbox = Array.from(element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? [])
+            .find((el) => el.closest('label')?.textContent?.includes('Dehumidifier Control')) as HTMLInputElement | undefined;
+
+        expect(checkbox).toBeDefined();
+        checkbox!.checked = true;
+        checkbox!.dispatchEvent(new Event('change'));
+
+        expect(growspaceSlice.setDehumidifierControl).toHaveBeenCalledWith('gs1', true);
     });
 });

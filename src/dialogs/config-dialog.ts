@@ -37,6 +37,7 @@ import {
 } from '../types';
 import type { VisionCheckupConfigEventDetail } from '../lib/types/dialog';
 import { ConfigTab } from '../constants';
+import { setDehumidifierControl } from '../slices/growspace';
 import { getSubareas, addSubarea, removeSubarea } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
 import { DataService } from '../services/data-service';
@@ -112,6 +113,7 @@ export class ConfigDialog extends LitElement {
 
   // ── Humidity accordion (pure UI ephemeral state) ──────────────────────────
   @state() private _openHumidityStageId: HumidityStageId | '' = '';
+  @state() private _dehumidifierControlEnabled = false;
 
   private _initialStateApplied = false;
   private _dataService?: DataService;
@@ -171,8 +173,8 @@ export class ConfigDialog extends LitElement {
   get envSoilMoistureSensor() { return this._d.soilMoistureSensor; }
   set envSoilMoistureSensor(v: string) { this._setEnv({ soilMoistureSensor: v }); }
 
-  get envDehumidifierControlEnabled() { return this._d.dehumidifierControlEnabled; }
-  set envDehumidifierControlEnabled(v: boolean) { this._setEnv({ dehumidifierControlEnabled: v }); }
+  get envDehumidifierControlEnabled() { return this._dehumidifierControlEnabled; }
+  set envDehumidifierControlEnabled(v: boolean) { this._dehumidifierControlEnabled = v; }
 
   get envHumidifierControlEnabled() { return this._d.humidifierControlEnabled; }
   set envHumidifierControlEnabled(v: boolean) { this._setEnv({ humidifierControlEnabled: v }); }
@@ -964,7 +966,6 @@ export class ConfigDialog extends LitElement {
           humidifierEntities: environmentData.humidifierEntities || [],
           dehumidifierEntities: environmentData.dehumidifierEntities || [],
           soilMoistureSensor: environmentData.soilMoistureSensor,
-          dehumidifierControlEnabled: environmentData.dehumidifierControlEnabled,
           dehumidifierThresholds: environmentData.dehumidifierThresholds || {},
           humidifierControlEnabled: environmentData.humidifierControlEnabled,
           humidifierThresholds: environmentData.humidifierThresholds || {},
@@ -999,6 +1000,7 @@ export class ConfigDialog extends LitElement {
       activeTab: currentTab as ConfigTabId,
       environmentDraft: { ...createInitialSM().environmentDraft, ...envPartial },
     };
+    this._dehumidifierControlEnabled = environmentData?.dehumidifierControlEnabled ?? false;
 
     if (environmentData?.selectedGrowspaceId) {
       this._populateEditFields(environmentData.selectedGrowspaceId);
@@ -1062,7 +1064,6 @@ export class ConfigDialog extends LitElement {
           dehumidifierEntities: d.dehumidifierEntities,
           dehumidifierThresholds: d.dehumidifierThresholds,
           soilMoistureSensor: d.soilMoistureSensor,
-          dehumidifierControlEnabled: d.dehumidifierControlEnabled,
           sensorGroups: d.sensorGroups,
           sensorCoordinates: d.sensorCoordinates,
           irrigationTanks: d.irrigationTanks,
@@ -1468,6 +1469,7 @@ export class ConfigDialog extends LitElement {
     const device = this.devices.find((d) => d.deviceId === growspaceId);
     if (device) {
       this._t({ type: 'RESET_FROM_DEVICE', device });
+      this._dehumidifierControlEnabled = device.environmentAttributes?.dehumidifierControlEnabled ?? false;
     } else {
       this._t({
         type: 'UPDATE_ENV_DRAFT',
@@ -1483,7 +1485,6 @@ export class ConfigDialog extends LitElement {
           humidifierEntities: [],
           dehumidifierEntities: [],
           soilMoistureSensor: '',
-          dehumidifierControlEnabled: false,
           dehumidifierThresholds: {},
           humidifierControlEnabled: false,
           humidifierThresholds: {},
@@ -1505,6 +1506,7 @@ export class ConfigDialog extends LitElement {
           irrigationTanks: [],
         },
       });
+      this._dehumidifierControlEnabled = false;
       this._t({ type: 'CANCEL_TANK' });
     }
   }
@@ -1872,9 +1874,12 @@ export class ConfigDialog extends LitElement {
             <label class="checkbox-label">
               <input
                 type="checkbox"
-                .checked=${this._sm.environmentDraft.dehumidifierControlEnabled}
-                @change=${(e: Event) =>
-                  this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierControlEnabled: (e.target as HTMLInputElement).checked } })}
+                .checked=${this._dehumidifierControlEnabled}
+                @change=${(e: Event) => {
+                  const enabled = (e.target as HTMLInputElement).checked;
+                  this._dehumidifierControlEnabled = enabled;
+                  setDehumidifierControl(this._sm.environmentDraft.selectedGrowspaceId, enabled);
+                }}
               />
               Enable Dehumidifier Control
             </label>

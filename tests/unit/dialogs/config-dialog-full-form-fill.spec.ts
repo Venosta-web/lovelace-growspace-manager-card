@@ -307,9 +307,6 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
             (element as any).envIrrigationFlowSensors = ['sensor.flow'];
             (element as any).envEnergySensors = ['sensor.energy'];
 
-            // Enable dehumidifier control
-            (element as any).envDehumidifierControlEnabled = true;
-
             // Set thresholds
             (element as any).envStressThreshold = 0.75;
             (element as any).envMoldThreshold = 0.85;
@@ -335,7 +332,6 @@ describe('ConfigDialog - Complete Form Fill Tests', () => {
                     phSensors: expect.arrayContaining(['sensor.ph_main']),
                     feedEcSensors: expect.arrayContaining(['sensor.ec_feed']),
                     energySensors: expect.arrayContaining(['sensor.energy']),
-                    dehumidifierControlEnabled: true,
                     stressThreshold: 0.75,
                     moldThreshold: 0.85
                 })
