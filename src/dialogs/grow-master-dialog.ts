@@ -401,9 +401,6 @@ export class GrowMasterDialog extends LitElement {
           ${mode === 'briefing'
         ? html`<button class="md3-button tonal" @click=${() => fetchBriefing(this._growspaceId, true)}>Refresh Briefing</button>`
         : nothing}
-          ${mode === 'inbox'
-        ? html`<button class="md3-button tonal">Mark All Read</button>`
-        : nothing}
           <button class="gm-mic-btn" disabled aria-label="Voice input (unavailable)" title="Voice input coming soon">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="${mdiMicrophone}"></path>
@@ -454,7 +451,7 @@ export class GrowMasterDialog extends LitElement {
           <!-- Body: rail + content -->
           <div class="gm-body">
             ${this._renderNavRail(mode)}
-            <main class="gm-content ${mode === 'chat' ? 'no-pad' : ''}">
+            <main class="gm-content ${mode === 'chat' || mode === 'inbox' ? 'no-pad' : ''}">
               ${mode === 'chat' ? this._renderChatPanel() : nothing}
               ${mode === 'briefing' ? this._renderBriefingPanel() : nothing}
               ${mode === 'inbox' ? this._renderInboxPanel() : nothing}
