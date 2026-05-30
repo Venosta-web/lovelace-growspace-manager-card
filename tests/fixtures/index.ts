@@ -4,7 +4,7 @@ import type { SeedBatch, PollinationEvent } from '../../src/types';
 import { PlantStage, PlantSex } from '../../src/features/plants/types';
 import type { EnvSnapshot } from '../../src/slices/environment/index';
 import { createGrowspaceDevice } from '../../src/services/types';
-import type { GrowspaceDevice, IrrigationConfig } from '../../src/services/types';
+import type { GrowspaceDevice, IrrigationConfig, IrrigationTank } from '../../src/services/types';
 import type { ECRampPoint, ECRampCurve } from '../../src/schemas/api-schema';
 import type { Recommendation, AIBriefing } from '../../src/slices/ai-insight/schema';
 
@@ -160,9 +160,81 @@ export function aHass({ growspaces = [aGrowspace()] }: AHassOptions = {}) {
 export function aGrowspaceDevice(
   overrides: Partial<GrowspaceDevice> & { deviceId?: string; name?: string } = {}
 ): GrowspaceDevice {
+  const p1 = aPlant({
+    plant_id: 'plant-1',
+    stage: PlantStage.FLOWER,
+    veg_days: 21,
+    flower_days: 14,
+    veg_start: '2026-04-01',
+    flower_start: '2026-04-22',
+    last_watered: '2026-05-20',
+  });
+  const p2 = aPlant({
+    plant_id: 'plant-2',
+    entity_id: 'sensor.blue_dream',
+    strain: 'Blue Dream',
+    phenotype: '',
+    stage: PlantStage.VEG,
+    row: 1,
+    col: 2,
+    position: '(1,2)',
+    veg_days: 35,
+    flower_days: 0,
+    veg_start: '2026-03-17',
+    flower_start: null,
+    last_watered: '2026-05-20',
+    friendly_name: 'Blue Dream',
+  });
   return createGrowspaceDevice({
     deviceId: 'test_tent',
     name: 'Test Tent',
+    rows: 2,
+    plantsPerRow: 4,
+    plants: [p1, p2],
+    grid: { 'position_1_1': p1.attributes, 'position_1_2': p2.attributes },
+    stats: {
+      maxVegDays: 35,
+      maxFlowerDays: 14,
+      vegWeek: 5,
+      flowerWeek: 2,
+      maxStageSummary: 'Veg: 35d (W5), Flower: 14d (W2)',
+      totalPlants: 2,
+    },
+    ...overrides,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// aTankDevice
+// ---------------------------------------------------------------------------
+
+export function aTankDevice(
+  overrides: Partial<GrowspaceDevice> & { deviceId?: string; name?: string } = {}
+): GrowspaceDevice {
+  const tanks: IrrigationTank[] = [
+    {
+      sensorEntity: 'sensor.tank_a',
+      name: 'Tank A — Veg Mix',
+      warningLevel: 20,
+      fillLevel: 72,
+      isWarning: false,
+      hoursRemaining: 18,
+      depletionStatus: 'depleting',
+      volumeLiters: 100,
+    },
+    {
+      sensorEntity: 'sensor.tank_b',
+      name: 'Tank B — Bloom Mix',
+      warningLevel: 20,
+      fillLevel: 15,
+      isWarning: true,
+      hoursRemaining: 3,
+      depletionStatus: 'depleting',
+      volumeLiters: 100,
+    },
+  ];
+  return aGrowspaceDevice({
+    environmentAttributes: { irrigationTanks: tanks } as any,
     ...overrides,
   });
 }

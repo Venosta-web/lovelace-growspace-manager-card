@@ -3,8 +3,8 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../../src/cards/growspace-logbook-card';
-import { aHass } from '../../fixtures';
-import { createMockDevice } from '../../mocks/device';
+import { aHass, aGrowspaceDevice } from '../../fixtures';
+
 
 // Mock the timeline service so growspace-logbook renders empty events instead of fetching
 vi.mock('../../../src/services/timeline-service', () => ({
@@ -31,7 +31,7 @@ test('growspace-logbook-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
 
     (element as any)._store.ui.$isLoading.set(false);
-    (element as any)._store.data.$devices.set([createMockDevice()]);
+    (element as any)._store.data.$devices.set([aGrowspaceDevice()]);
     (element as any)._store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
     // Allow the async _fetchEvents to complete

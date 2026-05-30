@@ -51,7 +51,6 @@ export interface EnvironmentDraft {
   // Humidity devices
   humidifierEntities: string[];
   dehumidifierEntities: string[];
-  humidifierControlEnabled: boolean;
   humidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
   dehumidifierThresholds: Record<string, Record<string, { on: number; off: number }>>;
 
@@ -255,7 +254,6 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     moldThreshold: 0.8,
     humidifierEntities: [],
     dehumidifierEntities: [],
-    humidifierControlEnabled: false,
     humidifierThresholds: {},
     dehumidifierThresholds: {},
     soilMoistureSensor: '',
@@ -343,7 +341,6 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
       : attrs.dehumidifierEntity
         ? [attrs.dehumidifierEntity]
         : [],
-    humidifierControlEnabled: attrs.humidifierControlEnabled ?? false,
     humidifierThresholds: attrs.humidifierThresholds ?? {},
     dehumidifierThresholds: attrs.dehumidifierThresholds ?? {},
     soilMoistureSensor: attrs.soilMoistureSensor ?? '',

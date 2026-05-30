@@ -13,6 +13,7 @@ import {
   removeEnvironment,
   resetWaterTracking,
   setDehumidifierControl,
+  setHumidifierControl,
   updateSensorCoordinates,
   configureEnvironment,
 } from './index';
@@ -263,6 +264,22 @@ describe('setDehumidifierControl', () => {
     expect(hassCallModule.callService).toHaveBeenCalledWith(
       'growspace_manager',
       'set_dehumidifier_control',
+      { growspace_id: 'gs1', enabled: true }
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setHumidifierControl
+// ---------------------------------------------------------------------------
+
+describe('setHumidifierControl', () => {
+  it('calls set_humidifier_control service with growspace_id and enabled flag', async () => {
+    await setHumidifierControl('gs1', true);
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_humidifier_control',
       { growspace_id: 'gs1', enabled: true }
     );
   });

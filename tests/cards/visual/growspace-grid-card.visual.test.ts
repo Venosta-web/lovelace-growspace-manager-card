@@ -3,8 +3,8 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceGridCard } from '../../../src/cards/growspace-grid-card';
-import { aHass } from '../../fixtures';
-import { createMockDevice } from '../../mocks/device';
+import { aHass, aGrowspaceDevice } from '../../fixtures';
+
 
 // Keep only non-visual mocks so the card renders its actual content
 vi.mock('../../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
@@ -27,7 +27,7 @@ test('growspace-grid-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-grid-card', default_growspace: 'test_tent' } as any);
 
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([createMockDevice()]);
+    element.store.data.$devices.set([aGrowspaceDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
 

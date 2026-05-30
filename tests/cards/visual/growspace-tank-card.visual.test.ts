@@ -3,8 +3,8 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceTankCard } from '../../../src/cards/growspace-tank-card';
-import { aHass } from '../../fixtures';
-import { createMockTankDevice } from '../../mocks/device';
+import { aHass, aTankDevice } from '../../fixtures';
+
 
 vi.mock('../../../src/cards/editors/growspace-tank-card-editor', () => ({}));
 
@@ -22,7 +22,7 @@ test('growspace-tank-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-tank-card', default_growspace: 'test_tent' } as any);
 
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([createMockTankDevice()]);
+    element.store.data.$devices.set([aTankDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
 

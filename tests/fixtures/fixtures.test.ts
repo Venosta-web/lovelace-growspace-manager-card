@@ -86,13 +86,16 @@ describe('anEnvSnapshot', () => {
 });
 
 describe('aGrowspaceDevice', () => {
-  it('returns a GrowspaceDevice with required fields', () => {
+  it('returns a GrowspaceDevice with required fields and two default plants', () => {
     const device = aGrowspaceDevice();
     expect(device.deviceId).toBe('test_tent');
     expect(device.name).toBe('Test Tent');
-    expect(device.plants).toEqual([]);
-    expect(device.rows).toBe(3);
-    expect(device.plantsPerRow).toBe(3);
+    expect(device.rows).toBe(2);
+    expect(device.plantsPerRow).toBe(4);
+    expect(device.plants).toHaveLength(2);
+    expect(device.plants[0].attributes.strain).toBe('Gorilla Glue');
+    expect(device.plants[1].attributes.strain).toBe('Blue Dream');
+    expect(device.stats.totalPlants).toBe(2);
   });
 
   it('merges overrides', () => {

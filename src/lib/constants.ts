@@ -48,6 +48,7 @@ export const SERVICES = {
   SWITCH_PLANTS: 'switch_plants',
   MOVE_CLONE: 'move_clone',
   SET_DEHUMIDIFIER_CONTROL: 'set_dehumidifier_control',
+  SET_HUMIDIFIER_CONTROL: 'set_humidifier_control',
   SET_IRRIGATION_SETTINGS: 'set_irrigation_settings',
   ADD_IRRIGATION_TIME: 'add_irrigation_time',
   REMOVE_IRRIGATION_TIME: 'remove_irrigation_time',

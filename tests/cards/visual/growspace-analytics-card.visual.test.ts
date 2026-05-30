@@ -3,8 +3,8 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceAnalyticsCard } from '../../../src/cards/growspace-analytics-card';
-import { aHass } from '../../fixtures';
-import { createMockDevice } from '../../mocks/device';
+import { aHass, aGrowspaceDevice } from '../../fixtures';
+
 
 vi.mock('../../../src/cards/editors/growspace-analytics-card-editor', () => ({
     GrowspaceAnalyticsCardEditor: class extends HTMLElement {}
@@ -24,7 +24,7 @@ test('growspace-analytics-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-analytics-card', default_growspace: 'test_tent' } as any);
 
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([createMockDevice()]);
+    element.store.data.$devices.set([aGrowspaceDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
     element.store.history.$historyLoaded.set(true);
     element.store.history.$historyCache.setKey('temperature', [

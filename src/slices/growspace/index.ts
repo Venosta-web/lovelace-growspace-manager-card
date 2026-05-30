@@ -100,6 +100,13 @@ export async function setDehumidifierControl(growspaceId: string, enabled: boole
   });
 }
 
+export async function setHumidifierControl(growspaceId: string, enabled: boolean): Promise<void> {
+  await callService('growspace_manager', 'set_humidifier_control', {
+    growspace_id: growspaceId,
+    enabled,
+  });
+}
+
 export async function updateSensorCoordinates(
   growspaceId: string,
   entityId: string,
