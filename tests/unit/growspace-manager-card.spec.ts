@@ -21,6 +21,7 @@ vi.mock('../../src/slices/grid', () => ({
 
 vi.mock('../../src/slices/grid-interaction', () => ({
     startTransplant: vi.fn(),
+    completeTransplant: vi.fn(),
     select: vi.fn(),
     cancel: vi.fn(),
     gridInteraction$: { get: vi.fn(() => ({ status: 'idle' })), set: vi.fn(), listen: vi.fn(() => () => {}) },
@@ -480,6 +481,27 @@ describe('GrowspaceManagerCard', () => {
             const { startTransplant } = await import('../../src/slices/grid-interaction');
             (element as any)._handleTransplantMode();
             expect(startTransplant).toHaveBeenCalled();
+        });
+
+        it('should exit transplant mode and restore edit bar when transplant mode button is clicked while transplanting', async () => {
+            const { gridInteraction$, completeTransplant } = await import('../../src/slices/grid-interaction');
+            vi.mocked(gridInteraction$.get).mockReturnValue({ status: 'transplanting', sourcePlantId: null });
+            const setEditModeSpy = vi.spyOn(element.store.ui, 'setEditMode');
+
+            (element as any)._handleTransplantMode();
+
+            expect(completeTransplant).toHaveBeenCalled();
+            expect(setEditModeSpy).toHaveBeenCalledWith(true);
+        });
+
+        it('should not call startTransplant when already transplanting', async () => {
+            const { gridInteraction$, startTransplant } = await import('../../src/slices/grid-interaction');
+            vi.mocked(gridInteraction$.get).mockReturnValue({ status: 'transplanting', sourcePlantId: null });
+            vi.mocked(startTransplant).mockClear();
+
+            (element as any)._handleTransplantMode();
+
+            expect(startTransplant).not.toHaveBeenCalled();
         });
 
         it('should handle batch add plants', () => {

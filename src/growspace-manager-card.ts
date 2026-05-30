@@ -30,7 +30,7 @@ import { variables } from './styles/variables';
 import { GrowspaceStore } from './store/core/growspace-store';
 import { growspaceStoreRegistry } from './store/core/growspace-store-registry';
 import { StoreController } from '@nanostores/lit';
-import { startTransplant } from './slices/grid-interaction';
+import { startTransplant, completeTransplant, gridInteraction$ } from './slices/grid-interaction';
 
 @customElement('growspace-manager-card')
 export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
@@ -298,8 +298,13 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   };
 
   private _handleTransplantMode = () => {
-    this.store.ui.setEditMode(false);
-    startTransplant();
+    if (gridInteraction$.get().status === 'transplanting') {
+      completeTransplant();
+      this.store.ui.setEditMode(true);
+    } else {
+      this.store.ui.setEditMode(false);
+      startTransplant();
+    }
   };
 
   protected render(): TemplateResult {
