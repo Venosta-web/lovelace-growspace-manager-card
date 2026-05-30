@@ -1,3 +1,10 @@
+# [1.1.0-next.16](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.15...v1.1.0-next.16) (2026-05-30)
+
+
+### Features
+
+* implement grow report export and fetch functionality in growspace slice and remove legacy report API tests ([564d45d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/564d45d8892b4986f6f7652ed5e614d9eace10b3))
+
 # [1.1.0-next.15](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.14...v1.1.0-next.15) (2026-05-30)
 
 
