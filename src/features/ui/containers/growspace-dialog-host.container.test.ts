@@ -8,9 +8,25 @@ import { waterPlant as mockWaterPlant } from '../../../slices/plant';
 import './growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './growspace-dialog-host.container';
 
-// Mock sliceWaterPlant so no real API calls are made
+// Mock slices/plant so no real API calls are made
 vi.mock('../../../slices/plant', () => ({
   waterPlant: vi.fn(),
+  plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+  addPlant: vi.fn(), addPlants: vi.fn(), updatePlant: vi.fn(), deletePlant: vi.fn(),
+  harvestPlant: vi.fn(), takeClone: vi.fn(), moveClone: vi.fn(), swapPlants: vi.fn(),
+  printLabel: vi.fn(), scorePlant: vi.fn(), saveHarvestMetrics: vi.fn(),
+  logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
+  movePlantToGrowspace: vi.fn(),
+}));
+
+vi.mock('../../../slices/genetics', () => ({
+  seedBatches$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+  pollinationEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+  fetchGeneticsData: vi.fn(), addSeedBatch: vi.fn(), updateSeedBatch: vi.fn(),
+  removeSeedBatch: vi.fn(), logPollinationEvent: vi.fn(), updatePollinationEvent: vi.fn(),
+  deletePollinationEvent: vi.fn(), harvestSeeds: vi.fn(), sowSeed: vi.fn(),
+  setPlantSex: vi.fn(), unlinkSeedBatch: vi.fn(), getLineageTree: vi.fn(),
+  getStrainLineageTree: vi.fn(), updateStrainLineageTree: vi.fn(), importStrainLineageTree: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------

@@ -28,6 +28,21 @@ vi.mock('../../../../../src/slices/plant', () => ({
     plants$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
     selectedPlant$: { get: vi.fn().mockReturnValue(null), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
     setPlants: vi.fn(),
+    addPlant: vi.fn(), addPlants: vi.fn(), updatePlant: vi.fn(), deletePlant: vi.fn(),
+    harvestPlant: vi.fn(), takeClone: vi.fn(), moveClone: vi.fn(), swapPlants: vi.fn(),
+    printLabel: vi.fn(), scorePlant: vi.fn(), saveHarvestMetrics: vi.fn(),
+    logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
+    movePlantToGrowspace: vi.fn(),
+}));
+
+vi.mock('../../../../../src/slices/genetics', () => ({
+    seedBatches$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
+    pollinationEvents$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
+    fetchGeneticsData: vi.fn(), addSeedBatch: vi.fn(), updateSeedBatch: vi.fn(),
+    removeSeedBatch: vi.fn(), logPollinationEvent: vi.fn(), updatePollinationEvent: vi.fn(),
+    deletePollinationEvent: vi.fn(), harvestSeeds: vi.fn(), sowSeed: vi.fn(),
+    setPlantSex: vi.fn(), unlinkSeedBatch: vi.fn(), getLineageTree: vi.fn(),
+    getStrainLineageTree: vi.fn(), updateStrainLineageTree: vi.fn(), importStrainLineageTree: vi.fn(),
 }));
 
 vi.mock('../../../../../src/services/hass-call', () => ({
@@ -2220,12 +2235,12 @@ describe('GrowspaceDialogHostContainer', () => {
             expect(mockStore.actions.ui.setActiveDialog).not.toHaveBeenCalled();
         });
 
-        it('should handle _refreshGeneticsData when fetchData returns null', async () => {
-            mockStore.actions.genetics.fetchData.mockResolvedValue(null);
+        it('should handle _refreshGeneticsData when fetchData resolves', async () => {
+            mockStore.actions.genetics.fetchData.mockResolvedValue(undefined);
             // @ts-ignore
             await (element as any)._refreshGeneticsData();
-            // Should not crash - data is null so seed batches unchanged
-            expect((element as any)._seedBatches).toEqual({});
+            // Should not crash — genetics data now flows through atoms
+            expect(mockStore.actions.genetics.fetchData).toHaveBeenCalled();
         });
 
         it('should handle @add-growspace-submit on CONFIG dialog (add growspace success)', async () => {

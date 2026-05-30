@@ -64,7 +64,7 @@ function makeStore() {
     canRedo: false,
   };
 
-  return { store, dispatcher: new ActionDispatcher(store), ui, data, grid, history, dataService };
+  return { store, dispatcher: new ActionDispatcher(store as never), ui, data, grid, history, dataService };
 }
 
 // ─── plant.confirmAdd ────────────────────────────────────────────────────────

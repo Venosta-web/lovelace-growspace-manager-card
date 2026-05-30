@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
+import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -75,12 +76,10 @@ export class GrowspaceDialogHost extends LitElement {
     ipmPresets: Record<string, IPMPreset>;
     nutrientInventory: NutrientInventory | null;
   }>;
+  private _seedBatchesController!: StoreController<readonly SeedBatch[]>;
+  private _pollinationEventsController!: StoreController<readonly PollinationEvent[]>;
   private _controllersInitialized = false;
   private _dataChangeTimeout?: any;
-
-  // Genetics state
-  @state() private _seedBatches: Record<string, SeedBatch> = {};
-  @state() private _pollinationEvents: Record<string, PollinationEvent> = {};
   private _geneticsLoaded = false;
 
   connectedCallback() {
@@ -109,6 +108,8 @@ export class GrowspaceDialogHost extends LitElement {
     if (this._controllersInitialized) return;
 
     this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
+    this._seedBatchesController = new StoreController(this, seedBatches$);
+    this._pollinationEventsController = new StoreController(this, pollinationEvents$);
     this._controllersInitialized = true;
   }
 
@@ -220,11 +221,7 @@ export class GrowspaceDialogHost extends LitElement {
     const { store } = this;
     if (!store) return;
     try {
-      const data = await store.actions.genetics.fetchData();
-      if (data) {
-        this._seedBatches = data.seed_batches;
-        this._pollinationEvents = data.pollination_events;
-      }
+      await store.actions.genetics.fetchData();
     } catch (e) {
       console.error('Failed to refresh genetics data', e);
     }
@@ -528,8 +525,8 @@ export class GrowspaceDialogHost extends LitElement {
         .focusLineage=${!!payload?.focusLineage}
         .source=${payload?.source}
         .returnPayload=${payload?.returnPayload}
-        .seedBatches=${Object.values(this._seedBatches)}
-        .pollinationEvents=${Object.values(this._pollinationEvents)}
+        .seedBatches=${this._seedBatchesController.value as SeedBatch[]}
+        .pollinationEvents=${this._pollinationEventsController.value as PollinationEvent[]}
         .plants=${this._dialogHostController.value.devices ?? []}
         .initialTab=${(active.payload as StrainLibraryDialogState).initialTab ?? 'strains'}
         .initialSubView=${(active.payload as StrainLibraryDialogState).initialSubView}

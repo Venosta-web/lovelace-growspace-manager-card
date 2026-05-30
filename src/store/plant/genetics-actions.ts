@@ -141,8 +141,28 @@ export async function deleteSeedBatch(ctx: ActionContext, batchId: string): Prom
   );
 }
 
-/** Set the sex of a plant */
-export async function setPlantSex(ctx: ActionContext, plantId: string, sex: string): Promise<void> {
+/** Link a plant to its origin seed batch (decrements batch quantity, copies generation) */
+export async function sowSeed(ctx: ActionContext, batchId: string, plantId: string): Promise<void> {
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.sowSeed(batchId, plantId);
+      await ctx.refreshData();
+    },
+    {
+      success: 'Seed sown — plant linked to batch',
+      errorPrefix: 'Failed to sow seed',
+      rethrow: true,
+    }
+  );
+}
+
+/** Set the biological sex of a plant */
+export async function setPlantSex(
+  ctx: ActionContext,
+  plantId: string,
+  sex: string
+): Promise<void> {
   await withAction(
     ctx,
     async () => {
@@ -157,17 +177,17 @@ export async function setPlantSex(ctx: ActionContext, plantId: string, sex: stri
   );
 }
 
-/** Link a plant to its origin seed batch (decrements batch quantity) */
-export async function sowSeed(ctx: ActionContext, batchId: string, plantId: string): Promise<void> {
+/** Clear a plant's seed batch association */
+export async function unlinkSeedBatch(ctx: ActionContext, plantId: string): Promise<void> {
   await withAction(
     ctx,
     async () => {
-      await ctx.dataService.sowSeed(batchId, plantId);
+      await ctx.dataService.unlinkSeedBatch(plantId);
       await ctx.refreshData();
     },
     {
-      success: 'Seed sown — plant linked to batch',
-      errorPrefix: 'Failed to sow seed',
+      success: 'Seed batch unlinked',
+      errorPrefix: 'Failed to unlink seed batch',
       rethrow: true,
     }
   );

@@ -17,6 +17,9 @@ vi.mock('../../src/services/mutate', () => ({
 
 vi.mock('../../src/slices/grid', () => ({
     selectedDeviceId$: { get: vi.fn() },
+    optimisticDeletedPlantIds$: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+    addOptimisticDeletedPlantId: vi.fn(),
+    removeOptimisticDeletedPlantId: vi.fn(),
 }));
 
 vi.mock('../../src/slices/grid-interaction', () => ({

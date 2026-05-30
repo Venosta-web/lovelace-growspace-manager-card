@@ -14,6 +14,7 @@
  *   deletePlant()         — remove a plant (optimistic)
  *   harvestPlant()        — move a plant to its harvest target
  *   movePlantToGrowspace() — move/transplant a plant to any growspace
+ *   moveClone()           — move a clone to a target growspace (always uses move_clone)
  *   swapPlants()          — swap grid positions of two plants (optimistic)
  *   takeClone()           — take clones from a mother plant
  *   printLabel()          — fire-and-forget: print a plant label
@@ -372,6 +373,41 @@ export async function swapPlants(plantId1: string, plantId2: string): Promise<vo
 }
 
 /**
+ * Move a clone to a target growspace.
+ *
+ * Always calls move_clone regardless of plant stage; use movePlantToGrowspace
+ * for stage-aware moves.
+ * Optimistic: adds plant to Grid slice's optimisticDeletedPlantIds to clear source cell.
+ * Apply: calls growspace_manager.move_clone.
+ * Inverse: removes from optimistic deletes to restore the source cell.
+ */
+export async function moveClone(
+  plantId: string,
+  targetGrowspaceId: string,
+  transitionDate?: string
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    plant_id: plantId,
+    target_growspace_id: targetGrowspaceId,
+  };
+  if (transitionDate) payload.transition_date = transitionDate;
+
+  await mutate(
+    {
+      type: 'moveClone',
+      optimistic: () => {
+        addOptimisticDeletedPlantId(plantId);
+      },
+      inverse: () => {
+        removeOptimisticDeletedPlantId(plantId);
+      },
+      apply: () => wsVoid('growspace_manager/move_clone', payload),
+    },
+    _growspaceIdFor(plantId)
+  );
+}
+
+/**
  * Take clones from a mother plant.
  *
  * Optimistic: none.
@@ -413,6 +449,7 @@ export async function printLabel(params: {
   breederLogo?: string;
   deviceId?: string;
   preview?: boolean;
+  baseUrl?: string;
 }): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (params.plantId !== undefined) payload.plant_id = params.plantId;
@@ -423,6 +460,7 @@ export async function printLabel(params: {
   if (params.breederLogo !== undefined) payload.breeder_logo = params.breederLogo;
   if (params.deviceId !== undefined) payload.device_id = params.deviceId;
   if (params.preview !== undefined) payload.preview = params.preview;
+  if (params.baseUrl !== undefined) payload.base_url = params.baseUrl;
 
   await hassCall('growspace_manager/print_label', payload, z.unknown());
 }

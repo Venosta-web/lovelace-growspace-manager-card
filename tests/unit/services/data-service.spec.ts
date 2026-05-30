@@ -1,9 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock all API classes BEFORE imports that use them.
-// Explicit factories are required in browser mode — auto-mocking (vi.mock without factory)
-// calls resolveManualMock via birpc, which fails when the Playwright page closes between
-// test files and the RPC channel is already gone.
 vi.mock('../../../src/services/api/growspace-api', () => ({
   GrowspaceAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.updateHass = vi.fn();
@@ -13,12 +10,6 @@ vi.mock('../../../src/services/api/growspace-api', () => ({
     this.addGrowspace = vi.fn();
     this.updateGrowspace = vi.fn();
     this.removeGrowspace = vi.fn();
-    this.configureEnvironment = vi.fn();
-    this.removeEnvironment = vi.fn();
-    this.setDehumidifierControl = vi.fn();
-    this.resetWaterTracking = vi.fn();
-    this.logDrainReading = vi.fn();
-    this.configureDrainMonitoring = vi.fn();
   }),
 }));
 vi.mock('../../../src/slices/nutrient', () => ({
@@ -48,17 +39,6 @@ vi.mock('../../../src/services/api/history-api', () => ({
     this.getBatchHistory = vi.fn();
   }),
 }));
-vi.mock('../../../src/services/api/plant-api', () => ({
-  PlantAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
-    this.updateHass = vi.fn();
-    this.addPlant = vi.fn();
-    this.removePlant = vi.fn();
-    this.updatePlant = vi.fn();
-    this.waterPlant = vi.fn();
-    this.applyIPMPreset = vi.fn();
-    this.removeIPMPreset = vi.fn();
-  }),
-}));
 vi.mock('../../../src/services/api/irrigation-api', () => ({
   IrrigationAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.updateHass = vi.fn();
@@ -71,6 +51,8 @@ vi.mock('../../../src/services/api/ai-api', () => ({
   AIAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.updateHass = vi.fn();
     this.askGrowAdvice = vi.fn();
+    this.analyzeAllGrowspaces = vi.fn();
+    this.getStrainRecommendation = vi.fn();
   }),
 }));
 vi.mock('../../../src/slices/camera', () => ({
@@ -107,38 +89,67 @@ vi.mock('../../../src/services/api/report-api', () => ({
     this.fetchGrowReport = vi.fn();
   }),
 }));
-vi.mock('../../../src/services/api/genetics-api', () => ({
-  GeneticsAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
-    this.updateHass = vi.fn();
-    this.fetchGeneticsData = vi.fn();
-    this.addSeedBatch = vi.fn();
-    this.updateSeedBatch = vi.fn();
-    this.deleteSeedBatch = vi.fn();
-    this.logPollination = vi.fn();
-    this.updatePollination = vi.fn();
-    this.deletePollination = vi.fn();
-    this.harvestSeeds = vi.fn();
-    this.sowSeed = vi.fn();
-    this.setPlantSex = vi.fn();
-    this.getLineageTree = vi.fn();
-    this.getStrainLineageTree = vi.fn();
-    this.updateStrainLineageTree = vi.fn();
-    this.importStrainLineageTree = vi.fn();
-  }),
+vi.mock('../../../src/slices/plant', () => ({
+  plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  addPlant: vi.fn().mockResolvedValue(undefined),
+  addPlants: vi.fn().mockResolvedValue(undefined),
+  updatePlant: vi.fn().mockResolvedValue(undefined),
+  deletePlant: vi.fn().mockResolvedValue(undefined),
+  harvestPlant: vi.fn().mockResolvedValue(undefined),
+  takeClone: vi.fn().mockResolvedValue(undefined),
+  moveClone: vi.fn().mockResolvedValue(undefined),
+  swapPlants: vi.fn().mockResolvedValue(undefined),
+  waterPlant: vi.fn().mockResolvedValue(undefined),
+  printLabel: vi.fn().mockResolvedValue(undefined),
+  scorePlant: vi.fn().mockResolvedValue(undefined),
+  saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+  logDryingWeight: vi.fn().mockResolvedValue(undefined),
+  logMoistureReading: vi.fn().mockResolvedValue(undefined),
+  setVisualTag: vi.fn().mockResolvedValue(undefined),
+  movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../../src/slices/genetics', () => ({
+  seedBatches$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  pollinationEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  fetchGeneticsData: vi.fn().mockResolvedValue(undefined),
+  addSeedBatch: vi.fn().mockResolvedValue(undefined),
+  updateSeedBatch: vi.fn().mockResolvedValue(undefined),
+  removeSeedBatch: vi.fn().mockResolvedValue(undefined),
+  logPollinationEvent: vi.fn().mockResolvedValue(undefined),
+  updatePollinationEvent: vi.fn().mockResolvedValue(undefined),
+  deletePollinationEvent: vi.fn().mockResolvedValue(undefined),
+  harvestSeeds: vi.fn().mockResolvedValue(undefined),
+  sowSeed: vi.fn().mockResolvedValue(undefined),
+  setPlantSex: vi.fn().mockResolvedValue(undefined),
+  unlinkSeedBatch: vi.fn().mockResolvedValue(undefined),
+  getLineageTree: vi.fn().mockResolvedValue(null),
+  getStrainLineageTree: vi.fn().mockResolvedValue(null),
+  updateStrainLineageTree: vi.fn().mockResolvedValue({ lineage: '' }),
+  importStrainLineageTree: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock('../../../src/slices/growspace', () => ({
+  growspaceDevices$: { get: vi.fn(() => null), set: vi.fn() },
+  getGrowspaceDevices: vi.fn().mockReturnValue([]),
+  fetchGrowspaceData: vi.fn().mockResolvedValue(undefined),
+  configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  setDehumidifierControl: vi.fn().mockResolvedValue(undefined),
+  removeEnvironment: vi.fn().mockResolvedValue(undefined),
+  resetWaterTracking: vi.fn().mockResolvedValue(undefined),
+  updateSensorCoordinates: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceAPI } from '../../../src/services/api/growspace-api';
 import { HistoryAPI } from '../../../src/services/api/history-api';
 import * as nutrientSlice from '../../../src/slices/nutrient';
-import { PlantAPI } from '../../../src/services/api/plant-api';
 import { IrrigationAPI } from '../../../src/services/api/irrigation-api';
 import { AIAPI } from '../../../src/services/api/ai-api';
 import * as cameraSlice from '../../../src/slices/camera';
 import * as strainSlice from '../../../src/slices/strain';
 import { VisionAPI } from '../../../src/services/api/vision-api';
 import { ReportAPI } from '../../../src/services/api/report-api';
-import { GeneticsAPI } from '../../../src/services/api/genetics-api';
+import * as plantSlice from '../../../src/slices/plant';
+import * as geneticsSlice from '../../../src/slices/genetics';
 
 describe('DataService Delegation', () => {
   let dataService: DataService;
@@ -163,12 +174,7 @@ describe('DataService Delegation', () => {
       expect(dataService.hass).toBe(newHass);
 
       const growspaceAPIInstance = vi.mocked(GrowspaceAPI).mock.instances[0];
-      const plantAPIInstance = vi.mocked(PlantAPI).mock.instances[0];
-      const geneticsAPIInstance = vi.mocked(GeneticsAPI).mock.instances[0];
-
       expect(growspaceAPIInstance.updateHass).toHaveBeenCalledWith(newHass);
-      expect(plantAPIInstance.updateHass).toHaveBeenCalledWith(newHass);
-      expect(geneticsAPIInstance.updateHass).toHaveBeenCalledWith(newHass);
     });
   });
 
@@ -228,24 +234,31 @@ describe('DataService Delegation', () => {
     });
   });
 
-  describe('PlantAPI delegation', () => {
+  describe('Plant slice delegation', () => {
     it('delegates addPlant', () => {
-      const instance = vi.mocked(PlantAPI).mock.instances[0];
       const params = { growspace_id: 'gs1', row: 0, col: 0, strain: 'OG' };
       dataService.addPlant(params);
-      expect(instance.addPlant).toHaveBeenCalledWith(params);
+      expect(plantSlice.addPlant).toHaveBeenCalledWith(params);
     });
 
     it('delegates waterPlant', () => {
-      const instance = vi.mocked(PlantAPI).mock.instances[0];
       dataService.waterPlant('p1', 500);
-      expect(instance.waterPlant).toHaveBeenCalledWith('p1', 500, undefined, undefined);
+      expect(plantSlice.waterPlant).toHaveBeenCalledWith('p1', 500, undefined, undefined);
     });
 
-    it('delegates updatePlant', () => {
-      const instance = vi.mocked(PlantAPI).mock.instances[0];
+    it('delegates updatePlant — extracts plant_id from params', () => {
       dataService.updatePlant({ plant_id: 'p1', notes: 'Growing well' });
-      expect(instance.updatePlant).toHaveBeenCalledWith({ plant_id: 'p1', notes: 'Growing well' });
+      expect(plantSlice.updatePlant).toHaveBeenCalledWith('p1', { notes: 'Growing well' });
+    });
+
+    it('delegates removePlant to deletePlant', () => {
+      dataService.removePlant('p1');
+      expect(plantSlice.deletePlant).toHaveBeenCalledWith('p1');
+    });
+
+    it('delegates moveClone', () => {
+      dataService.moveClone('p1', 'g2');
+      expect(plantSlice.moveClone).toHaveBeenCalledWith('p1', 'g2', undefined);
     });
   });
 
@@ -270,15 +283,13 @@ describe('DataService Delegation', () => {
     });
   });
 
-  describe('GeneticsAPI delegation', () => {
+  describe('Genetics slice delegation', () => {
     it('delegates fetchGeneticsData', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       dataService.fetchGeneticsData();
-      expect(instance.fetchGeneticsData).toHaveBeenCalled();
+      expect(geneticsSlice.fetchGeneticsData).toHaveBeenCalled();
     });
 
     it('delegates addSeedBatch', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       const data = {
         strain_name: 'OG Kush',
         breeder: 'DNA Genetics',
@@ -287,85 +298,63 @@ describe('DataService Delegation', () => {
         generation: 'F1',
       };
       dataService.addSeedBatch(data);
-      expect(instance.addSeedBatch).toHaveBeenCalledWith(data);
+      expect(geneticsSlice.addSeedBatch).toHaveBeenCalledWith(data);
     });
 
     it('delegates updateSeedBatch', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       const data = { batch_id: 'b1', quantity: 8 };
       dataService.updateSeedBatch(data);
-      expect(instance.updateSeedBatch).toHaveBeenCalledWith(data);
+      expect(geneticsSlice.updateSeedBatch).toHaveBeenCalledWith(data);
     });
 
-    it('delegates logPollination', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+    it('delegates logPollination to logPollinationEvent', () => {
       const data = { date: '2024-03-01', donor_plant_id: 'p1', receiver_plant_id: 'p2' };
       dataService.logPollination(data);
-      expect(instance.logPollination).toHaveBeenCalledWith(data);
+      expect(geneticsSlice.logPollinationEvent).toHaveBeenCalledWith(data);
     });
 
-    it('delegates updatePollination', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+    it('delegates updatePollination to updatePollinationEvent', () => {
       const data = { event_id: 'evt-1', notes: 'Updated' };
       dataService.updatePollination(data);
-      expect(instance.updatePollination).toHaveBeenCalledWith(data);
+      expect(geneticsSlice.updatePollinationEvent).toHaveBeenCalledWith(data);
     });
 
     it('delegates harvestSeeds', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       const data = { event_id: 'evt-1', quantity: 20 };
       dataService.harvestSeeds(data);
-      expect(instance.harvestSeeds).toHaveBeenCalledWith(data);
+      expect(geneticsSlice.harvestSeeds).toHaveBeenCalledWith(data);
     });
 
-    it('delegates deleteSeedBatch', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+    it('delegates deleteSeedBatch to removeSeedBatch', () => {
       dataService.deleteSeedBatch('b1');
-      expect(instance.deleteSeedBatch).toHaveBeenCalledWith('b1');
+      expect(geneticsSlice.removeSeedBatch).toHaveBeenCalledWith('b1');
     });
 
-    it('delegates sowSeed', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
-      dataService.sowSeed('b1', 'p1');
-      expect(instance.sowSeed).toHaveBeenCalledWith('b1', 'p1');
-    });
-
-    it('delegates deletePollination', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
+    it('delegates deletePollination to deletePollinationEvent', () => {
       dataService.deletePollination('evt-1');
-      expect(instance.deletePollination).toHaveBeenCalledWith('evt-1');
-    });
-
-    it('delegates setPlantSex', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
-      dataService.setPlantSex('p1', 'female');
-      expect(instance.setPlantSex).toHaveBeenCalledWith('p1', 'female');
+      expect(geneticsSlice.deletePollinationEvent).toHaveBeenCalledWith('evt-1');
     });
 
     it('delegates getLineageTree', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       dataService.getLineageTree('p1');
-      expect(instance.getLineageTree).toHaveBeenCalledWith('p1');
+      expect(geneticsSlice.getLineageTree).toHaveBeenCalledWith('p1');
     });
 
     it('delegates getStrainLineageTree', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       dataService.getStrainLineageTree('strain1');
-      expect(instance.getStrainLineageTree).toHaveBeenCalledWith('strain1');
+      expect(geneticsSlice.getStrainLineageTree).toHaveBeenCalledWith('strain1');
     });
 
     it('delegates updateStrainLineageTree', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       const parents = [{ name: 'P1', source: 'library' as const }];
       dataService.updateStrainLineageTree('strain1', parents);
-      expect(instance.updateStrainLineageTree).toHaveBeenCalledWith('strain1', parents);
+      expect(geneticsSlice.updateStrainLineageTree).toHaveBeenCalledWith('strain1', parents);
     });
 
     it('delegates importStrainLineageTree', () => {
-      const instance = vi.mocked(GeneticsAPI).mock.instances[0];
       const tree = { name: 'OG Kush', children: [] };
       dataService.importStrainLineageTree('OG Kush', tree);
-      expect(instance.importStrainLineageTree).toHaveBeenCalledWith('OG Kush', tree);
+      expect(geneticsSlice.importStrainLineageTree).toHaveBeenCalledWith('OG Kush', tree);
     });
   });
 
@@ -411,8 +400,6 @@ describe('DataService Delegation', () => {
       expect(instance.fetchGrowReport).toHaveBeenCalledWith('gs1');
     });
   });
-
-  // SubareaAPI delegation removed — subarea operations now go through slices/subarea directly.
 
   describe('callService', () => {
     it('calls hass.callService', async () => {

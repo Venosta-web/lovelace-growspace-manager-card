@@ -11,7 +11,6 @@ import {
 } from '../slices/growspace';
 import { setHass } from './hass-call';
 import { HistoryAPI } from './api/history-api';
-import { PlantAPI } from './api/plant-api';
 import { IrrigationAPI } from './api/irrigation-api';
 import { AIAPI } from './api/ai-api';
 import {
@@ -45,9 +44,44 @@ import {
   updateBreeder as strainSliceUpdateBreeder,
   deleteBreeder as strainSliceDeleteBreeder,
 } from '../slices/strain';
+import {
+  addPlant as plantSliceAddPlant,
+  addPlants as plantSliceAddPlants,
+  updatePlant as plantSliceUpdatePlant,
+  deletePlant as plantSliceDeletePlant,
+  harvestPlant as plantSliceHarvestPlant,
+  takeClone as plantSliceTakeClone,
+  moveClone as plantSliceMoveClone,
+  swapPlants as plantSliceSwapPlants,
+  waterPlant as plantSliceWaterPlant,
+  printLabel as plantSlicePrintLabel,
+  scorePlant as plantSliceScorePlant,
+  saveHarvestMetrics as plantSliceSaveHarvestMetrics,
+  logDryingWeight as plantSliceLogDryingWeight,
+  logMoistureReading as plantSliceLogMoistureReading,
+  setVisualTag as plantSliceSetVisualTag,
+  plants$,
+} from '../slices/plant';
+import {
+  fetchGeneticsData as geneticsSliceFetchData,
+  addSeedBatch as geneticsSliceAddSeedBatch,
+  updateSeedBatch as geneticsSliceUpdateSeedBatch,
+  removeSeedBatch as geneticsSliceRemoveSeedBatch,
+  logPollinationEvent as geneticsSliceLogPollinationEvent,
+  updatePollinationEvent as geneticsSliceUpdatePollinationEvent,
+  deletePollinationEvent as geneticsSliceDeletePollinationEvent,
+  harvestSeeds as geneticsSliceHarvestSeeds,
+  sowSeed as geneticsSliceSowSeed,
+  setPlantSex as geneticsSliceSetPlantSex,
+  unlinkSeedBatch as geneticsSliceUnlinkSeedBatch,
+  getLineageTree as geneticsSliceGetLineageTree,
+  getStrainLineageTree as geneticsSliceGetStrainLineageTree,
+  updateStrainLineageTree as geneticsSliceUpdateStrainLineageTree,
+  importStrainLineageTree as geneticsSliceImportStrainLineageTree,
+} from '../slices/genetics';
+import type { PlantEntity } from '../features/plants/types';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
-import { GeneticsAPI } from './api/genetics-api';
 
 /**
  * DataService — single hass-propagation point for all domain API clients.
@@ -60,21 +94,18 @@ export class DataService {
 
   private _growspaceAPI: GrowspaceAPI;
   private _historyAPI: HistoryAPI;
-  private _plantAPI: PlantAPI;
   private _irrigationAPI: IrrigationAPI;
   private _aiAPI: AIAPI;
   private _visionAPI: VisionAPI;
   private _reportAPI: ReportAPI;
-  private _geneticsAPI: GeneticsAPI;
+
   constructor(hass?: HomeAssistant) {
     this._growspaceAPI = new GrowspaceAPI(hass);
     this._historyAPI = new HistoryAPI(hass);
-    this._plantAPI = new PlantAPI(hass);
     this._irrigationAPI = new IrrigationAPI(hass);
     this._aiAPI = new AIAPI(hass);
     this._visionAPI = new VisionAPI(hass);
     this._reportAPI = new ReportAPI(hass);
-    this._geneticsAPI = new GeneticsAPI(hass);
 
     if (hass) {
       this.hass = hass;
@@ -88,12 +119,10 @@ export class DataService {
     [
       this._growspaceAPI,
       this._historyAPI,
-      this._plantAPI,
       this._irrigationAPI,
       this._aiAPI,
       this._visionAPI,
       this._reportAPI,
-      this._geneticsAPI,
     ].forEach((api) => api.updateHass(hass));
     setHass(hass);
   }
@@ -157,9 +186,6 @@ export class DataService {
 
   deleteBreeder = (name: string) => strainSliceDeleteBreeder(name);
 
-  importStrainLineageTree = (strain_name: string, tree: Record<string, unknown>) =>
-    this._geneticsAPI.importStrainLineageTree(strain_name, tree);
-
   // ── Nutrient (delegated to slices/nutrient) ──────────────────────────────
 
   fetchNutrientPresets = () => nutrientSliceFetchPresets();
@@ -203,53 +229,89 @@ export class DataService {
   getHistoryStats = (...args: Parameters<HistoryAPI['getHistoryStats']>) =>
     this._historyAPI.getHistoryStats(...args);
 
-  // ── Plant ────────────────────────────────────────────────────────────────
+  // ── Plant (delegated to slices/plant) ────────────────────────────────────
 
-  addPlant = (params: Parameters<PlantAPI['addPlant']>[0]) => this._plantAPI.addPlant(params);
+  addPlant = (params: Parameters<typeof plantSliceAddPlant>[0]) => plantSliceAddPlant(params);
 
-  addPlants = (params: Parameters<PlantAPI['addPlants']>[0]) => this._plantAPI.addPlants(params);
+  addPlants = (params: Parameters<typeof plantSliceAddPlants>[0]) => plantSliceAddPlants(params);
 
-  updatePlant = (params: Parameters<PlantAPI['updatePlant']>[0]) =>
-    this._plantAPI.updatePlant(params);
+  updatePlant = (params: { plant_id: string; [key: string]: unknown }) => {
+    const { plant_id, ...updates } = params;
+    return plantSliceUpdatePlant(plant_id, updates as Partial<PlantEntity['attributes']>);
+  };
 
-  removePlant = (plantId: string) => this._plantAPI.removePlant(plantId);
+  removePlant = (plantId: string) => plantSliceDeletePlant(plantId);
 
-  harvestPlant = (...args: Parameters<PlantAPI['harvestPlant']>) =>
-    this._plantAPI.harvestPlant(...args);
+  harvestPlant = (
+    plantId: string,
+    targetGrowspaceId: string,
+    metrics?: Parameters<typeof plantSliceHarvestPlant>[2]
+  ) => plantSliceHarvestPlant(plantId, targetGrowspaceId, metrics);
 
-  takeClone = (params: Parameters<PlantAPI['takeClone']>[0]) => this._plantAPI.takeClone(params);
+  takeClone = (params: { mother_plant_id: string; num_clones?: number; target_growspace_id?: string }) => {
+    const plant = plants$
+      .get()
+      .find(
+        (p: PlantEntity) =>
+          (p.attributes.plant_id ?? p.entity_id.replace('sensor.', '')) === params.mother_plant_id
+      );
+    if (!plant) throw new Error(`Plant not found: ${params.mother_plant_id}`);
+    return plantSliceTakeClone(plant, params.num_clones, params.target_growspace_id);
+  };
 
   moveClone = (plantId: string, targetGrowspaceId: string, transitionDate?: string) =>
-    this._plantAPI.moveClone(plantId, targetGrowspaceId, transitionDate);
+    plantSliceMoveClone(plantId, targetGrowspaceId, transitionDate);
 
-  movePlant = (plantId: string, targetGrowspaceId: string, transitionDate?: string) =>
-    this._plantAPI.movePlant(plantId, targetGrowspaceId, transitionDate);
-
-  swapPlants = (plant1Id: string, plant2Id: string) =>
-    this._plantAPI.swapPlants(plant1Id, plant2Id);
+  swapPlants = (plant1Id: string, plant2Id: string) => plantSliceSwapPlants(plant1Id, plant2Id);
 
   waterPlant = (
     plantId: string,
     amount: number,
     nutrients?: Record<string, number>,
     presetId?: string
-  ) => this._plantAPI.waterPlant(plantId, amount, nutrients, presetId);
+  ) => plantSliceWaterPlant(plantId, amount, nutrients, presetId);
 
-  printLabel = (params: Parameters<PlantAPI['printLabel']>[0]) => this._plantAPI.printLabel(params);
+  printLabel = (params: {
+    plant_id?: string;
+    strain?: string;
+    phenotype?: string;
+    breeder?: string;
+    lineage?: string;
+    breeder_logo?: string;
+    device_id?: string;
+    preview?: boolean;
+    base_url?: string;
+  }) =>
+    plantSlicePrintLabel({
+      plantId: params.plant_id,
+      strain: params.strain,
+      phenotype: params.phenotype,
+      breeder: params.breeder,
+      lineage: params.lineage,
+      breederLogo: params.breeder_logo,
+      deviceId: params.device_id,
+      preview: params.preview,
+      baseUrl: params.base_url,
+    });
 
-  scorePlant = (params: Parameters<PlantAPI['scorePlant']>[0]) => this._plantAPI.scorePlant(params);
+  scorePlant = (params: { plant_id: string; [key: string]: unknown }) => {
+    const { plant_id, ...scores } = params;
+    return plantSliceScorePlant(plant_id, scores as Record<string, number | null>);
+  };
 
-  updateHarvestMetrics = (params: Parameters<PlantAPI['updateHarvestMetrics']>[0]) =>
-    this._plantAPI.updateHarvestMetrics(params);
+  updateHarvestMetrics = (params: { plant_id: string; [key: string]: unknown }) => {
+    const { plant_id, ...metrics } = params;
+    return plantSliceSaveHarvestMetrics(plant_id, metrics);
+  };
 
-  logDryingWeight = (params: Parameters<PlantAPI['logDryingWeight']>[0]) =>
-    this._plantAPI.logDryingWeight(params);
+  logDryingWeight = (params: { plant_id: string; weight_grams: number; date?: string }) =>
+    plantSliceLogDryingWeight(params.plant_id, params.weight_grams, params.date);
 
-  logMoistureReading = (params: Parameters<PlantAPI['logMoistureReading']>[0]) =>
-    this._plantAPI.logMoistureReading(params);
+  logMoistureReading = (params: { plant_id: string; moisture_percent: number; date?: string }) =>
+    plantSliceLogMoistureReading(params.plant_id, params.moisture_percent, params.date);
 
-  setVisualTag = (params: Parameters<PlantAPI['setVisualTag']>[0]) =>
-    this._plantAPI.setVisualTag(params);
+  setVisualTag = (params: { plant_id: string; visual_tag: string | null }) =>
+    plantSliceSetVisualTag(params.plant_id, params.visual_tag);
 
   // ── Irrigation ───────────────────────────────────────────────────────────
 
@@ -326,40 +388,46 @@ export class DataService {
 
   fetchGrowReport = (growspaceId: string) => this._reportAPI.fetchGrowReport(growspaceId);
 
-  // ── Genetics ─────────────────────────────────────────────────────────────
+  // ── Genetics (delegated to slices/genetics) ──────────────────────────────
 
-  fetchGeneticsData = () => this._geneticsAPI.fetchGeneticsData();
+  fetchGeneticsData = () => geneticsSliceFetchData();
 
-  addSeedBatch = (data: Parameters<GeneticsAPI['addSeedBatch']>[0]) =>
-    this._geneticsAPI.addSeedBatch(data);
+  addSeedBatch = (data: Parameters<typeof geneticsSliceAddSeedBatch>[0]) =>
+    geneticsSliceAddSeedBatch(data);
 
-  updateSeedBatch = (data: Parameters<GeneticsAPI['updateSeedBatch']>[0]) =>
-    this._geneticsAPI.updateSeedBatch(data);
+  updateSeedBatch = (data: Parameters<typeof geneticsSliceUpdateSeedBatch>[0]) =>
+    geneticsSliceUpdateSeedBatch(data);
 
-  logPollination = (data: Parameters<GeneticsAPI['logPollination']>[0]) =>
-    this._geneticsAPI.logPollination(data);
+  deleteSeedBatch = (batch_id: string) => geneticsSliceRemoveSeedBatch(batch_id);
 
-  updatePollination = (data: Parameters<GeneticsAPI['updatePollination']>[0]) =>
-    this._geneticsAPI.updatePollination(data);
+  logPollination = (data: Parameters<typeof geneticsSliceLogPollinationEvent>[0]) =>
+    geneticsSliceLogPollinationEvent(data);
 
-  deletePollination = (event_id: string) => this._geneticsAPI.deletePollination(event_id);
+  updatePollination = (data: Parameters<typeof geneticsSliceUpdatePollinationEvent>[0]) =>
+    geneticsSliceUpdatePollinationEvent(data);
 
-  harvestSeeds = (data: Parameters<GeneticsAPI['harvestSeeds']>[0]) =>
-    this._geneticsAPI.harvestSeeds(data);
+  deletePollination = (event_id: string) => geneticsSliceDeletePollinationEvent(event_id);
 
-  deleteSeedBatch = (batch_id: string) => this._geneticsAPI.deleteSeedBatch(batch_id);
+  harvestSeeds = (data: Parameters<typeof geneticsSliceHarvestSeeds>[0]) =>
+    geneticsSliceHarvestSeeds(data);
 
-  setPlantSex = (plant_id: string, sex: string) => this._geneticsAPI.setPlantSex(plant_id, sex);
+  getLineageTree = (plant_id: string) => geneticsSliceGetLineageTree(plant_id);
 
-  sowSeed = (batch_id: string, plant_id: string) => this._geneticsAPI.sowSeed(batch_id, plant_id);
+  getStrainLineageTree = (strain_name: string) => geneticsSliceGetStrainLineageTree(strain_name);
 
-  getLineageTree = (plant_id: string) => this._geneticsAPI.getLineageTree(plant_id);
+  updateStrainLineageTree = (
+    strain_name: string,
+    parents: Array<{ name: string; source: 'library' | 'manual' }>
+  ) => geneticsSliceUpdateStrainLineageTree(strain_name, parents);
 
-  getStrainLineageTree = (strain_name: string) =>
-    this._geneticsAPI.getStrainLineageTree(strain_name);
+  importStrainLineageTree = (strain_name: string, tree: Record<string, unknown>) =>
+    geneticsSliceImportStrainLineageTree(strain_name, tree);
 
-  updateStrainLineageTree = (...args: Parameters<GeneticsAPI['updateStrainLineageTree']>) =>
-    this._geneticsAPI.updateStrainLineageTree(...args);
+  sowSeed = (batch_id: string, plant_id: string) => geneticsSliceSowSeed(batch_id, plant_id);
+
+  setPlantSex = (plant_id: string, sex: string) => geneticsSliceSetPlantSex(plant_id, sex);
+
+  unlinkSeedBatch = (plant_id: string) => geneticsSliceUnlinkSeedBatch(plant_id);
 
   // ── Generic ──────────────────────────────────────────────────────────────
 

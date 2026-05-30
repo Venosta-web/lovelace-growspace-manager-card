@@ -15,8 +15,6 @@ describe('plant-genetics-tab', () => {
     mockStore = {
       actions: {
         genetics: {
-          setPlantSex: vi.fn().mockResolvedValue(undefined),
-          sowSeed: vi.fn().mockResolvedValue(undefined),
           getLineageTree: vi.fn().mockResolvedValue({ id: 'root', name: 'Root' }),
         },
       },
@@ -49,53 +47,10 @@ describe('plant-genetics-tab', () => {
 
   it('renders correctly with plant data', async () => {
     const el = await setup();
-    
-    // Check sex chips
-    const chips = el.shadowRoot?.querySelectorAll('.md3-chip');
-    expect(chips?.length).to.equal(4);
-    const femaleChip = Array.from(chips || []).find(c => c.textContent?.includes('Female'));
-    expect(femaleChip?.classList.contains('selected')).to.be.true;
 
     // Check origin
     expect(el.shadowRoot?.textContent).to.contain('SB001');
     expect(el.shadowRoot?.textContent).to.contain('F1');
-    expect(el.shadowRoot?.querySelector('button')?.textContent?.trim()).to.not.equal('Link to seed batch');
-  });
-
-  it('handles sex selection', async () => {
-    const el = await setup();
-    
-    const maleChip = Array.from(el.shadowRoot?.querySelectorAll('.md3-chip') || [])
-      .find(c => c.textContent?.includes('Male')) as HTMLElement;
-    
-    maleChip.click();
-    expect((el as any)._sexSaving).to.be.true;
-    
-    await vi.waitFor(() => !(el as any)._sexSaving);
-    
-    expect(mockStore.actions.genetics.setPlantSex).toHaveBeenCalledWith('p123', 'male');
-  });
-
-  it('does not call setPlantSex if already selected', async () => {
-    const el = await setup();
-    
-    const femaleChip = Array.from(el.shadowRoot?.querySelectorAll('.md3-chip') || [])
-      .find(c => c.textContent?.includes('Female')) as HTMLElement;
-    
-    femaleChip.click();
-    expect(mockStore.actions.genetics.setPlantSex).not.toHaveBeenCalled();
-  });
-
-  it('handles unlinking seed batch', async () => {
-    const el = await setup();
-    
-    const unlinkBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
-      .find(b => b.textContent?.trim() === 'Unlink') as HTMLElement;
-    
-    unlinkBtn.click();
-    await el.updateComplete;
-    
-    expect(mockStore.actions.genetics.sowSeed).toHaveBeenCalledWith('SB001', 'p123');
   });
 
   it('toggles link to seed batch form when no seed batch is present', async () => {

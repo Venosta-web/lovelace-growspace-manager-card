@@ -260,6 +260,15 @@ A pollination donor identified by a live plant's UUID (`plant_id`). The plant is
 **Library Donor**
 A pollination donor identified by a strain library entry using the `"strain||phenotype"` key format. Used to record genetic lineage from a pollen source that is not tracked as a live plant. Distinguished from a [[Live Donor]] by the presence of `||` in the `donor_plant_id`.
 
+**Sowing**
+The act of linking an existing plant to its origin [[Seed Batch]] (`sow_seed` service). Records which batch a plant was grown from: sets `plant.seed_batch_id`, copies the batch's `generation` into `plant.genetics.generation`, and decrements `batch.quantity` by one. Rejected if `batch.quantity` is already zero. Distinct from physically germinating seeds — sowing is a retroactive provenance annotation on an already-existing plant record. Overwriting an existing link is allowed (e.g. to correct a labelling mistake).
+
+**Unlinking (Seed Batch)**
+Clearing a plant's origin [[Seed Batch]] association (`unlink_seed_batch` service). Sets `plant.seed_batch_id` to null. Does not restore batch quantity (the physical seed was used regardless). Does not alter `plant.genetics.generation` (generation may have been set independently or remain as a historical record).
+
+**Plant Sex**
+The biological sex of an individual plant: `"male"`, `"female"`, or `"hermaphrodite"`. Stored as `plant.sex` — a per-plant field, distinct from the strain-library `sex` column which records the typical sex of a strain. Determined by observation during the grow and set via the `set_plant_sex` service.
+
 **Seeds-Genetics Tab SM**
 The state machine for `seeds-genetics-tab.ts`, extracted into `seeds-genetics-tab-sm.ts`. Owns the tab's interaction state: `activeView` (the active sub-view), `views` (one typed state object per sub-view), `status` (`{ kind: 'idle' }` — no discard guard), and `toast`. Sub-views: `list | add-batch | log-pollination | harvest`. `add-batch` handles both creating and editing a [[Seed Batch]], discriminated by `editingBatchId: string | null` in the view state. `log-pollination` handles both creating and editing a [[Pollination Event]], discriminated by `editingEventId: string | null`. Delete confirmations and the inline Sow form live in the list view's `sub` discriminated union. Async lifecycle (`applying | error`) lives in each sub-view's `sub` — not at root. Validation logic lives in exported pure helpers (`validateBatchDraft`, `validatePollinationDraft`, `validateHarvestDraft`) — not in `transition()`. Does not satisfy [[DialogStateMachine]].
 

@@ -13,7 +13,9 @@ import {
   updatePollinationEvent,
   deletePollinationEvent,
   getLineageTree,
-  sowSeedBatch,
+  sowSeed,
+  setPlantSex,
+  unlinkSeedBatch,
 } from './index';
 import type { SeedBatch, PollinationEvent } from '../../types';
 
@@ -323,34 +325,67 @@ describe('getLineageTree', () => {
 });
 
 // ---------------------------------------------------------------------------
-// sowSeedBatch
+// sowSeed
 // ---------------------------------------------------------------------------
 
-describe('sowSeedBatch', () => {
-  it('calls callService with sow_seed and the payload', async () => {
-    await sowSeedBatch('batch-1', 'growspace-1', 'plant-1');
+describe('sowSeed', () => {
+  it('calls callService with sow_seed and batch_id + plant_id', async () => {
+    await sowSeed('batch-1', 'plant-1');
 
-    expect(hassCallModule.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'sow_seed',
-      { batch_id: 'batch-1', growspace_id: 'growspace-1', plant_id: 'plant-1' }
-    );
-  });
-
-  it('calls callService without plant_id when omitted', async () => {
-    await sowSeedBatch('batch-2', 'growspace-2');
-
-    expect(hassCallModule.callService).toHaveBeenCalledWith(
-      'growspace_manager',
-      'sow_seed',
-      { batch_id: 'batch-2', growspace_id: 'growspace-2' }
-    );
+    expect(hassCallModule.callService).toHaveBeenCalledWith('growspace_manager', 'sow_seed', {
+      batch_id: 'batch-1',
+      plant_id: 'plant-1',
+    });
   });
 
   it('re-throws when callService fails', async () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('sow error'));
 
-    await expect(sowSeedBatch('b1', 'g1')).rejects.toThrow('sow error');
+    await expect(sowSeed('b1', 'p1')).rejects.toThrow('sow error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setPlantSex
+// ---------------------------------------------------------------------------
+
+describe('setPlantSex', () => {
+  it('calls callService with set_plant_sex', async () => {
+    await setPlantSex('plant-1', 'female');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_plant_sex',
+      { plant_id: 'plant-1', sex: 'female' }
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('sex error'));
+
+    await expect(setPlantSex('p1', 'male')).rejects.toThrow('sex error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// unlinkSeedBatch
+// ---------------------------------------------------------------------------
+
+describe('unlinkSeedBatch', () => {
+  it('calls callService with unlink_seed_batch', async () => {
+    await unlinkSeedBatch('plant-1');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'unlink_seed_batch',
+      { plant_id: 'plant-1' }
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('unlink error'));
+
+    await expect(unlinkSeedBatch('p1')).rejects.toThrow('unlink error');
   });
 });
 

@@ -54,9 +54,51 @@ vi.mock('../../src/slices/strain', () => ({
   strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
 
+vi.mock('../../src/slices/plant', () => ({
+  plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  addPlant: vi.fn().mockResolvedValue(undefined),
+  addPlants: vi.fn().mockResolvedValue(undefined),
+  updatePlant: vi.fn().mockResolvedValue(undefined),
+  deletePlant: vi.fn().mockResolvedValue(undefined),
+  harvestPlant: vi.fn().mockResolvedValue(undefined),
+  takeClone: vi.fn().mockResolvedValue(undefined),
+  moveClone: vi.fn().mockResolvedValue(undefined),
+  swapPlants: vi.fn().mockResolvedValue(undefined),
+  waterPlant: vi.fn().mockResolvedValue(undefined),
+  printLabel: vi.fn().mockResolvedValue(undefined),
+  scorePlant: vi.fn().mockResolvedValue(undefined),
+  saveHarvestMetrics: vi.fn().mockResolvedValue(undefined),
+  logDryingWeight: vi.fn().mockResolvedValue(undefined),
+  logMoistureReading: vi.fn().mockResolvedValue(undefined),
+  setVisualTag: vi.fn().mockResolvedValue(undefined),
+  movePlantToGrowspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../src/slices/genetics', () => ({
+  seedBatches$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  pollinationEvents$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
+  fetchGeneticsData: vi.fn().mockResolvedValue(undefined),
+  addSeedBatch: vi.fn().mockResolvedValue(undefined),
+  updateSeedBatch: vi.fn().mockResolvedValue(undefined),
+  removeSeedBatch: vi.fn().mockResolvedValue(undefined),
+  logPollinationEvent: vi.fn().mockResolvedValue(undefined),
+  updatePollinationEvent: vi.fn().mockResolvedValue(undefined),
+  deletePollinationEvent: vi.fn().mockResolvedValue(undefined),
+  harvestSeeds: vi.fn().mockResolvedValue(undefined),
+  sowSeed: vi.fn().mockResolvedValue(undefined),
+  setPlantSex: vi.fn().mockResolvedValue(undefined),
+  unlinkSeedBatch: vi.fn().mockResolvedValue(undefined),
+  getLineageTree: vi.fn().mockResolvedValue(null),
+  getStrainLineageTree: vi.fn().mockResolvedValue(null),
+  updateStrainLineageTree: vi.fn().mockResolvedValue({ lineage: '' }),
+  importStrainLineageTree: vi.fn().mockResolvedValue(undefined),
+}));
+
 import * as strainSlice from '../../src/slices/strain';
 import * as nutrientSlice from '../../src/slices/nutrient';
 import * as growspaceSlice from '../../src/slices/growspace';
+import * as plantSlice from '../../src/slices/plant';
+import * as geneticsSlice from '../../src/slices/genetics';
 
 describe('DataService Coverage Gap Fill', () => {
     let service: DataService;
@@ -220,42 +262,30 @@ describe('DataService Coverage Gap Fill', () => {
             expect(statsSpy).toHaveBeenCalled();
         });
 
-        it('should delegate Plant API calls', async () => {
-            const addSpy = vi.spyOn((service as any)._plantAPI, 'addPlant');
+        it('should delegate Plant API calls to plant slice', async () => {
             service.addPlant({ growspace_id: 'g1', row: 0, col: 0, strain: 'S1' });
-            expect(addSpy).toHaveBeenCalled();
+            expect(plantSlice.addPlant).toHaveBeenCalled();
 
-            const addManySpy = vi.spyOn((service as any)._plantAPI, 'addPlants');
             service.addPlants({ growspace_id: 'g1', strain: 'S1', amount: 5 });
-            expect(addManySpy).toHaveBeenCalled();
+            expect(plantSlice.addPlants).toHaveBeenCalled();
 
-            const updateSpy = vi.spyOn((service as any)._plantAPI, 'updatePlant');
             service.updatePlant({ plant_id: 'p1' });
-            expect(updateSpy).toHaveBeenCalled();
+            expect(plantSlice.updatePlant).toHaveBeenCalledWith('p1', {});
 
-            const removeSpy = vi.spyOn((service as any)._plantAPI, 'removePlant');
             service.removePlant('p1');
-            expect(removeSpy).toHaveBeenCalled();
+            expect(plantSlice.deletePlant).toHaveBeenCalledWith('p1');
 
-            const harvestSpy = vi.spyOn((service as any)._plantAPI, 'harvestPlant');
-            service.harvestPlant('p1');
-            expect(harvestSpy).toHaveBeenCalled();
+            service.harvestPlant('p1', 'dry');
+            expect(plantSlice.harvestPlant).toHaveBeenCalled();
 
-            const cloneSpy = vi.spyOn((service as any)._plantAPI, 'takeClone');
-            service.takeClone({ mother_plant_id: 'p1' });
-            expect(cloneSpy).toHaveBeenCalled();
-
-            const moveSpy = vi.spyOn((service as any)._plantAPI, 'moveClone');
             service.moveClone('p1', 'g2');
-            expect(moveSpy).toHaveBeenCalled();
+            expect(plantSlice.moveClone).toHaveBeenCalledWith('p1', 'g2', undefined);
 
-            const swapSpy = vi.spyOn((service as any)._plantAPI, 'swapPlants');
             service.swapPlants('p1', 'p2');
-            expect(swapSpy).toHaveBeenCalled();
+            expect(plantSlice.swapPlants).toHaveBeenCalledWith('p1', 'p2');
 
-            const waterSpy = vi.spyOn((service as any)._plantAPI, 'waterPlant');
             service.waterPlant('p1', 500);
-            expect(waterSpy).toHaveBeenCalled();
+            expect(plantSlice.waterPlant).toHaveBeenCalled();
         });
 
         it('should delegate Irrigation API calls', async () => {

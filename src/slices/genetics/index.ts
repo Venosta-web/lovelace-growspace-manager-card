@@ -1,4 +1,5 @@
 import { atom } from 'nanostores';
+import { z } from 'zod';
 import { hassCall, callService } from '../../services/hass-call';
 import type { SeedBatch, PollinationEvent } from '../../types';
 import { GeneticsDataSchema, LineageNodeSchema } from './schema';
@@ -85,14 +86,58 @@ export async function getLineageTree(plantId: string): Promise<LineageNode | nul
   }
 }
 
-export async function sowSeedBatch(
-  batchId: string,
-  growspaceId: string,
-  plantId?: string
+export async function sowSeed(batchId: string, plantId: string): Promise<void> {
+  await callService('growspace_manager', 'sow_seed', { batch_id: batchId, plant_id: plantId });
+}
+
+export async function setPlantSex(plantId: string, sex: string): Promise<void> {
+  await callService('growspace_manager', 'set_plant_sex', { plant_id: plantId, sex });
+}
+
+export async function unlinkSeedBatch(plantId: string): Promise<void> {
+  await callService('growspace_manager', 'unlink_seed_batch', { plant_id: plantId });
+}
+
+export async function harvestSeeds(data: {
+  event_id: string;
+  quantity: number;
+  notes?: string;
+}): Promise<void> {
+  await callService('growspace_manager', 'harvest_seeds', data as Record<string, unknown>);
+}
+
+export async function getStrainLineageTree(strainName: string): Promise<LineageNode | null> {
+  try {
+    return (await hassCall(
+      'growspace_manager/get_strain_lineage_tree',
+      { strain_name: strainName },
+      LineageNodeSchema
+    )) as LineageNode;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateStrainLineageTree(
+  strainName: string,
+  parents: Array<{ name: string; source: 'library' | 'manual' }>
+): Promise<{ lineage: string }> {
+  return (await hassCall(
+    'growspace_manager/update_strain_lineage_tree',
+    { strain_name: strainName, parents },
+    z.object({ lineage: z.string() })
+  )) as { lineage: string };
+}
+
+export async function importStrainLineageTree(
+  strainName: string,
+  tree: Record<string, unknown>
 ): Promise<void> {
-  const data: Record<string, unknown> = { batch_id: batchId, growspace_id: growspaceId };
-  if (plantId !== undefined) data.plant_id = plantId;
-  await callService('growspace_manager', 'sow_seed', data);
+  await hassCall(
+    'growspace_manager/import_strain_lineage_tree',
+    { strain_name: strainName, tree },
+    z.unknown()
+  );
 }
 
 export async function fetchGeneticsData(): Promise<void> {
