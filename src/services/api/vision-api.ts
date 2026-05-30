@@ -4,7 +4,7 @@ import {
   WS_TYPE_UPDATE_VISION_CHECKUP_CONFIG,
   SERVICES,
 } from '../../lib/constants';
-import type { VisionCheckupResult, VisionCheckupConfig } from '../../lib/types/dialog';
+import type { VisionCheckupResult, VisionCheckupConfig } from '../../slices/camera';
 
 export interface GetVisionHistoryResponse {
   history: VisionCheckupResult[];

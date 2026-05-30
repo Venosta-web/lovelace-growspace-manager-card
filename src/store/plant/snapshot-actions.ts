@@ -10,7 +10,7 @@
 
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
-import type { VisionCheckupConfig } from '../../lib/types/dialog';
+import type { VisionCheckupConfig } from '../../slices/camera';
 
 /**
  * Fetch the snapshot list for a growspace (read-only, no toast).

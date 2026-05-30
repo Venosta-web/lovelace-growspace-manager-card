@@ -21,7 +21,7 @@ import {
 } from '../../types';
 import { ActionContext } from './action-context';
 import { ViewMode } from '../../constants';
-import type { VisionCheckupConfig } from '../../lib/types/dialog';
+import type { VisionCheckupConfig } from '../../slices/camera';
 import type { GrowspaceHistoryStore } from '../history/history-store';
 
 interface IGrowspaceStore {

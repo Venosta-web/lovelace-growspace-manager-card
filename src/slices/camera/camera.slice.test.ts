@@ -6,11 +6,26 @@
  *   - getSnapshots (apply, updates snapshots$, error re-throw)
  *   - captureSnapshot (apply, error re-throw)
  *   - setSnapshots (bootstrap write)
+ *   - visionHistory$ atom default
+ *   - setVisionHistory (bootstrap write)
+ *   - getVisionHistory (apply, updates visionHistory$, error re-throw)
+ *   - triggerVisionCheckup (apply, error re-throw)
+ *   - updateVisionCheckupConfig (apply, error re-throw)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as hassCall from '../../services/hass-call';
-import { snapshots$, setSnapshots, getSnapshots, captureSnapshot } from './index';
+import {
+  snapshots$,
+  setSnapshots,
+  getSnapshots,
+  captureSnapshot,
+  visionHistory$,
+  setVisionHistory,
+  getVisionHistory,
+  triggerVisionCheckup,
+  updateVisionCheckupConfig,
+} from './index';
 
 vi.mock('../../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -19,12 +34,23 @@ vi.mock('../../services/hass-call', () => ({
   setHass: vi.fn(),
 }));
 
+const aVisionResult = () => ({
+  timestamp: '2026-05-01T08:00:00Z',
+  check_type: 'early' as const,
+  analysis: 'Plants look healthy',
+  issues_detected: [],
+  severity: 'none' as const,
+  recommendations: [],
+  snapshot_paths: ['/img/snap.jpg'],
+});
+
 // ---------------------------------------------------------------------------
 // Reset atoms before each test
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
   setSnapshots([]);
+  setVisionHistory([]);
   vi.clearAllMocks();
 });
 
@@ -172,5 +198,165 @@ describe('captureSnapshot', () => {
     vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('camera offline'));
 
     await expect(captureSnapshot('gs1')).rejects.toThrow('camera offline');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// visionHistory$ atom
+// ---------------------------------------------------------------------------
+
+describe('visionHistory$', () => {
+  it('defaults to an empty array', () => {
+    expect(visionHistory$.get()).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setVisionHistory (bootstrap write)
+// ---------------------------------------------------------------------------
+
+describe('setVisionHistory', () => {
+  it('replaces visionHistory$ with the provided array', () => {
+    const result = aVisionResult();
+    setVisionHistory([result]);
+    expect(visionHistory$.get()).toEqual([result]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getVisionHistory
+// ---------------------------------------------------------------------------
+
+describe('getVisionHistory', () => {
+  it('calls hassCall with the correct WS command and growspace_id', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ history: [], total: 0 });
+
+    await getVisionHistory('gs1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_vision_history',
+      expect.objectContaining({ growspace_id: 'gs1' }),
+      expect.anything()
+    );
+  });
+
+  it('passes limit when provided', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ history: [], total: 0 });
+
+    await getVisionHistory('gs1', 5);
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_vision_history',
+      { growspace_id: 'gs1', limit: 5 },
+      expect.anything()
+    );
+  });
+
+  it('updates visionHistory$ with the returned history', async () => {
+    const result = aVisionResult();
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ history: [result], total: 1 });
+
+    await getVisionHistory('gs1');
+
+    expect(visionHistory$.get()).toEqual([result]);
+  });
+
+  it('returns the full response', async () => {
+    const result = aVisionResult();
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ history: [result], total: 1 });
+
+    const response = await getVisionHistory('gs1');
+
+    expect(response.total).toBe(1);
+    expect(response.history).toEqual([result]);
+  });
+
+  it('re-throws when hassCall fails', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('network error'));
+
+    await expect(getVisionHistory('gs1')).rejects.toThrow('network error');
+  });
+
+  it('does not update visionHistory$ when hassCall fails', async () => {
+    setVisionHistory([aVisionResult()]);
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(getVisionHistory('gs1')).rejects.toThrow();
+
+    expect(visionHistory$.get()).toHaveLength(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// triggerVisionCheckup
+// ---------------------------------------------------------------------------
+
+describe('triggerVisionCheckup', () => {
+  it('calls callServiceReturning with the correct domain, service, and growspace_id', async () => {
+    const result = aVisionResult();
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce(result);
+
+    await triggerVisionCheckup('gs1');
+
+    expect(hassCall.callServiceReturning).toHaveBeenCalledWith(
+      'growspace_manager',
+      'trigger_vision_checkup',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+  });
+
+  it('returns the checkup result', async () => {
+    const result = aVisionResult();
+    vi.mocked(hassCall.callServiceReturning).mockResolvedValueOnce(result);
+
+    const response = await triggerVisionCheckup('gs1');
+
+    expect(response).toEqual(result);
+  });
+
+  it('re-throws when callServiceReturning fails', async () => {
+    vi.mocked(hassCall.callServiceReturning).mockRejectedValueOnce(new Error('no cameras'));
+
+    await expect(triggerVisionCheckup('gs1')).rejects.toThrow('no cameras');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateVisionCheckupConfig
+// ---------------------------------------------------------------------------
+
+describe('updateVisionCheckupConfig', () => {
+  const config = {
+    enabled: true,
+    early_check_offset_minutes: 30,
+    mid_check_hours: 6,
+    late_check_offset_minutes: 60,
+  };
+
+  it('calls hassCall with the correct WS command, growspace_id, and config fields', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true });
+
+    await updateVisionCheckupConfig('gs1', config);
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_vision_checkup_config',
+      { growspace_id: 'gs1', ...config },
+      expect.anything()
+    );
+  });
+
+  it('returns the success response', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce({ success: true });
+
+    const response = await updateVisionCheckupConfig('gs1', config);
+
+    expect(response).toEqual({ success: true });
+  });
+
+  it('re-throws when hassCall fails', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('save failed'));
+
+    await expect(updateVisionCheckupConfig('gs1', config)).rejects.toThrow('save failed');
   });
 });

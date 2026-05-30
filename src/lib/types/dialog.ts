@@ -1,5 +1,8 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
+import type { VisionCheckupConfig } from '../../slices/camera';
+
+export type { VisionCheckupConfig };
 
 export interface AddPlantDialogState {
   row: number;
@@ -114,23 +117,6 @@ export interface EnvironmentConfigData {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
-}
-
-export interface VisionCheckupConfig {
-  enabled: boolean;
-  early_check_offset_minutes: number;
-  mid_check_hours: number;
-  late_check_offset_minutes: number;
-}
-
-export interface VisionCheckupResult {
-  timestamp: string;
-  check_type: 'early' | 'mid' | 'late' | 'manual';
-  analysis: string;
-  issues_detected: string[];
-  severity: 'none' | 'low' | 'medium' | 'high' | 'critical';
-  recommendations: string[];
-  snapshot_paths: string[];
 }
 
 export interface VisionCheckupConfigEventDetail {
