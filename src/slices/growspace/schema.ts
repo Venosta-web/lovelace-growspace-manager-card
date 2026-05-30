@@ -207,3 +207,24 @@ export type GrowspaceAPISchemaResponse = z.infer<typeof GrowspaceAPIResponseSche
 
 export const GrowspaceAPICollectionSchema = z.record(z.string(), GrowspaceAPIResponseSchema);
 export type GrowspaceAPICollection = z.infer<typeof GrowspaceAPICollectionSchema>;
+
+export const GrowReportSchema = z.object({
+  summary: z.object({
+    plant_count: z.number(),
+    strains: z.array(z.string()),
+    stages: z.record(z.unknown()),
+  }),
+  harvest: z.object({
+    total_wet_weight: z.number(),
+    total_dry_weight: z.number(),
+    total_trim_weight: z.number(),
+    top_thc: z.number().nullable().optional(),
+  }),
+  environment: z.object({
+    temperature_avg: z.number().nullable().optional(),
+    humidity_avg: z.number().nullable().optional(),
+    vpd_avg: z.number().nullable().optional(),
+  }),
+});
+
+export type GrowReport = z.infer<typeof GrowReportSchema>;

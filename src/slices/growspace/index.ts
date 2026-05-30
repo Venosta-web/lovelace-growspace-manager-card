@@ -2,7 +2,7 @@ import { atom } from 'nanostores';
 import { hassCall, callService } from '../../services/hass-call';
 import { mutate } from '../../services/mutate';
 import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
-import { GrowspaceAPICollectionSchema } from './schema';
+import { GrowspaceAPICollectionSchema, GrowReportSchema, type GrowReport } from './schema';
 import type { GrowspaceDevice } from '../../services/types';
 
 export const growspaceDevices$ = atom<GrowspaceDevice[] | null>(null);
@@ -70,6 +70,17 @@ export async function updateGrowspace(data: {
     },
     data.growspaceId
   );
+}
+
+export async function exportGrowReport(growspaceId: string): Promise<void> {
+  await callService('growspace_manager', 'export_grow_report', {
+    growspace_id: growspaceId,
+    format: 'json',
+  });
+}
+
+export async function fetchGrowReport(growspaceId: string): Promise<GrowReport> {
+  return hassCall('growspace_manager/get_grow_report', { growspace_id: growspaceId }, GrowReportSchema);
 }
 
 export async function fetchGrowspaceData(): Promise<void> {

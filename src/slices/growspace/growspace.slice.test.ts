@@ -8,6 +8,8 @@ import {
   addGrowspace,
   removeGrowspace,
   updateGrowspace,
+  exportGrowReport,
+  fetchGrowReport,
 } from './index';
 
 vi.mock('../../services/hass-call', () => ({
@@ -114,6 +116,62 @@ describe('removeGrowspace', () => {
       'remove_growspace',
       { growspace_id: 'gs1' }
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateGrowspace
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// exportGrowReport
+// ---------------------------------------------------------------------------
+
+describe('exportGrowReport', () => {
+  it('calls export_grow_report service with growspace_id and json format', async () => {
+    await exportGrowReport('gs1');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'export_grow_report',
+      { growspace_id: 'gs1', format: 'json' }
+    );
+  });
+
+  it('propagates errors from callService', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('export failed'));
+
+    await expect(exportGrowReport('gs1')).rejects.toThrow('export failed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchGrowReport
+// ---------------------------------------------------------------------------
+
+describe('fetchGrowReport', () => {
+  it('calls hassCall with get_grow_report and returns the result', async () => {
+    const mockReport = {
+      summary: { plant_count: 10, strains: ['Kush'], stages: {} },
+      harvest: { total_wet_weight: 100, total_dry_weight: 80, total_trim_weight: 20, top_thc: 25 },
+      environment: { temperature_avg: 24, humidity_avg: 50, vpd_avg: 1.2 },
+    };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(mockReport);
+
+    const result = await fetchGrowReport('gs1');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_grow_report',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+    expect(result).toEqual(mockReport);
+  });
+
+  it('propagates errors from hassCall', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('ws failure'));
+
+    await expect(fetchGrowReport('gs1')).rejects.toThrow('ws failure');
   });
 });
 
