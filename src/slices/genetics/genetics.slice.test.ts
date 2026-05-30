@@ -1,0 +1,371 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as hassCallModule from '../../services/hass-call';
+import {
+  seedBatches$,
+  pollinationEvents$,
+  setSeedBatches,
+  setPollinationEvents,
+  fetchGeneticsData,
+  addSeedBatch,
+  removeSeedBatch,
+  updateSeedBatch,
+  logPollinationEvent,
+  updatePollinationEvent,
+  deletePollinationEvent,
+  getLineageTree,
+  sowSeedBatch,
+} from './index';
+import type { SeedBatch, PollinationEvent } from '../../types';
+
+vi.mock('../../services/hass-call', () => ({
+  callService: vi.fn().mockResolvedValue(undefined),
+  callServiceReturning: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn().mockResolvedValue({}),
+  callFetch: vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
+  setHass: vi.fn(),
+}));
+
+beforeEach(() => {
+  setSeedBatches([]);
+  setPollinationEvents([]);
+  vi.clearAllMocks();
+});
+
+// ---------------------------------------------------------------------------
+// Bootstrap writes
+// ---------------------------------------------------------------------------
+
+describe('setSeedBatches', () => {
+  it('replaces seedBatches$ with the provided array', () => {
+    const batch: SeedBatch = {
+      batch_id: 'b1',
+      strain_name: 'OG Kush',
+      breeder: 'HSO',
+      quantity: 10,
+      acquisition_date: '2026-01-01',
+      generation: 'F1',
+      lineage: 'OG x Kush',
+      notes: '',
+    };
+    setSeedBatches([batch]);
+    expect(seedBatches$.get()).toEqual([batch]);
+  });
+});
+
+describe('setPollinationEvents', () => {
+  it('replaces pollinationEvents$ with the provided array', () => {
+    const event: PollinationEvent = {
+      event_id: 'e1',
+      date: '2026-03-01',
+      donor_plant_id: 'p1',
+      receiver_plant_id: 'p2',
+      notes: '',
+      result_seed_batch_id: null,
+    };
+    setPollinationEvents([event]);
+    expect(pollinationEvents$.get()).toEqual([event]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchGeneticsData
+// ---------------------------------------------------------------------------
+
+describe('fetchGeneticsData', () => {
+  it('calls hassCall with get_genetics_data WS command', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      seed_batches: {},
+      pollination_events: {},
+    });
+
+    await fetchGeneticsData();
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_genetics_data',
+      {},
+      expect.anything()
+    );
+  });
+
+  it('populates seedBatches$ from WS response', async () => {
+    const batch: SeedBatch = {
+      batch_id: 'b1',
+      strain_name: 'Blue Dream',
+      breeder: 'HSO',
+      quantity: 5,
+      acquisition_date: '2026-01-01',
+      generation: 'F1',
+      lineage: '',
+      notes: '',
+    };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      seed_batches: { b1: batch },
+      pollination_events: {},
+    });
+
+    await fetchGeneticsData();
+
+    expect(seedBatches$.get()).toEqual([batch]);
+  });
+
+  it('populates pollinationEvents$ from WS response', async () => {
+    const event: PollinationEvent = {
+      event_id: 'e1',
+      date: '2026-03-01',
+      donor_plant_id: 'p1',
+      receiver_plant_id: 'p2',
+      notes: '',
+      result_seed_batch_id: null,
+    };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce({
+      seed_batches: {},
+      pollination_events: { e1: event },
+    });
+
+    await fetchGeneticsData();
+
+    expect(pollinationEvents$.get()).toEqual([event]);
+  });
+
+  it('does not update atoms when hassCall fails', async () => {
+    const existing: SeedBatch = {
+      batch_id: 'existing',
+      strain_name: 'OG',
+      breeder: 'B',
+      quantity: 1,
+      acquisition_date: '2026-01-01',
+      generation: 'S1',
+      lineage: '',
+      notes: '',
+    };
+    setSeedBatches([existing]);
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('ws error'));
+
+    await expect(fetchGeneticsData()).rejects.toThrow('ws error');
+
+    expect(seedBatches$.get()).toEqual([existing]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// addSeedBatch
+// ---------------------------------------------------------------------------
+
+describe('addSeedBatch', () => {
+  it('calls callService with add_seed_batch and the payload', async () => {
+    await addSeedBatch({
+      strain_name: 'Blue Dream',
+      breeder: 'HSO',
+      quantity: 10,
+      acquisition_date: '2026-01-01',
+      generation: 'F1',
+    });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'add_seed_batch',
+      expect.objectContaining({ strain_name: 'Blue Dream', breeder: 'HSO', quantity: 10 })
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('svc error'));
+
+    await expect(
+      addSeedBatch({ strain_name: 'Test', breeder: 'B', quantity: 1, acquisition_date: '2026-01-01', generation: 'S1' })
+    ).rejects.toThrow('svc error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// removeSeedBatch
+// ---------------------------------------------------------------------------
+
+describe('removeSeedBatch', () => {
+  it('calls callService with delete_seed_batch and the batch_id', async () => {
+    await removeSeedBatch('batch-123');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'delete_seed_batch',
+      { batch_id: 'batch-123' }
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('del error'));
+
+    await expect(removeSeedBatch('batch-x')).rejects.toThrow('del error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateSeedBatch
+// ---------------------------------------------------------------------------
+
+describe('updateSeedBatch', () => {
+  it('calls callService with update_seed_batch and the payload', async () => {
+    await updateSeedBatch({ batch_id: 'b1', quantity: 5, notes: 'updated' });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'update_seed_batch',
+      expect.objectContaining({ batch_id: 'b1', quantity: 5, notes: 'updated' })
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('upd error'));
+
+    await expect(updateSeedBatch({ batch_id: 'b1' })).rejects.toThrow('upd error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// logPollinationEvent
+// ---------------------------------------------------------------------------
+
+describe('logPollinationEvent', () => {
+  it('calls callService with log_pollination and the payload', async () => {
+    await logPollinationEvent({
+      date: '2026-03-01',
+      donor_plant_id: 'p1',
+      receiver_plant_id: 'p2',
+      notes: 'First attempt',
+    });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'log_pollination',
+      expect.objectContaining({ date: '2026-03-01', donor_plant_id: 'p1', receiver_plant_id: 'p2' })
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('log error'));
+
+    await expect(
+      logPollinationEvent({ date: '2026-03-01', donor_plant_id: 'p1', receiver_plant_id: 'p2' })
+    ).rejects.toThrow('log error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updatePollinationEvent
+// ---------------------------------------------------------------------------
+
+describe('updatePollinationEvent', () => {
+  it('calls callService with update_pollination and the payload', async () => {
+    await updatePollinationEvent({ event_id: 'e1', notes: 'Updated' });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'update_pollination',
+      expect.objectContaining({ event_id: 'e1', notes: 'Updated' })
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('upd error'));
+
+    await expect(updatePollinationEvent({ event_id: 'e1' })).rejects.toThrow('upd error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deletePollinationEvent
+// ---------------------------------------------------------------------------
+
+describe('deletePollinationEvent', () => {
+  it('calls callService with delete_pollination and the event_id', async () => {
+    await deletePollinationEvent('e1');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'delete_pollination',
+      { event_id: 'e1' }
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('del error'));
+
+    await expect(deletePollinationEvent('e1')).rejects.toThrow('del error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getLineageTree
+// ---------------------------------------------------------------------------
+
+describe('getLineageTree', () => {
+  it('calls hassCall with get_lineage_tree WS command and returns result', async () => {
+    const node = { id: 'p1', name: 'OG Kush', type: 'plant' as const, parents: [] };
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(node);
+
+    const result = await getLineageTree('p1');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_lineage_tree',
+      { plant_id: 'p1' },
+      expect.anything()
+    );
+    expect(result).toEqual(node);
+  });
+
+  it('returns null when hassCall fails', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('WS fail'));
+
+    const result = await getLineageTree('p1');
+
+    expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sowSeedBatch
+// ---------------------------------------------------------------------------
+
+describe('sowSeedBatch', () => {
+  it('calls callService with sow_seed and the payload', async () => {
+    await sowSeedBatch('batch-1', 'growspace-1', 'plant-1');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'sow_seed',
+      { batch_id: 'batch-1', growspace_id: 'growspace-1', plant_id: 'plant-1' }
+    );
+  });
+
+  it('calls callService without plant_id when omitted', async () => {
+    await sowSeedBatch('batch-2', 'growspace-2');
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'sow_seed',
+      { batch_id: 'batch-2', growspace_id: 'growspace-2' }
+    );
+  });
+
+  it('re-throws when callService fails', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('sow error'));
+
+    await expect(sowSeedBatch('b1', 'g1')).rejects.toThrow('sow error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Atom defaults
+// ---------------------------------------------------------------------------
+
+describe('seedBatches$', () => {
+  it('defaults to an empty array', () => {
+    expect(seedBatches$.get()).toEqual([]);
+  });
+});
+
+describe('pollinationEvents$', () => {
+  it('defaults to an empty array', () => {
+    expect(pollinationEvents$.get()).toEqual([]);
+  });
+});

@@ -120,7 +120,9 @@ Nanostores-based reactive store holding plant data, nutrient inventory, and irri
 ## Architecture
 
 **Slice**
-A vertical module keyed to a domain concept (Plant, Grid, Irrigation, Environment, Logbook, Strain, Camera, Subarea, AIInsight, GridInteraction, UI). A slice owns its nanostore atoms, its [[Mutator]]s, its zod schemas, and its hassCall sites. Cards import atoms (read) and mutators (write) from slices; they never reach into the HA `hass` object directly. Slices replace the older `store/{actions,atoms,dispatcher}` + `services/api/*API` split.
+A vertical module keyed to a domain concept (Plant, Grid, Irrigation, Environment, Logbook, Strain, Camera, Subarea, AIInsight, GridInteraction, UI, Growspace, Genetics, Nutrient). A slice owns its nanostore atoms, its [[Mutator]]s, its zod schemas, and its hassCall sites. Cards import atoms (read) and mutators (write) from slices; they never reach into the HA `hass` object directly. Slices replace the older `store/{actions,atoms,dispatcher}` + `services/api/*API` split.
+
+Small domains (≤3 mutators, no atoms of their own) are absorbed into a semantically related slice rather than given a standalone one. UI dialog placement does not determine domain ownership. Specifically: vision checkup operations live in the Camera slice; grow report operations live in the Growspace slice; history transport tests live in the existing `history-store` (see [[hassCall seam]]). See ADR-0005.
 
 **Mutator**
 An exported async function on a slice that wraps a single call to [[mutate]]. Example: `waterPlant(id, ml)` in the Plant slice. The mutator is the public write API of the slice; the [[Action]] it builds is private.
