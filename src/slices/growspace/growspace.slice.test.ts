@@ -229,6 +229,56 @@ describe('updateGrowspace', () => {
 
     expect(growspaceDevices$.get()![0].name).toBe('Original');
   });
+
+  it('optimistically updates all fields and rolls back all of them', async () => {
+    const originalDevice = {
+      deviceId: 'gs1',
+      name: 'Original',
+      rows: 1,
+      plantsPerRow: 1,
+      notificationTarget: 'notify.original',
+    } as GrowspaceDevice;
+    growspaceDevices$.set([originalDevice]);
+
+    await updateGrowspace({
+      growspaceId: 'gs1',
+      name: 'Updated Name',
+      rows: 3,
+      plantsPerRow: 5,
+      notificationService: 'notify.updated',
+    });
+
+    const updated = growspaceDevices$.get()![0];
+    expect(updated.name).toBe('Updated Name');
+    expect(updated.rows).toBe(3);
+    expect(updated.plantsPerRow).toBe(5);
+    expect(updated.notificationTarget).toBe('notify.updated');
+  });
+
+  it('early returns in optimistic callback if previous growspaces is null', async () => {
+    growspaceDevices$.set(null);
+    await updateGrowspace({ growspaceId: 'gs1', name: 'New Name' });
+    expect(growspaceDevices$.get()).toBeNull();
+  });
+
+  it('optimistically updates when some fields are undefined and maps correctly with multiple devices', async () => {
+    const originalDevices = [
+      { deviceId: 'gs1', name: 'Original 1', rows: 1 },
+      { deviceId: 'gs2', name: 'Original 2', rows: 2 },
+    ] as GrowspaceDevice[];
+    growspaceDevices$.set(originalDevices);
+
+    await updateGrowspace({
+      growspaceId: 'gs1',
+      rows: 4,
+    });
+
+    const devices = growspaceDevices$.get()!;
+    expect(devices[0].name).toBe('Original 1');
+    expect(devices[0].rows).toBe(4);
+    expect(devices[1].name).toBe('Original 2');
+    expect(devices[1].rows).toBe(2);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -354,5 +404,123 @@ describe('configureEnvironment', () => {
     const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
     expect(payload).not.toHaveProperty('temperature_sensors');
     expect(payload).not.toHaveProperty('humidity_sensors');
+  });
+
+  it('calls configure_environment with all optional fields and mapped snake_case properties', async () => {
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      temperatureSensors: ['sensor.temp'],
+      humiditySensors: ['sensor.hum'],
+      vpdSensors: ['sensor.vpd'],
+      co2Sensor: 'sensor.co2',
+      circulationFanEntity: 'fan.circ',
+      circulationFanEntities: ['fan.circ1', 'fan.circ2'],
+      stressThreshold: 2.5,
+      moldThreshold: 3.5,
+      lightSensor: 'sensor.light',
+      lightSensors: ['sensor.light1', 'sensor.light2'],
+      exhaustEntity: 'fan.exhaust',
+      exhaustFanEntities: ['fan.exhaust1'],
+      humidifierEntity: 'humidifier.main',
+      humidifierEntities: ['humidifier.sub'],
+      humidifierThresholds: { room1: { day: { on: 40, off: 60 } } },
+      controlHumidifier: true,
+      dehumidifierEntity: 'dehumidifier.main',
+      dehumidifierEntities: ['dehumidifier.sub'],
+      dehumidifierThresholds: { room1: { day: { on: 50, off: 40 } } },
+      soilMoistureSensor: 'sensor.soil',
+      controlDehumidifier: false,
+      vegDayHours: 18,
+      flowerEarlyDayHours: 12,
+      flowerMidDayHours: 11.5,
+      flowerLateDayHours: 11,
+      minimumSourceAirTemperature: 15,
+      sensorGroups: [{
+        id: 'group1',
+        name: 'Group 1',
+        x: 1,
+        y: 2,
+        z: 3,
+        temperature_sensors: ['sensor.temp'],
+        humidity_sensors: ['sensor.hum'],
+        vpd_sensors: ['sensor.vpd'],
+      }],
+      sensorCoordinates: { 'sensor.temp': { x: 1, y: 2, z: 3, rotation: 45 } },
+      irrigationTanks: [
+        { sensorEntity: 'sensor.tank1', name: 'Tank 1', warningLevel: 20, volumeLiters: 100 },
+        { sensorEntity: 'sensor.tank2', name: 'Tank 2', warningLevel: 10, volumeLiters: null },
+      ],
+      cameraEntities: ['camera.grow'],
+      lungroomTempSensors: ['sensor.lung'],
+      substrateTemperatureSensors: ['sensor.sub_temp'],
+      phSensors: ['sensor.ph'],
+      feedEcSensors: ['sensor.feed_ec'],
+      substrateEcSensors: ['sensor.sub_ec'],
+      runoffEcSensors: ['sensor.runoff_ec'],
+      drainVolumeSensors: ['sensor.drain_vol'],
+      irrigationFlowSensors: ['sensor.flow'],
+      powerSensors: ['sensor.power'],
+      energySensors: ['sensor.energy'],
+    });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'configure_environment',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        temperature_sensors: ['sensor.temp'],
+        humidity_sensors: ['sensor.hum'],
+        vpd_sensors: ['sensor.vpd'],
+        co2_sensor: 'sensor.co2',
+        circulation_fan_entity: 'fan.circ',
+        circulation_fan_entities: ['fan.circ1', 'fan.circ2'],
+        stress_threshold: 2.5,
+        mold_threshold: 3.5,
+        light_sensor: 'sensor.light',
+        light_sensors: ['sensor.light1', 'sensor.light2'],
+        exhaust_entity: 'fan.exhaust',
+        exhaust_fan_entities: ['fan.exhaust1'],
+        humidifier_entity: 'humidifier.main',
+        humidifier_entities: ['humidifier.sub'],
+        humidifier_thresholds: { room1: { day: { on: 40, off: 60 } } },
+        control_humidifier: true,
+        dehumidifier_entity: 'dehumidifier.main',
+        dehumidifier_entities: ['dehumidifier.sub'],
+        dehumidifier_thresholds: { room1: { day: { on: 50, off: 40 } } },
+        soil_moisture_sensor: 'sensor.soil',
+        control_dehumidifier: false,
+        veg_day_hours: 18,
+        flower_early_day_hours: 12,
+        flower_mid_day_hours: 11.5,
+        flower_late_day_hours: 11,
+        minimum_source_air_temperature: 15,
+        sensor_groups: [{
+          id: 'group1',
+          name: 'Group 1',
+          x: 1,
+          y: 2,
+          z: 3,
+          temperature_sensors: ['sensor.temp'],
+          humidity_sensors: ['sensor.hum'],
+          vpd_sensors: ['sensor.vpd'],
+        }],
+        sensor_coordinates: { 'sensor.temp': { x: 1, y: 2, z: 3, rotation: 45 } },
+        irrigation_tanks: [
+          { sensor_entity: 'sensor.tank1', name: 'Tank 1', warning_level: 20, volume_liters: 100 },
+          { sensor_entity: 'sensor.tank2', name: 'Tank 2', warning_level: 10 },
+        ],
+        camera_entities: ['camera.grow'],
+        lung_room_temp_sensors: ['sensor.lung'],
+        substrate_temperature_sensors: ['sensor.sub_temp'],
+        ph_sensors: ['sensor.ph'],
+        feed_ec_sensors: ['sensor.feed_ec'],
+        substrate_ec_sensors: ['sensor.sub_ec'],
+        runoff_ec_sensors: ['sensor.runoff_ec'],
+        drain_volume_sensors: ['sensor.drain_vol'],
+        irrigation_flow_sensors: ['sensor.flow'],
+        power_sensors: ['sensor.power'],
+        energy_sensors: ['sensor.energy'],
+      })
+    );
   });
 });
