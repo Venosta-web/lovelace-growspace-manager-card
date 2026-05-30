@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../context';
+import { nutrientInventory$ } from '../slices/nutrient';
 import { mdiBottleTonicPlus, mdiFormatListBulleted, mdiClipboardList } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { GrowspaceStore } from '../store/core/growspace-store';
@@ -30,7 +31,7 @@ export class NutrientDialog extends LitElement {
 
   private _initControllers() {
     if (this.store && !this._inventoryController) {
-      this._inventoryController = new StoreController(this, this.store.data.$nutrientInventory);
+      this._inventoryController = new StoreController(this, nutrientInventory$);
     }
   }
 

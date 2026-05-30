@@ -7,9 +7,7 @@ function makeCtx(overrides: Record<string, unknown> = {}) {
       saveIPMPreset: vi.fn().mockResolvedValue(undefined),
       fetchIPMPresets: vi.fn().mockResolvedValue({}),
     },
-    data: {
-      setIPMPresets: vi.fn(),
-    },
+    data: {},
     ui: {
       showToast: vi.fn(),
     },

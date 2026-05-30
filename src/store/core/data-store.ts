@@ -1,18 +1,9 @@
-import { atom, onMount, WritableAtom, computed, ReadableAtom } from 'nanostores';
+import { atom, onMount, WritableAtom } from 'nanostores';
 import {
   GrowspaceDevice,
   StrainEntry,
   GrowspaceManagerCardConfig,
-  NutrientPreset,
-  IPMPreset,
 } from '../../types';
-
-export interface NutrientDataState {
-  nutrientPresets: Record<string, NutrientPreset>;
-  nutrientInventory: import('../../types').NutrientInventory | null;
-  ecRampCurves: Record<string, import('../../schemas/api-schema').ECRampCurve>;
-  isLoading: boolean;
-}
 
 export class GrowspaceDataStore {
   // Domain Data Atoms
@@ -22,13 +13,6 @@ export class GrowspaceDataStore {
   public readonly $optimisticDeletedPlantIds: WritableAtom<Set<string>>;
   /** Map from plantId to deviceId for O(1) lookups */
   public readonly $plantToDeviceMap: WritableAtom<Map<string, string>>;
-  public readonly $nutrientPresets: WritableAtom<Record<string, NutrientPreset>>;
-  public readonly $ipmPresets: WritableAtom<Record<string, IPMPreset>>;
-  public readonly $nutrientInventory: WritableAtom<import('../../types').NutrientInventory | null>;
-  public readonly $ecRampCurves: WritableAtom<
-    Record<string, import('../../schemas/api-schema').ECRampCurve>
-  >;
-  public readonly $nutrientDataState: ReadableAtom<NutrientDataState>;
 
   /** Incremented by GrowspaceSharedStore when a push event requires a full data refresh. */
   public readonly $staleCounter: WritableAtom<number>;
@@ -43,20 +27,6 @@ export class GrowspaceDataStore {
     this.$config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
     this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());
     this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
-    this.$nutrientPresets = atom<Record<string, NutrientPreset>>({});
-    this.$ipmPresets = atom<Record<string, IPMPreset>>({});
-    this.$nutrientInventory = atom<import('../../types').NutrientInventory | null>(null);
-    this.$ecRampCurves = atom<Record<string, import('../../schemas/api-schema').ECRampCurve>>({});
-
-    this.$nutrientDataState = computed(
-      [this.$nutrientPresets, this.$nutrientInventory, this.$ecRampCurves],
-      (nutrientPresets, nutrientInventory, ecRampCurves) => ({
-        nutrientPresets,
-        nutrientInventory,
-        ecRampCurves,
-        isLoading: Object.keys(nutrientPresets).length === 0 && nutrientInventory === null,
-      })
-    );
 
     // Lazy initialization: only log activity when store has subscribers
     onMount(this.$devices, () => {
@@ -98,18 +68,6 @@ export class GrowspaceDataStore {
     this.$strainLibrary.set(library);
   }
 
-  public setNutrientPresets(presets: Record<string, NutrientPreset>) {
-    this.$nutrientPresets.set(presets);
-  }
-
-  public setIPMPresets(presets: Record<string, IPMPreset>) {
-    this.$ipmPresets.set(presets);
-  }
-
-  public setECRampCurves(curves: Record<string, import('../../schemas/api-schema').ECRampCurve>) {
-    this.$ecRampCurves.set(curves);
-  }
-
   public setOptimisticDeletedPlantIds(ids: Set<string>) {
     this.$optimisticDeletedPlantIds.set(ids);
   }
@@ -141,7 +99,4 @@ export class GrowspaceDataStore {
     this.$devices.set(updated);
   }
 
-  public setNutrientInventory(inventory: import('../../types').NutrientInventory | null) {
-    this.$nutrientInventory.set(inventory);
-  }
 }

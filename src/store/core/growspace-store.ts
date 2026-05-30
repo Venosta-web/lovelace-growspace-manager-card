@@ -18,6 +18,13 @@ import { ActionContext } from './action-context';
 import * as plantSlice from '../../slices/plant';
 import * as aiActions from '../system/ai-actions';
 
+// Nutrient Slice atoms
+import {
+  nutrientPresets$,
+  ipmPresets$,
+  nutrientInventory$,
+} from '../../slices/nutrient';
+
 // Services
 import { SyncService } from '../../services/sync-service';
 import { UndoRedoManager, UndoableAction } from '../../services/undo-redo-manager';
@@ -151,9 +158,9 @@ export class GrowspaceStore {
         this.data.$devices,
         this.grid.$selectedDevice,
         this.data.$strainLibrary,
-        this.data.$nutrientPresets,
-        this.data.$ipmPresets,
-        this.data.$nutrientInventory,
+        nutrientPresets$,
+        ipmPresets$,
+        nutrientInventory$,
       ],
       (
         activeDialog,
@@ -168,8 +175,8 @@ export class GrowspaceStore {
         devices,
         selectedDevice,
         strainLibrary,
-        nutrientPresets,
-        ipmPresets,
+        nutrientPresets: nutrientPresets ?? {},
+        ipmPresets: ipmPresets ?? {},
         nutrientInventory,
       })
     );
@@ -194,20 +201,20 @@ export class GrowspaceStore {
         this.ui.$isEditMode,
         this.ui.$selectedPlants,
         this.data.$devices,
-        this.data.$nutrientPresets,
+        nutrientPresets$,
       ],
       (isEditMode, selectedPlants, devices, nutrientPresets) => ({
         isEditMode,
         selectedPlants,
         devices,
-        nutrientPresets,
+        nutrientPresets: nutrientPresets ?? {},
       })
     );
 
     this.$viewStandardState = computed([this.data.$devices], (devices) => ({ devices }));
 
     this.$headerState = computed(
-      [this.data.$devices, this.data.$nutrientInventory, this.history.$headerHistoryState],
+      [this.data.$devices, nutrientInventory$, this.history.$headerHistoryState],
       (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history })
     );
 

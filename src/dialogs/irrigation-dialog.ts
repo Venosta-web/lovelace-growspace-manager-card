@@ -41,6 +41,7 @@ import {
 import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { ecRampCurves$ } from '../slices/nutrient';
 import {
   addIrrigationTime,
   removeIrrigationTime,
@@ -111,7 +112,7 @@ export class IrrigationDialog extends LitElement {
   @state() private _ecRampEditingCurve: Partial<ECRampCurve> | null = null;
   @state() private _ecRampError: string | null = null;
   private _ecRampFetched = false;
-  private _ecRampCurvesController?: StoreController<Record<string, ECRampCurve>>;
+  private _ecRampCurvesController?: StoreController<Record<string, ECRampCurve> | null>;
 
   private _dataService?: DataService;
 
@@ -1099,10 +1100,7 @@ export class IrrigationDialog extends LitElement {
         if (!this._ecRampFetched && this.store) {
           this._ecRampFetched = true;
           if (!this._ecRampCurvesController) {
-            this._ecRampCurvesController = new StoreController(
-              this,
-              this.store.data.$ecRampCurves
-            );
+            this._ecRampCurvesController = new StoreController(this, ecRampCurves$);
           }
           this.store.actions.library.fetchECRampCurves().catch(() => undefined);
         }

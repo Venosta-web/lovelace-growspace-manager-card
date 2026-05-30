@@ -71,7 +71,7 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
       const age = Date.now() - (cache.timestamp || 0);
       if (age < CACHE_VALIDITY_MS) {
         console.debug('[LibraryActions] Using cached nutrient presets (Age: %sms)', age);
-        ctx.data.setNutrientPresets(cache.data);
+        nutrientPresets$.set(cache.data);
         return;
       }
     } catch (e) {
@@ -86,7 +86,6 @@ export async function fetchNutrientPresets(ctx: ActionContext, force: boolean = 
     await ctx.dataService.fetchNutrientPresets();
     const result = nutrientPresets$.get();
     if (result) {
-      ctx.data.setNutrientPresets(result);
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
@@ -105,7 +104,7 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
       const age = Date.now() - (cache.timestamp || 0);
       if (age < CACHE_VALIDITY_MS) {
         console.debug('[LibraryActions] Using cached IPM presets (Age: %sms)', age);
-        ctx.data.setIPMPresets(cache.data);
+        ipmPresets$.set(cache.data);
         return;
       }
     } catch (e) {
@@ -120,7 +119,6 @@ export async function fetchIPMPresets(ctx: ActionContext, force: boolean = false
     await ctx.dataService.fetchIPMPresets();
     const result = ipmPresets$.get();
     if (result) {
-      ctx.data.setIPMPresets(result);
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
@@ -138,7 +136,7 @@ export async function fetchNutrientInventory(ctx: ActionContext, force: boolean 
       const cache = JSON.parse(cachedRaw);
       const age = Date.now() - (cache.timestamp || 0);
       if (age < CACHE_VALIDITY_MS) {
-        ctx.data.setNutrientInventory(cache.data);
+        nutrientInventory$.set(cache.data);
         return;
       }
     } catch (_) {
@@ -150,7 +148,6 @@ export async function fetchNutrientInventory(ctx: ActionContext, force: boolean 
     await ctx.dataService.fetchNutrientInventory();
     const result = nutrientInventory$.get();
     if (result) {
-      ctx.data.setNutrientInventory(result);
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {
@@ -197,7 +194,7 @@ export async function fetchECRampCurves(ctx: ActionContext, force: boolean = fal
       const age = Date.now() - (cache.timestamp || 0);
       if (age < CACHE_VALIDITY_MS) {
         console.debug('[LibraryActions] Using cached EC ramp curves (Age: %sms)', age);
-        ctx.data.setECRampCurves(cache.data);
+        ecRampCurves$.set(cache.data);
         return;
       }
     } catch (e) {
@@ -212,7 +209,6 @@ export async function fetchECRampCurves(ctx: ActionContext, force: boolean = fal
     await ctx.dataService.fetchECRampCurves();
     const result = ecRampCurves$.get();
     if (result) {
-      ctx.data.setECRampCurves(result);
       localStorage.setItem(CACHE_KEY, JSON.stringify({ timestamp: Date.now(), data: result }));
     }
   } catch (e) {

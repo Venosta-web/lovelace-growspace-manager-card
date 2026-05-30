@@ -9,10 +9,11 @@ import { LitElement, html, css, type TemplateResult } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
-import { atom, type ReadableAtom } from 'nanostores';
+import { atom, computed, type ReadableAtom } from 'nanostores';
 import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
+import { nutrientPresets$ } from '../../../slices/nutrient';
 import { DragDropController, DragDropHost } from '../../../controllers/drag-drop-controller';
 import {
   createPlantCardViewModel,
@@ -86,7 +87,7 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
         $isEditMode: this.store.ui.$isEditMode,
         $selectedPlants: this.store.ui.$selectedPlants,
         $strainLibrary: this.store.data.$strainLibrary,
-        $nutrientPresets: this.store.data.$nutrientPresets,
+        $nutrientPresets: computed([nutrientPresets$], (p) => p ?? {}),
         $devices: this.store.data.$devices,
       });
       this.viewModelController = new StoreController(this, this.viewModel);

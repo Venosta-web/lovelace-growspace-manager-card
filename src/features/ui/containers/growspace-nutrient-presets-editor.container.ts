@@ -5,6 +5,7 @@ import { StoreController } from '@nanostores/lit';
 import { hassContext, storeContext } from '../../../lib/context';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { NutrientPreset } from '../../../types';
+import { nutrientPresets$ } from '../../../slices/nutrient';
 import '../components/growspace-nutrient-presets-editor-ui';
 
 @customElement('growspace-nutrient-presets-editor')
@@ -19,14 +20,14 @@ export class GrowspaceNutrientPresetsEditorContainer extends LitElement {
   @property({ type: Boolean }) open = false;
   @property({ type: String }) growspaceId?: string;
 
-  private _nutrientDataController!: StoreController<
-    import('../../../store/core/data-store').NutrientDataState
+  private _nutrientPresetsController!: StoreController<
+    import('../../../slices/nutrient').NutrientPresetsResponse | null
   >;
 
   connectedCallback() {
     super.connectedCallback();
     if (this.store) {
-      this._nutrientDataController = new StoreController(this, this.store.data.$nutrientDataState);
+      this._nutrientPresetsController = new StoreController(this, nutrientPresets$);
     }
   }
 
@@ -48,9 +49,9 @@ export class GrowspaceNutrientPresetsEditorContainer extends LitElement {
   }
 
   render() {
-    if (!this.store || !this._nutrientDataController) return nothing;
+    if (!this.store || !this._nutrientPresetsController) return nothing;
 
-    const { nutrientPresets } = this._nutrientDataController.value;
+    const nutrientPresets = this._nutrientPresetsController.value ?? {};
 
     return html`
       <growspace-nutrient-presets-editor-ui

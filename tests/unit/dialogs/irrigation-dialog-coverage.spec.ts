@@ -6,6 +6,7 @@ import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
 import type { ECRampCurve } from '../../../src/schemas/api-schema';
+import { ecRampCurves$ } from '../../../src/slices/nutrient';
 
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
   Md3TextInput: class extends HTMLElement {
@@ -89,12 +90,11 @@ const mockDevice: GrowspaceDevice = {
   stats: {} as any,
 };
 
-function makeMockStore(device: GrowspaceDevice, ecRampCurvesAtom = atom<Record<string, ECRampCurve>>({})) {
+function makeMockStore(device: GrowspaceDevice) {
   const deviceCopy = JSON.parse(JSON.stringify(device));
   const $devicesValue = [deviceCopy];
   const dataStore = {
     $devices: { get: () => $devicesValue },
-    $ecRampCurves: ecRampCurvesAtom,
     patchDeviceIrrigationConfig: vi.fn((gsId: string, patch: any) => {
       const d = $devicesValue.find((x: any) => x.deviceId === gsId);
       if (d) Object.assign(d.irrigationConfig, patch);
@@ -326,8 +326,6 @@ describe('IrrigationDialog - Coverage', () => {
   // ─── EC Ramp Tab – List View with Curves (lines 4269–4298) ────────────────
 
   describe('EC Ramp Tab – List View', () => {
-    let ecRampAtom: ReturnType<typeof atom<Record<string, ECRampCurve>>>;
-
     const sampleCurve: ECRampCurve = {
       id: 'curve-1',
       name: 'Veg Ramp',
@@ -339,15 +337,15 @@ describe('IrrigationDialog - Coverage', () => {
     };
 
     beforeEach(async () => {
-      ecRampAtom = atom({ 'curve-1': sampleCurve });
-      mockStore = makeMockStore(mockDevice, ecRampAtom);
+      ecRampCurves$.set({ 'curve-1': sampleCurve });
+      mockStore = makeMockStore(mockDevice);
       (element as any).store = mockStore;
       await switchToTab(7); // EC Ramp tab (index 7)
-      // The controller is created; manually force the controller to use the atom's value
-      if (!(element as any)._ecRampCurvesController) {
-        (element as any)._ecRampCurvesController = { value: { 'curve-1': sampleCurve } };
-      }
       await element.updateComplete;
+    });
+
+    afterEach(() => {
+      ecRampCurves$.set(null);
     });
 
     it('renders curve list when curves are present (line 4269)', () => {
