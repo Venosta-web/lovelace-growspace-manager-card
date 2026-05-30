@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../../src/cards/growspace-logbook-card';
-import { createMockHass } from '../../mocks/hass';
+import { aHass } from '../../fixtures';
 import { createMockDevice } from '../../mocks/device';
 
 // Mock the timeline service so growspace-logbook renders empty events instead of fetching
@@ -23,7 +23,7 @@ if (!customElements.get('growspace-logbook-card')) {
 
 test('growspace-logbook-card visual snapshot', async () => {
     const element = await fixture<GrowspaceLogbookCard>(html`<growspace-logbook-card></growspace-logbook-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = aHass() as any;
 
     vi.spyOn((element as any)._store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
     vi.spyOn((element as any)._store.syncService, 'updateDevicesState').mockImplementation(() => {});

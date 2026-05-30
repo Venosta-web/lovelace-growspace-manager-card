@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceManagerCard } from '../../../src/growspace-manager-card';
-import { createMockHass } from '../../mocks/hass';
+import { aHass } from '../../fixtures';
 import { createMockDevice } from '../../mocks/device';
 
 vi.mock('../../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
@@ -16,7 +16,7 @@ if (!customElements.get('growspace-manager-card')) {
 
 test('growspace-manager-card visual snapshot', async () => {
     const element = await fixture<GrowspaceManagerCard>(html`<growspace-manager-card></growspace-manager-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = aHass() as any;
 
     vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
     vi.spyOn(element.store.syncService, 'updateDevicesState').mockImplementation(() => {});

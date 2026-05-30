@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceAiInsightCard } from '../../../src/cards/growspace-ai-insight-card';
-import { createMockHass } from '../../mocks/hass';
+import { aHass } from '../../fixtures';
 import { createMockDevice } from '../../mocks/device';
 
 vi.mock('../../../src/cards/editors/growspace-ai-insight-card-editor', () => ({
@@ -16,7 +16,7 @@ if (!customElements.get('growspace-ai-insight-card')) {
 
 test('growspace-ai-insight-card visual snapshot', async () => {
     const element = await fixture<GrowspaceAiInsightCard>(html`<growspace-ai-insight-card></growspace-ai-insight-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = aHass() as any;
 
     vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
     vi.spyOn(element.store.syncService, 'updateDevicesState').mockImplementation(() => {});

@@ -232,7 +232,7 @@ vi.mock('../../src/store/system/optimistic-manager', () => {
 });
 
 // Helper
-const createMockHass = () => ({
+const aMinimalHass = () => ({
     states: {},
     services: {
         call: vi.fn(),
@@ -280,7 +280,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             // 2. Trigger update 
             // We need to bypass the "no cache" check or ensure cache is populated
             // updateDevicesState is called when we updateHass if cache exists
-            const hass = createMockHass();
+            const hass = aMinimalHass();
             store.updateHass(hass);
 
             // 3. Verify watched entities
@@ -301,7 +301,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             store.data.setWsDataCache({ 'd1': {} } as any);
 
             // Initial HASS
-            const hass1 = createMockHass();
+            const hass1 = aMinimalHass();
             hass1.states['sensor.plant1'] = { state: 'ok', last_updated: 't1' } as any;
             store.updateHass(hass1);
 
@@ -328,7 +328,7 @@ describe('GrowspaceStore Branch Coverage', () => {
             (store.dataService.getGrowspaceDevices as any).mockReturnValue(mockDevices);
             store.data.setWsDataCache({ 'd1': {} } as any);
 
-            const hass1 = createMockHass();
+            const hass1 = aMinimalHass();
             hass1.states['sensor.plant1'] = { state: 'ok', last_updated: 't1' } as any;
             store.updateHass(hass1);
 

@@ -3,7 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceTankCard } from '../../../src/cards/growspace-tank-card';
-import { createMockHass } from '../../mocks/hass';
+import { aHass } from '../../fixtures';
 import { createMockTankDevice } from '../../mocks/device';
 
 vi.mock('../../../src/cards/editors/growspace-tank-card-editor', () => ({}));
@@ -14,7 +14,7 @@ if (!customElements.get('growspace-tank-card')) {
 
 test('growspace-tank-card visual snapshot', async () => {
     const element = await fixture<GrowspaceTankCard>(html`<growspace-tank-card></growspace-tank-card>`);
-    element.hass = createMockHass() as any;
+    element.hass = aHass() as any;
 
     vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
     vi.spyOn(element.store.syncService, 'updateDevicesState').mockImplementation(() => {});

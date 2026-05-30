@@ -4,7 +4,7 @@ import { page } from 'vitest/browser';
 import { GrowspaceSubareaCard } from '../../../src/cards/growspace-subarea-card';
 import { DataService } from '../../../src/services/data-service';
 import { ChartUtils } from '../../../src/utils/chart-utils';
-import { createMockHass } from '../../mocks/hass';
+import { aHass } from '../../fixtures';
 
 const { mockDataService } = vi.hoisted(() => ({
     mockDataService: {
@@ -64,7 +64,7 @@ test('growspace-subarea-card visual snapshot', async () => {
     vi.mocked(ChartUtils.generateSparklinePath).mockReturnValue('M 0,0 L 100,100');
     vi.mocked(ChartUtils.getSparklineColor).mockReturnValue('#4caf50');
 
-    const mockHass = createMockHass();
+    const mockHass = aHass();
     Object.assign(mockHass.states, {
         'sensor.veg_temp': { state: '23.0', attributes: { friendly_name: 'Veg Temp', unit_of_measurement: '°C' } },
         'sensor.veg_humidity': { state: '52', attributes: { friendly_name: 'Veg Humidity', unit_of_measurement: '%' } },
