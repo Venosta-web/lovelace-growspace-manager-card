@@ -59,12 +59,8 @@ export class SyncService {
         const newState = hass.states[entityId];
         const oldState = this._lastHassRef.states[entityId];
 
-        // Fast reference check + check for missing/new states
-        if (
-          newState !== oldState ||
-          (newState === undefined && oldState !== undefined) ||
-          (newState !== undefined && oldState === undefined)
-        ) {
+        // Fast reference check covers all state changes and missing/new states
+        if (newState !== oldState) {
           hasChanged = true;
           break;
         }
