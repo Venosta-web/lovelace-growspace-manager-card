@@ -271,3 +271,30 @@ export interface IrrigationDialogState {
   initialTab?: string;
   scrollToField?: string;
 }
+
+export type LabelSizeId = '50x30' | '40x30' | '50x50' | '50x80' | '50x15';
+
+export type PrintDensity = 'low' | 'normal' | 'high';
+
+export interface LabelFieldVisibility {
+  name: boolean;
+  phenotype: boolean;
+  breeder: boolean;
+  lineage: boolean;
+  startDate: boolean;
+  stageAge: boolean;
+  plantId: boolean;
+  logo: boolean;
+  qr: boolean;
+}
+
+export interface LabelFieldValues {
+  name: string;
+  phenotype: string;
+  breeder: string;
+  lineage: string;
+  startDate: string;
+  stageAge: string;
+  plantId: string;
+  logo: string;
+}
