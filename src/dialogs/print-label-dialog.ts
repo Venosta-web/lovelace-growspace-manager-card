@@ -54,6 +54,7 @@ export class PrintLabelDialog extends LitElement {
   @state() private _copies = 1;
   @state() private _printState: PrintState = 'idle';
   @state() private _printProgress = 0;
+  @state() private _settingsOpen = false;
 
   static styles = [
     dialogStyles,
@@ -62,14 +63,27 @@ export class PrintLabelDialog extends LitElement {
         display: grid;
         grid-template-columns: 1fr 1.4fr;
         gap: 20px;
-        min-height: 400px;
+        min-height: 600px;
       }
 
-      /* Left — preview stage */
+      /* Left — preview stage (explicit column placement so DOM order can be settings-first) */
       .preview-col {
+        grid-column: 1;
+        grid-row: 1;
         display: flex;
         flex-direction: column;
         gap: 10px;
+      }
+
+      /* Settings wrapper occupies right column on desktop */
+      .settings-wrapper {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      /* Pill toggle button — desktop: hidden, mobile: shown */
+      .mobile-pill-toggle {
+        display: none;
       }
       .preview-stage {
         position: relative;
@@ -84,7 +98,7 @@ export class PrintLabelDialog extends LitElement {
       }
       .preview-stage label-preview {
         width: 100%;
-        max-width: 200px;
+        max-width: 300px;
       }
       .preview-meta {
         font-size: 0.78rem;
@@ -98,8 +112,70 @@ export class PrintLabelDialog extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 16px;
-        max-height: 480px;
+        max-height: 525px;
         padding-right: 4px;
+        padding-top: 12px;
+      }
+
+      /* Mobile: single column, pill collapsed above preview */
+      @media (max-width: 600px) {
+        .two-col {
+          display: flex;
+          flex-direction: column;
+          min-height: unset;
+          gap: 12px;
+        }
+
+        .preview-col {
+          grid-column: unset;
+          grid-row: unset;
+        }
+
+        .settings-wrapper {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          overflow: hidden;
+          grid-row: unset;
+          grid-column: unset;
+        }
+
+        .mobile-pill-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 12px 16px;
+          background: none;
+          border: none;
+          color: var(--primary-text-color, #fff);
+          cursor: pointer;
+          font-size: 0.88rem;
+          font-weight: 500;
+        }
+        .mobile-pill-toggle.open {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pill-chevron {
+          font-size: 1.1rem;
+          opacity: 0.5;
+          display: inline-block;
+          transform: rotate(90deg);
+          transition: transform 0.2s;
+        }
+        .pill-chevron.open {
+          transform: rotate(270deg);
+        }
+
+        .settings-col {
+          display: none;
+          max-height: none;
+          overflow-y: visible;
+          padding: 12px 16px;
+        }
+        .settings-col.mobile-open {
+          display: flex;
+        }
       }
 
       .settings-section {
@@ -254,7 +330,8 @@ export class PrintLabelDialog extends LitElement {
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding-top: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
       }
       .footer-meta {
         font-size: 0.82rem;
@@ -299,6 +376,7 @@ export class PrintLabelDialog extends LitElement {
     const ds = this.dialogState;
     this._printState = 'idle';
     this._printProgress = 0;
+    this._settingsOpen = false;
     this._copies = 1;
     this._sizeId = ds?.defaultSizeId ?? '50x30';
     this._density = ds?.defaultDensity ?? 'normal';
@@ -449,26 +527,16 @@ export class PrintLabelDialog extends LitElement {
         @close=${this._close}
       >
         <div class="two-col">
-          <!-- Left: preview stage -->
-          <div class="preview-col">
-            <div class="preview-stage">
-              <label-preview
-                .sizeId=${this._sizeId}
-                .fields=${this._fields}
-                .values=${values}
-                .qrValue=${qrValue}
-                .density=${this._density}
-              ></label-preview>
-            </div>
-            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
-            <printer-status-strip
-              .hass=${this.hass}
-              .selectedDeviceId=${this._selectedDeviceId}
-            ></printer-status-strip>
-          </div>
-
-          <!-- Right: settings -->
-          <div class="settings-col">
+          <!-- Settings (first in DOM so mobile stacks it above preview) -->
+          <div class="settings-wrapper">
+            <button
+              class="mobile-pill-toggle ${this._settingsOpen ? 'open' : ''}"
+              @click=${() => { this._settingsOpen = !this._settingsOpen; }}
+            >
+              <span>Print settings</span>
+              <span class="pill-chevron ${this._settingsOpen ? 'open' : ''}">›</span>
+            </button>
+            <div class="settings-col ${this._settingsOpen ? 'mobile-open' : ''}">
             <!-- Label content -->
             <div class="settings-section">
               <div class="settings-section-title">Label content</div>
@@ -485,23 +553,23 @@ export class PrintLabelDialog extends LitElement {
 
             <!-- QR target (only when qr is on) -->
             ${this._fields.qr
-              ? html`
+        ? html`
                   <div class="qr-target-card">
                     <div class="settings-section-title">QR code links to</div>
                     <md3-select
                       .value=${this._qrTarget}
                       .options=${[
-                        { label: 'Web (default)', value: 'web' },
-                        { label: 'Deep link', value: 'deeplink' },
-                      ]}
+            { label: 'Web (default)', value: 'web' },
+            { label: 'Deep link', value: 'deeplink' },
+          ]}
                       @change=${(e: CustomEvent) => {
-                        this._qrTarget = e.detail as QrTarget;
-                      }}
+            this._qrTarget = e.detail as QrTarget;
+          }}
                     ></md3-select>
                     <div class="qr-url-hint">${qrValue}</div>
                   </div>
                 `
-              : nothing}
+        : nothing}
 
             <!-- Copies + density -->
             <div class="settings-section">
@@ -510,29 +578,29 @@ export class PrintLabelDialog extends LitElement {
                 <div class="copies-stepper">
                   <button
                     @click=${() => {
-                      if (this._copies > 1) this._copies--;
-                    }}
+        if (this._copies > 1) this._copies--;
+      }}
                   >−</button>
                   <span class="copies-value">${this._copies}</span>
                   <button
                     @click=${() => {
-                      if (this._copies < 50) this._copies++;
-                    }}
+        if (this._copies < 50) this._copies++;
+      }}
                   >+</button>
                 </div>
                 <div class="density-seg">
                   ${(['low', 'normal', 'high'] as PrintDensity[]).map(
-                    (d) => html`
+        (d) => html`
                       <button
                         class=${this._density === d ? 'active' : ''}
                         @click=${() => {
-                          this._density = d;
-                        }}
+            this._density = d;
+          }}
                       >
                         ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
                       </button>
                     `
-                  )}
+      )}
                 </div>
               </div>
             </div>
@@ -542,17 +610,17 @@ export class PrintLabelDialog extends LitElement {
               <div class="settings-section-title">Print settings</div>
               <div class="size-chips">
                 ${LABEL_SIZES.map(
-                  (s) => html`
+        (s) => html`
                     <button
                       class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
                       @click=${() => {
-                        this._sizeId = s.id;
-                      }}
+            this._sizeId = s.id;
+          }}
                     >
                       ${s.label}
                     </button>
                   `
-                )}
+      )}
               </div>
             </div>
 
@@ -563,14 +631,33 @@ export class PrintLabelDialog extends LitElement {
                 label="Niimbot Printer"
                 .value=${this._selectedDeviceId || ''}
                 .options=${[
-                  { label: 'Default / Auto', value: '' },
-                  ...printers.map((p) => ({ label: p.name, value: p.id })),
-                ]}
+        { label: 'Default / Auto', value: '' },
+        ...printers.map((p) => ({ label: p.name, value: p.id })),
+      ]}
                 @change=${(e: CustomEvent) => {
-                  this._selectedDeviceId = e.detail;
-                }}
+        this._selectedDeviceId = e.detail;
+      }}
               ></md3-select>
             </div>
+          </div>
+          </div>
+
+          <!-- Preview (second in DOM; CSS grid places it in col 1 on desktop) -->
+          <div class="preview-col">
+            <div class="preview-stage">
+              <label-preview
+                .sizeId=${this._sizeId}
+                .fields=${this._fields}
+                .values=${values}
+                .qrValue=${qrValue}
+                .density=${this._density}
+              ></label-preview>
+            </div>
+            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
+            <printer-status-strip
+              .hass=${this.hass}
+              .selectedDeviceId=${this._selectedDeviceId}
+            ></printer-status-strip>
           </div>
         </div>
 

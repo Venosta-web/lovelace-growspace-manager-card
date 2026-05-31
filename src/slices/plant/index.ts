@@ -467,7 +467,7 @@ export async function printLabel(params: {
   if (params.preview !== undefined) payload.preview = params.preview;
   if (params.baseUrl !== undefined) payload.base_url = params.baseUrl;
   if (params.fields !== undefined) payload.fields = params.fields;
-  if (params.sizeId !== undefined) payload.size_id = params.sizeId;
+  if (params.sizeId !== undefined) payload.label_size = params.sizeId;
   if (params.density !== undefined) payload.density = params.density;
   if (params.qrTarget !== undefined) payload.qr_target = params.qrTarget;
 

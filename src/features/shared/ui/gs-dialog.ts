@@ -25,7 +25,7 @@ export class GsDialog extends LitElement {
 
     ha-dialog {
       --dialog-surface-margin-top: 40px;
-      --ha-dialog-min-height: 85vh;
+      --ha-dialog-min-height: var(--ha-dialog-min-height, 85vh);
       --dialog-content-padding: 0;
     }
 
