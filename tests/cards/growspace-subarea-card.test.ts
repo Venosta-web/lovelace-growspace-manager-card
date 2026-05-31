@@ -489,12 +489,10 @@ describe('GrowspaceSubareaCard', () => {
         consoleSpy.mockRestore();
     });
 
-    test('stale counter triggers data refresh and loadSubarea', async () => {
-        const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
+    test('data:stale on store eventBus triggers _loadSubarea', async () => {
         const loadSpy = vi.spyOn(element as any, '_loadSubarea');
-        element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
+        element.store.eventBus.emit('data:stale', undefined);
         await Promise.resolve();
-        expect(refreshSpy).toHaveBeenCalled();
         expect(loadSpy).toHaveBeenCalled();
     });
 

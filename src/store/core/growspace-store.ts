@@ -31,7 +31,7 @@ import { UndoRedoManager, UndoableAction } from '../../services/undo-redo-manage
 import { OptimisticManager } from '../system/optimistic-manager';
 
 // New infrastructure (Phase 1)
-import { EventBus } from '../../features/shared/events/event-bus';
+import { EventBus, DATA_STALE_EVENT } from '../../features/shared/events';
 
 export class GrowspaceStore {
   private readonly _shared: GrowspaceSharedStore;
@@ -234,12 +234,9 @@ export class GrowspaceStore {
     this.eventBus = new EventBus();
 
     // Trigger a full refresh whenever the shared store signals stale data
-    let prevStale = shared.data.$staleCounter.get();
-    this._staleUnsub = shared.data.$staleCounter.subscribe((n) => {
-      if (n !== prevStale) {
-        prevStale = n;
-        this.syncService.refreshGrowspaceData();
-      }
+    this._staleUnsub = shared.addOnStale(async () => {
+      await this.syncService.refreshGrowspaceData();
+      this.eventBus.emit(DATA_STALE_EVENT, undefined);
     });
   }
 

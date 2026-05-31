@@ -9,6 +9,7 @@ export class GrowspaceSharedStore {
 
   private _hass?: HomeAssistant;
   private _unsubEvents?: () => void;
+  private _staleCallbacks = new Set<() => Promise<void>>();
 
   constructor() {
     this.dataService = new DataService();
@@ -22,6 +23,11 @@ export class GrowspaceSharedStore {
     if (!this._unsubEvents) {
       this._subscribe(hass);
     }
+  }
+
+  addOnStale(cb: () => Promise<void>): () => void {
+    this._staleCallbacks.add(cb);
+    return () => this._staleCallbacks.delete(cb);
   }
 
   destroy(): void {
@@ -49,6 +55,6 @@ export class GrowspaceSharedStore {
 
   private _handleEvent(_event: unknown): void {
     this.dataService.invalidateCache();
-    this.data.$staleCounter.set(this.data.$staleCounter.get() + 1);
+    this._staleCallbacks.forEach((cb) => { cb().catch(() => {}); });
   }
 }

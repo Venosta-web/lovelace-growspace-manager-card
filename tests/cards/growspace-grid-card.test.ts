@@ -81,9 +81,9 @@ describe('GrowspaceGridCard', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  test('stale counter triggers data refresh', async () => {
-    const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData');
-    element.store.data.$staleCounter.set(element.store.data.$staleCounter.get() + 1);
+  test('WS event triggers data refresh', async () => {
+    const refreshSpy = vi.spyOn(element.store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+    (element.store as any)._shared._handleEvent({});
     await Promise.resolve();
     expect(refreshSpy).toHaveBeenCalled();
   });

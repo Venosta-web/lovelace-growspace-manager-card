@@ -19,6 +19,7 @@ import {
 } from '@mdi/js';
 
 import { hassContext, configContext, storeContext } from '../lib/context';
+import { DATA_STALE_EVENT } from '../features/shared/events';
 import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-helpers';
 
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
@@ -206,13 +207,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     connectedCallback(): void {
         super.connectedCallback();
         this._initAnalyticsController();
-        let prevStale = this._sharedStore.data.$staleCounter.get();
-        this._staleUnsub = this._sharedStore.data.$staleCounter.subscribe((n) => {
-            if (n !== prevStale) {
-                prevStale = n;
-                this._loadSubarea();
-            }
-        });
+        this._staleUnsub = this.store.eventBus.on(DATA_STALE_EVENT, () => this._loadSubarea());
     }
 
     protected firstUpdated(): void {
