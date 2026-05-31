@@ -1,6 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { configureEnvironment, removeEnvironment, resetWaterTracking } from './environment-actions';
+import {
+  configureEnvironment,
+  removeEnvironment,
+  resetWaterTracking,
+  waterPlant,
+  waterGrowspace,
+} from './environment-actions';
 import type { ActionContext } from '../core/action-context';
+import * as libraryActions from '../plant/library-actions';
+
+vi.mock('../plant/library-actions', () => ({
+  fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+}));
 
 function makeContext() {
   const showToast = vi.fn();
@@ -87,6 +98,82 @@ describe('removeEnvironment', () => {
 
     await expect(removeEnvironment(ctx, 'gs-1')).rejects.toBe('string-error');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
+});
+
+describe('waterPlant', () => {
+  let ctx: ReturnType<typeof makeContext>;
+
+  beforeEach(() => {
+    ctx = makeContext();
+    vi.mocked(libraryActions.fetchNutrientInventory).mockClear();
+  });
+
+  it('calls dataService without nutrient refresh when no nutrients given', async () => {
+    await waterPlant(ctx, 'plant-1', 200);
+
+    expect((ctx.dataService as any).waterPlant).toHaveBeenCalledWith('plant-1', 200, undefined, undefined);
+    expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+  });
+
+  it('calls dataService and refreshes nutrient inventory when nutrients applied', async () => {
+    const nutrients = { 'nutrient-a': 5 };
+    await waterPlant(ctx, 'plant-1', 200, nutrients, 'preset-1');
+
+    expect((ctx.dataService as any).waterPlant).toHaveBeenCalledWith('plant-1', 200, nutrients, 'preset-1');
+    expect(libraryActions.fetchNutrientInventory).toHaveBeenCalledWith(ctx, true);
+  });
+
+  it('skips nutrient refresh for empty nutrients object', async () => {
+    await waterPlant(ctx, 'plant-1', 200, {});
+
+    expect((ctx.dataService as any).waterPlant).toHaveBeenCalledWith('plant-1', 200, {}, undefined);
+    expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+  });
+
+  it('shows error toast and rethrows on failure', async () => {
+    (ctx.dataService as any).waterPlant.mockRejectedValue(new Error('water-err'));
+
+    await expect(waterPlant(ctx, 'plant-1', 200)).rejects.toThrow('water-err');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('water-err'), 'error');
+  });
+});
+
+describe('waterGrowspace', () => {
+  let ctx: ReturnType<typeof makeContext>;
+
+  beforeEach(() => {
+    ctx = makeContext();
+    vi.mocked(libraryActions.fetchNutrientInventory).mockClear();
+  });
+
+  it('calls dataService without nutrient refresh when no nutrients given', async () => {
+    await waterGrowspace(ctx, 'gs-1', 500);
+
+    expect((ctx.dataService as any).waterGrowspace).toHaveBeenCalledWith('gs-1', 500, undefined, undefined);
+    expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+  });
+
+  it('calls dataService and refreshes nutrient inventory when nutrients applied', async () => {
+    const nutrients = { 'nutrient-b': 10 };
+    await waterGrowspace(ctx, 'gs-1', 500, nutrients, 'preset-2');
+
+    expect((ctx.dataService as any).waterGrowspace).toHaveBeenCalledWith('gs-1', 500, nutrients, 'preset-2');
+    expect(libraryActions.fetchNutrientInventory).toHaveBeenCalledWith(ctx, true);
+  });
+
+  it('skips nutrient refresh for empty nutrients object', async () => {
+    await waterGrowspace(ctx, 'gs-1', 500, {});
+
+    expect((ctx.dataService as any).waterGrowspace).toHaveBeenCalledWith('gs-1', 500, {}, undefined);
+    expect(libraryActions.fetchNutrientInventory).not.toHaveBeenCalled();
+  });
+
+  it('shows error toast and rethrows on failure', async () => {
+    (ctx.dataService as any).waterGrowspace.mockRejectedValue(new Error('growspace-water-err'));
+
+    await expect(waterGrowspace(ctx, 'gs-1', 500)).rejects.toThrow('growspace-water-err');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('growspace-water-err'), 'error');
   });
 });
 
