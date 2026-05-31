@@ -3,11 +3,20 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
-import { mdiPrinter, mdiCheck, mdiInformation } from '@mdi/js';
+import { mdiPrinter, mdiCheck } from '@mdi/js';
 import '../features/shared/ui/gs-dialog';
-import type { BatchPrintLabelsDialogState } from '../lib/types/dialog';
+import '../features/shared/ui/printer-status-strip';
+import type { BatchPrintLabelsDialogState, LabelSizeId, PrintDensity } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+
+const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
+  { id: '50x30', label: '50×30' },
+  { id: '40x30', label: '40×30' },
+  { id: '50x50', label: '50×50' },
+  { id: '50x80', label: '50×80' },
+  { id: '50x15', label: '50×15' },
+];
 
 @customElement('batch-print-label-dialog')
 export class BatchPrintLabelDialog extends LitElement {
@@ -24,6 +33,8 @@ export class BatchPrintLabelDialog extends LitElement {
   @state() private _copies = 1;
   @state() private _isSubmitting = false;
   @state() private _progress = 0;
+  @state() private _sizeId: LabelSizeId = '50x30';
+  @state() private _density: PrintDensity = 'normal';
 
   static styles = [
     dialogStyles,
@@ -65,6 +76,47 @@ export class BatchPrintLabelDialog extends LitElement {
         height: 100%;
         transition: width 0.3s ease;
       }
+      .size-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .size-chip {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        color: var(--primary-text-color, #fff);
+        transition: background 0.15s;
+      }
+      .size-chip.active {
+        background: var(--primary-color, #4caf50);
+        border-color: transparent;
+      }
+      .density-seg {
+        display: flex;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .density-seg button {
+        background: transparent;
+        border: none;
+        color: var(--primary-text-color, #fff);
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        opacity: 0.6;
+        transition: background 0.15s, opacity 0.15s;
+      }
+      .density-seg button.active {
+        background: rgba(255, 255, 255, 0.12);
+        opacity: 1;
+      }
     `,
   ];
 
@@ -78,6 +130,8 @@ export class BatchPrintLabelDialog extends LitElement {
     this._isSubmitting = false;
     this._progress = 0;
     this._copies = 1;
+    this._sizeId = '50x30';
+    this._density = 'normal';
     if (!this._selectedDeviceId) {
       const printers = this._getPrinters();
       if (printers.length > 0) {
@@ -126,9 +180,11 @@ export class BatchPrintLabelDialog extends LitElement {
           await this.store.actions.plant.printLabel({
             plantId,
             deviceId: this._selectedDeviceId || undefined,
+            sizeId: this._sizeId,
+            density: this._density,
             preview: false,
           });
-        } catch (e) {
+        } catch (_e) {
           errors.push(plantId);
         }
         completed++;
@@ -168,6 +224,10 @@ export class BatchPrintLabelDialog extends LitElement {
         <div class="dialog-content-grid" style="display: block;">
           <div class="form-section">
             <h3>Printer Settings</h3>
+            <printer-status-strip
+              .hass=${this.hass}
+              .selectedDeviceId=${this._selectedDeviceId}
+            ></printer-status-strip>
             <md3-select
               label="Niimbot Printer"
               .value=${this._selectedDeviceId || ''}
@@ -177,20 +237,35 @@ export class BatchPrintLabelDialog extends LitElement {
               }}
             ></md3-select>
 
-            ${printers.length === 0
-              ? html`
-                  <div
-                    style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;"
+            <div class="size-chips">
+              ${LABEL_SIZES.map(
+                (s) => html`
+                  <button
+                    class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
+                    @click=${() => {
+                      this._sizeId = s.id;
+                    }}
                   >
-                    <ha-svg-icon
-                      .path=${mdiInformation}
-                      style="--mdc-icon-size: 16px;"
-                    ></ha-svg-icon>
-                    No Niimbot printers discovered. You can still try printing if you have a default
-                    printer configured.
-                  </div>
+                    ${s.label}
+                  </button>
                 `
-              : nothing}
+              )}
+            </div>
+
+            <div class="density-seg">
+              ${(['low', 'normal', 'high'] as PrintDensity[]).map(
+                (d) => html`
+                  <button
+                    class=${this._density === d ? 'active' : ''}
+                    @click=${() => {
+                      this._density = d;
+                    }}
+                  >
+                    ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
+                  </button>
+                `
+              )}
+            </div>
 
             <div class="copies-row">
               <label>Copies per plant</label>
