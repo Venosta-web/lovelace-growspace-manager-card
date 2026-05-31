@@ -3,6 +3,7 @@ import { GrowspaceAnalyticsCard } from '../../src/cards/growspace-analytics-card
 import { ViewMode } from '../../src/features/environment/constants';
 import { aHass, aGrowspace } from '../fixtures';
 import { renderCard } from '../harness';
+import { setDevices } from '../../src/slices/grid';
 
 if (!customElements.get('growspace-analytics-card')) {
   customElements.define('growspace-analytics-card', GrowspaceAnalyticsCard);
@@ -80,7 +81,7 @@ describe('GrowspaceAnalyticsCard', () => {
   test('renders no-data state when devices array is empty', async () => {
     const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
     handle.element.store.ui.$isLoading.set(false);
-    handle.element.store.data.$devices.set([]);
+    setDevices([]);
     await handle.element.updateComplete;
 
     const noData = handle.element.shadowRoot?.querySelector('.no-data');
@@ -92,7 +93,7 @@ describe('GrowspaceAnalyticsCard', () => {
   test('renders analytics view when valid device selected', async () => {
     const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
     handle.element.store.ui.$isLoading.set(false);
-    handle.element.store.data.$devices.set([
+    setDevices([
       { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
     ]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
@@ -107,7 +108,7 @@ describe('GrowspaceAnalyticsCard', () => {
     test('clickChip calls toggleEnvGraph for the selected metric', async () => {
       const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
       handle.element.store.ui.$isLoading.set(false);
-      handle.element.store.data.$devices.set([
+      setDevices([
         { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
       ]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);

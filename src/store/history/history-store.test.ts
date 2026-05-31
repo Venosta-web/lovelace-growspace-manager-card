@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceHistoryStore } from './history-store';
 import type { DataService } from '../../services/data-service';
 import type { GrowspaceDataStore } from '../core/data-store';
 import type { GrowspaceDevice } from '../../types';
 import { atom } from 'nanostores';
+import { setDevices } from '../../slices/grid';
 
 const makeStore = () => {
   const mockDataStore = {} as unknown as GrowspaceDataStore;
@@ -118,12 +119,17 @@ const makeTransportStore = (getHistoryStats: ReturnType<typeof vi.fn>) => {
     environmentAttributes: { temperatureSensor: TEMP_ENTITY },
   } as unknown as GrowspaceDevice;
 
-  const mockDataStore = { $devices: atom<GrowspaceDevice[]>([device]) } as unknown as GrowspaceDataStore;
+  setDevices([device]);
+  const mockDataStore = {} as unknown as GrowspaceDataStore;
   const $selectedDevice = atom<string | null>('dev1');
   return new GrowspaceHistoryStore(mockDataService, mockDataStore, $selectedDevice);
 };
 
 describe('GrowspaceHistoryStore - history transport', () => {
+  afterEach(() => {
+    setDevices([]);
+  });
+
   beforeEach(() => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);

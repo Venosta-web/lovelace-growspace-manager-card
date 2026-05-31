@@ -7,6 +7,7 @@ import '../features/shared/ui/gs-dialog';
 import type { BatchCloneDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { activeDevices$ } from '../slices/grid';
 
 @customElement('batch-clone-dialog')
 export class BatchCloneDialog extends LitElement {
@@ -95,7 +96,7 @@ export class BatchCloneDialog extends LitElement {
     let completed = 0;
 
     for (const plantId of plantIds) {
-      const devices = this.store.data.$devices.get();
+      const devices = activeDevices$.get();
       let motherPlant;
       for (const device of devices) {
         motherPlant = device.plants?.find(

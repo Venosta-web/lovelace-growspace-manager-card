@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { atom } from 'nanostores';
 import * as uiActions from '../ui/ui-actions';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
 import type { ActionContext } from '../core/action-context';
 import { GrowspaceDataStore } from '../core/data-store';
+import { setDevices, devices$ } from '../../slices/grid';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import type { PlantEntity } from '../../types';
 import { handleKeyboardNavigation } from './keyboard-actions';
@@ -24,7 +25,7 @@ function makeContext(plants: PlantEntity[] = []): ActionContext {
 
   if (plants.length > 0) {
     $selectedDevice.set('device-1');
-    data.setDevices([
+    setDevices([
       { deviceId: 'device-1', plants } as unknown as import('../../types').GrowspaceDevice,
     ]);
   }
@@ -43,6 +44,10 @@ function makeContext(plants: PlantEntity[] = []): ActionContext {
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  setDevices([]);
 });
 
 describe('handleKeyboardNavigation — Escape', () => {

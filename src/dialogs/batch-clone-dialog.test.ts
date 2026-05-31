@@ -6,6 +6,7 @@ import { openBatchCloneDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchCloneDialog } from './batch-clone-dialog';
 import './batch-clone-dialog';
+import { setDevices } from '../slices/grid';
 
 // ---------------------------------------------------------------------------
 // openBatchCloneDialog action
@@ -134,6 +135,7 @@ function makePlant(plantId: string) {
 
 function makeMockStore(plantIds: string[] = [], overrides: Record<string, unknown> = {}) {
   const plants = plantIds.map(makePlant);
+  setDevices([{ deviceId: 'gs-1', plants } as any]);
   return {
     actions: {
       plant: {
@@ -141,11 +143,6 @@ function makeMockStore(plantIds: string[] = [], overrides: Record<string, unknow
       },
       ui: {
         toast: vi.fn(),
-      },
-    },
-    data: {
-      $devices: {
-        get: vi.fn().mockReturnValue([{ deviceId: 'gs-1', plants }]),
       },
     },
     ...overrides,
@@ -204,7 +201,10 @@ describe('BatchCloneDialog – _close', () => {
 });
 
 describe('BatchCloneDialog – _submit', () => {
-  afterEach(() => vi.restoreAllMocks());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    setDevices([]);
+  });
 
   it('does nothing when store is missing', async () => {
     const el = createElement();

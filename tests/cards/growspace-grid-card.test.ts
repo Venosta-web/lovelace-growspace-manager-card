@@ -4,6 +4,7 @@ import { ViewMode } from '../../src/features/environment/constants';
 import type { GrowspaceManagerCardConfig } from '../../src/lib/types/config';
 import { aGrowspace, aHass } from '../fixtures';
 import { renderCard } from '../harness';
+import { setDevices } from '../../src/slices/grid';
 import { gridInteraction$ } from '../../src/slices/grid-interaction';
 
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
@@ -89,7 +90,7 @@ describe('GrowspaceGridCard', () => {
 
   test('event handlers trigger store actions', async () => {
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([
+    setDevices([
       { deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any,
     ]);
     element.store.grid.$selectedDevice.set('test_tent');
@@ -126,7 +127,7 @@ describe('GrowspaceGridCard', () => {
 
   test('transplant-mode event triggers startTransplant flow', async () => {
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([
+    setDevices([
       { deviceId: 'test_tent', name: 'Test Tent', plants: [] } as any,
     ]);
     element.store.grid.$selectedDevice.set('test_tent');
@@ -157,7 +158,7 @@ describe('GrowspaceGridCard', () => {
     element.store.ui.$isEditMode.set(false);
     element.store.ui.$viewMode.set(ViewMode.STANDARD);
     element.store.ui.$focusedPlantIndex.set(-1);
-    element.store.data.$devices.set([]);
+    setDevices([]);
     await element.updateComplete;
 
     const noData = element.shadowRoot?.querySelector('.no-data');
@@ -170,7 +171,7 @@ describe('GrowspaceGridCard', () => {
     element.store.ui.$isEditMode.set(false);
     element.store.ui.$viewMode.set(ViewMode.STANDARD);
     element.store.ui.$focusedPlantIndex.set(-1);
-    element.store.data.$devices.set([
+    setDevices([
       {
         deviceId: 'wrong_device',
         name: 'Wrong Tent',
@@ -193,7 +194,7 @@ describe('GrowspaceGridCard', () => {
     element.store.ui.$isEditMode.set(false);
     element.store.ui.$viewMode.set(ViewMode.STANDARD);
     element.store.ui.$focusedPlantIndex.set(-1);
-    element.store.data.$devices.set([
+    setDevices([
       {
         deviceId: 'selected_tent',
         name: 'Selected Tent',

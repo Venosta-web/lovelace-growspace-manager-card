@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceDataStore } from '../core/data-store';
 import { OptimisticManager } from '../system/optimistic-manager';
 import { UndoRedoManager } from '../../services/undo-redo-manager';
@@ -12,6 +12,7 @@ import {
   setIrrigationSettings,
   runIrrigationCycle,
 } from './irrigation-actions';
+import { devices$, setDevices } from '../../slices/grid';
 
 function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
   const data = new GrowspaceDataStore();
@@ -20,7 +21,7 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
   const optimisticManager = new OptimisticManager(data, undoRedoManager);
 
   const device = createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1' });
-  data.setDevices([device]);
+  setDevices([device]);
 
   return {
     data,
@@ -41,6 +42,10 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
     ...overrides,
   } satisfies ActionContext;
 }
+
+afterEach(() => {
+  setDevices([]);
+});
 
 // ---------------------------------------------------------------------------
 // addIrrigationTime
@@ -66,7 +71,7 @@ describe('addIrrigationTime', () => {
   it('applies the new time to the device immediately (optimistic)', async () => {
     await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00', duration: 60 });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationTimes).toContainEqual(
       expect.objectContaining({ time: '06:00:00' })
     );
@@ -85,7 +90,7 @@ describe('addIrrigationTime', () => {
       addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00', duration: 60 })
     ).rejects.toThrow();
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationTimes).toHaveLength(0);
   });
 
@@ -129,7 +134,7 @@ describe('addIrrigationTime', () => {
       duration: undefined,
     });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationTimes).toContainEqual(
       expect.objectContaining({ time: '06:00:00', duration: 60 })
     );
@@ -141,7 +146,7 @@ describe('addIrrigationTime', () => {
     await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '12:00:00', duration: 60 });
     await addIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00', duration: 60 });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationTimes).toEqual([
       expect.objectContaining({ time: undefined }),
       expect.objectContaining({ time: undefined }),
@@ -168,7 +173,7 @@ describe('removeIrrigationTime', () => {
         drainTimes: [],
       },
     });
-    ctx.data.setDevices([device]);
+    setDevices([device]);
   });
 
   it('calls dataService.removeIrrigationTime with correct params', async () => {
@@ -183,7 +188,7 @@ describe('removeIrrigationTime', () => {
   it('removes the time from the device immediately (optimistic)', async () => {
     await removeIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00' });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationTimes).toHaveLength(0);
   });
 
@@ -200,7 +205,7 @@ describe('removeIrrigationTime', () => {
       removeIrrigationTime(ctx, { growspaceId: 'gs1', time: '06:00:00' })
     ).rejects.toThrow();
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationTimes).toContainEqual(
       expect.objectContaining({ time: '06:00:00' })
     );
@@ -244,7 +249,7 @@ describe('addDrainTime', () => {
   it('applies the new drain time to the device immediately (optimistic)', async () => {
     await addDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00', duration: 30 });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toContainEqual(
       expect.objectContaining({ time: '18:00:00' })
     );
@@ -263,7 +268,7 @@ describe('addDrainTime', () => {
       addDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00', duration: 30 })
     ).rejects.toThrow();
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toHaveLength(0);
   });
 
@@ -289,7 +294,7 @@ describe('addDrainTime', () => {
       duration: undefined,
     });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toContainEqual(
       expect.objectContaining({ time: '18:00:00', duration: 60 })
     );
@@ -301,7 +306,7 @@ describe('addDrainTime', () => {
     await addDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00', duration: 30 });
     await addDrainTime(ctx, { growspaceId: 'gs1', time: '08:00:00', duration: 30 });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toEqual([
       expect.objectContaining({ time: undefined }),
       expect.objectContaining({ time: undefined }),
@@ -328,7 +333,7 @@ describe('removeDrainTime', () => {
         drainTimes: [{ time: '18:00:00', duration: 30 }],
       },
     });
-    ctx.data.setDevices([device]);
+    setDevices([device]);
   });
 
   it('calls dataService.removeDrainTime with correct params', async () => {
@@ -343,7 +348,7 @@ describe('removeDrainTime', () => {
   it('removes the drain time from the device immediately (optimistic)', async () => {
     await removeDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00' });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toHaveLength(0);
   });
 
@@ -352,7 +357,7 @@ describe('removeDrainTime', () => {
 
     await expect(removeDrainTime(ctx, { growspaceId: 'gs1', time: '18:00:00' })).rejects.toThrow();
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.drainTimes).toContainEqual(
       expect.objectContaining({ time: '18:00:00' })
     );
@@ -391,7 +396,7 @@ describe('setIrrigationSettings', () => {
         irrigationDuration: 60,
       },
     });
-    ctx.data.setDevices([device]);
+    setDevices([device]);
   });
 
   it('calls dataService.setIrrigationSettings with correct params', async () => {
@@ -421,7 +426,7 @@ describe('setIrrigationSettings', () => {
       drainDuration: 45,
     });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.new_pump');
     expect(device?.irrigationConfig.irrigationDuration).toBe(90);
   });
@@ -451,7 +456,7 @@ describe('setIrrigationSettings', () => {
       })
     ).rejects.toThrow();
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.old_pump');
     expect(device?.irrigationConfig.irrigationDuration).toBe(60);
   });
@@ -515,7 +520,7 @@ describe('setIrrigationSettings', () => {
       logToLogbook: false,
     });
 
-    const device = ctx.data.$devices.get().find((d) => d.deviceId === 'gs1');
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
     expect(device?.irrigationConfig.soilTriggerPercent).toBe(40);
     expect(device?.irrigationConfig.skipDuringDark).toBe(true);
     expect(device?.irrigationConfig.pauseOnLowTank).toBe(false);

@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SyncService } from '../../../src/services/sync-service';
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceDataStore } from '../../../src/store/core/data-store';
 import { GrowspaceUIStore } from '../../../src/store/ui/ui-store';
-import { GridSliceRef } from '../../../src/slices/grid';
+import { GridSliceRef, devices$, setDevices } from '../../../src/slices/grid';
 import { setDeviceSnapshot } from '../../../src/slices/device-state';
 import { setEnvSnapshot } from '../../../src/slices/environment';
 import { setPlants } from '../../../src/slices/plant';
@@ -37,6 +37,10 @@ describe('SyncService Unit Tests', () => {
   let uiStore: GrowspaceUIStore;
   let gridStore: GridSliceRef;
 
+  afterEach(() => {
+    setDevices([]);
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -47,12 +51,8 @@ describe('SyncService Unit Tests', () => {
       hass: undefined,
     } as unknown as DataService;
 
-    dataStore = {
-      $devices: atom<GrowspaceDevice[]>([]),
-      setDevices: vi.fn((devices: GrowspaceDevice[]) => {
-        dataStore.$devices.set(devices);
-      }),
-    } as unknown as GrowspaceDataStore;
+    setDevices([]);
+    dataStore = {} as unknown as GrowspaceDataStore;
 
     uiStore = {
       $defaultApplied: atom<boolean>(false),
@@ -262,7 +262,7 @@ describe('SyncService Unit Tests', () => {
 
     it('calls setIsLoading(true) if devices list is empty', async () => {
       dataService.hass = { states: {} } as any;
-      dataStore.$devices.set([]);
+      setDevices([]);
 
       const fetchPromise = Promise.resolve({} as any);
       vi.mocked(dataService.fetchGrowspaceData).mockReturnValue(fetchPromise);
@@ -275,7 +275,7 @@ describe('SyncService Unit Tests', () => {
 
     it('does not call setIsLoading(true) if devices list is not empty', async () => {
       dataService.hass = { states: {} } as any;
-      dataStore.$devices.set([{ deviceId: 'd1' } as any]);
+      setDevices([{ deviceId: 'd1', plants: [] } as any]);
 
       const fetchPromise = Promise.resolve({} as any);
       vi.mocked(dataService.fetchGrowspaceData).mockReturnValue(fetchPromise);
@@ -328,24 +328,24 @@ describe('SyncService Unit Tests', () => {
       const newDevices: GrowspaceDevice[] = [
         { deviceId: 'd1', plants: [] } as any,
       ];
-      dataStore.$devices.set([]);
+      setDevices([]);
       vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(newDevices);
 
       syncService.updateDevicesState();
 
-      expect(dataStore.setDevices).toHaveBeenCalledWith(newDevices);
+      expect(devices$.get()).toEqual(newDevices);
     });
 
     it('does not set devices store when device arrays are equal', () => {
       const currentDevices: GrowspaceDevice[] = [
         { deviceId: 'd1', plants: [] } as any,
       ];
-      dataStore.$devices.set(currentDevices);
+      setDevices(currentDevices);
       vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(currentDevices);
 
       syncService.updateDevicesState();
 
-      expect(dataStore.setDevices).not.toHaveBeenCalled();
+      expect(devices$.get()).toEqual(currentDevices);
     });
 
     it('correctly sets plants with all nested plant entities', () => {

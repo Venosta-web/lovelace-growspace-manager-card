@@ -8,6 +8,7 @@ import '../features/shared/ui/gs-dialog';
 import { PrintLabelDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { activeDevices$ } from '../slices/grid';
 import { strainLibrary$ } from '../slices/strain';
 
 @customElement('print-label-dialog')
@@ -322,8 +323,8 @@ export class PrintLabelDialog extends LitElement {
   }
 
   private _getPlant(plantId?: string) {
-    if (!plantId || !this.store || !this.store.data) return null;
-    const devices = this.store.data.$devices.get();
+    if (!plantId) return null;
+    const devices = activeDevices$.get();
     for (const device of devices) {
       const plant = device.plants.find(
         (p) => (p.attributes.plant_id || p.entity_id.replace('sensor.', '')) === plantId
@@ -334,7 +335,7 @@ export class PrintLabelDialog extends LitElement {
   }
 
   private _getStrain(strainName?: string, phenotype?: string) {
-    if (!strainName || !this.store || !this.store.data) return null;
+    if (!strainName) return null;
     const library = strainLibrary$.get();
     const pheno = phenotype || 'default';
     return library.find((s) => s.strain === strainName && s.phenotype === pheno) || null;

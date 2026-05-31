@@ -15,12 +15,15 @@ import {
   growspaceOptions$,
   gridLayout$,
   gridViewState$,
+  plantToDeviceMap$,
   gridSlice,
   setDevices,
   setSelectedDeviceId,
   addOptimisticDeletedPlantId,
   removeOptimisticDeletedPlantId,
   clearOptimisticDeletedPlantIds,
+  patchDeviceIrrigationConfig,
+  makePerCardGridSlice,
 } from './index';
 
 // ---------------------------------------------------------------------------
@@ -298,6 +301,73 @@ describe('gridSlice', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Computed: plantToDeviceMap$
+// ---------------------------------------------------------------------------
+
+describe('plantToDeviceMap$', () => {
+  it('maps plant_id to deviceId for all plants across all devices', () => {
+    const p1 = makePlant('p1', 1, 1);
+    const p2 = makePlant('p2', 1, 2);
+    setDevices([
+      makeDevice('gs1', 'Room 1', [p1]),
+      makeDevice('gs2', 'Room 2', [p2]),
+    ]);
+
+    const map = plantToDeviceMap$.get();
+    expect(map.get('p1')).toBe('gs1');
+    expect(map.get('p2')).toBe('gs2');
+  });
+
+  it('falls back to entity_id without sensor. prefix for plants without plant_id', () => {
+    const plant: PlantEntity = {
+      entity_id: 'sensor.legacy_plant',
+      state: 'vegetative',
+      attributes: { row: 1, col: 1 },
+    } as unknown as PlantEntity;
+    setDevices([makeDevice('gs1', 'Room 1', [plant])]);
+
+    expect(plantToDeviceMap$.get().get('legacy_plant')).toBe('gs1');
+  });
+
+  it('updates reactively when setDevices is called with new data', () => {
+    const p1 = makePlant('p1', 1, 1);
+    setDevices([makeDevice('gs1', 'Room 1', [p1])]);
+    expect(plantToDeviceMap$.get().get('p1')).toBe('gs1');
+
+    const p2 = makePlant('p2', 1, 1);
+    setDevices([makeDevice('gs2', 'Room 2', [p2])]);
+    expect(plantToDeviceMap$.get().has('p1')).toBe(false);
+    expect(plantToDeviceMap$.get().get('p2')).toBe('gs2');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// patchDeviceIrrigationConfig
+// ---------------------------------------------------------------------------
+
+describe('patchDeviceIrrigationConfig', () => {
+  it('patches irrigationConfig on the matching device', () => {
+    const device = { ...makeDevice('gs1', 'Room 1', []), irrigationConfig: { irrigationTimes: [] } };
+    setDevices([device as any]);
+
+    patchDeviceIrrigationConfig('gs1', { irrigationTimes: [{ start: '08:00', duration: 30 }] } as any);
+
+    const updated = devices$.get().find((d) => d.deviceId === 'gs1')!;
+    expect((updated as any).irrigationConfig.irrigationTimes).toHaveLength(1);
+  });
+
+  it('is a no-op when the deviceId is not found', () => {
+    const device = makeDevice('gs1', 'Room 1', []);
+    setDevices([device]);
+
+    patchDeviceIrrigationConfig('unknown', {} as any);
+
+    expect(devices$.get()).toHaveLength(1);
+    expect(devices$.get()[0].deviceId).toBe('gs1');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cross-slice usage: sibling setter integration
 // ---------------------------------------------------------------------------
 
@@ -312,5 +382,50 @@ describe('cross-slice sibling setter usage', () => {
 
     removeOptimisticDeletedPlantId('p-roundtrip');
     expect(gridLayout$.get().grid[0][0]?.attributes.plant_id).toBe('p-roundtrip');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// makePerCardGridSlice — per-card selection isolation
+// ---------------------------------------------------------------------------
+
+describe('makePerCardGridSlice', () => {
+  it('two instances have independent $selectedDevice — setting one does not affect the other', () => {
+    const sliceA = makePerCardGridSlice();
+    const sliceB = makePerCardGridSlice();
+
+    sliceA.setSelectedDevice('gs-a');
+
+    expect(sliceA.$selectedDevice.get()).toBe('gs-a');
+    expect(sliceB.$selectedDevice.get()).toBeNull();
+  });
+
+  it('both instances see identical $activeDevices from the shared devices$ source', () => {
+    const p = makePlant('p1', 1, 1);
+    setDevices([makeDevice('gs1', 'Room 1', [p])]);
+
+    const sliceA = makePerCardGridSlice();
+    const sliceB = makePerCardGridSlice();
+
+    expect(sliceA.$activeDevices.get()).toEqual(sliceB.$activeDevices.get());
+    expect(sliceA.$activeDevices.get()).toHaveLength(1);
+  });
+
+  it('$gridLayout computes independently per instance based on its own selected device', () => {
+    const p1 = makePlant('p1', 1, 1);
+    const p2 = makePlant('p2', 1, 1);
+    setDevices([
+      makeDevice('gs1', 'Room A', [p1], 2, 2),
+      makeDevice('gs2', 'Room B', [p2], 2, 2),
+    ]);
+
+    const sliceA = makePerCardGridSlice();
+    const sliceB = makePerCardGridSlice();
+
+    sliceA.setSelectedDevice('gs1');
+    sliceB.setSelectedDevice('gs2');
+
+    expect(sliceA.$gridLayout.get().grid[0][0]?.attributes.plant_id).toBe('p1');
+    expect(sliceB.$gridLayout.get().grid[0][0]?.attributes.plant_id).toBe('p2');
   });
 });

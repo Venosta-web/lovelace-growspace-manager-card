@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceLogbookCard } from '../../../src/cards/growspace-logbook-card';
+import { setDevices } from '../../../src/slices/grid';
 import { aHass, aGrowspaceDevice } from '../../fixtures';
 
 
@@ -31,7 +32,7 @@ test('growspace-logbook-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-logbook-card', default_growspace: 'test_tent' } as any);
 
     (element as any)._store.ui.$isLoading.set(false);
-    (element as any)._store.data.$devices.set([aGrowspaceDevice()]);
+    setDevices([aGrowspaceDevice()]);
     (element as any)._store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
     // Allow the async _fetchEvents to complete

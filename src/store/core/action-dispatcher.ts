@@ -20,6 +20,7 @@ import {
   AddPlantDialogState,
 } from '../../types';
 import { ActionContext } from './action-context';
+import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../../slices/grid';
 import { ViewMode } from '../../constants';
 import type { VisionCheckupConfig } from '../../slices/camera';
 import type { GrowspaceHistoryStore } from '../history/history-store';
@@ -110,7 +111,7 @@ export class ActionDispatcher {
     ): Promise<void> => {
       if (entityIds.length === 0) return;
       if (action === 'remove') {
-        entityIds.forEach((id) => this.ctx.data.addOptimisticDeletedPlantId(id));
+        entityIds.forEach((id) => addOptimisticDeletedPlantId(id));
       }
       try {
         await this.ctx.dataService.callService('growspace_manager', 'batch_action', {
@@ -130,7 +131,7 @@ export class ActionDispatcher {
         console.error(`Batch ${action} failed:`, err);
         this.ctx.ui.showToast(`Batch ${action} failed: ${error}`, 'error');
         if (action === 'remove') {
-          entityIds.forEach((id) => this.ctx.data.removeOptimisticDeletedPlantId(id));
+          entityIds.forEach((id) => removeOptimisticDeletedPlantId(id));
         }
       }
     },

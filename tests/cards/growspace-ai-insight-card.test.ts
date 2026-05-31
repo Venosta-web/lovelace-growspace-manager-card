@@ -3,6 +3,7 @@ import { GrowspaceAiInsightCard } from '../../src/cards/growspace-ai-insight-car
 import { aiInsight$, isAiLoading$, aiError$ } from '../../src/slices/ai-insight';
 import { aHass, aGrowspace } from '../fixtures';
 import { renderCard } from '../harness';
+import { setDevices } from '../../src/slices/grid';
 
 if (!customElements.get('growspace-ai-insight-card')) {
   customElements.define('growspace-ai-insight-card', GrowspaceAiInsightCard);
@@ -34,6 +35,7 @@ describe('GrowspaceAiInsightCard', () => {
     isAiLoading$.set(false);
     aiInsight$.set(null);
     aiError$.set(null);
+    setDevices([]);
   }
 
   test('renders without crash', async () => {
@@ -78,7 +80,7 @@ describe('GrowspaceAiInsightCard', () => {
   test('renders loading spinner when isAiLoading$ is true', async () => {
     resetAtoms();
     const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-    handle.element.store.data.$devices.set([
+    setDevices([
       { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
     ]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
@@ -93,7 +95,7 @@ describe('GrowspaceAiInsightCard', () => {
   test('renders response box when aiInsight$ has text', async () => {
     resetAtoms();
     const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-    handle.element.store.data.$devices.set([
+    setDevices([
       { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
     ]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
@@ -109,7 +111,7 @@ describe('GrowspaceAiInsightCard', () => {
   test('renders error state when aiError$ has a message', async () => {
     resetAtoms();
     const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-    handle.element.store.data.$devices.set([
+    setDevices([
       { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
     ]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
@@ -125,7 +127,7 @@ describe('GrowspaceAiInsightCard', () => {
     test('clicking Analyze All calls analyzeAllGrowspaces', async () => {
       resetAtoms();
       const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-      handle.element.store.data.$devices.set([
+      setDevices([
         { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
       ]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
@@ -143,7 +145,7 @@ describe('GrowspaceAiInsightCard', () => {
     test('clicking Analyze Specific calls askGrowAdvice with selected device', async () => {
       resetAtoms();
       const handle = await renderCard<GrowspaceAiInsightCard>('growspace-ai-insight-card', { hass, growspace });
-      handle.element.store.data.$devices.set([
+      setDevices([
         { deviceId: growspace.growspaceId, name: growspace.name, plants: [] } as any,
       ]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);

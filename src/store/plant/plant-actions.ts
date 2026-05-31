@@ -12,6 +12,12 @@ import { PlantUtils } from '../../utils/plant-utils';
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import * as libraryActions from './library-actions';
+import {
+  devices$,
+  setDevices,
+  addOptimisticDeletedPlantId,
+  removeOptimisticDeletedPlantId,
+} from '../../slices/grid';
 
 /**
  * Update a single plant with new attributes.
@@ -68,7 +74,7 @@ export async function updatePlantFromDialog(
  * Internal helper for API deletion with optimistic updates
  */
 async function _deletePlantsApi(ctx: ActionContext, plantIds: string[]): Promise<boolean> {
-  plantIds.forEach((id) => ctx.data.addOptimisticDeletedPlantId(id));
+  plantIds.forEach((id) => addOptimisticDeletedPlantId(id));
 
   try {
     await Promise.all(plantIds.map((id) => ctx.dataService.removePlant(id)));
@@ -77,7 +83,7 @@ async function _deletePlantsApi(ctx: ActionContext, plantIds: string[]): Promise
     const error = e instanceof Error ? e.message : 'Unknown error';
     console.error('Failed to delete plant:', e);
     ctx.ui.showToast(`Failed to delete: ${error}`, 'error');
-    plantIds.forEach((id) => ctx.data.removeOptimisticDeletedPlantId(id));
+    plantIds.forEach((id) => removeOptimisticDeletedPlantId(id));
     return false;
   }
 }
@@ -89,7 +95,7 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
   const ids = Array.isArray(plantId) ? plantId : [plantId];
 
   const plantsToRestore: Partial<PlantAttributes>[] = [];
-  const devices = ctx.data.$devices.get();
+  const devices = devices$.get();
   ids.forEach((id) => {
     for (const device of devices) {
       const plant = device.plants?.find(
@@ -369,10 +375,10 @@ export async function handlePlantDrop(
     };
 
     // Update Devices Atom (for immediate UI Reactivity)
-    const devices = ctx.data.$devices.get();
-    const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
+    const currentDevices = devices$.get();
+    const deviceIdx = currentDevices.findIndex((d) => d.deviceId === growspaceId);
     if (deviceIdx >= 0) {
-      const newDevices = [...devices];
+      const newDevices = [...currentDevices];
       const device = { ...newDevices[deviceIdx] };
       const newGrid = { ...device.grid };
 
@@ -380,7 +386,7 @@ export async function handlePlantDrop(
 
       device.grid = newGrid;
       newDevices[deviceIdx] = device;
-      ctx.data.$devices.set(newDevices);
+      setDevices(newDevices);
     }
   };
 
@@ -526,9 +532,9 @@ export async function confirmAddPlants(
     return;
   }
 
-  const devices = ctx.data.$devices.get();
+  const beforeDevices = devices$.get();
   const beforeIds = new Set<string>();
-  devices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
+  beforeDevices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
 
   await withAction(
     ctx,
@@ -566,7 +572,7 @@ export async function confirmAddPlants(
 
       await ctx.refreshData();
 
-      const afterDevices = ctx.data.$devices.get();
+      const afterDevices = devices$.get();
       const addedIds: string[] = [];
       afterDevices.forEach((d) =>
         d.plants?.forEach((p) => {

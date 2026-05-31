@@ -2,6 +2,7 @@ import { ActionContext } from '../core/action-context';
 import { ViewMode, ConfigTab } from '../../constants';
 import { PlantEntity, GrowspaceDevice, EnvironmentConfigData } from '../../types';
 import * as libraryActions from '../plant/library-actions';
+import { devices$, optimisticDeletedPlantIds$, plantToDeviceMap$ } from '../../slices/grid';
 
 export function setIsCompactView(ctx: ActionContext, value: boolean) {
   if (value) {
@@ -49,7 +50,7 @@ export function selectAllPlants(ctx: ActionContext) {
   const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) return;
 
-  const devices = ctx.data.$devices.get();
+  const devices = devices$.get();
   const selectedDeviceData = devices.find((d) => d.deviceId === selectedDevice);
 
   const allIds: string[] = [];
@@ -57,7 +58,7 @@ export function selectAllPlants(ctx: ActionContext) {
   if (selectedDeviceData && selectedDeviceData.plants) {
     selectedDeviceData.plants.forEach((plant) => {
       const pId = plant.attributes.plant_id;
-      if (pId && !ctx.data.$optimisticDeletedPlantIds.get().has(pId)) {
+      if (pId && !optimisticDeletedPlantIds$.get().has(pId)) {
         allIds.push(pId);
       }
     });
@@ -93,7 +94,7 @@ export function openPlantOverviewDialog(
 
 export function handleDeepLink(ctx: ActionContext, plantId: string) {
   // 1. Wait for data to be ready if needed - for now we check devices
-  const devices = ctx.data.$devices.get();
+  const devices = devices$.get();
 
   if (!devices || devices.length === 0) {
     console.log('[DeepLink] Devices not loaded yet, setting pending deep link:', plantId);
@@ -203,7 +204,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
     return;
   }
 
-  const devices = ctx.data.$devices.get();
+  const devices = devices$.get();
   const device = devices.find((d) => d.deviceId === selectedDeviceId);
 
   let targetRow = 0;
@@ -211,7 +212,7 @@ export function openAddPlantDialog(ctx: ActionContext, row?: number, col?: numbe
 
   if (device) {
     const occupied = new Set<string>();
-    const deleted = ctx.data.$optimisticDeletedPlantIds.get();
+    const deleted = optimisticDeletedPlantIds$.get();
 
     device.plants.forEach((p) => {
       const pId = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
@@ -307,7 +308,7 @@ export async function exportStrainLibrary(ctx: ActionContext) {
 
 /** HELPER: Get common growspace ID for multiple plants */
 function getCommonGrowspaceId(ctx: ActionContext, plantIds: string[]): string | undefined {
-  const plantToDevice = ctx.data.$plantToDeviceMap.get();
+  const plantToDevice = plantToDeviceMap$.get();
   let commonGrowspaceId: string | undefined;
 
   for (const plantId of plantIds) {

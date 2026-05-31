@@ -29,6 +29,7 @@
 
 import { atom, computed, type ReadableAtom, type WritableAtom } from 'nanostores';
 import type { GrowspaceDevice, PlantEntity } from '../../types';
+import type { IrrigationConfig } from '../../services/types';
 import { PlantUtils } from '../../utils/plant-utils';
 
 // ---------------------------------------------------------------------------
@@ -96,6 +97,18 @@ export const activeDevices$ = computed(
       }),
     }))
 );
+
+/** plantId → deviceId map for O(1) lookups. Derived from raw devices$ (not filtered). */
+export const plantToDeviceMap$ = computed(devices$, (devices): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const device of devices) {
+    for (const plant of device.plants) {
+      const pid = plant.attributes.plant_id || plant.entity_id.replace('sensor.', '');
+      map.set(pid, device.deviceId);
+    }
+  }
+  return map;
+});
 
 /** device_id → device name map for growspace selector dropdowns. */
 export const growspaceOptions$ = computed(
@@ -173,6 +186,24 @@ export function clearOptimisticDeletedPlantIds(): void {
   optimisticDeletedPlantIds$.set(new Set());
 }
 
+/**
+ * Patch a single device's irrigationConfig in place.
+ * Called by irrigation action handlers that previously called GrowspaceDataStore.patchDeviceIrrigationConfig().
+ */
+export function patchDeviceIrrigationConfig(
+  growspaceId: string,
+  patch: Partial<IrrigationConfig>
+): void {
+  const current = devices$.get();
+  const idx = current.findIndex((d) => d.deviceId === growspaceId);
+  if (idx === -1) return;
+  devices$.set(
+    current.map((d, i) =>
+      i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d
+    )
+  );
+}
+
 // ---------------------------------------------------------------------------
 // GridSliceRef facade — backward-compatible ActionContext.grid interface
 // ---------------------------------------------------------------------------
@@ -190,3 +221,63 @@ export const gridSlice: GridSliceRef = {
   $gridViewState: gridViewState$,
   setSelectedDevice: setSelectedDeviceId,
 };
+
+/**
+ * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
+ *
+ * Shared module atoms (devices$, optimisticDeletedPlantIds$) are the data
+ * source, so all cards see the same device list. Only selectedDevice is
+ * per-card, so carousel and standalone cards don't interfere with each other.
+ */
+export function makePerCardGridSlice(): GridSliceRef {
+  const selectedDevice$ = atom<string | null>(null);
+
+  const perCardActiveDevices$ = computed(
+    [devices$, optimisticDeletedPlantIds$],
+    (devices, deletedIds): GrowspaceDevice[] =>
+      devices.map((d) => ({
+        ...d,
+        plants: d.plants.filter((p) => {
+          const pid = p.attributes.plant_id || p.entity_id.replace('sensor.', '');
+          return !deletedIds.has(pid);
+        }),
+      }))
+  );
+
+  const perCardGrowspaceOptions$ = computed(
+    perCardActiveDevices$,
+    (devices): Record<string, string> =>
+      Object.fromEntries(devices.map((d) => [d.deviceId, d.name]))
+  );
+
+  const perCardGridLayout$ = computed(
+    [perCardActiveDevices$, selectedDevice$],
+    (devices, selectedId): GridLayout => {
+      if (!selectedId) return { effectiveRows: 0, grid: [] };
+      const device = devices.find((d) => d.deviceId === selectedId);
+      if (!device) return { effectiveRows: 0, grid: [] };
+      const effectiveRows = PlantUtils.calculateEffectiveRows(device);
+      const { grid } = PlantUtils.createGridLayout(device.plants, effectiveRows, device.plantsPerRow);
+      return { effectiveRows, grid };
+    }
+  );
+
+  const perCardGridViewState$ = computed(
+    [perCardActiveDevices$, selectedDevice$, perCardGridLayout$, perCardGrowspaceOptions$],
+    (devices, selectedDevice, gridLayout, growspaceOptions): GridViewState => ({
+      devices,
+      selectedDevice,
+      gridLayout,
+      growspaceOptions,
+    })
+  );
+
+  return {
+    $selectedDevice: selectedDevice$,
+    $growspaceOptions: perCardGrowspaceOptions$,
+    $activeDevices: perCardActiveDevices$,
+    $gridLayout: perCardGridLayout$,
+    $gridViewState: perCardGridViewState$,
+    setSelectedDevice: (id) => selectedDevice$.set(id),
+  };
+}

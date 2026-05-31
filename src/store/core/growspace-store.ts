@@ -7,8 +7,7 @@ import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
-import { type GridSliceRef, type GridViewState } from '../../slices/grid';
-import { GrowspaceGridStore } from '../grid/grid-store';
+import { type GridSliceRef, type GridViewState, makePerCardGridSlice, devices$, optimisticDeletedPlantIds$, removeOptimisticDeletedPlantId } from '../../slices/grid';
 import { GrowspaceSharedStore } from './growspace-shared-store';
 
 import { ActionDispatcher } from './action-dispatcher';
@@ -145,7 +144,7 @@ export class GrowspaceStore {
 
     // Per-card stores
     this.ui = new GrowspaceUIStore();
-    this.grid = new GrowspaceGridStore(shared.data);
+    this.grid = makePerCardGridSlice();
     this.history = new GrowspaceHistoryStore(
       shared.dataService,
       shared.data,
@@ -156,7 +155,7 @@ export class GrowspaceStore {
     this.$dialogHostState = computed(
       [
         this.ui.$activeDialog,
-        this.data.$devices,
+        this.grid.$activeDevices,
         this.grid.$selectedDevice,
         strainLibrary$,
         nutrientPresets$,
@@ -201,7 +200,7 @@ export class GrowspaceStore {
       [
         this.ui.$isEditMode,
         this.ui.$selectedPlants,
-        this.data.$devices,
+        this.grid.$activeDevices,
         nutrientPresets$,
       ],
       (isEditMode, selectedPlants, devices, nutrientPresets) => ({
@@ -212,10 +211,10 @@ export class GrowspaceStore {
       })
     );
 
-    this.$viewStandardState = computed([this.data.$devices], (devices) => ({ devices }));
+    this.$viewStandardState = computed([this.grid.$activeDevices], (devices) => ({ devices }));
 
     this.$headerState = computed(
-      [this.data.$devices, nutrientInventory$, this.history.$headerHistoryState],
+      [this.grid.$activeDevices, nutrientInventory$, this.history.$headerHistoryState],
       (devices, nutrientInventory, history) => ({ devices, nutrientInventory, history })
     );
 
@@ -295,12 +294,11 @@ export class GrowspaceStore {
   }
 
   private _pruneOptimisticDeletions() {
-    const optimisticIds = this.data.$optimisticDeletedPlantIds.get();
+    const optimisticIds = optimisticDeletedPlantIds$.get();
     if (optimisticIds.size === 0) return;
 
     const allPlantIds = new Set<string>();
-    const devices = this.data.$devices.get();
-    devices.forEach((d) =>
+    devices$.get().forEach((d) =>
       d.plants.forEach((p) =>
         allPlantIds.add(p.attributes.plant_id || p.entity_id.replace('sensor.', ''))
       )
@@ -314,7 +312,7 @@ export class GrowspaceStore {
     });
 
     if (toRemove.size > 0) {
-      toRemove.forEach((id) => this.data.removeOptimisticDeletedPlantId(id));
+      toRemove.forEach((id) => removeOptimisticDeletedPlantId(id));
     }
   }
 

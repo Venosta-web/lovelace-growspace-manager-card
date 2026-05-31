@@ -15,6 +15,7 @@ import {
 } from '@mdi/js';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { activeDevices$ } from '../slices/grid';
 import type { GrowspaceDevice } from '../services/types';
 import {
   createInitialSM,
@@ -98,7 +99,7 @@ export class CropSteeringDialog extends LitElement {
 
   private _device(): GrowspaceDevice | undefined {
     if (!this.dialogState?.growspaceId) return undefined;
-    return this.store.data.$devices
+    return activeDevices$
       .get()
       .find((d) => d.deviceId === this.dialogState?.growspaceId);
   }

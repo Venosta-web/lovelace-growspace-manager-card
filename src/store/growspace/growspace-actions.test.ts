@@ -1,18 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { addGrowspace, updateGrowspace, removeGrowspace } from './growspace-actions';
 import type { ActionContext } from '../core/action-context';
-
-function makeDevicesAtom(initial: any[] = []) {
-  let state = [...initial];
-  return {
-    get: () => state,
-    set: (v: any[]) => {
-      state = v;
-    },
-  };
-}
+import { devices$, setDevices } from '../../slices/grid';
 
 function makeContext(initialDevices: any[] = []) {
+  setDevices(initialDevices);
   const showToast = vi.fn();
   const dataService = new Proxy({} as any, {
     get(target, prop) {
@@ -30,12 +22,14 @@ function makeContext(initialDevices: any[] = []) {
     closeDialog: vi.fn(),
     undoRedoManager: {} as any,
     optimisticManager: {} as any,
-    data: {
-      $devices: makeDevicesAtom(initialDevices),
-    } as unknown as ActionContext['data'],
+    data: {} as unknown as ActionContext['data'],
     grid: {} as any,
   } satisfies ActionContext;
 }
+
+afterEach(() => {
+  setDevices([]);
+});
 
 // ---------------------------------------------------------------------------
 // addGrowspace
@@ -147,7 +141,7 @@ describe('updateGrowspace', () => {
   it('patches $devices optimistically before calling the service', async () => {
     let devicesAtCallTime: any[] | undefined;
     ctx.dataService.updateGrowspace.mockImplementation(async () => {
-      devicesAtCallTime = ctx.data.$devices.get();
+      devicesAtCallTime = devices$.get();
     });
 
     await updateGrowspace(ctx, 'gs-1', 'New Name', 4, 8);

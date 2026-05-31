@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceTankCard } from '../../../src/cards/growspace-tank-card';
+import { setDevices } from '../../../src/slices/grid';
 import { aHass, aTankDevice } from '../../fixtures';
 
 
@@ -22,7 +23,7 @@ test('growspace-tank-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-tank-card', default_growspace: 'test_tent' } as any);
 
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([aTankDevice()]);
+    setDevices([aTankDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
 

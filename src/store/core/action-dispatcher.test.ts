@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { atom } from 'nanostores';
 import { ActionDispatcher } from './action-dispatcher';
 import { ViewMode } from '../../constants';
+import { optimisticDeletedPlantIds$ } from '../../slices/grid';
 
 function makeStore() {
   const dataService = new Proxy(
@@ -30,11 +31,7 @@ function makeStore() {
     $activeDialog: atom({ type: 'NONE' }),
   };
 
-  const data = {
-    addOptimisticDeletedPlantId: vi.fn(),
-    removeOptimisticDeletedPlantId: vi.fn(),
-    $devices: atom([]),
-  };
+  const data = {};
 
   const grid = { $selectedDevice };
 
@@ -86,6 +83,10 @@ describe('plant.confirmAdd', () => {
   });
 });
 
+afterEach(() => {
+  optimisticDeletedPlantIds$.set(new Set());
+});
+
 // ─── plant.batchAction ───────────────────────────────────────────────────────
 
 describe('plant.batchAction', () => {
@@ -102,8 +103,8 @@ describe('plant.batchAction', () => {
 
   it('adds optimistic deletes for remove action before the call', async () => {
     await store.dispatcher.plant.batchAction('remove', ['p1', 'p2']);
-    expect(store.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
-    expect(store.data.addOptimisticDeletedPlantId).toHaveBeenCalledWith('p2');
+    expect(optimisticDeletedPlantIds$.get().has('p1')).toBe(true);
+    expect(optimisticDeletedPlantIds$.get().has('p2')).toBe(true);
   });
 
   it('calls callService with correct params', async () => {
@@ -144,8 +145,8 @@ describe('plant.batchAction', () => {
       .mockRejectedValue(new Error('fail'));
 
     await store.dispatcher.plant.batchAction('remove', ['p1', 'p2']);
-    expect(store.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('p1');
-    expect(store.data.removeOptimisticDeletedPlantId).toHaveBeenCalledWith('p2');
+    expect(optimisticDeletedPlantIds$.get().has('p1')).toBe(false);
+    expect(optimisticDeletedPlantIds$.get().has('p2')).toBe(false);
   });
 
   it('does not roll back optimistic deletes on failure for non-remove action', async () => {
@@ -154,7 +155,7 @@ describe('plant.batchAction', () => {
       .mockRejectedValue(new Error('fail'));
 
     await store.dispatcher.plant.batchAction('harvest', ['p1']);
-    expect(store.data.removeOptimisticDeletedPlantId).not.toHaveBeenCalled();
+    expect(optimisticDeletedPlantIds$.get().has('p1')).toBe(false);
   });
 });
 

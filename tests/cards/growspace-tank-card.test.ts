@@ -1,7 +1,8 @@
-import { expect, test, describe, beforeEach, vi } from 'vitest';
+import { expect, test, describe, beforeEach, afterEach, vi } from 'vitest';
 import { GrowspaceTankCard } from '../../src/cards/growspace-tank-card';
 import type { IrrigationTank } from '../../src/services/types';
 import { aHass, aGrowspace } from '../fixtures';
+import { setDevices } from '../../src/slices/grid';
 import { renderCard } from '../harness';
 
 if (!customElements.get('growspace-tank-card')) {
@@ -23,6 +24,10 @@ vi.mock('../../src/cards/editors/growspace-tank-card-editor', () => ({
 describe('GrowspaceTankCard', () => {
   const growspace = aGrowspace();
   const hass = aHass({ growspaces: [growspace] });
+
+  afterEach(() => {
+    setDevices([]);
+  });
 
   test('renders without crash', async () => {
     const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
@@ -50,7 +55,7 @@ describe('GrowspaceTankCard', () => {
   test('renders loading state when store is loading and no devices', async () => {
     const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
     handle.element.store.ui.$isLoading.set(true);
-    handle.element.store.data.$devices.set([]);
+    setDevices([]);
     await handle.element.updateComplete;
 
     const loader = handle.element.shadowRoot?.querySelector('ha-circular-progress');
@@ -61,7 +66,7 @@ describe('GrowspaceTankCard', () => {
   test('renders no-data state when devices array is empty', async () => {
     const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
     handle.element.store.ui.$isLoading.set(false);
-    handle.element.store.data.$devices.set([]);
+    setDevices([]);
     await handle.element.updateComplete;
 
     const noData = handle.element.shadowRoot?.querySelector('.no-data');
@@ -73,7 +78,7 @@ describe('GrowspaceTankCard', () => {
   test('renders empty state when no tanks configured', async () => {
     const handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
     handle.element.store.ui.$isLoading.set(false);
-    handle.element.store.data.$devices.set([
+    setDevices([
       { deviceId: growspace.growspaceId, name: growspace.name, environmentAttributes: { irrigationTanks: [] }, plants: [] } as any,
     ]);
     handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);
@@ -113,7 +118,7 @@ describe('GrowspaceTankCard', () => {
     beforeEach(async () => {
       handle = await renderCard<GrowspaceTankCard>('growspace-tank-card', { hass, growspace });
       handle.element.store.ui.$isLoading.set(false);
-      handle.element.store.data.$devices.set([
+      setDevices([
         { deviceId: growspace.growspaceId, name: growspace.name, environmentAttributes: { irrigationTanks: tanks }, plants: [] } as any,
       ]);
       handle.element.store.grid.$selectedDevice.set(growspace.growspaceId);

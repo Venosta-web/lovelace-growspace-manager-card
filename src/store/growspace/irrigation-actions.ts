@@ -1,5 +1,6 @@
 import type { ActionContext } from '../core/action-context';
 import type { IrrigationConfig } from '../../services/types';
+import { devices$, patchDeviceIrrigationConfig } from '../../slices/grid';
 
 type IrrigationTimeParams = { growspaceId: string; time: string; duration?: number };
 type RemoveTimeParams = { growspaceId: string; time: string };
@@ -22,8 +23,8 @@ type IrrigationSettingsParams = {
 };
 type RunIrrigationCycleParams = { growspaceId: string; duration?: number };
 
-function getIrrigationConfig(ctx: ActionContext, growspaceId: string): IrrigationConfig {
-  const device = ctx.data.$devices.get().find((d) => d.deviceId === growspaceId);
+function getIrrigationConfig(_ctx: ActionContext, growspaceId: string): IrrigationConfig {
+  const device = devices$.get().find((d) => d.deviceId === growspaceId);
   return device ? { ...device.irrigationConfig } : { irrigationTimes: [], drainTimes: [] };
 }
 
@@ -41,9 +42,9 @@ export async function addIrrigationTime(
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
     'update',
     params,
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }),
+    () => patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }),
     () =>
-      ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
+      patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
   );
 
   try {
@@ -70,9 +71,9 @@ export async function removeIrrigationTime(
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
     'delete',
     params,
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }),
+    () => patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next }),
     () =>
-      ctx.data.patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
+      patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes })
   );
 
   try {
@@ -102,8 +103,8 @@ export async function addDrainTime(
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
     'update',
     params,
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: next }),
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes })
+    () => patchDeviceIrrigationConfig(growspaceId, { drainTimes: next }),
+    () => patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes })
   );
 
   try {
@@ -127,8 +128,8 @@ export async function removeDrainTime(ctx: ActionContext, params: RemoveTimePara
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
     'delete',
     params,
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: next }),
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes })
+    () => patchDeviceIrrigationConfig(growspaceId, { drainTimes: next }),
+    () => patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes })
   );
 
   try {
@@ -184,9 +185,9 @@ export async function setIrrigationSettings(
   const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
     'update',
     params,
-    () => ctx.data.patchDeviceIrrigationConfig(growspaceId, patch),
+    () => patchDeviceIrrigationConfig(growspaceId, patch),
     () =>
-      ctx.data.patchDeviceIrrigationConfig(growspaceId, {
+      patchDeviceIrrigationConfig(growspaceId, {
         irrigationPumpEntity: prev.irrigationPumpEntity,
         drainPumpEntity: prev.drainPumpEntity,
         irrigationDuration: prev.irrigationDuration,

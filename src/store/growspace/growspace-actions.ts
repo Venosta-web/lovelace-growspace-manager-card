@@ -4,6 +4,7 @@
 
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
+import { devices$, setDevices } from '../../slices/grid';
 
 export async function addGrowspace(
   ctx: ActionContext,
@@ -40,12 +41,12 @@ export async function updateGrowspace(
   const ok = await withAction(
     ctx,
     async () => {
-      const devices = ctx.data.$devices.get();
-      const deviceIdx = devices.findIndex((d) => d.deviceId === growspaceId);
+      const currentDevices = devices$.get();
+      const deviceIdx = currentDevices.findIndex((d) => d.deviceId === growspaceId);
       if (deviceIdx >= 0) {
-        const newDevices = [...devices];
+        const newDevices = [...currentDevices];
         newDevices[deviceIdx] = { ...newDevices[deviceIdx], name, rows, plantsPerRow };
-        ctx.data.$devices.set(newDevices);
+        setDevices(newDevices);
       }
       await ctx.dataService.updateGrowspace({ growspaceId, name, rows, plantsPerRow });
       await ctx.refreshData();

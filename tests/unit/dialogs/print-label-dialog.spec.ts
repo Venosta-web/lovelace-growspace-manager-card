@@ -4,12 +4,10 @@ import { PrintLabelDialog } from '../../../src/dialogs/print-label-dialog';
 import { PrintLabelDialogState } from '../../../src/types';
 import { atom } from 'nanostores';
 import { strainLibrary$, setStrainLibrary } from '../../../src/slices/strain';
+import { setDevices } from '../../../src/slices/grid';
 
 // Mock dependencies
 const mockStore = {
-    data: {
-        $devices: atom<any[]>([]),
-    },
     actions: {
         ui: {
             toast: vi.fn(),
@@ -65,7 +63,7 @@ describe('PrintLabelDialog', () => {
         // Reset mocks
         mockStore.actions.plant.printLabel.mockReset();
         mockStore.actions.ui.toast.mockReset();
-        mockStore.data.$devices.set([]);
+        setDevices([]);
         setStrainLibrary([]);
 
         document.body.appendChild(element);
@@ -370,7 +368,7 @@ describe('PrintLabelDialog', () => {
                 entity_id: 'sensor.plant_raw',
                 attributes: { plant_id: '123', strain: 'OG' }
             };
-            mockStore.data.$devices.set([
+            setDevices([
                 { plants: [mockPlant] }
             ]);
 
@@ -383,7 +381,7 @@ describe('PrintLabelDialog', () => {
                 entity_id: 'sensor.plant456',
                 attributes: { strain: 'Kush' }
             };
-            mockStore.data.$devices.set([
+            setDevices([
                 { plants: [mockPlant] }
             ]);
 
@@ -392,7 +390,7 @@ describe('PrintLabelDialog', () => {
         });
 
         it('should return null for plant if plantId not found', () => {
-            mockStore.data.$devices.set([{ plants: [] }]);
+            setDevices([{ plants: [] }]);
             expect((element as any)._getPlant('none')).toBeNull();
         });
 
@@ -447,7 +445,7 @@ describe('PrintLabelDialog', () => {
                 entity_id: 'sensor.p1',
                 attributes: { plant_id: 'P1', strain: 'StrainA' }
             };
-            mockStore.data.$devices.set([{ plants: [mockPlant] }]);
+            setDevices([{ plants: [mockPlant] }]);
             element.dialogState = { plantId: 'P1' };
 
             await element.updateComplete;
@@ -456,7 +454,7 @@ describe('PrintLabelDialog', () => {
         });
 
         it('should render strain-only subtitle if plant not found', async () => {
-            mockStore.data.$devices.set([{ plants: [] }]);
+            setDevices([{ plants: [] }]);
             element.dialogState = { strainName: 'StrainB' };
 
             await element.updateComplete;

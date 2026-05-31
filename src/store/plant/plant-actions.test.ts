@@ -13,6 +13,7 @@ import {
   printLabel,
 } from './plant-actions';
 import type { ActionContext } from '../core/action-context';
+import { setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
 
 vi.mock('./library-actions', () => ({
   fetchStrainLibrary: vi.fn().mockResolvedValue(undefined),
@@ -76,6 +77,11 @@ function makePlant(overrides: any = {}): any {
     ...overrides,
   };
 }
+
+afterEach(() => {
+  setDevices([]);
+  optimisticDeletedPlantIds$.set(new Set());
+});
 
 // ─── updatePlant ─────────────────────────────────────────────────────────────
 
@@ -161,11 +167,11 @@ describe('handleDeletePlant', () => {
   beforeEach(() => { ctx = makeContext(); });
 
   it('marks plant as optimistically deleted, calls API, registers undo', async () => {
-    (ctx.data.$devices as any).get.mockReturnValue([]);
+    setDevices([]);
 
     await handleDeletePlant(ctx, 'plant-1');
 
-    expect((ctx.data as any).addOptimisticDeletedPlantId).toHaveBeenCalledWith('plant-1');
+    expect(optimisticDeletedPlantIds$.get().has('plant-1')).toBe(true);
     expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('plant-1');
     expect((ctx.undoRedoManager as any).pushAction).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'delete' })
@@ -173,7 +179,7 @@ describe('handleDeletePlant', () => {
   });
 
   it('accepts an array of plant ids and registers batch-delete undo', async () => {
-    (ctx.data.$devices as any).get.mockReturnValue([]);
+    setDevices([]);
 
     await handleDeletePlant(ctx, ['plant-1', 'plant-2']);
 
@@ -185,11 +191,11 @@ describe('handleDeletePlant', () => {
 
   it('removes optimistic id and shows error when API fails', async () => {
     (ctx.dataService as any).removePlant.mockRejectedValue(new Error('del-fail'));
-    (ctx.data.$devices as any).get.mockReturnValue([]);
+    setDevices([]);
 
     await handleDeletePlant(ctx, 'plant-1');
 
-    expect((ctx.data as any).removeOptimisticDeletedPlantId).toHaveBeenCalledWith('plant-1');
+    expect(optimisticDeletedPlantIds$.get().has('plant-1')).toBe(false);
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
       expect.stringContaining('del-fail'),
       'error'
@@ -198,7 +204,7 @@ describe('handleDeletePlant', () => {
   });
 
   it('closes dialog when active dialog is PLANT_OVERVIEW', async () => {
-    (ctx.data.$devices as any).get.mockReturnValue([]);
+    setDevices([]);
     (ctx.ui.$activeDialog as any).get.mockReturnValue({ type: 'PLANT_OVERVIEW' });
 
     await handleDeletePlant(ctx, 'plant-1');
@@ -409,9 +415,7 @@ describe('handlePlantDrop', () => {
   it('performs optimistic swap when target plant exists', async () => {
     const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
     const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
-    (ctx.data.$devices as any).get.mockReturnValue([
-      { deviceId: 'gs', grid: {}, plants: [] },
-    ]);
+    setDevices([{ deviceId: 'gs', grid: {}, plants: [] } as any]);
 
     const result = await handlePlantDrop(ctx, 1, 1, target, source);
 
@@ -507,7 +511,7 @@ describe('confirmAddPlants', () => {
   });
 
   it('calls addPlants, refreshes, and toasts success', async () => {
-    (ctx.data.$devices as any).get.mockReturnValue([]);
+    setDevices([]);
 
     await confirmAddPlants(ctx, { strain: 'Gelato', amount: 3 } as any);
 
@@ -522,7 +526,7 @@ describe('confirmAddPlants', () => {
   });
 
   it('adds strains to library when addToLibrary is true', async () => {
-    (ctx.data.$devices as any).get.mockReturnValue([]);
+    setDevices([]);
 
     await confirmAddPlants(ctx, {
       strain: 'Purple Haze',

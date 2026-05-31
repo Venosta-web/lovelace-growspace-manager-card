@@ -8,6 +8,7 @@ import {
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
 import { DataService } from '../../services/data-service';
 import { GrowspaceDataStore } from '../core/data-store';
+import { devices$ } from '../../slices/grid';
 
 export class GrowspaceHistoryStore {
   // --- Core History Cache ---
@@ -331,7 +332,7 @@ export class GrowspaceHistoryStore {
     const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
-    const devices = this.dataStore.$devices.get();
+    const devices = devices$.get();
     const device = devices.find((d) => d.deviceId === deviceId);
     if (!device) return;
 
@@ -423,7 +424,7 @@ export class GrowspaceHistoryStore {
     const deviceId = this._selectedDevice.get();
     if (!deviceId) return;
 
-    const devices = this.dataStore.$devices.get();
+    const devices = devices$.get();
     const device = devices.find((d) => d.deviceId === deviceId);
     if (!device) return;
 

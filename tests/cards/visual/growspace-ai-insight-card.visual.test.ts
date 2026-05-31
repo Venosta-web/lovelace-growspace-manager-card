@@ -3,6 +3,7 @@ import { expect, test, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { html } from 'lit';
 import { GrowspaceAiInsightCard } from '../../../src/cards/growspace-ai-insight-card';
+import { setDevices } from '../../../src/slices/grid';
 import { aHass, aGrowspaceDevice } from '../../fixtures';
 
 vi.mock('../../../src/cards/editors/growspace-ai-insight-card-editor', () => ({
@@ -23,7 +24,7 @@ test('growspace-ai-insight-card visual snapshot', async () => {
     element.setConfig({ type: 'custom:growspace-ai-insight-card', default_growspace: 'test_tent' } as any);
 
     element.store.ui.$isLoading.set(false);
-    element.store.data.$devices.set([aGrowspaceDevice()]);
+    setDevices([aGrowspaceDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
     (element as any)._response = 'Gorilla Glue #4 is in week 2 of flower and looks healthy. Consider raising EC to 1.8 and maintaining 12/12 light. VPD is optimal at 1.2 kPa. Blue Dream in veg is on track for a 5-week cycle.';
     await element.requestUpdate();

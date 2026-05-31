@@ -25,6 +25,7 @@ import { growspaceCardStyles } from '../styles/growspace-card.styles';
 import { variables } from '../styles/variables';
 
 import { GrowspaceStore } from '../store/core/growspace-store';
+import { activeDevices$ } from '../slices/grid';
 import { StoreController } from '@nanostores/lit';
 
 import {
@@ -225,7 +226,7 @@ export class GrowspaceAiInsightCard extends LitElement implements LovelaceCard {
       } else {
         const device = this.selectedDevice;
         if (!device) throw new Error('No device selected and "Analyze All" was false.');
-        const devices = this.store.data.$devices.get();
+        const devices = activeDevices$.get();
         if (!devices.find((d: { deviceId: string }) => d.deviceId === device)) {
           throw new Error('Selected device not found in devices list.');
         }

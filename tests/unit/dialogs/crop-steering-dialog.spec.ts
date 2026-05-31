@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CropSteeringDialog } from '../../../src/dialogs/crop-steering-dialog';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
+import { setDevices } from '../../../src/slices/grid';
 
 // Mock UI components
 class HaDialogMock extends HTMLElement {
@@ -40,15 +41,12 @@ describe('CropSteeringDialog', () => {
             irrigationConfig: {} as any
         };
 
+        setDevices([mockDevice]);
+
         mockStore = {
             ui: {
                 closeDialog: vi.fn()
             },
-            data: {
-                $devices: {
-                    get: () => [mockDevice]
-                }
-            }
         };
 
         mockHass = {
@@ -80,6 +78,7 @@ describe('CropSteeringDialog', () => {
     afterEach(() => {
         document.body.removeChild(element);
         vi.clearAllMocks();
+        setDevices([]);
     });
 
     it('should not render anything if not open', async () => {
@@ -191,7 +190,7 @@ describe('CropSteeringDialog', () => {
             ];
 
             testNames.forEach(({ name, expected }) => {
-                mockDevice.name = name;
+                setDevices([{ ...mockDevice, name }]);
                 expect((element as any)._getEntityId()).toBe(expected);
             });
         });
@@ -223,7 +222,7 @@ describe('CropSteeringDialog', () => {
 
         it('should return the device if growspaceId matches a device in the store', () => {
             element.dialogState = { growspaceId: 'gs_123' };
-            expect((element as any)._device()).toBe(mockDevice);
+            expect((element as any)._device()).toEqual(mockDevice);
         });
     });
 
@@ -324,7 +323,7 @@ describe('CropSteeringDialog', () => {
 
             it('should discard changes and switch tab when device exists', () => {
                 // Set activeSteeringPhase on device so it resets to it
-                mockDevice.irrigationConfig = { activeSteeringPhase: 'p2' } as any;
+                setDevices([{ ...mockDevice, irrigationConfig: { activeSteeringPhase: 'p2' } as any }]);
 
                 // Set up pending switch status
                 (element as any)._sm.status = { kind: 'confirm-discard', pendingTab: 'settings' };
@@ -336,9 +335,6 @@ describe('CropSteeringDialog', () => {
                 expect((element as any)._sm.activeTab).toBe('settings');
                 // The draft should be reset to device value
                 expect((element as any)._sm.tabs.settings.draft.phase).toBe('p2');
-
-                // Reset back to empty to avoid side effects in other tests
-                mockDevice.irrigationConfig = {} as any;
             });
         });
 

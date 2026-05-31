@@ -8,6 +8,7 @@ import { ActionContext } from '../core/action-context';
 import * as uiActions from '../ui/ui-actions';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
+import { devices$, optimisticDeletedPlantIds$ } from '../../slices/grid';
 
 /**
  * Get the currently visible plants for the selected device.
@@ -17,12 +18,11 @@ function getVisiblePlants(ctx: ActionContext): PlantEntity[] {
   const selectedDevice = ctx.grid.$selectedDevice.get();
   if (!selectedDevice) return [];
 
-  const devices = ctx.data.$devices.get();
-  const device = devices.find((d) => d.deviceId === selectedDevice);
+  const device = devices$.get().find((d) => d.deviceId === selectedDevice);
   if (!device) return [];
 
   return device.plants.filter(
-    (p) => !ctx.data.$optimisticDeletedPlantIds.get().has(p.attributes.plant_id || '')
+    (p) => !optimisticDeletedPlantIds$.get().has(p.attributes.plant_id || '')
   );
 }
 
