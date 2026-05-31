@@ -8,6 +8,7 @@ import {
   PlantAttributes,
   AddPlantsDialogState,
 } from '../../types';
+import type { LabelFieldVisibility } from '../../lib/types/dialog';
 import { PlantUtils } from '../../utils/plant-utils';
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
@@ -615,9 +616,13 @@ export async function printLabel(
     breederLogo?: string;
     deviceId?: string;
     preview?: boolean;
+    fields?: LabelFieldVisibility;
+    sizeId?: string;
+    density?: string;
+    qrTarget?: string;
   }
 ): Promise<any> {
-  const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
+  const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview, fields, sizeId, density, qrTarget } = params;
   const baseUrl = window.location.origin + window.location.pathname;
 
   try {
@@ -631,6 +636,10 @@ export async function printLabel(
       device_id: deviceId,
       preview,
       base_url: baseUrl,
+      fields,
+      size_id: sizeId,
+      density,
+      qr_target: qrTarget,
     });
     if (!preview) {
       ctx.ui.showToast('Label printing command sent', 'success');

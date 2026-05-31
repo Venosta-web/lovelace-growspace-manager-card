@@ -30,6 +30,7 @@
 
 import { atom } from 'nanostores';
 import type { PlantEntity } from '../../features/plants/types';
+import type { LabelFieldVisibility } from '../../lib/types/dialog';
 import { z } from 'zod';
 import { mutate } from '../../services/mutate';
 import { hassCall } from '../../services/hass-call';
@@ -450,6 +451,10 @@ export async function printLabel(params: {
   deviceId?: string;
   preview?: boolean;
   baseUrl?: string;
+  fields?: LabelFieldVisibility;
+  sizeId?: string;
+  density?: string;
+  qrTarget?: string;
 }): Promise<void> {
   const payload: Record<string, unknown> = {};
   if (params.plantId !== undefined) payload.plant_id = params.plantId;
@@ -461,6 +466,10 @@ export async function printLabel(params: {
   if (params.deviceId !== undefined) payload.device_id = params.deviceId;
   if (params.preview !== undefined) payload.preview = params.preview;
   if (params.baseUrl !== undefined) payload.base_url = params.baseUrl;
+  if (params.fields !== undefined) payload.fields = params.fields;
+  if (params.sizeId !== undefined) payload.size_id = params.sizeId;
+  if (params.density !== undefined) payload.density = params.density;
+  if (params.qrTarget !== undefined) payload.qr_target = params.qrTarget;
 
   await hassCall('growspace_manager/print_label', payload, z.unknown());
 }

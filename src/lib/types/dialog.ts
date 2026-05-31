@@ -230,6 +230,8 @@ export interface IPMDialogState {
   plantIds?: string[];
 }
 
+export type QrTarget = 'web' | 'deeplink';
+
 export interface PrintLabelDialogState {
   plantId?: string;
   strainName?: string;
@@ -238,6 +240,10 @@ export interface PrintLabelDialogState {
   breeder?: string;
   breederLogo?: string;
   deviceId?: string;
+  defaultFields?: Partial<LabelFieldVisibility>;
+  defaultSizeId?: LabelSizeId;
+  defaultDensity?: PrintDensity;
+  defaultQrTarget?: QrTarget;
 }
 
 export interface BatchPrintLabelsDialogState {

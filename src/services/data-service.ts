@@ -80,6 +80,7 @@ import {
   importStrainLineageTree as geneticsSliceImportStrainLineageTree,
 } from '../slices/genetics';
 import type { PlantEntity } from '../features/plants/types';
+import type { LabelFieldVisibility } from '../lib/types/dialog';
 import { VisionAPI } from './api/vision-api';
 import { ReportAPI } from './api/report-api';
 
@@ -281,6 +282,10 @@ export class DataService {
     device_id?: string;
     preview?: boolean;
     base_url?: string;
+    fields?: LabelFieldVisibility;
+    size_id?: string;
+    density?: string;
+    qr_target?: string;
   }) =>
     plantSlicePrintLabel({
       plantId: params.plant_id,
@@ -292,6 +297,10 @@ export class DataService {
       deviceId: params.device_id,
       preview: params.preview,
       baseUrl: params.base_url,
+      fields: params.fields,
+      sizeId: params.size_id,
+      density: params.density,
+      qrTarget: params.qr_target,
     });
 
   scorePlant = (params: { plant_id: string; [key: string]: unknown }) => {
