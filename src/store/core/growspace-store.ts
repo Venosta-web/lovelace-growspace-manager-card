@@ -4,7 +4,6 @@ import { PlantEntity, GrowspaceManagerCardConfig } from '../../types';
 import { DataService } from '../../services/data-service';
 
 // Sub-stores
-import { GrowspaceDataStore } from './data-store';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import { GrowspaceHistoryStore } from '../history/history-store';
 import { type GridSliceRef, type GridViewState, makePerCardGridSlice, devices$, optimisticDeletedPlantIds$, removeOptimisticDeletedPlantId } from '../../slices/grid';
@@ -39,11 +38,6 @@ export class GrowspaceStore {
 
   dataService!: DataService;
   hass!: HomeAssistant;
-
-  // Shared sub-stores (delegated to shared store)
-  public get data(): GrowspaceDataStore {
-    return this._shared.data;
-  }
 
   // Per-card stores
   public readonly ui: GrowspaceUIStore;
@@ -123,7 +117,6 @@ export class GrowspaceStore {
   public get context(): ActionContext {
     return {
       dataService: this.dataService,
-      data: this.data,
       ui: this.ui,
       grid: this.grid,
       undoRedoManager: this.undoRedoManager,
@@ -147,7 +140,6 @@ export class GrowspaceStore {
     this.grid = makePerCardGridSlice();
     this.history = new GrowspaceHistoryStore(
       shared.dataService,
-      shared.data,
       this.grid.$selectedDevice
     );
 
@@ -224,11 +216,11 @@ export class GrowspaceStore {
     );
 
     // Initialize services
-    this.syncService = new SyncService(this.dataService, shared.data, this.ui, this.grid);
+    this.syncService = new SyncService(this.dataService, this.ui, this.grid);
     this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
       this.ui.showToast(msg, type, action)
     );
-    this.optimisticManager = new OptimisticManager(shared.data, this.undoRedoManager);
+    this.optimisticManager = new OptimisticManager(this.undoRedoManager);
 
     // Initialize new infrastructure (Phase 1)
     this.eventBus = new EventBus();
@@ -316,7 +308,6 @@ export class GrowspaceStore {
   // Device coordination — these belong on the store as they manage lifecycle state
   initializeSelectedDevice(config: GrowspaceManagerCardConfig) {
     if (!config) return;
-    this.data.setConfig(config);
     this.syncService.setCardConfig(config);
     this.syncService.updateDevicesState();
   }

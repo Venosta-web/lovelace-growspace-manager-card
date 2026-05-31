@@ -1,4 +1,3 @@
-import { GrowspaceDataStore } from '../core/data-store';
 import { UndoRedoManager } from '../../services/undo-redo-manager';
 
 export interface OptimisticAction<T> {
@@ -12,10 +11,7 @@ export interface OptimisticAction<T> {
 export class OptimisticManager {
   private _pendingActions = new Map<string, OptimisticAction<unknown>>();
 
-  constructor(
-    private data: GrowspaceDataStore,
-    private undoRedoManager: UndoRedoManager
-  ) {}
+  constructor(private undoRedoManager: UndoRedoManager) {}
 
   /**
    * Apply an optimistic update immediately.
@@ -97,8 +93,6 @@ export class OptimisticManager {
       await action.revert();
     } catch (e) {
       console.error('Critical: Failed to rollback optimistic update', e);
-      // Force a full refresh as a fallback if rollback fails
-      // this.dataStore.requestRefetch(); // detailed implementation depends on store
     } finally {
       this._pendingActions.delete(actionId);
     }

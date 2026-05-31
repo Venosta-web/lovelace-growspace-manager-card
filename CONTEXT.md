@@ -272,6 +272,20 @@ The biological sex of an individual plant: `"male"`, `"female"`, or `"hermaphrod
 **Seeds-Genetics Tab SM**
 The state machine for `seeds-genetics-tab.ts`, extracted into `seeds-genetics-tab-sm.ts`. Owns the tab's interaction state: `activeView` (the active sub-view), `views` (one typed state object per sub-view), `status` (`{ kind: 'idle' }` — no discard guard), and `toast`. Sub-views: `list | add-batch | log-pollination | harvest`. `add-batch` handles both creating and editing a [[Seed Batch]], discriminated by `editingBatchId: string | null` in the view state. `log-pollination` handles both creating and editing a [[Pollination Event]], discriminated by `editingEventId: string | null`. Delete confirmations and the inline Sow form live in the list view's `sub` discriminated union. Async lifecycle (`applying | error`) lives in each sub-view's `sub` — not at root. Validation logic lives in exported pure helpers (`validateBatchDraft`, `validatePollinationDraft`, `validateHarvestDraft`) — not in `transition()`. Does not satisfy [[DialogStateMachine]].
 
+## Print Label
+
+**Label Field**
+One of nine configurable data rows that can appear on a printed thermal label: strain name (always shown), phenotype, breeder, lineage, start date, stage & age, plant ID, logo, QR code. Each field is independently toggled on/off in the Print Label Dialog. Note: the approved design mockup labels these "Breeder" (= phenotype) and "Genetics" (= breeder) — the canonical names in this codebase are phenotype and breeder respectively.
+
+**Label Size**
+The physical roll dimensions selected for printing: 50×30, 40×30, 50×50, 50×80, or 50×15 mm. Affects both the frontend preview layout and the `width`/`height` values sent to the Niimbot `print` service.
+
+**Print Density**
+User-selectable ink darkness: Light, Normal, or Dark. Mapped to a numeric `density` value for the Niimbot service call.
+
+**QR Target**
+The URL encoded in the label's QR code. Options: HA deep link to the plant, or raw plant UUID.
+
 ## Build
 
 **`__VERSION__`**

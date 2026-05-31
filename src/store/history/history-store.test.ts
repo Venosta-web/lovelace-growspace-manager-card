@@ -1,16 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrowspaceHistoryStore } from './history-store';
 import type { DataService } from '../../services/data-service';
-import type { GrowspaceDataStore } from '../core/data-store';
 import type { GrowspaceDevice } from '../../types';
 import { atom } from 'nanostores';
 import { setDevices } from '../../slices/grid';
 
 const makeStore = () => {
-  const mockDataStore = {} as unknown as GrowspaceDataStore;
   const mockDataService = {} as DataService;
   const $selectedDevice = atom<string | null>(null);
-  return new GrowspaceHistoryStore(mockDataService, mockDataStore, $selectedDevice);
+  return new GrowspaceHistoryStore(mockDataService, $selectedDevice);
 };
 
 describe('GrowspaceHistoryStore.$analyticsViewState', () => {
@@ -120,9 +118,8 @@ const makeTransportStore = (getHistoryStats: ReturnType<typeof vi.fn>) => {
   } as unknown as GrowspaceDevice;
 
   setDevices([device]);
-  const mockDataStore = {} as unknown as GrowspaceDataStore;
   const $selectedDevice = atom<string | null>('dev1');
-  return new GrowspaceHistoryStore(mockDataService, mockDataStore, $selectedDevice);
+  return new GrowspaceHistoryStore(mockDataService, $selectedDevice);
 };
 
 describe('GrowspaceHistoryStore - history transport', () => {

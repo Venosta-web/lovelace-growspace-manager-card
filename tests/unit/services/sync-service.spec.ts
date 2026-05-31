@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SyncService } from '../../../src/services/sync-service';
 import { DataService } from '../../../src/services/data-service';
-import { GrowspaceDataStore } from '../../../src/store/core/data-store';
 import { GrowspaceUIStore } from '../../../src/store/ui/ui-store';
 import { GridSliceRef, devices$, setDevices } from '../../../src/slices/grid';
 import { setDeviceSnapshot } from '../../../src/slices/device-state';
@@ -33,7 +32,6 @@ vi.mock('../../../src/slices/irrigation', () => ({
 describe('SyncService Unit Tests', () => {
   let syncService: SyncService;
   let dataService: DataService;
-  let dataStore: GrowspaceDataStore;
   let uiStore: GrowspaceUIStore;
   let gridStore: GridSliceRef;
 
@@ -52,7 +50,6 @@ describe('SyncService Unit Tests', () => {
     } as unknown as DataService;
 
     setDevices([]);
-    dataStore = {} as unknown as GrowspaceDataStore;
 
     uiStore = {
       $defaultApplied: atom<boolean>(false),
@@ -69,7 +66,7 @@ describe('SyncService Unit Tests', () => {
       }),
     } as unknown as GridSliceRef;
 
-    syncService = new SyncService(dataService, dataStore, uiStore, gridStore);
+    syncService = new SyncService(dataService, uiStore, gridStore);
   });
 
   describe('setCardConfig', () => {

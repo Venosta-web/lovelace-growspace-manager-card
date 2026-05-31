@@ -1,6 +1,5 @@
 import { HomeAssistant } from 'custom-card-helpers';
 import { DataService } from './data-service';
-import { GrowspaceDataStore } from '../store/core/data-store';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import type { GridSliceRef } from '../slices/grid';
 import { devices$, setDevices } from '../slices/grid';
@@ -31,7 +30,6 @@ export class SyncService {
 
   constructor(
     private dataService: DataService,
-    private dataStore: GrowspaceDataStore,
     private uiStore: GrowspaceUIStore,
     private gridStore: GridSliceRef
   ) {}

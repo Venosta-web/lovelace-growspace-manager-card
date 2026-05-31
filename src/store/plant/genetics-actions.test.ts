@@ -31,7 +31,6 @@ function makeContext() {
     closeDialog: vi.fn(),
     undoRedoManager: {} as any,
     optimisticManager: {} as any,
-    data: {} as any,
     grid: {} as any,
   } satisfies ActionContext;
 }

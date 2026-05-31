@@ -50,12 +50,6 @@ function makeContext() {
       applyOptimisticUpdate: vi.fn().mockResolvedValue('action-id'),
       confirmUpdate: vi.fn(),
     } as any,
-    data: {
-      addOptimisticDeletedPlantId: vi.fn(),
-      removeOptimisticDeletedPlantId: vi.fn(),
-      $devices: { get: vi.fn().mockReturnValue(devices), set: vi.fn() },
-      updateWsDataCacheGrid: vi.fn(),
-    } as unknown as ActionContext['data'],
     grid: {
       $selectedDevice: { get: vi.fn().mockReturnValue('device-1') },
     } as unknown as ActionContext['grid'],

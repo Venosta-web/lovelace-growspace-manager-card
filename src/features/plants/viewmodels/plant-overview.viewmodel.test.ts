@@ -31,7 +31,6 @@ describe('PlantOverviewViewModel', () => {
     ]);
     // Mock store with necessary atoms
     mockStore = {
-      data: {} as any,
       grid: {
         $growspaceOptions: atom({}),
       } as any,

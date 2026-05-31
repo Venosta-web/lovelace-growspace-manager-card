@@ -14,7 +14,6 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
       askGrowAdvice: vi.fn().mockResolvedValue({ response: 'ok' }),
       analyzeAllGrowspaces: vi.fn().mockResolvedValue({ response: 'ok' }),
     } as unknown as ActionContext['dataService'],
-    data: {} as ActionContext['data'],
     ui: {
       $activeDialog,
       setActiveDialog: (d: { type: string; payload?: Record<string, unknown> }) => $activeDialog.set(d),

@@ -1,14 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GrowspaceDataStore } from '../core/data-store';
 import { gridSlice, setSelectedDeviceId } from '../../slices/grid';
 import type { ActionContext } from '../core/action-context';
 import { handleDeviceChange } from './device-actions';
 
 function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
-  const data = new GrowspaceDataStore();
-
   return {
-    data,
     grid: gridSlice,
     dataService: {} as ActionContext['dataService'],
     ui: {} as ActionContext['ui'],

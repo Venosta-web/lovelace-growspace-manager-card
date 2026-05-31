@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { GrowspaceDataStore } from '../core/data-store';
 import { OptimisticManager } from '../system/optimistic-manager';
 import { UndoRedoManager } from '../../services/undo-redo-manager';
 import { createGrowspaceDevice } from '../../services/types';
@@ -15,16 +14,14 @@ import {
 import { devices$, setDevices } from '../../slices/grid';
 
 function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
-  const data = new GrowspaceDataStore();
   const showToast = vi.fn();
   const undoRedoManager = new UndoRedoManager(showToast);
-  const optimisticManager = new OptimisticManager(data, undoRedoManager);
+  const optimisticManager = new OptimisticManager(undoRedoManager);
 
   const device = createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1' });
   setDevices([device]);
 
   return {
-    data,
     undoRedoManager,
     optimisticManager,
     dataService: {

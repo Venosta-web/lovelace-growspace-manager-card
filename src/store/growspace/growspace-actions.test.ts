@@ -22,7 +22,6 @@ function makeContext(initialDevices: any[] = []) {
     closeDialog: vi.fn(),
     undoRedoManager: {} as any,
     optimisticManager: {} as any,
-    data: {} as unknown as ActionContext['data'],
     grid: {} as any,
   } satisfies ActionContext;
 }

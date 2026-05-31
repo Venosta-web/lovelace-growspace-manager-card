@@ -1,10 +1,8 @@
 import { HomeAssistant } from 'custom-card-helpers';
 
 import { DataService } from '../../services/data-service';
-import { GrowspaceDataStore } from './data-store';
 
 export class GrowspaceSharedStore {
-  public readonly data: GrowspaceDataStore;
   public readonly dataService: DataService;
 
   private _hass?: HomeAssistant;
@@ -13,7 +11,6 @@ export class GrowspaceSharedStore {
 
   constructor() {
     this.dataService = new DataService();
-    this.data = new GrowspaceDataStore();
   }
 
   updateHass(hass: HomeAssistant): void {

@@ -4,7 +4,6 @@ import * as uiActions from '../ui/ui-actions';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
 import type { ActionContext } from '../core/action-context';
-import { GrowspaceDataStore } from '../core/data-store';
 import { setDevices, devices$ } from '../../slices/grid';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import type { PlantEntity } from '../../types';
@@ -19,7 +18,6 @@ function makePlant(id: string): PlantEntity {
 }
 
 function makeContext(plants: PlantEntity[] = []): ActionContext {
-  const data = new GrowspaceDataStore();
   const ui = new GrowspaceUIStore();
   const $selectedDevice = atom<string | null>(null);
 
@@ -31,7 +29,6 @@ function makeContext(plants: PlantEntity[] = []): ActionContext {
   }
 
   return {
-    data,
     ui,
     grid: { $selectedDevice } as unknown as ActionContext['grid'],
     dataService: {} as ActionContext['dataService'],

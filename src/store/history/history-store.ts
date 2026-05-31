@@ -7,7 +7,6 @@ import {
 } from '../../types';
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
 import { DataService } from '../../services/data-service';
-import { GrowspaceDataStore } from '../core/data-store';
 import { devices$ } from '../../slices/grid';
 
 export class GrowspaceHistoryStore {
@@ -29,7 +28,6 @@ export class GrowspaceHistoryStore {
 
   // --- Dependencies ---
   private dataService: DataService;
-  private dataStore: GrowspaceDataStore;
   private _selectedDevice: ReadableAtom<string | null>;
 
   // --- Internals ---
@@ -69,11 +67,9 @@ export class GrowspaceHistoryStore {
 
   constructor(
     dataService: DataService,
-    dataStore: GrowspaceDataStore,
     selectedDevice: ReadableAtom<string | null>
   ) {
     this.dataService = dataService;
-    this.dataStore = dataStore;
     this._selectedDevice = selectedDevice;
 
     this.$historyCache = map<Record<string, HistorySensorState[]>>({});
