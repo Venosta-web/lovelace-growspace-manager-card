@@ -59,6 +59,12 @@ describe('FlowerFlipChip', () => {
     expect(inner.tooltip.toLowerCase()).toContain('auto');
   });
 
+  it('renders nothing when info is not set', async () => {
+    element = await fixture(html`<flower-flip-chip .growspaceId=${'gs1'}></flower-flip-chip>`);
+    const inner = element.shadowRoot!.querySelector('growspace-chip');
+    expect(inner).toBeNull();
+  });
+
   it('click dispatches flower-flip-click event with growspaceId and flowerStart', async () => {
     element = await fixture(html`<flower-flip-chip .info=${baseInfo} .growspaceId=${'gs1'}></flower-flip-chip>`);
     const listener = vi.fn();
