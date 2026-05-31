@@ -461,7 +461,7 @@ describe('saveECRampCurve', () => {
 describe('NutrientPresetsSchema new fields', () => {
   it('parses a preset without week/ec_target/ph_target and applies defaults', () => {
     const raw = {
-      p1: { id: 'p1', name: 'Veg Mix', nutrients: [{ name: 'A', dose_ml_l: 1 }] },
+      p1: { id: 'p1', name: 'Veg Mix', nutrients: [{ nutrient_id: 'id-a', dose_ml_l: 1 }] },
     };
     const result = NutrientPresetsSchema.parse(raw);
     expect(result['p1'].week).toBe(1);
@@ -474,7 +474,7 @@ describe('NutrientPresetsSchema new fields', () => {
       p2: {
         id: 'p2',
         name: 'Bloom Week 3',
-        nutrients: [{ name: 'Bloom', dose_ml_l: 2 }],
+        nutrients: [{ nutrient_id: 'id-bloom', dose_ml_l: 2 }],
         week: 3,
         ec_target: 1.8,
         ph_target: 6.0,

@@ -12,7 +12,7 @@ export const NutrientPresetsSchema = z.record(
       name: z.string(),
       nutrients: z.array(
         z.object({
-          name: z.string(),
+          nutrient_id: z.string(),
           dose_ml_l: z.number(),
         })
       ),

@@ -5248,7 +5248,7 @@ const NutrientPresetsSchema = recordType(stringType(), objectType({
     id: stringType(),
     name: stringType(),
     nutrients: arrayType(objectType({
-        name: stringType(),
+        nutrient_id: stringType(),
         dose_ml_l: numberType(),
     })),
     stage: stringType()
@@ -5257,6 +5257,9 @@ const NutrientPresetsSchema = recordType(stringType(), objectType({
     min_days_in_stage: numberType()
         .nullish()
         .transform((v) => v || undefined),
+    week: numberType().int().min(1).optional().default(1),
+    ec_target: numberType().min(0).nullish().transform((v) => v ?? undefined),
+    ph_target: numberType().min(0).max(14).nullish().transform((v) => v ?? undefined),
 })
     .passthrough());
 // ---------------------------------------------------------------------------

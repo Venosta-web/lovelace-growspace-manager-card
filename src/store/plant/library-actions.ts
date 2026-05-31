@@ -248,7 +248,7 @@ export async function saveNutrientPreset(
   preset: {
     preset_id?: string;
     name: string;
-    nutrients: { name: string; dose_ml_l: number }[];
+    nutrients: { nutrient_id: string; dose_ml_l: number }[];
     stage?: string;
     min_days_in_stage?: number;
   }

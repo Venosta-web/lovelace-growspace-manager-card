@@ -58,7 +58,7 @@ export async function fetchECRampCurves(): Promise<void> {
 export async function saveNutrientPreset(data: {
   preset_id?: string;
   name: string;
-  nutrients: { name: string; dose_ml_l: number }[];
+  nutrients: { nutrient_id: string; dose_ml_l: number }[];
   stage?: string;
   min_days_in_stage?: number;
   week?: number;
