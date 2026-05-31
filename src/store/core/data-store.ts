@@ -1,14 +1,12 @@
 import { atom, onMount, WritableAtom } from 'nanostores';
 import {
   GrowspaceDevice,
-  StrainEntry,
   GrowspaceManagerCardConfig,
 } from '../../types';
 
 export class GrowspaceDataStore {
   // Domain Data Atoms
   public readonly $devices: WritableAtom<GrowspaceDevice[]>;
-  public readonly $strainLibrary: WritableAtom<StrainEntry[]>;
   public readonly $config: WritableAtom<GrowspaceManagerCardConfig>;
   public readonly $optimisticDeletedPlantIds: WritableAtom<Set<string>>;
   /** Map from plantId to deviceId for O(1) lookups */
@@ -23,7 +21,6 @@ export class GrowspaceDataStore {
   constructor() {
     this.$devices = atom<GrowspaceDevice[]>([]);
     this.$staleCounter = atom<number>(0);
-    this.$strainLibrary = atom<StrainEntry[]>([]);
     this.$config = atom<GrowspaceManagerCardConfig>({} as GrowspaceManagerCardConfig);
     this.$optimisticDeletedPlantIds = atom<Set<string>>(new Set());
     this.$plantToDeviceMap = atom<Map<string, string>>(new Map());
@@ -62,10 +59,6 @@ export class GrowspaceDataStore {
 
   public setConfig(config: GrowspaceManagerCardConfig) {
     this.$config.set(config);
-  }
-
-  public setStrainLibrary(library: StrainEntry[]) {
-    this.$strainLibrary.set(library);
   }
 
   public setOptimisticDeletedPlantIds(ids: Set<string>) {

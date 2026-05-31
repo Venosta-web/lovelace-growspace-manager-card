@@ -24,6 +24,7 @@ import {
   ipmPresets$,
   nutrientInventory$,
 } from '../../slices/nutrient';
+import { strainLibrary$ } from '../../slices/strain';
 
 // Services
 import { SyncService } from '../../services/sync-service';
@@ -157,7 +158,7 @@ export class GrowspaceStore {
         this.ui.$activeDialog,
         this.data.$devices,
         this.grid.$selectedDevice,
-        this.data.$strainLibrary,
+        strainLibrary$,
         nutrientPresets$,
         ipmPresets$,
         nutrientInventory$,
@@ -219,7 +220,7 @@ export class GrowspaceStore {
     );
 
     this.$mainCardState = computed(
-      [this.grid.$gridViewState, this.ui.$cardViewState, this.data.$strainLibrary],
+      [this.grid.$gridViewState, this.ui.$cardViewState, strainLibrary$],
       (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary })
     );
 

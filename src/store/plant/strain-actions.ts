@@ -10,6 +10,8 @@ import {
   addStrain as strainSliceAdd,
   updateStrainMeta as strainSliceUpdateMeta,
   removeStrain as strainSliceRemove,
+  strainLibrary$,
+  setStrainLibrary,
 } from '../../slices/strain';
 
 /**
@@ -100,8 +102,8 @@ export async function removeStrain(ctx: ActionContext, strainKey: string): Promi
   try {
     await strainSliceRemove(strainKey);
 
-    const current = ctx.data.$strainLibrary.get();
-    ctx.data.setStrainLibrary(current.filter((s) => s.key !== strainKey));
+    const current = strainLibrary$.get();
+    setStrainLibrary(current.filter((s) => s.key !== strainKey));
 
     await fetchStrainLibrary(ctx, true);
     return true;

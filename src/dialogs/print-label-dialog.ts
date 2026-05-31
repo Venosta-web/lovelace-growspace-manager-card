@@ -8,6 +8,7 @@ import '../features/shared/ui/gs-dialog';
 import { PrintLabelDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { strainLibrary$ } from '../slices/strain';
 
 @customElement('print-label-dialog')
 export class PrintLabelDialog extends LitElement {
@@ -334,7 +335,7 @@ export class PrintLabelDialog extends LitElement {
 
   private _getStrain(strainName?: string, phenotype?: string) {
     if (!strainName || !this.store || !this.store.data) return null;
-    const library = this.store.data.$strainLibrary.get();
+    const library = strainLibrary$.get();
     const pheno = phenotype || 'default';
     return library.find((s) => s.strain === strainName && s.phenotype === pheno) || null;
   }

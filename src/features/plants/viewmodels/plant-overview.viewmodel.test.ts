@@ -2,11 +2,12 @@
  * Plant Overview ViewModel Tests
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { atom } from 'nanostores';
 import { createStablePlantOverviewViewModel } from './plant-overview.viewmodel';
 import type { PlantEntity, PlantOverviewEditedAttributes } from '../../../types';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { strainLibrary$, setStrainLibrary } from '../../../slices/strain';
 
 describe('PlantOverviewViewModel', () => {
   let mockStore: Partial<GrowspaceStore>;
@@ -20,18 +21,17 @@ describe('PlantOverviewViewModel', () => {
   };
 
   beforeEach(() => {
+    setStrainLibrary([
+      {
+        strain: 'Test Strain',
+        phenotype: 'Pheno A',
+        key: 'test_strain_pheno_a',
+        flowering_days: 60,
+      } as any,
+    ]);
     // Mock store with necessary atoms
     mockStore = {
-      data: {
-        $strainLibrary: atom([
-          {
-            strain: 'Test Strain',
-            phenotype: 'Pheno A',
-            key: 'test_strain_pheno_a',
-            flowering_days: 60,
-          },
-        ]),
-      } as any,
+      data: {} as any,
       grid: {
         $growspaceOptions: atom({}),
       } as any,
@@ -90,6 +90,10 @@ describe('PlantOverviewViewModel', () => {
       showAllDates: false,
       showDeleteConfirmation: false,
     };
+  });
+
+  afterEach(() => {
+    setStrainLibrary([]);
   });
 
   it('should create view model with correct structure', () => {
@@ -785,13 +789,13 @@ describe('PlantOverviewViewModel', () => {
       expect(initialValue.displayName).toBe('Test Strain');
 
       // Update strain library
-      mockStore.data!.$strainLibrary.set([
+      strainLibrary$.set([
         {
           strain: 'New Strain',
           phenotype: 'New Pheno',
           key: 'new_strain_new_pheno',
           flowering_days: 70,
-        },
+        } as any,
       ]);
 
       // ViewModel should recompute (though displayName comes from edited attributes)

@@ -35,6 +35,7 @@ import {
   type StrainEntry,
 } from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
+import { strainLibrary$ } from '../../../slices/strain';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -1147,7 +1148,7 @@ export class PlantOverviewContainer extends LitElement {
   private _openStrainEditor(): void {
     const strain = this.plant?.attributes?.strain ?? '';
     const phenotype = this.plant?.attributes?.phenotype ?? '';
-    const strainLibrary = this.store.data.$strainLibrary.get();
+    const strainLibrary = strainLibrary$.get();
     let strainEntry: StrainEntry | undefined = strainLibrary.find((s) => {
       const entryPhenotype = s.phenotype || '';
       return s.strain === strain && entryPhenotype === phenotype;

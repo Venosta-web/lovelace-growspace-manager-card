@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { addStrain, updateStrain, removeStrain } from './strain-actions';
 import type { ActionContext } from '../core/action-context';
 
@@ -6,7 +6,8 @@ vi.mock('./library-actions', () => ({
   fetchStrainLibrary: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('../../slices/strain', () => ({
+vi.mock('../../slices/strain', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../slices/strain')>()),
   addStrain: vi.fn().mockResolvedValue(undefined),
   updateStrainMeta: vi.fn().mockResolvedValue(undefined),
   removeStrain: vi.fn().mockResolvedValue(undefined),
@@ -25,10 +26,6 @@ function makeDataService() {
 
 function makeContext() {
   const showToast = vi.fn();
-  const strainLibrary: any[] = [
-    { key: 'og-kush', strain: 'OG Kush' },
-    { key: 'blue-dream', strain: 'Blue Dream' },
-  ];
 
   return {
     dataService: makeDataService(),
@@ -37,10 +34,7 @@ function makeContext() {
     closeDialog: vi.fn(),
     undoRedoManager: {} as any,
     optimisticManager: {} as any,
-    data: {
-      $strainLibrary: { get: vi.fn().mockReturnValue(strainLibrary) },
-      setStrainLibrary: vi.fn(),
-    } as unknown as ActionContext['data'],
+    data: {} as unknown as ActionContext['data'],
     grid: {} as any,
   } satisfies ActionContext;
 }
@@ -162,13 +156,24 @@ describe('updateStrain', () => {
 
 describe('removeStrain', () => {
   let ctx: ReturnType<typeof makeContext>;
-  beforeEach(() => { ctx = makeContext(); });
+
+  beforeEach(() => {
+    ctx = makeContext();
+    strainSlice.setStrainLibrary([
+      { key: 'og-kush', strain: 'OG Kush' } as any,
+      { key: 'blue-dream', strain: 'Blue Dream' } as any,
+    ]);
+  });
+
+  afterEach(() => {
+    strainSlice.setStrainLibrary([]);
+  });
 
   it('calls slice remove, filters local library, fetches fresh library, returns true', async () => {
     const result = await removeStrain(ctx, 'og-kush');
 
     expect(strainSlice.removeStrain).toHaveBeenCalledWith('og-kush');
-    expect((ctx.data as any).setStrainLibrary).toHaveBeenCalledWith([
+    expect(strainSlice.strainLibrary$.get()).toEqual([
       { key: 'blue-dream', strain: 'Blue Dream' },
     ]);
     expect(result).toBe(true);
@@ -180,6 +185,9 @@ describe('removeStrain', () => {
     const result = await removeStrain(ctx, 'og-kush');
 
     expect(result).toBe(false);
-    expect((ctx.data as any).setStrainLibrary).not.toHaveBeenCalled();
+    expect(strainSlice.strainLibrary$.get()).toEqual([
+      { key: 'og-kush', strain: 'OG Kush' },
+      { key: 'blue-dream', strain: 'Blue Dream' },
+    ]);
   });
 });

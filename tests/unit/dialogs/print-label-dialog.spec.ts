@@ -3,12 +3,12 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { PrintLabelDialog } from '../../../src/dialogs/print-label-dialog';
 import { PrintLabelDialogState } from '../../../src/types';
 import { atom } from 'nanostores';
+import { strainLibrary$, setStrainLibrary } from '../../../src/slices/strain';
 
 // Mock dependencies
 const mockStore = {
     data: {
         $devices: atom<any[]>([]),
-        $strainLibrary: atom<any[]>([])
     },
     actions: {
         ui: {
@@ -66,7 +66,7 @@ describe('PrintLabelDialog', () => {
         mockStore.actions.plant.printLabel.mockReset();
         mockStore.actions.ui.toast.mockReset();
         mockStore.data.$devices.set([]);
-        mockStore.data.$strainLibrary.set([]);
+        setStrainLibrary([]);
 
         document.body.appendChild(element);
     });
@@ -405,7 +405,7 @@ describe('PrintLabelDialog', () => {
 
         it('should get strain from library with default phenotype', () => {
             const mockStrain = { strain: 'OG', phenotype: 'default' };
-            mockStore.data.$strainLibrary.set([mockStrain]);
+            strainLibrary$.set([mockStrain as any]);
 
             const result = (element as any)._getStrain('OG');
             expect(result).toEqual(mockStrain);
@@ -413,14 +413,14 @@ describe('PrintLabelDialog', () => {
 
         it('should get strain from library with specific phenotype', () => {
             const mockStrain = { strain: 'OG', phenotype: 'P1' };
-            mockStore.data.$strainLibrary.set([mockStrain]);
+            strainLibrary$.set([mockStrain as any]);
 
             const result = (element as any)._getStrain('OG', 'P1');
             expect(result).toEqual(mockStrain);
         });
 
         it('should return null if strain not found', () => {
-            mockStore.data.$strainLibrary.set([]);
+            setStrainLibrary([]);
             expect((element as any)._getStrain('OG')).toBeNull();
         });
 

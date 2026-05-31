@@ -14,6 +14,7 @@ import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import { nutrientPresets$ } from '../../../slices/nutrient';
+import { strainLibrary$ } from '../../../slices/strain';
 import { DragDropController, DragDropHost } from '../../../controllers/drag-drop-controller';
 import {
   createPlantCardViewModel,
@@ -86,7 +87,7 @@ export class PlantCardContainer extends LitElement implements DragDropHost {
       this.viewModel = createPlantCardViewModel(this.$plant, {
         $isEditMode: this.store.ui.$isEditMode,
         $selectedPlants: this.store.ui.$selectedPlants,
-        $strainLibrary: this.store.data.$strainLibrary,
+        $strainLibrary: strainLibrary$,
         $nutrientPresets: computed([nutrientPresets$], (p) => p ?? {}),
         $devices: this.store.data.$devices,
       });

@@ -31,7 +31,6 @@ export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = fa
       const age = Date.now() - (cache.timestamp || 0);
 
       if (cache.version === 2 && age < CACHE_VALIDITY_MS && Array.isArray(cache.data)) {
-        ctx.data.setStrainLibrary(cache.data);
         setStrainLibrary(cache.data);
         usedCache = true;
       }
@@ -45,8 +44,6 @@ export async function fetchStrainLibrary(ctx: ActionContext, force: boolean = fa
     try {
       const currentStrains = await strainSliceFetchLibrary();
       if (Array.isArray(currentStrains)) {
-        ctx.data.setStrainLibrary(currentStrains);
-
         const cacheData = {
           version: 2,
           timestamp: Date.now(),
