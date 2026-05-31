@@ -89,7 +89,7 @@ export class LabelPreview extends LitElement {
     :host([data-layout='std']) .text-cols { display: flex; flex-direction: column; flex: 1; gap: 2px; font-size: 0.7em; }
     :host([data-layout='std']) .text-cols .field-phenotype,
     :host([data-layout='std']) .text-cols .field-lineage { font-weight: bold; }
-    :host([data-layout='std']) .field-qr { width: auto; display: flex; align-items: center; justify-content: center; border-left: 1px solid #000; padding-left: 6px; }
+    :host([data-layout='std']) .field-qr { width: auto; display: flex; align-items: center; justify-content: center; }
     :host([data-layout='std']) .field-qr svg { max-width: 48px; max-height: 48px; width: 100%; height: auto; }
 
     /* --- tall layout (50x50, 50x80) --- */
