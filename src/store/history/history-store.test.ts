@@ -928,7 +928,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
     store.stopAutoRefresh();
 
     expect(store.$historyCache.get()['temperature']).toHaveLength(2);
-    expect(store.$historyCache.get()['temperature'][1].value).toBe('22');
+    expect(store.$historyCache.get()['temperature'][1]).toMatchObject(newPoint);
   });
 
   it('delta fetch returns early when selected device is null', async () => {

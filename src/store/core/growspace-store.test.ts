@@ -130,7 +130,7 @@ describe('GrowspaceStore – undo/redo delegation', () => {
   it('pushUndoAction delegates to undoRedoManager', () => {
     const spy = vi.spyOn(store.undoRedoManager, 'pushAction');
     const action = { undo: vi.fn(), redo: vi.fn(), description: 'test' };
-    store.pushUndoAction(action);
+    store.pushUndoAction(action as any);
     expect(spy).toHaveBeenCalledWith(action);
   });
 
@@ -336,7 +336,7 @@ describe('GrowspaceStore – movePlant', () => {
 
   it('logs error and skips updateGrid when updatePlant rejects', async () => {
     vi.mocked(plantSlice.updatePlant).mockRejectedValue(new Error('move failed'));
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
     const gridSpy = vi.spyOn(store, 'updateGrid');
     const plant = { entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } } as any;
     await store.movePlant(plant, 0, 0);
@@ -373,7 +373,7 @@ describe('GrowspaceStore – getStrainRecommendation', () => {
   it('updates dialog with error response and rethrows on failure', async () => {
     store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
     vi.mocked(aiActions.getStrainRecommendation).mockRejectedValue(new Error('AI down'));
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => { });
     await expect(store.getStrainRecommendation('query')).rejects.toThrow('AI down');
     const dialog = store.ui.$activeDialog.get() as any;
     expect(dialog.payload.response).toContain('Error: AI down');
