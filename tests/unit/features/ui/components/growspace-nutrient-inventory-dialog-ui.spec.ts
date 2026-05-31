@@ -261,8 +261,8 @@ describe('GrowspaceNutrientInventoryDialogUI', () => {
         const detail = spy.mock.calls[0][0].detail;
         expect(detail.id).toBe('flora_micro');
         expect(detail.name).toBe('Flora Micro');
-        expect(detail.current).toBe(500);
-        expect(detail.initial).toBe(1000);
+        expect(detail.current_ml).toBe(500);
+        expect(detail.initial_ml).toBe(1000);
     });
 
     it('_handleSave() dispatches update-stock with existing id when editing', () => {

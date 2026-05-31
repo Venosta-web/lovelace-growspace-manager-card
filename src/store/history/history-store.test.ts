@@ -128,7 +128,7 @@ describe('GrowspaceHistoryStore - history transport', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { });
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });
 
@@ -390,7 +390,7 @@ describe('GrowspaceHistoryStore - localStorage', () => {
       timestamps: {},
     };
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(JSON.stringify(stored));
-    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {});
+    const removeSpy = vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => { });
 
     const device = {
       deviceId: 'dev1',
@@ -729,7 +729,7 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { });
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });
 
@@ -859,7 +859,7 @@ describe('GrowspaceHistoryStore - auto-refresh lifecycle', () => {
   });
 
   beforeEach(() => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { });
     vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
   });
 

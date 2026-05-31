@@ -141,8 +141,8 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         detail: {
           id: this._editingId || this._editName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
           name: this._editName,
-          current: this._editCurrent,
-          initial: this._editInitial,
+          current_ml: this._editCurrent,
+          initial_ml: this._editInitial,
         },
       })
     );

@@ -6,7 +6,7 @@ import {
   GrowspaceDevice,
 } from '../../types';
 import { METRIC_ENTITY_KEYS, STORAGE_KEYS } from '../../constants';
-import { DataService } from '../../services/data-service';
+import type { DataService } from '../../services/data-service';
 import { devices$ } from '../../slices/grid';
 
 export class GrowspaceHistoryStore {
