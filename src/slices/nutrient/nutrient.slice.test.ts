@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NutrientPresetsSchema } from './schema';
 import * as hassCallModule from '../../services/hass-call';
 import {
   nutrientPresets$,
@@ -450,6 +451,62 @@ describe('saveECRampCurve', () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('save failed'));
 
     await expect(saveECRampCurve({ name: 'X', points: [] })).rejects.toThrow('save failed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NutrientPresetsSchema — new fields (issue #409)
+// ---------------------------------------------------------------------------
+
+describe('NutrientPresetsSchema new fields', () => {
+  it('parses a preset without week/ec_target/ph_target and applies defaults', () => {
+    const raw = {
+      p1: { id: 'p1', name: 'Veg Mix', nutrients: [{ name: 'A', dose_ml_l: 1 }] },
+    };
+    const result = NutrientPresetsSchema.parse(raw);
+    expect(result['p1'].week).toBe(1);
+    expect(result['p1'].ec_target).toBeUndefined();
+    expect(result['p1'].ph_target).toBeUndefined();
+  });
+
+  it('parses a preset with week, ec_target and ph_target', () => {
+    const raw = {
+      p2: {
+        id: 'p2',
+        name: 'Bloom Week 3',
+        nutrients: [{ name: 'Bloom', dose_ml_l: 2 }],
+        week: 3,
+        ec_target: 1.8,
+        ph_target: 6.0,
+      },
+    };
+    const result = NutrientPresetsSchema.parse(raw);
+    expect(result['p2'].week).toBe(3);
+    expect(result['p2'].ec_target).toBe(1.8);
+    expect(result['p2'].ph_target).toBe(6.0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveNutrientPreset — new fields (issue #409)
+// ---------------------------------------------------------------------------
+
+describe('saveNutrientPreset with new fields', () => {
+  it('forwards week, ec_target, ph_target to callService when provided', async () => {
+    const data = {
+      name: 'Week 3 Bloom',
+      nutrients: [{ name: 'Bloom', dose_ml_l: 3 }],
+      week: 3,
+      ec_target: 1.8,
+      ph_target: 6.0,
+    };
+    await saveNutrientPreset(data);
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'save_nutrient_preset',
+      data
+    );
   });
 });
 

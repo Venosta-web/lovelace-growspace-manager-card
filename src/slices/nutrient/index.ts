@@ -61,6 +61,9 @@ export async function saveNutrientPreset(data: {
   nutrients: { name: string; dose_ml_l: number }[];
   stage?: string;
   min_days_in_stage?: number;
+  week?: number;
+  ec_target?: number | null;
+  ph_target?: number | null;
 }): Promise<void> {
   await callService('growspace_manager', 'save_nutrient_preset', data as Record<string, unknown>);
 }

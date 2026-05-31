@@ -24,6 +24,9 @@ export const NutrientPresetsSchema = z.record(
         .number()
         .nullish()
         .transform((v) => v || undefined),
+      week: z.number().int().min(1).optional().default(1),
+      ec_target: z.number().min(0).nullish().transform((v) => v ?? undefined),
+      ph_target: z.number().min(0).max(14).nullish().transform((v) => v ?? undefined),
     })
     .passthrough()
 );
