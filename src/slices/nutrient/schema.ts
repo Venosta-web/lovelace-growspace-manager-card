@@ -100,12 +100,28 @@ export type ECRampCurvesResponse = Record<string, ECRampCurve>;
 // Nutrient Inventory
 // ---------------------------------------------------------------------------
 
+export const NUTRIENT_STOCK_TYPES = [
+  'base',
+  'bloom',
+  'calmag',
+  'root',
+  'additive',
+  'microbe',
+] as const;
+
+export type NutrientStockType = (typeof NUTRIENT_STOCK_TYPES)[number];
+
 export const NutrientStockSchema = z.object({
   nutrient_id: z.string(),
   name: z.string(),
   current_ml: z.number(),
   initial_ml: z.number(),
   last_updated: z.string(),
+  brand: z.string().optional().default(''),
+  type: z.enum(NUTRIENT_STOCK_TYPES).optional().default('base'),
+  npk: z.string().optional().default(''),
+  dose_ml_l: z.number().optional().default(0),
+  notes: z.string().optional().default(''),
 });
 
 export const NutrientInventorySchema = z.object({

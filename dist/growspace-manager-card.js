@@ -5308,12 +5308,25 @@ const ECRampCurvesSchema = unionType([
 // ---------------------------------------------------------------------------
 // Nutrient Inventory
 // ---------------------------------------------------------------------------
+const NUTRIENT_STOCK_TYPES = [
+    'base',
+    'bloom',
+    'calmag',
+    'root',
+    'additive',
+    'microbe',
+];
 const NutrientStockSchema = objectType({
     nutrient_id: stringType(),
     name: stringType(),
     current_ml: numberType(),
     initial_ml: numberType(),
     last_updated: stringType(),
+    brand: stringType().optional().default(''),
+    type: enumType(NUTRIENT_STOCK_TYPES).optional().default('base'),
+    npk: stringType().optional().default(''),
+    dose_ml_l: numberType().optional().default(0),
+    notes: stringType().optional().default(''),
 });
 const NutrientInventorySchema = objectType({
     stocks: recordType(stringType(), NutrientStockSchema),
@@ -7009,8 +7022,18 @@ async function applyIPM$1(data) {
 // ---------------------------------------------------------------------------
 // Write mutators — nutrient inventory
 // ---------------------------------------------------------------------------
-async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl) {
-    await hassCall('growspace_manager/update_nutrient_stock', { nutrient_id: nutrientId, name, current_ml: currentMl, initial_ml: initialMl }, unknownType());
+async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl, brand = '', stockType = 'base', npk = '', doseMlL = 0, notes = '') {
+    await hassCall('growspace_manager/update_nutrient_stock', {
+        nutrient_id: nutrientId,
+        name,
+        current_ml: currentMl,
+        initial_ml: initialMl,
+        brand,
+        stock_type: stockType,
+        npk,
+        dose_ml_l: doseMlL,
+        notes,
+    }, unknownType());
 }
 async function removeNutrientStock$1(nutrientId) {
     await hassCall('growspace_manager/remove_nutrient_stock', { nutrient_id: nutrientId }, unknownType());

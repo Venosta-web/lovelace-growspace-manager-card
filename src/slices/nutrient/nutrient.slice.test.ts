@@ -327,11 +327,43 @@ describe('updateNutrientStock', () => {
   it('calls hassCall with the update_nutrient_stock WS command and all fields', async () => {
     vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
 
+    await updateNutrientStock('n1', 'Grow A', 500, 1000, 'Canna', 'bloom', '0-15-14', 1.5, 'Use late');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_nutrient_stock',
+      {
+        nutrient_id: 'n1',
+        name: 'Grow A',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: 'Canna',
+        stock_type: 'bloom',
+        npk: '0-15-14',
+        dose_ml_l: 1.5,
+        notes: 'Use late',
+      },
+      expect.anything()
+    );
+  });
+
+  it('calls hassCall with defaults when new fields are omitted', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
+
     await updateNutrientStock('n1', 'Grow A', 500, 1000);
 
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/update_nutrient_stock',
-      { nutrient_id: 'n1', name: 'Grow A', current_ml: 500, initial_ml: 1000 },
+      {
+        nutrient_id: 'n1',
+        name: 'Grow A',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: '',
+        stock_type: 'base',
+        npk: '',
+        dose_ml_l: 0,
+        notes: '',
+      },
       expect.anything()
     );
   });
