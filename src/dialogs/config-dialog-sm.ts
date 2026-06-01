@@ -16,6 +16,7 @@
 import type { DialogStateMachine } from './dialog-sm';
 import type { GrowspaceDevice, SensorGroup } from '../types';
 import type { Subarea } from '../slices/subarea/schema';
+import type { CirculationFanConfig } from '../slices/growspace/schema';
 
 // ─── Tab ID ───────────────────────────────────────────────────────────────────
 
@@ -87,6 +88,9 @@ export interface EnvironmentDraft {
   visionEarlyOffset: number;
   visionMidHours: number;
   visionLateOffset: number;
+
+  // Fan controller
+  circulationFanConfig: CirculationFanConfig;
 }
 
 // ─── Growspaces tab ───────────────────────────────────────────────────────────
@@ -275,6 +279,24 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     visionEarlyOffset: 60,
     visionMidHours: 6,
     visionLateOffset: 60,
+    circulationFanConfig: {
+      enabled: false,
+      regulation_mode: 'vpd',
+      min_speed: 0,
+      max_speed: 100,
+      vpd_target: 1.0,
+      vpd_tolerance: 0.2,
+      humidity_target: 60.0,
+      humidity_tolerance: 5.0,
+      temperature_target: 25.0,
+      temperature_tolerance: 2.0,
+      critical_temp_low: null,
+      critical_temp_high: null,
+      critical_temp_hysteresis: 1.0,
+      wind_enabled: false,
+      wind_period_seconds: 60,
+      wind_amplitude_pct: 10,
+    },
   };
 }
 
@@ -367,6 +389,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
     visionMidHours: vc?.mid_check_hours ?? 6,
     visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+    circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
   };
 }
 

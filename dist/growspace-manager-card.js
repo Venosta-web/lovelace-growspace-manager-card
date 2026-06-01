@@ -5117,6 +5117,24 @@ const DrainConfigSchema = objectType({
 })
     .nullable()
     .optional();
+const CirculationFanConfigSchema = objectType({
+    enabled: booleanType(),
+    regulation_mode: enumType(['vpd', 'humidity', 'temperature']),
+    min_speed: numberType(),
+    max_speed: numberType(),
+    vpd_target: numberType(),
+    vpd_tolerance: numberType(),
+    humidity_target: numberType(),
+    humidity_tolerance: numberType(),
+    temperature_target: numberType(),
+    temperature_tolerance: numberType(),
+    critical_temp_low: numberType().nullable(),
+    critical_temp_high: numberType().nullable(),
+    critical_temp_hysteresis: numberType(),
+    wind_enabled: booleanType(),
+    wind_period_seconds: numberType(),
+    wind_amplitude_pct: numberType(),
+});
 const GrowspaceAPIResponseSchema = objectType({
     identity: objectType({
         growspace_id: stringType(),
@@ -5142,6 +5160,7 @@ const GrowspaceAPIResponseSchema = objectType({
         dehumidifier_control_enabled: booleanType().optional(),
         circulation_fan_entity: stringType().optional(),
         circulation_fan_entities: arrayType(stringType()).optional().default([]),
+        circulation_fan_config: CirculationFanConfigSchema.optional(),
         exhaust_fan_entities: arrayType(stringType()).optional().default([]),
         humidifier_entities: arrayType(stringType()).optional().default([]),
         dehumidifier_entities: arrayType(stringType()).optional().default([]),
@@ -5519,6 +5538,7 @@ class GrowspaceAdapter {
             exhaustFanEntities: environment?.exhaust_fan_entities,
             circulationFanEntity: environment?.circulation_fan_entity,
             circulationFanEntities: environment?.circulation_fan_entities,
+            circulationFanConfig: environment?.circulation_fan_config,
             vpd: environment?.vpd,
             soilMoistureValue: environment?.soil_moisture_value,
             exhaustSensor: environment?.exhaust_sensor,
@@ -17599,6 +17619,24 @@ function defaultEnvironmentDraft() {
         visionEarlyOffset: 60,
         visionMidHours: 6,
         visionLateOffset: 60,
+        circulationFanConfig: {
+            enabled: false,
+            regulation_mode: 'vpd',
+            min_speed: 0,
+            max_speed: 100,
+            vpd_target: 1.0,
+            vpd_tolerance: 0.2,
+            humidity_target: 60.0,
+            humidity_tolerance: 5.0,
+            temperature_target: 25.0,
+            temperature_tolerance: 2.0,
+            critical_temp_low: null,
+            critical_temp_high: null,
+            critical_temp_hysteresis: 1.0,
+            wind_enabled: false,
+            wind_period_seconds: 60,
+            wind_amplitude_pct: 10,
+        },
     };
 }
 function defaultTabs$2() {
@@ -17689,6 +17727,7 @@ function envDraftFromDevice(device) {
         visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
         visionMidHours: vc?.mid_check_hours ?? 6,
         visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+        circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
@@ -128281,6 +128320,7 @@ function openConfigDialog(ctx, device) {
                 irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
                 powerSensors: device?.environmentAttributes?.powerSensors || [],
                 energySensors: device?.environmentAttributes?.energySensors || [],
+                circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
             },
         },
     });

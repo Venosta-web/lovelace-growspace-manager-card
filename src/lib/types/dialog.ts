@@ -1,8 +1,10 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
+import type { CirculationFanConfig } from '../../slices/growspace/schema';
 
 export type { VisionCheckupConfig };
+export type { CirculationFanConfig };
 
 export interface VisionCheckupResult {
   severity: string;
@@ -126,6 +128,7 @@ export interface EnvironmentConfigData {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
 }
 
 export interface VisionCheckupConfigEventDetail {

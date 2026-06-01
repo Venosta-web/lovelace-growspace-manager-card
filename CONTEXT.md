@@ -117,6 +117,17 @@ A dot-separated string in the format `section.key`, resolved by the `localize()`
 **GrowspaceDataStore**
 Nanostores-based reactive store holding plant data (devices, strain library, config) for a growspace. Uses lazy initialization — only activates when it has subscribers. Nutrient domain data (presets, IPM presets, inventory, EC ramp curves) has been migrated to the [[Nutrient Slice]] and is no longer stored here.
 
+## Environment Control
+
+**Circulation Fan Controller**
+The backend closed-loop controller (`CirculationFanCoordinator`) that automatically regulates circulation fan speed to a target value. Configured via `CirculationFanConfig` (a sub-object of `EnvironmentConfig`). The controller polls every 10 seconds, reads the active sensor, linearly maps the error to a fan speed between `min_speed` and `max_speed`, and optionally overlays a sinusoidal wind effect. Enabled/disabled independently of the circulation fan entity list — the entities may be assigned without the controller being active. Distinct from exhaust fan control, which is not closed-loop.
+
+**Fan Regulation Mode**
+The control variable the [[Circulation Fan Controller]] targets: `vpd`, `humidity`, or `temperature`. Exactly one mode is active at a time; switching mode changes which target+tolerance pair is used. In VPD mode, a temperature override (critical_temp_low / critical_temp_high) can override the computed speed to min or max when the measured temperature leaves a safe band. The override fields are only evaluated in VPD mode.
+
+**Fan Controller Panel**
+The config dialog panel (inside the Climate tab, between the Climate Control panel and the Humidity Control panel) that exposes all `CirculationFanConfig` fields: enabled toggle, regulation mode selector, active-mode target+tolerance pair, VPD-mode-only temperature override sub-section (collapsed by default), min/max speed, and dynamic wind settings (period + amplitude revealed when wind_enabled is toggled on). Disabled fields are greyed out when `enabled` is false, not hidden. Submitted as part of the existing `configure-environment-submit` event; the dialog host dispatches the `configure_circulation_fan` HA service call separately from `configure_environment`.
+
 ## Architecture
 
 **Slice**

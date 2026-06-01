@@ -689,6 +689,39 @@ describe('openConfigDialog', () => {
       expect(dialog.payload.environmentData.temperatureSensors).toEqual(['sensor.temp']);
     }
   });
+
+  it('threads circulationFanConfig from device attributes into the dialog payload', () => {
+    const ctx = makeCtx();
+    const circulationFanConfig = {
+      enabled: true,
+      regulation_mode: 'temperature' as const,
+      min_speed: 5,
+      max_speed: 80,
+      vpd_target: 1.0,
+      vpd_tolerance: 0.2,
+      humidity_target: 60.0,
+      humidity_tolerance: 5.0,
+      temperature_target: 22.0,
+      temperature_tolerance: 1.0,
+      critical_temp_low: 15.0,
+      critical_temp_high: 30.0,
+      critical_temp_hysteresis: 1.0,
+      wind_enabled: true,
+      wind_period_seconds: 90,
+      wind_amplitude_pct: 15,
+    };
+    const device = {
+      deviceId: 'gs-2',
+      environmentAttributes: { circulationFanConfig },
+    } as unknown as GrowspaceDevice;
+
+    openConfigDialog(ctx, device);
+    const dialog = ctx.ui.$activeDialog.get();
+    expect(dialog.type).toBe('CONFIG');
+    if (dialog.type === 'CONFIG') {
+      expect(dialog.payload.environmentData.circulationFanConfig).toEqual(circulationFanConfig);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
