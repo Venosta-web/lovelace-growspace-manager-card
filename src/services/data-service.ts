@@ -4,6 +4,7 @@ import type { GrowspaceAPIResponse } from './types';
 import { GrowspaceAPI } from './api/growspace-api';
 import {
   configureEnvironment as growspaceSliceConfigureEnvironment,
+  configureCirculationFan as growspaceSliceConfigureCirculationFan,
   setDehumidifierControl as growspaceSliceSetDehumidifierControl,
   removeEnvironment as growspaceSliceRemoveEnvironment,
   resetWaterTracking as growspaceSliceResetWaterTracking,
@@ -147,6 +148,10 @@ export class DataService {
 
   configureEnvironment = (data: Parameters<typeof growspaceSliceConfigureEnvironment>[0]) =>
     growspaceSliceConfigureEnvironment(data);
+
+  configureCirculationFan = (
+    data: Parameters<typeof growspaceSliceConfigureCirculationFan>[0]
+  ) => growspaceSliceConfigureCirculationFan(data);
 
   setDehumidifierControl = (growspaceId: string, enabled: boolean) =>
     growspaceSliceSetDehumidifierControl(growspaceId, enabled);

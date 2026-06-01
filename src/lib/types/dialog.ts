@@ -178,6 +178,7 @@ export interface EnvironmentConfigEventDetail {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
 }
 
 export interface ConfigDialogState {

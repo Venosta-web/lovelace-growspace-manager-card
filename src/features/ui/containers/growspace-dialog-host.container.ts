@@ -757,6 +757,12 @@ export class GrowspaceDialogHost extends LitElement {
         powerSensors: detail.powerSensors,
         energySensors: detail.energySensors,
       });
+      if (detail.circulationFanConfig) {
+        await this.store?.actions.environment.configureFanController({
+          growspaceId: detail.selectedGrowspaceId,
+          fanConfig: detail.circulationFanConfig,
+        });
+      }
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {
       console.error('[DialogHost] configureEnvironment failed:', e);

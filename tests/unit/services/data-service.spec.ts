@@ -141,6 +141,7 @@ vi.mock('../../../src/slices/growspace', () => ({
   getGrowspaceDevices: vi.fn().mockReturnValue([]),
   fetchGrowspaceData: vi.fn().mockResolvedValue(undefined),
   configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  configureCirculationFan: vi.fn().mockResolvedValue(undefined),
   setDehumidifierControl: vi.fn().mockResolvedValue(undefined),
   removeEnvironment: vi.fn().mockResolvedValue(undefined),
   resetWaterTracking: vi.fn().mockResolvedValue(undefined),

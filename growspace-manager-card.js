@@ -6482,6 +6482,12 @@ async function configureEnvironment$1(data) {
         payload.energy_sensors = data.energySensors;
     await callService('growspace_manager', 'configure_environment', payload);
 }
+async function configureCirculationFan({ growspaceId, fanConfig, }) {
+    await callService('growspace_manager', 'configure_circulation_fan', {
+        growspace_id: growspaceId,
+        ...fanConfig,
+    });
+}
 
 /**
  * API service for history and statistics operations.
@@ -8080,6 +8086,7 @@ class DataService {
         this.updateGrowspace = (data) => this._growspaceAPI.updateGrowspace(data);
         this.removeGrowspace = (growspaceId) => this._growspaceAPI.removeGrowspace(growspaceId);
         this.configureEnvironment = (data) => configureEnvironment$1(data);
+        this.configureCirculationFan = (data) => configureCirculationFan(data);
         this.setDehumidifierControl = (growspaceId, enabled) => setDehumidifierControl(growspaceId, enabled);
         this.removeEnvironment = (growspaceId) => removeEnvironment$1(growspaceId);
         this.resetWaterTracking = (growspaceId) => resetWaterTracking$1(growspaceId);
@@ -18002,6 +18009,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._dehumidifierControlEnabled = false;
         this._humidifierControlEnabled = false;
         this._initialStateApplied = false;
+        this._fanTempOverrideExpanded = false;
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
@@ -18412,6 +18420,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 irrigationFlowSensors: d.irrigationFlowSensors,
                 powerSensors: d.powerSensors,
                 energySensors: d.energySensors,
+                circulationFanConfig: d.circulationFanConfig,
             },
             bubbles: true,
             composed: true,
@@ -19023,6 +19032,211 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             >
               Remove Environment
             </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _updateFanConfig(partial) {
+        this._t({
+            type: 'UPDATE_ENV_DRAFT',
+            partial: {
+                circulationFanConfig: { ...this._sm.environmentDraft.circulationFanConfig, ...partial },
+            },
+        });
+    }
+    _renderFanControllerPanel() {
+        const fan = this._sm.environmentDraft.circulationFanConfig;
+        const disabled = !fan.enabled;
+        const mode = fan.regulation_mode;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiFan}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Fan Controller</h3>
+        </div>
+
+        <!-- Enabled toggle -->
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${fan.enabled}
+              @change=${(e) => this._updateFanConfig({ enabled: e.target.checked })}
+            />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <!-- Regulation mode -->
+        <div class="form-section" style="${disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
+          <md3-select
+            label="Regulation Mode"
+            .value=${mode}
+            .options=${[
+            { value: 'vpd', label: 'VPD' },
+            { value: 'humidity', label: 'Humidity' },
+            { value: 'temperature', label: 'Temperature' },
+        ]}
+            @change=${(e) => this._updateFanConfig({ regulation_mode: e.detail })}
+          ></md3-select>
+
+          <!-- Active mode target + tolerance -->
+          <div class="row-col-grid">
+            ${mode === 'vpd'
+            ? x `
+                  <md3-number-input
+                    label="VPD Target (kPa)"
+                    .value=${fan.vpd_target}
+                    @change=${(e) => this._updateFanConfig({ vpd_target: parseFloat(e.detail) })}
+                    step="0.01"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="VPD Tolerance (kPa)"
+                    .value=${fan.vpd_tolerance}
+                    @change=${(e) => this._updateFanConfig({ vpd_tolerance: parseFloat(e.detail) })}
+                    step="0.01"
+                  ></md3-number-input>
+                `
+            : E}
+            ${mode === 'humidity'
+            ? x `
+                  <md3-number-input
+                    label="Humidity Target (%)"
+                    .value=${fan.humidity_target}
+                    @change=${(e) => this._updateFanConfig({ humidity_target: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Humidity Tolerance (%)"
+                    .value=${fan.humidity_tolerance}
+                    @change=${(e) => this._updateFanConfig({ humidity_tolerance: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                `
+            : E}
+            ${mode === 'temperature'
+            ? x `
+                  <md3-number-input
+                    label="Temperature Target (°C)"
+                    .value=${fan.temperature_target}
+                    @change=${(e) => this._updateFanConfig({ temperature_target: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Temperature Tolerance (°C)"
+                    .value=${fan.temperature_tolerance}
+                    @change=${(e) => this._updateFanConfig({ temperature_tolerance: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                `
+            : E}
+          </div>
+
+          <!-- Temperature Override (VPD mode only, collapsible) -->
+          ${mode === 'vpd'
+            ? x `
+                <div style="margin-top:8px;">
+                  <button
+                    class="md3-button tonal"
+                    style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
+                    @click=${() => {
+                this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
+            }}
+                  >
+                    <span>Temperature Override</span>
+                    <svg
+                      style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${this._fanTempOverrideExpanded ? '180deg' : '0deg'});"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiChevronDown}"></path>
+                    </svg>
+                  </button>
+                  ${this._fanTempOverrideExpanded
+                ? x `
+                        <div class="row-col-grid" style="margin-top:8px;">
+                          <md3-number-input
+                            label="Critical Temp Low (°C)"
+                            .value=${fan.critical_temp_low ?? ''}
+                            @change=${(e) => this._updateFanConfig({
+                    critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null,
+                })}
+                            step="0.1"
+                          ></md3-number-input>
+                          <md3-number-input
+                            label="Critical Temp High (°C)"
+                            .value=${fan.critical_temp_high ?? ''}
+                            @change=${(e) => this._updateFanConfig({
+                    critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null,
+                })}
+                            step="0.1"
+                          ></md3-number-input>
+                          <md3-number-input
+                            label="Critical Temp Hysteresis (°C)"
+                            .value=${fan.critical_temp_hysteresis}
+                            @change=${(e) => this._updateFanConfig({
+                    critical_temp_hysteresis: parseFloat(e.detail),
+                })}
+                            step="0.1"
+                          ></md3-number-input>
+                        </div>
+                      `
+                : E}
+                </div>
+              `
+            : E}
+
+          <!-- Min / Max speed -->
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Min Speed (%)"
+              .value=${fan.min_speed}
+              @change=${(e) => this._updateFanConfig({ min_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Max Speed (%)"
+              .value=${fan.max_speed}
+              @change=${(e) => this._updateFanConfig({ max_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+          </div>
+
+          <!-- Dynamic Wind -->
+          <div style="margin-top:8px;">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${fan.wind_enabled}
+                @change=${(e) => this._updateFanConfig({ wind_enabled: e.target.checked })}
+              />
+              <span>Dynamic Wind</span>
+            </label>
+            ${fan.wind_enabled
+            ? x `
+                  <div class="row-col-grid" style="margin-top:8px;">
+                    <md3-number-input
+                      label="Wind Period (s)"
+                      .value=${fan.wind_period_seconds}
+                      @change=${(e) => this._updateFanConfig({ wind_period_seconds: parseFloat(e.detail) })}
+                      step="1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Wind Amplitude (%)"
+                      .value=${fan.wind_amplitude_pct}
+                      @change=${(e) => this._updateFanConfig({ wind_amplitude_pct: parseFloat(e.detail) })}
+                      step="1"
+                    ></md3-number-input>
+                  </div>
+                `
+            : E}
           </div>
         </div>
       </div>
@@ -19857,6 +20071,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             : E}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : E}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : E}
+                ${this.currentTab === ConfigTab.CLIMATE
+            ? this._renderFanControllerPanel()
+            : E}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : E}
                 ${this.currentTab === ConfigTab.IRRIGATION
             ? this._renderIrrigationSection()
@@ -20465,6 +20682,9 @@ __decorate([
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "_humidifierControlEnabled", void 0);
+__decorate([
+    r$3()
+], ConfigDialog.prototype, "_fanTempOverrideExpanded", void 0);
 ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
@@ -53104,6 +53324,12 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 powerSensors: detail.powerSensors,
                 energySensors: detail.energySensors,
             });
+            if (detail.circulationFanConfig) {
+                await this.store?.actions.environment.configureFanController({
+                    growspaceId: detail.selectedGrowspaceId,
+                    fanConfig: detail.circulationFanConfig,
+                });
+            }
             this.store?.actions.ui.closeDialog();
         }
         catch (e) {
@@ -128616,6 +128842,17 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
             await fetchNutrientInventory(ctx, true);
     }, { errorPrefix: 'Failed to water growspace', rethrow: true });
 }
+/** Configure the circulation fan controller for a growspace */
+async function configureFanController(ctx, data) {
+    await withAction(ctx, async () => {
+        await ctx.dataService.configureCirculationFan(data);
+        await ctx.refreshData();
+    }, {
+        success: 'Fan controller configured successfully!',
+        errorPrefix: 'Failed to configure fan controller',
+        rethrow: true,
+    });
+}
 
 /**
  * Growspace Actions - CRUD operations for growspace management.
@@ -129135,6 +129372,7 @@ class ActionDispatcher {
         };
         this.environment = {
             configure: (data) => configureEnvironment(this.ctx, data),
+            configureFanController: (data) => configureFanController(this.ctx, data),
             remove: (growspaceId) => removeEnvironment(this.ctx, growspaceId),
             resetWaterTracking: (growspaceId) => resetWaterTracking(this.ctx, growspaceId),
             waterPlant: (plantId, amount, nutrients, presetId) => waterPlant(this.ctx, plantId, amount, nutrients, presetId),

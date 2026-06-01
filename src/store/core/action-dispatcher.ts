@@ -336,6 +336,9 @@ export class ActionDispatcher {
   public readonly environment = {
     configure: (data: Parameters<typeof environmentActions.configureEnvironment>[1]) =>
       environmentActions.configureEnvironment(this.ctx, data),
+    configureFanController: (
+      data: Parameters<typeof environmentActions.configureFanController>[1]
+    ) => environmentActions.configureFanController(this.ctx, data),
     remove: (growspaceId: string) => environmentActions.removeEnvironment(this.ctx, growspaceId),
     resetWaterTracking: (growspaceId: string) =>
       environmentActions.resetWaterTracking(this.ctx, growspaceId),

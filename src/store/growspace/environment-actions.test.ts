@@ -5,7 +5,9 @@ import {
   resetWaterTracking,
   waterPlant,
   waterGrowspace,
+  configureFanController,
 } from './environment-actions';
+import type { CirculationFanConfig } from '../../slices/growspace/schema';
 import type { ActionContext } from '../core/action-context';
 import * as libraryActions from '../plant/library-actions';
 
@@ -204,5 +206,63 @@ describe('resetWaterTracking', () => {
 
     await expect(resetWaterTracking(ctx, 'gs-1')).rejects.toBe('string-error');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(expect.stringContaining('Unknown error'), 'error');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// configureFanController
+// ---------------------------------------------------------------------------
+
+const fanConfig: CirculationFanConfig = {
+  enabled: true,
+  regulation_mode: 'humidity',
+  min_speed: 20,
+  max_speed: 80,
+  vpd_target: 1.0,
+  vpd_tolerance: 0.2,
+  humidity_target: 65,
+  humidity_tolerance: 5,
+  temperature_target: 24,
+  temperature_tolerance: 2,
+  critical_temp_low: null,
+  critical_temp_high: null,
+  critical_temp_hysteresis: 1,
+  wind_enabled: false,
+  wind_period_seconds: 60,
+  wind_amplitude_pct: 10,
+};
+
+describe('configureFanController', () => {
+  let ctx: ReturnType<typeof makeContext>;
+
+  beforeEach(() => {
+    ctx = makeContext();
+  });
+
+  it('calls dataService.configureCirculationFan, toasts success, and refreshes', async () => {
+    await configureFanController(ctx, { growspaceId: 'gs-1', fanConfig });
+
+    expect((ctx.dataService as any).configureCirculationFan).toHaveBeenCalledWith({
+      growspaceId: 'gs-1',
+      fanConfig,
+    });
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      'Fan controller configured successfully!',
+      'success'
+    );
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('shows error toast and rethrows on failure', async () => {
+    (ctx.dataService as any).configureCirculationFan.mockRejectedValue(new Error('fan-err'));
+
+    await expect(configureFanController(ctx, { growspaceId: 'gs-1', fanConfig })).rejects.toThrow(
+      'fan-err'
+    );
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('fan-err'),
+      'error'
+    );
+    expect(ctx.refreshData).not.toHaveBeenCalled();
   });
 });

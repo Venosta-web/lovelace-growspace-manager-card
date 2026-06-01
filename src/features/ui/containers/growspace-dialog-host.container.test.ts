@@ -1,6 +1,7 @@
 /**
  * GrowspaceDialogHost – watering submit handler, IPM apply handler,
- * log-pollination handler, and _initControllers idempotency guard.
+ * log-pollination handler, _handleEnvironmentConfig handler, and
+ * _initControllers idempotency guard.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -380,5 +381,101 @@ describe('GrowspaceDialogHost – _initControllers idempotency', () => {
     (el as any)._initControllers();
 
     expect((el as any)._dialogHostController).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _handleEnvironmentConfig
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
+  const minimalValidDetail = {
+    selectedGrowspaceId: 'gs-1',
+    temperatureSensors: ['sensor.temp'],
+    humiditySensors: ['sensor.humid'],
+  };
+
+  const fanConfig = {
+    enabled: true,
+    regulation_mode: 'vpd' as const,
+    min_speed: 10,
+    max_speed: 90,
+    vpd_target: 1.1,
+    vpd_tolerance: 0.2,
+    humidity_target: 60,
+    humidity_tolerance: 5,
+    temperature_target: 25,
+    temperature_tolerance: 2,
+    critical_temp_low: null,
+    critical_temp_high: null,
+    critical_temp_hysteresis: 1,
+    wind_enabled: false,
+    wind_period_seconds: 60,
+    wind_amplitude_pct: 10,
+  };
+
+  function makeEnvStore() {
+    return {
+      ui: { $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) } },
+      actions: {
+        ui: { showToast: vi.fn(), closeDialog: vi.fn() },
+        environment: {
+          configure: vi.fn().mockResolvedValue(undefined),
+          configureFanController: vi.fn().mockResolvedValue(undefined),
+        },
+      },
+      $dialogHostState: { subscribe: vi.fn(() => () => {}), get: vi.fn() },
+      refreshData: vi.fn(),
+    };
+  }
+
+  let el: GrowspaceDialogHost;
+  let store: ReturnType<typeof makeEnvStore>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    store = makeEnvStore();
+    (el as any).store = store;
+  });
+
+  it('calls environment.configure with the mapped payload', async () => {
+    await (el as any)._handleEnvironmentConfig(minimalValidDetail);
+
+    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+      expect.objectContaining({ growspaceId: 'gs-1' })
+    );
+  });
+
+  it('calls configureFanController after configure when circulationFanConfig is present', async () => {
+    await (el as any)._handleEnvironmentConfig({
+      ...minimalValidDetail,
+      circulationFanConfig: fanConfig,
+    });
+
+    expect(store.actions.environment.configureFanController).toHaveBeenCalledWith({
+      growspaceId: 'gs-1',
+      fanConfig,
+    });
+  });
+
+  it('does not call configureFanController when circulationFanConfig is absent', async () => {
+    await (el as any)._handleEnvironmentConfig(minimalValidDetail);
+
+    expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
+  });
+
+  it('shows a toast and returns early when mandatory sensors are missing', async () => {
+    await (el as any)._handleEnvironmentConfig({
+      selectedGrowspaceId: 'gs-1',
+      temperatureSensors: [],
+      humiditySensors: [],
+    });
+
+    expect(store.actions.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('mandatory'),
+      'error'
+    );
+    expect(store.actions.environment.configure).not.toHaveBeenCalled();
   });
 });
