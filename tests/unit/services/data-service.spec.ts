@@ -83,14 +83,7 @@ vi.mock('../../../src/slices/strain', () => ({
   setStrainLibrary: vi.fn(),
   strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
-vi.mock('../../../src/services/api/vision-api', () => ({
-  VisionAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
-    this.updateHass = vi.fn();
-    this.triggerVisionCheckup = vi.fn();
-    this.getVisionHistory = vi.fn();
-    this.updateVisionCheckupConfig = vi.fn();
-  }),
-}));
+
 vi.mock('../../../src/services/api/report-api', () => ({
   ReportAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.updateHass = vi.fn();
@@ -376,22 +369,22 @@ describe('DataService Delegation', () => {
     });
 
     it('delegates Vision operations', () => {
-      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const spy = vi.spyOn(VisionAPI.prototype, 'triggerVisionCheckup').mockResolvedValue(null);
       dataService.triggerVisionCheckup('gs1');
-      expect(instance.triggerVisionCheckup).toHaveBeenCalledWith('gs1');
+      expect(spy).toHaveBeenCalledWith('gs1');
     });
 
     it('delegates getVisionHistory', () => {
-      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const spy = vi.spyOn(VisionAPI.prototype, 'getVisionHistory').mockResolvedValue(null);
       dataService.getVisionHistory('gs1', 5);
-      expect(instance.getVisionHistory).toHaveBeenCalledWith('gs1', 5);
+      expect(spy).toHaveBeenCalledWith('gs1', 5);
     });
 
     it('delegates updateVisionCheckupConfig', () => {
-      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const spy = vi.spyOn(VisionAPI.prototype, 'updateVisionCheckupConfig').mockResolvedValue(null);
       const config = { enabled: true, interval_hours: 12 } as any;
       dataService.updateVisionCheckupConfig('gs1', config);
-      expect(instance.updateVisionCheckupConfig).toHaveBeenCalledWith('gs1', config);
+      expect(spy).toHaveBeenCalledWith('gs1', config);
     });
 
     it('delegates Camera operations', () => {

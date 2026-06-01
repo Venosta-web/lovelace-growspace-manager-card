@@ -25,6 +25,23 @@ for (const tag of stubs) {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function fieldInput(root: ShadowRoot, labelText: string): HTMLInputElement | HTMLSelectElement {
+  const labels = Array.from(root.querySelectorAll<HTMLLabelElement>('label.form-label'));
+  const label = labels.find((l) => l.textContent?.includes(labelText));
+  if (!label) throw new Error(`No label matching "${labelText}"`);
+  return label.nextElementSibling as HTMLInputElement | HTMLSelectElement;
+}
+
+function simulateInput(el: HTMLInputElement | HTMLSelectElement, value: string): void {
+  (el as HTMLInputElement).value = value;
+  el.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+}
+
+function simulateChange(el: HTMLSelectElement, value: string): void {
+  el.value = value;
+  el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+}
+
 function aInventory(overrides: Partial<NutrientInventoryResponse['stocks']> = {}): NutrientInventoryResponse {
   return {
     stocks: {
@@ -272,6 +289,93 @@ describe('editing view — interactions', () => {
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="cancel"]')!.click();
     expect(events).toHaveLength(1);
     expect(events[0]).toEqual({ type: 'BackToList' });
+  });
+});
+
+// ─── Editing view — form field inputs ─────────────────────────────────────────
+
+async function mountEditing(): Promise<GrowspaceNutrientInventoryDialogUI> {
+  return fixture<GrowspaceNutrientInventoryDialogUI>(html`
+    <growspace-nutrient-inventory-dialog-ui
+      .inventory=${aInventory()}
+      .selectedId=${'n1'}
+      .sub=${{
+        kind: 'editing',
+        draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '0-0-0', dose_ml_l: 2, notes: '' },
+      }}
+    ></growspace-nutrient-inventory-dialog-ui>
+  `);
+}
+
+describe('editing view — form field inputs', () => {
+  it('dispatches StockDraftChanged for name field', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Name') as HTMLInputElement, 'New Name');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'name', value: 'New Name' });
+  });
+
+  it('dispatches StockDraftChanged for brand field', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Brand') as HTMLInputElement, 'Canna');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'brand', value: 'Canna' });
+  });
+
+  it('dispatches StockDraftChanged for stockType via select change', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateChange(fieldInput(el.shadowRoot!, 'Type') as HTMLSelectElement, 'bloom');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'stockType', value: 'bloom' });
+  });
+
+  it('dispatches StockDraftChanged for current_ml as parsed float', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Current') as HTMLInputElement, '750');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'current_ml', value: 750 });
+  });
+
+  it('dispatches StockDraftChanged for current_ml as 0 when input is empty', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Current') as HTMLInputElement, '');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'current_ml', value: 0 });
+  });
+
+  it('dispatches StockDraftChanged for initial_ml (capacity) as parsed float', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Capacity') as HTMLInputElement, '2000');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'initial_ml', value: 2000 });
+  });
+
+  it('dispatches StockDraftChanged for npk field', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'NPK') as HTMLInputElement, '3-1-2');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'npk', value: '3-1-2' });
+  });
+
+  it('dispatches StockDraftChanged for dose_ml_l as parsed float', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Default dose') as HTMLInputElement, '1.5');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'dose_ml_l', value: 1.5 });
+  });
+
+  it('dispatches StockDraftChanged for dose_ml_l as 0 when input is empty', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Default dose') as HTMLInputElement, '');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'dose_ml_l', value: 0 });
+  });
+
+  it('dispatches StockDraftChanged for notes field', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Notes') as HTMLInputElement, 'keep refrigerated');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'notes', value: 'keep refrigerated' });
   });
 });
 

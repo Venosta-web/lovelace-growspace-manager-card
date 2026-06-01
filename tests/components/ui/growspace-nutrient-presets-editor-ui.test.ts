@@ -297,6 +297,123 @@ describe('nutrient select — pre-selection', () => {
   });
 });
 
+// ─── Edit form — field interactions ──────────────────────────────────────────
+
+describe('editing view — field interactions', () => {
+  it('dispatches PresetDraftChanged for name when name input fires input event', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="text"]')!;
+    input.value = 'New Name';
+    input.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'name', value: 'New Name' });
+  });
+
+  it('dispatches PresetDraftChanged for stage when stage select changes', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const selects = el.shadowRoot!.querySelectorAll<HTMLSelectElement>('select');
+    const stageSelect = selects[0];
+    stageSelect.value = 'flower';
+    stageSelect.dispatchEvent(new Event('change'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'stage', value: 'flower' });
+  });
+
+  it('dispatches PresetDraftChanged with undefined stage when stage select is cleared', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const stageSelect = el.shadowRoot!.querySelectorAll<HTMLSelectElement>('select')[0];
+    stageSelect.value = '';
+    stageSelect.dispatchEvent(new Event('change'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'stage', value: undefined });
+  });
+
+  it('dispatches PresetDraftChanged for week when week input changes', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const weekInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="number"]')[0];
+    weekInput.value = '3';
+    weekInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'week', value: 3 });
+  });
+
+  it('dispatches PresetDraftChanged with undefined week when week input is cleared', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const weekInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="number"]')[0];
+    weekInput.value = '';
+    weekInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'week', value: undefined });
+  });
+
+  it('dispatches PresetDraftChanged for ec_target when EC input changes', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const ecInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="number"]')[1];
+    ecInput.value = '1.5';
+    ecInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'ec_target', value: 1.5 });
+  });
+
+  it('dispatches PresetDraftChanged with null ec_target when EC input is cleared', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const ecInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="number"]')[1];
+    ecInput.value = '';
+    ecInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'ec_target', value: null });
+  });
+
+  it('dispatches PresetDraftChanged for ph_target when pH input changes', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const phInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="number"]')[2];
+    phInput.value = '6.5';
+    phInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'ph_target', value: 6.5 });
+  });
+
+  it('dispatches PresetDraftChanged with null ph_target when pH input is cleared', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const phInput = el.shadowRoot!.querySelectorAll<HTMLInputElement>('input[type="number"]')[2];
+    phInput.value = '';
+    phInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetDraftChanged', field: 'ph_target', value: null });
+  });
+});
+
+// ─── Nutrient row — field interactions ───────────────────────────────────────
+
+describe('nutrient row — field interactions', () => {
+  it('dispatches PresetNutrientRowUpdated with nutrient_id when nutrient select changes', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    nutrientSelect.value = 'n2';
+    nutrientSelect.dispatchEvent(new Event('change'));
+    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: 'n2' } });
+  });
+
+  it('dispatches PresetNutrientRowUpdated with dose_ml_l when dose input changes', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const doseInput = el.shadowRoot!.querySelector<HTMLInputElement>('[data-nutrient-row] input[type="number"]')!;
+    doseInput.value = '5';
+    doseInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 5 } });
+  });
+
+  it('dispatches PresetNutrientRowUpdated with dose_ml_l 0 when dose input is cleared', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const doseInput = el.shadowRoot!.querySelector<HTMLInputElement>('[data-nutrient-row] input[type="number"]')!;
+    doseInput.value = '';
+    doseInput.dispatchEvent(new Event('input'));
+    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 0 } });
+  });
+});
+
 // ─── New preset (selectedId null, sub editing) ────────────────────────────────
 
 describe('new preset form', () => {
