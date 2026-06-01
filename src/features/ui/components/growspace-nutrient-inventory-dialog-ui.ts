@@ -311,6 +311,11 @@ export class GrowspaceNutrientInventoryDialogUI extends LitElement {
         font-family: inherit;
       }
 
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
+      }
+
       .form-footer {
         display: flex;
         justify-content: flex-end;

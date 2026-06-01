@@ -253,6 +253,11 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         font-family: inherit;
       }
 
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
+      }
+
       .nutrient-rows-header {
         display: flex;
         align-items: center;
@@ -670,7 +675,6 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         <select
           class="form-select"
           style="${isOrphan ? 'border-color:#ff9800' : ''}"
-          .value=${row.nutrient_id}
           @change=${(e: Event) =>
             this._dispatch({
               type: 'PresetNutrientRowUpdated',
@@ -678,8 +682,8 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
               patch: { nutrient_id: (e.target as HTMLSelectElement).value },
             })}
         >
-          <option value="">— select nutrient —</option>
-          ${stocks.map((s) => html`<option value=${s.nutrient_id}>${s.name}</option>`)}
+          <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
+          ${stocks.map((s) => html`<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}
         </select>
         <input
           class="form-input"

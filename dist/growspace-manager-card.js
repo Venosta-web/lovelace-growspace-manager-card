@@ -11844,15 +11844,14 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
         <select
           class="form-select"
           style="${isOrphan ? 'border-color:#ff9800' : ''}"
-          .value=${row.nutrient_id}
           @change=${(e) => this._dispatch({
             type: 'PresetNutrientRowUpdated',
             index,
             patch: { nutrient_id: e.target.value },
         })}
         >
-          <option value="">— select nutrient —</option>
-          ${stocks.map((s) => x `<option value=${s.nutrient_id}>${s.name}</option>`)}
+          <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
+          ${stocks.map((s) => x `<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}
         </select>
         <input
           class="form-input"
@@ -12116,6 +12115,11 @@ GrowspaceNutrientPresetsEditorUI.styles = [
         color: var(--primary-text-color);
         font-size: 0.875rem;
         font-family: inherit;
+      }
+
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
       }
 
       .nutrient-rows-header {
@@ -32520,6 +32524,11 @@ GrowspaceNutrientInventoryDialogUI.styles = [
         color: var(--primary-text-color);
         font-size: 0.875rem;
         font-family: inherit;
+      }
+
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
       }
 
       .form-footer {

@@ -280,6 +280,23 @@ describe('editing view — interactions', () => {
   });
 });
 
+// ─── Nutrient select pre-selection ───────────────────────────────────────────
+
+describe('nutrient select — pre-selection', () => {
+  it('has the correct option selected in the nutrient select when opening edit', async () => {
+    const el = await mountEditing('p1'); // draft has nutrient_id: 'n1'
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    expect(select.value).toBe('n1');
+  });
+
+  it('shows the nutrient name in the selected option when opening edit', async () => {
+    const el = await mountEditing('p1');
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    const selected = select.options[select.selectedIndex];
+    expect(selected?.text).toBe('Cal-Mag');
+  });
+});
+
 // ─── New preset (selectedId null, sub editing) ────────────────────────────────
 
 describe('new preset form', () => {
