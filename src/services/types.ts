@@ -544,7 +544,7 @@ export function createGrowspaceDevice(
 // --- Nutrients & IPM ---
 
 export interface NutrientItem {
-  name: string;
+  nutrient_id: string;
   dose_ml_l: number;
 }
 

@@ -286,6 +286,29 @@ User-selectable ink darkness: Light, Normal, or Dark. Mapped to a numeric `densi
 **QR Target**
 The URL encoded in the label's QR code. Options: HA deep link to the plant, or raw plant UUID.
 
+## Nutrients
+
+**Nutrient Dialog** (`nutrient-dialog`)
+The modal for managing nutrient inventory and feeding presets. Uses the Design A shell (same left-rail nav + header pattern as [[Growmaster Dialog]]) — the dialog owns `ha-dialog` directly and renders its own header and nav rail. The rail has two sections: **Inventory** and **Presets**, each with a badge showing the total item count. A **Stock Indicator** appears in the rail when any bottle is low stock. Interaction state is owned by [[Nutrient Dialog SM]].
+
+**Nutrient Dialog SM**
+The state machine for `nutrient-dialog.ts`, extracted into `nutrient-dialog-sm.ts`. Satisfies [[DialogStateMachine]]. Shape: `{ activeTab: 'inventory' | 'presets'; tabs: { inventory: NutrientTabState; presets: NutrientTabState }; status: { kind: 'idle' } | { kind: 'confirm-discard'; pendingTab }; toast }`. Each `NutrientTabState` carries `selectedId: string | null` and `sub: { kind: 'idle' } | { kind: 'editing'; draft } | { kind: 'confirm-delete'; id; name }`. `applying` and `error` live inside each tab's `sub`, not at root `status`. A `confirm-discard` guard fires when the user switches tabs while `sub.kind === 'editing'` and the draft is dirty.
+
+**NutrientStock Type Color**
+Each [[NutrientStock]] `type` value maps to a fixed accent color used for the bottle icon in the Inventory master list: `base` → `--primary-color`; `bloom` → `#e91e63`; `calmag` → `#ff9800`; `root` → `#795548`; `additive` → `#9c27b0`; `microbe` → `#00bcd4`. Derived at render time — no user-configurable color field.
+
+**Low Stock**
+A [[NutrientStock]] whose fill level (`current_ml / initial_ml`) is ≤ 0.25 (25%). Surfaces as a Stock Indicator in the Nutrient Dialog nav rail. No separate threshold field — computed from existing `current_ml` and `initial_ml`.
+
+**Nutrient Orphan**
+A preset item whose `nutrient_id` no longer matches any entry in the current [[NutrientInventory]]. Displayed in the preset's nutrient-mixing table with a warning indicator (amber icon + strikethrough name). The preset is not blocked from saving; the orphan is not silently hidden. The user must manually remove or replace the orphaned item.
+
+**Nutrient Dialog Navigation**
+The Inventory and Presets sections each use **drill-down** navigation: selecting an item in the master list replaces the list with a detail view (no side-by-side split). `selectedId !== null` + `sub.kind === 'idle'` = read-only detail; `sub.kind === 'editing'` = edit form. `selectedId === null` + `sub.kind === 'editing'` = new-item form. The dialog's max-width (600px) minus the 72px nav rail leaves insufficient room for a side-by-side split at typical viewport sizes.
+
+**Nutrient Presets Container** (`growspace-nutrient-presets-editor.container`)
+Pure pass-through container that subscribes to `nutrientInventory$` and threads the live inventory value into `growspace-nutrient-presets-editor-ui` for dropdown population and [[Nutrient Orphan]] detection. Does not fetch — the [[Nutrient Dialog]] shell owns all fetching (`fetchNutrientInventory`, `fetchNutrientPresets`) on open.
+
 ## Build
 
 **`__VERSION__`**

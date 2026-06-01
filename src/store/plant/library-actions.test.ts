@@ -280,7 +280,7 @@ describe('fetchECRampCurves', () => {
 // ---------------------------------------------------------------------------
 
 describe('saveNutrientPreset', () => {
-  const preset = { name: 'Veg Mix', nutrients: [{ name: 'N', dose_ml_l: 2 }] };
+  const preset = { name: 'Veg Mix', nutrients: [{ nutrient_id: 'n', dose_ml_l: 2 }] };
 
   it('calls dataService.saveNutrientPreset and shows success toast', async () => {
     const ctx = makeCtx();

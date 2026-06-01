@@ -24,6 +24,7 @@ import type {
   VisionCheckupConfigEventDetail,
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
+import type { NutrientPresetsResponse } from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
 import '../../../dialogs/add-plant-dialog';
@@ -72,7 +73,7 @@ export class GrowspaceDialogHost extends LitElement {
     devices: GrowspaceDevice[];
     selectedDevice: string | null;
     strainLibrary: StrainEntry[];
-    nutrientPresets: Record<string, NutrientPreset>;
+    nutrientPresets: NutrientPresetsResponse;
     ipmPresets: Record<string, IPMPreset>;
     nutrientInventory: NutrientInventory | null;
   }>;
@@ -886,7 +887,7 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _renderWateringDialog(
     active: ActiveDialogState,
-    nutrientPresets: Record<string, NutrientPreset>,
+    nutrientPresets: NutrientPresetsResponse,
     nutrientInventory: NutrientInventory | null,
     selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {

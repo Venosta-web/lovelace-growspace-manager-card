@@ -210,7 +210,7 @@ describe('fetchECRampCurves', () => {
 
 describe('saveNutrientPreset', () => {
   it('calls callService with the correct domain, service, and payload', async () => {
-    const data = { name: 'Veg Week 1', nutrients: [{ name: 'Base', dose_ml_l: 2 }], stage: 'veg' };
+    const data = { name: 'Veg Week 1', nutrients: [{ nutrient_id: 'base_nutrient', dose_ml_l: 2 }], stage: 'veg' };
 
     await saveNutrientPreset(data);
 
@@ -495,7 +495,7 @@ describe('saveNutrientPreset with new fields', () => {
   it('forwards week, ec_target, ph_target to callService when provided', async () => {
     const data = {
       name: 'Week 3 Bloom',
-      nutrients: [{ name: 'Bloom', dose_ml_l: 3 }],
+      nutrients: [{ nutrient_id: 'bloom_nutrient', dose_ml_l: 3 }],
       week: 3,
       ec_target: 1.8,
       ph_target: 6.0,

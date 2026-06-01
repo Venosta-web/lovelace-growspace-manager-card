@@ -36,7 +36,7 @@ export interface PlantCardAtoms {
   $isEditMode: ReadableAtom<boolean>;
   $selectedPlants: ReadableAtom<Set<string>>;
   $strainLibrary: ReadableAtom<StrainEntry[]>;
-  $nutrientPresets: ReadableAtom<Record<string, NutrientPreset>>;
+  $nutrientPresets: ReadableAtom<Record<string, { stage?: string | null; min_days_in_stage?: number | null }>>;
   $devices: ReadableAtom<GrowspaceDevice[]>;
 }
 
@@ -79,7 +79,7 @@ function isRecentlyWatered(plant: PlantEntity): boolean {
  */
 function hasRecommendedPreset(
   plant: PlantEntity,
-  nutrientPresets: Record<string, NutrientPreset>,
+  nutrientPresets: Record<string, { stage?: string | null; min_days_in_stage?: number | null }>,
   devices: GrowspaceDevice[]
 ): boolean {
   const growspaceId = plant.attributes.growspace_id;
