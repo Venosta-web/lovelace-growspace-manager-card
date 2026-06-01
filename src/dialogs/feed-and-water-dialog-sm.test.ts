@@ -14,6 +14,7 @@ import {
   type TabId,
   type WateringDraft,
   type NutrientStockDraft,
+  type NutrientPresetDraft,
 } from './feed-and-water-dialog-sm';
 import type { NutrientStock } from '../slices/nutrient';
 import type { DialogStateMachine } from './dialog-sm';
@@ -85,6 +86,10 @@ describe('createInitialSM', () => {
 
   it('starts with no item selected in inventory', () => {
     expect(idle().tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('starts with no item selected in presets', () => {
+    expect(idle().tabs.presets.selectedId).toBeNull();
   });
 
   it('satisfies DialogStateMachine type contract', () => {
@@ -232,6 +237,17 @@ describe('isTabDirty', () => {
   it('returns false for non-editing tabs', () => {
     expect(isTabDirty(idle(), 'watering')).toBe(false);
     expect(isTabDirty(idle(), 'presets')).toBe(false);
+  });
+
+  it('returns true when presets sub is editing', () => {
+    const sm = transition(idle(), { type: 'PresetNewItemRequested' });
+    expect(isTabDirty(sm, 'presets')).toBe(true);
+  });
+
+  it('returns true when presets sub is applying', () => {
+    const sm = transition(idle(), { type: 'PresetNewItemRequested' });
+    const applying = transition(sm, { type: 'PresetSaveRequested' });
+    expect(isTabDirty(applying, 'presets')).toBe(true);
   });
 });
 
@@ -720,5 +736,452 @@ describe('full inventory drill-down lifecycle', () => {
     expect(sm.activeTab).toBe('presets');
     expect(sm.tabs.inventory.sub.kind).toBe('idle');
     expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+});
+
+// ─── Preset helpers ───────────────────────────────────────────────────────────
+
+function withPresetsTab(): SM {
+  return transition(idle(), { type: 'TabSelected', tab: 'presets' });
+}
+
+function withPresetsItemSelected(id = 'p1'): SM {
+  return transition(withPresetsTab(), { type: 'PresetItemSelected', id });
+}
+
+function withPresetsEditing(id = 'p1', draft?: Partial<NutrientPresetDraft>): SM {
+  return transition(withPresetsItemSelected(id), {
+    type: 'PresetEditStarted',
+    draft: {
+      name: 'Veg Week 1',
+      stage: 'veg',
+      week: 1,
+      ec_target: 1.2,
+      ph_target: 6.0,
+      nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+      ...draft,
+    },
+  });
+}
+
+// ─── PresetItemSelected ───────────────────────────────────────────────────────
+
+describe('PresetItemSelected', () => {
+  it('sets selectedId on presets tab', () => {
+    const sm = transition(withPresetsTab(), { type: 'PresetItemSelected', id: 'p1' });
+    expect(sm.tabs.presets.selectedId).toBe('p1');
+  });
+
+  it('sub remains idle after selecting', () => {
+    const sm = transition(withPresetsTab(), { type: 'PresetItemSelected', id: 'p1' });
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+  });
+
+  it('does not affect other tabs', () => {
+    const before = withPresetsTab();
+    const after = transition(before, { type: 'PresetItemSelected', id: 'p1' });
+    expect(after.tabs.inventory).toBe(before.tabs.inventory);
+    expect(after.tabs.watering).toBe(before.tabs.watering);
+  });
+});
+
+// ─── PresetBackToList ─────────────────────────────────────────────────────────
+
+describe('PresetBackToList', () => {
+  it('clears selectedId', () => {
+    const sm = transition(withPresetsItemSelected(), { type: 'PresetBackToList' });
+    expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+
+  it('resets sub to idle', () => {
+    const sm = transition(withPresetsEditing(), { type: 'PresetBackToList' });
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+  });
+
+  it('does not affect other tabs', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetBackToList' });
+    expect(after.tabs.inventory).toBe(before.tabs.inventory);
+    expect(after.tabs.watering).toBe(before.tabs.watering);
+  });
+});
+
+// ─── PresetNewItemRequested ───────────────────────────────────────────────────
+
+describe('PresetNewItemRequested', () => {
+  it('sets sub to editing with an empty preset draft', () => {
+    const sm = transition(withPresetsTab(), { type: 'PresetNewItemRequested' });
+    expect(sm.tabs.presets.sub.kind).toBe('editing');
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft).toMatchObject({ name: '', nutrients: [] });
+    }
+  });
+
+  it('selectedId is null when creating a new item', () => {
+    const sm = transition(withPresetsTab(), { type: 'PresetNewItemRequested' });
+    expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+
+  it('is a no-op if already editing', () => {
+    const before = withPresetsEditing();
+    const after = transition(before, { type: 'PresetNewItemRequested' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetEditStarted ────────────────────────────────────────────────────────
+
+describe('PresetEditStarted', () => {
+  it('sets sub to editing with the provided draft', () => {
+    const sm = withPresetsEditing('p1');
+    expect(sm.tabs.presets.sub.kind).toBe('editing');
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft).toMatchObject({ name: 'Veg Week 1' });
+    }
+  });
+
+  it('is a no-op when selectedId is null and not already editing', () => {
+    const before = withPresetsTab();
+    const after = transition(before, {
+      type: 'PresetEditStarted',
+      draft: { name: 'X', nutrients: [] },
+    });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetDraftChanged ───────────────────────────────────────────────────────
+
+describe('PresetDraftChanged', () => {
+  it('updates a scalar field in the preset draft', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetDraftChanged', field: 'name', value: 'Week 2' });
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft.name).toBe('Week 2');
+    }
+  });
+
+  it('does not affect other tabs', () => {
+    const before = withPresetsEditing();
+    const after = transition(before, { type: 'PresetDraftChanged', field: 'name', value: 'X' });
+    expect(after.tabs.inventory).toBe(before.tabs.inventory);
+    expect(after.tabs.watering).toBe(before.tabs.watering);
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetDraftChanged', field: 'name', value: 'X' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetNutrientRowAdded ───────────────────────────────────────────────────
+
+describe('PresetNutrientRowAdded', () => {
+  it('appends an empty nutrient row to the preset draft', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetNutrientRowAdded' });
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft.nutrients).toHaveLength(2);
+      expect(sm.tabs.presets.sub.draft.nutrients[1]).toEqual({ nutrient_id: '', dose_ml_l: 0 });
+    }
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetNutrientRowAdded' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetNutrientRowRemoved ─────────────────────────────────────────────────
+
+describe('PresetNutrientRowRemoved', () => {
+  it('removes the nutrient row at the given index', () => {
+    let sm = withPresetsEditing('p1', {
+      nutrients: [
+        { nutrient_id: 'n1', dose_ml_l: 2 },
+        { nutrient_id: 'n2', dose_ml_l: 1 },
+      ],
+    });
+    sm = transition(sm, { type: 'PresetNutrientRowRemoved', index: 0 });
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft.nutrients).toHaveLength(1);
+      expect(sm.tabs.presets.sub.draft.nutrients[0].nutrient_id).toBe('n2');
+    }
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetNutrientRowRemoved', index: 0 });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetNutrientRowUpdated ─────────────────────────────────────────────────
+
+describe('PresetNutrientRowUpdated', () => {
+  it('merges partial updates into the nutrient row at the given index', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 3.5 } });
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft.nutrients[0].dose_ml_l).toBe(3.5);
+      expect(sm.tabs.presets.sub.draft.nutrients[0].nutrient_id).toBe('n1');
+    }
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 5 } });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetSaveRequested ──────────────────────────────────────────────────────
+
+describe('PresetSaveRequested', () => {
+  it('moves presets sub from editing to applying', () => {
+    const sm = transition(withPresetsEditing(), { type: 'PresetSaveRequested' });
+    expect(sm.tabs.presets.sub.kind).toBe('applying');
+  });
+
+  it('preserves the draft during applying', () => {
+    const sm = transition(withPresetsEditing('p1', { name: 'Bloom' }), { type: 'PresetSaveRequested' });
+    if (sm.tabs.presets.sub.kind === 'applying') {
+      expect(sm.tabs.presets.sub.draft.name).toBe('Bloom');
+    }
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetSaveRequested' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetSaveResolved ───────────────────────────────────────────────────────
+
+describe('PresetSaveResolved', () => {
+  it('resets presets sub to idle after applying', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetSaveRequested' });
+    sm = transition(sm, { type: 'PresetSaveResolved' });
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+  });
+
+  it('clears selectedId — returns user to master list', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetSaveRequested' });
+    sm = transition(sm, { type: 'PresetSaveResolved' });
+    expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+
+  it('sets a success toast', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetSaveRequested' });
+    sm = transition(sm, { type: 'PresetSaveResolved' });
+    expect(sm.toast).toBeTruthy();
+  });
+
+  it('is a no-op when not applying', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetSaveResolved' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetSaveFailed ─────────────────────────────────────────────────────────
+
+describe('PresetSaveFailed', () => {
+  it('moves presets sub from applying to error with message', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetSaveRequested' });
+    sm = transition(sm, { type: 'PresetSaveFailed', message: 'Network error' });
+    expect(sm.tabs.presets.sub.kind).toBe('error');
+    if (sm.tabs.presets.sub.kind === 'error') {
+      expect(sm.tabs.presets.sub.message).toBe('Network error');
+    }
+  });
+
+  it('is a no-op when not applying', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetSaveFailed', message: 'err' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetErrorDismissed ─────────────────────────────────────────────────────
+
+describe('PresetErrorDismissed', () => {
+  it('resets presets sub from error back to editing', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetSaveRequested' });
+    sm = transition(sm, { type: 'PresetSaveFailed', message: 'err' });
+    sm = transition(sm, { type: 'PresetErrorDismissed' });
+    expect(sm.tabs.presets.sub.kind).toBe('editing');
+  });
+
+  it('is a no-op when not in error', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetErrorDismissed' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetDeleteRequested ────────────────────────────────────────────────────
+
+describe('PresetDeleteRequested', () => {
+  it('moves presets sub to confirm-delete', () => {
+    const sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    expect(sm.tabs.presets.sub).toEqual({ kind: 'confirm-delete', id: 'p1', name: 'Veg Week 1' });
+  });
+
+  it('is a no-op when editing', () => {
+    const before = withPresetsEditing();
+    const after = transition(before, { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    expect(after).toBe(before);
+  });
+
+  it('is a no-op when applying', () => {
+    const applying = transition(withPresetsEditing(), { type: 'PresetSaveRequested' });
+    const after = transition(applying, { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    expect(after).toBe(applying);
+  });
+});
+
+// ─── PresetDeleteConfirmed ────────────────────────────────────────────────────
+
+describe('PresetDeleteConfirmed', () => {
+  it('moves sub from confirm-delete to applying', () => {
+    let sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    sm = transition(sm, { type: 'PresetDeleteConfirmed' });
+    expect(sm.tabs.presets.sub.kind).toBe('applying');
+  });
+
+  it('is a no-op when not in confirm-delete', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetDeleteConfirmed' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetDeleteResolved ─────────────────────────────────────────────────────
+
+describe('PresetDeleteResolved', () => {
+  it('resets sub to idle and clears selectedId', () => {
+    let sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    sm = transition(sm, { type: 'PresetDeleteConfirmed' });
+    sm = transition(sm, { type: 'PresetDeleteResolved' });
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+    expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+
+  it('sets a deleted toast', () => {
+    let sm = transition(withPresetsItemSelected(), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    sm = transition(sm, { type: 'PresetDeleteConfirmed' });
+    sm = transition(sm, { type: 'PresetDeleteResolved' });
+    expect(sm.toast).toBeTruthy();
+  });
+
+  it('is a no-op when not applying', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetDeleteResolved' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── PresetDeleteCancelled ────────────────────────────────────────────────────
+
+describe('PresetDeleteCancelled', () => {
+  it('returns sub to idle', () => {
+    let sm = transition(withPresetsItemSelected('p1'), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    sm = transition(sm, { type: 'PresetDeleteCancelled' });
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+  });
+
+  it('preserves selectedId', () => {
+    let sm = transition(withPresetsItemSelected('p1'), { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    sm = transition(sm, { type: 'PresetDeleteCancelled' });
+    expect(sm.tabs.presets.selectedId).toBe('p1');
+  });
+
+  it('is a no-op when not in confirm-delete', () => {
+    const before = withPresetsItemSelected();
+    const after = transition(before, { type: 'PresetDeleteCancelled' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── Presets confirm-discard guard ────────────────────────────────────────────
+
+describe('confirm-discard guard from presets tab', () => {
+  it('fires confirm-discard when switching away from editing presets', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'TabSelected', tab: 'watering' });
+    expect(sm.status.kind).toBe('confirm-discard');
+    if (sm.status.kind === 'confirm-discard') {
+      expect(sm.status.pendingTab).toBe('watering');
+    }
+  });
+
+  it('does not switch tab yet when entering confirm-discard from presets', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'TabSelected', tab: 'watering' });
+    expect(sm.activeTab).toBe('presets');
+  });
+
+  it('DiscardConfirmed resets presets tab and switches', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'TabSelected', tab: 'inventory' });
+    sm = transition(sm, { type: 'DiscardConfirmed' });
+    expect(sm.activeTab).toBe('inventory');
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+    expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+
+  it('DiscardCancelled stays on presets and preserves editing sub', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'TabSelected', tab: 'watering' });
+    sm = transition(sm, { type: 'DiscardCancelled' });
+    expect(sm.activeTab).toBe('presets');
+    expect(sm.tabs.presets.sub.kind).toBe('editing');
+  });
+});
+
+// ─── Full presets drill-down lifecycle ────────────────────────────────────────
+
+describe('full presets drill-down lifecycle', () => {
+  it('list → select → edit → save → back to list', () => {
+    let sm = withPresetsTab();
+    expect(sm.tabs.presets.selectedId).toBeNull();
+
+    sm = transition(sm, { type: 'PresetItemSelected', id: 'p1' });
+    expect(sm.tabs.presets.selectedId).toBe('p1');
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+
+    sm = transition(sm, {
+      type: 'PresetEditStarted',
+      draft: { name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0, nutrients: [] },
+    });
+    expect(sm.tabs.presets.sub.kind).toBe('editing');
+
+    sm = transition(sm, { type: 'PresetSaveRequested' });
+    expect(sm.tabs.presets.sub.kind).toBe('applying');
+
+    sm = transition(sm, { type: 'PresetSaveResolved' });
+    expect(sm.tabs.presets.sub.kind).toBe('idle');
+    expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+
+  it('list → select → delete → confirm → back to list', () => {
+    let sm = transition(withPresetsTab(), { type: 'PresetItemSelected', id: 'p1' });
+    sm = transition(sm, { type: 'PresetDeleteRequested', id: 'p1', name: 'Veg Week 1' });
+    expect(sm.tabs.presets.sub.kind).toBe('confirm-delete');
+
+    sm = transition(sm, { type: 'PresetDeleteConfirmed' });
+    expect(sm.tabs.presets.sub.kind).toBe('applying');
+
+    sm = transition(sm, { type: 'PresetDeleteResolved' });
+    expect(sm.tabs.presets.selectedId).toBeNull();
   });
 });

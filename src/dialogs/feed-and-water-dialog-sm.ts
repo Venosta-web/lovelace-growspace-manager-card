@@ -46,7 +46,21 @@ export type InventorySub =
   | { kind: 'error'; draft: NutrientStockDraft; message: string }
   | { kind: 'confirm-delete'; id: string; name: string };
 
-export type PresetsSub = { kind: 'idle' } | { kind: 'editing' };
+export interface NutrientPresetDraft {
+  name: string;
+  stage?: string;
+  week?: number;
+  ec_target?: number | null;
+  ph_target?: number | null;
+  nutrients: { nutrient_id: string; dose_ml_l: number }[];
+}
+
+export type PresetsSub =
+  | { kind: 'idle' }
+  | { kind: 'editing'; draft: NutrientPresetDraft }
+  | { kind: 'applying'; draft: NutrientPresetDraft }
+  | { kind: 'error'; draft: NutrientPresetDraft; message: string }
+  | { kind: 'confirm-delete'; id: string; name: string };
 
 export interface WateringDraft {
   volume: number;
@@ -66,6 +80,7 @@ export interface InventoryTabState {
 }
 
 export interface PresetsTabState {
+  selectedId: string | null;
   sub: PresetsSub;
 }
 
@@ -112,7 +127,24 @@ export type SMEvent =
   | { type: 'DeleteRequested'; id: string; name: string }
   | { type: 'DeleteConfirmed' }
   | { type: 'DeleteResolved' }
-  | { type: 'DeleteCancelled' };
+  | { type: 'DeleteCancelled' }
+  // Presets
+  | { type: 'PresetItemSelected'; id: string }
+  | { type: 'PresetBackToList' }
+  | { type: 'PresetNewItemRequested' }
+  | { type: 'PresetEditStarted'; draft: NutrientPresetDraft }
+  | { type: 'PresetDraftChanged'; field: keyof Omit<NutrientPresetDraft, 'nutrients'>; value: string | number | null | undefined }
+  | { type: 'PresetNutrientRowAdded' }
+  | { type: 'PresetNutrientRowRemoved'; index: number }
+  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number }> }
+  | { type: 'PresetSaveRequested' }
+  | { type: 'PresetSaveResolved' }
+  | { type: 'PresetSaveFailed'; message: string }
+  | { type: 'PresetErrorDismissed' }
+  | { type: 'PresetDeleteRequested'; id: string; name: string }
+  | { type: 'PresetDeleteConfirmed' }
+  | { type: 'PresetDeleteResolved' }
+  | { type: 'PresetDeleteCancelled' };
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
@@ -122,7 +154,7 @@ export function createInitialSM(): SM {
     tabs: {
       watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
       inventory: { selectedId: null, sub: { kind: 'idle' } },
-      presets: { sub: { kind: 'idle' } },
+      presets: { selectedId: null, sub: { kind: 'idle' } },
     },
     status: { kind: 'idle' },
     toast: undefined,
@@ -132,16 +164,17 @@ export function createInitialSM(): SM {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function isTabDirty(sm: SM, tab: TabId): boolean {
-  if (tab === 'inventory') {
-    const sub = sm.tabs.inventory.sub;
-    return sub.kind === 'editing' || sub.kind === 'applying';
-  }
-  return sm.tabs[tab].sub.kind === 'editing';
+  const sub = sm.tabs[tab].sub;
+  return sub.kind === 'editing' || sub.kind === 'applying';
 }
 
 export function isLowStock(stock: NutrientStock): boolean {
   if (stock.initial_ml === 0) return false;
   return stock.current_ml / stock.initial_ml <= 0.25;
+}
+
+function emptyPresetDraft(): NutrientPresetDraft {
+  return { name: '', nutrients: [] };
 }
 
 function emptyStockDraft(): NutrientStockDraft {
@@ -170,9 +203,7 @@ export function transition(sm: SM, event: SMEvent): SM {
         status: { kind: 'idle' },
         tabs: {
           ...sm.tabs,
-          [sm.activeTab]: sm.activeTab === 'inventory'
-            ? { selectedId: null, sub: { kind: 'idle' } }
-            : { sub: { kind: 'idle' } },
+          [sm.activeTab]: { selectedId: null, sub: { kind: 'idle' } },
         },
       };
     }
@@ -380,6 +411,176 @@ export function transition(sm: SM, event: SMEvent): SM {
           ...sm.tabs,
           inventory: { ...inv, sub: { kind: 'idle' } },
         },
+      };
+    }
+
+    // ─── Presets ────────────────────────────────────────────────────────────
+
+    case 'PresetItemSelected': {
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { selectedId: event.id, sub: { kind: 'idle' } } },
+      };
+    }
+
+    case 'PresetBackToList': {
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'idle' } } },
+      };
+    }
+
+    case 'PresetNewItemRequested': {
+      if (sm.tabs.presets.sub.kind === 'editing') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'editing', draft: emptyPresetDraft() } } },
+      };
+    }
+
+    case 'PresetEditStarted': {
+      const presets = sm.tabs.presets;
+      if (presets.selectedId === null && presets.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'editing', draft: event.draft } } },
+      };
+    }
+
+    case 'PresetDraftChanged': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          presets: { ...presets, sub: { kind: 'editing', draft: { ...presets.sub.draft, [event.field]: event.value } } },
+        },
+      };
+    }
+
+    case 'PresetNutrientRowAdded': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          presets: {
+            ...presets,
+            sub: { kind: 'editing', draft: { ...presets.sub.draft, nutrients: [...presets.sub.draft.nutrients, { nutrient_id: '', dose_ml_l: 0 }] } },
+          },
+        },
+      };
+    }
+
+    case 'PresetNutrientRowRemoved': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          presets: {
+            ...presets,
+            sub: { kind: 'editing', draft: { ...presets.sub.draft, nutrients: presets.sub.draft.nutrients.filter((_, i) => i !== event.index) } },
+          },
+        },
+      };
+    }
+
+    case 'PresetNutrientRowUpdated': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          presets: {
+            ...presets,
+            sub: {
+              kind: 'editing',
+              draft: {
+                ...presets.sub.draft,
+                nutrients: presets.sub.draft.nutrients.map((row, i) => i === event.index ? { ...row, ...event.patch } : row),
+              },
+            },
+          },
+        },
+      };
+    }
+
+    case 'PresetSaveRequested': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'applying', draft: presets.sub.draft } } },
+      };
+    }
+
+    case 'PresetSaveResolved': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'applying') return sm;
+      return {
+        ...sm,
+        toast: 'Saved',
+        tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'idle' } } },
+      };
+    }
+
+    case 'PresetSaveFailed': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'applying') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'error', draft: presets.sub.draft, message: event.message } } },
+      };
+    }
+
+    case 'PresetErrorDismissed': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'error') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'editing', draft: presets.sub.draft } } },
+      };
+    }
+
+    case 'PresetDeleteRequested': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind === 'editing' || presets.sub.kind === 'applying') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'confirm-delete', id: event.id, name: event.name } } },
+      };
+    }
+
+    case 'PresetDeleteConfirmed': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'confirm-delete') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'applying', draft: emptyPresetDraft() } } },
+      };
+    }
+
+    case 'PresetDeleteResolved': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'applying') return sm;
+      return {
+        ...sm,
+        toast: 'Deleted',
+        tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'idle' } } },
+      };
+    }
+
+    case 'PresetDeleteCancelled': {
+      const presets = sm.tabs.presets;
+      if (presets.sub.kind !== 'confirm-delete') return sm;
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'idle' } } },
       };
     }
 
