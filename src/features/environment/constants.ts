@@ -315,6 +315,10 @@ export const METRIC_ENTITY_KEYS: Record<
   [MetricKey.POWER]: { primary: 'powerSensors' },
   [MetricKey.PH]: { primary: 'phSensors' },
   [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
+  [MetricKey.SUBSTRATE_EC]: { primary: 'substrateEcSensors' },
+  [MetricKey.RUNOFF_EC]: { primary: 'runoffEcSensors' },
+  [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
+  [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
 };
 
 export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
