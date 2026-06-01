@@ -334,22 +334,7 @@ export class GrowspaceHistoryStore {
 
     const { start, end } = this.calculateTimeRange(range);
 
-    const metricsToFetch = [
-      'optimal',
-      'temperature',
-      'humidity',
-      'vpd',
-      'co2',
-      'light',
-      'irrigation_tank_level',
-      'soil_moisture',
-      'exhaust',
-      'humidifier',
-      'dehumidifier',
-      'circulation_fan',
-      'irrigation',
-      'drain',
-    ];
+    const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
 
     const entityMap: Record<string, string> = {};
     const entitiesToFetch = new Set<string>();
@@ -433,22 +418,7 @@ export class GrowspaceHistoryStore {
     }
 
     const now = new Date();
-    const metricsToFetch = [
-      'optimal',
-      'temperature',
-      'humidity',
-      'vpd',
-      'co2',
-      'light',
-      'irrigation_tank_level',
-      'soil_moisture',
-      'exhaust',
-      'humidifier',
-      'dehumidifier',
-      'circulation_fan',
-      'irrigation',
-      'drain',
-    ];
+    const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
 
     const entityMap: Record<string, string> = {};
     const entitiesToFetch = new Set<string>();
@@ -620,6 +590,12 @@ export class GrowspaceHistoryStore {
     const envAttrs = (device.environmentAttributes ||
       (device as unknown as Record<string, unknown>).environment_attributes ||
       {}) as Record<string, unknown>;
+
+    // Primary key is already a string[] (e.g. energySensors, powerSensors)
+    const directValue = envAttrs[mapping.primary];
+    if (Array.isArray(directValue) && (directValue.length === 0 || typeof directValue[0] === 'string')) {
+      return directValue as string[];
+    }
 
     // 1. Try plural keys first
     const pluralKey = mapping.primary.endsWith('Sensor')

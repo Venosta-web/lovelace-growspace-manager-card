@@ -496,6 +496,9 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
     [MetricKey.SUBSTRATE_TEMPERATURE]: { primary: 'substrateTemperatureSensors' },
     [MetricKey.ENERGY]: { primary: 'energySensors' },
+    [MetricKey.POWER]: { primary: 'powerSensors' },
+    [MetricKey.PH]: { primary: 'phSensors' },
+    [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
 };
 
 // --- Utils ---
@@ -126957,22 +126960,7 @@ class GrowspaceHistoryStore {
         if (!device)
             return;
         const { start, end } = this.calculateTimeRange(range);
-        const metricsToFetch = [
-            'optimal',
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'irrigation_tank_level',
-            'soil_moisture',
-            'exhaust',
-            'humidifier',
-            'dehumidifier',
-            'circulation_fan',
-            'irrigation',
-            'drain',
-        ];
+        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
         const entitiesToFetch = new Set();
         // 1. Identify Overview Entity
         if (device.overviewEntityId) {
@@ -127035,22 +127023,7 @@ class GrowspaceHistoryStore {
             return;
         }
         const now = new Date();
-        const metricsToFetch = [
-            'optimal',
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'irrigation_tank_level',
-            'soil_moisture',
-            'exhaust',
-            'humidifier',
-            'dehumidifier',
-            'circulation_fan',
-            'irrigation',
-            'drain',
-        ];
+        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
         const entityMap = {};
         const entitiesToFetch = new Set();
         // Overview
@@ -127191,6 +127164,11 @@ class GrowspaceHistoryStore {
         const envAttrs = (device.environmentAttributes ||
             device.environment_attributes ||
             {});
+        // Primary key is already a string[] (e.g. energySensors, powerSensors)
+        const directValue = envAttrs[mapping.primary];
+        if (Array.isArray(directValue) && (directValue.length === 0 || typeof directValue[0] === 'string')) {
+            return directValue;
+        }
         // 1. Try plural keys first
         const pluralKey = mapping.primary.endsWith('Sensor')
             ? mapping.primary.replace('Sensor', 'Sensors')

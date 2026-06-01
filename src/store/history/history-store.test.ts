@@ -716,6 +716,62 @@ describe('GrowspaceHistoryStore - getEntityIdsForMetric', () => {
     } as unknown as GrowspaceDevice;
     expect((store as any).getEntityIdForMetric(device, 'temperature')).toBe('sensor.temp1');
   });
+
+  it('returns energySensors array directly when primary key is already plural', () => {
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: { energySensors: ['sensor.energy1', 'sensor.energy2'] },
+    } as unknown as GrowspaceDevice;
+    expect((store as any).getEntityIdsForMetric(device, 'energy')).toEqual([
+      'sensor.energy1',
+      'sensor.energy2',
+    ]);
+  });
+
+  it('returns powerSensors array for the power metric', () => {
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: { powerSensors: ['sensor.power1'] },
+    } as unknown as GrowspaceDevice;
+    expect((store as any).getEntityIdsForMetric(device, 'power')).toEqual(['sensor.power1']);
+  });
+
+  it('returns phSensors array for the ph metric', () => {
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: { phSensors: ['sensor.ph1'] },
+    } as unknown as GrowspaceDevice;
+    expect((store as any).getEntityIdsForMetric(device, 'ph')).toEqual(['sensor.ph1']);
+  });
+
+  it('returns feedEcSensors array for the feed_ec metric', () => {
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: { feedEcSensors: ['sensor.feed_ec1'] },
+    } as unknown as GrowspaceDevice;
+    expect((store as any).getEntityIdsForMetric(device, 'feed_ec')).toEqual(['sensor.feed_ec1']);
+  });
+
+  it('extracts sensorEntity from tank objects for irrigation_tank_level', () => {
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: {
+        irrigationTanks: [
+          { sensorEntity: 'sensor.tank1_level', name: 'Tank 1' },
+          { sensorEntity: 'sensor.tank2_level', name: 'Tank 2' },
+        ],
+      },
+    } as unknown as GrowspaceDevice;
+    expect((store as any).getEntityIdsForMetric(device, 'irrigation_tank_level')).toEqual([
+      'sensor.tank1_level',
+      'sensor.tank2_level',
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -822,6 +878,38 @@ describe('GrowspaceHistoryStore - _fetchHistory branches', () => {
 
     expect(store.$historyCache.get()[`temperature:${entity1}`]).toHaveLength(1);
     expect(store.$historyCache.get()[`temperature:${entity2}`]).toHaveLength(1);
+  });
+
+  it('fetches power, energy, ph, and feed_ec entities when they are configured', async () => {
+    const powerEntity = 'sensor.power1';
+    const energyEntity = 'sensor.energy1';
+    const phEntity = 'sensor.ph1';
+    const feedEcEntity = 'sensor.feed_ec1';
+    const getHistoryStats = vi.fn().mockResolvedValue({});
+    const device = {
+      deviceId: 'dev1',
+      name: 'Tent 1',
+      environmentAttributes: {
+        powerSensors: [powerEntity],
+        energySensors: [energyEntity],
+        phSensors: [phEntity],
+        feedEcSensors: [feedEcEntity],
+      },
+    } as unknown as GrowspaceDevice;
+    setDevices([device]);
+    const $selectedDevice = atom<string | null>('dev1');
+    const store = new GrowspaceHistoryStore(
+      { getHistoryStats, hass: { states: {} } } as unknown as DataService,
+      $selectedDevice
+    );
+
+    await store.loadHistoryOnDemand();
+
+    const [entities] = getHistoryStats.mock.calls[0] as [string[], ...unknown[]];
+    expect(entities).toContain(powerEntity);
+    expect(entities).toContain(energyEntity);
+    expect(entities).toContain(phEntity);
+    expect(entities).toContain(feedEcEntity);
   });
 
   it('includes composite key entities in the fetch set', async () => {

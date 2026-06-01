@@ -312,6 +312,9 @@ export const METRIC_ENTITY_KEYS: Record<
   [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
   [MetricKey.SUBSTRATE_TEMPERATURE]: { primary: 'substrateTemperatureSensors' },
   [MetricKey.ENERGY]: { primary: 'energySensors' },
+  [MetricKey.POWER]: { primary: 'powerSensors' },
+  [MetricKey.PH]: { primary: 'phSensors' },
+  [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
 };
 
 export type HistoryTimeRange = '1h' | '6h' | '24h' | '7d';
