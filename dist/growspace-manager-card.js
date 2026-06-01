@@ -31641,7 +31641,7 @@ function isLowStock(stock) {
         return false;
     return stock.current_ml / stock.initial_ml <= 0.25;
 }
-function emptyStockDraft() {
+function emptyStockDraft$1() {
     return { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' };
 }
 function emptyPresetDraft() {
@@ -31710,7 +31710,7 @@ function transition$4(sm, event) {
             const tab = sm.activeTab;
             if (sm.tabs[tab].sub.kind === 'editing')
                 return sm;
-            const draft = tab === 'inventory' ? emptyStockDraft() : emptyPresetDraft();
+            const draft = tab === 'inventory' ? emptyStockDraft$1() : emptyPresetDraft();
             return {
                 ...sm,
                 tabs: {
@@ -31905,7 +31905,7 @@ function transition$4(sm, event) {
                 ...sm,
                 tabs: {
                     ...sm.tabs,
-                    [tab]: { ...tabState, sub: { kind: 'applying', draft: tab === 'inventory' ? emptyStockDraft() : emptyPresetDraft() } },
+                    [tab]: { ...tabState, sub: { kind: 'applying', draft: tab === 'inventory' ? emptyStockDraft$1() : emptyPresetDraft() } },
                 },
             };
         }
@@ -48479,7 +48479,7 @@ function createInitialSM() {
         activeTab: 'watering',
         tabs: {
             watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
-            inventory: { sub: { kind: 'idle' } },
+            inventory: { selectedId: null, sub: { kind: 'idle' } },
             presets: { sub: { kind: 'idle' } },
         },
         status: { kind: 'idle' },
@@ -48488,7 +48488,14 @@ function createInitialSM() {
 }
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function isTabDirty(sm, tab) {
+    if (tab === 'inventory') {
+        const sub = sm.tabs.inventory.sub;
+        return sub.kind === 'editing' || sub.kind === 'applying';
+    }
     return sm.tabs[tab].sub.kind === 'editing';
+}
+function emptyStockDraft() {
+    return { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
 function transition(sm, event) {
@@ -48513,7 +48520,9 @@ function transition(sm, event) {
                 status: { kind: 'idle' },
                 tabs: {
                     ...sm.tabs,
-                    [sm.activeTab]: { sub: { kind: 'idle' } },
+                    [sm.activeTab]: sm.activeTab === 'inventory'
+                        ? { selectedId: null, sub: { kind: 'idle' } }
+                        : { sub: { kind: 'idle' } },
                 },
             };
         }
@@ -48559,6 +48568,161 @@ function transition(sm, event) {
                 tabs: {
                     ...sm.tabs,
                     watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+                },
+            };
+        }
+        // ─── Inventory ─────────────────────────────────────────────────────────
+        case 'ItemSelected': {
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: event.id, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'BackToList': {
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'NewItemRequested': {
+            if (sm.tabs.inventory.sub.kind === 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'editing', draft: emptyStockDraft() } },
+                },
+            };
+        }
+        case 'EditStarted': {
+            const inv = sm.tabs.inventory;
+            if (inv.selectedId === null && inv.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'editing', draft: event.draft } },
+                },
+            };
+        }
+        case 'StockDraftChanged': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: {
+                        ...inv,
+                        sub: { kind: 'editing', draft: { ...inv.sub.draft, [event.field]: event.value } },
+                    },
+                },
+            };
+        }
+        case 'SaveRequested': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'applying', draft: inv.sub.draft } },
+                },
+            };
+        }
+        case 'SaveResolved': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                toast: 'Saved',
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'SaveFailed': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'error', draft: inv.sub.draft, message: event.message } },
+                },
+            };
+        }
+        case 'ErrorDismissed': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'error')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'editing', draft: inv.sub.draft } },
+                },
+            };
+        }
+        case 'DeleteRequested': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind === 'editing' || inv.sub.kind === 'applying')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'confirm-delete', id: event.id, name: event.name } },
+                },
+            };
+        }
+        case 'DeleteConfirmed': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'applying', draft: emptyStockDraft() } },
+                },
+            };
+        }
+        case 'DeleteResolved': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                toast: 'Deleted',
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'DeleteCancelled': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'idle' } },
                 },
             };
         }

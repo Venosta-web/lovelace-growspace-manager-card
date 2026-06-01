@@ -9,10 +9,13 @@ import {
   createInitialSM,
   transition,
   isTabDirty,
+  isLowStock,
   type SM,
   type TabId,
   type WateringDraft,
+  type NutrientStockDraft,
 } from './feed-and-water-dialog-sm';
+import type { NutrientStock } from '../slices/nutrient';
 import type { DialogStateMachine } from './dialog-sm';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -21,14 +24,40 @@ function idle(): SM {
   return createInitialSM();
 }
 
-function withInventoryEditing(): SM {
-  const sm = idle();
-  return {
-    ...sm,
-    tabs: {
-      ...sm.tabs,
-      inventory: { sub: { kind: 'editing' } },
+function withInventoryItemSelected(id = 'n1'): SM {
+  return transition(idle(), { type: 'ItemSelected', id });
+}
+
+function withInventoryEditing(id = 'n1', draft?: Partial<NutrientStockDraft>): SM {
+  return transition(withInventoryItemSelected(id), {
+    type: 'EditStarted',
+    draft: {
+      name: 'Cal-Mag',
+      current_ml: 500,
+      initial_ml: 1000,
+      brand: 'GH',
+      stockType: 'calmag',
+      npk: '0-0-0',
+      dose_ml_l: 2,
+      notes: '',
+      ...draft,
     },
+  });
+}
+
+function aStock(overrides: Partial<NutrientStock> = {}): NutrientStock {
+  return {
+    nutrient_id: 'n1',
+    name: 'Cal-Mag',
+    current_ml: 500,
+    initial_ml: 1000,
+    last_updated: '2026-01-01',
+    brand: 'GH',
+    type: 'calmag',
+    npk: '0-0-0',
+    dose_ml_l: 2,
+    notes: '',
+    ...overrides,
   };
 }
 
@@ -52,6 +81,10 @@ describe('createInitialSM', () => {
     expect(sm.tabs.watering.sub.kind).toBe('idle');
     expect(sm.tabs.inventory.sub.kind).toBe('idle');
     expect(sm.tabs.presets.sub.kind).toBe('idle');
+  });
+
+  it('starts with no item selected in inventory', () => {
+    expect(idle().tabs.inventory.selectedId).toBeNull();
   });
 
   it('satisfies DialogStateMachine type contract', () => {
@@ -307,5 +340,385 @@ describe('WateringSubmitCompleted', () => {
     const before = idle();
     const after = transition(before, { type: 'WateringSubmitCompleted' });
     expect(after).toBe(before);
+  });
+});
+
+// ─── isTabDirty (inventory applying) ─────────────────────────────────────────
+
+describe('isTabDirty — inventory applying', () => {
+  it('returns true when inventory sub is applying', () => {
+    const sm = transition(withInventoryEditing(), { type: 'SaveRequested' });
+    expect(isTabDirty(sm, 'inventory')).toBe(true);
+  });
+
+  it('returns false when inventory sub is confirm-delete', () => {
+    const sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'X' });
+    expect(isTabDirty(sm, 'inventory')).toBe(false);
+  });
+});
+
+// ─── ItemSelected ─────────────────────────────────────────────────────────────
+
+describe('ItemSelected', () => {
+  it('sets selectedId on inventory tab', () => {
+    const sm = transition(idle(), { type: 'ItemSelected', id: 'n1' });
+    expect(sm.tabs.inventory.selectedId).toBe('n1');
+  });
+
+  it('sub remains idle after selecting', () => {
+    const sm = transition(idle(), { type: 'ItemSelected', id: 'n1' });
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+  });
+
+  it('does not affect other tabs', () => {
+    const before = idle();
+    const after = transition(before, { type: 'ItemSelected', id: 'n1' });
+    expect(after.tabs.watering).toBe(before.tabs.watering);
+    expect(after.tabs.presets).toBe(before.tabs.presets);
+  });
+});
+
+// ─── BackToList ───────────────────────────────────────────────────────────────
+
+describe('BackToList', () => {
+  it('clears selectedId', () => {
+    const sm = transition(withInventoryItemSelected(), { type: 'BackToList' });
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('resets sub to idle', () => {
+    const sm = transition(withInventoryEditing(), { type: 'BackToList' });
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+  });
+
+  it('does not affect other tabs', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'BackToList' });
+    expect(after.tabs.watering).toBe(before.tabs.watering);
+    expect(after.tabs.presets).toBe(before.tabs.presets);
+  });
+});
+
+// ─── NewItemRequested ─────────────────────────────────────────────────────────
+
+describe('NewItemRequested', () => {
+  it('sets sub to editing with an empty stock draft', () => {
+    const sm = transition(idle(), { type: 'NewItemRequested' });
+    expect(sm.tabs.inventory.sub.kind).toBe('editing');
+    if (sm.tabs.inventory.sub.kind === 'editing') {
+      expect(sm.tabs.inventory.sub.draft).toMatchObject({ name: '', current_ml: 0, initial_ml: 0 });
+    }
+  });
+
+  it('selectedId is null when creating a new item', () => {
+    const sm = transition(idle(), { type: 'NewItemRequested' });
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('is a no-op if already editing', () => {
+    const before = withInventoryEditing();
+    const after = transition(before, { type: 'NewItemRequested' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── EditStarted ──────────────────────────────────────────────────────────────
+
+describe('EditStarted', () => {
+  it('sets sub to editing with the provided draft', () => {
+    const sm = withInventoryEditing('n1');
+    expect(sm.tabs.inventory.sub.kind).toBe('editing');
+    if (sm.tabs.inventory.sub.kind === 'editing') {
+      expect(sm.tabs.inventory.sub.draft).toMatchObject({ name: 'Cal-Mag' });
+    }
+  });
+
+  it('is a no-op when selectedId is null and not already editing', () => {
+    const before = idle();
+    const after = transition(before, {
+      type: 'EditStarted',
+      draft: { name: 'X', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' },
+    });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── StockDraftChanged ────────────────────────────────────────────────────────
+
+describe('StockDraftChanged', () => {
+  it('updates a field in the draft', () => {
+    let sm = withInventoryEditing();
+    sm = transition(sm, { type: 'StockDraftChanged', field: 'name', value: 'New Name' });
+    if (sm.tabs.inventory.sub.kind === 'editing') {
+      expect(sm.tabs.inventory.sub.draft.name).toBe('New Name');
+    }
+  });
+
+  it('does not affect other tabs', () => {
+    const before = withInventoryEditing();
+    const after = transition(before, { type: 'StockDraftChanged', field: 'name', value: 'X' });
+    expect(after.tabs.watering).toBe(before.tabs.watering);
+    expect(after.tabs.presets).toBe(before.tabs.presets);
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'StockDraftChanged', field: 'name', value: 'X' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── SaveRequested ────────────────────────────────────────────────────────────
+
+describe('SaveRequested', () => {
+  it('moves inventory sub from editing to applying', () => {
+    const sm = transition(withInventoryEditing(), { type: 'SaveRequested' });
+    expect(sm.tabs.inventory.sub.kind).toBe('applying');
+  });
+
+  it('preserves the draft during applying', () => {
+    const sm = transition(withInventoryEditing('n1', { name: 'Bloom' }), { type: 'SaveRequested' });
+    if (sm.tabs.inventory.sub.kind === 'applying') {
+      expect(sm.tabs.inventory.sub.draft.name).toBe('Bloom');
+    }
+  });
+
+  it('is a no-op when not editing', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'SaveRequested' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── SaveResolved ─────────────────────────────────────────────────────────────
+
+describe('SaveResolved', () => {
+  it('resets inventory sub to idle after applying', () => {
+    let sm = withInventoryEditing();
+    sm = transition(sm, { type: 'SaveRequested' });
+    sm = transition(sm, { type: 'SaveResolved' });
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+  });
+
+  it('clears selectedId — returns user to master list', () => {
+    let sm = withInventoryEditing();
+    sm = transition(sm, { type: 'SaveRequested' });
+    sm = transition(sm, { type: 'SaveResolved' });
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('sets a success toast', () => {
+    let sm = withInventoryEditing();
+    sm = transition(sm, { type: 'SaveRequested' });
+    sm = transition(sm, { type: 'SaveResolved' });
+    expect(sm.toast).toBeTruthy();
+  });
+
+  it('is a no-op when not applying', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'SaveResolved' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── SaveFailed ───────────────────────────────────────────────────────────────
+
+describe('SaveFailed', () => {
+  it('moves inventory sub from applying to error with message', () => {
+    let sm = withInventoryEditing();
+    sm = transition(sm, { type: 'SaveRequested' });
+    sm = transition(sm, { type: 'SaveFailed', message: 'Network error' });
+    expect(sm.tabs.inventory.sub.kind).toBe('error');
+    if (sm.tabs.inventory.sub.kind === 'error') {
+      expect(sm.tabs.inventory.sub.message).toBe('Network error');
+    }
+  });
+
+  it('is a no-op when not applying', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'SaveFailed', message: 'err' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── ErrorDismissed ───────────────────────────────────────────────────────────
+
+describe('ErrorDismissed', () => {
+  it('resets sub from error back to editing', () => {
+    let sm = withInventoryEditing();
+    sm = transition(sm, { type: 'SaveRequested' });
+    sm = transition(sm, { type: 'SaveFailed', message: 'err' });
+    sm = transition(sm, { type: 'ErrorDismissed' });
+    expect(sm.tabs.inventory.sub.kind).toBe('editing');
+  });
+
+  it('is a no-op when not in error', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'ErrorDismissed' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── DeleteRequested ──────────────────────────────────────────────────────────
+
+describe('DeleteRequested', () => {
+  it('moves inventory sub to confirm-delete', () => {
+    const sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    expect(sm.tabs.inventory.sub).toEqual({ kind: 'confirm-delete', id: 'n1', name: 'Cal-Mag' });
+  });
+
+  it('is a no-op when editing', () => {
+    const before = withInventoryEditing();
+    const after = transition(before, { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    expect(after).toBe(before);
+  });
+
+  it('is a no-op when applying', () => {
+    const applying = transition(withInventoryEditing(), { type: 'SaveRequested' });
+    const after = transition(applying, { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    expect(after).toBe(applying);
+  });
+});
+
+// ─── DeleteConfirmed ──────────────────────────────────────────────────────────
+
+describe('DeleteConfirmed', () => {
+  it('moves sub from confirm-delete to applying', () => {
+    let sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    sm = transition(sm, { type: 'DeleteConfirmed' });
+    expect(sm.tabs.inventory.sub.kind).toBe('applying');
+  });
+
+  it('is a no-op when not in confirm-delete', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'DeleteConfirmed' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── DeleteResolved ───────────────────────────────────────────────────────────
+
+describe('DeleteResolved', () => {
+  it('resets sub to idle and clears selectedId', () => {
+    let sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    sm = transition(sm, { type: 'DeleteConfirmed' });
+    sm = transition(sm, { type: 'DeleteResolved' });
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('sets a deleted toast', () => {
+    let sm = transition(withInventoryItemSelected(), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    sm = transition(sm, { type: 'DeleteConfirmed' });
+    sm = transition(sm, { type: 'DeleteResolved' });
+    expect(sm.toast).toBeTruthy();
+  });
+
+  it('is a no-op when not applying', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'DeleteResolved' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── DeleteCancelled ──────────────────────────────────────────────────────────
+
+describe('DeleteCancelled', () => {
+  it('returns sub to idle', () => {
+    let sm = transition(withInventoryItemSelected('n1'), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    sm = transition(sm, { type: 'DeleteCancelled' });
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+  });
+
+  it('preserves selectedId', () => {
+    let sm = transition(withInventoryItemSelected('n1'), { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    sm = transition(sm, { type: 'DeleteCancelled' });
+    expect(sm.tabs.inventory.selectedId).toBe('n1');
+  });
+
+  it('is a no-op when not in confirm-delete', () => {
+    const before = withInventoryItemSelected();
+    const after = transition(before, { type: 'DeleteCancelled' });
+    expect(after).toBe(before);
+  });
+});
+
+// ─── isLowStock ───────────────────────────────────────────────────────────────
+
+describe('isLowStock', () => {
+  it('returns false at 100% fill', () => {
+    expect(isLowStock(aStock({ current_ml: 1000, initial_ml: 1000 }))).toBe(false);
+  });
+
+  it('returns false at 26% fill', () => {
+    expect(isLowStock(aStock({ current_ml: 260, initial_ml: 1000 }))).toBe(false);
+  });
+
+  it('returns true at exactly 25% fill', () => {
+    expect(isLowStock(aStock({ current_ml: 250, initial_ml: 1000 }))).toBe(true);
+  });
+
+  it('returns true below 25% fill', () => {
+    expect(isLowStock(aStock({ current_ml: 100, initial_ml: 1000 }))).toBe(true);
+  });
+
+  it('returns false when initial_ml is zero', () => {
+    expect(isLowStock(aStock({ current_ml: 0, initial_ml: 0 }))).toBe(false);
+  });
+});
+
+// ─── Full drill-down lifecycle ────────────────────────────────────────────────
+
+describe('full inventory drill-down lifecycle', () => {
+  it('list → select → edit → save → back to list', () => {
+    let sm = idle();
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+
+    sm = transition(sm, { type: 'ItemSelected', id: 'n1' });
+    expect(sm.tabs.inventory.selectedId).toBe('n1');
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+
+    sm = transition(sm, {
+      type: 'EditStarted',
+      draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: '', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+    });
+    expect(sm.tabs.inventory.sub.kind).toBe('editing');
+
+    sm = transition(sm, { type: 'SaveRequested' });
+    expect(sm.tabs.inventory.sub.kind).toBe('applying');
+
+    sm = transition(sm, { type: 'SaveResolved' });
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('list → select → delete → confirm → back to list', () => {
+    let sm = transition(idle(), { type: 'ItemSelected', id: 'n1' });
+    sm = transition(sm, { type: 'DeleteRequested', id: 'n1', name: 'Cal-Mag' });
+    expect(sm.tabs.inventory.sub.kind).toBe('confirm-delete');
+
+    sm = transition(sm, { type: 'DeleteConfirmed' });
+    expect(sm.tabs.inventory.sub.kind).toBe('applying');
+
+    sm = transition(sm, { type: 'DeleteResolved' });
+    expect(sm.tabs.inventory.selectedId).toBeNull();
+  });
+
+  it('tab switch blocked by dirty guard → confirm discard → switch succeeds', () => {
+    let sm = transition(idle(), { type: 'TabSelected', tab: 'inventory' });
+    sm = transition(sm, { type: 'ItemSelected', id: 'n1' });
+    sm = transition(sm, {
+      type: 'EditStarted',
+      draft: { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: '', stockType: 'calmag', npk: '', dose_ml_l: 2, notes: '' },
+    });
+
+    sm = transition(sm, { type: 'TabSelected', tab: 'presets' });
+    expect(sm.status.kind).toBe('confirm-discard');
+    expect(sm.activeTab).toBe('inventory');
+
+    sm = transition(sm, { type: 'DiscardConfirmed' });
+    expect(sm.activeTab).toBe('presets');
+    expect(sm.tabs.inventory.sub.kind).toBe('idle');
+    expect(sm.tabs.inventory.selectedId).toBeNull();
   });
 });

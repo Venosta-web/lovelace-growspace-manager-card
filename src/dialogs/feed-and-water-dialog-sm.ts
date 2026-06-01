@@ -16,15 +16,36 @@
  */
 
 import type { DialogStateMachine } from './dialog-sm';
+import type { NutrientStock } from '../slices/nutrient';
 
 // ─── Tab IDs ──────────────────────────────────────────────────────────────────
 
 export type TabId = 'watering' | 'inventory' | 'presets';
 
+// ─── Drafts ───────────────────────────────────────────────────────────────────
+
+export interface NutrientStockDraft {
+  name: string;
+  current_ml: number;
+  initial_ml: number;
+  brand: string;
+  stockType: string;
+  npk: string;
+  dose_ml_l: number;
+  notes: string;
+}
+
 // ─── Per-tab sub-states ───────────────────────────────────────────────────────
 
 export type WateringSub = { kind: 'idle' } | { kind: 'submitting' };
-export type InventorySub = { kind: 'idle' } | { kind: 'editing' };
+
+export type InventorySub =
+  | { kind: 'idle' }
+  | { kind: 'editing'; draft: NutrientStockDraft }
+  | { kind: 'applying'; draft: NutrientStockDraft }
+  | { kind: 'error'; draft: NutrientStockDraft; message: string }
+  | { kind: 'confirm-delete'; id: string; name: string };
+
 export type PresetsSub = { kind: 'idle' } | { kind: 'editing' };
 
 export interface WateringDraft {
@@ -40,6 +61,7 @@ export interface WateringTabState {
 }
 
 export interface InventoryTabState {
+  selectedId: string | null;
   sub: InventorySub;
 }
 
@@ -76,7 +98,21 @@ export type SMEvent =
   | { type: 'WateringVolumeChanged'; volume: number }
   | { type: 'WateringPresetChanged'; presetId: string }
   | { type: 'WateringSubmitRequested' }
-  | { type: 'WateringSubmitCompleted' };
+  | { type: 'WateringSubmitCompleted' }
+  // Inventory
+  | { type: 'ItemSelected'; id: string }
+  | { type: 'BackToList' }
+  | { type: 'NewItemRequested' }
+  | { type: 'EditStarted'; draft: NutrientStockDraft }
+  | { type: 'StockDraftChanged'; field: keyof NutrientStockDraft; value: string | number }
+  | { type: 'SaveRequested' }
+  | { type: 'SaveResolved' }
+  | { type: 'SaveFailed'; message: string }
+  | { type: 'ErrorDismissed' }
+  | { type: 'DeleteRequested'; id: string; name: string }
+  | { type: 'DeleteConfirmed' }
+  | { type: 'DeleteResolved' }
+  | { type: 'DeleteCancelled' };
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
@@ -85,7 +121,7 @@ export function createInitialSM(): SM {
     activeTab: 'watering',
     tabs: {
       watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
-      inventory: { sub: { kind: 'idle' } },
+      inventory: { selectedId: null, sub: { kind: 'idle' } },
       presets: { sub: { kind: 'idle' } },
     },
     status: { kind: 'idle' },
@@ -96,7 +132,20 @@ export function createInitialSM(): SM {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function isTabDirty(sm: SM, tab: TabId): boolean {
+  if (tab === 'inventory') {
+    const sub = sm.tabs.inventory.sub;
+    return sub.kind === 'editing' || sub.kind === 'applying';
+  }
   return sm.tabs[tab].sub.kind === 'editing';
+}
+
+export function isLowStock(stock: NutrientStock): boolean {
+  if (stock.initial_ml === 0) return false;
+  return stock.current_ml / stock.initial_ml <= 0.25;
+}
+
+function emptyStockDraft(): NutrientStockDraft {
+  return { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' };
 }
 
 // ─── Transition ───────────────────────────────────────────────────────────────
@@ -121,7 +170,9 @@ export function transition(sm: SM, event: SMEvent): SM {
         status: { kind: 'idle' },
         tabs: {
           ...sm.tabs,
-          [sm.activeTab]: { sub: { kind: 'idle' } },
+          [sm.activeTab]: sm.activeTab === 'inventory'
+            ? { selectedId: null, sub: { kind: 'idle' } }
+            : { sub: { kind: 'idle' } },
         },
       };
     }
@@ -170,6 +221,164 @@ export function transition(sm: SM, event: SMEvent): SM {
         tabs: {
           ...sm.tabs,
           watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+        },
+      };
+    }
+
+    // ─── Inventory ─────────────────────────────────────────────────────────
+
+    case 'ItemSelected': {
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { selectedId: event.id, sub: { kind: 'idle' } },
+        },
+      };
+    }
+
+    case 'BackToList': {
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { selectedId: null, sub: { kind: 'idle' } },
+        },
+      };
+    }
+
+    case 'NewItemRequested': {
+      if (sm.tabs.inventory.sub.kind === 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { selectedId: null, sub: { kind: 'editing', draft: emptyStockDraft() } },
+        },
+      };
+    }
+
+    case 'EditStarted': {
+      const inv = sm.tabs.inventory;
+      if (inv.selectedId === null && inv.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'editing', draft: event.draft } },
+        },
+      };
+    }
+
+    case 'StockDraftChanged': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: {
+            ...inv,
+            sub: { kind: 'editing', draft: { ...inv.sub.draft, [event.field]: event.value } },
+          },
+        },
+      };
+    }
+
+    case 'SaveRequested': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'applying', draft: inv.sub.draft } },
+        },
+      };
+    }
+
+    case 'SaveResolved': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'applying') return sm;
+      return {
+        ...sm,
+        toast: 'Saved',
+        tabs: {
+          ...sm.tabs,
+          inventory: { selectedId: null, sub: { kind: 'idle' } },
+        },
+      };
+    }
+
+    case 'SaveFailed': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'applying') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'error', draft: inv.sub.draft, message: event.message } },
+        },
+      };
+    }
+
+    case 'ErrorDismissed': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'error') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'editing', draft: inv.sub.draft } },
+        },
+      };
+    }
+
+    case 'DeleteRequested': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind === 'editing' || inv.sub.kind === 'applying') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'confirm-delete', id: event.id, name: event.name } },
+        },
+      };
+    }
+
+    case 'DeleteConfirmed': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'confirm-delete') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'applying', draft: emptyStockDraft() } },
+        },
+      };
+    }
+
+    case 'DeleteResolved': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'applying') return sm;
+      return {
+        ...sm,
+        toast: 'Deleted',
+        tabs: {
+          ...sm.tabs,
+          inventory: { selectedId: null, sub: { kind: 'idle' } },
+        },
+      };
+    }
+
+    case 'DeleteCancelled': {
+      const inv = sm.tabs.inventory;
+      if (inv.sub.kind !== 'confirm-delete') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          inventory: { ...inv, sub: { kind: 'idle' } },
         },
       };
     }
