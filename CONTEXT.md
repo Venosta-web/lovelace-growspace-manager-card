@@ -288,11 +288,17 @@ The URL encoded in the label's QR code. Options: HA deep link to the plant, or r
 
 ## Nutrients
 
+**Feed & Water Dialog** (`feed-and-water-dialog`)
+The combined modal for recording a watering event and managing nutrient inventory and feeding presets. Replaces the standalone `growspace-watering-dialog-ui` and the previous two-tab [[Nutrient Dialog]]. Uses the Design A shell with a three-item left nav rail: **Watering**, **Inventory**, **Presets**. A persistent "Record Watering" footer button is visible on all three tabs. Opened from two entry points with context-aware default tabs: the watering action (plant grid / header) opens on the Watering tab; the nutrient management entry point opens on the Presets tab. Interaction state is owned by [[Feed & Water Dialog SM]].
+
+**Feed & Water Dialog SM**
+The state machine for `feed-and-water-dialog.ts`. Extends [[DialogStateMachine]] with `activeTab: 'watering' | 'inventory' | 'presets'`. The Watering tab owns `{ draft: WateringDraft; sub: WateringSubState }` where `WateringDraft` holds `volume`, `selectedPresetId`, and `customNutrients` (ad-hoc entries, hidden behind a toggle by default). The Inventory and Presets tabs carry the same `NutrientTabState` shape as the previous [[Nutrient Dialog SM]]. A `confirm-discard` guard fires when switching tabs while `sub.kind === 'editing'` and the draft is dirty. The "Record Watering" footer button is disabled (blocked) while any tab has `sub.kind === 'editing'` — the cultivator must save or discard the edit first.
+
 **Nutrient Dialog** (`nutrient-dialog`)
-The modal for managing nutrient inventory and feeding presets. Uses the Design A shell (same left-rail nav + header pattern as [[Growmaster Dialog]]) — the dialog owns `ha-dialog` directly and renders its own header and nav rail. The rail has two sections: **Inventory** and **Presets**, each with a badge showing the total item count. A **Stock Indicator** appears in the rail when any bottle is low stock. Interaction state is owned by [[Nutrient Dialog SM]].
+Superseded by [[Feed & Water Dialog]]. Previously the standalone modal for managing nutrient inventory and feeding presets.
 
 **Nutrient Dialog SM**
-The state machine for `nutrient-dialog.ts`, extracted into `nutrient-dialog-sm.ts`. Satisfies [[DialogStateMachine]]. Shape: `{ activeTab: 'inventory' | 'presets'; tabs: { inventory: NutrientTabState; presets: NutrientTabState }; status: { kind: 'idle' } | { kind: 'confirm-discard'; pendingTab }; toast }`. Each `NutrientTabState` carries `selectedId: string | null` and `sub: { kind: 'idle' } | { kind: 'editing'; draft } | { kind: 'confirm-delete'; id; name }`. `applying` and `error` live inside each tab's `sub`, not at root `status`. A `confirm-discard` guard fires when the user switches tabs while `sub.kind === 'editing'` and the draft is dirty.
+Superseded by [[Feed & Water Dialog SM]]. The state machine for the retired `nutrient-dialog.ts`.
 
 **NutrientStock Type Color**
 Each [[NutrientStock]] `type` value maps to a fixed accent color used for the bottle icon in the Inventory master list: `base` → `--primary-color`; `bloom` → `#e91e63`; `calmag` → `#ff9800`; `root` → `#795548`; `additive` → `#9c27b0`; `microbe` → `#00bcd4`. Derived at render time — no user-configurable color field.
