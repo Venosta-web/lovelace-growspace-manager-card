@@ -118,7 +118,6 @@ var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z
 var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiChevronUp = "M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z";
-var mdiClipboardList = "M19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M7 8H9V12H8V9H7V8M10 17V18H7V17.08L9 15H7V14H9.25C9.66 14 10 14.34 10 14.75C10 14.95 9.92 15.14 9.79 15.27L8.12 17H10M11 4C11 3.45 11.45 3 12 3S13 3.45 13 4 12.55 5 12 5 11 4.55 11 4M17 17H12V15H17V17M17 11H12V9H17V11Z";
 var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
 var mdiClockOutline = "M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
@@ -12829,7 +12828,7 @@ function defaultAddDraft(row, col) {
 function defaultTransplantDraft(row, col) {
     return { selectedPlantId: null, row, col };
 }
-function createInitialSM$b({ row, col }) {
+function createInitialSM$a({ row, col }) {
     return {
         activeTab: 'add',
         tabs: {
@@ -12842,7 +12841,7 @@ function createInitialSM$b({ row, col }) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$b(sm, event) {
+function transition$a(sm, event) {
     switch (event.type) {
         case 'TabSelected': {
             const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
@@ -12981,16 +12980,16 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.seedlingPlants = [];
         this.targetGrowspaceId = '';
         this.siblingPlants = [];
-        this._sm = createInitialSM$b({ row: 0, col: 0 });
+        this._sm = createInitialSM$a({ row: 0, col: 0 });
     }
     setInitialState(row, col, strain = '', phenotype = '') {
-        this._sm = createInitialSM$b({ row, col });
+        this._sm = createInitialSM$a({ row, col });
         if (strain) {
-            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
-            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
         }
         if (phenotype) {
-            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
         }
     }
     _close() {
@@ -13038,7 +13037,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 cure_start: d.cureStart,
                 addToLibrary: d.addToLibrary,
             };
-            this._sm = transition$b(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
         else {
@@ -13058,7 +13057,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 new_col: tabDraft.col + 1,
                 veg_start: today,
             };
-            this._sm = transition$b(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
     }
@@ -13133,7 +13132,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$b(this._sm, { type: 'TabSelected', tab: 'add' });
+            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'add' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -13142,7 +13141,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$b(this._sm, { type: 'TabSelected', tab: 'clone' });
+            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'clone' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
@@ -13151,7 +13150,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$b(this._sm, { type: 'TabSelected', tab: 'seedling' });
+            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'seedling' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -13175,7 +13174,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                   <button
                     class="md3-button tonal"
                     @click=${addSub.kind === 'step-identity' ? this._close : () => {
-                this._sm = transition$b(this._sm, { type: 'WizardBacked' });
+                this._sm = transition$a(this._sm, { type: 'WizardBacked' });
             }}
                   >
                     ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
@@ -13185,7 +13184,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                         <button
                           class="md3-button primary"
                           @click=${() => {
-                    this._sm = transition$b(this._sm, { type: 'WizardAdvanced' });
+                    this._sm = transition$a(this._sm, { type: 'WizardAdvanced' });
                 }}
                           ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
                         >
@@ -13283,9 +13282,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             .value=${draft.strainQuery || draft.strain}
             placeholder="Search strain library…"
             @change=${(e) => {
-            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
             if (e.detail !== draft.strain) {
-                this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+                this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
             }
         }}
           ></md3-text-input>
@@ -13298,8 +13297,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       <div
                         class="strain-option"
                         @click=${() => {
-                    this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
-                    this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
                 }}
                       >
                         <span>${s}</span>
@@ -13320,7 +13319,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 label="Phenotype"
                 .value=${draft.phenotype}
                 .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+                @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
               ></md3-text-input>
             `
             : E}
@@ -13362,7 +13361,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           >
           <md3-switch
             .checked=${draft.addToLibrary}
-            @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
+            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
             ?disabled=${!draft.strain}
           ></md3-switch>
         </div>
@@ -13391,15 +13390,15 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <button
             class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
             @click=${() => {
-            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
-            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
         }}
           >
             🌱 Seed
           </button>
           <button
             class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
-            @click=${() => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+            @click=${() => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
             ?disabled=${clonable.length === 0}
           >
             ✂️ Clone
@@ -13423,7 +13422,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       class="sibling-item ${isSelected ? 'selected' : ''}"
                       @click=${() => {
                     const today = new Date().toISOString().split('T')[0];
-                    this._sm = transition$b(this._sm, {
+                    this._sm = transition$a(this._sm, {
                         type: 'SiblingPlantSelected',
                         strain: p.attributes.strain || draft.strain,
                         phenotype: p.attributes.phenotype || draft.phenotype,
@@ -13471,12 +13470,12 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${draft.row + 1}
-            @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
             .value=${draft.col + 1}
-            @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
         </div>
       </div>
@@ -13497,28 +13496,28 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             return x `<md3-date-input
         label="Mother Start"
         .value=${draft.motherStart}
-        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('clone')) {
             return x `<md3-date-input
         label="Clone Start"
         .value=${draft.cloneStart}
-        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('dry')) {
             return x `<md3-date-input
         label="Dry Start"
         .value=${draft.dryStart}
-        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('cure')) {
             return x `<md3-date-input
         label="Cure Start"
         .value=${draft.cureStart}
-        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else {
@@ -13526,17 +13525,17 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         <md3-date-input
           label="Seedling Start"
           .value=${draft.seedlingStart}
-          @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Veg Start"
           .value=${draft.vegStart}
-          @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Flower Start"
           .value=${draft.flowerStart}
-          @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
         ></md3-date-input>
       `;
         }
@@ -13575,7 +13574,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 .value=${tabDraft.selectedPlantId || ''}
                 .options=${options}
                 @change=${(e) => {
-                this._sm = transition$b(this._sm, {
+                this._sm = transition$a(this._sm, {
                     type: 'DraftFieldChanged',
                     tab: stage,
                     field: 'selectedPlantId',
@@ -13619,7 +13618,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${tabDraft.row + 1}
-            @change=${(e) => (this._sm = transition$b(this._sm, {
+            @change=${(e) => (this._sm = transition$a(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'row',
@@ -13629,7 +13628,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Col"
             .value=${tabDraft.col + 1}
-            @change=${(e) => (this._sm = transition$b(this._sm, {
+            @change=${(e) => (this._sm = transition$a(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'col',
@@ -17693,7 +17692,7 @@ function envDraftFromDevice(device) {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$a(device) {
+function createInitialSM$9(device) {
     const sm = {
         activeTab: 'sensors',
         tabs: defaultTabs$2(),
@@ -17709,7 +17708,7 @@ function applyDeviceToSM$2(sm, device) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$a(sm, event) {
+function transition$9(sm, event) {
     switch (event.type) {
         // ── Navigation ────────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -17954,7 +17953,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
         // ── Single SM ────────────────────────────────────────────────────────────
-        this._sm = createInitialSM$a();
+        this._sm = createInitialSM$9();
         // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
@@ -17967,7 +17966,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
-        this._sm = transition$a(this._sm, event);
+        this._sm = transition$9(this._sm, event);
     }
     get currentTab() {
         return this._sm.activeTab;
@@ -17980,7 +17979,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // through familiar names. The SM is the authoritative source of truth.
     get _d() { return this._sm.environmentDraft; }
     _setEnv(partial) {
-        this._sm = transition$a(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+        this._sm = transition$9(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     }
     get envSelectedId() { return this._d.selectedGrowspaceId; }
     set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
@@ -18300,9 +18299,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             }
             : {};
         this._sm = {
-            ...createInitialSM$a(),
+            ...createInitialSM$9(),
             activeTab: currentTab,
-            environmentDraft: { ...createInitialSM$a().environmentDraft, ...envPartial },
+            environmentDraft: { ...createInitialSM$9().environmentDraft, ...envPartial },
         };
         this._dehumidifierControlEnabled = environmentData?.dehumidifierControlEnabled ?? false;
         this._humidifierControlEnabled = environmentData?.humidifierControlEnabled ?? false;
@@ -20468,7 +20467,7 @@ function defaultTabs$1() {
     };
 }
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$9(device) {
+function createInitialSM$8(device) {
     const sm = {
         activeTab: 'diagnostics',
         tabs: defaultTabs$1(),
@@ -20532,9 +20531,9 @@ function requestTabSwitch$1(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty$1(sm, device)) {
-        return transition$9(sm, { type: 'REQUEST_TAB', tab });
+        return transition$8(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$9(sm, { type: 'SWITCH_TAB', tab });
+    return transition$8(sm, { type: 'SWITCH_TAB', tab });
 }
 function discardAndSwitch$1(sm, device) {
     if (sm.status.kind !== 'confirm-discard')
@@ -20548,7 +20547,7 @@ function discardAndSwitch$1(sm, device) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$9(sm, event) {
+function transition$8(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -20674,7 +20673,7 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
         super(...arguments);
         this.open = false;
         this.growspaceName = '';
-        this._sm = createInitialSM$9();
+        this._sm = createInitialSM$8();
     }
     _device() {
         if (!this.dialogState?.growspaceId)
@@ -20686,11 +20685,11 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
     updated(changed) {
         if (changed.has('open') && this.open) {
             const device = this._device();
-            this._sm = createInitialSM$9(device);
+            this._sm = createInitialSM$8(device);
         }
     }
     _transition(event) {
-        this._sm = transition$9(this._sm, event);
+        this._sm = transition$8(this._sm, event);
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
@@ -20940,7 +20939,7 @@ CropSteeringDialog = __decorate([
  * user interactions become transition(sm, event) calls.
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$8(growspaceName) {
+function createInitialSM$7(growspaceName) {
     return {
         activeThreadId: null,
         composerDraft: '',
@@ -20957,7 +20956,7 @@ function createInitialSM$8(growspaceName) {
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$8(sm, event) {
+function transition$7(sm, event) {
     switch (event.type) {
         case 'THREAD_SELECTED':
             return {
@@ -21020,7 +21019,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this.growspacename = '';
-        this._sm = createInitialSM$8();
+        this._sm = createInitialSM$7();
         this._activeThread = new libExports.StoreController(this, activeThreadId$);
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
@@ -21029,10 +21028,10 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        this._sm = createInitialSM$8(this.growspacename || undefined);
+        this._sm = createInitialSM$7(this.growspacename || undefined);
     }
     _dispatch(event) {
-        this._sm = transition$8(this._sm, event);
+        this._sm = transition$7(this._sm, event);
     }
     _getActiveThread() {
         const activeMap = this._activeThread.value;
@@ -22748,7 +22747,7 @@ GmBriefingPanel = __decorate([
  * per-tab draft state. Shape is flat.
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$7() {
+function createInitialSM$6() {
     return {
         activeFilter: 'all',
         selectedId: null,
@@ -22758,7 +22757,7 @@ function createInitialSM$7() {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$7(sm, event) {
+function transition$6(sm, event) {
     switch (event.type) {
         case 'FilterSelected':
             return {
@@ -22859,7 +22858,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this.growspacename = '';
-        this._sm = createInitialSM$7();
+        this._sm = createInitialSM$6();
         this._alerts = new libExports.StoreController(this, aiAlerts$);
         this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
     }
@@ -22900,28 +22899,28 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         const alertId = this._sm.selectedId;
         if (!alertId)
             return;
-        this._sm = transition$7(this._sm, { type: 'ResolveRequested' });
+        this._sm = transition$6(this._sm, { type: 'ResolveRequested' });
         try {
             await resolveAlert(alertId, note);
-            this._sm = transition$7(this._sm, { type: 'SaveResolved' });
-            this._sm = transition$7(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
+            this._sm = transition$6(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$6(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
         }
         catch (e) {
-            this._sm = transition$7(this._sm, { type: 'SaveFailed', message: String(e) });
+            this._sm = transition$6(this._sm, { type: 'SaveFailed', message: String(e) });
         }
     }
     async _handleApplyConfirmed() {
         if (this._sm.status.kind !== 'confirming')
             return;
         const action = this._sm.status.action;
-        this._sm = transition$7(this._sm, { type: 'ActionApplyConfirmed' });
+        this._sm = transition$6(this._sm, { type: 'ActionApplyConfirmed' });
         try {
             await applyAction(action);
-            this._sm = transition$7(this._sm, { type: 'SaveResolved' });
-            this._sm = transition$7(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
+            this._sm = transition$6(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$6(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
         }
         catch (e) {
-            this._sm = transition$7(this._sm, { type: 'SaveFailed', message: String(e) });
+            this._sm = transition$6(this._sm, { type: 'SaveFailed', message: String(e) });
         }
     }
     _renderFilterStrip() {
@@ -22936,7 +22935,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             <button
               class="inbox-filter-pill"
               aria-pressed=${this._sm.activeFilter === key ? 'true' : 'false'}
-              @click=${() => { this._sm = transition$7(this._sm, { type: 'FilterSelected', filter: key }); }}
+              @click=${() => { this._sm = transition$6(this._sm, { type: 'FilterSelected', filter: key }); }}
             >
               ${label}
               <span class="pill-count">${this._countFor(key)}</span>
@@ -22965,7 +22964,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
               <div
                 class="inbox-row"
                 aria-selected=${this._sm.selectedId === a.id ? 'true' : 'false'}
-                @click=${() => { this._sm = transition$7(this._sm, { type: 'AlertSelected', id: a.id }); }}
+                @click=${() => { this._sm = transition$6(this._sm, { type: 'AlertSelected', id: a.id }); }}
               >
                 <div
                   class="inbox-severity-bar"
@@ -23014,7 +23013,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                 ${status.message}
                 <button
                   class="error-dismiss-btn"
-                  @click=${() => { this._sm = transition$7(this._sm, { type: 'ErrorDismissed' }); }}
+                  @click=${() => { this._sm = transition$6(this._sm, { type: 'ErrorDismissed' }); }}
                 >Dismiss</button>
               </div>
             `
@@ -23061,7 +23060,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                     <div class="reco-row-body">${action.description}</div>
                     <button
                       class="apply-btn"
-                      @click=${() => { this._sm = transition$7(this._sm, { type: 'ActionApplyRequested', action }); }}
+                      @click=${() => { this._sm = transition$6(this._sm, { type: 'ActionApplyRequested', action }); }}
                     >Apply</button>
                   </div>
                 `)}
@@ -23076,7 +23075,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                 <div class="confirm-overlay-actions">
                   <button
                     class="confirm-cancel-btn"
-                    @click=${() => { this._sm = transition$7(this._sm, { type: 'ActionApplyCancelled' }); }}
+                    @click=${() => { this._sm = transition$6(this._sm, { type: 'ActionApplyCancelled' }); }}
                   >Cancel</button>
                   <button
                     class="confirm-apply-btn"
@@ -23101,7 +23100,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                     placeholder="Add a note…"
                     .value=${status.text}
                     @input=${(e) => {
-                this._sm = transition$7(this._sm, {
+                this._sm = transition$6(this._sm, {
                     type: 'NoteChanged',
                     text: e.target.value,
                 });
@@ -23116,7 +23115,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             : x `
                 <button
                   class="add-note-btn"
-                  @click=${() => { this._sm = transition$7(this._sm, { type: 'AddNoteOpened' }); }}
+                  @click=${() => { this._sm = transition$6(this._sm, { type: 'AddNoteOpened' }); }}
                 >Add note</button>
                 <button
                   class="resolve-btn"
@@ -23141,7 +23140,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
           class="mark-all-read-btn"
           ?disabled=${!this._hasUnread}
           @click=${() => {
-            this._sm = transition$7(this._sm, {
+            this._sm = transition$6(this._sm, {
                 type: 'MarkAllRead',
                 ids: this._filtered().map((a) => a.id),
             });
@@ -24590,7 +24589,7 @@ GrowMasterDialog = __decorate([
  *     .tabs               — one typed state object per tab (draft + sub)
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$6(seed) {
+function createInitialSM$5(seed) {
     return {
         activeTab: 'scoring',
         tabs: {
@@ -24650,7 +24649,7 @@ function parseMetrics(draft) {
     return result;
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$6(sm, event) {
+function transition$5(sm, event) {
     switch (event.type) {
         case 'TabSelected':
             if (sm.status.kind !== 'idle')
@@ -24748,15 +24747,15 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        this._sm = createInitialSM$6();
+        this._sm = createInitialSM$5();
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
-            this._sm = createInitialSM$6(this.dialogState);
+            this._sm = createInitialSM$5(this.dialogState);
         }
     }
     _transition(event) {
-        this._sm = transition$6(this._sm, event);
+        this._sm = transition$5(this._sm, event);
     }
     _selectTab(tab) {
         this._transition({ type: 'TabSelected', tab });
@@ -25380,7 +25379,7 @@ function defaultTabs() {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$5(device) {
+function createInitialSM$4(device) {
     const sm = {
         activeTab: 'schedules',
         tabs: defaultTabs(),
@@ -25634,7 +25633,7 @@ function resetActiveTabDraft(sm, device) {
 }
 // ─── Transition function ────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$5(sm, event) {
+function transition$4(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -25968,9 +25967,9 @@ function requestTabSwitch(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty(sm, device)) {
-        return transition$5(sm, { type: 'REQUEST_TAB', tab });
+        return transition$4(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$5(sm, { type: 'SWITCH_TAB', tab });
+    return transition$4(sm, { type: 'SWITCH_TAB', tab });
 }
 /**
  * Discard the active tab's draft (reset to device state) and switch to the pending tab.
@@ -26133,7 +26132,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.initialTab = undefined;
         this.scrollToField = undefined;
         /** Single reactive state atom. All 35 former @state() flags live here. */
-        this._sm = createInitialSM$5();
+        this._sm = createInitialSM$4();
         // ─── Tanks tab state ────────────────────────────────────────────────────
         this._editingTankIndex = null;
         this._tankDraft = null;
@@ -26234,14 +26233,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._fetchStageAnalytics();
             this._ecRampFetched = false;
             if (this.initialTab) {
-                this._sm = transition$5(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
+                this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
         if (!this._visibleTabs.includes(this._sm.activeTab)) {
-            this._sm = transition$5(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
+            this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
         }
         // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
         if (changedProps.has('_sm')) {
@@ -26277,7 +26276,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _initializeState() {
         if (!this.device)
             return;
-        this._sm = transition$5(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
+        this._sm = transition$4(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
     }
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
@@ -26319,7 +26318,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this._dataService)
             return;
         const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
-        this._sm = transition$5(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'SET_STAGE_AGGREGATES',
             data: result?.stage_aggregates ?? null,
         });
@@ -26327,12 +26326,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _handleRunNow() {
         if (!this.device?.deviceId || !this.store)
             return;
-        this._sm = transition$5(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
+        this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
         try {
             await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
         }
         finally {
-            this._sm = transition$5(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
+            this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
         }
     }
     async _saveStrategy() {
@@ -26348,7 +26347,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _saveDrainConfig() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        this._sm = transition$5(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
+        this._sm = transition$4(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
         const d = this._sm.tabs.drain_ec.draft;
         try {
             await this._dataService.configureDrainMonitoring(this.device.deviceId, {
@@ -26361,7 +26360,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to save drain config');
         }
         finally {
-            this._sm = transition$5(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
+            this._sm = transition$4(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
         }
     }
     // ─── Schedule mutations ───────────────────────────────────────────────────
@@ -26369,7 +26368,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         await addIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: formattedTime,
@@ -26385,7 +26384,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await addDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26415,7 +26414,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$5(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_ADD_IRRIGATION',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.irrigationDuration,
@@ -26426,14 +26425,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$5(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_ADD_DRAIN',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.drainDuration,
         });
     }
     _startEditingIrrigationTime(timeStr, duration) {
-        this._sm = transition$5(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_EDIT_IRRIGATION',
             originalTime: timeStr,
             originalDuration: duration,
@@ -26442,7 +26441,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         });
     }
     _startEditingDrainTime(timeStr, duration) {
-        this._sm = transition$5(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_EDIT_DRAIN',
             originalTime: timeStr,
             originalDuration: duration,
@@ -26463,7 +26462,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         await removeIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -26487,7 +26486,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         await removeDrainTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -26503,7 +26502,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeIrrigationTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26519,7 +26518,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26531,18 +26530,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _close() {
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
-        this._sm = transition$5(this._sm, { type: 'SET_TOAST', message: undefined });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _showErrorToast(message) {
-        this._sm = transition$5(this._sm, { type: 'SET_TOAST', message });
+        this._sm = transition$4(this._sm, { type: 'SET_TOAST', message });
         setTimeout(() => {
-            this._sm = transition$5(this._sm, { type: 'SET_TOAST', message: undefined });
+            this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
         }, 5000);
     }
     _updateStrategyField(field, value) {
-        this._sm = transition$5(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
+        this._sm = transition$4(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -26568,7 +26567,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Feed EC and Drain EC must be > 0');
             return;
         }
-        this._sm = transition$5(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
+        this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
         try {
             await this._dataService.logDrainReading(this.device.deviceId, {
                 feedEc: d.logFeedEc,
@@ -26581,7 +26580,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to log drain reading');
         }
         finally {
-            this._sm = transition$5(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
+            this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
         }
     }
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -26736,7 +26735,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   .iconPath=${mdiAlert}
                   stageColor="var(--warning-color, #ff9800)"
                   @close=${() => {
-                this._sm = transition$5(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$4(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                 >
                   <div style="padding:20px;">
@@ -26751,7 +26750,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     <button
                       class="md3-button tonal"
                       @click=${() => {
-                this._sm = transition$5(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$4(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                     >
                       Stay
@@ -27379,12 +27378,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$5(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_ADD_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$5(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
+                    this._sm = transition$4(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -27411,12 +27410,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$5(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_ADD_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$5(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_ADD_DRAIN',
                             duration: val,
                         });
@@ -27462,12 +27461,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$5(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_EDIT_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$5(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
+                    this._sm = transition$4(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -27494,12 +27493,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$5(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_EDIT_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$5(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_EDIT_DRAIN',
                             duration: val,
                         });
@@ -27540,14 +27539,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _openAddTimeDialog(type) {
         if (type === 'irrigation') {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'BEGIN_ADD_IRRIGATION',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.irrigationDuration,
             });
         }
         else {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'BEGIN_ADD_DRAIN',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.drainDuration,
@@ -27555,22 +27554,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _cancelAddTime(_type) {
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
     }
     _cancelEditTime(_type) {
-        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
     }
     _handlePhaseCardClick(phaseId) {
         if (this._sm.tabs.steering.phase === phaseId)
             return;
-        this._sm = transition$5(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
+        this._sm = transition$4(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
     }
     _confirmPhaseChange() {
-        this._sm = transition$5(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
+        this._sm = transition$4(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
         this._saveSettings();
     }
     _cancelPhaseChange() {
-        this._sm = transition$5(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     _renderSteeringTab(_color) {
@@ -27728,7 +27727,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP1ToP2"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
               @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP1ToP2: e.target.checked },
             });
@@ -27746,7 +27745,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP2ToP3"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
               @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP2ToP3: e.target.checked },
             });
@@ -27764,7 +27763,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="haltOnRunoffEc"
               .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
               @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null },
             });
@@ -27783,7 +27782,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const v = parseFloat(e.detail ?? e.target.value);
                 if (!isNaN(v))
-                    this._sm = transition$5(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { haltOnRunoffEcThreshold: v },
                     });
@@ -27835,13 +27834,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div class="section-header"><h3>Pump Configuration</h3></div>
         <div class="section-content">
           ${this._renderEntitySelect('Irrigation Pump', this._sm.tabs.schedules.draft.irrigationPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { irrigationPumpEntity: e.target.value },
             });
         })}
           ${this._renderEntitySelect('Drain Pump (Optional)', this._sm.tabs.schedules.draft.drainPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { drainPumpEntity: e.target.value },
             });
@@ -27873,7 +27872,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { soilTriggerPercent: v ? parseFloat(v) : null },
             });
@@ -27893,7 +27892,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
             });
@@ -27913,7 +27912,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
             });
@@ -27931,7 +27930,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'No cycles between lights-off and lights-on',
                 get: () => this._sm.tabs.config.draft.skipDuringDark,
                 set: (v) => {
-                    this._sm = transition$5(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { skipDuringDark: v },
                     });
@@ -27942,7 +27941,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Halt cycles when any tank is below warning level',
                 get: () => this._sm.tabs.config.draft.pauseOnLowTank,
                 set: (v) => {
-                    this._sm = transition$5(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { pauseOnLowTank: v },
                     });
@@ -27953,7 +27952,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Record start, duration, and moisture delta per cycle',
                 get: () => this._sm.tabs.config.draft.logToLogbook,
                 set: (v) => {
-                    this._sm = transition$5(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { logToLogbook: v },
                     });
@@ -28852,7 +28851,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <md3-switch
             .checked=${drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { enabled: e.target.checked },
             });
@@ -28867,7 +28866,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             min="0.1"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
             });
@@ -28881,7 +28880,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="5"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
             });
@@ -28903,7 +28902,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedEc: parseFloat(e.detail) || 0 },
             });
@@ -28915,7 +28914,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainEc: parseFloat(e.detail) || 0 },
             });
@@ -28927,7 +28926,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedVolume: parseInt(e.detail) || 0 },
             });
@@ -28939,7 +28938,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainVolume: parseInt(e.detail) || 0 },
             });
@@ -29112,7 +29111,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.minEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
             });
@@ -29130,7 +29129,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.maxEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
             });
@@ -31596,1499 +31595,6 @@ __decorate([
 LogbookDialog = __decorate([
     t$2('logbook-dialog')
 ], LogbookDialog);
-
-/**
- * Nutrient Dialog State Machine
- *
- * Pure module — no Lit, no DOM, no hassCall. All interaction state for
- * NutrientDialog lives here. The component calls `transition(sm, event)`
- * and replaces its single `@state() _sm`.
- *
- * Satisfies DialogStateMachine.
- *
- * Structure:
- *   SM
- *     .activeTab          — 'inventory' | 'presets'
- *     .tabs               — per-tab state (selectedId + sub)
- *     .status             — root confirm-discard guard
- *     .toast              — transient feedback message
- */
-// ─── Initial state ────────────────────────────────────────────────────────────
-function emptyInventoryTab() {
-    return { selectedId: null, sub: { kind: 'idle' } };
-}
-function emptyPresetsTab() {
-    return { selectedId: null, sub: { kind: 'idle' } };
-}
-function createInitialSM$4() {
-    return {
-        activeTab: 'inventory',
-        tabs: {
-            inventory: emptyInventoryTab(),
-            presets: emptyPresetsTab(),
-        },
-        status: { kind: 'idle' },
-        toast: undefined,
-    };
-}
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function isTabDirty$1(sm, tab) {
-    const sub = sm.tabs[tab].sub;
-    return sub.kind === 'editing' || sub.kind === 'applying';
-}
-function isLowStock(stock) {
-    if (stock.initial_ml === 0)
-        return false;
-    return stock.current_ml / stock.initial_ml <= 0.25;
-}
-function emptyStockDraft$1() {
-    return { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' };
-}
-function emptyPresetDraft$1() {
-    return { name: '', nutrients: [] };
-}
-// ─── Transition ───────────────────────────────────────────────────────────────
-function transition$4(sm, event) {
-    switch (event.type) {
-        case 'TabSelected': {
-            if (event.tab === sm.activeTab)
-                return sm;
-            if (sm.status.kind !== 'idle')
-                return sm;
-            if (isTabDirty$1(sm, sm.activeTab)) {
-                return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
-            }
-            return {
-                ...sm,
-                activeTab: event.tab,
-                tabs: {
-                    ...sm.tabs,
-                    [sm.activeTab]: { ...sm.tabs[sm.activeTab], selectedId: null },
-                },
-            };
-        }
-        case 'DiscardConfirmed': {
-            if (sm.status.kind !== 'confirm-discard')
-                return sm;
-            const { pendingTab } = sm.status;
-            return {
-                ...sm,
-                activeTab: pendingTab,
-                status: { kind: 'idle' },
-                tabs: {
-                    ...sm.tabs,
-                    [sm.activeTab]: { selectedId: null, sub: { kind: 'idle' } },
-                },
-            };
-        }
-        case 'DiscardCancelled': {
-            if (sm.status.kind !== 'confirm-discard')
-                return sm;
-            return { ...sm, status: { kind: 'idle' } };
-        }
-        case 'ItemSelected': {
-            const tab = sm.activeTab;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...sm.tabs[tab], selectedId: event.id, sub: { kind: 'idle' } },
-                },
-            };
-        }
-        case 'BackToList': {
-            const tab = sm.activeTab;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { selectedId: null, sub: { kind: 'idle' } },
-                },
-            };
-        }
-        case 'NewItemRequested': {
-            const tab = sm.activeTab;
-            if (sm.tabs[tab].sub.kind === 'editing')
-                return sm;
-            const draft = tab === 'inventory' ? emptyStockDraft$1() : emptyPresetDraft$1();
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { selectedId: null, sub: { kind: 'editing', draft } },
-                },
-            };
-        }
-        case 'EditStarted': {
-            const tab = sm.activeTab;
-            if (sm.tabs[tab].selectedId === null && sm.tabs[tab].sub.kind !== 'editing')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...sm.tabs[tab], sub: { kind: 'editing', draft: event.draft } },
-                },
-            };
-        }
-        case 'StockDraftChanged': {
-            const tabState = sm.tabs.inventory;
-            if (tabState.sub.kind !== 'editing')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    inventory: {
-                        ...tabState,
-                        sub: {
-                            kind: 'editing',
-                            draft: { ...tabState.sub.draft, [event.field]: event.value },
-                        },
-                    },
-                },
-            };
-        }
-        case 'PresetDraftChanged': {
-            const tabState = sm.tabs.presets;
-            if (tabState.sub.kind !== 'editing')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    presets: {
-                        ...tabState,
-                        sub: {
-                            kind: 'editing',
-                            draft: { ...tabState.sub.draft, [event.field]: event.value },
-                        },
-                    },
-                },
-            };
-        }
-        case 'PresetNutrientRowAdded': {
-            const tabState = sm.tabs.presets;
-            if (tabState.sub.kind !== 'editing')
-                return sm;
-            const draft = tabState.sub.draft;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    presets: {
-                        ...tabState,
-                        sub: {
-                            kind: 'editing',
-                            draft: { ...draft, nutrients: [...draft.nutrients, { nutrient_id: '', dose_ml_l: 0 }] },
-                        },
-                    },
-                },
-            };
-        }
-        case 'PresetNutrientRowRemoved': {
-            const tabState = sm.tabs.presets;
-            if (tabState.sub.kind !== 'editing')
-                return sm;
-            const draft = tabState.sub.draft;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    presets: {
-                        ...tabState,
-                        sub: {
-                            kind: 'editing',
-                            draft: { ...draft, nutrients: draft.nutrients.filter((_, i) => i !== event.index) },
-                        },
-                    },
-                },
-            };
-        }
-        case 'PresetNutrientRowUpdated': {
-            const tabState = sm.tabs.presets;
-            if (tabState.sub.kind !== 'editing')
-                return sm;
-            const draft = tabState.sub.draft;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    presets: {
-                        ...tabState,
-                        sub: {
-                            kind: 'editing',
-                            draft: {
-                                ...draft,
-                                nutrients: draft.nutrients.map((row, i) => i === event.index ? { ...row, ...event.patch } : row),
-                            },
-                        },
-                    },
-                },
-            };
-        }
-        case 'SaveRequested': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'editing')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...tabState, sub: { kind: 'applying', draft: tabState.sub.draft } },
-                },
-            };
-        }
-        case 'SaveResolved': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'applying')
-                return sm;
-            return {
-                ...sm,
-                toast: 'Saved',
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { selectedId: null, sub: { kind: 'idle' } },
-                },
-            };
-        }
-        case 'SaveFailed': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'applying')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: {
-                        ...tabState,
-                        sub: { kind: 'error', draft: tabState.sub.draft, message: event.message },
-                    },
-                },
-            };
-        }
-        case 'ErrorDismissed': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'error')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...tabState, sub: { kind: 'editing', draft: tabState.sub.draft } },
-                },
-            };
-        }
-        case 'DeleteRequested': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind === 'editing' || tabState.sub.kind === 'applying')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...tabState, sub: { kind: 'confirm-delete', id: event.id, name: event.name } },
-                },
-            };
-        }
-        case 'DeleteConfirmed': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'confirm-delete')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...tabState, sub: { kind: 'applying', draft: tab === 'inventory' ? emptyStockDraft$1() : emptyPresetDraft$1() } },
-                },
-            };
-        }
-        case 'DeleteResolved': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'applying')
-                return sm;
-            return {
-                ...sm,
-                toast: 'Deleted',
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { selectedId: null, sub: { kind: 'idle' } },
-                },
-            };
-        }
-        case 'DeleteCancelled': {
-            const tab = sm.activeTab;
-            const tabState = sm.tabs[tab];
-            if (tabState.sub.kind !== 'confirm-delete')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    [tab]: { ...tabState, sub: { kind: 'idle' } },
-                },
-            };
-        }
-        case 'SetToast':
-            return { ...sm, toast: event.message };
-        default:
-            return sm;
-    }
-}
-
-// ─── Type-color map ───────────────────────────────────────────────────────────
-const TYPE_COLOR = {
-    base: 'var(--primary-color, #4caf50)',
-    bloom: '#e91e63',
-    calmag: '#ff9800',
-    root: '#795548',
-    additive: '#9c27b0',
-    microbe: '#00bcd4',
-};
-const TYPE_ICON = {
-    base: mdiFlask,
-    bloom: mdiLeaf,
-    calmag: mdiMoleculeCo2,
-    root: mdiSprout,
-    additive: mdiTestTube,
-    microbe: mdiBug,
-};
-function stockColor(type) {
-    return TYPE_COLOR[type] ?? 'var(--primary-color, #4caf50)';
-}
-function stockIcon(type) {
-    return TYPE_ICON[type] ?? mdiBottleTonicPlus;
-}
-function fillPercent(stock) {
-    if (stock.initial_ml === 0)
-        return 0;
-    return Math.max(0, Math.min(100, (stock.current_ml / stock.initial_ml) * 100));
-}
-function fillClass(pct) {
-    if (pct <= 10)
-        return 'danger';
-    if (pct <= 25)
-        return 'warning';
-    return '';
-}
-function draftFromStock(stock) {
-    return {
-        name: stock.name,
-        current_ml: stock.current_ml,
-        initial_ml: stock.initial_ml,
-        brand: stock.brand ?? '',
-        stockType: stock.type ?? 'base',
-        npk: stock.npk ?? '',
-        dose_ml_l: stock.dose_ml_l ?? 0,
-        notes: stock.notes ?? '',
-    };
-}
-// ─── Component ────────────────────────────────────────────────────────────────
-let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogUI extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.inventory = null;
-        this.selectedId = null;
-        this.sub = { kind: 'idle' };
-    }
-    _dispatch(event) {
-        this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
-    }
-    render() {
-        const { sub, selectedId } = this;
-        if (sub.kind === 'editing' || sub.kind === 'applying') {
-            return this._renderEditForm(sub);
-        }
-        if (sub.kind === 'confirm-delete') {
-            return this._renderConfirmDelete(sub.id, sub.name);
-        }
-        if (sub.kind === 'error') {
-            return this._renderError(sub);
-        }
-        if (selectedId !== null) {
-            const stock = this.inventory?.stocks[selectedId] ?? null;
-            return stock ? this._renderDetail(stock) : E;
-        }
-        return this._renderList();
-    }
-    // ─── Master list ────────────────────────────────────────────────────────────
-    _renderList() {
-        const stocks = this.inventory ? Object.values(this.inventory.stocks) : [];
-        return x `
-      <button
-        class="add-btn"
-        data-action="add"
-        @click=${() => this._dispatch({ type: 'NewItemRequested' })}
-      >
-        <ha-svg-icon .path=${mdiPlus} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
-        Add Nutrient
-      </button>
-
-      ${stocks.length === 0
-            ? x `<div class="empty-state">No nutrient stock items tracked.</div>`
-            : x `
-            <div class="list">
-              ${stocks.map((s) => this._renderListItem(s))}
-            </div>
-          `}
-    `;
-    }
-    _renderListItem(stock) {
-        const pct = fillPercent(stock);
-        const color = stockColor(stock.type);
-        const icon = stockIcon(stock.type);
-        return x `
-      <div
-        class="list-item"
-        data-stock-id=${stock.nutrient_id}
-        @click=${() => this._dispatch({ type: 'ItemSelected', id: stock.nutrient_id })}
-      >
-        <div class="type-icon" style="background:${color}22;color:${color}">
-          <ha-svg-icon .path=${icon} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
-        </div>
-        <div class="item-body">
-          <div class="item-name">${stock.name}</div>
-          <div class="item-meta">${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml</div>
-          <div class="fill-bar-wrap">
-            <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%"></div>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-    // ─── Detail view ────────────────────────────────────────────────────────────
-    _renderDetail(stock) {
-        const pct = fillPercent(stock);
-        const color = stockColor(stock.type);
-        return x `
-      <div class="detail-header">
-        <button
-          class="back-btn"
-          data-action="back"
-          @click=${() => this._dispatch({ type: 'BackToList' })}
-        >
-          <ha-svg-icon .path=${mdiArrowLeft} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
-        </button>
-        <h3 class="detail-title">${stock.name}</h3>
-        <div class="detail-actions">
-          <button
-            class="icon-btn"
-            data-action="edit"
-            @click=${() => this._dispatch({ type: 'EditStarted', draft: draftFromStock(stock) })}
-          >
-            <ha-svg-icon .path=${mdiPencil} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
-          </button>
-          <button
-            class="icon-btn danger"
-            data-action="delete"
-            @click=${() => this._dispatch({ type: 'DeleteRequested', id: stock.nutrient_id, name: stock.name })}
-          >
-            <ha-svg-icon .path=${mdiDelete} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
-          </button>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <p class="detail-section-title">Container</p>
-        <div class="detail-row">
-          <span class="detail-label">Current</span>
-          <span>${stock.current_ml.toFixed(0)} ml</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Capacity</span>
-          <span>${stock.initial_ml.toFixed(0)} ml</span>
-        </div>
-        <div class="detail-fill-bar-wrap" data-fill-bar>
-          <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%;background:${color}"></div>
-        </div>
-      </div>
-
-      <div class="detail-section">
-        <p class="detail-section-title">Identity</p>
-        <div class="detail-row">
-          <span class="detail-label">Brand</span>
-          <span>${stock.brand || '—'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Type</span>
-          <span style="color:${color}">${stock.type}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">NPK</span>
-          <span>${stock.npk || '—'}</span>
-        </div>
-      </div>
-
-      ${stock.dose_ml_l > 0
-            ? x `
-            <div class="detail-section">
-              <p class="detail-section-title">Composition</p>
-              <div class="detail-row">
-                <span class="detail-label">Default dose</span>
-                <span>${stock.dose_ml_l} ml/L</span>
-              </div>
-            </div>
-          `
-            : E}
-
-      ${stock.notes
-            ? x `
-            <div class="detail-section">
-              <p class="detail-section-title">Notes</p>
-              <p style="margin:0;font-size:0.875rem">${stock.notes}</p>
-            </div>
-          `
-            : E}
-    `;
-    }
-    // ─── Edit form ──────────────────────────────────────────────────────────────
-    _renderEditForm(sub) {
-        const { draft } = sub;
-        const applying = sub.kind === 'applying';
-        return x `
-      <div class="form" data-form="stock">
-        <div>
-          <label class="form-label">Name *</label>
-          <input
-            class="form-input"
-            type="text"
-            .value=${draft.name}
-            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'name', value: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label class="form-label">Brand</label>
-          <input
-            class="form-input"
-            type="text"
-            .value=${draft.brand}
-            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'brand', value: e.target.value })}
-          />
-        </div>
-
-        <div>
-          <label class="form-label">Type</label>
-          <select
-            class="form-select"
-            .value=${draft.stockType}
-            @change=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'stockType', value: e.target.value })}
-          >
-            <option value="base">Base</option>
-            <option value="bloom">Bloom</option>
-            <option value="calmag">Cal-Mag</option>
-            <option value="root">Root</option>
-            <option value="additive">Additive</option>
-            <option value="microbe">Microbe</option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <div>
-            <label class="form-label">Current (ml)</label>
-            <input
-              class="form-input"
-              type="number"
-              min="0"
-              .value=${String(draft.current_ml)}
-              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'current_ml', value: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
-          <div>
-            <label class="form-label">Capacity (ml)</label>
-            <input
-              class="form-input"
-              type="number"
-              min="0"
-              .value=${String(draft.initial_ml)}
-              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'initial_ml', value: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div>
-            <label class="form-label">NPK</label>
-            <input
-              class="form-input"
-              type="text"
-              .value=${draft.npk}
-              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'npk', value: e.target.value })}
-            />
-          </div>
-          <div>
-            <label class="form-label">Default dose (ml/L)</label>
-            <input
-              class="form-input"
-              type="number"
-              min="0"
-              step="0.1"
-              .value=${String(draft.dose_ml_l)}
-              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'dose_ml_l', value: parseFloat(e.target.value) || 0 })}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label class="form-label">Notes</label>
-          <input
-            class="form-input"
-            type="text"
-            .value=${draft.notes}
-            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'notes', value: e.target.value })}
-          />
-        </div>
-
-        <div class="form-footer">
-          <button
-            class="btn btn-text"
-            data-action="cancel"
-            @click=${() => this._dispatch({ type: 'BackToList' })}
-          >
-            Cancel
-          </button>
-          <button
-            class="btn btn-primary"
-            data-action="save"
-            ?disabled=${applying}
-            @click=${() => this._dispatch({ type: 'SaveRequested' })}
-          >
-            <ha-svg-icon .path=${mdiCheck} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
-            ${applying ? 'Saving…' : 'Save'}
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    // ─── Confirm delete ─────────────────────────────────────────────────────────
-    _renderConfirmDelete(id, name) {
-        return x `
-      <div class="confirm-box">
-        <p>Delete <span class="confirm-name">${name}</span>? This cannot be undone.</p>
-        <div class="confirm-box-actions">
-          <button
-            class="btn btn-text"
-            data-action="cancel-delete"
-            @click=${() => this._dispatch({ type: 'DeleteCancelled' })}
-          >
-            Cancel
-          </button>
-          <button
-            class="btn btn-danger"
-            data-action="confirm-delete"
-            @click=${() => this._dispatch({ type: 'DeleteConfirmed' })}
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    `;
-    }
-    // ─── Error state ────────────────────────────────────────────────────────────
-    _renderError(sub) {
-        return x `
-      <div class="error-banner">
-        <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
-        ${sub.message}
-      </div>
-      ${this._renderEditForm({ kind: 'editing', draft: sub.draft })}
-    `;
-    }
-};
-GrowspaceNutrientInventoryDialogUI.styles = [
-    dialogStyles,
-    i$6 `
-      .list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .list-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
-        cursor: pointer;
-        transition: background 0.15s;
-      }
-
-      .list-item:hover {
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      .type-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .item-body {
-        flex: 1;
-        min-width: 0;
-      }
-
-      .item-name {
-        font-weight: 500;
-        font-size: 0.9rem;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .item-meta {
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        margin-top: 2px;
-      }
-
-      .fill-bar-wrap {
-        height: 4px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 2px;
-        margin-top: 4px;
-        overflow: hidden;
-      }
-
-      .fill-bar {
-        height: 100%;
-        border-radius: 2px;
-        background: var(--primary-color, #4caf50);
-        transition: width 0.3s ease;
-      }
-
-      .fill-bar.warning { background: #ff9800; }
-      .fill-bar.danger  { background: #f44336; }
-
-      .add-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        padding: 10px 16px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px dashed rgba(255, 255, 255, 0.2);
-        border-radius: 12px;
-        color: var(--primary-text-color);
-        cursor: pointer;
-        font-size: 0.875rem;
-        font-family: inherit;
-        transition: background 0.15s;
-        margin-bottom: 12px;
-      }
-
-      .add-btn:hover { background: rgba(255, 255, 255, 0.09); }
-
-      .empty-state {
-        text-align: center;
-        padding: 32px 0;
-        color: var(--secondary-text-color);
-        font-size: 0.9rem;
-        opacity: 0.7;
-      }
-
-      /* Detail view */
-      .detail-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .back-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--secondary-text-color);
-        padding: 6px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        transition: background 0.15s;
-      }
-
-      .back-btn:hover { background: rgba(255, 255, 255, 0.08); }
-
-      .detail-title {
-        flex: 1;
-        font-size: 1rem;
-        font-weight: 500;
-        margin: 0;
-      }
-
-      .detail-actions {
-        display: flex;
-        gap: 8px;
-      }
-
-      .icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 6px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        transition: background 0.15s;
-        color: var(--primary-text-color);
-      }
-
-      .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
-      .icon-btn.danger { color: var(--error-color, #f44336); }
-
-      .detail-section {
-        background: rgba(255, 255, 255, 0.04);
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 12px;
-      }
-
-      .detail-section-title {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--secondary-text-color);
-        margin: 0 0 12px 0;
-      }
-
-      .detail-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 6px 0;
-        font-size: 0.875rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .detail-row:last-child { border-bottom: none; }
-      .detail-label { color: var(--secondary-text-color); }
-
-      .detail-fill-bar-wrap {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-        margin-top: 8px;
-        overflow: hidden;
-      }
-
-      /* Edit form */
-      .form {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-
-      .form-row {
-        display: flex;
-        gap: 12px;
-      }
-
-      .form-row > * { flex: 1; }
-
-      .form-label {
-        font-size: 0.75rem;
-        color: var(--secondary-text-color);
-        margin-bottom: 4px;
-        display: block;
-      }
-
-      .form-input {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px 12px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        color: var(--primary-text-color);
-        font-size: 0.875rem;
-        font-family: inherit;
-        outline: none;
-        transition: border-color 0.15s;
-      }
-
-      .form-input:focus { border-color: var(--primary-color, #4caf50); }
-
-      .form-select {
-        width: 100%;
-        box-sizing: border-box;
-        padding: 8px 12px;
-        background: rgba(255, 255, 255, 0.06);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 8px;
-        color: var(--primary-text-color);
-        font-size: 0.875rem;
-        font-family: inherit;
-      }
-
-      .form-select option {
-        background-color: var(--card-background-color, #1e1e1e);
-        color: var(--primary-text-color, #ffffff);
-      }
-
-      .form-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-        margin-top: 4px;
-      }
-
-      .btn {
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        font-size: 0.875rem;
-        font-family: inherit;
-        transition: background 0.15s;
-      }
-
-      .btn:disabled { opacity: 0.5; cursor: default; }
-
-      .btn-text {
-        background: transparent;
-        color: var(--secondary-text-color);
-      }
-
-      .btn-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
-
-      .btn-primary {
-        background: var(--primary-color, #4caf50);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-
-      .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
-
-      /* Confirm-delete overlay */
-      .confirm-box {
-        background: rgba(244, 67, 54, 0.1);
-        border: 1px solid rgba(244, 67, 54, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-      }
-
-      .confirm-box p { margin: 0 0 16px; font-size: 0.9rem; }
-
-      .confirm-box .confirm-name {
-        font-weight: 600;
-        color: var(--error-color, #f44336);
-      }
-
-      .confirm-box-actions {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .btn-danger {
-        background: var(--error-color, #f44336);
-        color: #fff;
-      }
-
-      .btn-danger:hover { filter: brightness(1.1); }
-
-      /* Error banner */
-      .error-banner {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(244, 67, 54, 0.1);
-        border-radius: 8px;
-        padding: 10px 14px;
-        margin-bottom: 12px;
-        font-size: 0.875rem;
-        color: var(--error-color, #f44336);
-      }
-    `,
-];
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceNutrientInventoryDialogUI.prototype, "inventory", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceNutrientInventoryDialogUI.prototype, "selectedId", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceNutrientInventoryDialogUI.prototype, "sub", void 0);
-GrowspaceNutrientInventoryDialogUI = __decorate([
-    t$2('growspace-nutrient-inventory-dialog-ui')
-], GrowspaceNutrientInventoryDialogUI);
-
-let NutrientDialog = class NutrientDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this._sm = createInitialSM$4();
-        this._inventory = new libExports.StoreController(this, nutrientInventory$);
-        this._presets = new libExports.StoreController(this, nutrientPresets$);
-    }
-    updated(changed) {
-        super.updated(changed);
-        if (changed.has('open') && this.open) {
-            void fetchNutrientInventory$1();
-            void fetchNutrientPresets$1();
-        }
-        if (changed.has('_sm')) {
-            this._triggerAsyncIfNeeded(changed.get('_sm'));
-        }
-    }
-    _applyEvent(event) {
-        this._sm = transition$4(this._sm, event);
-    }
-    _handleSmEvent(e) {
-        this._applyEvent(e.detail);
-    }
-    _triggerAsyncIfNeeded(prev) {
-        const tab = this._sm.activeTab;
-        const sub = this._sm.tabs[tab].sub;
-        const prevSub = prev?.tabs[tab].sub;
-        if (sub.kind === prevSub?.kind)
-            return;
-        if (sub.kind === 'applying') {
-            if (tab === 'inventory') {
-                this._runInventoryApply(sub.draft, prev?.tabs.inventory.sub);
-            }
-            else {
-                this._runPresetsApply(sub.draft, prev?.tabs.presets.sub);
-            }
-        }
-    }
-    async _runInventoryApply(draft, prevSub) {
-        const selectedId = this._sm.tabs.inventory.selectedId;
-        try {
-            if (prevSub?.kind === 'confirm-delete') {
-                await removeNutrientStock$1(prevSub.id);
-                this._applyEvent({ type: 'DeleteResolved' });
-            }
-            else {
-                await updateNutrientStock$1(selectedId ?? `nutrient_${Date.now()}`, draft.name, draft.current_ml, draft.initial_ml, draft.brand, draft.stockType, draft.npk, draft.dose_ml_l, draft.notes);
-                this._applyEvent({ type: 'SaveResolved' });
-                await fetchNutrientInventory$1();
-            }
-        }
-        catch (err) {
-            this._applyEvent({ type: 'SaveFailed', message: String(err) });
-        }
-    }
-    async _runPresetsApply(draft, prevSub) {
-        const selectedId = this._sm.tabs.presets.selectedId;
-        try {
-            if (prevSub?.kind === 'confirm-delete') {
-                await removeNutrientPreset$1(prevSub.id);
-                this._applyEvent({ type: 'DeleteResolved' });
-            }
-            else {
-                await saveNutrientPreset$1({
-                    preset_id: selectedId ?? undefined,
-                    name: draft.name,
-                    nutrients: draft.nutrients,
-                    stage: draft.stage,
-                    week: draft.week,
-                    ec_target: draft.ec_target,
-                    ph_target: draft.ph_target,
-                });
-                this._applyEvent({ type: 'SaveResolved' });
-                await fetchNutrientPresets$1();
-            }
-        }
-        catch (err) {
-            this._applyEvent({ type: 'SaveFailed', message: String(err) });
-        }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const { _sm } = this;
-        const inventory = this._inventory.value;
-        const presets = this._presets.value;
-        const inventoryCount = inventory ? Object.keys(inventory.stocks).length : 0;
-        const presetsCount = presets ? Object.keys(presets).length : 0;
-        const hasLowStock = inventory
-            ? Object.values(inventory.stocks).some((s) => isLowStock(s))
-            : false;
-        return x `
-      <ha-dialog
-        open
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
-        @closed=${this._close}
-      >
-        <div class="shell">
-          ${this._renderHeader()}
-          <div class="body">
-            ${this._renderNavRail(_sm, inventoryCount, presetsCount, hasLowStock)}
-            <div
-              class="content"
-              data-content
-              @sm-event=${this._handleSmEvent}
-            >
-              ${this._renderContent(_sm, inventory, presets)}
-            </div>
-          </div>
-          ${_sm.status.kind === 'confirm-discard' ? this._renderConfirmDiscard() : E}
-          ${_sm.toast ? x `<div class="toast">${_sm.toast}</div>` : E}
-        </div>
-      </ha-dialog>
-    `;
-    }
-    _renderHeader() {
-        return x `
-      <div class="header">
-        <div class="header-icon">
-          <ha-svg-icon .path=${mdiBottleTonicPlus} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
-        </div>
-        <div class="header-title-group">
-          <h2 class="header-title">Nutrients</h2>
-          <div class="header-subtitle">Manage inventory and recipes</div>
-        </div>
-        <button class="close-btn" @click=${this._close} aria-label="Close">
-          <ha-svg-icon .path=${mdiClose} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
-        </button>
-      </div>
-    `;
-    }
-    _renderNavRail(sm, inventoryCount, presetsCount, hasLowStock) {
-        return x `
-      <nav class="nav-rail">
-        <button
-          class="nav-item"
-          data-nav="inventory"
-          aria-pressed=${sm.activeTab === 'inventory' ? 'true' : 'false'}
-          @click=${() => this._applyEvent({ type: 'TabSelected', tab: 'inventory' })}
-        >
-          <ha-svg-icon .path=${mdiClipboardList} style="width:22px;height:22px;fill:currentColor"></ha-svg-icon>
-          <span>Inventory</span>
-          ${inventoryCount > 0
-            ? x `<span class="nav-badge" data-badge="inventory">${inventoryCount}</span>`
-            : E}
-        </button>
-
-        <button
-          class="nav-item"
-          data-nav="presets"
-          aria-pressed=${sm.activeTab === 'presets' ? 'true' : 'false'}
-          @click=${() => this._applyEvent({ type: 'TabSelected', tab: 'presets' })}
-        >
-          <ha-svg-icon .path=${mdiFormatListBulleted} style="width:22px;height:22px;fill:currentColor"></ha-svg-icon>
-          <span>Presets</span>
-          ${presetsCount > 0
-            ? x `<span class="nav-badge" data-badge="presets">${presetsCount}</span>`
-            : E}
-        </button>
-
-        ${hasLowStock
-            ? x `
-              <div class="nav-rail-bottom">
-                <div class="low-stock-indicator" data-low-stock title="One or more nutrients are running low">
-                  <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
-                </div>
-              </div>
-            `
-            : E}
-      </nav>
-    `;
-    }
-    _renderContent(sm, inventory, presets) {
-        if (sm.activeTab === 'inventory') {
-            return x `
-        <growspace-nutrient-inventory-dialog-ui
-          .inventory=${inventory}
-          .selectedId=${sm.tabs.inventory.selectedId}
-          .sub=${sm.tabs.inventory.sub}
-        ></growspace-nutrient-inventory-dialog-ui>
-      `;
-        }
-        return x `
-      <growspace-nutrient-presets-editor-ui
-        .presets=${presets}
-        .inventory=${inventory}
-        .selectedId=${sm.tabs.presets.selectedId}
-        .sub=${sm.tabs.presets.sub}
-      ></growspace-nutrient-presets-editor-ui>
-    `;
-    }
-    _renderConfirmDiscard() {
-        return x `
-      <div class="confirm-discard-overlay">
-        <div class="confirm-discard-box">
-          <h3>Discard changes?</h3>
-          <p>You have unsaved changes. If you switch sections now, your edits will be lost.</p>
-          <div class="confirm-discard-actions">
-            <button
-              class="btn btn-text"
-              @click=${() => this._applyEvent({ type: 'DiscardCancelled' })}
-            >
-              Keep editing
-            </button>
-            <button
-              class="btn btn-danger"
-              @click=${() => this._applyEvent({ type: 'DiscardConfirmed' })}
-            >
-              Discard
-            </button>
-          </div>
-        </div>
-      </div>
-    `;
-    }
-};
-NutrientDialog.styles = i$6 `
-    :host { display: contents; }
-
-    ha-dialog {
-      --dialog-surface-margin-top: 40px;
-      --ha-dialog-min-height: var(--ha-dialog-min-height, 85vh);
-      --dialog-content-padding: 0;
-    }
-
-    .shell {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      min-height: 85vh;
-      max-height: 85vh;
-      overflow: hidden;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-    }
-
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      gap: 12px;
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-      flex-shrink: 0;
-    }
-
-    .header-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--primary-color, #4caf50);
-    }
-
-    .header-title-group { flex: 1; }
-
-    .header-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-
-    .header-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-      color: var(--secondary-text-color);
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--primary-text-color, #fff);
-      padding: 8px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s;
-    }
-
-    .close-btn:hover { background: rgba(255, 255, 255, 0.08); }
-
-    /* Body */
-    .body {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    /* Nav rail */
-    .nav-rail {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px 8px;
-      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
-      width: 72px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 6px;
-      border-radius: 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-      font-size: 0.6875rem;
-      font-family: inherit;
-      width: 56px;
-      position: relative;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
-
-    .nav-item[aria-pressed='true'] {
-      color: var(--primary-color, #4caf50);
-      background: rgba(76, 175, 80, 0.12);
-    }
-
-    .nav-badge {
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      min-width: 16px;
-      height: 16px;
-      border-radius: 8px;
-      background: var(--primary-color, #4caf50);
-      color: #fff;
-      font-size: 0.6rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 3px;
-      font-weight: 600;
-    }
-
-    .nav-item[aria-pressed='false'] .nav-badge {
-      background: var(--secondary-text-color, rgba(255,255,255,0.4));
-    }
-
-    .nav-rail-bottom {
-      margin-top: auto;
-      padding-top: 8px;
-      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
-    .low-stock-indicator {
-      color: #ff9800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 6px;
-    }
-
-    /* Content */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
-      min-height: 0;
-    }
-
-    /* Confirm-discard overlay */
-    .confirm-discard-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .confirm-discard-box {
-      background: var(--card-background-color, #1c1c1c);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 360px;
-      width: 100%;
-      margin: 16px;
-    }
-
-    .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
-    .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
-
-    .confirm-discard-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-family: inherit;
-    }
-
-    .btn-text { background: transparent; color: var(--secondary-text-color); }
-    .btn-text:hover { background: rgba(255,255,255,0.06); }
-
-    .btn-danger { background: var(--error-color, #f44336); color: #fff; }
-    .btn-danger:hover { filter: brightness(1.1); }
-
-    /* Toast */
-    .toast {
-      position: absolute;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      pointer-events: none;
-      z-index: 20;
-    }
-  `;
-__decorate([
-    n$5({ type: Boolean })
-], NutrientDialog.prototype, "open", void 0);
-__decorate([
-    r$3()
-], NutrientDialog.prototype, "_sm", void 0);
-NutrientDialog = __decorate([
-    t$2('nutrient-dialog')
-], NutrientDialog);
 
 /**
  * @license
@@ -48144,317 +46650,693 @@ GrowspaceIPMDialogUI = __decorate([
     t$2('growspace-ipm-dialog-ui')
 ], GrowspaceIPMDialogUI);
 
-let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
+// ─── Type-color map ───────────────────────────────────────────────────────────
+const TYPE_COLOR = {
+    base: 'var(--primary-color, #4caf50)',
+    bloom: '#e91e63',
+    calmag: '#ff9800',
+    root: '#795548',
+    additive: '#9c27b0',
+    microbe: '#00bcd4',
+};
+const TYPE_ICON = {
+    base: mdiFlask,
+    bloom: mdiLeaf,
+    calmag: mdiMoleculeCo2,
+    root: mdiSprout,
+    additive: mdiTestTube,
+    microbe: mdiBug,
+};
+function stockColor(type) {
+    return TYPE_COLOR[type] ?? 'var(--primary-color, #4caf50)';
+}
+function stockIcon(type) {
+    return TYPE_ICON[type] ?? mdiBottleTonicPlus;
+}
+function fillPercent(stock) {
+    if (stock.initial_ml === 0)
+        return 0;
+    return Math.max(0, Math.min(100, (stock.current_ml / stock.initial_ml) * 100));
+}
+function fillClass(pct) {
+    if (pct <= 10)
+        return 'danger';
+    if (pct <= 25)
+        return 'warning';
+    return '';
+}
+function draftFromStock(stock) {
+    return {
+        name: stock.name,
+        current_ml: stock.current_ml,
+        initial_ml: stock.initial_ml,
+        brand: stock.brand ?? '',
+        stockType: stock.type ?? 'base',
+        npk: stock.npk ?? '',
+        dose_ml_l: stock.dose_ml_l ?? 0,
+        notes: stock.notes ?? '',
+    };
+}
+// ─── Component ────────────────────────────────────────────────────────────────
+let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogUI extends i$3 {
     constructor() {
         super(...arguments);
-        this.open = false;
-        this.growspaceName = '';
-        this.targetText = '';
-        this.presetOptions = [];
-        this.nutrientSuggestions = [];
-        this.isSubmitting = false;
-        this.hasPhiWarning = false;
-        this.phiWarningText = '';
-        this._volume = 1.0;
-        this._nutrients = [];
-        this._selectedPresetId = '';
+        this.inventory = null;
+        this.selectedId = null;
+        this.sub = { kind: 'idle' };
     }
-    updated(changedProps) {
-        if (changedProps.has('open') && this.open) {
-            this._resetForm();
-        }
-    }
-    _resetForm() {
-        this._volume = 1.0;
-        this._nutrients = [];
-        this._selectedPresetId = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _handlePresetChange(e) {
-        const presetId = e.detail;
-        this._selectedPresetId = presetId;
-        this.dispatchEvent(new CustomEvent('preset-changed', { detail: presetId }));
-    }
-    // Allow container to set nutrients when preset changes
-    setNutrients(nutrients) {
-        this._nutrients = [...nutrients];
-    }
-    _addNutrient() {
-        this._nutrients = [...this._nutrients, { name: '', concentration: 0 }];
-    }
-    _updateNutrient(index, field, value) {
-        const updated = [...this._nutrients];
-        updated[index] = { ...updated[index], [field]: value };
-        this._nutrients = updated;
-    }
-    _removeNutrient(index) {
-        this._nutrients = this._nutrients.filter((_, i) => i !== index);
-    }
-    _calculateTotalMl(concentration) {
-        return this._volume * concentration;
-    }
-    _getTotalNutrientsMl() {
-        return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
-    }
-    _handleSubmit() {
-        this.dispatchEvent(new CustomEvent('submit-watering', {
-            detail: {
-                volume: this._volume,
-                nutrients: this._nutrients,
-                presetId: this._selectedPresetId,
-            },
-        }));
+    _dispatch(event) {
+        this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
     }
     render() {
-        if (!this.open)
-            return E;
-        const dialogColor = '#2196F3';
+        const { sub, selectedId } = this;
+        if (sub.kind === 'editing' || sub.kind === 'applying') {
+            return this._renderEditForm(sub);
+        }
+        if (sub.kind === 'confirm-delete') {
+            return this._renderConfirmDelete(sub.id, sub.name);
+        }
+        if (sub.kind === 'error') {
+            return this._renderError(sub);
+        }
+        if (selectedId !== null) {
+            const stock = this.inventory?.stocks[selectedId] ?? null;
+            return stock ? this._renderDetail(stock) : E;
+        }
+        return this._renderList();
+    }
+    // ─── Master list ────────────────────────────────────────────────────────────
+    _renderList() {
+        const stocks = this.inventory ? Object.values(this.inventory.stocks) : [];
         return x `
-      <gs-dialog
-        .open=${true}
-        .heading=${'Record Watering'}
-        .subtitle=${this.growspaceName}
-        .iconPath=${mdiWaterPlus}
-        stageColor="${dialogColor}"
-        .submitting=${this.isSubmitting}
+      <button
+        class="add-btn"
+        data-action="add"
+        @click=${() => this._dispatch({ type: 'NewItemRequested' })}
       >
-        <div class="dialog-content-grid">
-          ${this.hasPhiWarning
-            ? x `
-                <div class="error-bar">
-                  <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
-                  ${this.phiWarningText}
-                </div>
-              `
-            : E}
+        <ha-svg-icon .path=${mdiPlus} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        Add Nutrient
+      </button>
 
-          <div class="form-section">
-            <h3>Watering Settings</h3>
-            <md3-number-input
-              label="Volume (Liters)"
-              .value=${this._volume}
-              .min=${0.1}
-              .step=${0.1}
-              @change=${(e) => (this._volume = parseFloat(e.detail) || 0)}
-            ></md3-number-input>
-
-            <div style="margin-top: 12px;">
-              <md3-select
-                label="Nutrient Preset"
-                .value=${this._selectedPresetId || ''}
-                .options=${this.presetOptions}
-                @change=${this._handlePresetChange}
-              ></md3-select>
+      ${stocks.length === 0
+            ? x `<div class="empty-state">No nutrient stock items tracked.</div>`
+            : x `
+            <div class="list">
+              ${stocks.map((s) => this._renderListItem(s))}
             </div>
-
-            <div class="apply-summary">
-              Targeting: <span class="apply-target">${this.targetText}</span>
-            </div>
+          `}
+    `;
+    }
+    _renderListItem(stock) {
+        const pct = fillPercent(stock);
+        const color = stockColor(stock.type);
+        const icon = stockIcon(stock.type);
+        return x `
+      <div
+        class="list-item"
+        data-stock-id=${stock.nutrient_id}
+        @click=${() => this._dispatch({ type: 'ItemSelected', id: stock.nutrient_id })}
+      >
+        <div class="type-icon" style="background:${color}22;color:${color}">
+          <ha-svg-icon .path=${icon} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+        </div>
+        <div class="item-body">
+          <div class="item-name">${stock.name}</div>
+          <div class="item-meta">${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml</div>
+          <div class="fill-bar-wrap">
+            <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%"></div>
           </div>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Detail view ────────────────────────────────────────────────────────────
+    _renderDetail(stock) {
+        const pct = fillPercent(stock);
+        const color = stockColor(stock.type);
+        return x `
+      <div class="detail-header">
+        <button
+          class="back-btn"
+          data-action="back"
+          @click=${() => this._dispatch({ type: 'BackToList' })}
+        >
+          <ha-svg-icon .path=${mdiArrowLeft} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+        </button>
+        <h3 class="detail-title">${stock.name}</h3>
+        <div class="detail-actions">
+          <button
+            class="icon-btn"
+            data-action="edit"
+            @click=${() => this._dispatch({ type: 'EditStarted', draft: draftFromStock(stock) })}
+          >
+            <ha-svg-icon .path=${mdiPencil} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+          </button>
+          <button
+            class="icon-btn danger"
+            data-action="delete"
+            @click=${() => this._dispatch({ type: 'DeleteRequested', id: stock.nutrient_id, name: stock.name })}
+          >
+            <ha-svg-icon .path=${mdiDelete} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+          </button>
+        </div>
+      </div>
 
-          <div class="form-section">
-            <div
-              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-            >
-              <h3 style="margin: 0;">Nutrients</h3>
-              <button class="md3-button text" @click=${this._addNutrient}>
-                <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                Add
-              </button>
+      <div class="detail-section">
+        <p class="detail-section-title">Container</p>
+        <div class="detail-row">
+          <span class="detail-label">Current</span>
+          <span>${stock.current_ml.toFixed(0)} ml</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Capacity</span>
+          <span>${stock.initial_ml.toFixed(0)} ml</span>
+        </div>
+        <div class="detail-fill-bar-wrap" data-fill-bar>
+          <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <p class="detail-section-title">Identity</p>
+        <div class="detail-row">
+          <span class="detail-label">Brand</span>
+          <span>${stock.brand || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Type</span>
+          <span style="color:${color}">${stock.type}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">NPK</span>
+          <span>${stock.npk || '—'}</span>
+        </div>
+      </div>
+
+      ${stock.dose_ml_l > 0
+            ? x `
+            <div class="detail-section">
+              <p class="detail-section-title">Composition</p>
+              <div class="detail-row">
+                <span class="detail-label">Default dose</span>
+                <span>${stock.dose_ml_l} ml/L</span>
+              </div>
             </div>
-
-            ${this._nutrients.length === 0
-            ? x `
-                  <div style="text-align: center; opacity: 0.6; padding: 20px;">
-                    <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
-                    <div>No nutrients added</div>
-                  </div>
-                `
+          `
             : E}
-            ${this._nutrients.map((nutrient, index) => x `
-                <div class="product-row">
-                  <md3-text-input
-                    label="Nutrient Name"
-                    .value=${nutrient.name}
-                    .suggestions=${this.nutrientSuggestions}
-                    @change=${(e) => this._updateNutrient(index, 'name', e.target.value || e.detail)}
-                    placeholder="e.g. CalMag"
-                  ></md3-text-input>
-                  <md3-number-input
-                    label="ml/L"
-                    .value=${nutrient.concentration}
-                    min="0"
-                    step="0.1"
-                    @change=${(e) => this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0)}
-                  ></md3-number-input>
-                  <button
-                    class="md3-button icon"
-                    @click=${() => this._removeNutrient(index)}
-                    style="color: var(--error-color);"
-                  >
-                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                  </button>
-                </div>
-              `)}
-          </div>
 
-          ${this._nutrients.length > 0
+      ${stock.notes
             ? x `
-                <div class="form-section">
-                  <h3>Summary</h3>
-                  <div class="calculation-preview">
-                    ${this._nutrients
-                .filter((n) => n.name && n.concentration > 0)
-                .map((nutrient) => x `
-                          <div class="calculation-row">
-                            <span class="calculation-label">${nutrient.name}</span>
-                            <span class="calculation-value">
-                              ${this._volume}L × ${nutrient.concentration} ml/L =
-                              <strong>
-                                ${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml
-                              </strong>
-                            </span>
-                          </div>
-                        `)}
-                    <div class="calculation-row">
-                      <span class="calculation-label">Total Nutrients</span>
-                      <span class="calculation-value">
-                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              `
+            <div class="detail-section">
+              <p class="detail-section-title">Notes</p>
+              <p style="margin:0;font-size:0.875rem">${stock.notes}</p>
+            </div>
+          `
             : E}
+    `;
+    }
+    // ─── Edit form ──────────────────────────────────────────────────────────────
+    _renderEditForm(sub) {
+        const { draft } = sub;
+        const applying = sub.kind === 'applying';
+        return x `
+      <div class="form" data-form="stock">
+        <div>
+          <label class="form-label">Name *</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.name}
+            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'name', value: e.target.value })}
+          />
         </div>
 
-        <div class="button-group">
-          <button class="md3-button tonal" @click=${this._close} ?disabled=${this.isSubmitting}>
+        <div>
+          <label class="form-label">Brand</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.brand}
+            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'brand', value: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <label class="form-label">Type</label>
+          <select
+            class="form-select"
+            .value=${draft.stockType}
+            @change=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'stockType', value: e.target.value })}
+          >
+            <option value="base">Base</option>
+            <option value="bloom">Bloom</option>
+            <option value="calmag">Cal-Mag</option>
+            <option value="root">Root</option>
+            <option value="additive">Additive</option>
+            <option value="microbe">Microbe</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Current (ml)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              .value=${String(draft.current_ml)}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'current_ml', value: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <label class="form-label">Capacity (ml)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              .value=${String(draft.initial_ml)}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'initial_ml', value: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">NPK</label>
+            <input
+              class="form-input"
+              type="text"
+              .value=${draft.npk}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'npk', value: e.target.value })}
+            />
+          </div>
+          <div>
+            <label class="form-label">Default dose (ml/L)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              step="0.1"
+              .value=${String(draft.dose_ml_l)}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'dose_ml_l', value: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Notes</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.notes}
+            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'notes', value: e.target.value })}
+          />
+        </div>
+
+        <div class="form-footer">
+          <button
+            class="btn btn-text"
+            data-action="cancel"
+            @click=${() => this._dispatch({ type: 'BackToList' })}
+          >
             Cancel
           </button>
           <button
-            class="md3-button primary"
-            style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
-            @click=${this._handleSubmit}
-            ?disabled=${this.isSubmitting || this._volume <= 0}
+            class="btn btn-primary"
+            data-action="save"
+            ?disabled=${applying}
+            @click=${() => this._dispatch({ type: 'SaveRequested' })}
           >
-            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-            ${this.isSubmitting ? 'Recording...' : 'Record Watering'}
+            <ha-svg-icon .path=${mdiCheck} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+            ${applying ? 'Saving…' : 'Save'}
           </button>
         </div>
-      </gs-dialog>
+      </div>
+    `;
+    }
+    // ─── Confirm delete ─────────────────────────────────────────────────────────
+    _renderConfirmDelete(id, name) {
+        return x `
+      <div class="confirm-box">
+        <p>Delete <span class="confirm-name">${name}</span>? This cannot be undone.</p>
+        <div class="confirm-box-actions">
+          <button
+            class="btn btn-text"
+            data-action="cancel-delete"
+            @click=${() => this._dispatch({ type: 'DeleteCancelled' })}
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-danger"
+            data-action="confirm-delete"
+            @click=${() => this._dispatch({ type: 'DeleteConfirmed' })}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Error state ────────────────────────────────────────────────────────────
+    _renderError(sub) {
+        return x `
+      <div class="error-banner">
+        <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        ${sub.message}
+      </div>
+      ${this._renderEditForm({ kind: 'editing', draft: sub.draft })}
     `;
     }
 };
-GrowspaceWateringDialogUI.styles = [
+GrowspaceNutrientInventoryDialogUI.styles = [
     dialogStyles,
     i$6 `
-      .product-row {
+      .list {
         display: flex;
-        gap: 12px;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .list-item {
+        display: flex;
         align-items: center;
-        margin-bottom: 8px;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.15s;
       }
-      .product-row md3-text-input {
-        flex: 2;
+
+      .list-item:hover {
+        background: rgba(255, 255, 255, 0.08);
       }
-      .product-row md3-number-input {
+
+      .type-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .item-body {
         flex: 1;
+        min-width: 0;
       }
-      .form-section {
-        margin-bottom: 24px;
-      }
-      .form-section h3 {
-        margin-top: 0;
+
+      .item-name {
+        font-weight: 500;
         font-size: 0.9rem;
-        text-transform: uppercase;
-        opacity: 0.6;
-        letter-spacing: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .item-meta {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-top: 2px;
+      }
+
+      .fill-bar-wrap {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin-top: 4px;
+        overflow: hidden;
+      }
+
+      .fill-bar {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--primary-color, #4caf50);
+        transition: width 0.3s ease;
+      }
+
+      .fill-bar.warning { background: #ff9800; }
+      .fill-bar.danger  { background: #f44336; }
+
+      .add-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: background 0.15s;
         margin-bottom: 12px;
       }
-      .apply-summary {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        padding: 16px;
-        border-radius: 8px;
-        margin-top: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      }
-      .apply-target {
-        font-weight: 500;
-        color: var(--primary-color, #4caf50);
-      }
-      .calculation-preview {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 16px;
-      }
-      .calculation-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      .calculation-row:last-child {
-        border-bottom: none;
-        font-weight: 600;
-      }
-      .calculation-label {
+
+      .add-btn:hover { background: rgba(255, 255, 255, 0.09); }
+
+      .empty-state {
+        text-align: center;
+        padding: 32px 0;
         color: var(--secondary-text-color);
-      }
-      .calculation-value {
-        color: var(--primary-text-color);
-      }
-      .error-bar {
-        background: rgba(255, 152, 0, 0.2);
-        color: #ff9800;
-        border: 1px solid #ff9800;
-        padding: 8px 16px;
-        border-radius: 4px;
-        margin-bottom: 16px;
         font-size: 0.9rem;
+        opacity: 0.7;
+      }
+
+      /* Detail view */
+      .detail-header {
         display: flex;
         align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .back-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        transition: background 0.15s;
+      }
+
+      .back-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+      .detail-title {
+        flex: 1;
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .detail-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        transition: background 0.15s;
+        color: var(--primary-text-color);
+      }
+
+      .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .icon-btn.danger { color: var(--error-color, #f44336); }
+
+      .detail-section {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .detail-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--secondary-text-color);
+        margin: 0 0 12px 0;
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        font-size: 0.875rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .detail-row:last-child { border-bottom: none; }
+      .detail-label { color: var(--secondary-text-color); }
+
+      .detail-fill-bar-wrap {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+
+      /* Edit form */
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .form-row > * { flex: 1; }
+
+      .form-label {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .form-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.875rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .form-input:focus { border-color: var(--primary-color, #4caf50); }
+
+      .form-select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.875rem;
+        font-family: inherit;
+      }
+
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
+      }
+
+      .form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: background 0.15s;
+      }
+
+      .btn:disabled { opacity: 0.5; cursor: default; }
+
+      .btn-text {
+        background: transparent;
+        color: var(--secondary-text-color);
+      }
+
+      .btn-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+
+      .btn-primary {
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+      /* Confirm-delete overlay */
+      .confirm-box {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .confirm-box p { margin: 0 0 16px; font-size: 0.9rem; }
+
+      .confirm-box .confirm-name {
+        font-weight: 600;
+        color: var(--error-color, #f44336);
+      }
+
+      .confirm-box-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-danger {
+        background: var(--error-color, #f44336);
+        color: #fff;
+      }
+
+      .btn-danger:hover { filter: brightness(1.1); }
+
+      /* Error banner */
+      .error-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(244, 67, 54, 0.1);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        font-size: 0.875rem;
+        color: var(--error-color, #f44336);
       }
     `,
 ];
 __decorate([
-    n$5({ type: Boolean })
-], GrowspaceWateringDialogUI.prototype, "open", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceWateringDialogUI.prototype, "growspaceName", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceWateringDialogUI.prototype, "targetText", void 0);
+    n$5({ attribute: false })
+], GrowspaceNutrientInventoryDialogUI.prototype, "inventory", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceWateringDialogUI.prototype, "presetOptions", void 0);
+], GrowspaceNutrientInventoryDialogUI.prototype, "selectedId", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceWateringDialogUI.prototype, "nutrientSuggestions", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceWateringDialogUI.prototype, "isSubmitting", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceWateringDialogUI.prototype, "hasPhiWarning", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceWateringDialogUI.prototype, "phiWarningText", void 0);
-__decorate([
-    r$3()
-], GrowspaceWateringDialogUI.prototype, "_volume", void 0);
-__decorate([
-    r$3()
-], GrowspaceWateringDialogUI.prototype, "_nutrients", void 0);
-__decorate([
-    r$3()
-], GrowspaceWateringDialogUI.prototype, "_selectedPresetId", void 0);
-GrowspaceWateringDialogUI = __decorate([
-    t$2('growspace-watering-dialog-ui')
-], GrowspaceWateringDialogUI);
+], GrowspaceNutrientInventoryDialogUI.prototype, "sub", void 0);
+GrowspaceNutrientInventoryDialogUI = __decorate([
+    t$2('growspace-nutrient-inventory-dialog-ui')
+], GrowspaceNutrientInventoryDialogUI);
 
 /**
  * Feed & Water Dialog State Machine
@@ -48478,7 +47360,7 @@ function createInitialSM() {
     return {
         activeTab: 'watering',
         tabs: {
-            watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+            watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
             inventory: { selectedId: null, sub: { kind: 'idle' } },
             presets: { selectedId: null, sub: { kind: 'idle' } },
         },
@@ -48531,6 +47413,14 @@ function transition(sm, event) {
         }
         case 'SetToast':
             return { ...sm, toast: event.message };
+        case 'AdHocToggled':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, adHocOpen: !sm.tabs.watering.adHocOpen },
+                },
+            };
         case 'WateringVolumeChanged':
             return {
                 ...sm,
@@ -48565,7 +47455,7 @@ function transition(sm, event) {
                 ...sm,
                 tabs: {
                     ...sm.tabs,
-                    watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+                    watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
                 },
             };
         }
@@ -48904,6 +47794,8 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
         this.targetText = '';
         this.hasPhiWarning = false;
         this.phiWarningText = '';
+        this.inventory = null;
+        this.presets = null;
         this._sm = createInitialSM();
         this._handleRecordWatering = () => {
             const { draft } = this._sm.tabs.watering;
@@ -48914,6 +47806,76 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
                 composed: true,
             }));
         };
+        this._handleContentSmEvent = (e) => {
+            if (this._sm.activeTab === 'presets') {
+                this._applyPresetEvent(e.detail);
+            }
+            else {
+                this._applyEvent(e.detail);
+            }
+        };
+    }
+    updated(changed) {
+        super.updated(changed);
+        if (changed.has('_sm')) {
+            this._triggerAsyncIfNeeded(this._prevSm);
+        }
+        this._prevSm = this._sm;
+    }
+    _triggerAsyncIfNeeded(prev) {
+        const tab = this._sm.activeTab;
+        const sub = this._sm.tabs[tab].sub;
+        const prevSub = prev?.tabs[tab].sub;
+        if (sub.kind !== 'applying' || sub.kind === prevSub?.kind)
+            return;
+        if (tab === 'inventory') {
+            this._runInventoryApply(sub.draft, prev?.tabs.inventory.sub);
+        }
+        else if (tab === 'presets') {
+            this._runPresetsApply(sub.draft, prev?.tabs.presets.sub);
+        }
+    }
+    async _runInventoryApply(draft, prevSub) {
+        const selectedId = this._sm.tabs.inventory.selectedId;
+        try {
+            if (prevSub?.kind === 'confirm-delete') {
+                await removeNutrientStock$1(prevSub.id);
+                this._applyEvent({ type: 'DeleteResolved' });
+            }
+            else {
+                await updateNutrientStock$1(selectedId ?? `nutrient_${Date.now()}`, draft.name, draft.current_ml, draft.initial_ml, draft.brand, draft.stockType, draft.npk, draft.dose_ml_l, draft.notes);
+                this._applyEvent({ type: 'SaveResolved' });
+                await fetchNutrientInventory$1();
+            }
+        }
+        catch (err) {
+            this._applyEvent({ type: 'SaveFailed', message: String(err) });
+        }
+    }
+    async _runPresetsApply(draft, prevSub) {
+        const selectedId = this._sm.tabs.presets.selectedId;
+        try {
+            if (prevSub?.kind === 'confirm-delete') {
+                await removeNutrientPreset$1(prevSub.id);
+                this._applyEvent({ type: 'PresetDeleteResolved' });
+            }
+            else {
+                await saveNutrientPreset$1({
+                    preset_id: selectedId ?? undefined,
+                    name: draft.name,
+                    nutrients: draft.nutrients,
+                    stage: draft.stage,
+                    week: draft.week,
+                    ec_target: draft.ec_target,
+                    ph_target: draft.ph_target,
+                });
+                this._applyEvent({ type: 'PresetSaveResolved' });
+                await fetchNutrientPresets$1();
+            }
+        }
+        catch (err) {
+            this._applyEvent({ type: 'PresetSaveFailed', message: String(err) });
+        }
     }
     _applyEvent(event) {
         this._sm = transition(this._sm, event);
@@ -48922,30 +47884,27 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _isFooterBlocked() {
-        const { tabs } = this._sm;
-        return (tabs.watering.sub.kind === 'submitting' ||
-            tabs.inventory.sub.kind === 'editing' ||
-            tabs.presets.sub.kind === 'editing');
+        const { activeTab, tabs } = this._sm;
+        return (activeTab !== 'watering' ||
+            tabs.watering.sub.kind === 'submitting');
     }
     render() {
         if (!this.open)
             return E;
         const { _sm } = this;
         return x `
-      <ha-dialog
-        open
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
-        @closed=${this._close}
+      <gs-dialog
+        .open=${true}
+        heading="Feed & Water"
+        subtitle="Record watering and manage nutrients"
+        .iconPath=${mdiWaterOutline}
+        containerStyle="min-height: 400px;"
+        @close=${this._close}
       >
-        <div class="shell">
-          ${this._renderHeader()}
+        <div class="glass-dialog-container">
           <div class="body">
             ${this._renderNavRail(_sm)}
-            <div class="content">
+            <div class="content" @sm-event=${this._handleContentSmEvent}>
               ${this._renderContent(_sm.activeTab)}
             </div>
           </div>
@@ -48953,23 +47912,7 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
           ${_sm.status.kind === 'confirm-discard' ? this._renderConfirmDiscard() : E}
           ${_sm.toast ? x `<div class="toast">${_sm.toast}</div>` : E}
         </div>
-      </ha-dialog>
-    `;
-    }
-    _renderHeader() {
-        return x `
-      <div class="header">
-        <div class="header-icon">
-          <ha-svg-icon .path=${mdiWaterOutline} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
-        </div>
-        <div class="header-title-group">
-          <h2 class="header-title">Feed &amp; Water</h2>
-          <div class="header-subtitle">Record watering and manage nutrients</div>
-        </div>
-        <button class="close-btn" @click=${this._close} aria-label="Close">
-          <ha-svg-icon .path=${mdiClose} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
-        </button>
-      </div>
+      </gs-dialog>
     `;
     }
     _renderNavRail(sm) {
@@ -48997,15 +47940,48 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
     _renderContent(activeTab) {
         if (activeTab === 'watering')
             return this._renderWateringTab();
-        const labels = {
-            inventory: 'Inventory',
-            presets: 'Presets',
-        };
+        if (activeTab === 'inventory')
+            return this._renderInventoryTab();
+        return this._renderPresetsTab();
+    }
+    _renderInventoryTab() {
+        const { inventory: invTab } = this._sm.tabs;
         return x `
-      <div class="tab-placeholder" data-tab=${activeTab}>
-        ${labels[activeTab]} tab — coming soon
-      </div>
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${this.inventory}
+        .selectedId=${invTab.selectedId}
+        .sub=${invTab.sub}
+      ></growspace-nutrient-inventory-dialog-ui>
     `;
+    }
+    _renderPresetsTab() {
+        const { presets: presetsTab } = this._sm.tabs;
+        return x `
+      <growspace-nutrient-presets-editor-ui
+        .presets=${this.presets}
+        .inventory=${this.inventory}
+        .selectedId=${presetsTab.selectedId}
+        .sub=${presetsTab.sub}
+      ></growspace-nutrient-presets-editor-ui>
+    `;
+    }
+    _applyPresetEvent(event) {
+        const PRESET_MAP = {
+            ItemSelected: 'PresetItemSelected',
+            BackToList: 'PresetBackToList',
+            NewItemRequested: 'PresetNewItemRequested',
+            EditStarted: 'PresetEditStarted',
+            SaveRequested: 'PresetSaveRequested',
+            SaveResolved: 'PresetSaveResolved',
+            SaveFailed: 'PresetSaveFailed',
+            ErrorDismissed: 'PresetErrorDismissed',
+            DeleteRequested: 'PresetDeleteRequested',
+            DeleteConfirmed: 'PresetDeleteConfirmed',
+            DeleteResolved: 'PresetDeleteResolved',
+            DeleteCancelled: 'PresetDeleteCancelled',
+        };
+        const mappedType = PRESET_MAP[event.type] ?? event.type;
+        this._applyEvent({ ...event, type: mappedType });
     }
     _renderWateringTab() {
         const { draft } = this._sm.tabs.watering;
@@ -49020,36 +47996,24 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
             `
             : E}
 
-        <div class="form-field">
-          <label class="form-label">Volume (Liters)</label>
-          <input
-            class="volume-input"
-            type="number"
-            min="0.1"
-            step="0.1"
-            .value=${String(draft.volume)}
-            @change=${(e) => {
-            const v = parseFloat(e.target.value);
+        <md3-number-input
+          label="Volume (Liters)"
+          .value=${draft.volume}
+          .min=${0.1}
+          unit="L"
+          @change=${(e) => {
+            const v = parseFloat(e.detail);
             if (!isNaN(v) && v > 0)
                 this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
         }}
-          />
-        </div>
+        ></md3-number-input>
 
-        <div class="form-field">
-          <label class="form-label">Nutrient Preset</label>
-          <select
-            class="preset-select"
-            .value=${draft.presetId}
-            @change=${(e) => this._applyEvent({
-            type: 'WateringPresetChanged',
-            presetId: e.target.value,
-        })}
-          >
-            <option value="">— No preset —</option>
-            ${this.presetOptions.map((opt) => x `<option value=${opt.value} ?selected=${opt.value === draft.presetId}>${opt.label}</option>`)}
-          </select>
-        </div>
+        <md3-select
+          label="Nutrient Preset"
+          .value=${draft.presetId}
+          .options=${this.presetOptions}
+          @change=${(e) => this._applyEvent({ type: 'WateringPresetChanged', presetId: e.detail })}
+        ></md3-select>
 
         ${this.targetText
             ? x `
@@ -49102,314 +48066,196 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
     `;
     }
 };
-FeedAndWaterDialog.styles = i$6 `
-    :host { display: contents; }
+FeedAndWaterDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host { display: contents; }
 
-    ha-dialog {
-      --dialog-surface-margin-top: 40px;
-      --ha-dialog-min-height: var(--ha-dialog-min-height, 85vh);
-      --dialog-content-padding: 0;
-    }
+      /* Body: nav-rail + content */
+      .body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
 
-    .shell {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      min-height: 85vh;
-      max-height: 85vh;
-      overflow: hidden;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-      position: relative;
-    }
+      .nav-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 8px;
+        border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
+        width: 72px;
+        align-items: center;
+        flex-shrink: 0;
+      }
 
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      gap: 12px;
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-      flex-shrink: 0;
-    }
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-size: 0.6875rem;
+        font-family: inherit;
+        width: 56px;
+        transition: background 0.15s, color 0.15s;
+      }
 
-    .header-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--primary-color, #4caf50);
-    }
+      .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
 
-    .header-title-group { flex: 1; }
+      .nav-item[aria-pressed='true'] {
+        color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
+      }
 
-    .header-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        min-height: 0;
+      }
 
-    .header-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-      color: var(--secondary-text-color);
-    }
+      /* Footer */
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 12px 24px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
 
-    .close-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--primary-text-color, #fff);
-      padding: 8px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s;
-    }
+      .btn-record {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        font-weight: 500;
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        transition: filter 0.15s, opacity 0.15s;
+      }
 
-    .close-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
 
-    /* Body */
-    .body {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
+      .btn-record:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
 
-    /* Nav rail */
-    .nav-rail {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px 8px;
-      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
-      width: 72px;
-      align-items: center;
-      flex-shrink: 0;
-    }
+      /* Confirm-discard overlay */
+      .confirm-discard-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 6px;
-      border-radius: 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-      font-size: 0.6875rem;
-      font-family: inherit;
-      width: 56px;
-      transition: background 0.15s, color 0.15s;
-    }
+      .confirm-discard-box {
+        background: var(--card-background-color, #1c1c1c);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 360px;
+        width: 100%;
+        margin: 16px;
+      }
 
-    .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
+      .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
+      .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
 
-    .nav-item[aria-pressed='true'] {
-      color: var(--primary-color, #4caf50);
-      background: rgba(76, 175, 80, 0.12);
-    }
+      .confirm-discard-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
 
-    /* Content */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
-      min-height: 0;
-    }
+      .btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+      }
 
-    /* Footer */
-    .footer {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 12px 24px;
-      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-      flex-shrink: 0;
-    }
+      .btn-text { background: transparent; color: var(--secondary-text-color); }
+      .btn-text:hover { background: rgba(255,255,255,0.06); }
 
-    .btn-record {
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-family: inherit;
-      font-weight: 500;
-      background: var(--primary-color, #4caf50);
-      color: #fff;
-      transition: filter 0.15s, opacity 0.15s;
-    }
+      .btn-danger { background: var(--error-color, #f44336); color: #fff; }
+      .btn-danger:hover { filter: brightness(1.1); }
 
-    .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
+      /* Toast */
+      .toast {
+        position: absolute;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        z-index: 20;
+      }
 
-    .btn-record:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+      /* Tab placeholder */
+      .tab-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: var(--secondary-text-color, rgba(255,255,255,0.5));
+        font-size: 0.875rem;
+      }
 
-    /* Confirm-discard overlay */
-    .confirm-discard-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+      /* Watering tab */
+      .phi-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+        border: 1px solid #ff9800;
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin-bottom: 20px;
+        font-size: 0.875rem;
+      }
 
-    .confirm-discard-box {
-      background: var(--card-background-color, #1c1c1c);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 360px;
-      width: 100%;
-      margin: 16px;
-    }
+      .targeting-summary {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        margin-top: 8px;
+      }
 
-    .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
-    .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
+      .targeting-label {
+        opacity: 0.6;
+        margin-right: 6px;
+      }
 
-    .confirm-discard-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-family: inherit;
-    }
-
-    .btn-text { background: transparent; color: var(--secondary-text-color); }
-    .btn-text:hover { background: rgba(255,255,255,0.06); }
-
-    .btn-danger { background: var(--error-color, #f44336); color: #fff; }
-    .btn-danger:hover { filter: brightness(1.1); }
-
-    /* Toast */
-    .toast {
-      position: absolute;
-      bottom: 72px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      pointer-events: none;
-      z-index: 20;
-    }
-
-    /* Tab placeholder */
-    .tab-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 200px;
-      color: var(--secondary-text-color, rgba(255,255,255,0.5));
-      font-size: 0.875rem;
-    }
-
-    /* Watering tab */
-    .phi-warning {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 152, 0, 0.15);
-      color: #ff9800;
-      border: 1px solid #ff9800;
-      border-radius: 6px;
-      padding: 10px 14px;
-      margin-bottom: 20px;
-      font-size: 0.875rem;
-    }
-
-    .form-field {
-      margin-bottom: 16px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.6;
-      margin-bottom: 6px;
-    }
-
-    .volume-input {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-      border-radius: 8px;
-      color: var(--primary-text-color, #fff);
-      font-size: 0.9375rem;
-      font-family: inherit;
-      box-sizing: border-box;
-    }
-
-    .volume-input:focus {
-      outline: none;
-      border-color: var(--primary-color, #4caf50);
-    }
-
-    .preset-select {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-      border-radius: 8px;
-      color: var(--primary-text-color, #fff);
-      font-size: 0.9375rem;
-      font-family: inherit;
-      box-sizing: border-box;
-      appearance: none;
-    }
-
-    .preset-select:focus {
-      outline: none;
-      border-color: var(--primary-color, #4caf50);
-    }
-
-    .targeting-summary {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 0.875rem;
-    }
-
-    .targeting-label {
-      opacity: 0.6;
-      margin-right: 6px;
-    }
-
-    .targeting-value {
-      color: var(--primary-color, #4caf50);
-      font-weight: 500;
-    }
-  `;
+      .targeting-value {
+        color: var(--primary-color, #4caf50);
+        font-weight: 500;
+      }
+    `,
+];
 __decorate([
     n$5({ type: Boolean })
 ], FeedAndWaterDialog.prototype, "open", void 0);
@@ -49425,6 +48271,12 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], FeedAndWaterDialog.prototype, "phiWarningText", void 0);
+__decorate([
+    n$5({ attribute: false })
+], FeedAndWaterDialog.prototype, "inventory", void 0);
+__decorate([
+    n$5({ attribute: false })
+], FeedAndWaterDialog.prototype, "presets", void 0);
 __decorate([
     r$3()
 ], FeedAndWaterDialog.prototype, "_sm", void 0);
@@ -53722,7 +52574,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 case 'NUTRIENT_INVENTORY':
                     return this._renderNutrientInventoryDialog(active, nutrientInventory, effectiveDeviceData);
                 case 'NUTRIENTS':
-                    return this._renderNutrientDialog(active, effectiveDeviceData);
+                    return this._renderNutrientDialog(active, nutrientPresets, nutrientInventory);
                 case 'PRINT_LABEL':
                     return this._renderPrintLabelDialog(active, effectiveDeviceData);
                 case 'BATCH_PRINT_LABELS':
@@ -54319,7 +53171,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       ></logbook-dialog>
     `;
     }
-    _renderWateringDialog(active, nutrientPresets, _nutrientInventory, selectedDeviceData) {
+    _renderWateringDialog(active, nutrientPresets, nutrientInventory, selectedDeviceData) {
         if (active.type !== 'WATERING')
             return x ``;
         const payload = active.payload;
@@ -54335,6 +53187,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .open=${true}
         .presetOptions=${presetOptions}
         .targetText=${targetText}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('WATERING')}
         @submit-watering=${(e) => this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
       ></feed-and-water-dialog>
@@ -54517,15 +53371,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       ></clone-dialog>
     `;
     }
-    _renderNutrientDialog(active, _selectedDeviceData) {
+    _renderNutrientDialog(active, nutrientPresets, nutrientInventory) {
         if (active.type !== 'NUTRIENTS')
             return x ``;
         return x `
-      <nutrient-dialog
+      <feed-and-water-dialog
         .open=${true}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('NUTRIENTS')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></nutrient-dialog>
+      ></feed-and-water-dialog>
     `;
     }
     _renderPrintLabelDialog(active, _selectedDeviceData) {

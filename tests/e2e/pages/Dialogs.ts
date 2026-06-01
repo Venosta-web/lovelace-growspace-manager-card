@@ -169,8 +169,8 @@ export class WateringDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('growspace-watering-dialog-ui');
-    this.haDialog = page.locator('growspace-watering-dialog-ui ha-dialog');
+    this.dialog = page.locator('feed-and-water-dialog');
+    this.haDialog = page.locator('feed-and-water-dialog ha-dialog');
   }
 
   async waitForOpen() {
@@ -317,7 +317,7 @@ export class NutrientDialog {
 
   constructor(page: Page) {
     this.page = page;
-    this.dialog = page.locator('nutrient-dialog ha-dialog');
+    this.dialog = page.locator('feed-and-water-dialog ha-dialog');
   }
 
   async waitForOpen() {

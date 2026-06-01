@@ -36,7 +36,6 @@ import '../../../dialogs/grow-master-dialog';
 import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
 import '../../../dialogs/logbook-dialog';
-import '../../../dialogs/nutrient-dialog';
 import '../../../dialogs/print-label-dialog';
 import '../../../dialogs/batch-print-label-dialog';
 import '../../../dialogs/batch-clone-dialog';
@@ -47,7 +46,6 @@ import '../../../dialogs/training-dialog';
 import '../../shared/ui/error-boundary';
 
 import '../components/growspace-ipm-dialog-ui';
-import '../components/growspace-watering-dialog-ui';
 import '../components/growspace-nutrient-inventory-dialog-ui';
 import '../../../dialogs/feed-and-water-dialog';
 import '../../plants/containers/plant-overview.container';
@@ -191,7 +189,7 @@ export class GrowspaceDialogHost extends LitElement {
               effectiveDeviceData
             );
           case 'NUTRIENTS':
-            return this._renderNutrientDialog(active, effectiveDeviceData);
+            return this._renderNutrientDialog(active, nutrientPresets, nutrientInventory);
           case 'PRINT_LABEL':
             return this._renderPrintLabelDialog(active, effectiveDeviceData);
           case 'BATCH_PRINT_LABELS':
@@ -889,7 +887,7 @@ export class GrowspaceDialogHost extends LitElement {
   private _renderWateringDialog(
     active: ActiveDialogState,
     nutrientPresets: NutrientPresetsResponse,
-    _nutrientInventory: NutrientInventory | null,
+    nutrientInventory: NutrientInventory | null,
     selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {
     if (active.type !== 'WATERING') return html``;
@@ -910,6 +908,8 @@ export class GrowspaceDialogHost extends LitElement {
         .open=${true}
         .presetOptions=${presetOptions}
         .targetText=${targetText}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('WATERING')}
         @submit-watering=${(e: CustomEvent) =>
         this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
@@ -1145,15 +1145,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _renderNutrientDialog(
     active: ActiveDialogState,
-    _selectedDeviceData?: GrowspaceDevice
+    nutrientPresets: NutrientPresetsResponse,
+    nutrientInventory: NutrientInventory | null
   ): TemplateResult {
     if (active.type !== 'NUTRIENTS') return html``;
     return html`
-      <nutrient-dialog
+      <feed-and-water-dialog
         .open=${true}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('NUTRIENTS')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></nutrient-dialog>
+      ></feed-and-water-dialog>
     `;
   }
 

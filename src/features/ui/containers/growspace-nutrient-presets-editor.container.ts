@@ -2,7 +2,7 @@ import { LitElement, html, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { StoreController } from '@nanostores/lit';
 import { nutrientPresets$, nutrientInventory$ } from '../../../slices/nutrient';
-import type { PresetsSub } from '../../../dialogs/nutrient-dialog-sm';
+import type { PresetsSub } from '../../../dialogs/feed-and-water-dialog-sm';
 import '../components/growspace-nutrient-presets-editor-ui';
 
 /**

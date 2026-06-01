@@ -11,7 +11,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui';
 import { GrowspaceNutrientInventoryDialogUI } from '../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui';
-import type { SMEvent } from '../../../src/dialogs/nutrient-dialog-sm';
+import type { SMEvent } from '../../../src/dialogs/feed-and-water-dialog-sm';
 import type { NutrientInventoryResponse } from '../../../src/slices/nutrient';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────

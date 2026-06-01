@@ -16,7 +16,7 @@ import {
   mdiBug,
 } from '@mdi/js';
 import type { NutrientInventoryResponse, NutrientStock, NutrientStockType } from '../../../slices/nutrient';
-import type { InventorySub, NutrientStockDraft, SMEvent } from '../../../dialogs/nutrient-dialog-sm';
+import type { InventorySub, NutrientStockDraft, SMEvent } from '../../../dialogs/feed-and-water-dialog-sm';
 import { dialogStyles } from '../../../styles/dialog.styles';
 
 // ─── Type-color map ───────────────────────────────────────────────────────────

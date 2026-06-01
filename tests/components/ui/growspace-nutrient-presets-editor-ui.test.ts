@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import '../../../src/features/ui/components/growspace-nutrient-presets-editor-ui';
 import { GrowspaceNutrientPresetsEditorUI } from '../../../src/features/ui/components/growspace-nutrient-presets-editor-ui';
-import type { SMEvent } from '../../../src/dialogs/nutrient-dialog-sm';
+import type { SMEvent } from '../../../src/dialogs/feed-and-water-dialog-sm';
 import type { NutrientPresetsResponse, NutrientInventoryResponse } from '../../../src/slices/nutrient';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────

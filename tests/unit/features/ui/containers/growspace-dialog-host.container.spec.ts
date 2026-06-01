@@ -61,13 +61,6 @@ vi.mock('../../../../../src/features/ui/components/growspace-ipm-dialog-ui', () 
     return { GrowspaceIPMDialogUI: class extends HTMLElement { } };
 });
 
-vi.mock('../../../../../src/features/ui/components/growspace-watering-dialog-ui', () => {
-    if (!customElements.get('growspace-watering-dialog-ui')) {
-        customElements.define('growspace-watering-dialog-ui', class extends HTMLElement { });
-    }
-    return { GrowspaceWateringDialogUI: class extends HTMLElement { } };
-});
-
 vi.mock('../../../../../src/dialogs/feed-and-water-dialog', () => {
     if (!customElements.get('feed-and-water-dialog')) {
         customElements.define('feed-and-water-dialog', class extends HTMLElement { });
@@ -525,6 +518,28 @@ describe('GrowspaceDialogHostContainer', () => {
         });
     });
 
+    it('should pass inventory from store to feed-and-water-dialog', async () => {
+        const inventory = { stocks: { n1: { nutrient_id: 'n1', name: 'Veg Boost', current_ml: 500, initial_ml: 1000, last_updated: '' } } };
+        mockStore.dataService.$nutrientInventory.set(inventory);
+        mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { mode: 'growspace', growspace_id: 'gs1' } });
+        await element.updateComplete;
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog') as any;
+        expect(dialog?.inventory).toEqual(inventory);
+    });
+
+    it('should pass presets from store to feed-and-water-dialog', async () => {
+        const presets = { p1: { id: 'p1', name: 'Veg Mix', nutrients: [], stage: 'veg', week: 1 } };
+        mockStore.dataService.$nutrientPresets.set(presets);
+        mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { mode: 'growspace', growspace_id: 'gs1' } });
+        await element.updateComplete;
+        await element.updateComplete;
+
+        const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog') as any;
+        expect(dialog?.presets).toEqual(presets);
+    });
+
     it('should render nutrient-presets-editor for NUTRIENT_PRESETS type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'NUTRIENT_PRESETS', payload: {} });
         await element.updateComplete;
@@ -601,11 +616,11 @@ describe('GrowspaceDialogHostContainer', () => {
         );
     });
 
-    it('should render nutrient-dialog for NUTRIENTS type', async () => {
+    it('should render feed-and-water-dialog for NUTRIENTS type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'NUTRIENTS', payload: {} });
         await element.updateComplete;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('nutrient-dialog')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector('feed-and-water-dialog')).toBeTruthy();
     });
 
     it('should render print-label-dialog for PRINT_LABEL type', async () => {
@@ -1025,15 +1040,6 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useRealTimers();
         });
 
-        it('should handle @data-changed on NUTRIENTS', async () => {
-            vi.useFakeTimers();
-            const refreshSpy = vi.spyOn(mockStore, 'refreshData');
-            await testDialogEvent('NUTRIENTS', 'nutrient-dialog', 'data-changed', () => {});
-            vi.runAllTimers();
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
-
         it('should handle @data-changed on GROW_MASTER', async () => {
             vi.useFakeTimers();
             const refreshSpy = vi.spyOn(mockStore, 'refreshData');
@@ -1128,8 +1134,8 @@ describe('GrowspaceDialogHostContainer', () => {
             testDialogEvent('TAKE_CLONE', 'clone-dialog', 'close', () => 
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
-        it('should handle @close on NUTRIENTS', () => 
-            testDialogEvent('NUTRIENTS', 'nutrient-dialog', 'close', () => 
+        it('should handle @close on NUTRIENTS', () =>
+            testDialogEvent('NUTRIENTS', 'feed-and-water-dialog', 'close', () =>
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
         it('should handle @close on PRINT_LABEL', () => 
@@ -1358,7 +1364,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 { type: 'TAKE_CLONE', selector: 'clone-dialog' },
                 { type: 'IPM', selector: 'growspace-ipm-dialog-ui' },
                 { type: 'NUTRIENT_INVENTORY', selector: 'growspace-nutrient-inventory-dialog-ui' },
-                { type: 'NUTRIENTS', selector: 'nutrient-dialog' },
+                { type: 'NUTRIENTS', selector: 'feed-and-water-dialog' },
                 { type: 'PRINT_LABEL', selector: 'print-label-dialog' },
                 { type: 'HARVEST_SCORING', selector: 'harvest-scoring-dialog' },
                 { type: 'SNAPSHOTS', selector: 'snapshots-dialog' },

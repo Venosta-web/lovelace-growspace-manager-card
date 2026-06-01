@@ -9,6 +9,7 @@ import {
   createInitialSM,
   transition,
   isTabDirty,
+  isFooterBlocked,
   isLowStock,
   type SM,
   type TabId,
@@ -1183,5 +1184,76 @@ describe('full presets drill-down lifecycle', () => {
 
     sm = transition(sm, { type: 'PresetDeleteResolved' });
     expect(sm.tabs.presets.selectedId).toBeNull();
+  });
+});
+
+// ─── isFooterBlocked ──────────────────────────────────────────────────────────
+
+describe('isFooterBlocked', () => {
+  it('returns false in initial state', () => {
+    expect(isFooterBlocked(idle())).toBe(false);
+  });
+
+  it('returns true when inventory tab is editing', () => {
+    expect(isFooterBlocked(withInventoryEditing())).toBe(true);
+  });
+
+  it('returns true when presets tab is editing', () => {
+    expect(isFooterBlocked(withPresetsEditing())).toBe(true);
+  });
+
+  it('returns false when inventory tab is applying', () => {
+    const applying = transition(withInventoryEditing(), { type: 'SaveRequested' });
+    expect(isFooterBlocked(applying)).toBe(false);
+  });
+
+  it('returns false when presets tab is applying', () => {
+    const applying = transition(withPresetsEditing(), { type: 'PresetSaveRequested' });
+    expect(isFooterBlocked(applying)).toBe(false);
+  });
+
+  it('returns false when watering tab is submitting', () => {
+    const submitting = transition(idle(), { type: 'WateringSubmitRequested' });
+    expect(isFooterBlocked(submitting)).toBe(false);
+  });
+});
+
+// ─── adHocOpen (ad-hoc nutrients toggle) ─────────────────────────────────────
+
+describe('adHocOpen initial state', () => {
+  it('starts closed', () => {
+    expect(idle().tabs.watering.adHocOpen).toBe(false);
+  });
+});
+
+describe('AdHocToggled', () => {
+  it('opens the section when closed', () => {
+    const sm = transition(idle(), { type: 'AdHocToggled' });
+    expect(sm.tabs.watering.adHocOpen).toBe(true);
+  });
+
+  it('closes the section when open', () => {
+    let sm = transition(idle(), { type: 'AdHocToggled' });
+    sm = transition(sm, { type: 'AdHocToggled' });
+    expect(sm.tabs.watering.adHocOpen).toBe(false);
+  });
+
+  it('does not change watering sub.kind', () => {
+    const sm = transition(idle(), { type: 'AdHocToggled' });
+    expect(sm.tabs.watering.sub.kind).toBe('idle');
+  });
+
+  it('does not affect other tabs', () => {
+    const before = idle();
+    const after = transition(before, { type: 'AdHocToggled' });
+    expect(after.tabs.inventory).toBe(before.tabs.inventory);
+    expect(after.tabs.presets).toBe(before.tabs.presets);
+  });
+
+  it('resets to closed after WateringSubmitCompleted', () => {
+    let sm = transition(idle(), { type: 'AdHocToggled' });
+    sm = transition(sm, { type: 'WateringSubmitRequested' });
+    sm = transition(sm, { type: 'WateringSubmitCompleted' });
+    expect(sm.tabs.watering.adHocOpen).toBe(false);
   });
 });

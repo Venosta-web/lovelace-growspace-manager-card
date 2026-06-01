@@ -10,7 +10,21 @@ import {
   mdiFlask,
 } from '@mdi/js';
 import type { NutrientPresetsResponse, NutrientInventoryResponse } from '../../../slices/nutrient';
-import type { PresetsSub, NutrientPresetDraft, SMEvent } from '../../../dialogs/nutrient-dialog-sm';
+import type { PresetsSub, NutrientPresetDraft } from '../../../dialogs/feed-and-water-dialog-sm';
+
+type PresetsEditorEvent =
+  | { type: 'NewItemRequested' }
+  | { type: 'ItemSelected'; id: string }
+  | { type: 'BackToList' }
+  | { type: 'EditStarted'; draft: NutrientPresetDraft }
+  | { type: 'SaveRequested' }
+  | { type: 'DeleteRequested'; id: string; name: string }
+  | { type: 'DeleteConfirmed' }
+  | { type: 'DeleteCancelled' }
+  | { type: 'PresetDraftChanged'; field: keyof Omit<NutrientPresetDraft, 'nutrients'>; value: string | number | null | undefined }
+  | { type: 'PresetNutrientRowAdded' }
+  | { type: 'PresetNutrientRowRemoved'; index: number }
+  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number }> };
 import { dialogStyles } from '../../../styles/dialog.styles';
 
 // ─── Stage colors ─────────────────────────────────────────────────────────────
@@ -382,7 +396,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
     `,
   ];
 
-  private _dispatch(event: SMEvent): void {
+  private _dispatch(event: PresetsEditorEvent): void {
     this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
   }
 

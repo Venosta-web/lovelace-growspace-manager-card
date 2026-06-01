@@ -72,6 +72,7 @@ const DEFAULT_WATERING_DRAFT: WateringDraft = { volume: 1.0, presetId: '' };
 export interface WateringTabState {
   sub: WateringSub;
   draft: WateringDraft;
+  adHocOpen: boolean;
 }
 
 export interface InventoryTabState {
@@ -110,6 +111,7 @@ export type SMEvent =
   | { type: 'DiscardConfirmed' }
   | { type: 'DiscardCancelled' }
   | { type: 'SetToast'; message: string | undefined }
+  | { type: 'AdHocToggled' }
   | { type: 'WateringVolumeChanged'; volume: number }
   | { type: 'WateringPresetChanged'; presetId: string }
   | { type: 'WateringSubmitRequested' }
@@ -152,7 +154,7 @@ export function createInitialSM(): SM {
   return {
     activeTab: 'watering',
     tabs: {
-      watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+      watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
       inventory: { selectedId: null, sub: { kind: 'idle' } },
       presets: { selectedId: null, sub: { kind: 'idle' } },
     },
@@ -166,6 +168,10 @@ export function createInitialSM(): SM {
 export function isTabDirty(sm: SM, tab: TabId): boolean {
   const sub = sm.tabs[tab].sub;
   return sub.kind === 'editing' || sub.kind === 'applying';
+}
+
+export function isFooterBlocked(sm: SM): boolean {
+  return sm.tabs.inventory.sub.kind === 'editing' || sm.tabs.presets.sub.kind === 'editing';
 }
 
 export function isLowStock(stock: NutrientStock): boolean {
@@ -216,6 +222,15 @@ export function transition(sm: SM, event: SMEvent): SM {
     case 'SetToast':
       return { ...sm, toast: event.message };
 
+    case 'AdHocToggled':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          watering: { ...sm.tabs.watering, adHocOpen: !sm.tabs.watering.adHocOpen },
+        },
+      };
+
     case 'WateringVolumeChanged':
       return {
         ...sm,
@@ -251,7 +266,7 @@ export function transition(sm: SM, event: SMEvent): SM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+          watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
         },
       };
     }

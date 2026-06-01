@@ -1,10 +1,9 @@
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import {
   mdiWaterOutline,
   mdiBottleTonicPlus,
   mdiFormatListBulleted,
-  mdiClose,
   mdiInformation,
 } from '@mdi/js';
 import {
@@ -13,7 +12,25 @@ import {
   type SM,
   type SMEvent,
   type TabId,
+  type NutrientStockDraft,
+  type NutrientPresetDraft,
 } from './feed-and-water-dialog-sm';
+import {
+  type NutrientInventoryResponse,
+  type NutrientPresetsResponse,
+  updateNutrientStock,
+  removeNutrientStock,
+  saveNutrientPreset,
+  removeNutrientPreset,
+  fetchNutrientInventory,
+  fetchNutrientPresets,
+} from '../slices/nutrient';
+import { dialogStyles } from '../styles/dialog.styles';
+import '../features/shared/ui/gs-dialog';
+import '../features/shared/ui/md3-number-input';
+import '../features/shared/ui/md3-select';
+import '../features/ui/components/growspace-nutrient-inventory-dialog-ui';
+import '../features/ui/components/growspace-nutrient-presets-editor-ui';
 
 @customElement('feed-and-water-dialog')
 export class FeedAndWaterDialog extends LitElement {
@@ -22,317 +39,278 @@ export class FeedAndWaterDialog extends LitElement {
   @property({ type: String }) targetText = '';
   @property({ type: Boolean }) hasPhiWarning = false;
   @property({ type: String }) phiWarningText = '';
+  @property({ attribute: false }) inventory: NutrientInventoryResponse | null = null;
+  @property({ attribute: false }) presets: NutrientPresetsResponse | null = null;
 
   @state() private _sm: SM = createInitialSM();
+  private _prevSm: SM | undefined;
 
-  static styles = css`
-    :host { display: contents; }
+  static styles = [
+    dialogStyles,
+    css`
+      :host { display: contents; }
 
-    ha-dialog {
-      --dialog-surface-margin-top: 40px;
-      --ha-dialog-min-height: var(--ha-dialog-min-height, 85vh);
-      --dialog-content-padding: 0;
+      /* Body: nav-rail + content */
+      .body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .nav-rail {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 8px;
+        border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
+        width: 72px;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-size: 0.6875rem;
+        font-family: inherit;
+        width: 56px;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
+
+      .nav-item[aria-pressed='true'] {
+        color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
+      }
+
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        min-height: 0;
+      }
+
+      /* Footer */
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 12px 24px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
+
+      .btn-record {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        font-weight: 500;
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        transition: filter 0.15s, opacity 0.15s;
+      }
+
+      .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
+
+      .btn-record:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Confirm-discard overlay */
+      .confirm-discard-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .confirm-discard-box {
+        background: var(--card-background-color, #1c1c1c);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 360px;
+        width: 100%;
+        margin: 16px;
+      }
+
+      .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
+      .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
+
+      .confirm-discard-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+      }
+
+      .btn-text { background: transparent; color: var(--secondary-text-color); }
+      .btn-text:hover { background: rgba(255,255,255,0.06); }
+
+      .btn-danger { background: var(--error-color, #f44336); color: #fff; }
+      .btn-danger:hover { filter: brightness(1.1); }
+
+      /* Toast */
+      .toast {
+        position: absolute;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        z-index: 20;
+      }
+
+      /* Tab placeholder */
+      .tab-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: var(--secondary-text-color, rgba(255,255,255,0.5));
+        font-size: 0.875rem;
+      }
+
+      /* Watering tab */
+      .phi-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+        border: 1px solid #ff9800;
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin-bottom: 20px;
+        font-size: 0.875rem;
+      }
+
+      .targeting-summary {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        margin-top: 8px;
+      }
+
+      .targeting-label {
+        opacity: 0.6;
+        margin-right: 6px;
+      }
+
+      .targeting-value {
+        color: var(--primary-color, #4caf50);
+        font-weight: 500;
+      }
+    `,
+  ];
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    if (changed.has('_sm')) {
+      this._triggerAsyncIfNeeded(this._prevSm);
     }
+    this._prevSm = this._sm;
+  }
 
-    .shell {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: 100%;
-      min-height: 85vh;
-      max-height: 85vh;
-      overflow: hidden;
-      color: var(--primary-text-color, #fff);
-      font-family: 'Roboto', sans-serif;
-      position: relative;
+  private _triggerAsyncIfNeeded(prev: SM | undefined): void {
+    const tab = this._sm.activeTab;
+    const sub = this._sm.tabs[tab].sub;
+    const prevSub = prev?.tabs[tab].sub;
+    if (sub.kind !== 'applying' || sub.kind === prevSub?.kind) return;
+    if (tab === 'inventory') {
+      this._runInventoryApply(sub.draft as NutrientStockDraft, prev?.tabs.inventory.sub);
+    } else if (tab === 'presets') {
+      this._runPresetsApply(sub.draft as NutrientPresetDraft, prev?.tabs.presets.sub);
     }
+  }
 
-    /* Header */
-    .header {
-      display: flex;
-      align-items: center;
-      padding: 16px 24px;
-      gap: 12px;
-      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-      flex-shrink: 0;
+  private async _runInventoryApply(
+    draft: NutrientStockDraft,
+    prevSub: SM['tabs']['inventory']['sub'] | undefined
+  ): Promise<void> {
+    const selectedId = this._sm.tabs.inventory.selectedId;
+    try {
+      if (prevSub?.kind === 'confirm-delete') {
+        await removeNutrientStock(prevSub.id);
+        this._applyEvent({ type: 'DeleteResolved' });
+      } else {
+        await updateNutrientStock(
+          selectedId ?? `nutrient_${Date.now()}`,
+          draft.name,
+          draft.current_ml,
+          draft.initial_ml,
+          draft.brand,
+          draft.stockType,
+          draft.npk,
+          draft.dose_ml_l,
+          draft.notes
+        );
+        this._applyEvent({ type: 'SaveResolved' });
+        await fetchNutrientInventory();
+      }
+    } catch (err) {
+      this._applyEvent({ type: 'SaveFailed', message: String(err) });
     }
+  }
 
-    .header-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.05);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--primary-color, #4caf50);
+  private async _runPresetsApply(
+    draft: NutrientPresetDraft,
+    prevSub: SM['tabs']['presets']['sub'] | undefined
+  ): Promise<void> {
+    const selectedId = this._sm.tabs.presets.selectedId;
+    try {
+      if (prevSub?.kind === 'confirm-delete') {
+        await removeNutrientPreset(prevSub.id);
+        this._applyEvent({ type: 'PresetDeleteResolved' });
+      } else {
+        await saveNutrientPreset({
+          preset_id: selectedId ?? undefined,
+          name: draft.name,
+          nutrients: draft.nutrients,
+          stage: draft.stage,
+          week: draft.week,
+          ec_target: draft.ec_target,
+          ph_target: draft.ph_target,
+        });
+        this._applyEvent({ type: 'PresetSaveResolved' });
+        await fetchNutrientPresets();
+      }
+    } catch (err) {
+      this._applyEvent({ type: 'PresetSaveFailed', message: String(err) });
     }
-
-    .header-title-group { flex: 1; }
-
-    .header-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 500;
-    }
-
-    .header-subtitle {
-      font-size: 0.85rem;
-      opacity: 0.7;
-      margin-top: 2px;
-      color: var(--secondary-text-color);
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--primary-text-color, #fff);
-      padding: 8px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s;
-    }
-
-    .close-btn:hover { background: rgba(255, 255, 255, 0.08); }
-
-    /* Body */
-    .body {
-      display: flex;
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    /* Nav rail */
-    .nav-rail {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      padding: 12px 8px;
-      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
-      width: 72px;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 6px;
-      border-radius: 12px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
-      font-size: 0.6875rem;
-      font-family: inherit;
-      width: 56px;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
-
-    .nav-item[aria-pressed='true'] {
-      color: var(--primary-color, #4caf50);
-      background: rgba(76, 175, 80, 0.12);
-    }
-
-    /* Content */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px 24px;
-      min-height: 0;
-    }
-
-    /* Footer */
-    .footer {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding: 12px 24px;
-      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
-      flex-shrink: 0;
-    }
-
-    .btn-record {
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-family: inherit;
-      font-weight: 500;
-      background: var(--primary-color, #4caf50);
-      color: #fff;
-      transition: filter 0.15s, opacity 0.15s;
-    }
-
-    .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
-
-    .btn-record:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    /* Confirm-discard overlay */
-    .confirm-discard-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .confirm-discard-box {
-      background: var(--card-background-color, #1c1c1c);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 360px;
-      width: 100%;
-      margin: 16px;
-    }
-
-    .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
-    .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
-
-    .confirm-discard-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-family: inherit;
-    }
-
-    .btn-text { background: transparent; color: var(--secondary-text-color); }
-    .btn-text:hover { background: rgba(255,255,255,0.06); }
-
-    .btn-danger { background: var(--error-color, #f44336); color: #fff; }
-    .btn-danger:hover { filter: brightness(1.1); }
-
-    /* Toast */
-    .toast {
-      position: absolute;
-      bottom: 72px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 0.875rem;
-      pointer-events: none;
-      z-index: 20;
-    }
-
-    /* Tab placeholder */
-    .tab-placeholder {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 200px;
-      color: var(--secondary-text-color, rgba(255,255,255,0.5));
-      font-size: 0.875rem;
-    }
-
-    /* Watering tab */
-    .phi-warning {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 152, 0, 0.15);
-      color: #ff9800;
-      border: 1px solid #ff9800;
-      border-radius: 6px;
-      padding: 10px 14px;
-      margin-bottom: 20px;
-      font-size: 0.875rem;
-    }
-
-    .form-field {
-      margin-bottom: 16px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      opacity: 0.6;
-      margin-bottom: 6px;
-    }
-
-    .volume-input {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-      border-radius: 8px;
-      color: var(--primary-text-color, #fff);
-      font-size: 0.9375rem;
-      font-family: inherit;
-      box-sizing: border-box;
-    }
-
-    .volume-input:focus {
-      outline: none;
-      border-color: var(--primary-color, #4caf50);
-    }
-
-    .preset-select {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-      border-radius: 8px;
-      color: var(--primary-text-color, #fff);
-      font-size: 0.9375rem;
-      font-family: inherit;
-      box-sizing: border-box;
-      appearance: none;
-    }
-
-    .preset-select:focus {
-      outline: none;
-      border-color: var(--primary-color, #4caf50);
-    }
-
-    .targeting-summary {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      border-radius: 8px;
-      padding: 12px 16px;
-      font-size: 0.875rem;
-    }
-
-    .targeting-label {
-      opacity: 0.6;
-      margin-right: 6px;
-    }
-
-    .targeting-value {
-      color: var(--primary-color, #4caf50);
-      font-weight: 500;
-    }
-  `;
+  }
 
   private _applyEvent(event: SMEvent) {
     this._sm = transition(this._sm, event);
@@ -355,11 +333,10 @@ export class FeedAndWaterDialog extends LitElement {
   };
 
   private _isFooterBlocked(): boolean {
-    const { tabs } = this._sm;
+    const { activeTab, tabs } = this._sm;
     return (
-      tabs.watering.sub.kind === 'submitting' ||
-      tabs.inventory.sub.kind === 'editing' ||
-      tabs.presets.sub.kind === 'editing'
+      activeTab !== 'watering' ||
+      tabs.watering.sub.kind === 'submitting'
     );
   }
 
@@ -369,20 +346,18 @@ export class FeedAndWaterDialog extends LitElement {
     const { _sm } = this;
 
     return html`
-      <ha-dialog
-        open
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
-        @closed=${this._close}
+      <gs-dialog
+        .open=${true}
+        heading="Feed & Water"
+        subtitle="Record watering and manage nutrients"
+        .iconPath=${mdiWaterOutline}
+        containerStyle="min-height: 400px;"
+        @close=${this._close}
       >
-        <div class="shell">
-          ${this._renderHeader()}
+        <div class="glass-dialog-container">
           <div class="body">
             ${this._renderNavRail(_sm)}
-            <div class="content">
+            <div class="content" @sm-event=${this._handleContentSmEvent}>
               ${this._renderContent(_sm.activeTab)}
             </div>
           </div>
@@ -390,24 +365,7 @@ export class FeedAndWaterDialog extends LitElement {
           ${_sm.status.kind === 'confirm-discard' ? this._renderConfirmDiscard() : nothing}
           ${_sm.toast ? html`<div class="toast">${_sm.toast}</div>` : nothing}
         </div>
-      </ha-dialog>
-    `;
-  }
-
-  private _renderHeader() {
-    return html`
-      <div class="header">
-        <div class="header-icon">
-          <ha-svg-icon .path=${mdiWaterOutline} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
-        </div>
-        <div class="header-title-group">
-          <h2 class="header-title">Feed &amp; Water</h2>
-          <div class="header-subtitle">Record watering and manage nutrients</div>
-        </div>
-        <button class="close-btn" @click=${this._close} aria-label="Close">
-          <ha-svg-icon .path=${mdiClose} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
-        </button>
-      </div>
+      </gs-dialog>
     `;
   }
 
@@ -421,7 +379,7 @@ export class FeedAndWaterDialog extends LitElement {
     return html`
       <nav class="nav-rail">
         ${navItems.map(
-          ({ tab, icon, label }) => html`
+      ({ tab, icon, label }) => html`
             <button
               class="nav-item"
               data-nav=${tab}
@@ -432,22 +390,65 @@ export class FeedAndWaterDialog extends LitElement {
               <span>${label}</span>
             </button>
           `
-        )}
+    )}
       </nav>
     `;
   }
 
   private _renderContent(activeTab: TabId) {
     if (activeTab === 'watering') return this._renderWateringTab();
-    const labels: Record<'inventory' | 'presets', string> = {
-      inventory: 'Inventory',
-      presets: 'Presets',
-    };
+    if (activeTab === 'inventory') return this._renderInventoryTab();
+    return this._renderPresetsTab();
+  }
+
+  private _handleContentSmEvent = (e: CustomEvent) => {
+    if (this._sm.activeTab === 'presets') {
+      this._applyPresetEvent(e.detail);
+    } else {
+      this._applyEvent(e.detail);
+    }
+  };
+
+  private _renderInventoryTab() {
+    const { inventory: invTab } = this._sm.tabs;
     return html`
-      <div class="tab-placeholder" data-tab=${activeTab}>
-        ${labels[activeTab]} tab — coming soon
-      </div>
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${this.inventory}
+        .selectedId=${invTab.selectedId}
+        .sub=${invTab.sub}
+      ></growspace-nutrient-inventory-dialog-ui>
     `;
+  }
+
+  private _renderPresetsTab() {
+    const { presets: presetsTab } = this._sm.tabs;
+    return html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${this.presets}
+        .inventory=${this.inventory}
+        .selectedId=${presetsTab.selectedId}
+        .sub=${presetsTab.sub}
+      ></growspace-nutrient-presets-editor-ui>
+    `;
+  }
+
+  private _applyPresetEvent(event: { type: string;[key: string]: unknown }) {
+    const PRESET_MAP: Record<string, string> = {
+      ItemSelected: 'PresetItemSelected',
+      BackToList: 'PresetBackToList',
+      NewItemRequested: 'PresetNewItemRequested',
+      EditStarted: 'PresetEditStarted',
+      SaveRequested: 'PresetSaveRequested',
+      SaveResolved: 'PresetSaveResolved',
+      SaveFailed: 'PresetSaveFailed',
+      ErrorDismissed: 'PresetErrorDismissed',
+      DeleteRequested: 'PresetDeleteRequested',
+      DeleteConfirmed: 'PresetDeleteConfirmed',
+      DeleteResolved: 'PresetDeleteResolved',
+      DeleteCancelled: 'PresetDeleteCancelled',
+    };
+    const mappedType = PRESET_MAP[event.type] ?? event.type;
+    this._applyEvent({ ...event, type: mappedType } as SMEvent);
   }
 
   private _renderWateringTab() {
@@ -455,55 +456,41 @@ export class FeedAndWaterDialog extends LitElement {
     return html`
       <div data-tab="watering">
         ${this.hasPhiWarning
-          ? html`
+        ? html`
               <div class="phi-warning" data-testid="phi-warning">
                 <ha-svg-icon .path=${mdiInformation} style="width:18px;height:18px;fill:currentColor;flex-shrink:0"></ha-svg-icon>
                 ${this.phiWarningText}
               </div>
             `
-          : nothing}
+        : nothing}
 
-        <div class="form-field">
-          <label class="form-label">Volume (Liters)</label>
-          <input
-            class="volume-input"
-            type="number"
-            min="0.1"
-            step="0.1"
-            .value=${String(draft.volume)}
-            @change=${(e: Event) => {
-              const v = parseFloat((e.target as HTMLInputElement).value);
-              if (!isNaN(v) && v > 0) this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
-            }}
-          />
-        </div>
+        <md3-number-input
+          label="Volume (Liters)"
+          .value=${draft.volume}
+          .min=${0.1}
+          unit="L"
+          @change=${(e: CustomEvent) => {
+        const v = parseFloat(e.detail);
+        if (!isNaN(v) && v > 0) this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
+      }}
+        ></md3-number-input>
 
-        <div class="form-field">
-          <label class="form-label">Nutrient Preset</label>
-          <select
-            class="preset-select"
-            .value=${draft.presetId}
-            @change=${(e: Event) =>
-              this._applyEvent({
-                type: 'WateringPresetChanged',
-                presetId: (e.target as HTMLSelectElement).value,
-              })}
-          >
-            <option value="">— No preset —</option>
-            ${this.presetOptions.map(
-              (opt) => html`<option value=${opt.value} ?selected=${opt.value === draft.presetId}>${opt.label}</option>`
-            )}
-          </select>
-        </div>
+        <md3-select
+          label="Nutrient Preset"
+          .value=${draft.presetId}
+          .options=${this.presetOptions}
+          @change=${(e: CustomEvent) =>
+        this._applyEvent({ type: 'WateringPresetChanged', presetId: e.detail })}
+        ></md3-select>
 
         ${this.targetText
-          ? html`
+        ? html`
               <div class="targeting-summary">
                 <span class="targeting-label">Targeting:</span>
                 <span class="targeting-value">${this.targetText}</span>
               </div>
             `
-          : nothing}
+        : nothing}
       </div>
     `;
   }
