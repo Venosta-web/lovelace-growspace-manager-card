@@ -23,12 +23,20 @@ export type TabId = 'watering' | 'inventory' | 'presets';
 
 // ─── Per-tab sub-states ───────────────────────────────────────────────────────
 
-export type WateringSub = { kind: 'idle' } | { kind: 'editing' };
+export type WateringSub = { kind: 'idle' } | { kind: 'submitting' };
 export type InventorySub = { kind: 'idle' } | { kind: 'editing' };
 export type PresetsSub = { kind: 'idle' } | { kind: 'editing' };
 
+export interface WateringDraft {
+  volume: number;
+  presetId: string;
+}
+
+const DEFAULT_WATERING_DRAFT: WateringDraft = { volume: 1.0, presetId: '' };
+
 export interface WateringTabState {
   sub: WateringSub;
+  draft: WateringDraft;
 }
 
 export interface InventoryTabState {
@@ -64,7 +72,11 @@ export type SMEvent =
   | { type: 'TabSelected'; tab: TabId }
   | { type: 'DiscardConfirmed' }
   | { type: 'DiscardCancelled' }
-  | { type: 'SetToast'; message: string | undefined };
+  | { type: 'SetToast'; message: string | undefined }
+  | { type: 'WateringVolumeChanged'; volume: number }
+  | { type: 'WateringPresetChanged'; presetId: string }
+  | { type: 'WateringSubmitRequested' }
+  | { type: 'WateringSubmitCompleted' };
 
 // ─── Initial state ────────────────────────────────────────────────────────────
 
@@ -72,7 +84,7 @@ export function createInitialSM(): SM {
   return {
     activeTab: 'watering',
     tabs: {
-      watering: { sub: { kind: 'idle' } },
+      watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
       inventory: { sub: { kind: 'idle' } },
       presets: { sub: { kind: 'idle' } },
     },
@@ -121,6 +133,46 @@ export function transition(sm: SM, event: SMEvent): SM {
 
     case 'SetToast':
       return { ...sm, toast: event.message };
+
+    case 'WateringVolumeChanged':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, volume: event.volume } },
+        },
+      };
+
+    case 'WateringPresetChanged':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, presetId: event.presetId } },
+        },
+      };
+
+    case 'WateringSubmitRequested': {
+      if (sm.tabs.watering.sub.kind === 'submitting') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          watering: { ...sm.tabs.watering, sub: { kind: 'submitting' } },
+        },
+      };
+    }
+
+    case 'WateringSubmitCompleted': {
+      if (sm.tabs.watering.sub.kind !== 'submitting') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+        },
+      };
+    }
 
     default:
       return sm;

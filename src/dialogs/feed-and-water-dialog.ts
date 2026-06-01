@@ -5,6 +5,7 @@ import {
   mdiBottleTonicPlus,
   mdiFormatListBulleted,
   mdiClose,
+  mdiInformation,
 } from '@mdi/js';
 import {
   createInitialSM,
@@ -17,6 +18,10 @@ import {
 @customElement('feed-and-water-dialog')
 export class FeedAndWaterDialog extends LitElement {
   @property({ type: Boolean }) open = false;
+  @property({ attribute: false }) presetOptions: { label: string; value: string }[] = [];
+  @property({ type: String }) targetText = '';
+  @property({ type: Boolean }) hasPhiWarning = false;
+  @property({ type: String }) phiWarningText = '';
 
   @state() private _sm: SM = createInitialSM();
 
@@ -247,6 +252,86 @@ export class FeedAndWaterDialog extends LitElement {
       color: var(--secondary-text-color, rgba(255,255,255,0.5));
       font-size: 0.875rem;
     }
+
+    /* Watering tab */
+    .phi-warning {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+      border: 1px solid #ff9800;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
+    }
+
+    .form-field {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.6;
+      margin-bottom: 6px;
+    }
+
+    .volume-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      color: var(--primary-text-color, #fff);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .volume-input:focus {
+      outline: none;
+      border-color: var(--primary-color, #4caf50);
+    }
+
+    .preset-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      color: var(--primary-text-color, #fff);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      box-sizing: border-box;
+      appearance: none;
+    }
+
+    .preset-select:focus {
+      outline: none;
+      border-color: var(--primary-color, #4caf50);
+    }
+
+    .targeting-summary {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.875rem;
+    }
+
+    .targeting-label {
+      opacity: 0.6;
+      margin-right: 6px;
+    }
+
+    .targeting-value {
+      color: var(--primary-color, #4caf50);
+      font-weight: 500;
+    }
   `;
 
   private _applyEvent(event: SMEvent) {
@@ -257,8 +342,25 @@ export class FeedAndWaterDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
+  private _handleRecordWatering = () => {
+    const { draft } = this._sm.tabs.watering;
+    this._applyEvent({ type: 'WateringSubmitRequested' });
+    this.dispatchEvent(
+      new CustomEvent('submit-watering', {
+        detail: { volume: draft.volume, presetId: draft.presetId },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  };
+
   private _isFooterBlocked(): boolean {
-    return Object.values(this._sm.tabs).some((t) => t.sub.kind === 'editing');
+    const { tabs } = this._sm;
+    return (
+      tabs.watering.sub.kind === 'submitting' ||
+      tabs.inventory.sub.kind === 'editing' ||
+      tabs.presets.sub.kind === 'editing'
+    );
   }
 
   render() {
@@ -336,14 +438,72 @@ export class FeedAndWaterDialog extends LitElement {
   }
 
   private _renderContent(activeTab: TabId) {
-    const labels: Record<TabId, string> = {
-      watering: 'Watering',
+    if (activeTab === 'watering') return this._renderWateringTab();
+    const labels: Record<'inventory' | 'presets', string> = {
       inventory: 'Inventory',
       presets: 'Presets',
     };
     return html`
       <div class="tab-placeholder" data-tab=${activeTab}>
         ${labels[activeTab]} tab — coming soon
+      </div>
+    `;
+  }
+
+  private _renderWateringTab() {
+    const { draft } = this._sm.tabs.watering;
+    return html`
+      <div data-tab="watering">
+        ${this.hasPhiWarning
+          ? html`
+              <div class="phi-warning" data-testid="phi-warning">
+                <ha-svg-icon .path=${mdiInformation} style="width:18px;height:18px;fill:currentColor;flex-shrink:0"></ha-svg-icon>
+                ${this.phiWarningText}
+              </div>
+            `
+          : nothing}
+
+        <div class="form-field">
+          <label class="form-label">Volume (Liters)</label>
+          <input
+            class="volume-input"
+            type="number"
+            min="0.1"
+            step="0.1"
+            .value=${String(draft.volume)}
+            @change=${(e: Event) => {
+              const v = parseFloat((e.target as HTMLInputElement).value);
+              if (!isNaN(v) && v > 0) this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
+            }}
+          />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Nutrient Preset</label>
+          <select
+            class="preset-select"
+            .value=${draft.presetId}
+            @change=${(e: Event) =>
+              this._applyEvent({
+                type: 'WateringPresetChanged',
+                presetId: (e.target as HTMLSelectElement).value,
+              })}
+          >
+            <option value="">— No preset —</option>
+            ${this.presetOptions.map(
+              (opt) => html`<option value=${opt.value} ?selected=${opt.value === draft.presetId}>${opt.label}</option>`
+            )}
+          </select>
+        </div>
+
+        ${this.targetText
+          ? html`
+              <div class="targeting-summary">
+                <span class="targeting-label">Targeting:</span>
+                <span class="targeting-value">${this.targetText}</span>
+              </div>
+            `
+          : nothing}
       </div>
     `;
   }
@@ -356,9 +516,7 @@ export class FeedAndWaterDialog extends LitElement {
           class="btn-record"
           data-action="record-watering"
           ?disabled=${blocked}
-          @click=${() => {
-            /* watering submission — implemented in follow-on issue */
-          }}
+          @click=${this._handleRecordWatering}
         >
           Record Watering
         </button>

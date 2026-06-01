@@ -202,6 +202,7 @@ var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z
 var mdiViewGrid = "M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3";
 var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z";
 var mdiWaterMinus = "M22 17V19H14V17H22M17.62 12C16.31 8.1 12 3.25 12 3.25S6 10 6 14C6 17.31 8.69 20 12 20C12.12 20 12.23 20 12.34 20C12.12 19.36 12 18.7 12 18C12 14.82 14.5 12.22 17.62 12Z";
+var mdiWaterOutline = "M12,3.77L11.25,4.61C11.25,4.61 9.97,6.06 8.68,7.94C7.39,9.82 6,12.07 6,14.23A6,6 0 0,0 12,20.23A6,6 0 0,0 18,14.23C18,12.07 16.61,9.82 15.32,7.94C14.03,6.06 12.75,4.61 12.75,4.61L12,3.77M12,6.9C12.44,7.42 12.84,7.85 13.68,9.07C14.89,10.83 16,13.07 16,14.23C16,16.45 14.22,18.23 12,18.23C9.78,18.23 8,16.45 8,14.23C8,13.07 9.11,10.83 10.32,9.07C11.16,7.85 11.56,7.42 12,6.9Z";
 var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z";
 var mdiWaterPlus = "M12 18C12 18.7 12.12 19.36 12.34 20C12.23 20 12.12 20 12 20C8.69 20 6 17.31 6 14C6 10 12 3.25 12 3.25S16.31 8.1 17.62 12C14.5 12.22 12 14.82 12 18M19 17V14H17V17H14V19H17V22H19V19H22V17H19Z";
 var mdiWaterPump = "M19,14.5C19,14.5 21,16.67 21,18A2,2 0 0,1 19,20A2,2 0 0,1 17,18C17,16.67 19,14.5 19,14.5M5,18V9A2,2 0 0,1 3,7A2,2 0 0,1 5,5V4A2,2 0 0,1 7,2H9A2,2 0 0,1 11,4V5H19A2,2 0 0,1 21,7V9L21,11A1,1 0 0,1 22,12A1,1 0 0,1 21,13H17A1,1 0 0,1 16,12A1,1 0 0,1 17,11V9H11V18H12A2,2 0 0,1 14,20V22H2V20A2,2 0 0,1 4,18H5Z";
@@ -499,6 +500,10 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.POWER]: { primary: 'powerSensors' },
     [MetricKey.PH]: { primary: 'phSensors' },
     [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
+    [MetricKey.SUBSTRATE_EC]: { primary: 'substrateEcSensors' },
+    [MetricKey.RUNOFF_EC]: { primary: 'runoffEcSensors' },
+    [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
+    [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
 };
 
 // --- Utils ---
@@ -12824,7 +12829,7 @@ function defaultAddDraft(row, col) {
 function defaultTransplantDraft(row, col) {
     return { selectedPlantId: null, row, col };
 }
-function createInitialSM$a({ row, col }) {
+function createInitialSM$b({ row, col }) {
     return {
         activeTab: 'add',
         tabs: {
@@ -12837,7 +12842,7 @@ function createInitialSM$a({ row, col }) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$a(sm, event) {
+function transition$b(sm, event) {
     switch (event.type) {
         case 'TabSelected': {
             const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
@@ -12976,16 +12981,16 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.seedlingPlants = [];
         this.targetGrowspaceId = '';
         this.siblingPlants = [];
-        this._sm = createInitialSM$a({ row: 0, col: 0 });
+        this._sm = createInitialSM$b({ row: 0, col: 0 });
     }
     setInitialState(row, col, strain = '', phenotype = '') {
-        this._sm = createInitialSM$a({ row, col });
+        this._sm = createInitialSM$b({ row, col });
         if (strain) {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
         }
         if (phenotype) {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
         }
     }
     _close() {
@@ -13033,7 +13038,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 cure_start: d.cureStart,
                 addToLibrary: d.addToLibrary,
             };
-            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$b(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
         else {
@@ -13053,7 +13058,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 new_col: tabDraft.col + 1,
                 veg_start: today,
             };
-            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$b(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
     }
@@ -13128,7 +13133,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'add' });
+            this._sm = transition$b(this._sm, { type: 'TabSelected', tab: 'add' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -13137,7 +13142,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'clone' });
+            this._sm = transition$b(this._sm, { type: 'TabSelected', tab: 'clone' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
@@ -13146,7 +13151,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'seedling' });
+            this._sm = transition$b(this._sm, { type: 'TabSelected', tab: 'seedling' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -13170,7 +13175,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                   <button
                     class="md3-button tonal"
                     @click=${addSub.kind === 'step-identity' ? this._close : () => {
-                this._sm = transition$a(this._sm, { type: 'WizardBacked' });
+                this._sm = transition$b(this._sm, { type: 'WizardBacked' });
             }}
                   >
                     ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
@@ -13180,7 +13185,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                         <button
                           class="md3-button primary"
                           @click=${() => {
-                    this._sm = transition$a(this._sm, { type: 'WizardAdvanced' });
+                    this._sm = transition$b(this._sm, { type: 'WizardAdvanced' });
                 }}
                           ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
                         >
@@ -13278,9 +13283,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             .value=${draft.strainQuery || draft.strain}
             placeholder="Search strain library…"
             @change=${(e) => {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
             if (e.detail !== draft.strain) {
-                this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+                this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
             }
         }}
           ></md3-text-input>
@@ -13293,8 +13298,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       <div
                         class="strain-option"
                         @click=${() => {
-                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
-                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                    this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                    this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
                 }}
                       >
                         <span>${s}</span>
@@ -13315,7 +13320,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 label="Phenotype"
                 .value=${draft.phenotype}
                 .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+                @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
               ></md3-text-input>
             `
             : E}
@@ -13357,7 +13362,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           >
           <md3-switch
             .checked=${draft.addToLibrary}
-            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
+            @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
             ?disabled=${!draft.strain}
           ></md3-switch>
         </div>
@@ -13386,15 +13391,15 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <button
             class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
             @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+            this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
         }}
           >
             🌱 Seed
           </button>
           <button
             class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
-            @click=${() => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+            @click=${() => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
             ?disabled=${clonable.length === 0}
           >
             ✂️ Clone
@@ -13418,7 +13423,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       class="sibling-item ${isSelected ? 'selected' : ''}"
                       @click=${() => {
                     const today = new Date().toISOString().split('T')[0];
-                    this._sm = transition$a(this._sm, {
+                    this._sm = transition$b(this._sm, {
                         type: 'SiblingPlantSelected',
                         strain: p.attributes.strain || draft.strain,
                         phenotype: p.attributes.phenotype || draft.phenotype,
@@ -13466,12 +13471,12 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${draft.row + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
             .value=${draft.col + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
         </div>
       </div>
@@ -13492,28 +13497,28 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             return x `<md3-date-input
         label="Mother Start"
         .value=${draft.motherStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('clone')) {
             return x `<md3-date-input
         label="Clone Start"
         .value=${draft.cloneStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('dry')) {
             return x `<md3-date-input
         label="Dry Start"
         .value=${draft.dryStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else if (name.includes('cure')) {
             return x `<md3-date-input
         label="Cure Start"
         .value=${draft.cureStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
+        @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
       ></md3-date-input>`;
         }
         else {
@@ -13521,17 +13526,17 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         <md3-date-input
           label="Seedling Start"
           .value=${draft.seedlingStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Veg Start"
           .value=${draft.vegStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
         ></md3-date-input>
         <md3-date-input
           label="Flower Start"
           .value=${draft.flowerStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$b(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
         ></md3-date-input>
       `;
         }
@@ -13570,7 +13575,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 .value=${tabDraft.selectedPlantId || ''}
                 .options=${options}
                 @change=${(e) => {
-                this._sm = transition$a(this._sm, {
+                this._sm = transition$b(this._sm, {
                     type: 'DraftFieldChanged',
                     tab: stage,
                     field: 'selectedPlantId',
@@ -13614,7 +13619,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${tabDraft.row + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, {
+            @change=${(e) => (this._sm = transition$b(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'row',
@@ -13624,7 +13629,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Col"
             .value=${tabDraft.col + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, {
+            @change=${(e) => (this._sm = transition$b(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'col',
@@ -17688,7 +17693,7 @@ function envDraftFromDevice(device) {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$9(device) {
+function createInitialSM$a(device) {
     const sm = {
         activeTab: 'sensors',
         tabs: defaultTabs$2(),
@@ -17704,7 +17709,7 @@ function applyDeviceToSM$2(sm, device) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$9(sm, event) {
+function transition$a(sm, event) {
     switch (event.type) {
         // ── Navigation ────────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -17949,7 +17954,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
         // ── Single SM ────────────────────────────────────────────────────────────
-        this._sm = createInitialSM$9();
+        this._sm = createInitialSM$a();
         // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
@@ -17962,7 +17967,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
-        this._sm = transition$9(this._sm, event);
+        this._sm = transition$a(this._sm, event);
     }
     get currentTab() {
         return this._sm.activeTab;
@@ -17975,7 +17980,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // through familiar names. The SM is the authoritative source of truth.
     get _d() { return this._sm.environmentDraft; }
     _setEnv(partial) {
-        this._sm = transition$9(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+        this._sm = transition$a(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     }
     get envSelectedId() { return this._d.selectedGrowspaceId; }
     set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
@@ -18295,9 +18300,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             }
             : {};
         this._sm = {
-            ...createInitialSM$9(),
+            ...createInitialSM$a(),
             activeTab: currentTab,
-            environmentDraft: { ...createInitialSM$9().environmentDraft, ...envPartial },
+            environmentDraft: { ...createInitialSM$a().environmentDraft, ...envPartial },
         };
         this._dehumidifierControlEnabled = environmentData?.dehumidifierControlEnabled ?? false;
         this._humidifierControlEnabled = environmentData?.humidifierControlEnabled ?? false;
@@ -20463,7 +20468,7 @@ function defaultTabs$1() {
     };
 }
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$8(device) {
+function createInitialSM$9(device) {
     const sm = {
         activeTab: 'diagnostics',
         tabs: defaultTabs$1(),
@@ -20527,9 +20532,9 @@ function requestTabSwitch$1(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty$1(sm, device)) {
-        return transition$8(sm, { type: 'REQUEST_TAB', tab });
+        return transition$9(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$8(sm, { type: 'SWITCH_TAB', tab });
+    return transition$9(sm, { type: 'SWITCH_TAB', tab });
 }
 function discardAndSwitch$1(sm, device) {
     if (sm.status.kind !== 'confirm-discard')
@@ -20543,7 +20548,7 @@ function discardAndSwitch$1(sm, device) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$8(sm, event) {
+function transition$9(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -20669,7 +20674,7 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
         super(...arguments);
         this.open = false;
         this.growspaceName = '';
-        this._sm = createInitialSM$8();
+        this._sm = createInitialSM$9();
     }
     _device() {
         if (!this.dialogState?.growspaceId)
@@ -20681,11 +20686,11 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
     updated(changed) {
         if (changed.has('open') && this.open) {
             const device = this._device();
-            this._sm = createInitialSM$8(device);
+            this._sm = createInitialSM$9(device);
         }
     }
     _transition(event) {
-        this._sm = transition$8(this._sm, event);
+        this._sm = transition$9(this._sm, event);
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
@@ -20935,7 +20940,7 @@ CropSteeringDialog = __decorate([
  * user interactions become transition(sm, event) calls.
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$7(growspaceName) {
+function createInitialSM$8(growspaceName) {
     return {
         activeThreadId: null,
         composerDraft: '',
@@ -20952,7 +20957,7 @@ function createInitialSM$7(growspaceName) {
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$7(sm, event) {
+function transition$8(sm, event) {
     switch (event.type) {
         case 'THREAD_SELECTED':
             return {
@@ -21015,7 +21020,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this.growspacename = '';
-        this._sm = createInitialSM$7();
+        this._sm = createInitialSM$8();
         this._activeThread = new libExports.StoreController(this, activeThreadId$);
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
@@ -21024,10 +21029,10 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        this._sm = createInitialSM$7(this.growspacename || undefined);
+        this._sm = createInitialSM$8(this.growspacename || undefined);
     }
     _dispatch(event) {
-        this._sm = transition$7(this._sm, event);
+        this._sm = transition$8(this._sm, event);
     }
     _getActiveThread() {
         const activeMap = this._activeThread.value;
@@ -22743,7 +22748,7 @@ GmBriefingPanel = __decorate([
  * per-tab draft state. Shape is flat.
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$6() {
+function createInitialSM$7() {
     return {
         activeFilter: 'all',
         selectedId: null,
@@ -22753,7 +22758,7 @@ function createInitialSM$6() {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$6(sm, event) {
+function transition$7(sm, event) {
     switch (event.type) {
         case 'FilterSelected':
             return {
@@ -22854,7 +22859,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this.growspacename = '';
-        this._sm = createInitialSM$6();
+        this._sm = createInitialSM$7();
         this._alerts = new libExports.StoreController(this, aiAlerts$);
         this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
     }
@@ -22895,28 +22900,28 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         const alertId = this._sm.selectedId;
         if (!alertId)
             return;
-        this._sm = transition$6(this._sm, { type: 'ResolveRequested' });
+        this._sm = transition$7(this._sm, { type: 'ResolveRequested' });
         try {
             await resolveAlert(alertId, note);
-            this._sm = transition$6(this._sm, { type: 'SaveResolved' });
-            this._sm = transition$6(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
+            this._sm = transition$7(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$7(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
         }
         catch (e) {
-            this._sm = transition$6(this._sm, { type: 'SaveFailed', message: String(e) });
+            this._sm = transition$7(this._sm, { type: 'SaveFailed', message: String(e) });
         }
     }
     async _handleApplyConfirmed() {
         if (this._sm.status.kind !== 'confirming')
             return;
         const action = this._sm.status.action;
-        this._sm = transition$6(this._sm, { type: 'ActionApplyConfirmed' });
+        this._sm = transition$7(this._sm, { type: 'ActionApplyConfirmed' });
         try {
             await applyAction(action);
-            this._sm = transition$6(this._sm, { type: 'SaveResolved' });
-            this._sm = transition$6(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
+            this._sm = transition$7(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$7(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
         }
         catch (e) {
-            this._sm = transition$6(this._sm, { type: 'SaveFailed', message: String(e) });
+            this._sm = transition$7(this._sm, { type: 'SaveFailed', message: String(e) });
         }
     }
     _renderFilterStrip() {
@@ -22931,7 +22936,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             <button
               class="inbox-filter-pill"
               aria-pressed=${this._sm.activeFilter === key ? 'true' : 'false'}
-              @click=${() => { this._sm = transition$6(this._sm, { type: 'FilterSelected', filter: key }); }}
+              @click=${() => { this._sm = transition$7(this._sm, { type: 'FilterSelected', filter: key }); }}
             >
               ${label}
               <span class="pill-count">${this._countFor(key)}</span>
@@ -22960,7 +22965,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
               <div
                 class="inbox-row"
                 aria-selected=${this._sm.selectedId === a.id ? 'true' : 'false'}
-                @click=${() => { this._sm = transition$6(this._sm, { type: 'AlertSelected', id: a.id }); }}
+                @click=${() => { this._sm = transition$7(this._sm, { type: 'AlertSelected', id: a.id }); }}
               >
                 <div
                   class="inbox-severity-bar"
@@ -23009,7 +23014,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                 ${status.message}
                 <button
                   class="error-dismiss-btn"
-                  @click=${() => { this._sm = transition$6(this._sm, { type: 'ErrorDismissed' }); }}
+                  @click=${() => { this._sm = transition$7(this._sm, { type: 'ErrorDismissed' }); }}
                 >Dismiss</button>
               </div>
             `
@@ -23056,7 +23061,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                     <div class="reco-row-body">${action.description}</div>
                     <button
                       class="apply-btn"
-                      @click=${() => { this._sm = transition$6(this._sm, { type: 'ActionApplyRequested', action }); }}
+                      @click=${() => { this._sm = transition$7(this._sm, { type: 'ActionApplyRequested', action }); }}
                     >Apply</button>
                   </div>
                 `)}
@@ -23071,7 +23076,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                 <div class="confirm-overlay-actions">
                   <button
                     class="confirm-cancel-btn"
-                    @click=${() => { this._sm = transition$6(this._sm, { type: 'ActionApplyCancelled' }); }}
+                    @click=${() => { this._sm = transition$7(this._sm, { type: 'ActionApplyCancelled' }); }}
                   >Cancel</button>
                   <button
                     class="confirm-apply-btn"
@@ -23096,7 +23101,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                     placeholder="Add a note…"
                     .value=${status.text}
                     @input=${(e) => {
-                this._sm = transition$6(this._sm, {
+                this._sm = transition$7(this._sm, {
                     type: 'NoteChanged',
                     text: e.target.value,
                 });
@@ -23111,7 +23116,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             : x `
                 <button
                   class="add-note-btn"
-                  @click=${() => { this._sm = transition$6(this._sm, { type: 'AddNoteOpened' }); }}
+                  @click=${() => { this._sm = transition$7(this._sm, { type: 'AddNoteOpened' }); }}
                 >Add note</button>
                 <button
                   class="resolve-btn"
@@ -23136,7 +23141,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
           class="mark-all-read-btn"
           ?disabled=${!this._hasUnread}
           @click=${() => {
-            this._sm = transition$6(this._sm, {
+            this._sm = transition$7(this._sm, {
                 type: 'MarkAllRead',
                 ids: this._filtered().map((a) => a.id),
             });
@@ -24585,7 +24590,7 @@ GrowMasterDialog = __decorate([
  *     .tabs               — one typed state object per tab (draft + sub)
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$5(seed) {
+function createInitialSM$6(seed) {
     return {
         activeTab: 'scoring',
         tabs: {
@@ -24645,7 +24650,7 @@ function parseMetrics(draft) {
     return result;
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$5(sm, event) {
+function transition$6(sm, event) {
     switch (event.type) {
         case 'TabSelected':
             if (sm.status.kind !== 'idle')
@@ -24743,15 +24748,15 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        this._sm = createInitialSM$5();
+        this._sm = createInitialSM$6();
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
-            this._sm = createInitialSM$5(this.dialogState);
+            this._sm = createInitialSM$6(this.dialogState);
         }
     }
     _transition(event) {
-        this._sm = transition$5(this._sm, event);
+        this._sm = transition$6(this._sm, event);
     }
     _selectTab(tab) {
         this._transition({ type: 'TabSelected', tab });
@@ -25375,7 +25380,7 @@ function defaultTabs() {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$4(device) {
+function createInitialSM$5(device) {
     const sm = {
         activeTab: 'schedules',
         tabs: defaultTabs(),
@@ -25629,7 +25634,7 @@ function resetActiveTabDraft(sm, device) {
 }
 // ─── Transition function ────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$4(sm, event) {
+function transition$5(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -25963,9 +25968,9 @@ function requestTabSwitch(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty(sm, device)) {
-        return transition$4(sm, { type: 'REQUEST_TAB', tab });
+        return transition$5(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$4(sm, { type: 'SWITCH_TAB', tab });
+    return transition$5(sm, { type: 'SWITCH_TAB', tab });
 }
 /**
  * Discard the active tab's draft (reset to device state) and switch to the pending tab.
@@ -26128,7 +26133,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.initialTab = undefined;
         this.scrollToField = undefined;
         /** Single reactive state atom. All 35 former @state() flags live here. */
-        this._sm = createInitialSM$4();
+        this._sm = createInitialSM$5();
         // ─── Tanks tab state ────────────────────────────────────────────────────
         this._editingTankIndex = null;
         this._tankDraft = null;
@@ -26229,14 +26234,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._fetchStageAnalytics();
             this._ecRampFetched = false;
             if (this.initialTab) {
-                this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
+                this._sm = transition$5(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
         if (!this._visibleTabs.includes(this._sm.activeTab)) {
-            this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
+            this._sm = transition$5(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
         }
         // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
         if (changedProps.has('_sm')) {
@@ -26272,7 +26277,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _initializeState() {
         if (!this.device)
             return;
-        this._sm = transition$4(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
+        this._sm = transition$5(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
     }
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
@@ -26314,7 +26319,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this._dataService)
             return;
         const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
-        this._sm = transition$4(this._sm, {
+        this._sm = transition$5(this._sm, {
             type: 'SET_STAGE_AGGREGATES',
             data: result?.stage_aggregates ?? null,
         });
@@ -26322,12 +26327,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _handleRunNow() {
         if (!this.device?.deviceId || !this.store)
             return;
-        this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
+        this._sm = transition$5(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
         try {
             await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
         }
         finally {
-            this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
+            this._sm = transition$5(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
         }
     }
     async _saveStrategy() {
@@ -26343,7 +26348,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _saveDrainConfig() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        this._sm = transition$4(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
+        this._sm = transition$5(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
         const d = this._sm.tabs.drain_ec.draft;
         try {
             await this._dataService.configureDrainMonitoring(this.device.deviceId, {
@@ -26356,7 +26361,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to save drain config');
         }
         finally {
-            this._sm = transition$4(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
+            this._sm = transition$5(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
         }
     }
     // ─── Schedule mutations ───────────────────────────────────────────────────
@@ -26364,7 +26369,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
         await addIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: formattedTime,
@@ -26380,7 +26385,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await addDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26410,7 +26415,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$4(this._sm, {
+        this._sm = transition$5(this._sm, {
             type: 'BEGIN_ADD_IRRIGATION',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.irrigationDuration,
@@ -26421,14 +26426,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$4(this._sm, {
+        this._sm = transition$5(this._sm, {
             type: 'BEGIN_ADD_DRAIN',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.drainDuration,
         });
     }
     _startEditingIrrigationTime(timeStr, duration) {
-        this._sm = transition$4(this._sm, {
+        this._sm = transition$5(this._sm, {
             type: 'BEGIN_EDIT_IRRIGATION',
             originalTime: timeStr,
             originalDuration: duration,
@@ -26437,7 +26442,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         });
     }
     _startEditingDrainTime(timeStr, duration) {
-        this._sm = transition$4(this._sm, {
+        this._sm = transition$5(this._sm, {
             type: 'BEGIN_EDIT_DRAIN',
             originalTime: timeStr,
             originalDuration: duration,
@@ -26458,7 +26463,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
         await removeIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -26482,7 +26487,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
         await removeDrainTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -26498,7 +26503,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeIrrigationTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26514,7 +26519,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26526,18 +26531,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _close() {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
-        this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'SET_TOAST', message: undefined });
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _showErrorToast(message) {
-        this._sm = transition$4(this._sm, { type: 'SET_TOAST', message });
+        this._sm = transition$5(this._sm, { type: 'SET_TOAST', message });
         setTimeout(() => {
-            this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
+            this._sm = transition$5(this._sm, { type: 'SET_TOAST', message: undefined });
         }, 5000);
     }
     _updateStrategyField(field, value) {
-        this._sm = transition$4(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
+        this._sm = transition$5(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -26563,7 +26568,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Feed EC and Drain EC must be > 0');
             return;
         }
-        this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
+        this._sm = transition$5(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
         try {
             await this._dataService.logDrainReading(this.device.deviceId, {
                 feedEc: d.logFeedEc,
@@ -26576,7 +26581,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to log drain reading');
         }
         finally {
-            this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
+            this._sm = transition$5(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
         }
     }
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -26731,7 +26736,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   .iconPath=${mdiAlert}
                   stageColor="var(--warning-color, #ff9800)"
                   @close=${() => {
-                this._sm = transition$4(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$5(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                 >
                   <div style="padding:20px;">
@@ -26746,7 +26751,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     <button
                       class="md3-button tonal"
                       @click=${() => {
-                this._sm = transition$4(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$5(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                     >
                       Stay
@@ -27374,12 +27379,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'UPDATE_ADD_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$4(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
+                    this._sm = transition$5(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -27406,12 +27411,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$4(this._sm, {
+                        this._sm = transition$5(this._sm, {
                             type: 'UPDATE_ADD_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$4(this._sm, {
+                        this._sm = transition$5(this._sm, {
                             type: 'UPDATE_ADD_DRAIN',
                             duration: val,
                         });
@@ -27457,12 +27462,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'UPDATE_EDIT_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$4(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
+                    this._sm = transition$5(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -27489,12 +27494,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$4(this._sm, {
+                        this._sm = transition$5(this._sm, {
                             type: 'UPDATE_EDIT_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$4(this._sm, {
+                        this._sm = transition$5(this._sm, {
                             type: 'UPDATE_EDIT_DRAIN',
                             duration: val,
                         });
@@ -27535,14 +27540,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _openAddTimeDialog(type) {
         if (type === 'irrigation') {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'BEGIN_ADD_IRRIGATION',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.irrigationDuration,
             });
         }
         else {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'BEGIN_ADD_DRAIN',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.drainDuration,
@@ -27550,22 +27555,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _cancelAddTime(_type) {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
     }
     _cancelEditTime(_type) {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_INLINE' });
     }
     _handlePhaseCardClick(phaseId) {
         if (this._sm.tabs.steering.phase === phaseId)
             return;
-        this._sm = transition$4(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
+        this._sm = transition$5(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
     }
     _confirmPhaseChange() {
-        this._sm = transition$4(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
+        this._sm = transition$5(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
         this._saveSettings();
     }
     _cancelPhaseChange() {
-        this._sm = transition$4(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
+        this._sm = transition$5(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     _renderSteeringTab(_color) {
@@ -27723,7 +27728,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP1ToP2"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
               @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP1ToP2: e.target.checked },
             });
@@ -27741,7 +27746,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP2ToP3"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
               @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP2ToP3: e.target.checked },
             });
@@ -27759,7 +27764,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="haltOnRunoffEc"
               .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
               @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null },
             });
@@ -27778,7 +27783,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const v = parseFloat(e.detail ?? e.target.value);
                 if (!isNaN(v))
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { haltOnRunoffEcThreshold: v },
                     });
@@ -27830,13 +27835,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div class="section-header"><h3>Pump Configuration</h3></div>
         <div class="section-content">
           ${this._renderEntitySelect('Irrigation Pump', this._sm.tabs.schedules.draft.irrigationPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { irrigationPumpEntity: e.target.value },
             });
         })}
           ${this._renderEntitySelect('Drain Pump (Optional)', this._sm.tabs.schedules.draft.drainPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { drainPumpEntity: e.target.value },
             });
@@ -27868,7 +27873,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { soilTriggerPercent: v ? parseFloat(v) : null },
             });
@@ -27888,7 +27893,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
             });
@@ -27908,7 +27913,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
             });
@@ -27926,7 +27931,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'No cycles between lights-off and lights-on',
                 get: () => this._sm.tabs.config.draft.skipDuringDark,
                 set: (v) => {
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { skipDuringDark: v },
                     });
@@ -27937,7 +27942,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Halt cycles when any tank is below warning level',
                 get: () => this._sm.tabs.config.draft.pauseOnLowTank,
                 set: (v) => {
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { pauseOnLowTank: v },
                     });
@@ -27948,7 +27953,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Record start, duration, and moisture delta per cycle',
                 get: () => this._sm.tabs.config.draft.logToLogbook,
                 set: (v) => {
-                    this._sm = transition$4(this._sm, {
+                    this._sm = transition$5(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { logToLogbook: v },
                     });
@@ -28847,7 +28852,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <md3-switch
             .checked=${drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { enabled: e.target.checked },
             });
@@ -28862,7 +28867,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             min="0.1"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
             });
@@ -28876,7 +28881,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="5"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
             });
@@ -28898,7 +28903,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedEc: parseFloat(e.detail) || 0 },
             });
@@ -28910,7 +28915,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainEc: parseFloat(e.detail) || 0 },
             });
@@ -28922,7 +28927,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedVolume: parseInt(e.detail) || 0 },
             });
@@ -28934,7 +28939,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainVolume: parseInt(e.detail) || 0 },
             });
@@ -29107,7 +29112,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.minEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
             });
@@ -29125,7 +29130,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.maxEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$4(this._sm, {
+            this._sm = transition$5(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
             });
@@ -31615,7 +31620,7 @@ function emptyInventoryTab() {
 function emptyPresetsTab() {
     return { selectedId: null, sub: { kind: 'idle' } };
 }
-function createInitialSM$3() {
+function createInitialSM$4() {
     return {
         activeTab: 'inventory',
         tabs: {
@@ -31627,7 +31632,7 @@ function createInitialSM$3() {
     };
 }
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function isTabDirty(sm, tab) {
+function isTabDirty$1(sm, tab) {
     const sub = sm.tabs[tab].sub;
     return sub.kind === 'editing' || sub.kind === 'applying';
 }
@@ -31643,14 +31648,14 @@ function emptyPresetDraft() {
     return { name: '', nutrients: [] };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$3(sm, event) {
+function transition$4(sm, event) {
     switch (event.type) {
         case 'TabSelected': {
             if (event.tab === sm.activeTab)
                 return sm;
             if (sm.status.kind !== 'idle')
                 return sm;
-            if (isTabDirty(sm, sm.activeTab)) {
+            if (isTabDirty$1(sm, sm.activeTab)) {
                 return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
             }
             return {
@@ -32630,7 +32635,7 @@ let NutrientDialog = class NutrientDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        this._sm = createInitialSM$3();
+        this._sm = createInitialSM$4();
         this._inventory = new libExports.StoreController(this, nutrientInventory$);
         this._presets = new libExports.StoreController(this, nutrientPresets$);
     }
@@ -32645,7 +32650,7 @@ let NutrientDialog = class NutrientDialog extends i$3 {
         }
     }
     _applyEvent(event) {
-        this._sm = transition$3(this._sm, event);
+        this._sm = transition$4(this._sm, event);
     }
     _handleSmEvent(e) {
         this._applyEvent(e.detail);
@@ -37351,7 +37356,7 @@ SnapshotsDialog = __decorate([
  *     .toast       — transient message
  */
 // ─── Factory ──────────────────────────────────────────────────────────────────
-function createInitialSM$2() {
+function createInitialSM$3() {
     return {
         activeView: 'list',
         views: {
@@ -37366,7 +37371,7 @@ function createInitialSM$2() {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$2(sm, event) {
+function transition$3(sm, event) {
     switch (event.type) {
         case 'EDIT_REQUESTED':
             return {
@@ -37464,11 +37469,11 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         super(...arguments);
         this.strains = [];
         this.open = false;
-        this._sm = createInitialSM$2();
+        this._sm = createInitialSM$3();
     }
     willUpdate(changed) {
         if (changed.has('open') && !this.open) {
-            this._sm = createInitialSM$2();
+            this._sm = createInitialSM$3();
         }
     }
     _close() {
@@ -37549,7 +37554,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         ${breeders.map((b) => x `
             <div
               class="breeder-card"
-              @click=${() => (this._sm = transition$2(this._sm, {
+              @click=${() => (this._sm = transition$3(this._sm, {
             type: 'EDIT_REQUESTED',
             name: b.name,
             logo: b.logo,
@@ -37573,7 +37578,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                   class="action-btn"
                   @click=${(e) => {
             e.stopPropagation();
-            this._sm = transition$2(this._sm, {
+            this._sm = transition$3(this._sm, {
                 type: 'EDIT_REQUESTED',
                 name: b.name,
                 logo: b.logo,
@@ -37588,7 +37593,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                   class="action-btn"
                   @click=${(e) => {
             e.stopPropagation();
-            this._sm = transition$2(this._sm, { type: 'DELETE_REQUESTED', name: b.name });
+            this._sm = transition$3(this._sm, { type: 'DELETE_REQUESTED', name: b.name });
         }}
                   style="color:var(--error-color, #f44336);"
                 >
@@ -37613,14 +37618,14 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             const file = e.target.files?.[0];
             if (!file)
                 return;
-            this._sm = transition$2(this._sm, { type: 'LOGO_UPLOAD_STARTED' });
+            this._sm = transition$3(this._sm, { type: 'LOGO_UPLOAD_STARTED' });
             PlantUtils.compressImage(file)
                 .then((base64) => {
-                this._sm = transition$2(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64 });
+                this._sm = transition$3(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64 });
             })
                 .catch((err) => {
                 console.error('Error compressing logo:', err);
-                this._sm = transition$2(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: draft.logo });
+                this._sm = transition$3(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: draft.logo });
             });
         };
         return x `
@@ -37629,7 +37634,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => (this._sm = transition$2(this._sm, { type: 'BACK_TO_LIST' }))}
+            @click=${() => (this._sm = transition$3(this._sm, { type: 'BACK_TO_LIST' }))}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -37652,7 +37657,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             placeholder="e.g. Royal Queen Seeds"
             .value=${draft.name}
             @input=${(e) => {
-            this._sm = transition$2(this._sm, {
+            this._sm = transition$3(this._sm, {
                 type: 'FIELD_CHANGED',
                 field: 'name',
                 value: e.target.value,
@@ -37703,7 +37708,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                       class="md3-button text"
                       style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
                       @click=${() => {
-                this._sm = transition$2(this._sm, {
+                this._sm = transition$3(this._sm, {
                     type: 'FIELD_CHANGED',
                     field: 'logo',
                     value: '',
@@ -37744,7 +37749,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
           <button
             class="md3-button tonal"
-            @click=${() => (this._sm = transition$2(this._sm, { type: 'BACK_TO_LIST' }))}
+            @click=${() => (this._sm = transition$3(this._sm, { type: 'BACK_TO_LIST' }))}
           >
             Cancel
           </button>
@@ -37768,7 +37773,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
       <ha-dialog
         open
         @closed=${() => {
-            this._sm = transition$2(this._sm, { type: 'CANCEL_DELETE' });
+            this._sm = transition$3(this._sm, { type: 'CANCEL_DELETE' });
         }}
         hideActions
         without-header
@@ -37791,7 +37796,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             <button
               class="md3-button tonal"
               @click=${() => {
-            this._sm = transition$2(this._sm, { type: 'CANCEL_DELETE' });
+            this._sm = transition$3(this._sm, { type: 'CANCEL_DELETE' });
         }}
             >
               Cancel
@@ -37820,7 +37825,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             return;
         const newName = draft.name.trim();
         const isEdit = draft.originalName !== null;
-        this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
+        this._sm = transition$3(this._sm, { type: 'SAVE_REQUESTED' });
         if (isEdit) {
             this.dispatchEvent(new CustomEvent('update-breeder', {
                 detail: { oldName: draft.originalName, newName, logo: draft.logo },
@@ -37831,16 +37836,16 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                 detail: { name: newName, logo: draft.logo },
             }));
         }
-        this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
+        this._sm = transition$3(this._sm, { type: 'SAVE_RESOLVED' });
     }
     _confirmDelete() {
         const sub = this._sm.views.list.sub;
         if (sub.kind !== 'confirm-delete')
             return;
         const name = sub.name;
-        this._sm = transition$2(this._sm, { type: 'DELETE_CONFIRMED' });
+        this._sm = transition$3(this._sm, { type: 'DELETE_CONFIRMED' });
         this.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name } }));
-        this._sm = transition$2(this._sm, { type: 'DELETE_RESOLVED' });
+        this._sm = transition$3(this._sm, { type: 'DELETE_RESOLVED' });
     }
 };
 GsBreederManager.styles = [
@@ -39412,7 +39417,7 @@ function defaultViews() {
         harvest: { eventId: '', draft: defaultHarvestDraft(), sub: { kind: 'idle' } },
     };
 }
-function createInitialSM$1(seed) {
+function createInitialSM$2(seed) {
     const views = defaultViews();
     let activeView = 'list';
     if (seed?.initialView === 'log-pollination') {
@@ -39447,7 +39452,7 @@ function validateHarvestDraft(draft, eventId) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$1(sm, event) {
+function transition$2(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'BEGIN_ADD_BATCH':
@@ -39578,7 +39583,7 @@ function transition$1(sm, event) {
         case 'SAVE_RESOLVED': {
             if (sm.activeView === 'list')
                 return sm;
-            return transition$1(sm, { type: 'NAVIGATE_BACK' });
+            return transition$2(sm, { type: 'NAVIGATE_BACK' });
         }
         case 'SAVE_FAILED': {
             const view = sm.activeView;
@@ -39684,16 +39689,16 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         this.seedBatches = [];
         this.pollinationEvents = [];
         this.plants = [];
-        this._sm = createInitialSM$1();
+        this._sm = createInitialSM$2();
         this._submitAddBatch = async () => {
             const view = this._sm.views['add-batch'];
             const { draft, editingBatchId } = view;
             const error = validateBatchDraft(draft);
             if (error) {
-                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                this._sm = transition$2(this._sm, { type: 'SAVE_FAILED', message: error });
                 return;
             }
-            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
             const resolveKey = (key) => {
                 if (!key)
                     return { strain: null, phenotype: null };
@@ -39732,12 +39737,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                         notes: draft.notes,
                     });
                 }
-                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
                 this.onSeedDataChanged?.();
             }
             catch (e) {
                 console.error('Failed to save seed batch', e);
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SAVE_FAILED',
                     message: 'Failed to save. Please check your connection and try again.',
                 });
@@ -39748,10 +39753,10 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             const { draft, editingEventId } = view;
             const error = validatePollinationDraft(draft);
             if (error) {
-                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                this._sm = transition$2(this._sm, { type: 'SAVE_FAILED', message: error });
                 return;
             }
-            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
             try {
                 if (editingEventId) {
                     await this.onUpdatePollination?.({
@@ -39770,12 +39775,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                         notes: draft.notes,
                     });
                 }
-                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
                 this.onSeedDataChanged?.();
             }
             catch (e) {
                 console.error('Failed to log pollination', e);
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SAVE_FAILED',
                     message: 'Failed to save. Please check your connection and try again.',
                 });
@@ -39786,18 +39791,18 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             const { draft, eventId } = view;
             const error = validateHarvestDraft(draft, eventId);
             if (error) {
-                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                this._sm = transition$2(this._sm, { type: 'SAVE_FAILED', message: error });
                 return;
             }
-            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
             try {
                 await this.onHarvestSeeds?.({ event_id: eventId, quantity: draft.quantity, notes: draft.notes });
-                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
                 this.onSeedDataChanged?.();
             }
             catch (e) {
                 console.error('Failed to harvest seeds', e);
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SAVE_FAILED',
                     message: 'Failed to save. Please check your connection and try again.',
                 });
@@ -39807,7 +39812,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     connectedCallback() {
         super.connectedCallback();
         if (this.initialSubView === 'log-pollination') {
-            this._sm = createInitialSM$1({
+            this._sm = createInitialSM$2({
                 initialView: 'log-pollination',
                 prefilledReceiverId: this.prefilledReceiverId,
             });
@@ -39886,7 +39891,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button filled"
               @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'BEGIN_ADD_BATCH' });
+            this._sm = transition$2(this._sm, { type: 'BEGIN_ADD_BATCH' });
         }}
             >
               Add batch
@@ -39901,7 +39906,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button tonal"
               @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
+            this._sm = transition$2(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
         }}
             >
               Log pollination
@@ -39939,7 +39944,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     : '',
                 notes: b.notes ?? '',
             };
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'BEGIN_EDIT_BATCH',
                 batchId: b.batch_id,
                 draft,
@@ -39987,10 +39992,10 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             style="font-size:12px;"
             @click=${() => {
             if (isSowOpen) {
-                this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'SOW_CANCELLED' });
             }
             else {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SOW_OPENED',
                     batchId: b.batch_id,
                     defaultGrowspaceId: this.plants[0]?.deviceId ?? '',
@@ -40008,7 +40013,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   title="Confirm delete"
                   @click=${async () => {
                 await this.onDeleteSeedBatch?.(b.batch_id);
-                this._sm = transition$1(this._sm, { type: 'DELETE_CONFIRMED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CONFIRMED' });
                 this.onSeedDataChanged?.();
             }}
                 >
@@ -40020,7 +40025,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="icon-btn"
                   title="Cancel"
                   @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'DELETE_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CANCELLED' });
             }}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
@@ -40033,7 +40038,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="icon-btn danger"
                   title="Delete batch"
                   @click=${() => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'DELETE_BATCH_REQUESTED',
                     batchId: b.batch_id,
                 });
@@ -40052,7 +40057,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="sow-select"
                   .value=${listSub.growspaceId}
                   @change=${(e) => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SOW_FIELD_CHANGED',
                     partial: { growspaceId: e.target.value },
                 });
@@ -40071,7 +40076,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   max=${b.quantity}
                   .value=${String(listSub.quantity)}
                   @input=${(e) => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SOW_FIELD_CHANGED',
                     partial: { quantity: Number(e.target.value) },
                 });
@@ -40085,7 +40090,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   @click=${async () => {
                 if (!listSub.growspaceId || listSub.kind !== 'sow')
                     return;
-                this._sm = transition$1(this._sm, { type: 'SOW_APPLY_REQUESTED' });
+                this._sm = transition$2(this._sm, { type: 'SOW_APPLY_REQUESTED' });
                 try {
                     await this.onSowSeeds?.({
                         growspace_id: listSub.growspaceId,
@@ -40094,11 +40099,11 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                         seed_batch_id: b.batch_id,
                         generation: b.generation,
                     });
-                    this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                    this._sm = transition$2(this._sm, { type: 'SOW_CANCELLED' });
                     this.onSeedDataChanged?.();
                 }
                 catch {
-                    this._sm = transition$1(this._sm, { type: 'SOW_APPLY_FAILED' });
+                    this._sm = transition$2(this._sm, { type: 'SOW_APPLY_FAILED' });
                 }
             }}
                 >
@@ -40108,7 +40113,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="md3-button text"
                   style="font-size:12px;"
                   @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'SOW_CANCELLED' });
             }}
                 >
                   Cancel
@@ -40137,7 +40142,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                 notes: e.notes ?? '',
                 donorActivePlantsOnly: !e.donor_plant_id.includes('||'),
             };
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'BEGIN_EDIT_POLLINATION',
                 eventId: e.event_id,
                 draft,
@@ -40156,7 +40161,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     title="Confirm delete"
                     @click=${async () => {
                 await this.onDeletePollination?.(e.event_id);
-                this._sm = transition$1(this._sm, { type: 'DELETE_CONFIRMED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CONFIRMED' });
                 this.onSeedDataChanged?.();
             }}
                   >
@@ -40168,7 +40173,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     class="icon-btn"
                     title="Cancel"
                     @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'DELETE_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CANCELLED' });
             }}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16">
@@ -40181,7 +40186,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     class="icon-btn danger"
                     title="Delete"
                     @click=${() => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'DELETE_POLLINATION_REQUESTED',
                     eventId: e.event_id,
                 });
@@ -40207,7 +40212,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
               <button
                 class="md3-button tonal"
                 @click=${() => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'BEGIN_HARVEST',
                     eventId: e.event_id,
                 });
@@ -40242,7 +40247,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -40255,7 +40260,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.strainName}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { strainName: e.target.value },
             });
@@ -40269,7 +40274,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             list="batch-breeder-suggestions"
             .value=${draft.breeder}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { breeder: e.target.value },
             });
@@ -40283,7 +40288,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             min="1"
             .value=${String(draft.quantity)}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { quantity: parseInt(e.target.value) || 1 },
             });
@@ -40296,7 +40301,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="date"
             .value=${draft.acquisitionDate}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { acquisitionDate: e.target.value },
             });
@@ -40310,7 +40315,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             placeholder="F1, S1, BX1…"
             .value=${draft.generation}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { generation: e.target.value },
             });
@@ -40321,7 +40326,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Parent 1
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { parent1Key: e.target.value },
             });
@@ -40337,7 +40342,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Parent 2
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { parent2Key: e.target.value },
             });
@@ -40355,7 +40360,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.notes}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { notes: e.target.value },
             });
@@ -40367,7 +40372,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
@@ -40403,7 +40408,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -40416,7 +40421,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="date"
             .value=${draft.date}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { date: e.target.value },
             });
@@ -40427,7 +40432,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Donor plant (male / pollen donor)
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { donorPlantId: e.target.value },
             });
@@ -40449,7 +40454,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="checkbox"
             .checked=${draft.donorActivePlantsOnly}
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: {
                     donorActivePlantsOnly: e.target.checked,
@@ -40464,7 +40469,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Receiver plant (female / seed bearer)
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { receiverPlantId: e.target.value },
             });
@@ -40484,7 +40489,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.notes}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { notes: e.target.value },
             });
@@ -40496,7 +40501,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
@@ -40521,7 +40526,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -40535,7 +40540,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             min="1"
             .value=${String(draft.quantity)}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_HARVEST_DRAFT',
                 partial: { quantity: parseInt(e.target.value) || 1 },
             });
@@ -40548,7 +40553,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.notes}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_HARVEST_DRAFT',
                 partial: { notes: e.target.value },
             });
@@ -40560,7 +40565,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
@@ -41452,7 +41457,7 @@ LineageTreeEditor = __decorate([
  *     .sub       — mutually-exclusive overlay state
  */
 // ─── Factory ──────────────────────────────────────────────────────────────────
-function createInitialSM(draft = {}) {
+function createInitialSM$1(draft = {}) {
     return {
         draft,
         history: [],
@@ -41462,7 +41467,7 @@ function createInitialSM(draft = {}) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition(sm, event) {
+function transition$1(sm, event) {
     switch (event.type) {
         case 'DraftFieldChanged':
             return { ...sm, draft: { ...sm.draft, [event.field]: event.value } };
@@ -41545,7 +41550,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     constructor() {
         super(...arguments);
         this.strains = [];
-        this._sm = createInitialSM();
+        this._sm = createInitialSM$1();
         this._lineageTree = null;
     }
     _dispatchStateChange() {
@@ -41582,7 +41587,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 // Preserve overlay sub-state across strain switches, but reset lineage-editing
                 // since lineage tree is strain-specific.
                 const sub = this._sm.sub.kind === 'lineage-editing' ? { kind: 'idle' } : this._sm.sub;
-                this._sm = { ...createInitialSM(draft), sub };
+                this._sm = { ...createInitialSM$1(draft), sub };
                 this._lineageTree = null;
                 this._dispatchStateChange();
             }
@@ -41596,13 +41601,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         }));
     }
     _navigateToAncestor(match) {
-        this._sm = transition(this._sm, { type: 'NavigateToRelated', strain: { ...match } });
+        this._sm = transition$1(this._sm, { type: 'NavigateToRelated', strain: { ...match } });
         this._lineageTree = null;
         this._dispatchStateChange();
     }
     _goBack() {
         if (this._sm.history.length > 0) {
-            this._sm = transition(this._sm, { type: 'NavigateBack' });
+            this._sm = transition$1(this._sm, { type: 'NavigateBack' });
             this._lineageTree = null;
             this._dispatchStateChange();
         }
@@ -41613,7 +41618,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     async _handleSave() {
         if (!this._sm.draft.strain)
             return;
-        this._sm = transition(this._sm, { type: 'SaveRequested' });
+        this._sm = transition$1(this._sm, { type: 'SaveRequested' });
         try {
             const images = this._sm.draft.images ?? [];
             const hasRemote = images.some((img) => img.path.startsWith('http'));
@@ -41633,13 +41638,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                         image_crop_meta: promoted[0].crop_meta,
                     };
                 }
-                this._sm = transition(this._sm, {
+                this._sm = transition$1(this._sm, {
                     type: 'DraftFieldChanged',
                     field: 'images',
                     value: updatedDraft.images,
                 });
                 if (updatedDraft.image !== this._sm.draft.image) {
-                    this._sm = transition(this._sm, {
+                    this._sm = transition$1(this._sm, {
                         type: 'DraftFieldChanged',
                         field: 'image',
                         value: updatedDraft.image,
@@ -41660,12 +41665,12 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                     composed: true,
                 }));
             }
-            this._sm = transition(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$1(this._sm, { type: 'SaveResolved' });
             this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
         }
         catch (err) {
             const message = err instanceof Error ? err.message : 'Save failed';
-            this._sm = transition(this._sm, { type: 'SaveFailed', message });
+            this._sm = transition$1(this._sm, { type: 'SaveFailed', message });
         }
     }
     async _downloadRemoteImages(images) {
@@ -41717,20 +41722,20 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         if (field === 'image_crop_meta' && newDraft.images?.length) {
             newDraft.images = newDraft.images.map((img) => img.is_thumbnail ? { ...img, crop_meta: value } : img);
         }
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: field,
             value: newDraft[field],
         });
         if (field === 'breeder' && newDraft.breeder_logo !== this._sm.draft.breeder_logo) {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'DraftFieldChanged',
                 field: 'breeder_logo',
                 value: newDraft.breeder_logo,
             });
         }
         if (field === 'image_crop_meta' && newDraft.images) {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'DraftFieldChanged',
                 field: 'images',
                 value: newDraft.images,
@@ -41755,7 +41760,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         }));
     }
     _toggleCropMode(active) {
-        this._sm = transition(this._sm, { type: active ? 'CropRequested' : 'CropExited' });
+        this._sm = transition$1(this._sm, { type: active ? 'CropRequested' : 'CropExited' });
     }
     getCropStyle(path, meta) {
         const safeUrl = PlantUtils.encodeLocalPath(path);
@@ -41773,7 +41778,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             const file = e.target.files?.[0];
             if (file) {
                 this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace } }));
-                this._sm = transition(this._sm, { type: 'ImportCompleted' });
+                this._sm = transition$1(this._sm, { type: 'ImportCompleted' });
             }
         };
         input.click();
@@ -41804,14 +41809,14 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     }
     _startBreederEdit(name, logo) {
         if (name) {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'BreederEditRequested',
                 name,
                 logo: logo ?? '',
             });
         }
         else {
-            this._sm = transition(this._sm, { type: 'BreederAddRequested' });
+            this._sm = transition$1(this._sm, { type: 'BreederAddRequested' });
         }
     }
     _handleSaveBreeder() {
@@ -41830,19 +41835,19 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         else {
             this.dispatchEvent(new CustomEvent('save-breeder', { detail: { name: newName, logo: draft.logo } }));
         }
-        this._sm = transition(this._sm, { type: 'BreederSaved' });
+        this._sm = transition$1(this._sm, { type: 'BreederSaved' });
     }
     _handleDeleteBreeder(breederName) {
-        this._sm = transition(this._sm, { type: 'BreederDeleteRequested', name: breederName });
+        this._sm = transition$1(this._sm, { type: 'BreederDeleteRequested', name: breederName });
     }
     _confirmDeleteBreeder() {
         if (this._sm.sub.kind !== 'breeder-confirm-delete')
             return;
         this.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name: this._sm.sub.name } }));
-        this._sm = transition(this._sm, { type: 'BreederDeleteConfirmed' });
+        this._sm = transition$1(this._sm, { type: 'BreederDeleteConfirmed' });
     }
     _cancelDeleteBreeder() {
-        this._sm = transition(this._sm, { type: 'BreederDeleteCancelled' });
+        this._sm = transition$1(this._sm, { type: 'BreederDeleteCancelled' });
     }
     _handleSeedfinderImport(e) {
         const data = e.detail;
@@ -41860,14 +41865,14 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         // Apply merged fields individually via DraftFieldChanged
         for (const [key, value] of Object.entries(merged)) {
             if (merged[key] !== this._sm.draft[key]) {
-                this._sm = transition(this._sm, {
+                this._sm = transition$1(this._sm, {
                     type: 'DraftFieldChanged',
                     field: key,
                     value,
                 });
             }
         }
-        this._sm = transition(this._sm, { type: 'SeedfinderClosed' });
+        this._sm = transition$1(this._sm, { type: 'SeedfinderClosed' });
         this._dispatchStateChange();
         this.requestUpdate();
     }
@@ -41875,7 +41880,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         return this._sm.draft.images ?? [];
     }
     async _handleGalleryUpload(file) {
-        this._sm = transition(this._sm, { type: 'SaveRequested' });
+        this._sm = transition$1(this._sm, { type: 'SaveRequested' });
         try {
             const base64 = await PlantUtils.compressImage(file);
             const strain = this._sm.draft.strain ?? 'unknown';
@@ -41890,13 +41895,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 ...this._gallery(),
                 { path: response.path, is_thumbnail: this._gallery().length === 0 },
             ];
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'DraftFieldChanged',
                 field: 'images',
                 value: gallery,
             });
             if (gallery.length === 1) {
-                this._sm = transition(this._sm, {
+                this._sm = transition$1(this._sm, {
                     type: 'DraftFieldChanged',
                     field: 'image',
                     value: response.path,
@@ -41908,15 +41913,15 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             console.error('Gallery upload failed:', err);
         }
         finally {
-            this._sm = transition(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$1(this._sm, { type: 'SaveResolved' });
         }
     }
     _handleSetThumbnail(index) {
         const gallery = this._gallery().map((img, i) => ({ ...img, is_thumbnail: i === index }));
         const thumb = gallery[index];
-        this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
-        this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'image', value: thumb.path });
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
+        this._sm = transition$1(this._sm, { type: 'DraftFieldChanged', field: 'image', value: thumb.path });
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: 'image_crop_meta',
             value: thumb.crop_meta,
@@ -41931,13 +41936,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             gallery[0] = { ...gallery[0], is_thumbnail: true };
         }
         const thumb = gallery.find((img) => img.is_thumbnail);
-        this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: 'image',
             value: thumb?.path ?? '',
         });
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: 'image_crop_meta',
             value: thumb?.crop_meta,
@@ -42015,7 +42020,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 <button
                   class="md3-button text"
                   style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
-                  @click=${() => { this._sm = transition(this._sm, { type: 'SeedfinderOpened' }); }}
+                  @click=${() => { this._sm = transition$1(this._sm, { type: 'SeedfinderOpened' }); }}
                 >
                   <svg
                     style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
@@ -42273,7 +42278,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                     type="button"
                     @click=${async () => {
             const entering = this._sm.sub.kind !== 'lineage-editing';
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: entering ? 'LineageEditRequested' : 'LineageEditExited',
             });
             if (entering && s.strain) {
@@ -42505,7 +42510,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             if (file)
                 this._handleGalleryUpload(file);
             e.target.value = '';
-            this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
+            this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
         };
         const handleDrop = (e) => {
             e.preventDefault();
@@ -42593,7 +42598,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => {
             if (this._sm.status.kind !== 'applying') {
-                this._sm = transition(this._sm, { type: 'PhotoMenuToggled' });
+                this._sm = transition$1(this._sm, { type: 'PhotoMenuToggled' });
             }
         }}
           >
@@ -42640,7 +42645,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             ? x `
               <div
                 style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
-                @click=${() => { this._sm = transition(this._sm, { type: 'PhotoMenuClosed' }); }}
+                @click=${() => { this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' }); }}
               ></div>
               <div
                 style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;"
@@ -42652,7 +42657,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
                   @click=${(e) => {
                 e.stopPropagation();
-                this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
+                this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
                 this.shadowRoot?.getElementById('gallery-camera-input')?.click();
             }}
                 >
@@ -42668,7 +42673,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
                   @click=${(e) => {
                 e.stopPropagation();
-                this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
+                this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
                 this.shadowRoot?.getElementById('gallery-library-input')?.click();
             }}
                 >
@@ -42687,7 +42692,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     `;
     }
     renderImportDialog() {
-        const close = () => { this._sm = transition(this._sm, { type: 'ImportCancelled' }); };
+        const close = () => { this._sm = transition$1(this._sm, { type: 'ImportCancelled' }); };
         return x `
       <ha-dialog
         open
@@ -42734,7 +42739,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   name="import_mode"
                   .checked=${this._sm.sub.kind === 'importing' && !this._sm.sub.replace}
                   @change=${() => { if (this._sm.sub.kind === 'importing' && this._sm.sub.replace)
-            this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
+            this._sm = transition$1(this._sm, { type: 'ImportReplaceToggled' }); }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -42753,7 +42758,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   name="import_mode"
                   .checked=${this._sm.sub.kind === 'importing' && this._sm.sub.replace}
                   @change=${() => { if (this._sm.sub.kind === 'importing' && !this._sm.sub.replace)
-            this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
+            this._sm = transition$1(this._sm, { type: 'ImportReplaceToggled' }); }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -42781,7 +42786,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     }
     renderBreederDialog() {
         const breeders = this._getUniqueBreeders();
-        const close = () => { this._sm = transition(this._sm, { type: 'BreederDialogClosed' }); };
+        const close = () => { this._sm = transition$1(this._sm, { type: 'BreederDialogClosed' }); };
         return x `
       <ha-dialog
         open
@@ -42910,7 +42915,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             if (file) {
                 PlantUtils.compressImage(file)
                     .then((base64) => {
-                    this._sm = transition(this._sm, {
+                    this._sm = transition$1(this._sm, {
                         type: 'BreederEditFieldChanged',
                         field: 'logo',
                         value: base64,
@@ -42925,7 +42930,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}
+            @click=${() => { this._sm = transition$1(this._sm, { type: 'BreederSaved' }); }}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -42948,7 +42953,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             placeholder="e.g. Royal Queen Seeds"
             .value=${state.name}
             @input=${(e) => {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'BreederEditFieldChanged',
                 field: 'name',
                 value: e.target.value,
@@ -42998,7 +43003,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                       class="md3-button text"
                       style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
                       @click=${() => {
-                this._sm = transition(this._sm, { type: 'BreederEditFieldChanged', field: 'logo', value: '' });
+                this._sm = transition$1(this._sm, { type: 'BreederEditFieldChanged', field: 'logo', value: '' });
             }}
                     >
                       <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -43033,7 +43038,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             : E}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}>
+          <button class="md3-button tonal" @click=${() => { this._sm = transition$1(this._sm, { type: 'BreederSaved' }); }}>
             Cancel
           </button>
           <button
@@ -43101,7 +43106,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         .open=${this._sm.sub.kind === 'seedfinder'}
         .initialStrain=${this._sm.draft.strain}
         .initialPheno=${this._sm.draft.phenotype}
-        @close=${() => { this._sm = transition(this._sm, { type: 'SeedfinderClosed' }); }}
+        @close=${() => { this._sm = transition$1(this._sm, { type: 'SeedfinderClosed' }); }}
         @import=${this._handleSeedfinderImport}
       ></strain-import-dialog>
     `;
@@ -48452,6 +48457,653 @@ GrowspaceWateringDialogUI = __decorate([
 ], GrowspaceWateringDialogUI);
 
 /**
+ * Feed & Water Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM, no hassCall. All interaction state for
+ * FeedAndWaterDialog lives here. The component calls `transition(sm, event)`
+ * and replaces its single `@state() _sm`.
+ *
+ * Satisfies DialogStateMachine.
+ *
+ * Structure:
+ *   SM
+ *     .activeTab          — 'watering' | 'inventory' | 'presets'
+ *     .tabs               — per-tab state stubs (content added in follow-on issues)
+ *     .status             — root confirm-discard guard
+ *     .toast              — transient feedback message
+ */
+const DEFAULT_WATERING_DRAFT = { volume: 1.0, presetId: '' };
+// ─── Initial state ────────────────────────────────────────────────────────────
+function createInitialSM() {
+    return {
+        activeTab: 'watering',
+        tabs: {
+            watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+            inventory: { sub: { kind: 'idle' } },
+            presets: { sub: { kind: 'idle' } },
+        },
+        status: { kind: 'idle' },
+        toast: undefined,
+    };
+}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function isTabDirty(sm, tab) {
+    return sm.tabs[tab].sub.kind === 'editing';
+}
+// ─── Transition ───────────────────────────────────────────────────────────────
+function transition(sm, event) {
+    switch (event.type) {
+        case 'TabSelected': {
+            if (event.tab === sm.activeTab)
+                return sm;
+            if (sm.status.kind !== 'idle')
+                return sm;
+            if (isTabDirty(sm, sm.activeTab)) {
+                return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
+            }
+            return { ...sm, activeTab: event.tab };
+        }
+        case 'DiscardConfirmed': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            const { pendingTab } = sm.status;
+            return {
+                ...sm,
+                activeTab: pendingTab,
+                status: { kind: 'idle' },
+                tabs: {
+                    ...sm.tabs,
+                    [sm.activeTab]: { sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'DiscardCancelled': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            return { ...sm, status: { kind: 'idle' } };
+        }
+        case 'SetToast':
+            return { ...sm, toast: event.message };
+        case 'WateringVolumeChanged':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, volume: event.volume } },
+                },
+            };
+        case 'WateringPresetChanged':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, presetId: event.presetId } },
+                },
+            };
+        case 'WateringSubmitRequested': {
+            if (sm.tabs.watering.sub.kind === 'submitting')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, sub: { kind: 'submitting' } },
+                },
+            };
+        }
+        case 'WateringSubmitCompleted': {
+            if (sm.tabs.watering.sub.kind !== 'submitting')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT } },
+                },
+            };
+        }
+        default:
+            return sm;
+    }
+}
+
+let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.open = false;
+        this.presetOptions = [];
+        this.targetText = '';
+        this.hasPhiWarning = false;
+        this.phiWarningText = '';
+        this._sm = createInitialSM();
+        this._handleRecordWatering = () => {
+            const { draft } = this._sm.tabs.watering;
+            this._applyEvent({ type: 'WateringSubmitRequested' });
+            this.dispatchEvent(new CustomEvent('submit-watering', {
+                detail: { volume: draft.volume, presetId: draft.presetId },
+                bubbles: true,
+                composed: true,
+            }));
+        };
+    }
+    _applyEvent(event) {
+        this._sm = transition(this._sm, event);
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _isFooterBlocked() {
+        const { tabs } = this._sm;
+        return (tabs.watering.sub.kind === 'submitting' ||
+            tabs.inventory.sub.kind === 'editing' ||
+            tabs.presets.sub.kind === 'editing');
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const { _sm } = this;
+        return x `
+      <ha-dialog
+        open
+        hideActions
+        without-header
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="large"
+        @closed=${this._close}
+      >
+        <div class="shell">
+          ${this._renderHeader()}
+          <div class="body">
+            ${this._renderNavRail(_sm)}
+            <div class="content">
+              ${this._renderContent(_sm.activeTab)}
+            </div>
+          </div>
+          ${this._renderFooter()}
+          ${_sm.status.kind === 'confirm-discard' ? this._renderConfirmDiscard() : E}
+          ${_sm.toast ? x `<div class="toast">${_sm.toast}</div>` : E}
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderHeader() {
+        return x `
+      <div class="header">
+        <div class="header-icon">
+          <ha-svg-icon .path=${mdiWaterOutline} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
+        </div>
+        <div class="header-title-group">
+          <h2 class="header-title">Feed &amp; Water</h2>
+          <div class="header-subtitle">Record watering and manage nutrients</div>
+        </div>
+        <button class="close-btn" @click=${this._close} aria-label="Close">
+          <ha-svg-icon .path=${mdiClose} style="width:24px;height:24px;fill:currentColor"></ha-svg-icon>
+        </button>
+      </div>
+    `;
+    }
+    _renderNavRail(sm) {
+        const navItems = [
+            { tab: 'watering', icon: mdiWaterOutline, label: 'Watering' },
+            { tab: 'inventory', icon: mdiBottleTonicPlus, label: 'Inventory' },
+            { tab: 'presets', icon: mdiFormatListBulleted, label: 'Presets' },
+        ];
+        return x `
+      <nav class="nav-rail">
+        ${navItems.map(({ tab, icon, label }) => x `
+            <button
+              class="nav-item"
+              data-nav=${tab}
+              aria-pressed=${sm.activeTab === tab ? 'true' : 'false'}
+              @click=${() => this._applyEvent({ type: 'TabSelected', tab })}
+            >
+              <ha-svg-icon .path=${icon} style="width:22px;height:22px;fill:currentColor"></ha-svg-icon>
+              <span>${label}</span>
+            </button>
+          `)}
+      </nav>
+    `;
+    }
+    _renderContent(activeTab) {
+        if (activeTab === 'watering')
+            return this._renderWateringTab();
+        const labels = {
+            inventory: 'Inventory',
+            presets: 'Presets',
+        };
+        return x `
+      <div class="tab-placeholder" data-tab=${activeTab}>
+        ${labels[activeTab]} tab — coming soon
+      </div>
+    `;
+    }
+    _renderWateringTab() {
+        const { draft } = this._sm.tabs.watering;
+        return x `
+      <div data-tab="watering">
+        ${this.hasPhiWarning
+            ? x `
+              <div class="phi-warning" data-testid="phi-warning">
+                <ha-svg-icon .path=${mdiInformation} style="width:18px;height:18px;fill:currentColor;flex-shrink:0"></ha-svg-icon>
+                ${this.phiWarningText}
+              </div>
+            `
+            : E}
+
+        <div class="form-field">
+          <label class="form-label">Volume (Liters)</label>
+          <input
+            class="volume-input"
+            type="number"
+            min="0.1"
+            step="0.1"
+            .value=${String(draft.volume)}
+            @change=${(e) => {
+            const v = parseFloat(e.target.value);
+            if (!isNaN(v) && v > 0)
+                this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
+        }}
+          />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">Nutrient Preset</label>
+          <select
+            class="preset-select"
+            .value=${draft.presetId}
+            @change=${(e) => this._applyEvent({
+            type: 'WateringPresetChanged',
+            presetId: e.target.value,
+        })}
+          >
+            <option value="">— No preset —</option>
+            ${this.presetOptions.map((opt) => x `<option value=${opt.value} ?selected=${opt.value === draft.presetId}>${opt.label}</option>`)}
+          </select>
+        </div>
+
+        ${this.targetText
+            ? x `
+              <div class="targeting-summary">
+                <span class="targeting-label">Targeting:</span>
+                <span class="targeting-value">${this.targetText}</span>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    _renderFooter() {
+        const blocked = this._isFooterBlocked();
+        return x `
+      <div class="footer">
+        <button
+          class="btn-record"
+          data-action="record-watering"
+          ?disabled=${blocked}
+          @click=${this._handleRecordWatering}
+        >
+          Record Watering
+        </button>
+      </div>
+    `;
+    }
+    _renderConfirmDiscard() {
+        return x `
+      <div class="confirm-discard-overlay">
+        <div class="confirm-discard-box">
+          <h3>Discard changes?</h3>
+          <p>You have unsaved changes. If you switch sections now, your edits will be lost.</p>
+          <div class="confirm-discard-actions">
+            <button
+              class="btn btn-text"
+              @click=${() => this._applyEvent({ type: 'DiscardCancelled' })}
+            >
+              Keep editing
+            </button>
+            <button
+              class="btn btn-danger"
+              @click=${() => this._applyEvent({ type: 'DiscardConfirmed' })}
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+};
+FeedAndWaterDialog.styles = i$6 `
+    :host { display: contents; }
+
+    ha-dialog {
+      --dialog-surface-margin-top: 40px;
+      --ha-dialog-min-height: var(--ha-dialog-min-height, 85vh);
+      --dialog-content-padding: 0;
+    }
+
+    .shell {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      height: 100%;
+      min-height: 85vh;
+      max-height: 85vh;
+      overflow: hidden;
+      color: var(--primary-text-color, #fff);
+      font-family: 'Roboto', sans-serif;
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 16px 24px;
+      gap: 12px;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      flex-shrink: 0;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--primary-color, #4caf50);
+    }
+
+    .header-title-group { flex: 1; }
+
+    .header-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 500;
+    }
+
+    .header-subtitle {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-top: 2px;
+      color: var(--secondary-text-color);
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--primary-text-color, #fff);
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .close-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+    /* Body */
+    .body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* Nav rail */
+    .nav-rail {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 8px;
+      border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
+      width: 72px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 6px;
+      border-radius: 12px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+      font-size: 0.6875rem;
+      font-family: inherit;
+      width: 56px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
+
+    .nav-item[aria-pressed='true'] {
+      color: var(--primary-color, #4caf50);
+      background: rgba(76, 175, 80, 0.12);
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      min-height: 0;
+    }
+
+    /* Footer */
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 12px 24px;
+      border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+      flex-shrink: 0;
+    }
+
+    .btn-record {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-family: inherit;
+      font-weight: 500;
+      background: var(--primary-color, #4caf50);
+      color: #fff;
+      transition: filter 0.15s, opacity 0.15s;
+    }
+
+    .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
+
+    .btn-record:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Confirm-discard overlay */
+    .confirm-discard-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .confirm-discard-box {
+      background: var(--card-background-color, #1c1c1c);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 360px;
+      width: 100%;
+      margin: 16px;
+    }
+
+    .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
+    .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
+
+    .confirm-discard-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-family: inherit;
+    }
+
+    .btn-text { background: transparent; color: var(--secondary-text-color); }
+    .btn-text:hover { background: rgba(255,255,255,0.06); }
+
+    .btn-danger { background: var(--error-color, #f44336); color: #fff; }
+    .btn-danger:hover { filter: brightness(1.1); }
+
+    /* Toast */
+    .toast {
+      position: absolute;
+      bottom: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* Tab placeholder */
+    .tab-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+      font-size: 0.875rem;
+    }
+
+    /* Watering tab */
+    .phi-warning {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 152, 0, 0.15);
+      color: #ff9800;
+      border: 1px solid #ff9800;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 0.875rem;
+    }
+
+    .form-field {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.6;
+      margin-bottom: 6px;
+    }
+
+    .volume-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      color: var(--primary-text-color, #fff);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .volume-input:focus {
+      outline: none;
+      border-color: var(--primary-color, #4caf50);
+    }
+
+    .preset-select {
+      width: 100%;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      color: var(--primary-text-color, #fff);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      box-sizing: border-box;
+      appearance: none;
+    }
+
+    .preset-select:focus {
+      outline: none;
+      border-color: var(--primary-color, #4caf50);
+    }
+
+    .targeting-summary {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.875rem;
+    }
+
+    .targeting-label {
+      opacity: 0.6;
+      margin-right: 6px;
+    }
+
+    .targeting-value {
+      color: var(--primary-color, #4caf50);
+      font-weight: 500;
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean })
+], FeedAndWaterDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ attribute: false })
+], FeedAndWaterDialog.prototype, "presetOptions", void 0);
+__decorate([
+    n$5({ type: String })
+], FeedAndWaterDialog.prototype, "targetText", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], FeedAndWaterDialog.prototype, "hasPhiWarning", void 0);
+__decorate([
+    n$5({ type: String })
+], FeedAndWaterDialog.prototype, "phiWarningText", void 0);
+__decorate([
+    r$3()
+], FeedAndWaterDialog.prototype, "_sm", void 0);
+FeedAndWaterDialog = __decorate([
+    t$2('feed-and-water-dialog')
+], FeedAndWaterDialog);
+
+/**
  * Plant Overview ViewModel
  *
  * Consolidates all business logic and state computations for plant overview dialog.
@@ -53338,23 +53990,25 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       ></logbook-dialog>
     `;
     }
-    _renderWateringDialog(active, nutrientPresets, nutrientInventory, selectedDeviceData) {
+    _renderWateringDialog(active, nutrientPresets, _nutrientInventory, selectedDeviceData) {
         if (active.type !== 'WATERING')
             return x ``;
         const payload = active.payload;
+        const presetOptions = Object.values(nutrientPresets).map((p) => ({
+            label: p.name,
+            value: p.id,
+        }));
+        const targetText = payload?.mode === 'plant'
+            ? `${(payload.plantIds || []).length} plant(s)`
+            : selectedDeviceData?.name || 'Entire growspace';
         return x `
-      <growspace-watering-dialog-ui
+      <feed-and-water-dialog
         .open=${true}
-        .plantIds=${payload?.plantIds || []}
-        .growspaceId=${selectedDeviceData?.deviceId || ''}
-        .nutrientPresets=${nutrientPresets}
-        .nutrientInventory=${nutrientInventory}
+        .presetOptions=${presetOptions}
+        .targetText=${targetText}
         @close=${() => this._closeDialogIfActive('WATERING')}
         @submit-watering=${(e) => this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
-        @save-preset=${(e) => this.store?.actions.nutrient.savePreset(e.detail)}
-        @update-stock=${(e) => this.store?.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-        @data-changed=${() => this._handleDataChanged()}
-      ></growspace-watering-dialog-ui>
+      ></feed-and-water-dialog>
     `;
     }
     async _handleWateringSubmit(e, payload, fallbackGrowspaceId) {

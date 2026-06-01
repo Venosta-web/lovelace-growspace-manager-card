@@ -49,6 +49,7 @@ import '../../shared/ui/error-boundary';
 import '../components/growspace-ipm-dialog-ui';
 import '../components/growspace-watering-dialog-ui';
 import '../components/growspace-nutrient-inventory-dialog-ui';
+import '../../../dialogs/feed-and-water-dialog';
 import '../../plants/containers/plant-overview.container';
 
 import { HomeAssistant } from 'custom-card-helpers';
@@ -888,32 +889,31 @@ export class GrowspaceDialogHost extends LitElement {
   private _renderWateringDialog(
     active: ActiveDialogState,
     nutrientPresets: NutrientPresetsResponse,
-    nutrientInventory: NutrientInventory | null,
+    _nutrientInventory: NutrientInventory | null,
     selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {
     if (active.type !== 'WATERING') return html``;
     const payload = active.payload as any;
 
+    const presetOptions = Object.values(nutrientPresets).map((p) => ({
+      label: p.name,
+      value: p.id,
+    }));
+
+    const targetText =
+      payload?.mode === 'plant'
+        ? `${(payload.plantIds || []).length} plant(s)`
+        : selectedDeviceData?.name || 'Entire growspace';
+
     return html`
-      <growspace-watering-dialog-ui
+      <feed-and-water-dialog
         .open=${true}
-        .plantIds=${payload?.plantIds || []}
-        .growspaceId=${selectedDeviceData?.deviceId || ''}
-        .nutrientPresets=${nutrientPresets}
-        .nutrientInventory=${nutrientInventory}
+        .presetOptions=${presetOptions}
+        .targetText=${targetText}
         @close=${() => this._closeDialogIfActive('WATERING')}
         @submit-watering=${(e: CustomEvent) =>
         this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
-        @save-preset=${(e: CustomEvent) => this.store?.actions.nutrient.savePreset(e.detail)}
-        @update-stock=${(e: CustomEvent) =>
-        this.store?.actions.library.updateNutrientStock(
-          e.detail.id,
-          e.detail.name,
-          e.detail.current_ml,
-          e.detail.initial_ml
-        )}
-        @data-changed=${() => this._handleDataChanged()}
-      ></growspace-watering-dialog-ui>
+      ></feed-and-water-dialog>
     `;
   }
 
