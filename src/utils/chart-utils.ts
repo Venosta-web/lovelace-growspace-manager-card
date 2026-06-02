@@ -513,7 +513,7 @@ export class ChartUtils {
     if (entityDomain === 'fan') {
       if (s === 'off') return 0;
       const pct = ent.attributes?.percentage;
-      return pct != null ? Number(pct) : undefined;
+      return pct != null ? Number(pct) : 100;
     }
 
     const val = parseFloat(s);
@@ -533,7 +533,8 @@ export class ChartUtils {
   public static normalizeHistory(
     historyData: RawHistoryDataPoint[],
     metricKey: string,
-    entityDomain?: string
+    entityDomain?: string,
+    entityUnit?: string
   ): NormalizedHistoryPoint[] {
     if (!historyData || historyData.length === 0) return [];
 
@@ -543,7 +544,7 @@ export class ChartUtils {
 
     const points: NormalizedHistoryPoint[] = [];
     for (const h of sorted) {
-      const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain);
+      const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain, entityUnit);
       if (val === undefined) continue;
       const point: NormalizedHistoryPoint = {
         time: new Date(h.last_changed).getTime(),

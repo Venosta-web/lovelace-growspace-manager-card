@@ -170,10 +170,6 @@ export function isTabDirty(sm: SM, tab: TabId): boolean {
   return sub.kind === 'editing' || sub.kind === 'applying';
 }
 
-export function isFooterBlocked(sm: SM): boolean {
-  return sm.tabs.inventory.sub.kind === 'editing' || sm.tabs.presets.sub.kind === 'editing';
-}
-
 export function isLowStock(stock: NutrientStock): boolean {
   if (stock.initial_ml === 0) return false;
   return stock.current_ml / stock.initial_ml <= 0.25;

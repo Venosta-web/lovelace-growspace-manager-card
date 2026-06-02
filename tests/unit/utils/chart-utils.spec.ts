@@ -66,10 +66,10 @@ describe('ChartUtils.normalizeSensorValue — fan entity domain (ADR-0008)', () 
     ).toBe(0);
   });
 
-  it('returns undefined (skip point) when fan.* entity is "on" but has no percentage attribute', () => {
+  it('returns 100 when fan.* entity is "on" but has no percentage attribute (avoids graph gaps)', () => {
     expect(
       ChartUtils.normalizeSensorValue({ state: 'on', attributes: {} }, MetricKey.EXHAUST, 'fan')
-    ).toBeUndefined();
+    ).toBe(100);
   });
 
   it('returns 0 when fan.* entity is "off" with no percentage attribute', () => {

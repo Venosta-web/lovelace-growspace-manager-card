@@ -481,6 +481,64 @@ describe('deviceSnapshots$ atom and setDeviceSnapshot', () => {
     expect(deviceSnapshots$.get().get('gs1')!.exhaustFans!.value).toBe('Off');
   });
 
+// ---------------------------------------------------------------------------
+// Cycle 10 — Speed sensor at 0 and 1 (issue #224)
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — speed sensor at boundary values', () => {
+  it('shows "0" for a speed sensor with state "0" (not "-")', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['sensor.fan_speed'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '0', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('0');
+  });
+
+  it('shows "1" for a speed sensor with state "1" (not "-")', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanEntities: ['sensor.fan_speed'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '1', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.circulationFans!.value).toBe('1');
+  });
+
+  it('still shows "On" for a switch domain at state "1"', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['switch.fan'] },
+    });
+    const hassStates: HassStates = {
+      'switch.fan': makeHassEntity('switch.fan', 'on', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('On');
+  });
+
+  it('still shows "Off" for an input_boolean domain at state "off"', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['input_boolean.fan'] },
+    });
+    const hassStates: HassStates = {
+      'input_boolean.fan': makeHassEntity('input_boolean.fan', 'off', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('Off');
+  });
+});
+
   it('setDeviceSnapshot stores independent snapshots for different growspaces', () => {
     const device1 = makeDevice({
       deviceId: 'gs1',

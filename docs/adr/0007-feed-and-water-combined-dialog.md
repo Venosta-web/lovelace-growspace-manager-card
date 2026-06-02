@@ -12,13 +12,11 @@ Replace `growspace-watering-dialog-ui` and `nutrient-dialog` with a single **Fee
 
 Key design decisions within the combined dialog:
 
-1. **Persistent "Record Watering" footer** — the submit action is visible on all three tabs, not buried on the Watering tab. The cultivator can adjust a preset and submit without switching back.
+1. **Watering-tab-only footer** — the "Record Watering" submit action is scoped to the Watering tab. Showing it on Inventory or Presets tabs is contextually confusing: a cultivator managing nutrient stock or editing a preset is not in a watering workflow. There is no `isFooterBlocked` state machine helper; the footer's visibility is determined solely by which tab is active.
 
-2. **Blocked footer while editing** — the "Record Watering" button is disabled when any tab has an active edit in progress (`sub.kind === 'editing'`). Silent auto-save would corrupt presets; silently ignoring the edit would lose work.
+2. **Context-aware default tab** — the dialog is opened from two entry points: the watering action (plant grid / header) defaults to the Watering tab; the nutrient management entry point defaults to the Presets tab. This preserves each distinct workflow.
 
-3. **Context-aware default tab** — the dialog is opened from two entry points: the watering action (plant grid / header) defaults to the Watering tab; the nutrient management entry point defaults to the Presets tab. This preserves each distinct workflow.
-
-4. **Ad-hoc nutrients demoted, not removed** — the Watering tab retains the manual nutrient entry rows but collapses them behind an "Add custom nutrient" toggle. Presets are the primary path; ad-hoc entries are the escape hatch.
+3. **Ad-hoc nutrients demoted, not removed** — the Watering tab retains the manual nutrient entry rows but collapses them behind an "Add custom nutrient" toggle. Presets are the primary path; ad-hoc entries are the escape hatch.
 
 ## Alternatives Considered
 

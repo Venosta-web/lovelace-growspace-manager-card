@@ -9,7 +9,6 @@ import {
   createInitialSM,
   transition,
   isTabDirty,
-  isFooterBlocked,
   isLowStock,
   type SM,
   type TabId,
@@ -1187,36 +1186,6 @@ describe('full presets drill-down lifecycle', () => {
   });
 });
 
-// ─── isFooterBlocked ──────────────────────────────────────────────────────────
-
-describe('isFooterBlocked', () => {
-  it('returns false in initial state', () => {
-    expect(isFooterBlocked(idle())).toBe(false);
-  });
-
-  it('returns true when inventory tab is editing', () => {
-    expect(isFooterBlocked(withInventoryEditing())).toBe(true);
-  });
-
-  it('returns true when presets tab is editing', () => {
-    expect(isFooterBlocked(withPresetsEditing())).toBe(true);
-  });
-
-  it('returns false when inventory tab is applying', () => {
-    const applying = transition(withInventoryEditing(), { type: 'SaveRequested' });
-    expect(isFooterBlocked(applying)).toBe(false);
-  });
-
-  it('returns false when presets tab is applying', () => {
-    const applying = transition(withPresetsEditing(), { type: 'PresetSaveRequested' });
-    expect(isFooterBlocked(applying)).toBe(false);
-  });
-
-  it('returns false when watering tab is submitting', () => {
-    const submitting = transition(idle(), { type: 'WateringSubmitRequested' });
-    expect(isFooterBlocked(submitting)).toBe(false);
-  });
-});
 
 // ─── adHocOpen (ad-hoc nutrients toggle) ─────────────────────────────────────
 

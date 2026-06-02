@@ -107,8 +107,11 @@ function _normalizeFanDevice(entity: HassEntity | undefined): string | undefined
   }
 
   const numVal = parseFloat(entity.state);
-  if (!isNaN(numVal) && numVal !== 0 && numVal !== 1) {
-    return String(Math.round(numVal));
+  if (!isNaN(numVal)) {
+    const domain = entity.entity_id.split('.')[0];
+    const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
+    if (!isBinaryDomain) return String(Math.round(numVal));
+    return numVal > 0 ? 'On' : 'Off';
   }
 
   if (entity.state === 'on') return 'On';

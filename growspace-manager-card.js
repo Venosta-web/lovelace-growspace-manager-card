@@ -9521,7 +9521,7 @@ class ChartUtils {
             if (s === 'off')
                 return 0;
             const pct = ent.attributes?.percentage;
-            return pct != null ? Number(pct) : undefined;
+            return pct != null ? Number(pct) : 100;
         }
         const val = parseFloat(s);
         if (isNaN(val)) {
@@ -9538,13 +9538,13 @@ class ChartUtils {
      * Delegates per-point conversion to normalizeSensorValue so all metric-specific
      * logic lives in one place.
      */
-    static normalizeHistory(historyData, metricKey, entityDomain) {
+    static normalizeHistory(historyData, metricKey, entityDomain, entityUnit) {
         if (!historyData || historyData.length === 0)
             return [];
         const sorted = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
         const points = [];
         for (const h of sorted) {
-            const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain);
+            const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain, entityUnit);
             if (val === undefined)
                 continue;
             const point = {
@@ -129562,8 +129562,12 @@ function _normalizeFanDevice(entity) {
         return pct != null ? `${Math.round(Number(pct))}%` : 'On';
     }
     const numVal = parseFloat(entity.state);
-    if (!isNaN(numVal) && numVal !== 0 && numVal !== 1) {
-        return String(Math.round(numVal));
+    if (!isNaN(numVal)) {
+        const domain = entity.entity_id.split('.')[0];
+        const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
+        if (!isBinaryDomain)
+            return String(Math.round(numVal));
+        return numVal > 0 ? 'On' : 'Off';
     }
     if (entity.state === 'on')
         return 'On';
