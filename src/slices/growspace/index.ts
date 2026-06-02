@@ -176,6 +176,7 @@ export async function configureEnvironment(data: {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
 }): Promise<void> {
   const payload: Record<string, unknown> = { growspace_id: data.growspaceId };
 
@@ -226,6 +227,7 @@ export async function configureEnvironment(data: {
   if (data.irrigationFlowSensors?.length) payload.irrigation_flow_sensors = data.irrigationFlowSensors;
   if (data.powerSensors?.length) payload.power_sensors = data.powerSensors;
   if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
+  if (data.circulationFanConfig) payload.circulation_fan_config = data.circulationFanConfig;
 
   await callService('growspace_manager', 'configure_environment', payload);
 }

@@ -6480,6 +6480,8 @@ async function configureEnvironment$1(data) {
         payload.power_sensors = data.powerSensors;
     if (data.energySensors?.length)
         payload.energy_sensors = data.energySensors;
+    if (data.circulationFanConfig)
+        payload.circulation_fan_config = data.circulationFanConfig;
     await callService('growspace_manager', 'configure_environment', payload);
 }
 async function configureCirculationFan({ growspaceId, fanConfig, }) {
@@ -18343,6 +18345,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
                 visionMidHours: vc?.mid_check_hours ?? 6,
                 visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+                ...(environmentData.circulationFanConfig
+                    ? { circulationFanConfig: environmentData.circulationFanConfig }
+                    : {}),
             }
             : {};
         this._sm = {
@@ -53323,13 +53328,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 irrigationFlowSensors: detail.irrigationFlowSensors,
                 powerSensors: detail.powerSensors,
                 energySensors: detail.energySensors,
+                circulationFanConfig: detail.circulationFanConfig,
             });
-            if (detail.circulationFanConfig) {
-                await this.store?.actions.environment.configureFanController({
-                    growspaceId: detail.selectedGrowspaceId,
-                    fanConfig: detail.circulationFanConfig,
-                });
-            }
             this.store?.actions.ui.closeDialog();
         }
         catch (e) {

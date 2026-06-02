@@ -992,6 +992,9 @@ export class ConfigDialog extends LitElement {
           visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
           visionMidHours: vc?.mid_check_hours ?? 6,
           visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+          ...(environmentData.circulationFanConfig
+            ? { circulationFanConfig: environmentData.circulationFanConfig }
+            : {}),
         }
       : {};
 

@@ -447,21 +447,24 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     );
   });
 
-  it('calls configureFanController after configure when circulationFanConfig is present', async () => {
+  it('passes circulationFanConfig to configure when present', async () => {
     await (el as any)._handleEnvironmentConfig({
       ...minimalValidDetail,
       circulationFanConfig: fanConfig,
     });
 
-    expect(store.actions.environment.configureFanController).toHaveBeenCalledWith({
-      growspaceId: 'gs-1',
-      fanConfig,
-    });
+    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+      expect.objectContaining({ circulationFanConfig: fanConfig })
+    );
+    expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
   });
 
-  it('does not call configureFanController when circulationFanConfig is absent', async () => {
+  it('does not pass circulationFanConfig to configure when absent', async () => {
     await (el as any)._handleEnvironmentConfig(minimalValidDetail);
 
+    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+      expect.not.objectContaining({ circulationFanConfig: expect.anything() })
+    );
     expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
   });
 
