@@ -56,6 +56,13 @@ const mockCustomElements = () => {
             set label(val: any) {}
         });
     }
+    if (!customElements.get('md3-select')) {
+        customElements.define('md3-select', class extends HTMLElement {
+            set value(val: any) {}
+            set label(val: any) {}
+            set options(val: any) {}
+        });
+    }
 };
 
 describe('ConfigDialog - Branch Coverage Expansion', () => {
@@ -858,5 +865,216 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
 
         expect((element as any).envSubstrateTemperatureSensors).toHaveLength(0);
+    });
+});
+
+// ─── Fan Controller Panel (ConfigTab.CLIMATE) — lines 1862–2038 ──────────────
+
+describe('ConfigDialog - Fan Controller Panel coverage', () => {
+    let element: ConfigDialog;
+
+    function allInputs() {
+        return Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') ?? []);
+    }
+
+    function dispatchAllInputs(value: string) {
+        for (const input of allInputs()) {
+            input.dispatchEvent(new CustomEvent('change', { detail: value }));
+        }
+    }
+
+    function fanCfg() {
+        return (element as any)._sm.environmentDraft.circulationFanConfig;
+    }
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        element.currentTab = ConfigTab.CLIMATE;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('enabled toggle (line 1862) sets circulationFanConfig.enabled', async () => {
+        const checkboxes = Array.from(
+            element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? []
+        ) as HTMLInputElement[];
+        const enabledCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Enabled'));
+        expect(enabledCb).toBeDefined();
+        enabledCb!.checked = true;
+        enabledCb!.dispatchEvent(new Event('change'));
+        expect(fanCfg().enabled).toBe(true);
+    });
+
+    it('regulation_mode change handler (line 1879) updates regulation_mode', async () => {
+        const select = element.shadowRoot?.querySelector('md3-select');
+        expect(select).toBeDefined();
+        select!.dispatchEvent(new CustomEvent('change', { detail: 'humidity' }));
+        expect(fanCfg().regulation_mode).toBe('humidity');
+    });
+
+    it('VPD mode (default) — vpd_target, vpd_tolerance, min_speed, max_speed handlers fire (lines 1889–2004)', async () => {
+        expect(allInputs().length).toBeGreaterThanOrEqual(4);
+        dispatchAllInputs('1.5');
+        expect(fanCfg().vpd_target).toBeCloseTo(1.5);
+        expect(fanCfg().vpd_tolerance).toBeCloseTo(1.5);
+        expect(fanCfg().min_speed).toBeCloseTo(1.5);
+        expect(fanCfg().max_speed).toBeCloseTo(1.5);
+    });
+
+    it('humidity mode — humidity_target / humidity_tolerance handlers fire (lines 1905–1911)', async () => {
+        (element as any)._updateFanConfig({ regulation_mode: 'humidity' });
+        await element.updateComplete;
+        dispatchAllInputs('65');
+        expect(fanCfg().humidity_target).toBeCloseTo(65);
+        expect(fanCfg().humidity_tolerance).toBeCloseTo(65);
+    });
+
+    it('temperature mode — temperature_target / temperature_tolerance handlers fire (lines 1921–1929)', async () => {
+        (element as any)._updateFanConfig({ regulation_mode: 'temperature' });
+        await element.updateComplete;
+        dispatchAllInputs('26');
+        expect(fanCfg().temperature_target).toBeCloseTo(26);
+        expect(fanCfg().temperature_tolerance).toBeCloseTo(26);
+    });
+
+    it('temperature override toggle expands section (line 1944) and wires critical temp handlers with null branch (lines 1961–1984)', async () => {
+        // VPD mode (default) — override button present
+        const overrideBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.tonal') ?? [])
+            .find((b) => b.textContent?.includes('Temperature Override')) as HTMLElement | undefined;
+        expect(overrideBtn).toBeDefined();
+
+        overrideBtn!.click();
+        await element.updateComplete;
+        expect((element as any)._fanTempOverrideExpanded).toBe(true);
+
+        // Find the override row-col-grid: first `.row-col-grid` with margin-top style
+        const overrideGrids = Array.from(
+            element.shadowRoot?.querySelectorAll('.row-col-grid[style*="margin-top"]') ?? []
+        );
+        expect(overrideGrids.length).toBeGreaterThanOrEqual(1);
+        const overrideInputs = Array.from(overrideGrids[0].querySelectorAll('md3-number-input'));
+        expect(overrideInputs.length).toBe(3);
+
+        // non-empty detail → parseFloat
+        overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '18' }));
+        expect(fanCfg().critical_temp_low).toBeCloseTo(18);
+        overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '30' }));
+        expect(fanCfg().critical_temp_high).toBeCloseTo(30);
+        overrideInputs[2].dispatchEvent(new CustomEvent('change', { detail: '2' }));
+        expect(fanCfg().critical_temp_hysteresis).toBeCloseTo(2);
+
+        // empty detail → null (covers the else-branch at lines 1963 and 1972)
+        overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '' }));
+        expect(fanCfg().critical_temp_low).toBeNull();
+        overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '' }));
+        expect(fanCfg().critical_temp_high).toBeNull();
+
+        // Collapse
+        overrideBtn!.click();
+        await element.updateComplete;
+        expect((element as any)._fanTempOverrideExpanded).toBe(false);
+    });
+
+    it('wind_enabled toggle (lines 2014–2015) expands wind settings; period/amplitude handlers fire (lines 2025–2033)', async () => {
+        const checkboxes = Array.from(
+            element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? []
+        ) as HTMLInputElement[];
+        const windCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Dynamic Wind'));
+        expect(windCb).toBeDefined();
+        windCb!.checked = true;
+        windCb!.dispatchEvent(new Event('change'));
+        await element.updateComplete;
+        expect(fanCfg().wind_enabled).toBe(true);
+
+        // Wind inputs are the last row-col-grid with margin-top style
+        const marginGrids = Array.from(
+            element.shadowRoot?.querySelectorAll('.row-col-grid[style*="margin-top"]') ?? []
+        );
+        const windInputs = Array.from(marginGrids[marginGrids.length - 1].querySelectorAll('md3-number-input'));
+        expect(windInputs.length).toBe(2);
+
+        windInputs[0].dispatchEvent(new CustomEvent('change', { detail: '90' }));
+        expect(fanCfg().wind_period_seconds).toBeCloseTo(90);
+        windInputs[1].dispatchEvent(new CustomEvent('change', { detail: '20' }));
+        expect(fanCfg().wind_amplitude_pct).toBeCloseTo(20);
+    });
+});
+
+// ─── Remaining branch gaps: lines 2725, 2770, 2969 ───────────────────────────
+
+describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('line 2725 false-branch: renders "Select a growspace" placeholder when envId empty and gsSub is idle', async () => {
+        // envSelectedId = '' and growspaces sub = idle → growspaceId = '' → guard fires
+        (element as any).envSelectedId = '';
+        element.currentTab = ConfigTab.SUBAREAS;
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.textContent).toContain('Select a growspace');
+    });
+
+    it('line 2725 true-branch: falls back to gsSub.growspaceId when envId empty and gsSub is editing', async () => {
+        // Put the growspaces SM into 'editing' state so gsSub.kind === 'editing'
+        (element as any)._t({ type: 'START_EDIT_GROWSPACE', growspaceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationService: '' });
+        (element as any).envSelectedId = '';
+        element.currentTab = ConfigTab.SUBAREAS;
+        await element.updateComplete;
+
+        // growspaceId resolves to gsSub.growspaceId ('gs1') → subareas section renders (not placeholder)
+        expect(element.shadowRoot?.textContent).not.toContain('Select a growspace');
+    });
+
+    it('line 2770 false-branch: non-Enter keydown on subarea name input does not call _handleAddSubarea', async () => {
+        (element as any).envSelectedId = 'gs1';
+        element.currentTab = ConfigTab.SUBAREAS;
+        (element as any)._showAddSubarea = true;
+        await element.updateComplete;
+
+        const spy = vi.spyOn(element as any, '_handleAddSubarea').mockResolvedValue(undefined);
+
+        const nameInput = element.shadowRoot?.querySelector('input.md3-input') as HTMLInputElement | null;
+        expect(nameInput).toBeDefined();
+        nameInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('line 2969 false-branch: rail hidden when allowedTabs has exactly one entry', async () => {
+        element.allowedTabs = [ConfigTab.SENSORS];
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.querySelector('.cfg-rail')).toBeNull();
     });
 });
