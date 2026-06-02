@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GmBriefingPanel } from '../../../src/dialogs/briefing-panel';
 import '../../../src/dialogs/briefing-panel';
-import { aiBriefing$, isAiLoading$ } from '../../../src/slices/ai-insight';
+import { aiBriefing$, isAiLoading$, saveAiAgent } from '../../../src/slices/ai-insight';
 import type { AIBriefing } from '../../../src/slices/ai-insight/schema';
 
 vi.mock('../../../src/services/hass-call', () => ({
@@ -18,6 +18,7 @@ vi.mock('../../../src/slices/ai-insight', async (importOriginal) => {
     fetchBriefing: vi.fn().mockResolvedValue(undefined),
     applyAction: vi.fn().mockResolvedValue(undefined),
     startConversation: vi.fn().mockResolvedValue(undefined),
+    saveAiAgent: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -148,5 +149,112 @@ describe('GmBriefingPanel — tab content', () => {
 
     expect(element.shadowRoot?.querySelector('.forecast-content')).toBeTruthy();
     expect(element.shadowRoot?.querySelector('.insight-head')).toBeFalsy();
+  });
+});
+
+describe('GmBriefingPanel — going-well tab', () => {
+  let element: GmBriefingPanel;
+
+  afterEach(() => {
+    if (element.isConnected) document.body.removeChild(element);
+    vi.restoreAllMocks();
+  });
+
+  it('renders low-impact recommendation rows when they exist', async () => {
+    const briefingWithLow: AIBriefing = {
+      ...STUB_BRIEFING,
+      recommendations: [
+        { title: 'Great humidity', description: 'Humidity is optimal.', impact: 'low' },
+      ],
+    };
+    isAiLoading$.set(false);
+    aiBriefing$.set(new Map([['', briefingWithLow]]));
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    const buttons = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+    (buttons?.[2] as HTMLElement).click();
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.going-well-content .reco-row')).toBeTruthy();
+  });
+
+  it('shows empty placeholder when no low-impact recommendations', async () => {
+    isAiLoading$.set(false);
+    aiBriefing$.set(new Map([['', STUB_BRIEFING]]));
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    const buttons = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+    (buttons?.[2] as HTMLElement).click();
+    await element.updateComplete;
+
+    const placeholder = element.shadowRoot?.querySelector('.going-well-content .tab-placeholder');
+    expect(placeholder?.textContent?.trim()).toBe("Nothing flagged as low-impact — keep it up!");
+  });
+});
+
+describe('GmBriefingPanel — agent setup', () => {
+  let element: GmBriefingPanel;
+
+  const UNAVAILABLE_BRIEFING: AIBriefing = {
+    ...STUB_BRIEFING,
+    ai_available: false,
+  };
+
+  beforeEach(async () => {
+    isAiLoading$.set(false);
+    aiBriefing$.set(new Map([['', UNAVAILABLE_BRIEFING]]));
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    if (element.isConnected) document.body.removeChild(element);
+    vi.restoreAllMocks();
+  });
+
+  it('value-changed on ha-entity-picker enables the save button', async () => {
+    const picker = element.shadowRoot?.querySelector('ha-entity-picker');
+    picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
+    await element.updateComplete;
+
+    const btn = element.shadowRoot?.querySelector('.agent-save-btn') as HTMLButtonElement;
+    expect(btn?.disabled).toBe(false);
+  });
+
+  it('_saveAgent happy path: resolves without error message', async () => {
+    const picker = element.shadowRoot?.querySelector('ha-entity-picker');
+    picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
+    await element.updateComplete;
+
+    const btn = element.shadowRoot?.querySelector('.agent-save-btn') as HTMLButtonElement;
+    btn.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    expect(vi.mocked(saveAiAgent)).toHaveBeenCalledWith('conversation.home_assistant', '');
+    expect(element.shadowRoot?.querySelector('.agent-setup-error')).toBeFalsy();
+    expect(btn.textContent?.trim()).toBe('Enable AI');
+  });
+
+  it('_saveAgent error path: shows error message on failure', async () => {
+    vi.mocked(saveAiAgent).mockRejectedValueOnce(new Error('Network error'));
+
+    const picker = element.shadowRoot?.querySelector('ha-entity-picker');
+    picker?.dispatchEvent(new CustomEvent('value-changed', { detail: { value: 'conversation.home_assistant' } }));
+    await element.updateComplete;
+
+    const btn = element.shadowRoot?.querySelector('.agent-save-btn') as HTMLButtonElement;
+    btn.click();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
+
+    const errorEl = element.shadowRoot?.querySelector('.agent-setup-error');
+    expect(errorEl?.textContent?.trim()).toBe('Network error');
+    expect(btn.disabled).toBe(false);
   });
 });
