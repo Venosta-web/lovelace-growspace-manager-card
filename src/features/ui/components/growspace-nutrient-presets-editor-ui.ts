@@ -549,7 +549,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
             <div class="mix-row">
               <ha-svg-icon .path=${mdiFlask} style="width:14px;height:14px;fill:currentColor;opacity:0.5"></ha-svg-icon>
               ${isOrphan
-                ? html`<span class="orphan-badge" data-orphan>${row.nutrient_id}</span>`
+                ? html`<span class="orphan-badge" data-orphan style="flex:1">${row.name ?? row.nutrient_id} (missing)</span>`
                 : html`<span style="flex:1">${stock!.name}</span>`}
               <span style="color:var(--secondary-text-color)">${row.dose_ml_l} ml/L</span>
             </div>
@@ -689,14 +689,14 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
         <select
           class="form-select"
           style="${isOrphan ? 'border-color:#ff9800' : ''}"
-          @change=${(e: Event) =>
-            this._dispatch({
-              type: 'PresetNutrientRowUpdated',
-              index,
-              patch: { nutrient_id: (e.target as HTMLSelectElement).value },
-            })}
+          @change=${(e: Event) => {
+            const nutrient_id = (e.target as HTMLSelectElement).value;
+            const name = this.inventory?.stocks[nutrient_id]?.name ?? '';
+            this._dispatch({ type: 'PresetNutrientRowUpdated', index, patch: { nutrient_id, name } });
+          }}
         >
           <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
+          ${isOrphan ? html`<option value=${row.nutrient_id} selected>${row.name ?? row.nutrient_id} (missing)</option>` : nothing}
           ${stocks.map((s) => html`<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}
         </select>
         <input

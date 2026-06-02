@@ -930,6 +930,15 @@ describe('PresetNutrientRowUpdated', () => {
     }
   });
 
+  it('stores name snapshot when nutrient_id is updated with a name', () => {
+    let sm = withPresetsEditing();
+    sm = transition(sm, { type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: 'n2', name: 'Bloom A' } });
+    if (sm.tabs.presets.sub.kind === 'editing') {
+      expect(sm.tabs.presets.sub.draft.nutrients[0].nutrient_id).toBe('n2');
+      expect(sm.tabs.presets.sub.draft.nutrients[0].name).toBe('Bloom A');
+    }
+  });
+
   it('is a no-op when not editing', () => {
     const before = withPresetsItemSelected();
     const after = transition(before, { type: 'PresetNutrientRowUpdated', index: 0, patch: { dose_ml_l: 5 } });

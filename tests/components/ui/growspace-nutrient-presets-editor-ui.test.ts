@@ -392,7 +392,16 @@ describe('nutrient row — field interactions', () => {
     const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
     nutrientSelect.value = 'n2';
     nutrientSelect.dispatchEvent(new Event('change'));
-    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: 'n2' } });
+    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: 'n2', name: 'Bloom A' } });
+  });
+
+  it('dispatches PresetNutrientRowUpdated with empty name when blank option is selected', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    const nutrientSelect = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    nutrientSelect.value = '';
+    nutrientSelect.dispatchEvent(new Event('change'));
+    expect(events[0]).toEqual({ type: 'PresetNutrientRowUpdated', index: 0, patch: { nutrient_id: '', name: '' } });
   });
 
   it('dispatches PresetNutrientRowUpdated with dose_ml_l when dose input changes', async () => {
@@ -460,6 +469,65 @@ describe('confirm-delete view', () => {
     el.shadowRoot!.querySelector<HTMLElement>('[data-action="confirm-delete"]')!.click();
     expect(events[0]).toEqual({ type: 'DeleteConfirmed' });
   });
+
+// ─── Orphaned nutrient rows (issue #227) ─────────────────────────────────────
+
+describe('orphaned nutrient rows', () => {
+  const orphanPresets: NutrientPresetsResponse = {
+    p1: {
+      id: 'p1', name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
+      nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2, name: 'Old Cal-Mag' }],
+    },
+  };
+
+  async function mountOrphanEditing(): Promise<GrowspaceNutrientPresetsEditorUI> {
+    return fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${orphanPresets}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'editing', draft: {
+          name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
+          nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2, name: 'Old Cal-Mag' }],
+        }}}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+  }
+
+  it('shows snapshot name + (missing) as the selected option for an orphaned row', async () => {
+    const el = await mountOrphanEditing();
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    const selected = select.options[select.selectedIndex];
+    expect(selected?.text).toContain('Old Cal-Mag');
+    expect(selected?.text).toContain('missing');
+  });
+
+  it('shows snapshot name + (missing) in the detail summary view', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${orphanPresets}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    expect(el.shadowRoot!.textContent).toContain('Old Cal-Mag');
+    expect(el.shadowRoot!.textContent).toContain('missing');
+  });
+
+  it('orphan badge has flex:1 style for layout alignment', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${orphanPresets}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const badge = el.shadowRoot!.querySelector<HTMLElement>('[data-orphan]')!;
+    expect(badge.getAttribute('style')).toContain('flex:1');
+  });
+});
 
   it('dispatches DeleteCancelled when Cancel is clicked', async () => {
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`

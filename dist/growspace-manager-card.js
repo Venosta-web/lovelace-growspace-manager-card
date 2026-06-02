@@ -11946,11 +11946,11 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
         <select
           class="form-select"
           style="${isOrphan ? 'border-color:#ff9800' : ''}"
-          @change=${(e) => this._dispatch({
-            type: 'PresetNutrientRowUpdated',
-            index,
-            patch: { nutrient_id: e.target.value },
-        })}
+          @change=${(e) => {
+            const nutrient_id = e.target.value;
+            const name = this.inventory?.stocks[nutrient_id]?.name ?? '';
+            this._dispatch({ type: 'PresetNutrientRowUpdated', index, patch: { nutrient_id, name } });
+        }}
         >
           <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
           ${stocks.map((s) => x `<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}

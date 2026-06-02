@@ -52,7 +52,7 @@ export interface NutrientPresetDraft {
   week?: number;
   ec_target?: number | null;
   ph_target?: number | null;
-  nutrients: { nutrient_id: string; dose_ml_l: number }[];
+  nutrients: { nutrient_id: string; dose_ml_l: number; name?: string }[];
 }
 
 export type PresetsSub =
@@ -138,7 +138,7 @@ export type SMEvent =
   | { type: 'PresetDraftChanged'; field: keyof Omit<NutrientPresetDraft, 'nutrients'>; value: string | number | null | undefined }
   | { type: 'PresetNutrientRowAdded' }
   | { type: 'PresetNutrientRowRemoved'; index: number }
-  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number }> }
+  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number; name: string }> }
   | { type: 'PresetSaveRequested' }
   | { type: 'PresetSaveResolved' }
   | { type: 'PresetSaveFailed'; message: string }
