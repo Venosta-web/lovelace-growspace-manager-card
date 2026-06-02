@@ -439,3 +439,191 @@ describe('confirm-delete view', () => {
     expect(events[0]).toEqual({ type: 'DeleteCancelled' });
   });
 });
+
+// ─── Edge cases and fallback logic ──────────────────────────────────────────
+
+describe('edge cases and fallback logic', () => {
+  it('uses fallback color and icon for unknown stock type in list item', async () => {
+    const unknownStock = {
+      nutrient_id: 'n3',
+      name: 'Mystery Mix',
+      current_ml: 100,
+      initial_ml: 1000,
+      last_updated: '2026-01-01',
+      brand: 'GH',
+      type: 'unknown' as any,
+      npk: '',
+      dose_ml_l: 0,
+      notes: '',
+    };
+    const el = await mountList(aInventory({ n3: unknownStock }));
+    const item = el.shadowRoot!.querySelector('[data-stock-id="n3"]')!;
+    const iconContainer = item.querySelector('.type-icon') as HTMLElement;
+    expect(iconContainer.style.background).toContain('var(--primary-color, #4caf50)22');
+  });
+
+  it('handles fillPercent boundary cases', async () => {
+    const zeroCapStock = {
+      ...aInventory().stocks.n1,
+      nutrient_id: 'n1',
+      current_ml: 0,
+      initial_ml: 0,
+    };
+    const dangerStock = {
+      ...aInventory().stocks.n1,
+      nutrient_id: 'n2',
+      current_ml: 50,
+      initial_ml: 1000,
+    };
+    const overfilledStock = {
+      ...aInventory().stocks.n1,
+      nutrient_id: 'n3',
+      current_ml: 1200,
+      initial_ml: 1000,
+    };
+    const negativeStock = {
+      ...aInventory().stocks.n1,
+      nutrient_id: 'n4',
+      current_ml: -10,
+      initial_ml: 1000,
+    };
+
+    const el = await mountList(aInventory({
+      n1: zeroCapStock,
+      n2: dangerStock,
+      n3: overfilledStock,
+      n4: negativeStock,
+    }));
+
+    const item1 = el.shadowRoot!.querySelector('[data-stock-id="n1"]')!;
+    const bar1 = item1.querySelector('.fill-bar') as HTMLElement;
+    expect(bar1.style.width).toBe('0%');
+
+    const item2 = el.shadowRoot!.querySelector('[data-stock-id="n2"]')!;
+    const bar2 = item2.querySelector('.fill-bar') as HTMLElement;
+    expect(bar2.classList.contains('danger')).toBe(true);
+
+    const item3 = el.shadowRoot!.querySelector('[data-stock-id="n3"]')!;
+    const bar3 = item3.querySelector('.fill-bar') as HTMLElement;
+    expect(bar3.style.width).toBe('100%');
+
+    const item4 = el.shadowRoot!.querySelector('[data-stock-id="n4"]')!;
+    const bar4 = item4.querySelector('.fill-bar') as HTMLElement;
+    expect(bar4.style.width).toBe('0%');
+  });
+
+  it('handles draftFromStock fallbacks when optional fields are missing', async () => {
+    const sparseStock = {
+      nutrient_id: 'n1',
+      name: 'Sparse Nutrient',
+      current_ml: 500,
+      initial_ml: 1000,
+      last_updated: '2026-01-01',
+    } as any;
+
+    const el = await mountDetail('n1', aInventory({ n1: sparseStock }));
+    const events = collectSmEvents(el);
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="edit"]')!.click();
+
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe('EditStarted');
+    if (events[0].type === 'EditStarted') {
+      expect(events[0].draft).toEqual({
+        name: 'Sparse Nutrient',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: '',
+        stockType: 'base',
+        npk: '',
+        dose_ml_l: 0,
+        notes: '',
+      });
+    }
+  });
+
+  it('renders nothing when selected stock is not found or inventory is null', async () => {
+    const el1 = await fixture<GrowspaceNutrientInventoryDialogUI>(html`
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${aInventory()}
+        .selectedId=${'nonexistent'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-inventory-dialog-ui>
+    `);
+    expect(el1.shadowRoot!.children).toHaveLength(0);
+
+    const el2 = await fixture<GrowspaceNutrientInventoryDialogUI>(html`
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${null}
+        .selectedId=${'n1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-inventory-dialog-ui>
+    `);
+    expect(el2.shadowRoot!.children).toHaveLength(0);
+  });
+
+  it('renders master list with empty stocks when inventory is null', async () => {
+    const el = await fixture<GrowspaceNutrientInventoryDialogUI>(html`
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${null}
+        .selectedId=${null}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-inventory-dialog-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('[data-action="add"]')).toBeTruthy();
+    expect(el.shadowRoot!.querySelectorAll('[data-stock-id]')).toHaveLength(0);
+  });
+});
+
+// ─── Detail view — conditional sections ───────────────────────────────────────
+
+describe('detail view — conditional sections', () => {
+  it('renders detail view sections conditionally based on dose and notes', async () => {
+    const stock1 = {
+      ...aInventory().stocks.n1,
+      dose_ml_l: 0,
+      notes: 'Contains calcium and magnesium.',
+    };
+
+    const el = await mountDetail('n1', aInventory({ n1: stock1 }));
+    const text = el.shadowRoot!.textContent!;
+    expect(text).not.toContain('Composition');
+    expect(text).toContain('Notes');
+    expect(text).toContain('Contains calcium and magnesium.');
+  });
+});
+
+// ─── Editing view — additional inputs ─────────────────────────────────────────
+
+describe('editing view — additional inputs', () => {
+  it('dispatches StockDraftChanged for initial_ml as 0 when input is empty', async () => {
+    const el = await mountEditing();
+    const events = collectSmEvents(el);
+    simulateInput(fieldInput(el.shadowRoot!, 'Capacity') as HTMLInputElement, '');
+    expect(events[0]).toEqual({ type: 'StockDraftChanged', field: 'initial_ml', value: 0 });
+  });
+});
+
+// ─── Error state view ─────────────────────────────────────────────────────────
+
+describe('error state view', () => {
+  it('renders error banner and edit form when sub.kind is error', async () => {
+    const draft = { name: 'Cal-Mag', current_ml: 500, initial_ml: 1000, brand: 'GH', stockType: 'calmag', npk: '0-0-0', dose_ml_l: 2, notes: '' };
+    const el = await fixture<GrowspaceNutrientInventoryDialogUI>(html`
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${aInventory()}
+        .selectedId=${'n1'}
+        .sub=${{
+          kind: 'error',
+          message: 'Failed to save: name is required',
+          draft,
+        }}
+      ></growspace-nutrient-inventory-dialog-ui>
+    `);
+
+    const banner = el.shadowRoot!.querySelector('.error-banner')!;
+    expect(banner).toBeTruthy();
+    expect(banner.textContent).toContain('Failed to save: name is required');
+
+    expect(el.shadowRoot!.querySelector('[data-form="stock"]')).toBeTruthy();
+  });
+});
