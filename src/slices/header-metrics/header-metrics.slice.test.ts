@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { DateTime } from 'luxon';
 import type { EnvSnapshot } from '../environment';
 import type { PlantEntity } from '../../features/plants/types';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
@@ -295,6 +296,17 @@ describe('Cycle 5 — irrigation and drain timing chips', () => {
     expect(chips.find((c) => c.key === MetricKey.IRRIGATION)).toBeUndefined();
     expect(chips.find((c) => c.key === MetricKey.DRAIN)).toBeUndefined();
   });
+
+  it('selects the soonest upcoming time when multiple schedule items are given out of order', () => {
+    const now = DateTime.now();
+    const near = now.plus({ minutes: 30 }).toFormat('HH:mm');
+    const far = now.plus({ hours: 3 }).toFormat('HH:mm');
+    const config = makeIrrigationConfig({ irrigationTimes: [{ time: far }, { time: near }] });
+
+    const { chips } = computeHeaderMetrics(null, [], config, [], 'main');
+
+    expect(chips.find((c) => c.key === MetricKey.IRRIGATION)!.value).toBe(near);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -334,6 +346,24 @@ describe('Cycle 6 — tank level chips', () => {
 
     const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
     expect(chip!.status).toBe('danger');
+  });
+
+  it('sets tank status to "warning" when 12 <= hoursRemaining < 24', () => {
+    const tank = makeTank({ fillLevel: 40, hoursRemaining: 18, depletionStatus: 'depleting' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBe('warning');
+  });
+
+  it('sets tank status to "optimal" when hoursRemaining >= 48', () => {
+    const tank = makeTank({ fillLevel: 80, hoursRemaining: 72, depletionStatus: 'depleting' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBe('optimal');
   });
 
   it('omits the tank chip when tankLevels is empty', () => {
@@ -421,6 +451,20 @@ describe('Cycle 8 — chip.active from activeEnvGraphs', () => {
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main', active);
 
     expect(chips.find((c) => c.key === MetricKey.DLI)!.active).toBe(true);
+  });
+
+  it('marks chip as linked with correct groupIndex when key appears in linkedGraphGroups', () => {
+    const env = makeEnvSnapshot({ temperature: 24, humidity: 60 });
+
+    const { hero } = computeHeaderMetrics(
+      env, [], null, [], 'main',
+      new Set(),
+      [[MetricKey.TEMPERATURE, MetricKey.HUMIDITY]],
+    );
+
+    const tempChip = hero.find((c) => c.key === MetricKey.TEMPERATURE)!;
+    expect(tempChip.linked).toBe(true);
+    expect(tempChip.groupIndex).toBe(0);
   });
 });
 
