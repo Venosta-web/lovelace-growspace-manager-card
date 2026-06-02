@@ -75,6 +75,8 @@ function _normalizeLightSensor(entity: HassEntity | undefined): string | undefin
   }
   if (entity.state === 'on') return 'On';
   if (entity.state === 'off') return 'Off';
+  const n = parseFloat(entity.state);
+  if (!isNaN(n)) return String(Math.round(n));
   return undefined;
 }
 
@@ -84,6 +86,8 @@ function _normalizeOnOff(entity: HassEntity | undefined): string | undefined {
   if (UNAVAILABLE_STATES.has(entity.state)) return undefined;
   if (entity.state === 'on') return 'On';
   if (entity.state === 'off') return 'Off';
+  const n = parseFloat(entity.state);
+  if (!isNaN(n)) return n > 0 ? 'On' : 'Off';
   return undefined;
 }
 
