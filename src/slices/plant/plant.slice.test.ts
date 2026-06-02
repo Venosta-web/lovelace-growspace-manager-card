@@ -22,6 +22,7 @@ import {
   deletePlant,
   harvestPlant,
   movePlantToGrowspace,
+  moveClone,
   swapPlants,
   takeClone,
   printLabel,
@@ -641,5 +642,59 @@ describe('swapPlants (with bystander plant)', () => {
     const after = plants$.get().find((p) => p.attributes.plant_id === 'bystander')!;
     expect(after.attributes.row).toBe(2);
     expect(after.attributes.col).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// moveClone
+// ---------------------------------------------------------------------------
+
+describe('moveClone', () => {
+  it('calls move_clone WS command without transition_date when not provided', async () => {
+    await moveClone('abc', 'veg-room');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/move_clone',
+      { plant_id: 'abc', target_growspace_id: 'veg-room' },
+      expect.anything()
+    );
+    const params = vi.mocked(hassCallModule.hassCall).mock.calls[0][1] as Record<string, unknown>;
+    expect(params).not.toHaveProperty('transition_date');
+  });
+
+  it('includes transition_date in the payload when provided', async () => {
+    await moveClone('abc', 'veg-room', '2026-06-01');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/move_clone',
+      { plant_id: 'abc', target_growspace_id: 'veg-room', transition_date: '2026-06-01' },
+      expect.anything()
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// takeClone — optional branch coverage
+// ---------------------------------------------------------------------------
+
+describe('takeClone (optional branches)', () => {
+  it('omits num_clones from payload when not provided', async () => {
+    const mother = makePlant({ plant_id: 'mom', stage: 'mother' });
+
+    await takeClone(mother);
+
+    const params = vi.mocked(hassCallModule.hassCall).mock.calls[0][1] as Record<string, unknown>;
+    expect(params).not.toHaveProperty('num_clones');
+    expect(params).not.toHaveProperty('target_growspace_id');
+  });
+
+  it('omits target_growspace_id from payload when not provided', async () => {
+    const mother = makePlant({ plant_id: 'mom', stage: 'mother' });
+
+    await takeClone(mother, 3);
+
+    const params = vi.mocked(hassCallModule.hassCall).mock.calls[0][1] as Record<string, unknown>;
+    expect(params).toHaveProperty('num_clones', 3);
+    expect(params).not.toHaveProperty('target_growspace_id');
   });
 });

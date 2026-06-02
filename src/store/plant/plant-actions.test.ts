@@ -262,6 +262,36 @@ describe('handleDeletePlant', () => {
     );
     expect(ctx.refreshData).toHaveBeenCalled();
   });
+
+  it('redo callback re-deletes the plant via handleDeletePlant', async () => {
+    setDevices([
+      {
+        deviceId: 'device-1',
+        plants: [
+          {
+            entity_id: 'sensor.og_kush',
+            attributes: {
+              plant_id: 'plant-1',
+              strain: 'OG Kush',
+              growspace_id: 'device-1',
+              row: 1,
+              col: 0,
+            },
+          },
+        ],
+      } as any,
+    ]);
+
+    await handleDeletePlant(ctx, 'plant-1');
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    (ctx.dataService as any).removePlant.mockClear();
+    setDevices([]);
+    await redo();
+
+    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('plant-1');
+  });
 });
 
 // ─── movePlantToNextStage ─────────────────────────────────────────────────────
@@ -608,6 +638,21 @@ describe('handlePlantDrop', () => {
     expect(result).toBe(false);
     expect(ctx.refreshData).toHaveBeenCalled();
   });
+
+  it('non-swap redo callback re-runs the drop to the target position', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+
+    await handlePlantDrop(ctx, 2, 3, null, source);
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    (ctx.dataService as any).updatePlant.mockClear();
+    await redo();
+
+    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
+      expect.objectContaining({ plant_id: 'p1', row: 2, col: 3 })
+    );
+  });
 });
 
 // ─── confirmAddPlant ──────────────────────────────────────────────────────────
@@ -748,6 +793,52 @@ describe('confirmAddPlants', () => {
 
     expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'batch-delete', description: 'Added 1 plants' })
+    );
+  });
+
+  it('reverse callback deletes the newly added plants and refreshes', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([
+        {
+          deviceId: 'device-1',
+          plants: [{ entity_id: 'sensor.new', attributes: { plant_id: 'new-plant-1' } }],
+        } as any,
+      ]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'Gelato', amount: 1 } as any);
+
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    await reverse();
+
+    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant-1');
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('redo callback re-adds the plants via confirmAddPlants', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([
+        {
+          deviceId: 'device-1',
+          plants: [{ entity_id: 'sensor.new', attributes: { plant_id: 'new-plant-1' } }],
+        } as any,
+      ]);
+    });
+
+    const detail = { strain: 'Gelato', amount: 1 } as any;
+    await confirmAddPlants(ctx, detail);
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    (ctx.dataService as any).addPlants.mockClear();
+    await redo();
+
+    expect((ctx.dataService as any).addPlants).toHaveBeenCalledWith(
+      expect.objectContaining({ strain: 'Gelato', amount: 1 })
     );
   });
 });
