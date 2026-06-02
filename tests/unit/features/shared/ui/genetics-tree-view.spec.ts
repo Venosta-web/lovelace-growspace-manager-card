@@ -54,6 +54,16 @@ const mockNodes: TreeNode[] = [
     gen: 'F3',
     type: 'batch',
     parents: { mother: 'f2', father: null }
+  },
+  {
+    id: 'p3',
+    name: 'Father Only',
+    strain: 'Strain 3',
+    breeder: 'Breeder 1',
+    pheno: 'P3',
+    gen: 'P1',
+    type: 'strain',
+    parents: { mother: null, father: 'p1' }
   }
 ];
 
@@ -71,7 +81,7 @@ describe('GeneticsTreeView', () => {
 
   it('should render all node types with correct icons', () => {
     const nodes = element.shadowRoot?.querySelectorAll('.tree-node');
-    expect(nodes?.length).toBe(5);
+    expect(nodes?.length).toBe(6);
   });
 
   it('should handle search input', async () => {
@@ -162,8 +172,8 @@ describe('GeneticsTreeView', () => {
 
     expect(element['_collapsed'].has('f1')).toBe(true);
     const nodes = element.shadowRoot?.querySelectorAll('.tree-node');
-    // f2 and f3 hidden
-    expect(nodes?.length).toBe(3);
+    // f2 and f3 hidden; p3 still visible (parent is p1, not f1)
+    expect(nodes?.length).toBe(4);
 
     foldBtn.click();
     await element.updateComplete;
@@ -471,5 +481,102 @@ describe('GeneticsTreeView', () => {
 
     expect(element['_panX']).not.toBe(before.panX);
     expect(element['_userHasInteracted']).toBe(true);
+  });
+
+  it('should ignore non-left-button mousedown on shell', async () => {
+    const shell = element.shadowRoot?.querySelector('.shell') as HTMLElement;
+    shell.dispatchEvent(new MouseEvent('mousedown', { button: 2, bubbles: true }));
+    expect(element['_dragging']).toBeNull();
+  });
+
+  it('should ignore mousemove when not dragging', async () => {
+    element['_dragging'] = null;
+    const before = element['_panX'];
+    element['_onMouseMove'](new MouseEvent('mousemove', { clientX: 200, clientY: 200 }));
+    expect(element['_panX']).toBe(before);
+  });
+
+  it('should not deselect when shell click target is inside a tree-node', async () => {
+    element['_selectedId'] = 'f1';
+    await element.updateComplete;
+
+    const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
+    node.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    await element.updateComplete;
+
+    // Shell click guard fires — selectedId is changed by _onNodeClick, not cleared
+    expect(element['_selectedId']).not.toBeNull();
+  });
+
+  it('should not deselect when shell click follows a pan', async () => {
+    element['_selectedId'] = 'f1';
+    element['_didPan'] = true;
+    await element.updateComplete;
+
+    const bgGrid = element.shadowRoot?.querySelector('.bg-grid') as HTMLElement;
+    bgGrid.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    await element.updateComplete;
+
+    expect(element['_selectedId']).toBe('f1');
+  });
+
+  it('should omit father link when selected node has no father', async () => {
+    // f2 has mother=f1, father=null — only mother link should render
+    element['_selectedId'] = 'f2';
+    await element.updateComplete;
+
+    const detailParents = element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent');
+    const roles = Array.from(detailParents ?? []).map((el) => el.querySelector('.role')?.textContent);
+    expect(roles).not.toContain('Father');
+    expect(roles).toContain('Mother');
+  });
+
+  it('should omit mother link when selected node has no mother', async () => {
+    // p3 has mother=null, father=p1 — only father link should render
+    element['_selectedId'] = 'p3';
+    await element.updateComplete;
+
+    const detailParents = element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent');
+    const roles = Array.from(detailParents ?? []).map((el) => el.querySelector('.role')?.textContent);
+    expect(roles).not.toContain('Mother');
+    expect(roles).toContain('Father');
+  });
+
+  it('should omit offspring section when selected node has no children', async () => {
+    // f3 is a leaf node with no children
+    element['_selectedId'] = 'f3';
+    await element.updateComplete;
+
+    const sections = Array.from(
+      element.shadowRoot?.querySelectorAll('.detail-panel .detail-section-label') ?? []
+    ).map((el) => el.textContent?.trim());
+    expect(sections).not.toContain('Offspring');
+  });
+
+  it('should show overflow count when node has more than 5 children', async () => {
+    const manyKidsNodes: TreeNode[] = [
+      { id: 'root', name: 'Root', strain: 'S', breeder: 'B', pheno: 'P1', gen: 'P1', type: 'strain', parents: { mother: null, father: null } },
+      ...Array.from({ length: 6 }, (_, i) => ({
+        id: `k${i}`,
+        name: `Kid ${i}`,
+        strain: 'S',
+        breeder: 'B',
+        pheno: 'F1',
+        gen: 'F1',
+        type: 'batch' as const,
+        parents: { mother: 'root', father: null },
+      })),
+    ];
+
+    const el = await fixture<GeneticsTreeView>(html`
+      <genetics-tree-view .nodes=${manyKidsNodes}></genetics-tree-view>
+    `);
+    el['_viewW'] = 1000;
+    el['_viewH'] = 800;
+    el['_selectedId'] = 'root';
+    await el.updateComplete;
+
+    const label = el.shadowRoot?.querySelector('.detail-section-label');
+    expect(label?.textContent).toContain('+1 more');
   });
 });
