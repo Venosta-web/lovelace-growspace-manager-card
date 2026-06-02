@@ -126,6 +126,23 @@ describe('getPrinters – no printers', () => {
     expect(getPrinters(makeHass())).toEqual([]);
   });
 
+  it('returns empty array when hass is undefined or has no states', () => {
+    expect(getPrinters(undefined)).toEqual([]);
+    expect(getPrinters({} as any)).toEqual([]);
+  });
+
+  it('uses entity id fallback when friendly_name is missing', () => {
+    const states = {
+      'image.niimbot_6649b9_last_label_made': {
+        state: 'ok',
+        attributes: {},
+      },
+    };
+    const hass = makeHass(states);
+    const printers = getPrinters(hass);
+    expect(printers[0].name).toBe('image.niimbot_6649b9_last_label_made');
+  });
+
   it('ignores image entities that do not end in _last_label_made', () => {
     const hass = makeHass({
       'image.niimbot_6649b9_thumbnail': { state: 'ok', attributes: {} },
@@ -321,5 +338,32 @@ describe('PrinterStatusStrip – paper loaded indicator', () => {
       ></printer-status-strip>
     `);
     expect(el.shadowRoot!.querySelector('.paper-indicator.muted')).not.toBeNull();
+  });
+});
+
+describe('PrinterStatusStrip – batteryPct null color', () => {
+  it('applies grey class when batteryPct is null', async () => {
+    const states = without(connectedPrinterStates(), 'sensor.niimbot_6649b9_battery');
+    const el = await fixture<PrinterStatusStrip>(html`
+      <printer-status-strip
+        .hass=${makeHass(states)}
+        .selectedDeviceId=${'image.niimbot_6649b9_last_label_made'}
+      ></printer-status-strip>
+    `);
+    expect(el.shadowRoot!.querySelector('.battery.grey')).not.toBeNull();
+  });
+});
+
+describe('PrinterStatusStrip – printer not found', () => {
+  it('renders nothing when selectedDeviceId is not in the discovered printers list', async () => {
+    const el = await fixture<PrinterStatusStrip>(html`
+      <printer-status-strip
+        .hass=${makeHass(connectedPrinterStates())}
+        .selectedDeviceId=${'image.nonexistent_printer_last_label_made'}
+      ></printer-status-strip>
+    `);
+    expect(el.shadowRoot).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('.strip')).toBeNull();
+    expect(el.shadowRoot!.querySelector('.no-printer')).toBeNull();
   });
 });

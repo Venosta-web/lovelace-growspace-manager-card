@@ -3,6 +3,7 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { PrintLabelDialog } from './print-label-dialog';
 import './print-label-dialog';
 import type { LabelFieldVisibility } from '../lib/types/dialog';
+import { setDevices } from '../slices/grid';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -431,5 +432,363 @@ describe('PrintLabelDialog – render', () => {
     await el.updateComplete;
     const footer = el.shadowRoot!.querySelector('.footer-meta') as HTMLElement;
     expect(footer?.textContent).toContain('offline');
+  });
+
+  it('renders printer options when printers are present in hass', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true} .hass=${makeHass()} .store=${makeMockStore()}></print-label-dialog>
+    `);
+    await el.updateComplete;
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+    expect(select).not.toBeNull();
+    expect(select.options).toContainEqual({ label: 'Printer A', value: 'image.printer_a_last_label_made' });
+    expect(select.options).toContainEqual({ label: 'Printer B', value: 'image.printer_b_last_label_made' });
+  });
+
+  it('renders fallback sizeLabel when sizeId is not found in LABEL_SIZES', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    (el as any)._sizeId = 'custom-size';
+    await el.updateComplete;
+    const footer = el.shadowRoot!.querySelector('.footer-meta') as HTMLElement;
+    expect(footer?.textContent).toContain('custom-size');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _getPlant & _getFieldValues
+// ---------------------------------------------------------------------------
+
+describe('PrintLabelDialog – _getPlant & _getFieldValues', () => {
+  afterEach(() => {
+    setDevices([]);
+    vi.restoreAllMocks();
+  });
+
+  it('returns null if plantId is missing', () => {
+    const el = createElement();
+    expect((el as any)._getPlant(undefined)).toBeNull();
+  });
+
+  it('returns plant if found by plant_id attribute', () => {
+    const mockPlant = {
+      entity_id: 'sensor.plant_1',
+      state: 'healthy',
+      attributes: {
+        plant_id: 'plant_1',
+        strain: 'OG Kush',
+        phenotype: 'Ph1',
+        veg_start: '2026-05-01T00:00:00Z',
+        days_in_stage: 5,
+      }
+    };
+    setDevices([{
+      deviceId: 'dev1',
+      name: 'Growspace 1',
+      type: 'normal' as any,
+      rows: 1,
+      plantsPerRow: 1,
+      plants: [mockPlant] as any,
+      grid: {},
+      biologicalMetrics: {} as any,
+      environmentAttributes: {} as any,
+      stats: {} as any,
+      irrigationConfig: {} as any
+    }]);
+
+    const el = createElement();
+    expect((el as any)._getPlant('plant_1')).toEqual(mockPlant);
+  });
+
+  it('returns plant if found by entity_id fallback', () => {
+    const mockPlant = {
+      entity_id: 'sensor.plant_1',
+      state: 'healthy',
+      attributes: {
+        strain: 'OG Kush',
+        phenotype: 'Ph1',
+      }
+    };
+    setDevices([{
+      deviceId: 'dev1',
+      name: 'Growspace 1',
+      type: 'normal' as any,
+      rows: 1,
+      plantsPerRow: 1,
+      plants: [mockPlant] as any,
+      grid: {},
+      biologicalMetrics: {} as any,
+      environmentAttributes: {} as any,
+      stats: {} as any,
+      irrigationConfig: {} as any
+    }]);
+
+    const el = createElement();
+    expect((el as any)._getPlant('plant_1')).toEqual(mockPlant);
+  });
+
+  it('returns null if plant is not found', () => {
+    setDevices([{
+      deviceId: 'dev1',
+      name: 'Growspace 1',
+      type: 'normal' as any,
+      rows: 1,
+      plantsPerRow: 1,
+      plants: [],
+      grid: {},
+      biologicalMetrics: {} as any,
+      environmentAttributes: {} as any,
+      stats: {} as any,
+      irrigationConfig: {} as any
+    }]);
+
+    const el = createElement();
+    expect((el as any)._getPlant('plant_1')).toBeNull();
+  });
+
+  it('formats field values correctly using veg_start date', () => {
+    const mockPlant = {
+      entity_id: 'sensor.plant_1',
+      state: 'healthy',
+      attributes: {
+        plant_id: 'plant_1',
+        strain: 'OG Kush',
+        phenotype: 'Ph1',
+        breeder: 'Barney',
+        lineage: 'Kush x OG',
+        veg_start: '2026-05-01T00:00:00Z',
+        days_in_stage: 5,
+        breeder_logo: 'logo.png'
+      }
+    };
+    setDevices([{
+      deviceId: 'dev1',
+      name: 'Growspace 1',
+      type: 'normal' as any,
+      rows: 1,
+      plantsPerRow: 1,
+      plants: [mockPlant] as any,
+      grid: {},
+      biologicalMetrics: {} as any,
+      environmentAttributes: {} as any,
+      stats: {} as any,
+      irrigationConfig: {} as any
+    }]);
+
+    const el = createElement();
+    el.dialogState = { plantId: 'plant_1' };
+    const values = (el as any)._getFieldValues();
+    expect(values.name).toBe('OG Kush');
+    expect(values.phenotype).toBe('Ph1');
+    expect(values.breeder).toBe('Barney');
+    expect(values.lineage).toBe('Kush x OG');
+    expect(values.stageAge).toBe('Day 5');
+    expect(values.logo).toBe('logo.png');
+    expect(values.startDate).toBeTruthy();
+  });
+
+  it('formats field values correctly using flower_start date', () => {
+    const mockPlant = {
+      entity_id: 'sensor.plant_1',
+      state: 'healthy',
+      attributes: {
+        plant_id: 'plant_1',
+        flower_start: '2026-05-01T00:00:00Z',
+      }
+    };
+    setDevices([{
+      deviceId: 'dev1',
+      name: 'Growspace 1',
+      type: 'normal' as any,
+      rows: 1,
+      plantsPerRow: 1,
+      plants: [mockPlant] as any,
+      grid: {},
+      biologicalMetrics: {} as any,
+      environmentAttributes: {} as any,
+      stats: {} as any,
+      irrigationConfig: {} as any
+    }]);
+
+    const el = createElement();
+    el.dialogState = { plantId: 'plant_1' };
+    const values = (el as any)._getFieldValues();
+    expect(values.startDate).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// _formatDate
+// ---------------------------------------------------------------------------
+
+describe('PrintLabelDialog – _formatDate', () => {
+  it('returns empty string for null or undefined', () => {
+    const el = createElement();
+    expect((el as any)._formatDate(null)).toBe('');
+    expect((el as any)._formatDate(undefined)).toBe('');
+  });
+
+  it('returns original string if parsing throws an error', () => {
+    const el = createElement();
+    expect((el as any)._formatDate('invalid-date-string')).toBe('invalid-date-string');
+  });
+
+  it('returns original input if conversion/parsing throws an error', () => {
+    const el = createElement();
+    const badInput = Symbol('bad') as any;
+    expect((el as any)._formatDate(badInput)).toBe(badInput);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DOM Interactive Tests
+// ---------------------------------------------------------------------------
+
+describe('PrintLabelDialog – DOM interactions', () => {
+  it('toggles non-locked fields on click in DOM', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    const phenotypeRow = Array.from(el.shadowRoot!.querySelectorAll('.field-toggle-row'))
+      .find(row => row.querySelector('.field-toggle-label')?.textContent?.trim() === 'Phenotype') as HTMLElement;
+    
+    expect((el as any)._fields.phenotype).toBe(true);
+    phenotypeRow.click();
+    await el.updateComplete;
+    expect((el as any)._fields.phenotype).toBe(false);
+  });
+
+  it('does not toggle locked fields on click in DOM', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    const nameRow = Array.from(el.shadowRoot!.querySelectorAll('.field-toggle-row'))
+      .find(row => row.querySelector('.field-toggle-label')?.textContent?.trim() === 'Strain name') as HTMLElement;
+    
+    expect((el as any)._fields.name).toBe(true);
+    nameRow.click();
+    await el.updateComplete;
+    expect((el as any)._fields.name).toBe(true);
+  });
+
+  it('toggles mobile settings panel on pill click', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    const pill = el.shadowRoot!.querySelector('.mobile-pill-toggle') as HTMLButtonElement;
+    const settingsCol = el.shadowRoot!.querySelector('.settings-col') as HTMLElement;
+    
+    expect((el as any)._settingsOpen).toBe(false);
+    expect(settingsCol.classList.contains('mobile-open')).toBe(false);
+    
+    pill.click();
+    await el.updateComplete;
+    
+    expect((el as any)._settingsOpen).toBe(true);
+    expect(settingsCol.classList.contains('mobile-open')).toBe(true);
+  });
+
+  it('updates qrTarget when md3-select changes', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    (el as any)._fields = {
+      name: true,
+      phenotype: true,
+      breeder: true,
+      lineage: true,
+      startDate: true,
+      stageAge: true,
+      plantId: true,
+      logo: true,
+      qr: true,
+    };
+    await el.updateComplete;
+    
+    const select = el.shadowRoot!.querySelector('.qr-target-card md3-select') as any;
+    expect(select).not.toBeNull();
+    
+    select.dispatchEvent(new CustomEvent('change', { detail: 'deeplink' }));
+    await el.updateComplete;
+    
+    expect((el as any)._qrTarget).toBe('deeplink');
+  });
+
+  it('decrements and increments copies on button click within boundaries', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    (el as any)._copies = 2;
+    await el.updateComplete;
+    
+    const decBtn = el.shadowRoot!.querySelectorAll('.copies-stepper button')[0] as HTMLButtonElement;
+    const incBtn = el.shadowRoot!.querySelectorAll('.copies-stepper button')[1] as HTMLButtonElement;
+    
+    incBtn.click();
+    await el.updateComplete;
+    expect((el as any)._copies).toBe(3);
+    
+    decBtn.click();
+    await el.updateComplete;
+    expect((el as any)._copies).toBe(2);
+
+    (el as any)._copies = 1;
+    await el.updateComplete;
+    decBtn.click();
+    await el.updateComplete;
+    expect((el as any)._copies).toBe(1);
+
+    (el as any)._copies = 50;
+    await el.updateComplete;
+    incBtn.click();
+    await el.updateComplete;
+    expect((el as any)._copies).toBe(50);
+  });
+
+  it('changes density when density segment button is clicked', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    (el as any)._density = 'normal';
+    await el.updateComplete;
+    
+    const lightBtn = el.shadowRoot!.querySelectorAll('.density-seg button')[0] as HTMLButtonElement;
+    lightBtn.click();
+    await el.updateComplete;
+    
+    expect((el as any)._density).toBe('low');
+  });
+
+  it('changes sizeId when size chip is clicked', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true}></print-label-dialog>
+    `);
+    (el as any)._sizeId = '50x30';
+    await el.updateComplete;
+    
+    const chip40x30 = Array.from(el.shadowRoot!.querySelectorAll('.size-chip'))
+      .find(btn => btn.textContent?.trim() === '40×30') as HTMLButtonElement;
+      
+    expect(chip40x30).not.toBeNull();
+    chip40x30.click();
+    await el.updateComplete;
+    
+    expect((el as any)._sizeId).toBe('40x30');
+  });
+
+  it('updates selectedDeviceId when printer select changes', async () => {
+    const el = await fixture<PrintLabelDialog>(html`
+      <print-label-dialog .open=${true} .hass=${makeHass()}></print-label-dialog>
+    `);
+    await el.updateComplete;
+    
+    const select = el.shadowRoot!.querySelector('md3-select[label="Niimbot Printer"]') as any;
+    expect(select).not.toBeNull();
+    
+    select.dispatchEvent(new CustomEvent('change', { detail: 'image.printer_b_last_label_made' }));
+    await el.updateComplete;
+    
+    expect((el as any)._selectedDeviceId).toBe('image.printer_b_last_label_made');
   });
 });

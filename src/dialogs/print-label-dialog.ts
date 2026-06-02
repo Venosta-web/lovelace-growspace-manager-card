@@ -464,7 +464,11 @@ export class PrintLabelDialog extends LitElement {
   private _formatDate(dateStr?: string | null) {
     if (!dateStr) return '';
     try {
-      return new Date(dateStr).toLocaleDateString(undefined, {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return dateStr;
+      }
+      return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
         year: '2-digit',

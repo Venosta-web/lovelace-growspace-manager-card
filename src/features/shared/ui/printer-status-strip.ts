@@ -12,7 +12,8 @@ export interface NiimbotPrinter {
   paperLoaded: boolean;
 }
 
-export function getPrinters(hass: HomeAssistant): NiimbotPrinter[] {
+export function getPrinters(hass?: HomeAssistant): NiimbotPrinter[] {
+  if (!hass || !hass.states) return [];
   return Object.keys(hass.states)
     .filter((eid) => eid.startsWith('image.') && eid.endsWith('_last_label_made'))
     .map((eid) => {
