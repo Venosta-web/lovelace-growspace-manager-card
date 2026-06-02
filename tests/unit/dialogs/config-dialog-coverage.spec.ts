@@ -243,6 +243,15 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._openHumidityStageId = 'seedling';
         await element.updateComplete;
         expect((element as any)._openHumidityStageId).to.equal('seedling');
+
+        // Click the open accordion head again → isOpen=true branch → sets id to ''  (line 2141)
+        const openHead = Array.from(element.shadowRoot?.querySelectorAll('.acc-head') ?? [])
+            .find((h) => h.closest('.acc-card')?.querySelector('.acc-head-title')?.textContent?.includes('Seedling')) as HTMLElement | undefined;
+        if (openHead) {
+            openHead.click();
+            await element.updateComplete;
+            expect((element as any)._openHumidityStageId).to.equal('');
+        }
     });
 
 
@@ -1046,8 +1055,8 @@ describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', ()
     });
 
     it('line 2725 true-branch: falls back to gsSub.growspaceId when envId empty and gsSub is editing', async () => {
-        // Put the growspaces SM into 'editing' state so gsSub.kind === 'editing'
-        (element as any)._t({ type: 'START_EDIT_GROWSPACE', growspaceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationService: '' });
+        // SELECT_GROWSPACE puts tabs.growspaces.sub into { kind: 'editing', growspaceId: 'gs1', ... }
+        (element as any)._t({ type: 'SELECT_GROWSPACE', growspaceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationService: '' });
         (element as any).envSelectedId = '';
         element.currentTab = ConfigTab.SUBAREAS;
         await element.updateComplete;
@@ -1076,5 +1085,236 @@ describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', ()
         await element.updateComplete;
 
         expect(element.shadowRoot?.querySelector('.cfg-rail')).toBeNull();
+    });
+});
+
+// ─── Tank row/form branch gaps: lines 2475, 2507, 2565 ───────────────────────
+
+describe('ConfigDialog - Tank branch coverage (lines 2475, 2507, 2565)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        element.currentTab = ConfigTab.TANKS;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('line 2471/2474/2475: empty name falls back to "Tank 1"; null volumeLiters → nothing; null warningLevel → 30%', async () => {
+        (element as any).envIrrigationTanks = [
+            { sensorEntity: 'sensor.tank1', name: '', volumeLiters: null, warningLevel: null },
+        ];
+        await element.updateComplete;
+
+        // name || 'Tank X' fallback (line 2471)
+        expect(element.shadowRoot?.textContent).toContain('Tank 1');
+        // warningLevel ?? 30 → 30% (line 2475)
+        expect(element.shadowRoot?.textContent).toContain('30%');
+        // volumeLiters == null → nothing branch — no "L" suffix (line 2474)
+        expect(element.shadowRoot?.textContent).not.toMatch(/\d+ L/);
+    });
+
+    it('line 2507: IIFE guard returns nothing when tank sub kind is not adding or editing', async () => {
+        // The only valid non-idle states are 'adding' and 'editing', so trigger the dead-code
+        // branch by forcing a synthetic state that passes the outer kind !== 'idle' check
+        // but fails the inner guard.
+        const sm = (element as any)._sm;
+        (element as any)._sm = {
+            ...sm,
+            tabs: {
+                ...sm.tabs,
+                tanks: { sub: { kind: 'confirm-delete' } },
+            },
+        };
+        await element.updateComplete;
+
+        // Outer condition (kind !== 'idle') is satisfied; inner guard short-circuits to nothing
+        expect(element.shadowRoot?.querySelector('.md3-input-group')).toBeNull();
+    });
+
+    it('line 2565: warningLevel input cleared → parseFloat(NaN) || 30 stores 30', async () => {
+        (element as any)._openAddTank();
+        await element.updateComplete;
+
+        // Distinguish warning level input (max="100") from volume input (no max)
+        const inputs = Array.from(
+            element.shadowRoot?.querySelectorAll('input.md3-input') ?? []
+        ) as HTMLInputElement[];
+        const warningInput = inputs.find((i) => i.type === 'number' && i.max === '100');
+        expect(warningInput).toBeDefined();
+
+        // First set a real value so the assertion below is non-vacuous
+        warningInput!.value = '45';
+        warningInput!.dispatchEvent(new Event('input'));
+        expect((element as any)._sm.tabs.tanks.sub.warningLevel).toBe(45);
+
+        // Now clear it → parseFloat('') = NaN, NaN || 30 = 30
+        warningInput!.value = '';
+        warningInput!.dispatchEvent(new Event('input'));
+        expect((element as any)._sm.tabs.tanks.sub.warningLevel).toBe(30);
+    });
+});
+
+// ─── Misc branch coverage: getters, setters, guards, setInitialState ──────────
+
+describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitialState)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('edit/add getters return defaults when sub-state is idle (lines 291,297,303,309,315,324,333,342)', () => {
+        // sub.kind = 'idle' by default — all ternary false-branches fire
+        expect((element as any).editName).toBe('');
+        expect((element as any).editRows).toBe(0);
+        expect((element as any).editPlantsPerRow).toBe(0);
+        expect((element as any).editNotificationService).toBe('');
+        expect((element as any).addName).toBe('');
+        expect((element as any).addRows).toBe(4);
+        expect((element as any).addPlantsPerRow).toBe(4);
+        expect((element as any).addNotificationService).toBe('');
+    });
+
+    it('addRows/addPlantsPerRow/addNotificationService setters trigger START_ADD_GROWSPACE when idle (lines 327,336,345)', () => {
+        // sub.kind = 'idle' → setters should call START_ADD_GROWSPACE then UPDATE_ADD_DRAFT
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('idle');
+        (element as any).addRows = 6;
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addRows).toBe(6);
+
+        // Reset to idle and test the other two setters
+        (element as any)._t({ type: 'CANCEL_GROWSPACES' });
+        (element as any).addPlantsPerRow = 3;
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addPlantsPerRow).toBe(3);
+
+        (element as any)._t({ type: 'CANCEL_GROWSPACES' });
+        (element as any).addNotificationService = 'notify.mobile';
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addNotificationService).toBe('notify.mobile');
+    });
+
+    it('_newSubareaName getter returns "" when sub is not adding (line 387)', () => {
+        // sub.kind = 'idle' → false branch of ternary
+        expect((element as any)._newSubareaName).toBe('');
+    });
+
+    it('setInitialState without environmentData leaves draft at defaults (line 943)', () => {
+        // No environmentData → envPartial = {} → SM uses initial draft
+        element.setInitialState(ConfigTab.SENSORS);
+        expect((element as any)._sm.environmentDraft.selectedGrowspaceId).toBe('');
+    });
+
+    it('setInitialState with legacy single-sensor fields maps to arrays (lines 948,953,956,958)', () => {
+        element.setInitialState(ConfigTab.SENSORS, {
+            selectedGrowspaceId: 'gs1',
+            // no *Sensors arrays → falls back to legacy single-sensor fields
+            temperatureSensor: 'sensor.temp',
+            humiditySensor: 'sensor.hum',
+            vpdSensor: 'sensor.vpd',
+            // no lightSensors / lightSensor
+        } as any);
+        expect((element as any)._sm.environmentDraft.temperatureSensors).toEqual(['sensor.temp']);
+        expect((element as any)._sm.environmentDraft.humiditySensors).toEqual(['sensor.hum']);
+        expect((element as any)._sm.environmentDraft.vpdSensors).toEqual(['sensor.vpd']);
+    });
+
+    it('_editTank with empty/null fields uses || and ?? fallbacks (lines 1363–1366)', () => {
+        (element as any).envIrrigationTanks = [
+            { sensorEntity: '', name: '', volumeLiters: null, warningLevel: null },
+        ];
+        (element as any)._updateFanConfig; // ensure element is set up
+        (element as any)._editTank(0);
+        const sub = (element as any)._sm.tabs.tanks.sub;
+        expect(sub.kind).toBe('editing');
+        expect(sub.sensorEntity).toBe('');   // || '' fallback
+        expect(sub.name).toBe('');            // || '' fallback
+        expect(sub.volumeLiters).toBeNull();  // ?? null fallback
+        expect(sub.warningLevel).toBe(30);   // ?? 30 fallback
+    });
+
+    it('_saveTank returns early when kind is idle (line 1377)', () => {
+        // kind = 'idle' → first guard fires, method returns without committing
+        expect((element as any)._sm.tabs.tanks.sub.kind).toBe('idle');
+        (element as any)._saveTank(); // should not throw or change state
+        expect((element as any)._sm.tabs.tanks.sub.kind).toBe('idle');
+    });
+
+    it('_handleSaveGroup updates existing group when found (line 1405 index >= 0 branch)', () => {
+        const existing = { id: 'g1', name: 'Group A', sensors: [] };
+        (element as any)._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: [existing] } });
+
+        const updated = { id: 'g1', name: 'Group A Renamed', sensors: ['sensor.a'] };
+        (element as any)._handleSaveGroup(new CustomEvent('save-sensor-group', { detail: { group: updated } }));
+
+        const groups = (element as any)._sm.environmentDraft.sensorGroups;
+        expect(groups).toHaveLength(1);
+        expect(groups[0].name).toBe('Group A Renamed');
+    });
+
+    it('_confirmDeleteGrowspace returns early when not in confirm-delete state (line 1146)', () => {
+        const spy = vi.fn();
+        element.addEventListener('delete-growspace-submit', spy);
+        // sub.kind = 'idle' → guard fires → returns without dispatching
+        (element as any)._confirmDeleteGrowspace();
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('_populateEditFields returns early when devices is undefined (line 1194)', () => {
+        (element as any).devices = undefined;
+        // Should not throw; the guard at line 1194 prevents the find() call
+        expect(() => (element as any)._populateEditFields('gs1')).not.toThrow();
+    });
+
+    it('_loadSubareas uses gsSub.growspaceId when envId is empty and sub is editing (line 1420)', async () => {
+        (element as any)._t({ type: 'SELECT_GROWSPACE', growspaceId: 'gs1', name: 'GS', rows: 4, plantsPerRow: 4, notificationService: '' });
+        (element as any).envSelectedId = '';
+
+        const loadSpy = vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
+        // Directly test the editId fallback by calling the real method once
+        loadSpy.mockRestore();
+
+        const { getSubareas: mockGet } = await import('../../../src/slices/subarea');
+        vi.mocked(mockGet).mockResolvedValueOnce([]);
+        await (element as any)._loadSubareas();
+
+        // growspaceId = '' || 'gs1' (from gsSub.growspaceId) → loaded with 'gs1'
+        expect((element as any)._subareasGrowspaceId).toBe('gs1');
+    });
+
+    it('_handleAddSubarea returns early when sub is not adding (line 1441)', async () => {
+        // sub.kind = 'idle' → name = '' → early return
+        expect((element as any)._sm.tabs.subareas.sub.kind).toBe('idle');
+        const { addSubarea: mockAdd } = await import('../../../src/slices/subarea');
+        await (element as any)._handleAddSubarea();
+        expect(vi.mocked(mockAdd)).not.toHaveBeenCalled();
     });
 });
