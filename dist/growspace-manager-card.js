@@ -9496,7 +9496,7 @@ class ChartUtils {
      * (ADR-0008: fan domain → attributes.percentage; speed sensor → raw float).
      * Returns undefined for unavailable/unknown/unparseable states.
      */
-    static normalizeSensorValue(ent, key, entityDomain) {
+    static normalizeSensorValue(ent, key, entityDomain, entityUnit) {
         const s = ent.state;
         if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN)
             return undefined;
@@ -9504,6 +9504,10 @@ class ChartUtils {
             return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
         }
         if (key === MetricKey.LIGHT) {
+            if (entityUnit === '%') {
+                const val = parseFloat(s);
+                return isNaN(val) ? undefined : val;
+            }
             if (s === EntityState.ON || s === EntityState.TRUE)
                 return 1;
             if (s === EntityState.OFF || s === EntityState.FALSE)
@@ -10017,6 +10021,14 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             return { min: 0, max: 100 };
         return { min: 0, max: 10 };
     }
+    _resolveLightEntityUnit() {
+        if (!this.device || !this.hass)
+            return undefined;
+        const entityId = this.device.environmentAttributes?.lightSensor;
+        if (!entityId)
+            return undefined;
+        return this.hass.states[entityId]?.attributes?.unit_of_measurement;
+    }
     _getVpdThresholds() {
         const defaultThresholds = {
             targetMin: DEFAULTS.VPD.TARGET_MIN,
@@ -10157,12 +10169,16 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             if (fanEntityDomain === 'fan') {
                 config.unit = '%';
             }
+            const lightEntityUnit = key === MetricKey.LIGHT ? this._resolveLightEntityUnit() : undefined;
+            if (lightEntityUnit === '%') {
+                config.unit = '%';
+            }
             if (initialState) {
                 const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
                     ? BINARY_ON_STATES.includes(initialState.state)
                         ? 1
                         : 0
-                    : ChartUtils.normalizeSensorValue(initialState, key, fanEntityDomain);
+                    : ChartUtils.normalizeSensorValue(initialState, key, fanEntityDomain, lightEntityUnit);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -10181,7 +10197,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         dataPoints.push({ time: t, value: val });
                 }
                 else {
-                    val = ChartUtils.normalizeSensorValue(h, key, fanEntityDomain);
+                    val = ChartUtils.normalizeSensorValue(h, key, fanEntityDomain, lightEntityUnit);
                     if (val !== undefined)
                         dataPoints.push({ time: t, value: val });
                 }
@@ -10209,13 +10225,17 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 const isStep = config.type === ChartType.STEP ||
                     key === MetricKey.OPTIMAL ||
                     key === MetricKey.DEHUMIDIFIER ||
-                    key === MetricKey.LIGHT ||
+                    (key === MetricKey.LIGHT && lightEntityUnit !== '%') ||
                     key === MetricKey.IRRIGATION ||
                     key === MetricKey.DRAIN;
                 if (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) {
                     const fanScale = this._resolveFanScale(key);
                     min = fanScale.min;
                     max = fanScale.max;
+                }
+                else if (key === MetricKey.LIGHT && lightEntityUnit === '%') {
+                    min = 0;
+                    max = 100;
                 }
                 else if (key === MetricKey.HUMIDIFIER) {
                     min = 0;
@@ -10476,7 +10496,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             const isBinary = defaults?.binary ||
                 series.id === MetricKey.OPTIMAL ||
                 series.id === MetricKey.DEHUMIDIFIER ||
-                series.id === MetricKey.LIGHT ||
+                (series.id === MetricKey.LIGHT && series.unit !== '%') ||
                 series.id === MetricKey.IRRIGATION ||
                 series.id === MetricKey.DRAIN;
             if (isBinary) {

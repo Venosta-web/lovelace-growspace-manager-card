@@ -489,7 +489,8 @@ export class ChartUtils {
   public static normalizeSensorValue(
     ent: { state: string; attributes?: Record<string, unknown> },
     key: string,
-    entityDomain?: string
+    entityDomain?: string,
+    entityUnit?: string
   ): number | undefined {
     const s = ent.state;
     if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN) return undefined;
@@ -498,6 +499,10 @@ export class ChartUtils {
       return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
     }
     if (key === MetricKey.LIGHT) {
+      if (entityUnit === '%') {
+        const val = parseFloat(s);
+        return isNaN(val) ? undefined : val;
+      }
       if (s === EntityState.ON || s === EntityState.TRUE) return 1;
       if (s === EntityState.OFF || s === EntityState.FALSE) return 0;
       const val = parseFloat(s);

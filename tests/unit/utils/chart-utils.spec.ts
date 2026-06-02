@@ -89,3 +89,28 @@ describe('ChartUtils.normalizeSensorValue — fan entity domain (ADR-0008)', () 
     ).toBe(5);
   });
 });
+
+describe('ChartUtils.normalizeSensorValue — percentage light sensor', () => {
+  it('returns raw numeric value when entityUnit is % and state is a percentage', () => {
+    expect(
+      ChartUtils.normalizeSensorValue({ state: '85', attributes: {} }, MetricKey.LIGHT, undefined, '%')
+    ).toBe(85);
+  });
+
+  it('returns 0 when entityUnit is % and state is 0', () => {
+    expect(
+      ChartUtils.normalizeSensorValue({ state: '0', attributes: {} }, MetricKey.LIGHT, undefined, '%')
+    ).toBe(0);
+  });
+
+  it('returns undefined when entityUnit is % and state is non-numeric', () => {
+    expect(
+      ChartUtils.normalizeSensorValue({ state: 'on', attributes: {} }, MetricKey.LIGHT, undefined, '%')
+    ).toBeUndefined();
+  });
+
+  it('preserves binary 0/1 behaviour for LIGHT when no entityUnit is provided', () => {
+    expect(ChartUtils.normalizeSensorValue({ state: '85', attributes: {} }, MetricKey.LIGHT)).toBe(1);
+    expect(ChartUtils.normalizeSensorValue({ state: '0', attributes: {} }, MetricKey.LIGHT)).toBe(0);
+  });
+});
