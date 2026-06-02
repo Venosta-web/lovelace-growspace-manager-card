@@ -470,6 +470,21 @@ describe('confirm-delete view', () => {
     expect(events[0]).toEqual({ type: 'DeleteConfirmed' });
   });
 
+  it('dispatches DeleteCancelled when Cancel is clicked', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${aPresets()}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'confirm-delete', id: 'p1', name: 'Veg Week 1' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const events = collectSmEvents(el);
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="cancel-delete"]')!.click();
+    expect(events[0]).toEqual({ type: 'DeleteCancelled' });
+  });
+});
+
 // ─── Orphaned nutrient rows (issue #227) ─────────────────────────────────────
 
 describe('orphaned nutrient rows', () => {
@@ -529,17 +544,161 @@ describe('orphaned nutrient rows', () => {
   });
 });
 
-  it('dispatches DeleteCancelled when Cancel is clicked', async () => {
+// ─── Branch coverage gaps ─────────────────────────────────────────────────────
+
+describe('stageColor — unknown stage fallback', () => {
+  it('uses secondary-text-color for a stage not in STAGE_COLOR', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${{ p1: { id: 'p1', name: 'Custom', stage: 'unknown-stage', week: 1, nutrients: [] } }}
+        .inventory=${aInventory()}
+        .selectedId=${null}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const dot = el.shadowRoot!.querySelector<HTMLElement>('.stage-dot')!;
+    expect(dot.getAttribute('style')).toContain('var(--secondary-text-color)');
+  });
+});
+
+describe('draftFromPreset — optional fields absent', () => {
+  it('seeds ec_target as null when preset has no ec_target', async () => {
+    const presets: NutrientPresetsResponse = {
+      p1: { id: 'p1', name: 'No Targets', stage: 'veg', week: 1, nutrients: [{ nutrient_id: 'n1', dose_ml_l: 1 }] },
+    };
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${presets}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const events: SMEvent[] = [];
+    el.addEventListener('sm-event', (e) => events.push((e as CustomEvent<SMEvent>).detail));
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="edit"]')!.click();
+    expect(events[0].type).toBe('EditStarted');
+    if (events[0].type === 'EditStarted') {
+      expect(events[0].draft.ec_target).toBeNull();
+      expect(events[0].draft.ph_target).toBeNull();
+    }
+  });
+
+  it('seeds nutrients as empty array when preset has no nutrients field', async () => {
+    const presets: NutrientPresetsResponse = {
+      p1: { id: 'p1', name: 'No Nutrients', stage: 'veg', week: 1 },
+    };
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${presets}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const events: SMEvent[] = [];
+    el.addEventListener('sm-event', (e) => events.push((e as CustomEvent<SMEvent>).detail));
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="edit"]')!.click();
+    expect(events[0].type).toBe('EditStarted');
+    if (events[0].type === 'EditStarted') {
+      expect(events[0].draft.nutrients).toEqual([]);
+    }
+  });
+});
+
+describe('render — selectedId with no matching preset', () => {
+  it('renders nothing when selectedId does not exist in presets', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${aPresets()}
+        .inventory=${aInventory()}
+        .selectedId=${'does-not-exist'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('[data-action="back"]')).toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-action="add"]')).toBeNull();
+  });
+});
+
+describe('list item — optional stage and week', () => {
+  it('omits stage and week text when both are absent', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${{ p1: { id: 'p1', name: 'Bare Preset', nutrients: [] } }}
+        .inventory=${aInventory()}
+        .selectedId=${null}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const meta = el.shadowRoot!.querySelector('.item-meta')!;
+    expect(meta.textContent).not.toContain('Week');
+    expect(meta.textContent).toContain('0 nutrients');
+  });
+});
+
+describe('detail view — targets section absent', () => {
+  it('hides the Targets section when ec_target and ph_target are both null', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${{ p1: { id: 'p1', name: 'No Targets', stage: 'veg', nutrients: [] } }}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const text = el.shadowRoot!.textContent!;
+    expect(text).not.toContain('EC target');
+    expect(text).not.toContain('pH target');
+  });
+
+  it('renders an empty nutrient mix when nutrients field is absent', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${{ p1: { id: 'p1', name: 'No Nutrients', stage: 'veg' } }}
+        .inventory=${aInventory()}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'idle' }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    expect(el.shadowRoot!.querySelectorAll('.mix-row')).toHaveLength(0);
+  });
+});
+
+describe('nutrient row — null inventory', () => {
+  it('treats all rows as orphans when inventory is null', async () => {
+    const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
+      <growspace-nutrient-presets-editor-ui
+        .presets=${aPresets()}
+        .inventory=${null}
+        .selectedId=${'p1'}
+        .sub=${{ kind: 'editing', draft: {
+          name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
+          nutrients: [{ nutrient_id: 'n1', dose_ml_l: 2 }],
+        } }}
+      ></growspace-nutrient-presets-editor-ui>
+    `);
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    expect(select.style.borderColor).toBeTruthy(); // browser normalises #ff9800 → rgb(…)
+  });
+});
+
+describe('nutrient row — orphan without stored name', () => {
+  it('falls back to nutrient_id when orphaned row has no name', async () => {
     const el = await fixture<GrowspaceNutrientPresetsEditorUI>(html`
       <growspace-nutrient-presets-editor-ui
         .presets=${aPresets()}
         .inventory=${aInventory()}
         .selectedId=${'p1'}
-        .sub=${{ kind: 'confirm-delete', id: 'p1', name: 'Veg Week 1' }}
+        .sub=${{ kind: 'editing', draft: {
+          name: 'Veg Week 1', stage: 'veg', week: 1, ec_target: 1.2, ph_target: 6.0,
+          nutrients: [{ nutrient_id: 'deleted_n', dose_ml_l: 2 }],
+        } }}
       ></growspace-nutrient-presets-editor-ui>
     `);
-    const events = collectSmEvents(el);
-    el.shadowRoot!.querySelector<HTMLElement>('[data-action="cancel-delete"]')!.click();
-    expect(events[0]).toEqual({ type: 'DeleteCancelled' });
+    const select = el.shadowRoot!.querySelector<HTMLSelectElement>('[data-nutrient-row] select')!;
+    const selected = select.options[select.selectedIndex];
+    expect(selected?.text).toContain('deleted_n');
+    expect(selected?.text).toContain('missing');
   });
 });
