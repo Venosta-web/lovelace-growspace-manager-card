@@ -368,6 +368,79 @@ describe('computeDeviceSnapshot — icon field', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Cycle 9 — HA fan entity (fan.* domain) chip display
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — HA fan entity (fan.* domain)', () => {
+  it('shows percentage when an exhaust fan entity is a HA fan entity with state "on"', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['fan.tent_1_exhaust'] },
+    });
+    const hassStates: HassStates = {
+      'fan.tent_1_exhaust': makeHassEntity('fan.tent_1_exhaust', 'on', { percentage: 70 }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('70%');
+  });
+
+  it('shows "Off" when a HA fan entity state is "off"', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanEntities: ['fan.tent_1_circ'] },
+    });
+    const hassStates: HassStates = {
+      'fan.tent_1_circ': makeHassEntity('fan.tent_1_circ', 'off', { percentage: 0 }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.circulationFans!.value).toBe('Off');
+  });
+
+  it('shows raw integer for a speed sensor (numeric state, non-fan domain)', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['sensor.tent_1_fan_speed'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.tent_1_fan_speed': makeHassEntity('sensor.tent_1_fan_speed', '5', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('5');
+  });
+
+  it('still shows "On"/"Off" for a binary switch fan', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['switch.tent_1_exhaust'] },
+    });
+    const hassStates: HassStates = {
+      'switch.tent_1_exhaust': makeHassEntity('switch.tent_1_exhaust', 'on', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('On');
+  });
+
+  it('shows "Multiple" with percentage multiValues for multiple HA fan entities', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanEntities: ['fan.circ_a', 'fan.circ_b'] },
+    });
+    const hassStates: HassStates = {
+      'fan.circ_a': makeHassEntity('fan.circ_a', 'on', { percentage: 70 }),
+      'fan.circ_b': makeHassEntity('fan.circ_b', 'on', { percentage: 50 }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.circulationFans!.value).toBe('Multiple');
+    expect(snapshot.circulationFans!.multiValues).toEqual(['70%', '50%']);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cycle 8 — deviceSnapshots$ atom and setDeviceSnapshot bootstrap write
 // ---------------------------------------------------------------------------
 

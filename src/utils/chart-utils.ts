@@ -482,11 +482,15 @@ export class ChartUtils {
 
   /**
    * Canonical conversion of a single HA sensor state string to a number.
-   * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT, EXHAUST, HUMIDIFIER)
-   * and falls back to float parsing for all other metrics.
+   * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT) and fan entity modes
+   * (ADR-0008: fan domain → attributes.percentage; speed sensor → raw float).
    * Returns undefined for unavailable/unknown/unparseable states.
    */
-  public static normalizeSensorValue(ent: { state: string }, key: string): number | undefined {
+  public static normalizeSensorValue(
+    ent: { state: string; attributes?: Record<string, unknown> },
+    key: string,
+    entityDomain?: string
+  ): number | undefined {
     const s = ent.state;
     if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN) return undefined;
 
@@ -499,6 +503,12 @@ export class ChartUtils {
       const val = parseFloat(s);
       if (!isNaN(val)) return val > 0 ? 1 : 0;
       return undefined;
+    }
+
+    if (entityDomain === 'fan') {
+      if (s === 'off') return 0;
+      const pct = ent.attributes?.percentage;
+      return pct != null ? Number(pct) : undefined;
     }
 
     const val = parseFloat(s);
@@ -517,7 +527,8 @@ export class ChartUtils {
    */
   public static normalizeHistory(
     historyData: RawHistoryDataPoint[],
-    metricKey: string
+    metricKey: string,
+    entityDomain?: string
   ): NormalizedHistoryPoint[] {
     if (!historyData || historyData.length === 0) return [];
 
@@ -527,7 +538,7 @@ export class ChartUtils {
 
     const points: NormalizedHistoryPoint[] = [];
     for (const h of sorted) {
-      const val = ChartUtils.normalizeSensorValue(h, metricKey);
+      const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain);
       if (val === undefined) continue;
       const point: NormalizedHistoryPoint = {
         time: new Date(h.last_changed).getTime(),

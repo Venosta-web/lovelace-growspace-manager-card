@@ -88,6 +88,35 @@ function _normalizeOnOff(entity: HassEntity | undefined): string | undefined {
 }
 
 /**
+ * Normalize a fan entity state for chip display.
+ *
+ * Three Fan Entity Modes (see ADR-0008):
+ *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
+ *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
+ *   - Binary (switch / input_boolean): "On" / "Off"
+ */
+function _normalizeFanDevice(entity: HassEntity | undefined): string | undefined {
+  if (!entity) return undefined;
+  if (UNAVAILABLE_STATES.has(entity.state)) return undefined;
+
+  const isFanDomain = entity.entity_id.startsWith('fan.');
+  if (isFanDomain) {
+    if (entity.state === 'off') return 'Off';
+    const pct = entity.attributes?.percentage;
+    return pct != null ? `${Math.round(Number(pct))}%` : 'On';
+  }
+
+  const numVal = parseFloat(entity.state);
+  if (!isNaN(numVal) && numVal !== 0 && numVal !== 1) {
+    return String(Math.round(numVal));
+  }
+
+  if (entity.state === 'on') return 'On';
+  if (entity.state === 'off') return 'Off';
+  return undefined;
+}
+
+/**
  * Build a DeviceEntry for a list of entity IDs using the given normalizer.
  * Returns null when the entity list is empty (device category not configured).
  */
@@ -145,8 +174,8 @@ export function computeDeviceSnapshot(
 
   return {
     lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
-    exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeOnOff),
-    circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeOnOff),
+    exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
+    circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeFanDevice),
     humidifiers: _buildEntry(humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
     dehumidifiers: _buildEntry(dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
   };

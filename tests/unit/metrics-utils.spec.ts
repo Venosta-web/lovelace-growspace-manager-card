@@ -541,10 +541,10 @@ describe('MetricsUtils', () => {
                 };
 
                 mockHass.states = {
-                    'fan.exhaust': { state: 'on' },
+                    'fan.exhaust': { state: 'on', attributes: { percentage: 75 } },
                     'humidifier.main': { state: 'off' },
                     'switch.dehum': { state: 'on' },
-                    'fan.circ': { state: 'on' },
+                    'fan.circ': { state: 'on', attributes: { percentage: 100 } },
                     'binary_sensor.grow_tent_optimal_conditions': {
                         state: 'on',
                         attributes: { is_lights_on: true }
@@ -554,7 +554,7 @@ describe('MetricsUtils', () => {
                 const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
 
                 const exhaust = res.deviceChips.find(c => c.key === MetricKey.EXHAUST);
-                expect(exhaust?.value).toBe('on');
+                expect(exhaust?.value).toBe('75%');
 
                 const light = res.deviceChips.find(c => c.key === MetricKey.LIGHT);
                 expect(light?.value).toBe('On');
@@ -647,7 +647,7 @@ describe('MetricsUtils', () => {
                     exhaustFanEntities: ['fan.ex1', 'fan.ex2']
                 };
                 mockHass.states = {
-                    'fan.ex1': { state: 'on' },
+                    'fan.ex1': { state: 'on', attributes: { percentage: 80 } },
                     'fan.ex2': { state: 'off' }
                 };
 
@@ -655,7 +655,7 @@ describe('MetricsUtils', () => {
                 const exhaust = res.deviceChips.find(c => c.key === MetricKey.EXHAUST);
 
                 expect(exhaust?.value).toBe('Multiple');
-                expect(exhaust?.multiValues).toEqual(['on', 'off']);
+                expect(exhaust?.multiValues).toEqual(['80%', 'Off']);
             });
         });
     });

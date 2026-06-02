@@ -655,7 +655,16 @@ export class MetricsUtils {
           s.state !== EntityState.UNAVAILABLE &&
           s.state !== EntityState.UNKNOWN
         ) {
-          states.push(s.state);
+          if (id.startsWith('fan.')) {
+            if (s.state === 'off') {
+              states.push('Off');
+            } else {
+              const pct = s.attributes?.percentage;
+              states.push(pct != null ? `${Math.round(Number(pct))}%` : 'On');
+            }
+          } else {
+            states.push(s.state);
+          }
         } else {
           states.push('-');
         }

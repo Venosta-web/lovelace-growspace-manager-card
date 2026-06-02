@@ -128,6 +128,13 @@ The control variable the [[Circulation Fan Controller]] targets: `vpd`, `humidit
 **Fan Controller Panel**
 The config dialog panel (inside the Climate tab, between the Climate Control panel and the Humidity Control panel) that exposes all `CirculationFanConfig` fields: enabled toggle, regulation mode selector, active-mode target+tolerance pair, VPD-mode-only temperature override sub-section (collapsed by default), min/max speed, and dynamic wind settings (period + amplitude revealed when wind_enabled is toggled on). Disabled fields are greyed out when `enabled` is false, not hidden. Submitted as part of the existing `configure-environment-submit` event; the dialog host dispatches the `configure_circulation_fan` HA service call separately from `configure_environment`.
 
+**Fan Entity Mode**
+The display and graph scale behaviour for a fan chip, determined by the entity domain at runtime (not a static config flag). Three modes:
+- **HA fan entity** (`fan.*` domain): chip shows `percentage` attribute as `"70%"` (or `"Off"` when state is `off`); graph Y-axis is 0–100, unit `%`.
+- **Speed sensor** (numeric state, domain not `fan.*`): chip shows raw integer (e.g. `"5"`); graph Y-axis is 0–10, no unit suffix.
+- **Binary fan** (switch / input_boolean / other non-numeric): chip shows `"On"` / `"Off"`; graph is binary 0/1.
+Detection runs in `computeDeviceSnapshot` (chip) and `env-chart.ts` series builder (graph) by inspecting `hass.states[entityId].domain` and `attributes.percentage`. See ADR-0008.
+
 ## Architecture
 
 **Slice**

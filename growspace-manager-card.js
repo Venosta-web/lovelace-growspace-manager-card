@@ -9492,11 +9492,11 @@ class ChartUtils {
     }
     /**
      * Canonical conversion of a single HA sensor state string to a number.
-     * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT, EXHAUST, HUMIDIFIER)
-     * and falls back to float parsing for all other metrics.
+     * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT) and fan entity modes
+     * (ADR-0008: fan domain → attributes.percentage; speed sensor → raw float).
      * Returns undefined for unavailable/unknown/unparseable states.
      */
-    static normalizeSensorValue(ent, key) {
+    static normalizeSensorValue(ent, key, entityDomain) {
         const s = ent.state;
         if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN)
             return undefined;
@@ -9513,6 +9513,12 @@ class ChartUtils {
                 return val > 0 ? 1 : 0;
             return undefined;
         }
+        if (entityDomain === 'fan') {
+            if (s === 'off')
+                return 0;
+            const pct = ent.attributes?.percentage;
+            return pct != null ? Number(pct) : undefined;
+        }
         const val = parseFloat(s);
         if (isNaN(val)) {
             if (s === 'on')
@@ -9528,13 +9534,13 @@ class ChartUtils {
      * Delegates per-point conversion to normalizeSensorValue so all metric-specific
      * logic lives in one place.
      */
-    static normalizeHistory(historyData, metricKey) {
+    static normalizeHistory(historyData, metricKey, entityDomain) {
         if (!historyData || historyData.length === 0)
             return [];
         const sorted = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
         const points = [];
         for (const h of sorted) {
-            const val = ChartUtils.normalizeSensorValue(h, metricKey);
+            const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain);
             if (val === undefined)
                 continue;
             const point = {
@@ -9980,6 +9986,37 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     _invalidateRectCache() {
         this._cachedChartRect = null;
     }
+    /**
+     * Return the entity domain (e.g. "fan", "sensor", "switch") for the first entity
+     * configured for a fan metric key (EXHAUST or CIRCULATION_FAN).
+     * Returns undefined when no entity is configured or hass is unavailable.
+     */
+    _resolveFanEntityDomain(key) {
+        if (!this.device || !this.hass)
+            return undefined;
+        const env = this.device.environmentAttributes ?? {};
+        let entityId;
+        if (key === MetricKey.EXHAUST) {
+            entityId = (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
+        }
+        else if (key === MetricKey.CIRCULATION_FAN) {
+            entityId = (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
+        }
+        if (!entityId)
+            return undefined;
+        return entityId.split('.')[0];
+    }
+    /**
+     * Return the Y-axis scale for a fan metric series based on the configured entity type.
+     * - HA fan entity (fan.* domain): 0–100
+     * - Speed sensor or binary: 0–10 (existing default)
+     */
+    _resolveFanScale(key) {
+        const domain = this._resolveFanEntityDomain(key);
+        if (domain === 'fan')
+            return { min: 0, max: 100 };
+        return { min: 0, max: 10 };
+    }
     _getVpdThresholds() {
         const defaultThresholds = {
             targetMin: DEFAULTS.VPD.TARGET_MIN,
@@ -10114,12 +10151,18 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     break;
                 initialState = h;
             }
+            const fanEntityDomain = key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
+                ? this._resolveFanEntityDomain(key)
+                : undefined;
+            if (fanEntityDomain === 'fan') {
+                config.unit = '%';
+            }
             if (initialState) {
                 const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
                     ? BINARY_ON_STATES.includes(initialState.state)
                         ? 1
                         : 0
-                    : ChartUtils.normalizeSensorValue(initialState, key);
+                    : ChartUtils.normalizeSensorValue(initialState, key, fanEntityDomain);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -10138,7 +10181,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         dataPoints.push({ time: t, value: val });
                 }
                 else {
-                    val = ChartUtils.normalizeSensorValue(h, key);
+                    val = ChartUtils.normalizeSensorValue(h, key, fanEntityDomain);
                     if (val !== undefined)
                         dataPoints.push({ time: t, value: val });
                 }
@@ -10169,9 +10212,12 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     key === MetricKey.LIGHT ||
                     key === MetricKey.IRRIGATION ||
                     key === MetricKey.DRAIN;
-                if (key === MetricKey.EXHAUST ||
-                    key === MetricKey.HUMIDIFIER ||
-                    key === MetricKey.CIRCULATION_FAN) {
+                if (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) {
+                    const fanScale = this._resolveFanScale(key);
+                    min = fanScale.min;
+                    max = fanScale.max;
+                }
+                else if (key === MetricKey.HUMIDIFIER) {
                     min = 0;
                     max = 10;
                 }
@@ -62686,7 +62732,18 @@ class MetricsUtils {
                     s.state &&
                     s.state !== EntityState.UNAVAILABLE &&
                     s.state !== EntityState.UNKNOWN) {
-                    states.push(s.state);
+                    if (id.startsWith('fan.')) {
+                        if (s.state === 'off') {
+                            states.push('Off');
+                        }
+                        else {
+                            const pct = s.attributes?.percentage;
+                            states.push(pct != null ? `${Math.round(Number(pct))}%` : 'On');
+                        }
+                    }
+                    else {
+                        states.push(s.state);
+                    }
                 }
                 else {
                     states.push('-');
@@ -129465,6 +129522,36 @@ function _normalizeOnOff(entity) {
     return undefined;
 }
 /**
+ * Normalize a fan entity state for chip display.
+ *
+ * Three Fan Entity Modes (see ADR-0008):
+ *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
+ *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
+ *   - Binary (switch / input_boolean): "On" / "Off"
+ */
+function _normalizeFanDevice(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    const isFanDomain = entity.entity_id.startsWith('fan.');
+    if (isFanDomain) {
+        if (entity.state === 'off')
+            return 'Off';
+        const pct = entity.attributes?.percentage;
+        return pct != null ? `${Math.round(Number(pct))}%` : 'On';
+    }
+    const numVal = parseFloat(entity.state);
+    if (!isNaN(numVal) && numVal !== 0 && numVal !== 1) {
+        return String(Math.round(numVal));
+    }
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    return undefined;
+}
+/**
  * Build a DeviceEntry for a list of entity IDs using the given normalizer.
  * Returns null when the entity list is empty (device category not configured).
  */
@@ -129505,8 +129592,8 @@ function computeDeviceSnapshot(device, hassStates) {
     const dehumidifierIds = env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
     return {
         lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
-        exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeOnOff),
-        circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeOnOff),
+        exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
+        circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeFanDevice),
         humidifiers: _buildEntry(humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
         dehumidifiers: _buildEntry(dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
     };
