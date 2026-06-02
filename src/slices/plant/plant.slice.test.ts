@@ -59,6 +59,23 @@ function makePlant(overrides: Partial<PlantEntity['attributes']> = {}): PlantEnt
   } as PlantEntity;
 }
 
+/** Plant with no plant_id — exercises the entity_id fallback in all id-resolution paths. */
+function makePlantNoId(entityId: string, overrides: Partial<PlantEntity['attributes']> = {}): PlantEntity {
+  const { plant_id: _omit, ...base } = {
+    strain: 'AK47',
+    stage: 'veg' as const,
+    row: 0,
+    col: 0,
+    growspace_id: 'gs1',
+    ...overrides,
+  } as Partial<PlantEntity['attributes']> & { plant_id?: string };
+  return {
+    entity_id: entityId,
+    state: 'veg',
+    attributes: base as PlantEntity['attributes'],
+  } as PlantEntity;
+}
+
 beforeEach(() => {
   plants$.set([]);
   selectedPlant$.set(null);
@@ -168,6 +185,14 @@ describe('updatePlant', () => {
     await updatePlant('abc', { strain: 'OG Kush' });
 
     expect(plants$.get()[0].attributes.plant_id).toBe('xyz');
+  });
+
+  it('patches a plant identified by entity_id when plant_id is absent', async () => {
+    setPlants([makePlantNoId('sensor.plant_noid', { strain: 'AK47' })]);
+
+    await updatePlant('plant_noid', { strain: 'OG Kush' });
+
+    expect(plants$.get()[0].attributes.strain).toBe('OG Kush');
   });
 });
 
@@ -402,6 +427,49 @@ describe('printLabel', () => {
       expect.anything()
     );
   });
+
+  it('omits strain from the payload when not provided', async () => {
+    await printLabel({ plantId: 'abc' });
+
+    const params = vi.mocked(hassCallModule.hassCall).mock.calls[0][1] as Record<string, unknown>;
+    expect(params).toHaveProperty('plant_id', 'abc');
+    expect(params).not.toHaveProperty('strain');
+  });
+
+  it('includes baseUrl, fields, sizeId, density, and qrTarget when provided', async () => {
+    const fields = {
+      name: true,
+      phenotype: true,
+      breeder: false,
+      lineage: false,
+      startDate: false,
+      stageAge: false,
+      plantId: true,
+      logo: false,
+      qr: true,
+    } as import('../../lib/types/dialog').LabelFieldVisibility;
+
+    await printLabel({
+      strain: 'AK47',
+      baseUrl: 'https://ha.local:8123',
+      fields,
+      sizeId: '62x29',
+      density: '300dpi',
+      qrTarget: 'plant_id',
+    });
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/print_label',
+      expect.objectContaining({
+        base_url: 'https://ha.local:8123',
+        fields,
+        label_size: '62x29',
+        density: '300dpi',
+        qr_target: 'plant_id',
+      }),
+      expect.anything()
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -597,6 +665,14 @@ describe('harvestPlant (all metrics)', () => {
       expect.anything()
     );
   });
+
+  it('omits wet_weight from the payload when only other metrics are provided', async () => {
+    await harvestPlant('abc', 'dry', { dry_weight: 25 });
+
+    const params = vi.mocked(hassCallModule.hassCall).mock.calls[0][1] as Record<string, unknown>;
+    expect(params).not.toHaveProperty('wet_weight');
+    expect(params).toHaveProperty('dry_weight', 25);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -671,6 +747,12 @@ describe('moveClone', () => {
       expect.anything()
     );
   });
+
+  it('removes the optimistic delete marker when the WS command fails', async () => {
+    vi.mocked(hassCallModule.hassCall).mockRejectedValueOnce(new Error('network'));
+
+    await expect(moveClone('abc', 'veg-room')).rejects.toThrow('network');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -696,5 +778,60 @@ describe('takeClone (optional branches)', () => {
     const params = vi.mocked(hassCallModule.hassCall).mock.calls[0][1] as Record<string, unknown>;
     expect(params).toHaveProperty('num_clones', 3);
     expect(params).not.toHaveProperty('target_growspace_id');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// entity_id fallback — plants without plant_id use entity_id for identification
+// ---------------------------------------------------------------------------
+
+describe('entity_id fallback (plant_id absent)', () => {
+  it('deletePlant resolves plant by entity_id when plant_id is absent', async () => {
+    const plant = makePlantNoId('sensor.plant_xyz');
+    setPlants([plant]);
+
+    await deletePlant('plant_xyz');
+
+    expect(plants$.get()).toHaveLength(0);
+  });
+
+  it('movePlantToGrowspace resolves plant_id from entity_id when plant_id is absent', async () => {
+    const plant = makePlantNoId('sensor.plant_xyz', { stage: 'veg' });
+    setPlants([plant]);
+
+    await movePlantToGrowspace(plant, 'flower-room');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/move_plant',
+      expect.objectContaining({ plant_id: 'plant_xyz', target_growspace_id: 'flower-room' }),
+      expect.anything()
+    );
+  });
+
+  it('takeClone resolves mother plant_id from entity_id when plant_id is absent', async () => {
+    const mother = makePlantNoId('sensor.plant_mom', { stage: 'mother' });
+    setPlants([mother]);
+
+    await takeClone(mother);
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/take_clone',
+      expect.objectContaining({ mother_plant_id: 'plant_mom' }),
+      expect.anything()
+    );
+  });
+
+  it('swapPlants resolves plant IDs from entity_id when plant_id is absent', async () => {
+    const p1 = makePlantNoId('sensor.plant_aaa', { row: 0, col: 0 });
+    const p2 = makePlantNoId('sensor.plant_bbb', { row: 1, col: 1 });
+    setPlants([p1, p2]);
+
+    await swapPlants('plant_aaa', 'plant_bbb');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/switch_plants',
+      { plant1_id: 'plant_aaa', plant2_id: 'plant_bbb' },
+      expect.anything()
+    );
   });
 });
