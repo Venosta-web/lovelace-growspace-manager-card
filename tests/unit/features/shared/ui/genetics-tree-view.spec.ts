@@ -247,6 +247,35 @@ describe('GeneticsTreeView', () => {
     expect(element['_selectedId']).toBeNull();
   });
 
+  it('should navigate to father via detail panel father link', async () => {
+    // f1 has mother: p1 and father: p2 — father link is the second .detail-parent
+    element['_selectedId'] = 'f1';
+    await element.updateComplete;
+
+    const detailParents = Array.from(
+      element.shadowRoot?.querySelectorAll('.detail-panel .detail-parent') ?? []
+    ) as HTMLElement[];
+    const fatherLink = detailParents[1];
+    expect(fatherLink).not.toBeUndefined();
+    fatherLink.click();
+    await element.updateComplete;
+
+    expect(element['_selectedId']).toBe('p2');
+  });
+
+  it('should navigate to offspring via detail panel offspring link', async () => {
+    // p1 has no parents but is the mother of f1 — only offspring section renders
+    element['_selectedId'] = 'p1';
+    await element.updateComplete;
+
+    const offspringLink = element.shadowRoot?.querySelector('.detail-panel .detail-parent') as HTMLElement;
+    expect(offspringLink).not.toBeNull();
+    offspringLink.click();
+    await element.updateComplete;
+
+    expect(element['_selectedId']).toBe('f1');
+  });
+
   it('should handle detail panel Isolate Lineage button', async () => {
     element['_selectedId'] = 'f1';
     await element.updateComplete;
@@ -277,11 +306,12 @@ describe('GeneticsTreeView', () => {
     await element.updateComplete;
     expect(element['_scale']).toBeCloseTo(1.0, 2);
 
-    const fitBtn = element.shadowRoot?.querySelector('button[title="Fit to screen"]') as HTMLElement;
+    const fitBtn = element.shadowRoot?.querySelector('.zoom-controls button[title="Fit to screen"]') as HTMLElement;
+    expect(fitBtn).not.toBeNull();
+    element['_panX'] = 999;
     fitBtn.click();
     await element.updateComplete;
-    // After fit, scale should be based on viewport (not 1.0)
-    expect(element['_scale']).not.toBe(1.2);
+    expect(element['_panX']).not.toBe(999);
   });
 
   it('should clear collapsed + gen filter with clear button', async () => {
@@ -364,5 +394,82 @@ describe('GeneticsTreeView', () => {
 
     expect(element['_focalId']).toBeNull();
     expect(element['_mode']).toBe('tree');
+  });
+
+  it('should clear focus when clicking shell background while focalId is set', async () => {
+    element['_focalId'] = 'f1';
+    element['_mode'] = 'lineage';
+    await element.updateComplete;
+
+    const bgGrid = element.shadowRoot?.querySelector('.bg-grid') as HTMLElement;
+    bgGrid.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true }));
+    await element.updateComplete;
+
+    expect(element['_focalId']).toBeNull();
+    expect(element['_mode']).toBe('tree');
+  });
+
+  it('should reset mode, focalId, and userHasInteracted when switching back to tree mode', async () => {
+    element['_mode'] = 'lineage';
+    element['_focalId'] = 'f1';
+    element['_userHasInteracted'] = true;
+    await element.updateComplete;
+
+    const treeBtn = element.shadowRoot?.querySelector('.seg button:nth-child(1)') as HTMLElement;
+    treeBtn.click();
+    await element.updateComplete;
+
+    expect(element['_mode']).toBe('tree');
+    expect(element['_focalId']).toBeNull();
+    expect(element['_userHasInteracted']).toBe(false);
+  });
+
+  it('should set and clear _hoverId on mouseenter and mouseleave', async () => {
+    const node = element.shadowRoot?.querySelector('.tree-node') as HTMLElement;
+    const nodeId = element['_computed']?.nodes
+      ? Object.keys(element['_computed'].nodes)[0]
+      : element.nodes[0].id;
+
+    node.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    await element.updateComplete;
+    expect(element['_hoverId']).toBe(nodeId);
+
+    node.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+    await element.updateComplete;
+    expect(element['_hoverId']).toBeNull();
+  });
+
+  it('should dispatch open-strain-editor event when Open in Library is clicked', async () => {
+    element.libraryKeys = new Set(['f1']);
+    element['_selectedId'] = 'f1';
+    await element.updateComplete;
+
+    const events: CustomEvent[] = [];
+    element.addEventListener('open-strain-editor', (e) => events.push(e as CustomEvent));
+
+    const libraryBtn = element.shadowRoot?.querySelector('.detail-actions .pill-btn:not(.active)') as HTMLElement;
+    expect(libraryBtn).not.toBeNull();
+    libraryBtn.click();
+
+    expect(events).toHaveLength(1);
+    expect(events[0].detail.id).toBe('f1');
+  });
+
+  it('should pan to clicked position on minimap', async () => {
+    await element.updateComplete;
+
+    const minimap = element.shadowRoot?.querySelector('.minimap') as SVGElement;
+    expect(minimap).not.toBeNull();
+    vi.spyOn(minimap, 'getBoundingClientRect').mockReturnValue({
+      left: 0, top: 0, width: 120, height: 80,
+      bottom: 80, right: 120, x: 0, y: 0, toJSON: () => {},
+    });
+
+    const before = { panX: element['_panX'], panY: element['_panY'] };
+    minimap.dispatchEvent(new MouseEvent('click', { clientX: 60, clientY: 40, bubbles: true }));
+    await element.updateComplete;
+
+    expect(element['_panX']).not.toBe(before.panX);
+    expect(element['_userHasInteracted']).toBe(true);
   });
 });

@@ -483,11 +483,6 @@ export class GeneticsTreeView extends LitElement {
             `
           : nothing}
 
-        <button class="pill-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
-          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
-          Fit
-        </button>
-
         <div class="toolbar-spacer"></div>
         <div class="count-chip">
           ${visible.length === this.nodes.length
