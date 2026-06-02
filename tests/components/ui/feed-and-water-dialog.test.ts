@@ -28,7 +28,7 @@ vi.mock('../../../src/slices/nutrient', async (importOriginal) => {
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
 
-const stubs = ['ha-dialog', 'ha-svg-icon', 'gs-dialog'];
+const stubs = ['ha-dialog', 'ha-svg-icon', 'gs-dialog', 'md3-number-input', 'md3-select'];
 for (const tag of stubs) {
   if (!customElements.get(tag)) {
     customElements.define(tag, class extends HTMLElement {
@@ -53,12 +53,13 @@ function aPresets(): NutrientPresetsResponse {
   };
 }
 
-async function mountOpen(overrides: Partial<{ inventory: NutrientInventoryResponse; presets: NutrientPresetsResponse }> = {}): Promise<FeedAndWaterDialog> {
+async function mountOpen(overrides: Partial<{ inventory: NutrientInventoryResponse; presets: NutrientPresetsResponse; presetOptions: { label: string; value: string }[] }> = {}): Promise<FeedAndWaterDialog> {
   return fixture<FeedAndWaterDialog>(html`
     <feed-and-water-dialog
       .open=${true}
       .inventory=${overrides.inventory ?? null}
       .presets=${overrides.presets ?? null}
+      .presetOptions=${overrides.presetOptions ?? []}
     ></feed-and-water-dialog>
   `);
 }
@@ -382,5 +383,136 @@ describe('service calls — presets', () => {
       const ui = el.shadowRoot!.querySelector('growspace-nutrient-presets-editor-ui') as any;
       expect(ui.sub.kind).toBe('error');
     });
+  });
+});
+
+// ─── Close event ──────────────────────────────────────────────────────────────
+
+describe('close event', () => {
+  it('dispatches a close CustomEvent when gs-dialog emits close', async () => {
+    const el = await mountOpen();
+    let fired = false;
+    el.addEventListener('close', () => { fired = true; });
+
+    const gsDialog = el.shadowRoot!.querySelector('gs-dialog')!;
+    gsDialog.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+
+    expect(fired).toBe(true);
+  });
+});
+
+// ─── Watering tab — interactions ──────────────────────────────────────────────
+
+describe('watering tab — record watering button', () => {
+  it('dispatches submit-watering with current draft when Record Watering is clicked', async () => {
+    const el = await mountOpen();
+    let detail: unknown;
+    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+
+    expect(detail).toMatchObject({ volume: 1.0, presetId: '' });
+  });
+});
+
+describe('watering tab — volume change handler', () => {
+  it('updates SM draft volume when a valid value is dispatched', async () => {
+    const el = await mountOpen();
+    const input = el.shadowRoot!.querySelector('md3-number-input')!;
+    input.dispatchEvent(new CustomEvent('change', { detail: '2.5', bubbles: true, composed: true }));
+    await el.updateComplete;
+
+    let detail: unknown;
+    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+
+    expect((detail as any).volume).toBe(2.5);
+  });
+
+  it('does not update SM draft when value is NaN', async () => {
+    const el = await mountOpen();
+    const input = el.shadowRoot!.querySelector('md3-number-input')!;
+    input.dispatchEvent(new CustomEvent('change', { detail: 'not-a-number', bubbles: true, composed: true }));
+    await el.updateComplete;
+
+    let detail: unknown;
+    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+
+    expect((detail as any).volume).toBe(1.0);
+  });
+
+  it('does not update SM draft when value is zero or negative', async () => {
+    const el = await mountOpen();
+    const input = el.shadowRoot!.querySelector('md3-number-input')!;
+    input.dispatchEvent(new CustomEvent('change', { detail: '0', bubbles: true, composed: true }));
+    await el.updateComplete;
+
+    let detail: unknown;
+    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+
+    expect((detail as any).volume).toBe(1.0);
+  });
+
+  it('updates SM draft presetId when md3-select dispatches change', async () => {
+    const el = await mountOpen({
+      presets: aPresets(),
+      presetOptions: [{ label: 'Veg Week 1', value: 'p1' }],
+    });
+    const select = el.shadowRoot!.querySelector('md3-select')!;
+    select.dispatchEvent(new CustomEvent('change', { detail: 'p1', bubbles: true, composed: true }));
+    await el.updateComplete;
+
+    let detail: unknown;
+    el.addEventListener('submit-watering', (e: Event) => { detail = (e as CustomEvent).detail; });
+    el.shadowRoot!.querySelector<HTMLElement>('[data-action="record-watering"]')!.click();
+
+    expect((detail as any).presetId).toBe('p1');
+  });
+});
+
+// ─── Confirm-discard overlay ───────────────────────────────────────────────────
+
+describe('confirm-discard overlay', () => {
+  async function mountWithDirtyInventory() {
+    const el = await mountOpen({ inventory: aInventory() });
+    clickNav(el, 'inventory');
+    await el.updateComplete;
+    dispatchSmEventFromContent(el, { type: 'NewItemRequested' });
+    await el.updateComplete;
+    return el;
+  }
+
+  it('renders the overlay when switching away from a dirty tab', async () => {
+    const el = await mountWithDirtyInventory();
+    clickNav(el, 'presets');
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeTruthy();
+  });
+
+  it('"Keep editing" button dismisses the overlay without switching tabs', async () => {
+    const el = await mountWithDirtyInventory();
+    clickNav(el, 'presets');
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.btn-text')!.click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeFalsy();
+    expect(el.shadowRoot!.querySelector('growspace-nutrient-inventory-dialog-ui')).toBeTruthy();
+  });
+
+  it('"Discard" button dismisses the overlay and switches to the pending tab', async () => {
+    const el = await mountWithDirtyInventory();
+    clickNav(el, 'presets');
+    await el.updateComplete;
+
+    el.shadowRoot!.querySelector<HTMLElement>('.btn-danger')!.click();
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.confirm-discard-overlay')).toBeFalsy();
+    expect(el.shadowRoot!.querySelector('growspace-nutrient-presets-editor-ui')).toBeTruthy();
   });
 });
