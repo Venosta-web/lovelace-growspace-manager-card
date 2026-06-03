@@ -24,7 +24,7 @@ type PresetsEditorEvent =
   | { type: 'PresetDraftChanged'; field: keyof Omit<NutrientPresetDraft, 'nutrients'>; value: string | number | null | undefined }
   | { type: 'PresetNutrientRowAdded' }
   | { type: 'PresetNutrientRowRemoved'; index: number }
-  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number }> };
+  | { type: 'PresetNutrientRowUpdated'; index: number; patch: Partial<{ nutrient_id: string; dose_ml_l: number; name: string }> };
 import { dialogStyles } from '../../../styles/dialog.styles';
 
 // ─── Stage colors ─────────────────────────────────────────────────────────────
@@ -48,7 +48,7 @@ function draftFromPreset(preset: NutrientPresetsResponse[string]): NutrientPrese
     week: preset.week,
     ec_target: preset.ec_target ?? null,
     ph_target: preset.ph_target ?? null,
-    nutrients: (preset.nutrients ?? []).map((n) => ({ nutrient_id: n.nutrient_id, dose_ml_l: n.dose_ml_l })),
+    nutrients: (preset.nutrients ?? []).map((n) => ({ nutrient_id: n.nutrient_id, dose_ml_l: n.dose_ml_l, name: n.name })),
   };
 }
 
@@ -680,7 +680,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
     `;
   }
 
-  private _renderNutrientRow(row: { nutrient_id: string; dose_ml_l: number }, index: number) {
+  private _renderNutrientRow(row: { nutrient_id: string; dose_ml_l: number; name?: string }, index: number) {
     const stocks = Object.values(this.inventory?.stocks ?? {});
     const isOrphan = row.nutrient_id !== '' && !this.inventory?.stocks[row.nutrient_id];
 
@@ -726,7 +726,7 @@ export class GrowspaceNutrientPresetsEditorUI extends LitElement {
 
   // ─── Confirm delete ─────────────────────────────────────────────────────────
 
-  private _renderConfirmDelete(id: string, name: string) {
+  private _renderConfirmDelete(_id: string, name: string) {
     return html`
       <div class="confirm-box">
         <p>Delete <span class="confirm-name">${name}</span>? This cannot be undone.</p>

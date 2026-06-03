@@ -14,6 +14,7 @@ export const NutrientPresetsSchema = z.record(
         z.object({
           nutrient_id: z.string(),
           dose_ml_l: z.number(),
+          name: z.string().optional(),
         })
       ),
       stage: z

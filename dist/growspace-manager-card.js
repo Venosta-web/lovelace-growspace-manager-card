@@ -5278,6 +5278,7 @@ const NutrientPresetsSchema = recordType(stringType(), objectType({
     nutrients: arrayType(objectType({
         nutrient_id: stringType(),
         dose_ml_l: numberType(),
+        name: stringType().optional(),
     })),
     stage: stringType()
         .nullish()
@@ -11662,7 +11663,7 @@ function draftFromPreset(preset) {
         week: preset.week,
         ec_target: preset.ec_target ?? null,
         ph_target: preset.ph_target ?? null,
-        nutrients: (preset.nutrients ?? []).map((n) => ({ nutrient_id: n.nutrient_id, dose_ml_l: n.dose_ml_l })),
+        nutrients: (preset.nutrients ?? []).map((n) => ({ nutrient_id: n.nutrient_id, dose_ml_l: n.dose_ml_l, name: n.name })),
     };
 }
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -11813,7 +11814,7 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
             <div class="mix-row">
               <ha-svg-icon .path=${mdiFlask} style="width:14px;height:14px;fill:currentColor;opacity:0.5"></ha-svg-icon>
               ${isOrphan
-                ? x `<span class="orphan-badge" data-orphan>${row.nutrient_id}</span>`
+                ? x `<span class="orphan-badge" data-orphan style="flex:1">${row.name ?? row.nutrient_id} (missing)</span>`
                 : x `<span style="flex:1">${stock.name}</span>`}
               <span style="color:var(--secondary-text-color)">${row.dose_ml_l} ml/L</span>
             </div>
@@ -11953,6 +11954,7 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
         }}
         >
           <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
+          ${isOrphan ? x `<option value=${row.nutrient_id} selected>${row.name ?? row.nutrient_id} (missing)</option>` : E}
           ${stocks.map((s) => x `<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}
         </select>
         <input
@@ -11979,7 +11981,7 @@ let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI ex
     `;
     }
     // ─── Confirm delete ─────────────────────────────────────────────────────────
-    _renderConfirmDelete(id, name) {
+    _renderConfirmDelete(_id, name) {
         return x `
       <div class="confirm-box">
         <p>Delete <span class="confirm-name">${name}</span>? This cannot be undone.</p>
@@ -34341,6 +34343,8 @@ LabelPreview = __decorate([
 ], LabelPreview);
 
 function getPrinters(hass) {
+    if (!hass || !hass.states)
+        return [];
     return Object.keys(hass.states)
         .filter((eid) => eid.startsWith('image.') && eid.endsWith('_last_label_made'))
         .map((eid) => {
@@ -34642,7 +34646,11 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         if (!dateStr)
             return '';
         try {
-            return new Date(dateStr).toLocaleDateString(undefined, {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) {
+                return dateStr;
+            }
+            return date.toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
                 year: '2-digit',
@@ -36895,6 +36903,35 @@ GsFilterChips = GsFilterChips_1 = __decorate([
     t$2('gs-filter-chips')
 ], GsFilterChips);
 
+const STRAIN_ITEMS_PER_PAGE = 15;
+function applyLibraryFilter(strains, filter, activePlantCounts) {
+    if (filter === 'active')
+        return strains.filter((s) => (activePlantCounts[s.strain] ?? 0) > 0);
+    if (filter === 'library')
+        return strains.filter((s) => !s.is_stub);
+    return strains;
+}
+function filterAndSortStrains(strains, query, filter, activePlantCounts) {
+    const terms = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t.length > 0);
+    return applyLibraryFilter(strains, filter, activePlantCounts)
+        .filter((s) => {
+        if (terms.length === 0)
+            return true;
+        const text = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
+        return terms.every((term) => text.includes(term));
+    })
+        .sort((a, b) => a.strain.localeCompare(b.strain));
+}
+function paginateStrains(strains, page, itemsPerPage = STRAIN_ITEMS_PER_PAGE) {
+    const totalPages = Math.max(1, Math.ceil(strains.length / itemsPerPage));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * itemsPerPage;
+    return { paged: strains.slice(start, start + itemsPerPage), totalPages, currentPage };
+}
+
 let StrainBrowseView = class StrainBrowseView extends i$3 {
     constructor() {
         super(...arguments);
@@ -36905,26 +36942,12 @@ let StrainBrowseView = class StrainBrowseView extends i$3 {
         this._currentPage = 1;
         this._mobileMenuOpen = false;
         this._pendingDeleteKey = null;
-        this.ITEMS_PER_PAGE = 15;
     }
     render() {
         const query = (this._searchQuery || '').toLowerCase();
-        const terms = query.split(/\s+/).filter((t) => t.length > 0);
-        const filteredStrains = this._applyFilter(this.strains)
-            .filter((s) => {
-            if (terms.length === 0)
-                return true;
-            const text = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
-            return terms.every((term) => text.includes(term));
-        })
-            .sort((a, b) => a.strain.localeCompare(b.strain));
-        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-        if (this._currentPage > totalPages && totalPages > 0)
-            this._currentPage = totalPages;
-        if (this._currentPage < 1)
-            this._currentPage = 1;
-        const start = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-        const paged = filteredStrains.slice(start, start + this.ITEMS_PER_PAGE);
+        const filteredStrains = filterAndSortStrains(this.strains, query, this.libraryFilter, this.activePlantCounts);
+        const { paged, totalPages, currentPage } = paginateStrains(filteredStrains, this._currentPage);
+        this._currentPage = currentPage;
         return x `
       <div class="dialog-header">
         <div class="dialog-icon">
@@ -37267,15 +37290,6 @@ let StrainBrowseView = class StrainBrowseView extends i$3 {
         </div>
       </div>
     `;
-    }
-    _applyFilter(strains) {
-        if (this.libraryFilter === 'active') {
-            return strains.filter((s) => (this.activePlantCounts[s.strain] ?? 0) > 0);
-        }
-        if (this.libraryFilter === 'library') {
-            return strains.filter((s) => !s.is_stub);
-        }
-        return strains;
     }
     _confirmDelete() {
         if (this._pendingDeleteKey) {
@@ -38518,6 +38532,39 @@ function transition$2(sm, event) {
     }
 }
 
+const ELIGIBLE_STAGES = ['flower', 'veg'];
+function getFlowerVegPlants(devices) {
+    return devices.flatMap((device) => device.plants
+        .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
+        .map((p) => {
+        const stage = p.attributes.stage;
+        const stageDays = p.attributes[`${stage}_days`];
+        const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
+        const strain = p.attributes.strain ?? '';
+        const phenotype = p.attributes.phenotype;
+        const phenoStr = phenotype ? ` (${phenotype})` : '';
+        const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
+        return { plant_id: p.attributes.plant_id, label };
+    }));
+}
+function getPlantLabel(devices, plant_id) {
+    for (const device of devices) {
+        for (const p of device.plants) {
+            if (p.attributes.plant_id === plant_id) {
+                const strain = p.attributes.strain ?? '';
+                const phenotype = p.attributes.phenotype;
+                return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
+            }
+        }
+    }
+    // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
+    if (plant_id && plant_id.includes('||')) {
+        const [strain, phenotype] = plant_id.split('||', 2);
+        return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
+    }
+    return plant_id;
+}
+
 let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     constructor() {
         super(...arguments);
@@ -38655,36 +38702,10 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         }
     }
     get _flowerVegPlants() {
-        const ELIGIBLE_STAGES = ['flower', 'veg'];
-        return this.plants.flatMap((device) => device.plants
-            .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
-            .map((p) => {
-            const stage = p.attributes.stage;
-            const stageDays = p.attributes[`${stage}_days`];
-            const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
-            const strain = p.attributes.strain ?? '';
-            const phenotype = p.attributes.phenotype;
-            const phenoStr = phenotype ? ` (${phenotype})` : '';
-            const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
-            return { plant_id: p.attributes.plant_id, label };
-        }));
+        return getFlowerVegPlants(this.plants);
     }
     _getPlantLabel(plant_id) {
-        for (const device of this.plants) {
-            for (const p of device.plants) {
-                if (p.attributes.plant_id === plant_id) {
-                    const strain = p.attributes.strain ?? '';
-                    const phenotype = p.attributes.phenotype;
-                    return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
-                }
-            }
-        }
-        // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
-        if (plant_id && plant_id.includes('||')) {
-            const [strain, phenotype] = plant_id.split('||', 2);
-            return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
-        }
-        return plant_id;
+        return getPlantLabel(this.plants, plant_id);
     }
     render() {
         const { activeView } = this._sm;
@@ -43307,11 +43328,6 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
               </select>
             `
             : E}
-
-        <button class="pill-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
-          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
-          Fit
-        </button>
 
         <div class="toolbar-spacer"></div>
         <div class="count-chip">
@@ -129527,6 +129543,9 @@ function _normalizeLightSensor(entity) {
         return 'On';
     if (entity.state === 'off')
         return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return String(Math.round(n));
     return undefined;
 }
 /** Normalize an on/off device entity state to "On", "Off", or undefined. */
@@ -129539,6 +129558,9 @@ function _normalizeOnOff(entity) {
         return 'On';
     if (entity.state === 'off')
         return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return n > 0 ? 'On' : 'Off';
     return undefined;
 }
 /**
@@ -130338,9 +130360,12 @@ class GrowspaceStoreRegistry {
     constructor() {
         this._entry = null;
     }
+    createStore() {
+        return new GrowspaceSharedStore();
+    }
     acquire() {
         if (!this._entry) {
-            this._entry = { store: new GrowspaceSharedStore(), refs: 0 };
+            this._entry = { store: this.createStore(), refs: 0 };
         }
         this._entry.refs++;
         return this._entry.store;

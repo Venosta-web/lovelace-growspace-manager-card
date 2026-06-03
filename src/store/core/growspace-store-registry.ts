@@ -1,11 +1,15 @@
 import { GrowspaceSharedStore } from './growspace-shared-store';
 
-class GrowspaceStoreRegistry {
+export class GrowspaceStoreRegistry {
   private _entry: { store: GrowspaceSharedStore; refs: number } | null = null;
+
+  protected createStore(): GrowspaceSharedStore {
+    return new GrowspaceSharedStore();
+  }
 
   acquire(): GrowspaceSharedStore {
     if (!this._entry) {
-      this._entry = { store: new GrowspaceSharedStore(), refs: 0 };
+      this._entry = { store: this.createStore(), refs: 0 };
     }
     this._entry.refs++;
     return this._entry.store;

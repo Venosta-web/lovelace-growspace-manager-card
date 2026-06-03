@@ -16,13 +16,13 @@ import {
   mdiChevronRight,
   mdiDotsVertical,
   mdiAccountGroup,
-  mdiFileUpload,
 } from '@mdi/js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { StrainEntry } from '../types';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { LibraryFilter } from './gs-filter-chips';
+import { filterAndSortStrains, paginateStrains } from './strain-browse-view-logic';
 import './gs-filter-chips';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/gs-help-tooltip';
@@ -38,8 +38,6 @@ export class StrainBrowseView extends LitElement {
   @state() private _currentPage = 1;
   @state() private _mobileMenuOpen = false;
   @state() private _pendingDeleteKey: string | null = null;
-
-  private readonly ITEMS_PER_PAGE = 15;
 
   static styles = [
     dialogStyles,
@@ -318,22 +316,14 @@ export class StrainBrowseView extends LitElement {
 
   render() {
     const query = (this._searchQuery || '').toLowerCase();
-    const terms = query.split(/\s+/).filter((t) => t.length > 0);
-
-    const filteredStrains = this._applyFilter(this.strains)
-      .filter((s) => {
-        if (terms.length === 0) return true;
-        const text = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
-        return terms.every((term) => text.includes(term));
-      })
-      .sort((a, b) => a.strain.localeCompare(b.strain));
-
-    const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-    if (this._currentPage > totalPages && totalPages > 0) this._currentPage = totalPages;
-    if (this._currentPage < 1) this._currentPage = 1;
-
-    const start = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-    const paged = filteredStrains.slice(start, start + this.ITEMS_PER_PAGE);
+    const filteredStrains = filterAndSortStrains(
+      this.strains,
+      query,
+      this.libraryFilter,
+      this.activePlantCounts
+    );
+    const { paged, totalPages, currentPage } = paginateStrains(filteredStrains, this._currentPage);
+    this._currentPage = currentPage;
 
     return html`
       <div class="dialog-header">
@@ -679,16 +669,6 @@ export class StrainBrowseView extends LitElement {
         </div>
       </div>
     `;
-  }
-
-  private _applyFilter(strains: StrainEntry[]): StrainEntry[] {
-    if (this.libraryFilter === 'active') {
-      return strains.filter((s) => (this.activePlantCounts[s.strain] ?? 0) > 0);
-    }
-    if (this.libraryFilter === 'library') {
-      return strains.filter((s) => !s.is_stub);
-    }
-    return strains;
   }
 
   private _confirmDelete() {

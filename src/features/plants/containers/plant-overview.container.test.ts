@@ -9,6 +9,13 @@ import { atom } from 'nanostores';
 import { PlantOverviewContainer } from './plant-overview.container';
 import './plant-overview.container';
 import type { PlantEntity } from '../../../types';
+import { strainLibrary$ } from '../../../slices/strain';
+
+vi.mock('../../../slices/logbook', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../slices/logbook')>();
+  return { ...actual, fetchPlantEvents: vi.fn(), fetchGrowspaceEvents: vi.fn() };
+});
+import * as logbookSlice from '../../../slices/logbook';
 
 // ---------------------------------------------------------------------------
 // Mock child elements expected by the container template
@@ -115,8 +122,6 @@ function createElement(store: ReturnType<typeof makeMockStore>, plant: PlantEnti
   return el;
 }
 
-const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 20));
-
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -136,6 +141,7 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   afterEach(() => {
+    strainLibrary$.set([]);
     vi.restoreAllMocks();
   });
 
@@ -249,21 +255,28 @@ describe('PlantOverviewContainer – private method logic', () => {
     expect(fired[0].detail.plantId).toBe('test_plant');
   });
 
+  // ── _openNutrients ────────────────────────────────────────────────────────
+  it('_openNutrients opens NUTRIENTS dialog', () => {
+    (el as any)._openNutrients();
+    expect(store.ui.setActiveDialog).toHaveBeenCalledWith({ type: 'NUTRIENTS', payload: {} });
+  });
+
   // ── _openStrainEditor ─────────────────────────────────────────────────────
   it('_openStrainEditor finds existing entry from library', () => {
-    store.data.$strainLibrary.set([
+    strainLibrary$.set([
       {
         strain: 'Test Strain',
         phenotype: 'Pheno A',
         key: 'ts_pa',
         flowering_days_min: 60,
         flowering_days_max: 70,
-      },
+      } as any,
     ]);
     (el as any)._openStrainEditor();
     const call = store.ui.setActiveDialog.mock.calls[0][0];
     expect(call.type).toBe('STRAIN_LIBRARY');
     expect(call.payload.editingStrain.strain).toBe('Test Strain');
+    expect(call.payload.editingStrain.key).toBe('ts_pa');
   });
 
   it('_openStrainEditor creates fallback entry when strain not in library (lines 828-829)', () => {
@@ -299,6 +312,16 @@ describe('PlantOverviewContainer – private method logic', () => {
     );
     expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
   });
+
+  // ── _fetchLogbookEvents success path ──────────────────────────────────────
+  it('_fetchLogbookEvents sets _logbookEvents and atom on success', async () => {
+    const mockEvents = [{ id: 'e1', type: 'watering' }] as any;
+    vi.mocked(logbookSlice.fetchPlantEvents).mockResolvedValue(mockEvents);
+    (el as any).hass = {};
+    await (el as any)._fetchLogbookEvents();
+    expect((el as any)._logbookEvents).toBe(mockEvents);
+    expect((el as any)._logbookEventsAtom.get()).toBe(mockEvents);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -321,7 +344,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
   }
 
   // ── Harvest tab button ────────────────────────────────────────────────────
-  it('clicking harvest tab button sets _activeTab to dashboard', async () => {
+  it('clicking harvest tab button sets _activeTab to harvest', async () => {
     const plant = makeMockPlant(
       { harvest_metrics: { wet_weight: 50 }, scores: { vigor: 3 } },
       'dry'
@@ -329,12 +352,12 @@ describe('PlantOverviewContainer – rendering branches', () => {
     await attachElement(plant);
 
     const harvestBtn = Array.from(el.shadowRoot?.querySelectorAll('.tab-btn') ?? []).find((btn) =>
-      btn.textContent?.includes('Scoring')
+      btn.textContent?.includes('Harvest')
     ) as HTMLButtonElement;
     harvestBtn?.click();
     await el.updateComplete;
 
-    expect((el as any)._activeTab).toBe('dashboard');
+    expect((el as any)._activeTab).toBe('harvest');
   });
 
   // ── Footer: mother stage "Take Clone" button (lines 561-565) ─────────────
