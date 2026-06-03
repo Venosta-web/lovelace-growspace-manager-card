@@ -273,6 +273,20 @@ describe('fetchECRampCurves', () => {
     const stored = JSON.parse(localStorage.getItem(EC_RAMP_KEY)!);
     expect(stored.data).toEqual(curves);
   });
+
+  it('logs error and does not throw when server fetch fails', async () => {
+    const ctx = makeCtx({
+      fetchECRampCurves: vi.fn().mockRejectedValue(new Error('server error')),
+    });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await expect(fetchECRampCurves(ctx, true)).resolves.toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      'Failed to fetch EC ramp curves:',
+      expect.any(Error)
+    );
+    errorSpy.mockRestore();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -417,5 +431,77 @@ describe('saveIPMPreset', () => {
       expect.stringContaining('network error'),
       'error'
     );
+  });
+
+  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
+    const ctx = makeCtx({
+      saveIPMPreset: vi.fn().mockRejectedValue('plain string error'),
+    });
+
+    await expect(saveIPMPreset(ctx, validPreset)).rejects.toBe('plain string error');
+    expect(ctx.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown error'),
+      'error'
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Non-Error throw branches for saveNutrientPreset, removeNutrientPreset, removeIPMPreset
+// ---------------------------------------------------------------------------
+
+describe('saveNutrientPreset — non-Error throw', () => {
+  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
+    const ctx = makeCtx({
+      saveNutrientPreset: vi.fn().mockRejectedValue('oops'),
+    });
+    const preset = { name: 'X', nutrients: [] };
+
+    await expect(saveNutrientPreset(ctx, preset)).rejects.toBe('oops');
+    expect(ctx.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown error'),
+      'error'
+    );
+  });
+});
+
+describe('removeNutrientPreset — non-Error throw', () => {
+  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
+    const ctx = makeCtx({
+      removeNutrientPreset: vi.fn().mockRejectedValue(42),
+    });
+
+    await expect(removeNutrientPreset(ctx, 'p1')).rejects.toBe(42);
+    expect(ctx.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown error'),
+      'error'
+    );
+  });
+});
+
+describe('removeIPMPreset — non-Error throw', () => {
+  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
+    const ctx = makeCtx({
+      removeIPMPreset: vi.fn().mockRejectedValue({ code: 500 }),
+    });
+
+    await expect(removeIPMPreset(ctx, 'ipm-1')).rejects.toEqual({ code: 500 });
+    expect(ctx.ui.showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown error'),
+      'error'
+    );
+  });
+});
+
+describe('fetchECRampCurves — stale cache', () => {
+  it('bypasses stale cache and fetches from server', async () => {
+    const staleCache = JSON.stringify({ timestamp: Date.now() - 31 * 60 * 1000, data: [] });
+    localStorage.setItem(EC_RAMP_KEY, staleCache);
+    const ctx = makeCtx();
+    vi.mocked(ecRampCurves$).get.mockReturnValue(null);
+
+    await fetchECRampCurves(ctx);
+
+    expect(ctx.dataService.fetchECRampCurves).toHaveBeenCalled();
   });
 });

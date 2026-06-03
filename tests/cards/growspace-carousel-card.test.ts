@@ -76,12 +76,50 @@ describe('GrowspaceCarouselCard', () => {
     handle.unmount();
   });
 
+  test('getLayoutOptions returns grid constraints', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    expect(handle.element.getLayoutOptions()).toEqual({
+      grid_columns: 4,
+      grid_min_columns: 2,
+      grid_min_rows: 4,
+    });
+    handle.unmount();
+  });
+
   test('getStubConfig returns default config', () => {
     expect(GrowspaceCarouselCard.getStubConfig()).toEqual({
       type: 'custom:growspace-carousel-card',
       growspaces: [],
       interval: 15,
     });
+  });
+
+  test('_handleMouseEnter stops timer', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    const spy = vi.spyOn(handle.element as any, '_stopTimer');
+    (handle.element as any)._handleMouseEnter();
+    expect(spy).toHaveBeenCalled();
+    handle.unmount();
+  });
+
+  test('_handleMouseLeave starts timer', async () => {
+    const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+      hass,
+      growspace: gs1,
+      config: carouselConfig,
+    });
+    const spy = vi.spyOn(handle.element as any, '_startTimer');
+    (handle.element as any)._handleMouseLeave();
+    expect(spy).toHaveBeenCalled();
+    handle.unmount();
   });
 
   test('disconnectedCallback stops timer', async () => {
@@ -147,6 +185,36 @@ describe('GrowspaceCarouselCard', () => {
 
       handle.unmount();
       vi.useRealTimers();
+    });
+
+    test('_nextSlide is a no-op when _isAnimating is true', async () => {
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass,
+        growspace: gs1,
+        config: cycleConfig,
+      });
+      (handle.element as any)._isAnimating = true;
+      const before = (handle.element as any)._currentIndex;
+      await (handle.element as any)._nextSlide();
+      expect((handle.element as any)._currentIndex).toBe(before);
+      handle.unmount();
+    });
+
+    test('_nextSlide is a no-op when only one active growspace', async () => {
+      const singleConfig = {
+        type: 'custom:growspace-carousel-card',
+        growspaces: [gs1.growspaceId],
+        interval: 10,
+      } as any;
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass,
+        growspace: gs1,
+        config: singleConfig,
+      });
+      const before = (handle.element as any)._currentIndex;
+      await (handle.element as any)._nextSlide();
+      expect((handle.element as any)._currentIndex).toBe(before);
+      handle.unmount();
     });
 
     test('timer triggers _nextSlide after interval', async () => {

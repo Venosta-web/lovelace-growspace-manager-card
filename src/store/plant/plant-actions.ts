@@ -533,6 +533,31 @@ export async function confirmAddPlants(
     return;
   }
 
+  if (detail.addToLibrary) {
+    const amount = detail.amount || 1;
+    const startNumber = detail.start_number || 1;
+    const promises: Promise<any>[] = [];
+    for (let i = 0; i < amount; i++) {
+      const currentNumber = startNumber + i;
+      const phenoName = detail.phenotype
+        ? `${detail.phenotype} #${currentNumber}`
+        : `Strain #${currentNumber}`;
+      if (detail.strain) {
+        promises.push(
+          ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName })
+        );
+      }
+    }
+    try {
+      await Promise.all(promises);
+      await libraryActions.fetchStrainLibrary(ctx, true);
+      ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
+    } catch (e) {
+      console.error('Failed to add strains to library:', e);
+      throw e instanceof Error ? e : new Error('Failed to add strains to library');
+    }
+  }
+
   const beforeDevices = devices$.get();
   const beforeIds = new Set<string>();
   beforeDevices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
@@ -540,31 +565,6 @@ export async function confirmAddPlants(
   await withAction(
     ctx,
     async () => {
-      if (detail.addToLibrary) {
-        try {
-          const amount = detail.amount || 1;
-          const startNumber = detail.start_number || 1;
-          const promises: Promise<any>[] = [];
-          for (let i = 0; i < amount; i++) {
-            const currentNumber = startNumber + i;
-            const phenoName = detail.phenotype
-              ? `${detail.phenotype} #${currentNumber}`
-              : `Strain #${currentNumber}`;
-            if (detail.strain) {
-              promises.push(
-                ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName })
-              );
-            }
-          }
-          await Promise.all(promises);
-          await libraryActions.fetchStrainLibrary(ctx, true);
-          ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
-        } catch (e) {
-          console.error('Failed to add strains to library:', e);
-          ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
-        }
-      }
-
       const { addToLibrary: _, ...apiPayload } = detail;
       await ctx.dataService.addPlants({
         ...apiPayload,

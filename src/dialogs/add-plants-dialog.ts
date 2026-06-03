@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -24,6 +24,7 @@ export class AddPlantsDialog extends LitElement {
 
   @property({ type: String }) strain = '';
   @property({ type: String }) phenotype = '';
+  @property({ type: String }) libraryError = '';
   @state() private addToLibrary = false;
   @property({ type: Number }) amount = 1;
   @property({ type: Number }) start_number = 1;
@@ -118,6 +119,7 @@ export class AddPlantsDialog extends LitElement {
   }
 
   private _confirm() {
+    this.libraryError = '';
     if (this.growspaceDevice) {
       const totalSlots =
         (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
@@ -266,6 +268,8 @@ export class AddPlantsDialog extends LitElement {
                   ?disabled=${!this.strain}
                 ></md3-switch>
               </div>
+
+              ${this.libraryError ? html`<ha-alert alert-type="error">${this.libraryError}</ha-alert>` : nothing}
 
               <div class="row-col-grid">
                 <md3-number-input

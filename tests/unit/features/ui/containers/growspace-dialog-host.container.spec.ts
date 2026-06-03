@@ -1236,6 +1236,48 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useRealTimers();
         });
 
+        it('should surface library error inline when addBatch rejects and keep dialog open', async () => {
+            const libraryError = new Error('Strain name is required');
+            mockStore.actions.plant.addBatch = vi.fn().mockRejectedValue(libraryError);
+            mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
+            await element.updateComplete;
+
+            const addPlantsDialog = element.shadowRoot?.querySelector('add-plants-dialog') as any;
+            addPlantsDialog?.dispatchEvent(new CustomEvent('add-plants-submit', {
+                detail: { strain: '', amount: 1, addToLibrary: true },
+                bubbles: true,
+                composed: true,
+            }));
+
+            await vi.waitFor(() => {
+                expect(addPlantsDialog?.libraryError).toBe('Strain name is required');
+            });
+            expect(mockStore.actions.ui.setActiveDialog).not.toHaveBeenCalledWith(
+                expect.objectContaining({ type: expect.stringMatching(/^(?!ADD_PLANTS)/) })
+            );
+        });
+
+        it('should clear library error on subsequent successful addBatch', async () => {
+            mockStore.actions.plant.addBatch = vi.fn()
+                .mockRejectedValueOnce(new Error('First attempt failed'))
+                .mockResolvedValueOnce(undefined);
+            mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
+            await element.updateComplete;
+
+            const addPlantsDialog = element.shadowRoot?.querySelector('add-plants-dialog') as any;
+            const submitEvent = () => addPlantsDialog?.dispatchEvent(new CustomEvent('add-plants-submit', {
+                detail: { strain: 'Blue Dream', amount: 1, addToLibrary: true },
+                bubbles: true,
+                composed: true,
+            }));
+
+            submitEvent();
+            await vi.waitFor(() => { expect(addPlantsDialog?.libraryError).toBe('First attempt failed'); });
+
+            submitEvent();
+            await vi.waitFor(() => { expect(addPlantsDialog?.libraryError).toBe(''); });
+        });
+
         it('should handle strain library seed and pollination events', async () => {
             mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
             await element.updateComplete;

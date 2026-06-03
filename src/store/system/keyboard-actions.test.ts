@@ -4,7 +4,7 @@ import * as uiActions from '../ui/ui-actions';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
 import type { ActionContext } from '../core/action-context';
-import { setDevices, devices$ } from '../../slices/grid';
+import { setDevices, devices$, optimisticDeletedPlantIds$ } from '../../slices/grid';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import type { PlantEntity } from '../../types';
 import { handleKeyboardNavigation } from './keyboard-actions';
@@ -45,6 +45,7 @@ beforeEach(() => {
 
 afterEach(() => {
   setDevices([]);
+  optimisticDeletedPlantIds$.set(new Set());
 });
 
 describe('handleKeyboardNavigation — Escape', () => {
@@ -172,5 +173,78 @@ describe('handleKeyboardNavigation — empty plant list', () => {
     expect(ctx.ui.$focusedPlantIndex.get()).toBe(-1);
     expect(select).not.toHaveBeenCalled();
     expect(plantActions.handleDeletePlant).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleKeyboardNavigation — getVisiblePlants edge cases', () => {
+  it('returns no plants when selectedDevice is set but device not found in devices$', () => {
+    const ctx = makeContext([]);
+    // Set a device ID but don't populate devices$ with it
+    ctx.grid.$selectedDevice.set('ghost-device');
+
+    // ArrowRight is a no-op when no visible plants
+    handleKeyboardNavigation(ctx, 'ArrowRight');
+
+    expect(ctx.ui.$focusedPlantIndex.get()).toBe(-1);
+  });
+
+  it('filters out plants marked in optimisticDeletedPlantIds$', () => {
+    const ctx = makeContext([makePlant('p1'), makePlant('p2')]);
+    optimisticDeletedPlantIds$.set(new Set(['p1', 'p2']));
+
+    // Both plants are filtered out, so navigation is a no-op
+    handleKeyboardNavigation(ctx, 'ArrowRight');
+
+    expect(ctx.ui.$focusedPlantIndex.get()).toBe(-1);
+    expect(select).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleKeyboardNavigation — Enter/Space guard branches', () => {
+  it('Enter is a no-op when currentIndex is out of bounds', () => {
+    const ctx = makeContext([makePlant('p1')]);
+    ctx.ui.setFocusedPlantIndex(-1);
+
+    handleKeyboardNavigation(ctx, 'Enter');
+
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it('Enter does not call select when focused plant has no plant_id', () => {
+    const plantWithoutId: PlantEntity = {
+      entity_id: 'sensor.anon',
+      attributes: {},
+    } as unknown as PlantEntity;
+    const ctx = makeContext([plantWithoutId]);
+    ctx.ui.setFocusedPlantIndex(0);
+
+    handleKeyboardNavigation(ctx, 'Enter');
+
+    expect(select).not.toHaveBeenCalled();
+  });
+});
+
+describe('handleKeyboardNavigation — Delete guard branches', () => {
+  it('Delete is a no-op when currentIndex is out of bounds and selectedPlants is empty', () => {
+    const ctx = makeContext([makePlant('p1')]);
+    ctx.ui.setFocusedPlantIndex(-1);
+    ctx.ui.$selectedPlants.set(new Set());
+
+    handleKeyboardNavigation(ctx, 'Delete');
+
+    expect(plantActions.handleDeletePlant).not.toHaveBeenCalled();
+  });
+
+  it('Delete falls back to entity_id when focused plant has no plant_id', () => {
+    const plantNoId: PlantEntity = {
+      entity_id: 'sensor.fallback',
+      attributes: {},
+    } as unknown as PlantEntity;
+    const ctx = makeContext([plantNoId]);
+    ctx.ui.setFocusedPlantIndex(0);
+
+    handleKeyboardNavigation(ctx, 'Delete');
+
+    expect(plantActions.handleDeletePlant).toHaveBeenCalledWith(ctx, 'sensor.fallback');
   });
 });

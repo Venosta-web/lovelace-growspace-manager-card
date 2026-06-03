@@ -653,6 +653,16 @@ describe('handlePlantDrop', () => {
       expect.objectContaining({ plant_id: 'p1', row: 2, col: 3 })
     );
   });
+
+  it('catches updatePlant errors, calls refreshData, and returns false', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+    (ctx.dataService as any).updatePlant.mockRejectedValue(new Error('network fail'));
+
+    const result = await handlePlantDrop(ctx, 2, 3, null, source);
+
+    expect(result).toBe(false);
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
 });
 
 // ─── confirmAddPlant ──────────────────────────────────────────────────────────
@@ -758,21 +768,32 @@ describe('confirmAddPlants', () => {
     expect((ctx.dataService as any).addStrain).toHaveBeenCalledTimes(2);
   });
 
-  it('shows info toast and still adds plants when addStrain fails', async () => {
+  it('throws and does not add plants when addStrain fails', async () => {
     setDevices([]);
     (ctx.dataService as any).addStrain.mockRejectedValue(new Error('lib-fail'));
 
-    await confirmAddPlants(ctx, {
-      strain: 'Purple Haze',
-      amount: 1,
-      addToLibrary: true,
-    } as any);
+    await expect(
+      confirmAddPlants(ctx, {
+        strain: 'Purple Haze',
+        amount: 1,
+        addToLibrary: true,
+      } as any)
+    ).rejects.toThrow('lib-fail');
 
-    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to add strains to library'),
-      'info'
-    );
-    expect((ctx.dataService as any).addPlants).toHaveBeenCalled();
+    expect((ctx.dataService as any).addPlants).not.toHaveBeenCalled();
+  });
+
+  it('rethrows a non-Error rejection as an Error when addStrain fails', async () => {
+    setDevices([]);
+    (ctx.dataService as any).addStrain.mockRejectedValue('raw string error');
+
+    await expect(
+      confirmAddPlants(ctx, {
+        strain: 'Purple Haze',
+        amount: 1,
+        addToLibrary: true,
+      } as any)
+    ).rejects.toThrow('Failed to add strains to library');
   });
 
   it('registers undo action when new plant ids are detected after refresh', async () => {
@@ -840,6 +861,75 @@ describe('confirmAddPlants', () => {
     expect((ctx.dataService as any).addPlants).toHaveBeenCalledWith(
       expect.objectContaining({ strain: 'Gelato', amount: 1 })
     );
+  });
+});
+
+// Additional confirmAddPlants branch coverage
+describe('confirmAddPlants — beforeIds forEach branches', () => {
+  let ctx: ReturnType<typeof makeContext>;
+  beforeEach(() => { ctx = makeContext(); });
+
+  it('populates beforeIds from existing plants so pre-existing plants are not counted as new', async () => {
+    setDevices([{
+      deviceId: 'device-1',
+      plants: [{ entity_id: 'sensor.old', attributes: { plant_id: 'old-plant' } }],
+    } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([{
+        deviceId: 'device-1',
+        plants: [
+          { entity_id: 'sensor.old', attributes: { plant_id: 'old-plant' } },
+          { entity_id: 'sensor.new', attributes: { plant_id: 'new-plant' } },
+        ],
+      } as any]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
+
+    const { type } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(type).toBe('batch-delete');
+    // Only new-plant should be in the undo action, not old-plant
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.dataService as any).removePlant.mockResolvedValue(undefined);
+    await reverse();
+    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant');
+    expect((ctx.dataService as any).removePlant).not.toHaveBeenCalledWith('old-plant');
+  });
+
+  it('handles plants with no plant_id (p.attributes.plant_id falsy)', async () => {
+    setDevices([{
+      deviceId: 'device-1',
+      plants: [{ entity_id: 'sensor.anon', attributes: {} }],
+    } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([{
+        deviceId: 'device-1',
+        plants: [
+          { entity_id: 'sensor.anon', attributes: {} },
+          { entity_id: 'sensor.new', attributes: { plant_id: 'real-new' } },
+        ],
+      } as any]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
+
+    // 'real-new' should be detected as new; anon plant (no id) is ignored
+    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+  });
+
+  it('is a no-op when afterDevices device has no plants array', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([{ deviceId: 'device-1' } as any]); // plants undefined
+    });
+
+    await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
+
+    // No new plants detected → no undo action registered
+    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled();
   });
 });
 
@@ -943,6 +1033,16 @@ describe('printLabel', () => {
     await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toThrow('print-fail');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
       expect.stringContaining('print-fail'),
+      'error'
+    );
+  });
+
+  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
+    (ctx.dataService as any).printLabel.mockRejectedValue('plain string');
+
+    await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toBe('plain string');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown error'),
       'error'
     );
   });

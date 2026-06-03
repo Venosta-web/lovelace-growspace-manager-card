@@ -81,6 +81,7 @@ export class GrowspaceDialogHost extends LitElement {
   private _controllersInitialized = false;
   private _dataChangeTimeout?: any;
   private _geneticsLoaded = false;
+  @state() private _addPlantsLibraryError = '';
 
   connectedCallback() {
     super.connectedCallback();
@@ -397,10 +398,18 @@ export class GrowspaceDialogHost extends LitElement {
         .clone_start=${active.payload?.clone_start || ''}
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
-        @close=${() => this._closeDialogIfActive('ADD_PLANTS')}
+        .libraryError=${this._addPlantsLibraryError}
+        @close=${() => { this._addPlantsLibraryError = ''; this._closeDialogIfActive('ADD_PLANTS'); }}
         @show-toast=${(e: CustomEvent) =>
         this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
-        @add-plants-submit=${(e: CustomEvent) => this.store?.actions.plant.addBatch(e.detail)}
+        @add-plants-submit=${async (e: CustomEvent) => {
+          this._addPlantsLibraryError = '';
+          try {
+            await this.store?.actions.plant.addBatch(e.detail);
+          } catch (err) {
+            this._addPlantsLibraryError = err instanceof Error ? err.message : 'Failed to add strains to library';
+          }
+        }}
         @create-new-strain=${(e: CustomEvent) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
       ></add-plants-dialog>
