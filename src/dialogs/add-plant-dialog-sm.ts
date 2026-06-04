@@ -28,7 +28,8 @@ export interface AddDraft {
   siblingPlantId: string | null;
   row: number;
   col: number;
-  // Date fields — all carried; component selects which to render by growspaceName
+  stage: string;
+  // Date fields — all carried; stage field drives which one is rendered and submitted
   seedlingStart: string;
   vegStart: string;
   flowerStart: string;
@@ -37,6 +38,17 @@ export interface AddDraft {
   dryStart: string;
   cureStart: string;
 }
+
+// Maps each stage value to its corresponding AddDraft date field
+export const STAGE_DATE_FIELD: Record<string, keyof AddDraft> = {
+  seedling: 'seedlingStart',
+  clone: 'cloneStart',
+  mother: 'motherStart',
+  veg: 'vegStart',
+  flower: 'flowerStart',
+  dry: 'dryStart',
+  cure: 'cureStart',
+};
 
 export type AddSubState =
   | { kind: 'step-identity' }
@@ -119,6 +131,7 @@ function defaultAddDraft(row: number, col: number): AddDraft {
     siblingPlantId: null,
     row,
     col,
+    stage: 'seedling',
     seedlingStart: '',
     vegStart: '',
     flowerStart: '',
@@ -184,6 +197,31 @@ export function transition(sm: SM, event: SMEvent): SM {
 
     case 'DraftFieldChanged': {
       if (event.tab === 'add') {
+        if (event.field === 'stage') {
+          const today = new Date().toISOString().split('T')[0];
+          const dateField = STAGE_DATE_FIELD[event.value as string];
+          return {
+            ...sm,
+            tabs: {
+              ...sm.tabs,
+              add: {
+                ...sm.tabs.add,
+                draft: {
+                  ...sm.tabs.add.draft,
+                  stage: event.value as string,
+                  seedlingStart: '',
+                  cloneStart: '',
+                  motherStart: '',
+                  vegStart: '',
+                  flowerStart: '',
+                  dryStart: '',
+                  cureStart: '',
+                  ...(dateField ? { [dateField]: today } : {}),
+                },
+              },
+            },
+          };
+        }
         return {
           ...sm,
           tabs: {

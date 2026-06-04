@@ -110,17 +110,18 @@ describe('AddPlantDialog', () => {
       await element.updateComplete;
     });
 
-    it('should show veg/flower inputs for standard growspace', async () => {
-      element.growspaceName = 'Main Tent';
+    it('should show one date input for seedling stage (default)', async () => {
       await element.updateComplete;
 
       const dateInputs = element.shadowRoot?.querySelectorAll('md3-date-input');
-      expect(dateInputs?.length).toBe(3);
+      expect(dateInputs?.length).toBe(1);
       expect(dateInputs?.[0].getAttribute('label')).toBe('Seedling Start');
     });
 
-    it('should show mother input for mother growspace and handle change', async () => {
-      element.growspaceName = 'Mother Tent';
+    it('should show mother input when stage is set to mother', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'mother',
+      });
       await element.updateComplete;
 
       const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
@@ -130,8 +131,10 @@ describe('AddPlantDialog', () => {
       await element.updateComplete;
     });
 
-    it('should show cure input for cure growspace and handle change', async () => {
-      element.growspaceName = 'Cure Area';
+    it('should show cure input when stage is set to cure', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'cure',
+      });
       await element.updateComplete;
 
       const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
@@ -141,8 +144,10 @@ describe('AddPlantDialog', () => {
       await element.updateComplete;
     });
 
-    it('should show clone input for clone growspace and handle change', async () => {
-      element.growspaceName = 'Clone Dome';
+    it('should show clone input when stage is set to clone', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'clone',
+      });
       await element.updateComplete;
 
       const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
@@ -152,8 +157,10 @@ describe('AddPlantDialog', () => {
       await element.updateComplete;
     });
 
-    it('should show dry input for dry growspace and handle change', async () => {
-      element.growspaceName = 'Dry Tent';
+    it('should show dry input when stage is set to dry', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'dry',
+      });
       await element.updateComplete;
 
       const dateInput = element.shadowRoot?.querySelector('md3-date-input') as any;
@@ -248,10 +255,15 @@ describe('AddPlantDialog', () => {
     (element as any)._sm = transition(sm(element), {
       type: 'DraftFieldChanged',
       tab: 'add',
+      field: 'stage',
+      value: 'veg',
+    });
+    (element as any)._sm = transition(sm(element), {
+      type: 'DraftFieldChanged',
+      tab: 'add',
       field: 'vegStart',
       value: '2023-01-01',
     });
-    element.growspaceName = 'Tent';
     // Navigate to step-schedule
     advanceTo(element, 'step-schedule');
     await element.updateComplete;
@@ -272,6 +284,7 @@ describe('AddPlantDialog', () => {
         strain: 'Blue Dream',
         phenotype: 'Sativa Dom',
         veg_start: '2023-01-01',
+        seedling_start: '',
         flower_start: '',
         mother_start: '',
         dry_start: '',
@@ -280,19 +293,17 @@ describe('AddPlantDialog', () => {
     );
   });
 
-  it('should handle seedling and flower start date changes', async () => {
-    element.growspaceName = 'Tent';
+  it('should handle flower start date change when stage is flower', async () => {
     element.setInitialState(0, 0, 'Blue Dream');
+    (element as any)._sm = transition(sm(element), {
+      type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'flower',
+    });
     advanceTo(element, 'step-schedule');
     await element.updateComplete;
 
-    const seedlingInput = element.shadowRoot?.querySelector('md3-date-input[label="Seedling Start"]');
     const flowerInput = element.shadowRoot?.querySelector('md3-date-input[label="Flower Start"]');
-
-    expect(seedlingInput).toBeTruthy();
     expect(flowerInput).toBeTruthy();
 
-    seedlingInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-01-02' }));
     flowerInput?.dispatchEvent(new CustomEvent('change', { detail: '2023-02-01' }));
     await element.updateComplete;
 
@@ -303,6 +314,7 @@ describe('AddPlantDialog', () => {
 
     const detail = submitSpy.mock.calls[0][0].detail;
     expect(detail.flower_start).toBe('2023-02-01');
+    expect(detail.seedling_start).toBe('');
   });
 
   describe('Transplant Mode', () => {
@@ -726,13 +738,15 @@ describe('AddPlantDialog', () => {
   });
 
   describe('Extra Date Changes', () => {
-    it('should handle veg start date change', async () => {
-      element.growspaceName = 'Tent';
+    it('should handle veg start date change when stage is veg', async () => {
       (element as any)._sm = transition(sm(element), {
         type: 'DraftFieldChanged',
         tab: 'add',
         field: 'strain',
         value: 'Blue Dream',
+      });
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'veg',
       });
       advanceTo(element, 'step-schedule');
       await element.updateComplete;

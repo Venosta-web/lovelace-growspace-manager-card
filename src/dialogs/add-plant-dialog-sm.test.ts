@@ -176,6 +176,32 @@ describe('DraftFieldChanged — add tab', () => {
     expect(next.tabs.add.draft.vegStart).toBe('2026-05-01');
   });
 
+  it('defaults stage to seedling', () => {
+    const sm = createInitialSM({ row: 0, col: 0 });
+    expect(sm.tabs.add.draft.stage).toBe('seedling');
+  });
+
+  it('stage change sets the new stage and its date to today', () => {
+    const today = new Date().toISOString().split('T')[0];
+    const sm = createInitialSM({ row: 0, col: 0 });
+    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'veg' });
+    expect(next.tabs.add.draft.stage).toBe('veg');
+    expect(next.tabs.add.draft.vegStart).toBe(today);
+  });
+
+  it('stage change clears all other date fields', () => {
+    let sm = createInitialSM({ row: 0, col: 0 });
+    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: '2026-01-01' });
+    sm = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: '2026-02-01' });
+    const next = transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: 'veg' });
+    expect(next.tabs.add.draft.seedlingStart).toBe('');
+    expect(next.tabs.add.draft.flowerStart).toBe('');
+    expect(next.tabs.add.draft.motherStart).toBe('');
+    expect(next.tabs.add.draft.cloneStart).toBe('');
+    expect(next.tabs.add.draft.dryStart).toBe('');
+    expect(next.tabs.add.draft.cureStart).toBe('');
+  });
+
   it('does not mutate the original SM', () => {
     const sm = createInitialSM({ row: 0, col: 0 });
     transition(sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'Mutant' });

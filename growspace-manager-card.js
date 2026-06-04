@@ -12903,6 +12903,16 @@ GsHelpTooltip = __decorate([
  *     .toast              — transient message
  *     .tabs               — one typed state object per tab (draft + sub)
  */
+// Maps each stage value to its corresponding AddDraft date field
+const STAGE_DATE_FIELD = {
+    seedling: 'seedlingStart',
+    clone: 'cloneStart',
+    mother: 'motherStart',
+    veg: 'vegStart',
+    flower: 'flowerStart',
+    dry: 'dryStart',
+    cure: 'cureStart',
+};
 // ─── Initial state ────────────────────────────────────────────────────────────
 function defaultAddDraft(row, col) {
     return {
@@ -12914,6 +12924,7 @@ function defaultAddDraft(row, col) {
         siblingPlantId: null,
         row,
         col,
+        stage: 'seedling',
         seedlingStart: '',
         vegStart: '',
         flowerStart: '',
@@ -12974,6 +12985,31 @@ function transition$a(sm, event) {
         }
         case 'DraftFieldChanged': {
             if (event.tab === 'add') {
+                if (event.field === 'stage') {
+                    const today = new Date().toISOString().split('T')[0];
+                    const dateField = STAGE_DATE_FIELD[event.value];
+                    return {
+                        ...sm,
+                        tabs: {
+                            ...sm.tabs,
+                            add: {
+                                ...sm.tabs.add,
+                                draft: {
+                                    ...sm.tabs.add.draft,
+                                    stage: event.value,
+                                    seedlingStart: '',
+                                    cloneStart: '',
+                                    motherStart: '',
+                                    vegStart: '',
+                                    flowerStart: '',
+                                    dryStart: '',
+                                    cureStart: '',
+                                    ...(dateField ? { [dateField]: today } : {}),
+                                },
+                            },
+                        },
+                    };
+                }
                 return {
                     ...sm,
                     tabs: {
@@ -13067,6 +13103,36 @@ function setAddSub(sm, sub) {
     };
 }
 
+const STAGE_OPTIONS = [
+    { value: 'seedling', label: 'Seedling' },
+    { value: 'clone', label: 'Clone' },
+    { value: 'mother', label: 'Mother' },
+    { value: 'veg', label: 'Veg' },
+    { value: 'flower', label: 'Flower' },
+    { value: 'dry', label: 'Dry' },
+    { value: 'cure', label: 'Cure' },
+];
+const STAGE_DATE_LABELS = {
+    seedling: 'Seedling Start',
+    clone: 'Clone Start',
+    mother: 'Mother Start',
+    veg: 'Veg Start',
+    flower: 'Flower Start',
+    dry: 'Dry Start',
+    cure: 'Cure Start',
+};
+function deriveDefaultStage(growspaceName) {
+    const name = growspaceName.toLowerCase();
+    if (name.includes('mother'))
+        return 'mother';
+    if (name.includes('clone'))
+        return 'clone';
+    if (name.includes('dry'))
+        return 'dry';
+    if (name.includes('cure'))
+        return 'cure';
+    return 'seedling';
+}
 let AddPlantDialog = class AddPlantDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -13082,6 +13148,12 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
     }
     setInitialState(row, col, strain = '', phenotype = '') {
         this._sm = createInitialSM$a({ row, col });
+        this._sm = transition$a(this._sm, {
+            type: 'DraftFieldChanged',
+            tab: 'add',
+            field: 'stage',
+            value: deriveDefaultStage(this.growspaceName),
+        });
         if (strain) {
             this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
             this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
@@ -13126,13 +13198,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 col: d.col + 1,
                 strain: d.strain,
                 phenotype: d.phenotype,
-                veg_start: d.vegStart,
-                flower_start: d.flowerStart,
-                seedling_start: d.sourceType === 'seed' ? d.seedlingStart || today : '',
-                mother_start: d.motherStart,
-                clone_start: d.sourceType === 'clone' ? d.cloneStart || today : '',
-                dry_start: d.dryStart,
-                cure_start: d.cureStart,
+                seedling_start: d.stage === 'seedling' ? d.seedlingStart || today : '',
+                clone_start: d.stage === 'clone' ? d.cloneStart || today : '',
+                mother_start: d.stage === 'mother' ? d.motherStart || today : '',
+                veg_start: d.stage === 'veg' ? d.vegStart || today : '',
+                flower_start: d.stage === 'flower' ? d.flowerStart || today : '',
+                dry_start: d.stage === 'dry' ? d.dryStart || today : '',
+                cure_start: d.stage === 'cure' ? d.cureStart || today : '',
                 addToLibrary: d.addToLibrary,
             };
             this._sm = transition$a(this._sm, { type: 'SaveRequested' });
@@ -13581,62 +13653,27 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
     }
     _renderStep3Schedule() {
         const { draft } = this._sm.tabs.add;
+        const dateField = STAGE_DATE_FIELD[draft.stage];
+        const dateValue = dateField ? draft[dateField] : '';
+        const dateLabel = STAGE_DATE_LABELS[draft.stage] ?? 'Start Date';
         return x `
       <div class="detail-card">
         <h3>Schedule</h3>
-        ${this._renderTimelineContent(draft)}
+        <md3-select
+          label="Stage"
+          .value=${draft.stage}
+          .options=${STAGE_OPTIONS}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: e.detail }))}
+        ></md3-select>
+        ${dateField
+            ? x `<md3-date-input
+              label=${dateLabel}
+              .value=${dateValue}
+              @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: dateField, value: e.detail }))}
+            ></md3-date-input>`
+            : E}
       </div>
     `;
-    }
-    _renderTimelineContent(draft) {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
-        label="Mother Start"
-        .value=${draft.motherStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
-        label="Clone Start"
-        .value=${draft.cloneStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
-        label="Dry Start"
-        .value=${draft.dryStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
-        label="Cure Start"
-        .value=${draft.cureStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else {
-            return x `
-        <md3-date-input
-          label="Seedling Start"
-          .value=${draft.seedlingStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${draft.vegStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${draft.flowerStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
-        ></md3-date-input>
-      `;
-        }
     }
     _renderTransplantForm(stage) {
         const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
