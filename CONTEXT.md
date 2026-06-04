@@ -168,6 +168,15 @@ Owns the [[Store-Driven Interaction]] state machine for Plant Grid Cells as a di
 
 ## Irrigation
 
+**Tank-Derived Water Chip**
+A [[Chip]] in the secondary header strip that shows calendar-day water consumption (liters since midnight local time) when a growspace is in [[Tank-Derived Water Mode]]. Condition is inferred client-side: `irrigationTanks.length > 0` AND no `irrigation_flow_sensors` AND no `drain_volume_sensors`. Value comes from `waterUsage.litersToday` in the growspace payload. Clicking it opens a [[Tank Water Chart]].
+
+**Tank Water Chart** (`tank-water-chart`)
+A separate chart component rendered in place of [[Env Graph]] when `MetricKey.WATER` is the active metric and the growspace is in [[Tank-Derived Water Mode]]. Fetches pre-bucketed consumption data from the backend via `growspace_manager/get_tank_water_history` (aggregated across all qualifying tanks). Supports the same 1h / 6h / 24h / 7d range selector as the standard [[Env Graph]]. Renders as a bar/area chart of liters consumed per time bucket. Routing: `_renderItem` in `growspace-analytics-ui.ts` checks `item.metrics[0] === MetricKey.WATER` and renders `<tank-water-chart>` instead of `<growspace-env-chart>`.
+
+**`growspace_manager/get_tank_water_history`**
+New WebSocket command that returns pre-bucketed consumption data for all qualifying tanks of a growspace, aggregated into a single series. Accepts `growspace_id` and `range` (`'1h' | '6h' | '24h' | '7d'`). For 1h/6h/24h returns 15-minute buckets (sliced from `TankWaterTracker.get_history_24h()`); for 7d returns hourly buckets from `TankWaterTracker.get_history_7d()`. Aggregates across all tanks whose `volume_liters` is configured and no flow/drain sensors are set (same predicate as [[Tank-Derived Water Mode]]).
+
 **Irrigation Mode**
 The two mutually exclusive ways a growspace can receive water. Switched via a toggle in the Schedules tab of the Irrigation Dialog, saved immediately on toggle.
 
