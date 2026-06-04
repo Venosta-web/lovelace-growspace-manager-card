@@ -18,7 +18,9 @@
           "path": "dist/growspace-manager-card.js",
           "label": "growspace-manager-card.js"
         }
-      ]
+      ],
+      "successComment": false,
+      "failComment": false
     }]
   ]
 }
