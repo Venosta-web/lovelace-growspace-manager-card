@@ -103,7 +103,7 @@ describe('StageVpdOverridesTable – sparse updates', () => {
     expect(received[0].seedling?.day).toBe(0.65);
   });
 
-  it('ignores non-numeric input', async () => {
+  it('fires no event when clearing an input that had no prior override', async () => {
     const el = createElement({});
     await el.updateComplete;
 
@@ -113,10 +113,28 @@ describe('StageVpdOverridesTable – sparse updates', () => {
     });
 
     const input = el.shadowRoot!.querySelector<HTMLInputElement>('input[type="number"]')!;
-    input.value = 'abc';
+    input.value = '';
     input.dispatchEvent(new Event('change'));
 
     expect(received).toHaveLength(0);
+  });
+
+  it('removes the entire stage key when either slot is cleared', async () => {
+    const el = createElement({ veg: { day: 0.9, night: 0.8 } });
+    await el.updateComplete;
+
+    const received: StageVpdOverrides[] = [];
+    el.addEventListener('overrides-change', (e: Event) => {
+      received.push((e as CustomEvent<StageVpdOverrides>).detail);
+    });
+
+    const rows = el.shadowRoot!.querySelectorAll('.stage-row');
+    const vegDayInput = rows[3].querySelectorAll<HTMLInputElement>('input[type="number"]')[0];
+    vegDayInput.value = '';
+    vegDayInput.dispatchEvent(new Event('change'));
+
+    expect(received).toHaveLength(1);
+    expect(received[0]).not.toHaveProperty('veg');
   });
 });
 
