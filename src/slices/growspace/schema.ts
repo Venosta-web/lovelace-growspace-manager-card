@@ -86,6 +86,10 @@ export const CirculationFanConfigSchema = z.object({
   wind_period_seconds: z.number(),
   wind_amplitude_pct: z.number(),
   stage_vpd_enabled: z.boolean(),
+  stage_vpd_overrides: z
+    .record(z.string(), z.object({ day: z.number(), night: z.number() }))
+    .optional()
+    .default({}),
 });
 
 export type CirculationFanConfig = z.infer<typeof CirculationFanConfigSchema>;

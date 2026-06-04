@@ -504,6 +504,39 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
     [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
 };
+const FAN_VPD_STAGE_KEYS = [
+    'seedling',
+    'clone',
+    'mother',
+    'veg',
+    'flower_early',
+    'flower_mid',
+    'flower_late',
+    'dry',
+    'cure',
+];
+const FAN_VPD_STAGE_LABELS = {
+    seedling: 'Seedling',
+    clone: 'Clone',
+    mother: 'Mother',
+    veg: 'Veg',
+    flower_early: 'Flower (Early)',
+    flower_mid: 'Flower (Mid)',
+    flower_late: 'Flower (Late)',
+    dry: 'Dry',
+    cure: 'Cure',
+};
+const FAN_VPD_STAGE_DEFAULTS = {
+    seedling: { day: 0.6, night: 0.6 },
+    clone: { day: 0.5, night: 0.5 },
+    mother: { day: 0.7, night: 0.6 },
+    veg: { day: 0.7, night: 0.6 },
+    flower_early: { day: 1.15, night: 1.0 },
+    flower_mid: { day: 1.2, night: 1.0 },
+    flower_late: { day: 1.25, night: 1.05 },
+    dry: { day: 0.95, night: 0.95 },
+    cure: { day: 0.75, night: 0.75 },
+};
 
 // --- Utils ---
 function createGrowspaceDevice(params) {
@@ -5135,6 +5168,9 @@ const CirculationFanConfigSchema = objectType({
     wind_period_seconds: numberType(),
     wind_amplitude_pct: numberType(),
     stage_vpd_enabled: booleanType(),
+    stage_vpd_overrides: recordType(stringType(), objectType({ day: numberType(), night: numberType() }))
+        .optional()
+        .default({}),
 });
 const GrowspaceAPIResponseSchema = objectType({
     identity: objectType({
@@ -17691,6 +17727,118 @@ SubareaConfigDialog = __decorate([
     t$2('subarea-config-dialog')
 ], SubareaConfigDialog);
 
+let StageVpdOverridesTable = class StageVpdOverridesTable extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.overrides = {};
+    }
+    _getDisplayValue(key, slot) {
+        return this.overrides[key]?.[slot] ?? FAN_VPD_STAGE_DEFAULTS[key][slot];
+    }
+    _handleChange(key, slot, raw) {
+        const value = parseFloat(raw);
+        if (isNaN(value))
+            return;
+        const existing = this.overrides[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
+        const updated = { ...this.overrides, [key]: { ...existing, [slot]: value } };
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
+    }
+    _handleReset() {
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="header-row">
+        <span>Stage</span>
+        <span>Day (kPa)</span>
+        <span>Night (kPa)</span>
+      </div>
+      ${FAN_VPD_STAGE_KEYS.map((key) => x `
+          <div class="stage-row">
+            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
+            <input
+              type="number"
+              min="0.1"
+              max="3.0"
+              step="0.01"
+              .value=${String(this._getDisplayValue(key, 'day'))}
+              @change=${(e) => this._handleChange(key, 'day', e.target.value)}
+            />
+            <input
+              type="number"
+              min="0.1"
+              max="3.0"
+              step="0.01"
+              .value=${String(this._getDisplayValue(key, 'night'))}
+              @change=${(e) => this._handleChange(key, 'night', e.target.value)}
+            />
+          </div>
+        `)}
+      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
+    `;
+    }
+};
+StageVpdOverridesTable.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .header-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 8px;
+      padding: 0 4px 4px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      margin-bottom: 4px;
+    }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 8px;
+      align-items: center;
+      padding: 4px;
+    }
+    .stage-label {
+      font-size: 0.875rem;
+      color: var(--primary-text-color);
+    }
+    input[type='number'] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      color: var(--primary-text-color);
+      font-size: 0.875rem;
+      padding: 4px 6px;
+      border-radius: 4px 4px 0 0;
+      outline: none;
+    }
+    input[type='number']:focus {
+      border-bottom: 2px solid var(--primary-color, #6200ee);
+    }
+    .reset-button {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      border-radius: 4px;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+    }
+    .reset-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], StageVpdOverridesTable.prototype, "overrides", void 0);
+StageVpdOverridesTable = __decorate([
+    t$2('stage-vpd-overrides-table')
+], StageVpdOverridesTable);
+
 /**
  * Config Dialog State Machine
  *
@@ -17759,6 +17907,7 @@ function defaultEnvironmentDraft() {
             wind_period_seconds: 60,
             wind_amplitude_pct: 10,
             stage_vpd_enabled: false,
+            stage_vpd_overrides: {},
         },
     };
 }
@@ -19222,6 +19371,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     <span>Stage-Aware VPD</span>
                   </label>
                 </div>
+                ${fan.stage_vpd_enabled
+                ? x `
+                      <div style="margin-top:12px;">
+                        <stage-vpd-overrides-table
+                          .overrides=${(fan.stage_vpd_overrides ?? {})}
+                          @overrides-change=${(e) => this._updateFanConfig({ stage_vpd_overrides: e.detail })}
+                        ></stage-vpd-overrides-table>
+                      </div>
+                    `
+                : E}
               `
             : E}
 
@@ -134859,5 +135018,5 @@ var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, FAN_VPD_STAGE_DEFAULTS, FAN_VPD_STAGE_KEYS, FAN_VPD_STAGE_LABELS, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

@@ -28,6 +28,8 @@ import '../features/shared/ui/md3-select';
 import '../features/shared/ui/gs-help-tooltip';
 import './sensor-group-dialog';
 import './subarea-config-dialog';
+import '../features/environment/components/stage-vpd-overrides-table';
+import type { StageVpdOverrides } from '../features/environment/components/stage-vpd-overrides-table';
 import {
   GrowspaceDevice,
   DehumidifierStage,
@@ -1895,6 +1897,17 @@ export class ConfigDialog extends LitElement {
                     <span>Stage-Aware VPD</span>
                   </label>
                 </div>
+                ${fan.stage_vpd_enabled
+                  ? html`
+                      <div style="margin-top:12px;">
+                        <stage-vpd-overrides-table
+                          .overrides=${(fan.stage_vpd_overrides ?? {}) as StageVpdOverrides}
+                          @overrides-change=${(e: CustomEvent<StageVpdOverrides>) =>
+                            this._updateFanConfig({ stage_vpd_overrides: e.detail })}
+                        ></stage-vpd-overrides-table>
+                      </div>
+                    `
+                  : nothing}
               `
             : nothing}
 

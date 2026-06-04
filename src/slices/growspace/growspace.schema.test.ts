@@ -69,7 +69,8 @@ describe('CirculationFanConfigSchema', () => {
       wind_enabled: true,
       wind_period_seconds: 120,
       wind_amplitude_pct: 20,
-  stage_vpd_enabled: false,
+      stage_vpd_enabled: false,
+      stage_vpd_overrides: {},
     });
   });
 });

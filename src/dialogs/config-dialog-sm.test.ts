@@ -781,6 +781,7 @@ const fanConfig: CirculationFanConfig = {
   wind_period_seconds: 60,
   wind_amplitude_pct: 10,
   stage_vpd_enabled: false,
+  stage_vpd_overrides: {},
 };
 
 describe('circulationFanConfig in EnvironmentDraft', () => {
@@ -812,7 +813,8 @@ describe('circulationFanConfig in EnvironmentDraft', () => {
       wind_enabled: false,
       wind_period_seconds: 60,
       wind_amplitude_pct: 10,
-  stage_vpd_enabled: false,
+      stage_vpd_enabled: false,
+      stage_vpd_overrides: {},
     });
   });
 });

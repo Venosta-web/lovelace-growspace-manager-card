@@ -341,3 +341,41 @@ export type MetricType =
   | MetricKey.CROP_STEERING
   | MetricKey.ENERGY
   | MetricKey.WATER;
+
+export const FAN_VPD_STAGE_KEYS = [
+  'seedling',
+  'clone',
+  'mother',
+  'veg',
+  'flower_early',
+  'flower_mid',
+  'flower_late',
+  'dry',
+  'cure',
+] as const;
+
+export type FanVpdStageKey = (typeof FAN_VPD_STAGE_KEYS)[number];
+
+export const FAN_VPD_STAGE_LABELS: Record<FanVpdStageKey, string> = {
+  seedling: 'Seedling',
+  clone: 'Clone',
+  mother: 'Mother',
+  veg: 'Veg',
+  flower_early: 'Flower (Early)',
+  flower_mid: 'Flower (Mid)',
+  flower_late: 'Flower (Late)',
+  dry: 'Dry',
+  cure: 'Cure',
+};
+
+export const FAN_VPD_STAGE_DEFAULTS: Record<FanVpdStageKey, { day: number; night: number }> = {
+  seedling: { day: 0.6, night: 0.6 },
+  clone: { day: 0.5, night: 0.5 },
+  mother: { day: 0.7, night: 0.6 },
+  veg: { day: 0.7, night: 0.6 },
+  flower_early: { day: 1.15, night: 1.0 },
+  flower_mid: { day: 1.2, night: 1.0 },
+  flower_late: { day: 1.25, night: 1.05 },
+  dry: { day: 0.95, night: 0.95 },
+  cure: { day: 0.75, night: 0.75 },
+};
