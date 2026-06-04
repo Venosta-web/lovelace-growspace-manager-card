@@ -27,6 +27,7 @@ describe('CirculationFanConfigSchema', () => {
         wind_enabled: false,
         wind_period_seconds: 60,
         wind_amplitude_pct: 10,
+  stage_vpd_enabled: false,
       }),
     ).toThrow(ZodError);
   });
@@ -49,6 +50,7 @@ describe('CirculationFanConfigSchema', () => {
       wind_enabled: true,
       wind_period_seconds: 120,
       wind_amplitude_pct: 20,
+  stage_vpd_enabled: false,
     });
     expect(result).toEqual({
       enabled: true,
@@ -67,6 +69,7 @@ describe('CirculationFanConfigSchema', () => {
       wind_enabled: true,
       wind_period_seconds: 120,
       wind_amplitude_pct: 20,
+  stage_vpd_enabled: false,
     });
   });
 });
@@ -151,6 +154,7 @@ describe('Growspace Zod Schemas', () => {
               wind_enabled: false,
               wind_period_seconds: 60,
               wind_amplitude_pct: 10,
+  stage_vpd_enabled: false,
             },
           },
         }),

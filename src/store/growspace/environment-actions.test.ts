@@ -230,6 +230,7 @@ const fanConfig: CirculationFanConfig = {
   wind_enabled: false,
   wind_period_seconds: 60,
   wind_amplitude_pct: 10,
+  stage_vpd_enabled: false,
 };
 
 describe('configureFanController', () => {

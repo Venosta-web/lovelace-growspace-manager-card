@@ -548,6 +548,7 @@ const fanConfig: CirculationFanConfig = {
   wind_enabled: true,
   wind_period_seconds: 120,
   wind_amplitude_pct: 20,
+  stage_vpd_enabled: false,
 };
 
 describe('configureCirculationFan', () => {
@@ -575,6 +576,7 @@ describe('configureCirculationFan', () => {
         wind_enabled: true,
         wind_period_seconds: 120,
         wind_amplitude_pct: 20,
+        stage_vpd_enabled: false,
       }
     );
   });

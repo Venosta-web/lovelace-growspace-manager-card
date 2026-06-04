@@ -412,6 +412,7 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     wind_enabled: false,
     wind_period_seconds: 60,
     wind_amplitude_pct: 10,
+  stage_vpd_enabled: false,
   };
 
   function makeEnvStore() {

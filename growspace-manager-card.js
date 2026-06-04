@@ -5134,6 +5134,7 @@ const CirculationFanConfigSchema = objectType({
     wind_enabled: booleanType(),
     wind_period_seconds: numberType(),
     wind_amplitude_pct: numberType(),
+    stage_vpd_enabled: booleanType(),
 });
 const GrowspaceAPIResponseSchema = objectType({
     identity: objectType({
@@ -17720,6 +17721,7 @@ function defaultEnvironmentDraft() {
             wind_enabled: false,
             wind_period_seconds: 60,
             wind_amplitude_pct: 10,
+            stage_vpd_enabled: false,
         },
     };
 }
@@ -19168,12 +19170,31 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             @change=${(e) => this._updateFanConfig({ regulation_mode: e.detail })}
           ></md3-select>
 
+          <!-- Stage-Aware VPD toggle (VPD mode only) -->
+          ${mode === 'vpd'
+            ? x `
+                <div style="margin-top:8px;">
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      .checked=${fan.stage_vpd_enabled}
+                      @change=${(e) => this._updateFanConfig({
+                stage_vpd_enabled: e.target.checked,
+            })}
+                    />
+                    <span>Stage-Aware VPD</span>
+                  </label>
+                </div>
+              `
+            : E}
+
           <!-- Active mode target + tolerance -->
           <div class="row-col-grid">
             ${mode === 'vpd'
             ? x `
                   <md3-number-input
-                    label="VPD Target (kPa)"
+                    label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
+                    style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
                     .value=${fan.vpd_target}
                     @change=${(e) => this._updateFanConfig({ vpd_target: parseFloat(e.detail) })}
                     step="0.01"
@@ -132864,7 +132885,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.16"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.17"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

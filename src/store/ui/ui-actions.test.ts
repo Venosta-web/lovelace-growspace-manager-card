@@ -709,6 +709,7 @@ describe('openConfigDialog', () => {
       wind_enabled: true,
       wind_period_seconds: 90,
       wind_amplitude_pct: 15,
+  stage_vpd_enabled: false,
     };
     const device = {
       deviceId: 'gs-2',

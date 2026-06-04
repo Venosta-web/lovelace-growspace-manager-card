@@ -1879,12 +1879,32 @@ export class ConfigDialog extends LitElement {
               this._updateFanConfig({ regulation_mode: e.detail as 'vpd' | 'humidity' | 'temperature' })}
           ></md3-select>
 
+          <!-- Stage-Aware VPD toggle (VPD mode only) -->
+          ${mode === 'vpd'
+            ? html`
+                <div style="margin-top:8px;">
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      .checked=${fan.stage_vpd_enabled}
+                      @change=${(e: Event) =>
+                        this._updateFanConfig({
+                          stage_vpd_enabled: (e.target as HTMLInputElement).checked,
+                        })}
+                    />
+                    <span>Stage-Aware VPD</span>
+                  </label>
+                </div>
+              `
+            : nothing}
+
           <!-- Active mode target + tolerance -->
           <div class="row-col-grid">
             ${mode === 'vpd'
               ? html`
                   <md3-number-input
-                    label="VPD Target (kPa)"
+                    label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
+                    style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
                     .value=${fan.vpd_target}
                     @change=${(e: CustomEvent) => this._updateFanConfig({ vpd_target: parseFloat(e.detail) })}
                     step="0.01"
