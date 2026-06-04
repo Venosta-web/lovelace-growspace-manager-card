@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 const SensorReadingsSchema = z.object({
   avg: z.number().nullable(),
+  sum: z.number().nullable(),
   perSensor: z.array(z.number().nullable()),
   entityIds: z.array(z.string()),
 });

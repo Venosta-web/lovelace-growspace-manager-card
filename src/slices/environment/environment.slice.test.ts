@@ -698,6 +698,7 @@ describe('computeEnvSnapshot — soil moisture', () => {
     const snapshot = computeEnvSnapshot(device, hassStates);
     expect(snapshot.soilMoisture).toEqual({
       avg: 42.5,
+      sum: 42.5,
       perSensor: [42.5],
       entityIds: ['sensor.sm_1'],
     });
@@ -846,11 +847,11 @@ describe('EnvSnapshotSchema', () => {
       dli: null,
       optimalConditions: null,
       ...NULL_SENSOR_FIELDS,
-      soilMoisture: { avg: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
-      substrateTemperature: { avg: null, perSensor: [null, null], entityIds: ['sensor.st_1', 'sensor.st_2'] },
+      soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
+      substrateTemperature: { avg: null, sum: null, perSensor: [null, null], entityIds: ['sensor.st_1', 'sensor.st_2'] },
     };
     const parsed = EnvSnapshotSchema.parse(payload);
-    expect(parsed.soilMoisture).toEqual({ avg: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] });
+    expect(parsed.soilMoisture).toEqual({ avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] });
     expect(parsed.substrateTemperature!.avg).toBeNull();
   });
 

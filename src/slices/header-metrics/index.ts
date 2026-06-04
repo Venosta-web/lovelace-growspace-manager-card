@@ -153,7 +153,8 @@ function _makeSensorReadingChip(
   unit: string,
   opts: Omit<ChipOpts, 'multiValues' | 'entityIds'>,
   activeEnvGraphs: Set<string>,
-  linkedGraphGroups: string[][]
+  linkedGraphGroups: string[][],
+  useSum = false
 ): HeaderChip | null {
   if (readings === null) return null;
   if (readings.avg === null && readings.perSensor.every((v) => v === null)) return null;
@@ -161,6 +162,11 @@ function _makeSensorReadingChip(
   const { entityIds, perSensor } = readings;
 
   if (entityIds.length > 1) {
+    if (useSum) {
+      const value = readings.sum !== null ? `${readings.sum.toFixed(1)}${unit}` : undefined;
+      if (!value) return null;
+      return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
+    }
     const multiValues = perSensor.map((v) => (v !== null ? `${v.toFixed(1)}${unit}` : '-'));
     return _makeChip(
       key,
@@ -626,7 +632,8 @@ export function computeHeaderMetrics(
     ' W',
     { label: 'Power', tooltip: 'Current power draw.' },
     activeEnvGraphs,
-    linkedGraphGroups
+    linkedGraphGroups,
+    true
   );
   if (powerChip) chips.push(powerChip);
 
@@ -637,7 +644,8 @@ export function computeHeaderMetrics(
     ' kWh',
     { label: 'Energy', tooltip: 'Energy consumed.' },
     activeEnvGraphs,
-    linkedGraphGroups
+    linkedGraphGroups,
+    true
   );
   if (energyChip) chips.push(energyChip);
 

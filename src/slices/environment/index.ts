@@ -30,9 +30,11 @@ import type { GrowspaceDevice } from '../../services/types';
  * null top-level means "not configured" (no sensor IDs defined for this metric).
  * avg === null with non-empty entityIds means all configured sensors are unavailable.
  * perSensor is parallel to entityIds; null entries mark individual unavailable sensors.
+ * sum is the total of all available sensors (null when none are available).
  */
 export interface SensorReadings {
   avg: number | null;
+  sum: number | null;
   perSensor: (number | null)[];
   entityIds: string[];
 }
@@ -178,9 +180,10 @@ function _resolveSensors(
 
   const perSensor: (number | null)[] = ids.map((id) => _parseState(hassStates[id]));
   const defined = perSensor.filter((v): v is number => v !== null);
-  const avg = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) / defined.length : null;
+  const total = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : null;
+  const avg = total !== null ? total / defined.length : null;
 
-  return { avg, perSensor, entityIds: ids };
+  return { avg, sum: total, perSensor, entityIds: ids };
 }
 
 /** Derive VPD status from overview entity or threshold comparison. */

@@ -17737,10 +17737,16 @@ let StageVpdOverridesTable = class StageVpdOverridesTable extends i$3 {
     }
     _handleChange(key, slot, raw) {
         const value = parseFloat(raw);
-        if (isNaN(value))
-            return;
-        const existing = this.overrides[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
-        const updated = { ...this.overrides, [key]: { ...existing, [slot]: value } };
+        const updated = { ...this.overrides };
+        if (isNaN(value)) {
+            if (!(key in updated))
+                return;
+            delete updated[key];
+        }
+        else {
+            const existing = updated[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
+            updated[key] = { ...existing, [slot]: value };
+        }
         this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
     }
     _handleReset() {
@@ -63319,13 +63325,19 @@ function _makeChip(key, icon, value, opts = {}, activeEnvGraphs, linkedGraphGrou
  * configured the chip shows "Multiple" and carries the individual formatted
  * values in multiValues so the chip component can render them side-by-side.
  */
-function _makeSensorReadingChip(key, icon, readings, unit, opts, activeEnvGraphs, linkedGraphGroups) {
+function _makeSensorReadingChip(key, icon, readings, unit, opts, activeEnvGraphs, linkedGraphGroups, useSum = false) {
     if (readings === null)
         return null;
     if (readings.avg === null && readings.perSensor.every((v) => v === null))
         return null;
     const { entityIds, perSensor } = readings;
     if (entityIds.length > 1) {
+        if (useSum) {
+            const value = readings.sum !== null ? `${readings.sum.toFixed(1)}${unit}` : undefined;
+            if (!value)
+                return null;
+            return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
+        }
         const multiValues = perSensor.map((v) => (v !== null ? `${v.toFixed(1)}${unit}` : '-'));
         return _makeChip(key, icon, 'Multiple', { ...opts, multiValues, entityIds }, activeEnvGraphs, linkedGraphGroups);
     }
@@ -63571,10 +63583,10 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     const flowChip = _makeSensorReadingChip(MetricKey.IRRIGATION_FLOW, mdiWaterPump, envSnapshot?.irrigationFlow ?? null, ' L/h', { label: 'Flow', tooltip: 'Irrigation flow rate.' }, activeEnvGraphs, linkedGraphGroups);
     if (flowChip)
         chips.push(flowChip);
-    const powerChip = _makeSensorReadingChip(MetricKey.POWER, mdiFlash, envSnapshot?.power ?? null, ' W', { label: 'Power', tooltip: 'Current power draw.' }, activeEnvGraphs, linkedGraphGroups);
+    const powerChip = _makeSensorReadingChip(MetricKey.POWER, mdiFlash, envSnapshot?.power ?? null, ' W', { label: 'Power', tooltip: 'Current power draw.' }, activeEnvGraphs, linkedGraphGroups, true);
     if (powerChip)
         chips.push(powerChip);
-    const energyChip = _makeSensorReadingChip(MetricKey.ENERGY, mdiFlash, envSnapshot?.energy ?? null, ' kWh', { label: 'Energy', tooltip: 'Energy consumed.' }, activeEnvGraphs, linkedGraphGroups);
+    const energyChip = _makeSensorReadingChip(MetricKey.ENERGY, mdiFlash, envSnapshot?.energy ?? null, ' kWh', { label: 'Energy', tooltip: 'Energy consumed.' }, activeEnvGraphs, linkedGraphGroups, true);
     if (energyChip)
         chips.push(energyChip);
     return { hero, chips, dominant };
@@ -63699,8 +63711,9 @@ function _resolveSensors(single, multi, hassStates) {
         return null;
     const perSensor = ids.map((id) => _parseState(hassStates[id]));
     const defined = perSensor.filter((v) => v !== null);
-    const avg = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) / defined.length : null;
-    return { avg, perSensor, entityIds: ids };
+    const total = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : null;
+    const avg = total !== null ? total / defined.length : null;
+    return { avg, sum: total, perSensor, entityIds: ids };
 }
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(vpd, overviewEntity) {
@@ -65808,8 +65821,11 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             case 'edit': {
                 const newEditMode = !this.store.ui.$isEditMode.get();
                 this.store.ui.setEditMode(newEditMode);
-                if (newEditMode && this.store.ui.$viewMode.get() === ViewMode.COMPACT) {
-                    this.store.ui.setViewMode(ViewMode.STANDARD);
+                if (newEditMode) {
+                    const currentMode = this.store.ui.$viewMode.get();
+                    if (currentMode === ViewMode.COMPACT || currentMode === ViewMode.HEADER) {
+                        this.store.ui.setViewMode(ViewMode.STANDARD);
+                    }
                 }
                 break;
             }
@@ -132251,6 +132267,36 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 return new Date(now.getTime() - 24 * 60 * 60 * 1000);
         }
     }
+    _resolveCalculatedVpdIds(subarea, tempIds, humIds) {
+        const slugify = (text) => text.toString().toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/[_-]+/g, '_')
+            .replace(/^[_-]+/, '')
+            .replace(/[_-]+$/, '');
+        const growspaceId = this._config.growspace_id;
+        const subareaId = subarea.id;
+        const numPairs = Math.min(tempIds.length, humIds.length);
+        const resolved = [];
+        for (let i = 0; i < numPairs; i++) {
+            const nameSuffix = numPairs > 1 ? ` ${i + 1}` : '';
+            const uuidSuffix = numPairs > 1 ? `_${i}` : '';
+            const nameId = this._parentGrowspaceName && subarea.name
+                ? `sensor.${slugify(`${this._parentGrowspaceName} ${subarea.name} Calculated VPD${nameSuffix}`)}`
+                : '';
+            const uuidId = `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`;
+            if (nameId && this.hass?.states[nameId]) {
+                resolved.push(nameId);
+            }
+            else if (this.hass?.states[uuidId]) {
+                resolved.push(uuidId);
+            }
+            else {
+                resolved.push(nameId || uuidId);
+            }
+        }
+        return resolved;
+    }
     async _loadHistory(subarea, range) {
         if (!this._dataService)
             return;
@@ -132269,7 +132315,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             : ec.humidity_sensor
                 ? [ec.humidity_sensor]
                 : [];
-        const vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        let vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        // When no explicit VPD sensor is configured, resolve the same calculated-VPD entity IDs
+        // that MetricsUtils.computeSubareaMetrics() uses, so the history cache keys match.
+        if (vpdIds.length === 0 && tempIds.length > 0 && humIds.length > 0) {
+            vpdIds = this._resolveCalculatedVpdIds(subarea, tempIds, humIds);
+        }
         const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
         if (tempIds.length)
             metricEntities.push({ metric: 'temperature', entityIds: tempIds });
@@ -133081,7 +133132,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.17"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.1-next.17"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
