@@ -63607,6 +63607,12 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     return { hero, chips, dominant };
 }
 
+function filterChips(chips, hiddenKeys) {
+    if (!hiddenKeys?.length)
+        return chips;
+    return chips.filter((chip) => !hiddenKeys.includes(chip.key));
+}
+
 /**
  * Environment slice — the single place in the codebase that reads hass.states
  * for environmental sensors and exposes normalized EnvSnapshot atoms.
@@ -65734,7 +65740,13 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
         // MetricsUtils until the DeviceState slice is implemented (issue #144).
         const { deviceChips } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);
-        return { heroChips, secondaryChips, deviceChips, dominant };
+        const hidden = this.config?.hidden_chips;
+        return {
+            heroChips,
+            secondaryChips: filterChips(secondaryChips, hidden),
+            deviceChips: filterChips(deviceChips, hidden),
+            dominant,
+        };
     }
     willUpdate(changedProps) {
         if (changedProps.has('store')) {
@@ -132707,9 +132719,13 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     }
     _renderHeaderMetrics(ec, parentDevice) {
         const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(), parentDevice?.deviceId, parentDevice?.name || this._parentGrowspaceName, this._subarea?.id, this._subarea?.name);
-        const hasAny = metrics.heroChips.length > 0 ||
-            metrics.secondaryChips.length > 0 ||
-            metrics.deviceChips.length > 0;
+        const hidden = this._config?.hidden_chips;
+        const heroChips = filterChips(metrics.heroChips, hidden);
+        const secondaryChips = filterChips(metrics.secondaryChips, hidden);
+        const deviceChips = filterChips(metrics.deviceChips, hidden);
+        const hasAny = heroChips.length > 0 ||
+            secondaryChips.length > 0 ||
+            deviceChips.length > 0;
         const isMobile = this._resizeController.isMobile;
         const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
         return x `
@@ -132719,12 +132735,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
               <div class="no-sensors">No environment sensors configured for this subarea.</div>
             `
             : ''}
-        ${metrics.deviceChips.length > 0
+        ${deviceChips.length > 0
             ? x `
               ${isMobile
                 ? x `
                     <growspace-header-hero-ui
-                      .chips=${metrics.deviceChips}
+                      .chips=${deviceChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -132737,7 +132753,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                     <div
                       style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto; scrollbar-width: none;"
                     >
-                      ${metrics.deviceChips.map((chip) => x `
+                      ${deviceChips.map((chip) => x `
                           <growspace-chip
                             .icon=${chip.icon}
                             .label=${chip.label}
@@ -132754,10 +132770,10 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                   `}
             `
             : ''}
-        ${metrics.heroChips.length > 0
+        ${heroChips.length > 0
             ? x `
               <growspace-header-hero-ui
-                .chips=${metrics.heroChips}
+                .chips=${heroChips}
                 .historyCache=${this._historyCache}
                 .device=${parentDevice}
                 .hass=${this.hass}
@@ -132767,12 +132783,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
               ></growspace-header-hero-ui>
             `
             : ''}
-        ${metrics.secondaryChips.length > 0
+        ${secondaryChips.length > 0
             ? x `
               ${isMobile
                 ? x `
                     <growspace-header-hero-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -132783,7 +132799,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                   `
                 : x `
                     <growspace-header-secondary-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-secondary-ui>
                   `}
@@ -134360,6 +134376,7 @@ const FIELD_LABELS = {
     keyboard_rotate_enabled: 'Keyboard Rotation (3D View)',
     keyboard_rotate_speed: 'Rotation Speed',
     default_view: 'Default View',
+    hidden_chips: 'Hidden Chips',
 };
 const computeEditorLabel = (schema) => FIELD_LABELS[schema.name] ?? schema.name;
 
@@ -134478,6 +134495,33 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
             },
             { name: 'keyboard_rotate_enabled', selector: { boolean: {} } },
             { name: 'keyboard_rotate_speed', selector: { number: { min: 0.1, max: 5.0, step: 0.1 } } },
+            {
+                name: 'hidden_chips',
+                selector: {
+                    select: {
+                        multiple: true,
+                        options: [
+                            { label: 'Light', value: 'light' },
+                            { label: 'Exhaust Fan', value: 'exhaust' },
+                            { label: 'Circulation Fan', value: 'circulation_fan' },
+                            { label: 'Humidifier', value: 'humidifier' },
+                            { label: 'Dehumidifier', value: 'dehumidifier' },
+                            { label: 'Temperature', value: 'temperature' },
+                            { label: 'Humidity', value: 'humidity' },
+                            { label: 'VPD', value: 'vpd' },
+                            { label: 'CO2', value: 'co2' },
+                            { label: 'Soil Moisture', value: 'soil_moisture' },
+                            { label: 'Substrate Temperature', value: 'substrate_temperature' },
+                            { label: 'Tank Level', value: 'irrigation_tank_level' },
+                            { label: 'DLI', value: 'dli' },
+                            { label: 'Energy', value: 'energy' },
+                            { label: 'Water', value: 'water' },
+                            { label: 'Optimal Conditions', value: 'optimal' },
+                            { label: 'Crop Steering', value: 'crop_steering' },
+                        ],
+                    },
+                },
+            },
         ];
     }
     render() {
@@ -134990,6 +135034,33 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
                 },
             },
             { name: 'subarea_id', selector: { select: { options: subareaOptions } } },
+            {
+                name: 'hidden_chips',
+                selector: {
+                    select: {
+                        multiple: true,
+                        options: [
+                            { label: 'Light', value: 'light' },
+                            { label: 'Exhaust Fan', value: 'exhaust' },
+                            { label: 'Circulation Fan', value: 'circulation_fan' },
+                            { label: 'Humidifier', value: 'humidifier' },
+                            { label: 'Dehumidifier', value: 'dehumidifier' },
+                            { label: 'Temperature', value: 'temperature' },
+                            { label: 'Humidity', value: 'humidity' },
+                            { label: 'VPD', value: 'vpd' },
+                            { label: 'CO2', value: 'co2' },
+                            { label: 'Soil Moisture', value: 'soil_moisture' },
+                            { label: 'Substrate Temperature', value: 'substrate_temperature' },
+                            { label: 'Tank Level', value: 'irrigation_tank_level' },
+                            { label: 'DLI', value: 'dli' },
+                            { label: 'Energy', value: 'energy' },
+                            { label: 'Water', value: 'water' },
+                            { label: 'Optimal Conditions', value: 'optimal' },
+                            { label: 'Crop Steering', value: 'crop_steering' },
+                        ],
+                    },
+                },
+            },
         ];
     }
     _valueChanged(ev) {
