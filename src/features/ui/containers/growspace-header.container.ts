@@ -245,8 +245,11 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'edit': {
         const newEditMode = !this.store.ui.$isEditMode.get();
         this.store.ui.setEditMode(newEditMode);
-        if (newEditMode && this.store.ui.$viewMode.get() === ViewMode.COMPACT) {
-          this.store.ui.setViewMode(ViewMode.STANDARD);
+        if (newEditMode) {
+          const currentMode = this.store.ui.$viewMode.get();
+          if (currentMode === ViewMode.COMPACT || currentMode === ViewMode.HEADER) {
+            this.store.ui.setViewMode(ViewMode.STANDARD);
+          }
         }
         break;
       }
