@@ -274,5 +274,76 @@ describe('GrowspaceCarouselCard', () => {
       expect(active).toEqual([gs1.growspaceId, gs2.growspaceId]);
       handle.unmount();
     });
+
+    test('filter_empty=true falls back to all when all growspaces are empty', async () => {
+      const allEmptyHass = {
+        ...hass,
+        states: {
+          ...hass.states,
+          'sensor.growspaces_list': {
+            attributes: {
+              growspaces: {
+                [gs1.growspaceId]: { name: gs1.name, total_plants: 0 },
+                [gs2.growspaceId]: { name: gs2.name, total_plants: 0 },
+              },
+            },
+          },
+        },
+      } as any;
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass: allEmptyHass,
+        growspace: gs1,
+        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId], filter_empty: true },
+      });
+      handle.element.hass = allEmptyHass;
+      const active = (handle.element as any)._activeGrowspaces;
+      expect(active).toEqual([gs1.growspaceId, gs2.growspaceId]);
+      handle.unmount();
+    });
+
+    test('filter_empty=true treats primitive (non-object) entry as zero-plant growspace', async () => {
+      const primitiveEntryHass = {
+        ...hass,
+        states: {
+          ...hass.states,
+          'sensor.growspaces_list': {
+            attributes: {
+              growspaces: {
+                [gs1.growspaceId]: 'Tent A',
+                [gs2.growspaceId]: { name: gs2.name, total_plants: 3 },
+              },
+            },
+          },
+        },
+      } as any;
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass: primitiveEntryHass,
+        growspace: gs1,
+        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId], filter_empty: true },
+      });
+      handle.element.hass = primitiveEntryHass;
+      const active = (handle.element as any)._activeGrowspaces;
+      expect(active).toEqual([gs2.growspaceId]);
+      handle.unmount();
+    });
+
+    test('_startTimer uses default interval of 15s when interval is not configured', async () => {
+      vi.useFakeTimers();
+      const handle = await renderCard<GrowspaceCarouselCard>('growspace-carousel-card', {
+        hass: hassWithCounts,
+        growspace: gs1,
+        config: { type: 'custom:growspace-carousel-card', growspaces: [gs1.growspaceId, gs2.growspaceId] },
+      });
+      handle.element.hass = hassWithCounts;
+      (handle.element as any)._config.interval = 0;
+      (handle.element as any)._startTimer();
+
+      const nextSlideSpy = vi.spyOn(handle.element as any, '_nextSlide').mockResolvedValue(undefined);
+      vi.advanceTimersByTime(15000);
+      expect(nextSlideSpy).toHaveBeenCalledTimes(1);
+
+      handle.unmount();
+      vi.useRealTimers();
+    });
   });
 });

@@ -87,6 +87,15 @@ describe('getFlowerVegPlants', () => {
   it('returns empty array when devices list is empty', () => {
     expect(getFlowerVegPlants([])).toEqual([]);
   });
+
+  it('uses empty string for strain when strain is undefined', () => {
+    const device = makeDevice('Tent A', [
+      makePlant({ stage: 'veg', strain: undefined, plant_id: 'p-no-strain' }),
+    ]);
+    const [entry] = getFlowerVegPlants([device]);
+    expect(entry.label).toContain('veg');
+    expect(entry.label).not.toContain('undefined');
+  });
 });
 
 // ─── getPlantLabel ────────────────────────────────────────────────────────────
@@ -127,5 +136,14 @@ describe('getPlantLabel', () => {
     const d1 = makeDevice('A', [makePlant({ plant_id: 'p-a', strain: 'Strain A', phenotype: '' })]);
     const d2 = makeDevice('B', [makePlant({ plant_id: 'p-b', strain: 'Strain B', phenotype: '' })]);
     expect(getPlantLabel([d1, d2] as GrowspaceDevice[], 'p-b')).toBe('Strain B');
+  });
+
+  it('returns plant_id when plant strain is empty and no phenotype', () => {
+    const device = makeDevice('Tent', [makePlant({ plant_id: 'p-empty', strain: '', phenotype: '' })]);
+    expect(getPlantLabel([device] as GrowspaceDevice[], 'p-empty')).toBe('p-empty');
+  });
+
+  it('falls back to plant_id when library-keyed ID has empty strain and no phenotype', () => {
+    expect(getPlantLabel([], '||')).toBe('||');
   });
 });

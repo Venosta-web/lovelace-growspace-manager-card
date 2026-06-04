@@ -11,6 +11,12 @@ import type { PlantEntity } from '../../../../../src/types';
 vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({ default: class { } }));
 vi.mock('../../../../../src/features/plants/components/plant-actions-tab', () => ({ default: class { } }));
 vi.mock('../../../../../src/features/plants/components/plant-timeline-tab', () => ({ default: class { } }));
+vi.mock('../../../../../src/slices/logbook', () => ({
+  fetchPlantEvents: vi.fn().mockResolvedValue([
+    { event_id: 'e1', timestamp: '2026-01-15T10:00:00Z', category: 'note' },
+  ]),
+  fetchGrowspaceEvents: vi.fn().mockResolvedValue([]),
+}));
 
 describe('PlantOverviewContainer', () => {
   let element: PlantOverviewContainer;
@@ -479,6 +485,41 @@ describe('PlantOverviewContainer', () => {
 
     expect(updatePlantDetail).toMatchObject({ strain: 'New Strain' });
     expect(mockStore.ui.closeDialog).toHaveBeenCalled(); // Should close upon save
+  });
+
+  it('_fetchLogbookEvents populates logbook events on success', async () => {
+    const { fetchPlantEvents } = await import('../../../../../src/slices/logbook');
+    vi.mocked(fetchPlantEvents).mockClear();
+
+    (element as any).hass = mockHass;
+    await (element as any)._fetchLogbookEvents();
+
+    expect(vi.mocked(fetchPlantEvents)).toHaveBeenCalledWith('plant_1', 'space_1');
+    expect((element as any)._logbookEvents).toHaveLength(1);
+  });
+
+  it('_openSnapshots calls setActiveDialog with SNAPSHOTS type', () => {
+    (element as any)._openSnapshots();
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'SNAPSHOTS',
+      payload: { growspaceId: 'space_1' },
+    });
+  });
+
+  it('_openLogbook calls setActiveDialog with LOGBOOK type', () => {
+    (element as any)._openLogbook();
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'LOGBOOK',
+      payload: { growspaceId: 'space_1' },
+    });
+  });
+
+  it('_openNutrients calls setActiveDialog with NUTRIENTS type', () => {
+    (element as any)._openNutrients();
+    expect(mockStore.ui.setActiveDialog).toHaveBeenCalledWith({
+      type: 'NUTRIENTS',
+      payload: {},
+    });
   });
 
   it('should handle deletion confirmation cycle', async () => {

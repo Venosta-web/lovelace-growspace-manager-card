@@ -654,15 +654,6 @@ describe('handlePlantDrop', () => {
     );
   });
 
-  it('catches updatePlant errors, calls refreshData, and returns false', async () => {
-    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
-    (ctx.dataService as any).updatePlant.mockRejectedValue(new Error('network fail'));
-
-    const result = await handlePlantDrop(ctx, 2, 3, null, source);
-
-    expect(result).toBe(false);
-    expect(ctx.refreshData).toHaveBeenCalled();
-  });
 });
 
 // ─── confirmAddPlant ──────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { GmBriefingPanel } from '../../../src/dialogs/briefing-panel';
 import '../../../src/dialogs/briefing-panel';
-import { aiBriefing$, isAiLoading$, saveAiAgent } from '../../../src/slices/ai-insight';
+import { aiBriefing$, isAiLoading$, saveAiAgent, briefingError$, startConversation } from '../../../src/slices/ai-insight';
 import type { AIBriefing } from '../../../src/slices/ai-insight/schema';
 
 vi.mock('../../../src/services/hass-call', () => ({
@@ -256,5 +256,151 @@ describe('GmBriefingPanel — agent setup', () => {
     const errorEl = element.shadowRoot?.querySelector('.agent-setup-error');
     expect(errorEl?.textContent?.trim()).toBe('Network error');
     expect(btn.disabled).toBe(false);
+  });
+});
+
+describe('GmBriefingPanel — optional field branches', () => {
+  let element: GmBriefingPanel;
+
+  afterEach(() => {
+    if (element.isConnected) document.body.removeChild(element);
+    briefingError$.set(null);
+    isAiLoading$.set(false);
+    vi.restoreAllMocks();
+  });
+
+  it('uses fallback headline when briefing.headline is undefined', async () => {
+    const briefing: AIBriefing = { ...STUB_BRIEFING, headline: undefined as any };
+    aiBriefing$.set(new Map([['', briefing]]));
+    isAiLoading$.set(false);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('h3')?.textContent?.trim()).toBe('Morning Briefing');
+  });
+
+  it('omits confidence meter when briefing.confidence is undefined', async () => {
+    const briefing: AIBriefing = { ...STUB_BRIEFING, confidence: undefined as any };
+    aiBriefing$.set(new Map([['', briefing]]));
+    isAiLoading$.set(false);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.conf-meter')).toBeNull();
+  });
+
+  it('omits drawn-from when briefing.drawn_from is falsy', async () => {
+    const briefing: AIBriefing = { ...STUB_BRIEFING, drawn_from: '' };
+    aiBriefing$.set(new Map([['', briefing]]));
+    isAiLoading$.set(false);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.drawn-from')).toBeNull();
+  });
+
+  it('renders kpi-delta when kpi.delta is set', async () => {
+    const briefing: AIBriefing = {
+      ...STUB_BRIEFING,
+      kpis: [{ label: 'VPD', value: 1.2, unit: 'kPa', delta: '+0.1' }],
+    };
+    aiBriefing$.set(new Map([['', briefing]]));
+    isAiLoading$.set(false);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.kpi-delta')).not.toBeNull();
+  });
+
+  it('renders empty kpi-unit span when kpi.unit is undefined', async () => {
+    const briefing: AIBriefing = {
+      ...STUB_BRIEFING,
+      kpis: [{ label: 'pH', value: 6.2, unit: undefined as any }],
+    };
+    aiBriefing$.set(new Map([['', briefing]]));
+    isAiLoading$.set(false);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    const unitSpan = element.shadowRoot?.querySelector('.kpi-unit');
+    expect(unitSpan?.textContent).toBe('');
+  });
+
+  it('shows loading state when briefing is null and loading is true', async () => {
+    aiBriefing$.set(new Map());
+    isAiLoading$.set(true);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.briefing-loading')).not.toBeNull();
+  });
+
+  it('shows error state when briefing is null and error is set', async () => {
+    aiBriefing$.set(new Map());
+    isAiLoading$.set(false);
+    briefingError$.set('Failed to load');
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+
+    expect(element.shadowRoot?.querySelector('.briefing-error')).not.toBeNull();
+  });
+});
+
+describe('GmBriefingPanel — follow-up input', () => {
+  let element: GmBriefingPanel;
+
+  beforeEach(async () => {
+    vi.mocked(startConversation).mockClear();
+    aiBriefing$.set(new Map([['', STUB_BRIEFING]]));
+    isAiLoading$.set(false);
+    element = document.createElement('gm-briefing-panel') as GmBriefingPanel;
+    document.body.appendChild(element);
+    await element.updateComplete;
+  });
+
+  afterEach(() => {
+    if (element.isConnected) document.body.removeChild(element);
+    vi.restoreAllMocks();
+  });
+
+  it('submits follow-up on Enter key', async () => {
+    const input = element.shadowRoot?.querySelector('.follow-up') as HTMLInputElement;
+    input.value = 'What should I adjust?';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await element.updateComplete;
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(vi.mocked(startConversation)).toHaveBeenCalled();
+  });
+
+  it('does not submit on non-Enter keydown', async () => {
+    const input = element.shadowRoot?.querySelector('.follow-up') as HTMLInputElement;
+    input.value = 'Some text';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await element.updateComplete;
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(vi.mocked(startConversation)).not.toHaveBeenCalled();
+  });
+
+  it('_submitFollowUp returns early when input is empty', async () => {
+    await (element as any)._submitFollowUp();
+    expect(vi.mocked(startConversation)).not.toHaveBeenCalled();
+  });
+
+  it('_submitFollowUp does not switch to chat mode when startConversation returns null', async () => {
+    vi.mocked(startConversation).mockResolvedValueOnce(null as any);
+    (element as any)._followUp = 'any question';
+    await (element as any)._submitFollowUp();
+    // aiMode$ should not have been set to 'chat'
+    const { aiMode$ } = await import('../../../src/slices/ai-insight');
+    expect(aiMode$.get()).not.toBe('chat');
   });
 });

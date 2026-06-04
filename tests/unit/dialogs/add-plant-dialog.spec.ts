@@ -529,6 +529,41 @@ describe('AddPlantDialog', () => {
       cancelBtn.click();
       expect(closeSpy).toHaveBeenCalled();
     });
+
+    it('should advance wizard via Continue button click when strain is set', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'strain',
+        value: 'Blue Dream',
+      });
+      await element.updateComplete;
+
+      const continueBtn = element.shadowRoot?.querySelector('.button-group .primary') as HTMLElement;
+      expect(continueBtn).toBeTruthy();
+      continueBtn.click();
+      await element.updateComplete;
+
+      expect(sm(element).tabs.add.sub.kind).toBe('step-source');
+    });
+
+    it('should go back via Back button click when on non-identity step', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged',
+        tab: 'add',
+        field: 'strain',
+        value: 'Blue Dream',
+      });
+      advanceTo(element, 'step-source');
+      await element.updateComplete;
+
+      const backBtn = element.shadowRoot?.querySelector('.button-group .tonal') as HTMLElement;
+      expect(backBtn?.textContent?.trim()).toBe('Back');
+      backBtn.click();
+      await element.updateComplete;
+
+      expect(sm(element).tabs.add.sub.kind).toBe('step-identity');
+    });
   });
 
   describe('Strain Typeahead and Phenotype Inputs', () => {
