@@ -1,3 +1,40 @@
+# [1.1.0-next.17](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.16...v1.1.0-next.17) (2026-06-04)
+
+
+### Bug Fixes
+
+* **device-state:** handle numeric states in light sensor and on/off normalizers; add coverage tests ([e56416f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e56416f48aed56797c683e72b6ff1ee73093c7a7))
+* improve sensor data normalization and handling for fan entities and boundary values ([c46d220](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c46d220f2448b75cafa467469468f93ad0b680ce))
+* update nutrient selection logic and styling in nutrient presets editor ([d52f848](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/d52f8489dc272506a170a18c8fb665ffa498affc))
+
+
+### Features
+
+* add component tests and visual regression screenshots for FeedAndWaterDialog ([954ba73](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/954ba7313b05d3e02b29b287d1d6eb85cd4cf366))
+* add LabelPreview Lit component with real QR, layout modes, and snapshot tests ([2db3086](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2db308627b5b102c056dc65669f7b2d647f79d8f)), closes [#209](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/209)
+* add library error handling and display to AddPlantsDialog during batch submission ([7ed40d6](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7ed40d6c9ed002d7a0f8798d2c958c389584a6e6))
+* add optional nutrient fields to updateNutrientStock service and tests ([8b949ae](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8b949aedf99b462028c1d39b0d10e421a8385d38))
+* add PrinterStatusStrip shared component with getPrinters helper ([ba0028a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ba0028a7a6798ef22bd39f4fb210487dc72241c0))
+* add sensor mapping constants for substrate EC, runoff EC, drain volume, and irrigation flow ([ae1ac73](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ae1ac7366a7f0914219c831b456f30cecbfcc757))
+* add status strip, size selector, and density to BatchPrintLabelDialog (issue [#212](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/212)) ([a7432b3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a7432b32f3822fb05e69487e3c4cc54f9188710a))
+* add support for power, ph, and feed_ec metrics to history store and mapping configurations ([4d353dc](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4d353dc62f854610dca16b831f055420cd5fe3cc))
+* add week, ec_target, ph_target to NutrientPresetsSchema and mutator ([#409](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/409)) ([c574a6d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c574a6d9b1e644240a58955305d02195caefd554))
+* **fan-controller:** panel UI + save flow ([#221](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/221)) ([556fa57](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/556fa57ca817e20bb00c556df6879b60ab8cd633))
+* **fan-controller:** wire CirculationFanConfig data pipeline ([#220](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/220)) ([1d71875](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1d718751c2ae12db992346bc48f5700017a521f8))
+* Feed & Water Dialog - Watering tab end-to-end ([#215](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/215)) ([6bc5df7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6bc5df73e1f6fb17a7bf29c31eadb454b2e18fff))
+* Feed & Water Dialog shell + SM scaffold ([#214](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/214)) ([630a8c5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/630a8c5ab58949f959dc6bd17b3f7d3756df55b9))
+* **feed-and-water-dialog:** port inventory tab SM from nutrient dialog ([#216](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/216)) ([5c0ddd1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5c0ddd119dae39865e7275ec1ac2b7c719999660))
+* **feed-and-water-dialog:** port presets tab SM from nutrient dialog ([#217](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/217)) ([25016fa](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/25016fa3e3969e23205d992d5f4637a09cecfb8f))
+* **feed-and-water:** retire growspace-watering-dialog-ui and nutrient-dialog ([#219](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/219)) ([31036f6](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/31036f653567f3310200bf66e1b66578df1cd358)), closes [#218](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/218)
+* implement fan entity percentage detection and display in metrics and charts ([6863cf4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6863cf436b727767dd3c3e4b5cd088a28d6fad89))
+* improve add-plants batch error handling and add registration tests for custom cards ([1d1534f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1d1534fe81691231e230af9b3819977536cff8aa))
+* include circulationFanConfig in environment configuration payload and service call ([7b66d30](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7b66d30990293d16fce18423400d6e5aa3aff86f))
+* nutrients dialog UI rewrite — left-rail nav + master/detail ([#213](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/213)) ([85f9fc9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/85f9fc982be2032c2d28e55c71424b7dd0fce168))
+* rework PrintLabelDialog to Layout A (issue [#211](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/211)) ([1be4df4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1be4df497a7473ff13a659d139664f67ba0dc5ad))
+* support orphaned nutrient rows by adding name tracking and UI badges for missing stock items. ([4f77193](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4f77193cbdb7325e9ad0b63179bdcf35be48dad3))
+* support percentage-based light sensor readings in env charts ([0371eaf](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0371eaf7734488ce1ff640b45435c9ce35f968a7))
+* switch NutrientPreset items to nutrient_id references ([#410](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/410)) ([374a17d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/374a17d64138c24075f916335f73c39420790e5e))
+
 # [1.1.0-next.16](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.15...v1.1.0-next.16) (2026-05-30)
 
 
