@@ -16,6 +16,7 @@ import {
   type ConfigTabId,
 } from './config-dialog-sm';
 import { createGrowspaceDevice } from '../services/types';
+import type { CirculationFanConfig } from '../slices/growspace/schema';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -757,5 +758,59 @@ describe('discardAndSwitch', () => {
     const device = makeDevice();
     const next = discardAndSwitch(sm, device);
     expect(next).toBe(sm);
+  });
+});
+
+// ─── circulationFanConfig in EnvironmentDraft ─────────────────────────────────
+
+const fanConfig: CirculationFanConfig = {
+  enabled: true,
+  regulation_mode: 'humidity',
+  min_speed: 15,
+  max_speed: 90,
+  vpd_target: 1.0,
+  vpd_tolerance: 0.2,
+  humidity_target: 65.0,
+  humidity_tolerance: 4.0,
+  temperature_target: 24.0,
+  temperature_tolerance: 1.5,
+  critical_temp_low: null,
+  critical_temp_high: null,
+  critical_temp_hysteresis: 1.0,
+  wind_enabled: false,
+  wind_period_seconds: 60,
+  wind_amplitude_pct: 10,
+};
+
+describe('circulationFanConfig in EnvironmentDraft', () => {
+  it('seeds circulationFanConfig from device attributes when present', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanConfig: fanConfig } as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.circulationFanConfig).toEqual(fanConfig);
+  });
+
+  it('uses backend-matching defaults when circulationFanConfig is absent', () => {
+    const device = makeDevice();
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.circulationFanConfig).toEqual({
+      enabled: false,
+      regulation_mode: 'vpd',
+      min_speed: 0,
+      max_speed: 100,
+      vpd_target: 1.0,
+      vpd_tolerance: 0.2,
+      humidity_target: 60.0,
+      humidity_tolerance: 5.0,
+      temperature_target: 25.0,
+      temperature_tolerance: 2.0,
+      critical_temp_low: null,
+      critical_temp_high: null,
+      critical_temp_hysteresis: 1.0,
+      wind_enabled: false,
+      wind_period_seconds: 60,
+      wind_amplitude_pct: 10,
+    });
   });
 });

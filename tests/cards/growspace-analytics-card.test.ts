@@ -132,4 +132,65 @@ describe('GrowspaceAnalyticsCard', () => {
     const editor = await GrowspaceAnalyticsCard.getConfigElement();
     expect(editor.tagName.toLowerCase()).toBe('growspace-analytics-card-editor');
   });
+
+  test('getLayoutOptions returns grid sizing options', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const opts = handle.element.getLayoutOptions();
+    expect(opts).toEqual({
+      grid_columns: 8,
+      grid_min_columns: 4,
+      grid_rows: 5,
+      grid_min_rows: 4,
+    });
+    handle.unmount();
+  });
+
+  test('renders error state when devices exist but none matches selectedDevice', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    handle.element.store.ui.$isLoading.set(false);
+    setDevices([
+      { deviceId: 'other-device', name: 'Other', plants: [] } as any,
+    ]);
+    handle.element.store.grid.$selectedDevice.set('no-match-device-id');
+    await handle.element.updateComplete;
+
+    const errorDiv = handle.element.shadowRoot?.querySelector('.error');
+    expect(errorDiv).toBeTruthy();
+    expect(errorDiv?.textContent).toContain('No valid growspace selected');
+    handle.unmount();
+  });
+
+  test('_handleError calls console.error and hass.callService', async () => {
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const testError = new Error('analytics error');
+    (handle.element as any)._handleError(testError, { componentStack: 'test' });
+    expect(consoleSpy).toHaveBeenCalledWith(
+      'Growspace Analytics Card caught error:',
+      testError,
+      { componentStack: 'test' }
+    );
+    expect(hass.callService).toHaveBeenCalledWith(
+      'system_log',
+      'write',
+      expect.objectContaining({ message: expect.stringContaining('analytics error') })
+    );
+    consoleSpy.mockRestore();
+    handle.unmount();
+  });
+
+  test('firstUpdated does not reset graphs when they are already active', async () => {
+    // Pre-populate graphs before the card mounts so the if-branch is skipped
+    const handle = await renderCard<GrowspaceAnalyticsCard>('growspace-analytics-card', { hass, growspace });
+    // After first render, graphs are already set by firstUpdated (truthy-branch covered elsewhere).
+    // Now manually add an extra graph and call firstUpdated again to exercise the falsy branch.
+    handle.element.store.actions.ui.toggleEnvGraph('co2');
+    const sizeBefore = handle.element.store.history.$activeEnvGraphs.get().size;
+    // Trigger firstUpdated-equivalent: call it directly — the store already has graphs so
+    // the inner if is false and no reset happens.
+    (handle.element as any).firstUpdated();
+    const sizeAfter = handle.element.store.history.$activeEnvGraphs.get().size;
+    expect(sizeAfter).toBe(sizeBefore);
+    handle.unmount();
+  });
 });

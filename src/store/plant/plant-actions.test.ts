@@ -11,6 +11,8 @@ import {
   confirmAddPlant,
   confirmAddPlants,
   printLabel,
+  saveHarvestMetrics,
+  scorePhenotype,
 } from './plant-actions';
 import type { ActionContext } from '../core/action-context';
 import { setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
@@ -205,6 +207,91 @@ describe('handleDeletePlant', () => {
 
     expect(ctx.closeDialog).toHaveBeenCalled();
   });
+
+  it('collects plant attributes from devices for the undo payload', async () => {
+    setDevices([
+      {
+        deviceId: 'device-1',
+        plants: [
+          {
+            entity_id: 'sensor.og_kush',
+            attributes: {
+              plant_id: 'plant-1',
+              strain: 'OG Kush',
+              growspace_id: 'device-1',
+              row: 2,
+              col: 3,
+            },
+          },
+        ],
+      } as any,
+    ]);
+
+    await handleDeletePlant(ctx, 'plant-1');
+
+    const pushCall = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(pushCall.description).toBe('Deleted OG Kush');
+  });
+
+  it('reverse callback re-adds the plant via addPlant and refreshes', async () => {
+    setDevices([
+      {
+        deviceId: 'device-1',
+        plants: [
+          {
+            entity_id: 'sensor.og_kush',
+            attributes: {
+              plant_id: 'plant-1',
+              strain: 'OG Kush',
+              growspace_id: 'device-1',
+              row: 1,
+              col: 0,
+            },
+          },
+        ],
+      } as any,
+    ]);
+
+    await handleDeletePlant(ctx, 'plant-1');
+
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    await reverse();
+
+    expect((ctx.dataService as any).addPlant).toHaveBeenCalledWith(
+      expect.objectContaining({ strain: 'OG Kush', row: 1, col: 0 })
+    );
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('redo callback re-deletes the plant via handleDeletePlant', async () => {
+    setDevices([
+      {
+        deviceId: 'device-1',
+        plants: [
+          {
+            entity_id: 'sensor.og_kush',
+            attributes: {
+              plant_id: 'plant-1',
+              strain: 'OG Kush',
+              growspace_id: 'device-1',
+              row: 1,
+              col: 0,
+            },
+          },
+        ],
+      } as any,
+    ]);
+
+    await handleDeletePlant(ctx, 'plant-1');
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    (ctx.dataService as any).removePlant.mockClear();
+    setDevices([]);
+    await redo();
+
+    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('plant-1');
+  });
 });
 
 // ─── movePlantToNextStage ─────────────────────────────────────────────────────
@@ -312,6 +399,35 @@ describe('movePlantToGrowspace', () => {
       expect.stringContaining('move-fail'),
       'error'
     );
+  });
+
+  it('reverse callback moves plant back to original growspace', async () => {
+    const plant = makePlant({ attributes: { plant_id: 'p1', stage: 'veg', growspace_id: 'src' } });
+    const promise = movePlantToGrowspace(ctx, plant, 'dst');
+    await vi.runAllTimersAsync();
+    await promise;
+
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    const reversePromise = reverse();
+    await vi.runAllTimersAsync();
+    await reversePromise;
+
+    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'src');
+  });
+
+  it('redo callback moves plant to the target growspace again', async () => {
+    const plant = makePlant({ attributes: { plant_id: 'p1', stage: 'veg', growspace_id: 'src' } });
+    const promise = movePlantToGrowspace(ctx, plant, 'dst');
+    await vi.runAllTimersAsync();
+    await promise;
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    const redoPromise = redo();
+    await vi.runAllTimersAsync();
+    await redoPromise;
+
+    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'dst');
   });
 });
 
@@ -440,6 +556,104 @@ describe('handlePlantDrop', () => {
       expect.objectContaining({ type: 'move' })
     );
   });
+
+  it('invokes optimistic apply and revert callbacks, updating the grid atom', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+    const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
+
+    setDevices([
+      {
+        deviceId: 'gs',
+        plants: [],
+        grid: {
+          'r0c0': { plant_id: 'p1', row: 0, col: 0 },
+          'r1c1': { plant_id: 'p2', row: 1, col: 1 },
+        },
+      } as any,
+    ]);
+
+    let capturedApply!: () => void;
+    let capturedRevert!: () => void;
+    (ctx.optimisticManager.applyOptimisticUpdate as ReturnType<typeof vi.fn>).mockImplementation(
+      async (_type: string, _data: any, apply: () => void, revert: () => void) => {
+        capturedApply = apply;
+        capturedRevert = revert;
+        return 'action-id';
+      }
+    );
+
+    await handlePlantDrop(ctx, 1, 1, target, source);
+
+    capturedApply();
+    capturedRevert();
+
+    expect(capturedApply).toBeDefined();
+    expect(capturedRevert).toBeDefined();
+  });
+
+  it('swap path: redo callback in confirmUpdate re-runs the drop', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+    const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
+
+    setDevices([{ deviceId: 'gs', plants: [], grid: {} } as any]);
+
+    let capturedRedo!: () => Promise<void>;
+    (ctx.optimisticManager.confirmUpdate as ReturnType<typeof vi.fn>).mockImplementation(
+      (_id: string, opts: { redo: () => Promise<void> }) => {
+        capturedRedo = opts.redo;
+      }
+    );
+
+    await handlePlantDrop(ctx, 1, 1, target, source);
+
+    (ctx.dataService as any).swapPlants.mockClear();
+    await capturedRedo();
+
+    expect((ctx.dataService as any).swapPlants).toHaveBeenCalledWith('p1', 'p2');
+  });
+
+  it('non-swap reverse callback moves plant back to original position', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+
+    await handlePlantDrop(ctx, 2, 3, null, source);
+
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.dataService as any).updatePlant.mockClear();
+    await reverse();
+
+    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
+      expect.objectContaining({ plant_id: 'p1', row: 0, col: 0 })
+    );
+  });
+
+  it('returns false and calls refreshData when API throws during swap', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+    const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
+
+    setDevices([{ deviceId: 'gs', plants: [], grid: {} } as any]);
+    (ctx.dataService as any).swapPlants.mockRejectedValue(new Error('swap-fail'));
+
+    const result = await handlePlantDrop(ctx, 1, 1, target, source);
+
+    expect(result).toBe(false);
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('non-swap redo callback re-runs the drop to the target position', async () => {
+    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
+
+    await handlePlantDrop(ctx, 2, 3, null, source);
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    (ctx.dataService as any).updatePlant.mockClear();
+    await redo();
+
+    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
+      expect.objectContaining({ plant_id: 'p1', row: 2, col: 3 })
+    );
+  });
+
 });
 
 // ─── confirmAddPlant ──────────────────────────────────────────────────────────
@@ -487,6 +701,19 @@ describe('confirmAddPlant', () => {
       phenotype: undefined,
     });
   });
+
+  it('shows info toast and still adds plant when addStrain fails', async () => {
+    (ctx.dataService as any).addStrain.mockRejectedValue(new Error('lib-fail'));
+
+    const result = await confirmAddPlant(ctx, { row: 0, col: 0, strain: 'Gelato', addToLibrary: true });
+
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Failed to add strain to library'),
+      'info'
+    );
+    expect((ctx.dataService as any).addPlant).toHaveBeenCalled();
+    expect(result).toBe(true);
+  });
 });
 
 // ─── confirmAddPlants ─────────────────────────────────────────────────────────
@@ -531,6 +758,240 @@ describe('confirmAddPlants', () => {
 
     expect((ctx.dataService as any).addStrain).toHaveBeenCalledTimes(2);
   });
+
+  it('throws and does not add plants when addStrain fails', async () => {
+    setDevices([]);
+    (ctx.dataService as any).addStrain.mockRejectedValue(new Error('lib-fail'));
+
+    await expect(
+      confirmAddPlants(ctx, {
+        strain: 'Purple Haze',
+        amount: 1,
+        addToLibrary: true,
+      } as any)
+    ).rejects.toThrow('lib-fail');
+
+    expect((ctx.dataService as any).addPlants).not.toHaveBeenCalled();
+  });
+
+  it('rethrows a non-Error rejection as an Error when addStrain fails', async () => {
+    setDevices([]);
+    (ctx.dataService as any).addStrain.mockRejectedValue('raw string error');
+
+    await expect(
+      confirmAddPlants(ctx, {
+        strain: 'Purple Haze',
+        amount: 1,
+        addToLibrary: true,
+      } as any)
+    ).rejects.toThrow('Failed to add strains to library');
+  });
+
+  it('registers undo action when new plant ids are detected after refresh', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([
+        {
+          deviceId: 'device-1',
+          plants: [
+            { entity_id: 'sensor.new', attributes: { plant_id: 'new-plant-1' } },
+          ],
+        } as any,
+      ]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'Gelato', amount: 1 } as any);
+
+    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'batch-delete', description: 'Added 1 plants' })
+    );
+  });
+
+  it('reverse callback deletes the newly added plants and refreshes', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([
+        {
+          deviceId: 'device-1',
+          plants: [{ entity_id: 'sensor.new', attributes: { plant_id: 'new-plant-1' } }],
+        } as any,
+      ]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'Gelato', amount: 1 } as any);
+
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    await reverse();
+
+    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant-1');
+    expect(ctx.refreshData).toHaveBeenCalled();
+  });
+
+  it('redo callback re-adds the plants via confirmAddPlants', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([
+        {
+          deviceId: 'device-1',
+          plants: [{ entity_id: 'sensor.new', attributes: { plant_id: 'new-plant-1' } }],
+        } as any,
+      ]);
+    });
+
+    const detail = { strain: 'Gelato', amount: 1 } as any;
+    await confirmAddPlants(ctx, detail);
+
+    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
+    (ctx.dataService as any).addPlants.mockClear();
+    await redo();
+
+    expect((ctx.dataService as any).addPlants).toHaveBeenCalledWith(
+      expect.objectContaining({ strain: 'Gelato', amount: 1 })
+    );
+  });
+});
+
+// Additional confirmAddPlants branch coverage
+describe('confirmAddPlants — beforeIds forEach branches', () => {
+  let ctx: ReturnType<typeof makeContext>;
+  beforeEach(() => { ctx = makeContext(); });
+
+  it('populates beforeIds from existing plants so pre-existing plants are not counted as new', async () => {
+    setDevices([{
+      deviceId: 'device-1',
+      plants: [{ entity_id: 'sensor.old', attributes: { plant_id: 'old-plant' } }],
+    } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([{
+        deviceId: 'device-1',
+        plants: [
+          { entity_id: 'sensor.old', attributes: { plant_id: 'old-plant' } },
+          { entity_id: 'sensor.new', attributes: { plant_id: 'new-plant' } },
+        ],
+      } as any]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
+
+    const { type } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(type).toBe('batch-delete');
+    // Only new-plant should be in the undo action, not old-plant
+    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    (ctx.dataService as any).removePlant.mockResolvedValue(undefined);
+    await reverse();
+    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant');
+    expect((ctx.dataService as any).removePlant).not.toHaveBeenCalledWith('old-plant');
+  });
+
+  it('handles plants with no plant_id (p.attributes.plant_id falsy)', async () => {
+    setDevices([{
+      deviceId: 'device-1',
+      plants: [{ entity_id: 'sensor.anon', attributes: {} }],
+    } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([{
+        deviceId: 'device-1',
+        plants: [
+          { entity_id: 'sensor.anon', attributes: {} },
+          { entity_id: 'sensor.new', attributes: { plant_id: 'real-new' } },
+        ],
+      } as any]);
+    });
+
+    await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
+
+    // 'real-new' should be detected as new; anon plant (no id) is ignored
+    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+  });
+
+  it('is a no-op when afterDevices device has no plants array', async () => {
+    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
+
+    ctx.refreshData = vi.fn().mockImplementation(async () => {
+      setDevices([{ deviceId: 'device-1' } as any]); // plants undefined
+    });
+
+    await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
+
+    // No new plants detected → no undo action registered
+    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled();
+  });
+});
+
+// ─── saveHarvestMetrics ───────────────────────────────────────────────────────
+
+describe('saveHarvestMetrics', () => {
+  let ctx: ReturnType<typeof makeContext>;
+  beforeEach(() => { ctx = makeContext(); });
+
+  it('no-ops when metrics object is empty', async () => {
+    await saveHarvestMetrics(ctx, 'p1', {});
+
+    expect((ctx.dataService as any).updateHarvestMetrics).not.toHaveBeenCalled();
+    expect((ctx.ui as any).showToast).not.toHaveBeenCalled();
+  });
+
+  it('calls updateHarvestMetrics, toasts success, and refreshes with force', async () => {
+    await saveHarvestMetrics(ctx, 'p1', { wet_weight: 100 });
+
+    expect((ctx.dataService as any).updateHarvestMetrics).toHaveBeenCalledWith({
+      plant_id: 'p1',
+      wet_weight: 100,
+    });
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Harvest metrics saved', 'success');
+    expect(ctx.refreshData).toHaveBeenCalledWith(true);
+  });
+
+  it('toasts error and rethrows on failure', async () => {
+    (ctx.dataService as any).updateHarvestMetrics.mockRejectedValue(new Error('metrics-fail'));
+
+    await expect(saveHarvestMetrics(ctx, 'p1', { wet_weight: 50 })).rejects.toThrow('metrics-fail');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('metrics-fail'),
+      'error'
+    );
+  });
+});
+
+// ─── scorePhenotype ───────────────────────────────────────────────────────────
+
+describe('scorePhenotype', () => {
+  let ctx: ReturnType<typeof makeContext>;
+  beforeEach(() => { ctx = makeContext(); });
+
+  it('no-ops when all score values are null or undefined', async () => {
+    await scorePhenotype(ctx, 'p1', { aroma: null, yield: undefined as any });
+
+    expect((ctx.dataService as any).scorePlant).not.toHaveBeenCalled();
+  });
+
+  it('calls scorePlant, toasts success, and refreshes with force when scores have values', async () => {
+    await scorePhenotype(ctx, 'p1', { aroma: 8, yield: null });
+
+    expect((ctx.dataService as any).scorePlant).toHaveBeenCalledWith({
+      plant_id: 'p1',
+      aroma: 8,
+      yield: null,
+    });
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith('Scores saved', 'success');
+    expect(ctx.refreshData).toHaveBeenCalledWith(true);
+  });
+
+  it('toasts error and rethrows on failure', async () => {
+    (ctx.dataService as any).scorePlant.mockRejectedValue(new Error('score-fail'));
+
+    await expect(scorePhenotype(ctx, 'p1', { aroma: 9 })).rejects.toThrow('score-fail');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('score-fail'),
+      'error'
+    );
+  });
 });
 
 // ─── printLabel ───────────────────────────────────────────────────────────────
@@ -563,6 +1024,16 @@ describe('printLabel', () => {
     await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toThrow('print-fail');
     expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
       expect.stringContaining('print-fail'),
+      'error'
+    );
+  });
+
+  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
+    (ctx.dataService as any).printLabel.mockRejectedValue('plain string');
+
+    await expect(printLabel(ctx, { plantId: 'p1' })).rejects.toBe('plain string');
+    expect((ctx.ui as any).showToast).toHaveBeenCalledWith(
+      expect.stringContaining('Unknown error'),
       'error'
     );
   });

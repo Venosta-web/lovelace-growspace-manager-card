@@ -15,7 +15,8 @@ import {
 
 export type { NutrientPresetsResponse, IPMPresetsResponse, NutrientInventoryResponse, ECRampCurvesResponse };
 export type { ECRampPoint };
-export type { IPMPreset, ECRampCurve, NutrientStock } from './schema';
+export type { IPMPreset, ECRampCurve, NutrientStock, NutrientStockType } from './schema';
+export { NUTRIENT_STOCK_TYPES } from './schema';
 
 // ---------------------------------------------------------------------------
 // Atoms
@@ -57,9 +58,12 @@ export async function fetchECRampCurves(): Promise<void> {
 export async function saveNutrientPreset(data: {
   preset_id?: string;
   name: string;
-  nutrients: { name: string; dose_ml_l: number }[];
+  nutrients: { nutrient_id: string; dose_ml_l: number }[];
   stage?: string;
   min_days_in_stage?: number;
+  week?: number;
+  ec_target?: number | null;
+  ph_target?: number | null;
 }): Promise<void> {
   await callService('growspace_manager', 'save_nutrient_preset', data as Record<string, unknown>);
 }
@@ -104,11 +108,26 @@ export async function updateNutrientStock(
   nutrientId: string,
   name: string,
   currentMl: number,
-  initialMl: number
+  initialMl: number,
+  brand: string = '',
+  stockType: string = 'base',
+  npk: string = '',
+  doseMlL: number = 0,
+  notes: string = ''
 ): Promise<void> {
   await hassCall(
     'growspace_manager/update_nutrient_stock',
-    { nutrient_id: nutrientId, name, current_ml: currentMl, initial_ml: initialMl },
+    {
+      nutrient_id: nutrientId,
+      name,
+      current_ml: currentMl,
+      initial_ml: initialMl,
+      brand,
+      stock_type: stockType,
+      npk,
+      dose_ml_l: doseMlL,
+      notes,
+    },
     z.unknown()
   );
 }

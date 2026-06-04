@@ -4,7 +4,72 @@ import {
   GrowspaceAPIResponseSchema,
   GrowspaceAPICollectionSchema,
   GrowReportSchema,
+  CirculationFanConfigSchema,
 } from './schema';
+
+describe('CirculationFanConfigSchema', () => {
+  it('rejects an unknown regulation_mode', () => {
+    expect(() =>
+      CirculationFanConfigSchema.parse({
+        enabled: false,
+        regulation_mode: 'auto',
+        min_speed: 0,
+        max_speed: 100,
+        vpd_target: 1.0,
+        vpd_tolerance: 0.2,
+        humidity_target: 60.0,
+        humidity_tolerance: 5.0,
+        temperature_target: 25.0,
+        temperature_tolerance: 2.0,
+        critical_temp_low: null,
+        critical_temp_high: null,
+        critical_temp_hysteresis: 1.0,
+        wind_enabled: false,
+        wind_period_seconds: 60,
+        wind_amplitude_pct: 10,
+      }),
+    ).toThrow(ZodError);
+  });
+
+  it('parses a full backend payload', () => {
+    const result = CirculationFanConfigSchema.parse({
+      enabled: true,
+      regulation_mode: 'humidity',
+      min_speed: 20,
+      max_speed: 90,
+      vpd_target: 1.2,
+      vpd_tolerance: 0.15,
+      humidity_target: 65.0,
+      humidity_tolerance: 4.0,
+      temperature_target: 24.0,
+      temperature_tolerance: 1.5,
+      critical_temp_low: 18.0,
+      critical_temp_high: 32.0,
+      critical_temp_hysteresis: 2.0,
+      wind_enabled: true,
+      wind_period_seconds: 120,
+      wind_amplitude_pct: 20,
+    });
+    expect(result).toEqual({
+      enabled: true,
+      regulation_mode: 'humidity',
+      min_speed: 20,
+      max_speed: 90,
+      vpd_target: 1.2,
+      vpd_tolerance: 0.15,
+      humidity_target: 65.0,
+      humidity_tolerance: 4.0,
+      temperature_target: 24.0,
+      temperature_tolerance: 1.5,
+      critical_temp_low: 18.0,
+      critical_temp_high: 32.0,
+      critical_temp_hysteresis: 2.0,
+      wind_enabled: true,
+      wind_period_seconds: 120,
+      wind_amplitude_pct: 20,
+    });
+  });
+});
 
 describe('Growspace Zod Schemas', () => {
   describe('GrowspaceAPIResponseSchema', () => {
@@ -63,6 +128,33 @@ describe('Growspace Zod Schemas', () => {
           max_stage_summary: '',
         },
       });
+    });
+
+    it('validates circulation_fan_config when present in the environment block', () => {
+      expect(() =>
+        GrowspaceAPIResponseSchema.parse({
+          environment: {
+            circulation_fan_config: {
+              enabled: true,
+              regulation_mode: 'invalid_mode',
+              min_speed: 10,
+              max_speed: 95,
+              vpd_target: 1.1,
+              vpd_tolerance: 0.2,
+              humidity_target: 60.0,
+              humidity_tolerance: 5.0,
+              temperature_target: 25.0,
+              temperature_tolerance: 2.0,
+              critical_temp_low: null,
+              critical_temp_high: null,
+              critical_temp_hysteresis: 1.0,
+              wind_enabled: false,
+              wind_period_seconds: 60,
+              wind_amplitude_pct: 10,
+            },
+          },
+        }),
+      ).toThrow(ZodError);
     });
 
     it('should pass through extra fields at the root and nested objects', () => {

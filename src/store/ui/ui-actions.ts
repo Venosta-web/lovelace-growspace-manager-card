@@ -375,6 +375,7 @@ export function openConfigDialog(ctx: ActionContext, device?: GrowspaceDevice) {
         irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
         powerSensors: device?.environmentAttributes?.powerSensors || [],
         energySensors: device?.environmentAttributes?.energySensors || [],
+        circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
       } as EnvironmentConfigData,
     },
   });

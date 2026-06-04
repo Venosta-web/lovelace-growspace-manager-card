@@ -16,6 +16,8 @@ describe('plant-genetics-tab', () => {
       actions: {
         genetics: {
           getLineageTree: vi.fn().mockResolvedValue({ id: 'root', name: 'Root' }),
+          unlinkSeedBatch: vi.fn().mockResolvedValue(undefined),
+          setPlantSex: vi.fn().mockResolvedValue(undefined),
         },
       },
     };
@@ -151,10 +153,57 @@ describe('plant-genetics-tab', () => {
   it('reloads lineage tree when plant changes', async () => {
     const el = await setup();
     mockStore.actions.genetics.getLineageTree.mockClear();
-    
+
     el.plant = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: 'p456' } } as any;
     await el.updateComplete;
-    
+
     expect(mockStore.actions.genetics.getLineageTree).toHaveBeenCalledWith('p456');
+  });
+
+  it('calls unlinkSeedBatch when Unlink button is clicked', async () => {
+    const el = await setup();
+
+    const unlinkBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Unlink') as HTMLElement;
+
+    unlinkBtn.click();
+    await el.updateComplete;
+
+    expect(mockStore.actions.genetics.unlinkSeedBatch).toHaveBeenCalledWith('p123');
+  });
+
+  it('calls setPlantSex and resets _sexSaving when a different sex chip is clicked', async () => {
+    const el = await setup(); // current sex is 'female'
+
+    let resolveSetSex!: () => void;
+    mockStore.actions.genetics.setPlantSex.mockReturnValue(
+      new Promise<void>(res => { resolveSetSex = res; })
+    );
+
+    const maleBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Male') as HTMLElement;
+
+    maleBtn.click();
+    await el.updateComplete;
+
+    expect((el as any)._sexSaving).to.be.true;
+    expect(mockStore.actions.genetics.setPlantSex).toHaveBeenCalledWith('p123', 'male');
+
+    resolveSetSex();
+    await el.updateComplete;
+
+    expect((el as any)._sexSaving).to.be.false;
+  });
+
+  it('does not call setPlantSex when the already-selected sex chip is clicked', async () => {
+    const el = await setup(); // current sex is 'female'
+
+    const femaleBtn = Array.from(el.shadowRoot?.querySelectorAll('button') || [])
+      .find(b => b.textContent?.trim() === 'Female') as HTMLElement;
+
+    femaleBtn.click();
+    await el.updateComplete;
+
+    expect(mockStore.actions.genetics.setPlantSex).not.toHaveBeenCalled();
   });
 });

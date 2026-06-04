@@ -42,9 +42,18 @@ vi.mock('../../../src/services/api/history-api', () => ({
 vi.mock('../../../src/services/api/irrigation-api', () => ({
   IrrigationAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.updateHass = vi.fn();
+    this.setIrrigationSettings = vi.fn();
+    this.addIrrigationTime = vi.fn();
+    this.removeIrrigationTime = vi.fn();
+    this.addDrainTime = vi.fn();
+    this.removeDrainTime = vi.fn();
     this.setIrrigationStrategy = vi.fn();
+    this.configureDrainMonitoring = vi.fn();
+    this.logDrainReading = vi.fn();
+    this.waterGrowspace = vi.fn();
     this.runIrrigationCycle = vi.fn();
     this.getIrrigationAnalytics = vi.fn();
+    this.setEcTargetRanges = vi.fn();
   }),
 }));
 vi.mock('../../../src/services/api/ai-api', () => ({
@@ -74,14 +83,7 @@ vi.mock('../../../src/slices/strain', () => ({
   setStrainLibrary: vi.fn(),
   strainLibrary$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
-vi.mock('../../../src/services/api/vision-api', () => ({
-  VisionAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
-    this.updateHass = vi.fn();
-    this.triggerVisionCheckup = vi.fn();
-    this.getVisionHistory = vi.fn();
-    this.updateVisionCheckupConfig = vi.fn();
-  }),
-}));
+
 vi.mock('../../../src/services/api/report-api', () => ({
   ReportAPI: vi.fn().mockImplementation(function (this: Record<string, unknown>) {
     this.updateHass = vi.fn();
@@ -132,6 +134,7 @@ vi.mock('../../../src/slices/growspace', () => ({
   getGrowspaceDevices: vi.fn().mockReturnValue([]),
   fetchGrowspaceData: vi.fn().mockResolvedValue(undefined),
   configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  configureCirculationFan: vi.fn().mockResolvedValue(undefined),
   setDehumidifierControl: vi.fn().mockResolvedValue(undefined),
   removeEnvironment: vi.fn().mockResolvedValue(undefined),
   resetWaterTracking: vi.fn().mockResolvedValue(undefined),
@@ -366,22 +369,22 @@ describe('DataService Delegation', () => {
     });
 
     it('delegates Vision operations', () => {
-      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const spy = vi.spyOn(VisionAPI.prototype, 'triggerVisionCheckup').mockResolvedValue(null);
       dataService.triggerVisionCheckup('gs1');
-      expect(instance.triggerVisionCheckup).toHaveBeenCalledWith('gs1');
+      expect(spy).toHaveBeenCalledWith('gs1');
     });
 
     it('delegates getVisionHistory', () => {
-      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const spy = vi.spyOn(VisionAPI.prototype, 'getVisionHistory').mockResolvedValue(null);
       dataService.getVisionHistory('gs1', 5);
-      expect(instance.getVisionHistory).toHaveBeenCalledWith('gs1', 5);
+      expect(spy).toHaveBeenCalledWith('gs1', 5);
     });
 
     it('delegates updateVisionCheckupConfig', () => {
-      const instance = vi.mocked(VisionAPI).mock.instances[0];
+      const spy = vi.spyOn(VisionAPI.prototype, 'updateVisionCheckupConfig').mockResolvedValue(null);
       const config = { enabled: true, interval_hours: 12 } as any;
       dataService.updateVisionCheckupConfig('gs1', config);
-      expect(instance.updateVisionCheckupConfig).toHaveBeenCalledWith('gs1', config);
+      expect(spy).toHaveBeenCalledWith('gs1', config);
     });
 
     it('delegates Camera operations', () => {
@@ -413,6 +416,117 @@ describe('DataService Delegation', () => {
       await dsNoHass.callService('dom', 'svc', {});
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
+    });
+  });
+
+  describe('Strain slice – remaining delegations', () => {
+    it('delegates updateStrainMeta to strain slice', () => {
+      const data = { strain: 'OG Kush', notes: 'Updated' };
+      dataService.updateStrainMeta(data as any);
+      expect(strainSlice.updateStrainMeta).toHaveBeenCalledWith(data);
+    });
+
+    it('delegates updateBreeder to strain slice', () => {
+      dataService.updateBreeder('OldName', 'NewName', 'logo.png');
+      expect(strainSlice.updateBreeder).toHaveBeenCalledWith('OldName', 'NewName', 'logo.png');
+    });
+  });
+
+  describe('Nutrient slice – EC ramp curves', () => {
+    it('delegates fetchECRampCurves to nutrient slice', () => {
+      dataService.fetchECRampCurves();
+      expect(nutrientSlice.fetchECRampCurves).toHaveBeenCalled();
+    });
+
+    it('delegates saveECRampCurve to nutrient slice', () => {
+      const data = { name: 'Veg Ramp', points: [{ day: 1, ec: 1.2 }] };
+      dataService.saveECRampCurve(data as any);
+      expect(nutrientSlice.saveECRampCurve).toHaveBeenCalledWith(data);
+    });
+  });
+
+  describe('Plant slice – takeClone', () => {
+    it('finds plant by plant_id and delegates takeClone', () => {
+      const plant = { entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } } as any;
+      vi.mocked(plantSlice.plants$.get).mockReturnValue([plant]);
+      dataService.takeClone({ mother_plant_id: 'p1', num_clones: 2 });
+      expect(plantSlice.takeClone).toHaveBeenCalledWith(plant, 2, undefined);
+    });
+
+    it('falls back to entity_id when plant_id attribute is absent', () => {
+      const plant = { entity_id: 'sensor.my-plant', attributes: {} } as any;
+      vi.mocked(plantSlice.plants$.get).mockReturnValue([plant]);
+      dataService.takeClone({ mother_plant_id: 'my-plant' });
+      expect(plantSlice.takeClone).toHaveBeenCalledWith(plant, undefined, undefined);
+    });
+
+    it('throws when plant is not found', () => {
+      vi.mocked(plantSlice.plants$.get).mockReturnValue([]);
+      expect(() => dataService.takeClone({ mother_plant_id: 'ghost' })).toThrow(
+        'Plant not found: ghost'
+      );
+    });
+  });
+
+  describe('Plant slice – printLabel, scorePlant, updateHarvestMetrics, logDryingWeight, logMoistureReading, setVisualTag', () => {
+    it('delegates printLabel to plant slice with mapped params', () => {
+      dataService.printLabel({ plant_id: 'p1', strain: 'OG', preview: true });
+      expect(plantSlice.printLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ plantId: 'p1', strain: 'OG', preview: true })
+      );
+    });
+
+    it('delegates scorePlant — extracts plant_id from params', () => {
+      dataService.scorePlant({ plant_id: 'p1', growth_rate: 8 });
+      expect(plantSlice.scorePlant).toHaveBeenCalledWith('p1', { growth_rate: 8 });
+    });
+
+    it('delegates updateHarvestMetrics — extracts plant_id from params', () => {
+      dataService.updateHarvestMetrics({ plant_id: 'p1', wet_weight: 120 });
+      expect(plantSlice.saveHarvestMetrics).toHaveBeenCalledWith('p1', { wet_weight: 120 });
+    });
+
+    it('delegates logDryingWeight to plant slice', () => {
+      dataService.logDryingWeight({ plant_id: 'p1', weight_grams: 45.5, date: '2024-01-15' });
+      expect(plantSlice.logDryingWeight).toHaveBeenCalledWith('p1', 45.5, '2024-01-15');
+    });
+
+    it('delegates logMoistureReading to plant slice', () => {
+      dataService.logMoistureReading({ plant_id: 'p1', moisture_percent: 62 });
+      expect(plantSlice.logMoistureReading).toHaveBeenCalledWith('p1', 62, undefined);
+    });
+
+    it('delegates setVisualTag to plant slice', () => {
+      dataService.setVisualTag({ plant_id: 'p1', visual_tag: 'red' });
+      expect(plantSlice.setVisualTag).toHaveBeenCalledWith('p1', 'red');
+    });
+  });
+
+  describe('IrrigationAPI – remaining delegations', () => {
+    it('delegates configureDrainMonitoring', () => {
+      const instance = vi.mocked(IrrigationAPI).mock.instances[0];
+      dataService.configureDrainMonitoring('gs1', { enabled: true } as any);
+      expect(instance.configureDrainMonitoring).toHaveBeenCalledWith('gs1', { enabled: true });
+    });
+
+    it('delegates logDrainReading', () => {
+      const instance = vi.mocked(IrrigationAPI).mock.instances[0];
+      dataService.logDrainReading('gs1', 1.8 as any);
+      expect(instance.logDrainReading).toHaveBeenCalledWith('gs1', 1.8);
+    });
+
+    it('delegates setEcTargetRanges', () => {
+      const instance = vi.mocked(IrrigationAPI).mock.instances[0];
+      dataService.setEcTargetRanges('gs1', { min: 1.2, max: 2.0 } as any);
+      expect(instance.setEcTargetRanges).toHaveBeenCalledWith('gs1', { min: 1.2, max: 2.0 });
+    });
+  });
+
+  describe('ReportAPI – exportGrowReport', () => {
+    it('delegates exportGrowReport to report API', () => {
+      const instance = vi.mocked(ReportAPI).mock.instances[0];
+      dataService.exportGrowReport('gs1', 'pdf');
+      expect(instance.exportGrowReport).toHaveBeenCalledWith('gs1', 'pdf');
     });
   });
 });

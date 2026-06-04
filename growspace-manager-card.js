@@ -94,6 +94,8 @@ var mdiArrowExpand = "M10,21V19H6.41L10.91,14.5L9.5,13.09L5,17.59V14H3V21H10M14.
 var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z";
 var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
+var mdiBattery = "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
+var mdiBluetooth = "M14.88,16.29L13,18.17V14.41M13,5.83L14.88,7.71L13,9.58M17.71,7.71L12,2H11V9.58L6.41,5L5,6.41L10.59,12L5,17.58L6.41,19L11,14.41V22H12L17.71,16.29L13.41,12L17.71,7.71Z";
 var mdiBookOpenVariant = "M12 21.5C10.65 20.65 8.2 20 6.5 20C4.85 20 3.15 20.3 1.75 21.05C1.65 21.1 1.6 21.1 1.5 21.1C1.25 21.1 1 20.85 1 20.6V6C1.6 5.55 2.25 5.25 3 5C4.11 4.65 5.33 4.5 6.5 4.5C8.45 4.5 10.55 4.9 12 6C13.45 4.9 15.55 4.5 17.5 4.5C18.67 4.5 19.89 4.65 21 5C21.75 5.25 22.4 5.55 23 6V20.6C23 20.85 22.75 21.1 22.5 21.1C22.4 21.1 22.35 21.1 22.25 21.05C20.85 20.3 19.15 20 17.5 20C15.8 20 13.35 20.65 12 21.5M12 8V19.5C13.35 18.65 15.8 18 17.5 18C18.7 18 19.9 18.15 21 18.5V7C19.9 6.65 18.7 6.5 17.5 6.5C15.8 6.5 13.35 7.15 12 8M13 11.5C14.11 10.82 15.6 10.5 17.5 10.5C18.41 10.5 19.26 10.59 20 10.78V9.23C19.13 9.08 18.29 9 17.5 9C15.73 9 14.23 9.28 13 9.84V11.5M17.5 11.67C15.79 11.67 14.29 11.93 13 12.46V14.15C14.11 13.5 15.6 13.16 17.5 13.16C18.54 13.16 19.38 13.24 20 13.4V11.9C19.13 11.74 18.29 11.67 17.5 11.67M20 14.57C19.13 14.41 18.29 14.33 17.5 14.33C15.67 14.33 14.17 14.6 13 15.13V16.82C14.11 16.16 15.6 15.83 17.5 15.83C18.54 15.83 19.38 15.91 20 16.07V14.57Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
 var mdiBrain = "M21.33,12.91C21.42,14.46 20.71,15.95 19.44,16.86L20.21,18.35C20.44,18.8 20.47,19.33 20.27,19.8C20.08,20.27 19.69,20.64 19.21,20.8L18.42,21.05C18.25,21.11 18.06,21.14 17.88,21.14C17.37,21.14 16.89,20.91 16.56,20.5L14.44,18C13.55,17.85 12.71,17.47 12,16.9C11.5,17.05 11,17.13 10.5,17.13C9.62,17.13 8.74,16.86 8,16.34C7.47,16.5 6.93,16.57 6.38,16.56C5.59,16.57 4.81,16.41 4.08,16.11C2.65,15.47 1.7,14.07 1.65,12.5C1.57,11.78 1.69,11.05 2,10.39C1.71,9.64 1.68,8.82 1.93,8.06C2.3,7.11 3,6.32 3.87,5.82C4.45,4.13 6.08,3 7.87,3.12C9.47,1.62 11.92,1.46 13.7,2.75C14.12,2.64 14.56,2.58 15,2.58C16.36,2.55 17.65,3.15 18.5,4.22C20.54,4.75 22,6.57 22.08,8.69C22.13,9.8 21.83,10.89 21.22,11.82C21.29,12.18 21.33,12.54 21.33,12.91M16.33,11.5C16.9,11.57 17.35,12 17.35,12.57A1,1 0 0,1 16.35,13.57H15.72C15.4,14.47 14.84,15.26 14.1,15.86C14.35,15.95 14.61,16 14.87,16.07C20,16 19.4,12.87 19.4,12.82C19.34,11.39 18.14,10.27 16.71,10.33A1,1 0 0,1 15.71,9.33A1,1 0 0,1 16.71,8.33C17.94,8.36 19.12,8.82 20.04,9.63C20.09,9.34 20.12,9.04 20.12,8.74C20.06,7.5 19.5,6.42 17.25,6.21C16,3.25 12.85,4.89 12.85,5.81V5.81C12.82,6.04 13.06,6.53 13.1,6.56A1,1 0 0,1 14.1,7.56C14.1,8.11 13.65,8.56 13.1,8.56V8.56C12.57,8.54 12.07,8.34 11.67,8C11.19,8.31 10.64,8.5 10.07,8.56V8.56C9.5,8.61 9.03,8.21 9,7.66C8.92,7.1 9.33,6.61 9.88,6.56C10.04,6.54 10.82,6.42 10.82,5.79V5.79C10.82,5.13 11.07,4.5 11.5,4C10.58,3.75 9.59,4.08 8.59,5.29C6.75,5 6,5.25 5.45,7.2C4.5,7.67 4,8 3.78,9C4.86,8.78 5.97,8.87 7,9.25C7.5,9.44 7.78,10 7.59,10.54C7.4,11.06 6.82,11.32 6.3,11.13C5.57,10.81 4.75,10.79 4,11.07C3.68,11.34 3.68,11.9 3.68,12.34C3.68,13.08 4.05,13.77 4.68,14.17C5.21,14.44 5.8,14.58 6.39,14.57C6.24,14.31 6.11,14.04 6,13.76C5.81,13.22 6.1,12.63 6.64,12.44C7.18,12.25 7.77,12.54 7.96,13.08C8.36,14.22 9.38,15 10.58,15.13C11.95,15.06 13.17,14.25 13.77,13C14,11.62 15.11,11.5 16.33,11.5M18.33,18.97L17.71,17.67L17,17.83L18,19.08L18.33,18.97M13.68,10.36C13.7,9.83 13.3,9.38 12.77,9.33C12.06,9.29 11.37,9.53 10.84,10C10.27,10.58 9.97,11.38 10,12.19A1,1 0 0,0 11,13.19C11.57,13.19 12,12.74 12,12.19C12,11.92 12.07,11.65 12.23,11.43C12.35,11.33 12.5,11.28 12.66,11.28C13.21,11.31 13.68,10.9 13.68,10.36Z";
@@ -116,7 +118,6 @@ var mdiChevronDown = "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z
 var mdiChevronLeft = "M15.41,16.58L10.83,12L15.41,7.41L14,6L8,12L14,18L15.41,16.58Z";
 var mdiChevronRight = "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z";
 var mdiChevronUp = "M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z";
-var mdiClipboardList = "M19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.1 3.9 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3M7 8H9V12H8V9H7V8M10 17V18H7V17.08L9 15H7V14H9.25C9.66 14 10 14.34 10 14.75C10 14.95 9.92 15.14 9.79 15.27L8.12 17H10M11 4C11 3.45 11.45 3 12 3S13 3.45 13 4 12.55 5 12 5 11 4.55 11 4M17 17H12V15H17V17M17 11H12V9H17V11Z";
 var mdiClipboardTextClock = "M21 11.11V5C21 3.9 20.11 3 19 3H14.82C14.4 1.84 13.3 1 12 1S9.6 1.84 9.18 3H5C3.9 3 3 3.9 3 5V19C3 20.11 3.9 21 5 21H11.11C12.37 22.24 14.09 23 16 23C19.87 23 23 19.87 23 16C23 14.09 22.24 12.37 21 11.11M12 3C12.55 3 13 3.45 13 4S12.55 5 12 5 11 4.55 11 4 11.45 3 12 3M6 7H18V9H6V7M9.08 17H6V15H9.08C9.03 15.33 9 15.66 9 16S9.03 16.67 9.08 17M6 13V11H11.11C10.5 11.57 10.04 12.25 9.68 13H6M16 21C13.24 21 11 18.76 11 16S13.24 11 16 11 21 13.24 21 16 18.76 21 16 21M16.5 16.25L19.36 17.94L18.61 19.16L15 17V12H16.5V16.25Z";
 var mdiClockOutline = "M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z";
 var mdiClose = "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z";
@@ -164,6 +165,7 @@ var mdiMagnify = "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L1
 var mdiMessageOutline = "M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2M20 16H5.2L4 17.2V4H20V16Z";
 var mdiMicrophone = "M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z";
 var mdiMinus = "M19,13H5V11H19V13Z";
+var mdiMoleculeCo2 = "M5,7A2,2 0 0,0 3,9V15A2,2 0 0,0 5,17H8V15H5V9H8V7H5M11,7A2,2 0 0,0 9,9V15A2,2 0 0,0 11,17H13A2,2 0 0,0 15,15V9A2,2 0 0,0 13,7H11M11,9H13V15H11V9M16,10.5V12H19V13.5H17.5A1.5,1.5 0 0,0 16,15V18H20.5V16.5H17.5V15H19A1.5,1.5 0 0,0 20.5,13.5V12A1.5,1.5 0 0,0 19,10.5H16Z";
 var mdiNewspaper = "M20,11H4V8H20M20,15H13V13H20M20,19H13V17H20M11,19H4V13H11M20.33,4.67L18.67,3L17,4.67L15.33,3L13.67,4.67L12,3L10.33,4.67L8.67,3L7,4.67L5.33,3L3.67,4.67L2,3V19A2,2 0 0,0 4,21H20A2,2 0 0,0 22,19V3L20.33,4.67Z";
 var mdiNoteOutline = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,5V19H19V12H12V5H5Z";
 var mdiNoteText = "M14,10H19.5L14,4.5V10M5,3H15L21,9V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3M5,12V14H19V12H5M5,16V18H14V16H5Z";
@@ -188,6 +190,7 @@ var mdiStar = "M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L
 var mdiStarOutline = "M12,15.39L8.24,17.66L9.23,13.38L5.91,10.5L10.29,10.13L12,6.09L13.71,10.13L18.09,10.5L14.77,13.38L15.76,17.66M22,9.24L14.81,8.63L12,2L9.19,8.63L2,9.24L7.45,13.97L5.82,21L12,17.27L18.18,21L16.54,13.97L22,9.24Z";
 var mdiSwapHorizontal = "M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z";
 var mdiTag = "M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z";
+var mdiTestTube = "M7,2V4H8V18A4,4 0 0,0 12,22A4,4 0 0,0 16,18V4H17V2H7M11,16C10.4,16 10,15.6 10,15C10,14.4 10.4,14 11,14C11.6,14 12,14.4 12,15C12,15.6 11.6,16 11,16M13,12C12.4,12 12,11.6 12,11C12,10.4 12.4,10 13,10C13.6,10 14,10.4 14,11C14,11.6 13.6,12 13,12M14,7H10V4H14V7Z";
 var mdiText = "M21,6V8H3V6H21M3,18H12V16H3V18M3,13H21V11H3V13Z";
 var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 13 5V8H11V5A1 1 0 0 1 12 4Z";
 var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
@@ -198,6 +201,7 @@ var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z
 var mdiViewGrid = "M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3";
 var mdiWater = "M12,20A6,6 0 0,1 6,14C6,10 12,3.25 12,3.25C12,3.25 18,10 18,14A6,6 0 0,1 12,20Z";
 var mdiWaterMinus = "M22 17V19H14V17H22M17.62 12C16.31 8.1 12 3.25 12 3.25S6 10 6 14C6 17.31 8.69 20 12 20C12.12 20 12.23 20 12.34 20C12.12 19.36 12 18.7 12 18C12 14.82 14.5 12.22 17.62 12Z";
+var mdiWaterOutline = "M12,3.77L11.25,4.61C11.25,4.61 9.97,6.06 8.68,7.94C7.39,9.82 6,12.07 6,14.23A6,6 0 0,0 12,20.23A6,6 0 0,0 18,14.23C18,12.07 16.61,9.82 15.32,7.94C14.03,6.06 12.75,4.61 12.75,4.61L12,3.77M12,6.9C12.44,7.42 12.84,7.85 13.68,9.07C14.89,10.83 16,13.07 16,14.23C16,16.45 14.22,18.23 12,18.23C9.78,18.23 8,16.45 8,14.23C8,13.07 9.11,10.83 10.32,9.07C11.16,7.85 11.56,7.42 12,6.9Z";
 var mdiWaterPercent = "M12,3.25C12,3.25 6,10 6,14C6,17.32 8.69,20 12,20A6,6 0 0,0 18,14C18,10 12,3.25 12,3.25M14.47,9.97L15.53,11.03L9.53,17.03L8.47,15.97M9.75,10A1.25,1.25 0 0,1 11,11.25A1.25,1.25 0 0,1 9.75,12.5A1.25,1.25 0 0,1 8.5,11.25A1.25,1.25 0 0,1 9.75,10M14.25,14.5A1.25,1.25 0 0,1 15.5,15.75A1.25,1.25 0 0,1 14.25,17A1.25,1.25 0 0,1 13,15.75A1.25,1.25 0 0,1 14.25,14.5Z";
 var mdiWaterPlus = "M12 18C12 18.7 12.12 19.36 12.34 20C12.23 20 12.12 20 12 20C8.69 20 6 17.31 6 14C6 10 12 3.25 12 3.25S16.31 8.1 17.62 12C14.5 12.22 12 14.82 12 18M19 17V14H17V17H14V19H17V22H19V19H22V17H19Z";
 var mdiWaterPump = "M19,14.5C19,14.5 21,16.67 21,18A2,2 0 0,1 19,20A2,2 0 0,1 17,18C17,16.67 19,14.5 19,14.5M5,18V9A2,2 0 0,1 3,7A2,2 0 0,1 5,5V4A2,2 0 0,1 7,2H9A2,2 0 0,1 11,4V5H19A2,2 0 0,1 21,7V9L21,11A1,1 0 0,1 22,12A1,1 0 0,1 21,13H17A1,1 0 0,1 16,12A1,1 0 0,1 17,11V9H11V18H12A2,2 0 0,1 14,20V22H2V20A2,2 0 0,1 4,18H5Z";
@@ -492,6 +496,13 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.DRAIN]: { primary: 'drainPumpEntity', source: 'irrigation' },
     [MetricKey.SUBSTRATE_TEMPERATURE]: { primary: 'substrateTemperatureSensors' },
     [MetricKey.ENERGY]: { primary: 'energySensors' },
+    [MetricKey.POWER]: { primary: 'powerSensors' },
+    [MetricKey.PH]: { primary: 'phSensors' },
+    [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
+    [MetricKey.SUBSTRATE_EC]: { primary: 'substrateEcSensors' },
+    [MetricKey.RUNOFF_EC]: { primary: 'runoffEcSensors' },
+    [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
+    [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
 };
 
 // --- Utils ---
@@ -5106,6 +5117,24 @@ const DrainConfigSchema = objectType({
 })
     .nullable()
     .optional();
+const CirculationFanConfigSchema = objectType({
+    enabled: booleanType(),
+    regulation_mode: enumType(['vpd', 'humidity', 'temperature']),
+    min_speed: numberType(),
+    max_speed: numberType(),
+    vpd_target: numberType(),
+    vpd_tolerance: numberType(),
+    humidity_target: numberType(),
+    humidity_tolerance: numberType(),
+    temperature_target: numberType(),
+    temperature_tolerance: numberType(),
+    critical_temp_low: numberType().nullable(),
+    critical_temp_high: numberType().nullable(),
+    critical_temp_hysteresis: numberType(),
+    wind_enabled: booleanType(),
+    wind_period_seconds: numberType(),
+    wind_amplitude_pct: numberType(),
+});
 const GrowspaceAPIResponseSchema = objectType({
     identity: objectType({
         growspace_id: stringType(),
@@ -5131,6 +5160,7 @@ const GrowspaceAPIResponseSchema = objectType({
         dehumidifier_control_enabled: booleanType().optional(),
         circulation_fan_entity: stringType().optional(),
         circulation_fan_entities: arrayType(stringType()).optional().default([]),
+        circulation_fan_config: CirculationFanConfigSchema.optional(),
         exhaust_fan_entities: arrayType(stringType()).optional().default([]),
         humidifier_entities: arrayType(stringType()).optional().default([]),
         dehumidifier_entities: arrayType(stringType()).optional().default([]),
@@ -5246,8 +5276,9 @@ const NutrientPresetsSchema = recordType(stringType(), objectType({
     id: stringType(),
     name: stringType(),
     nutrients: arrayType(objectType({
-        name: stringType(),
+        nutrient_id: stringType(),
         dose_ml_l: numberType(),
+        name: stringType().optional(),
     })),
     stage: stringType()
         .nullish()
@@ -5255,6 +5286,9 @@ const NutrientPresetsSchema = recordType(stringType(), objectType({
     min_days_in_stage: numberType()
         .nullish()
         .transform((v) => v || undefined),
+    week: numberType().int().min(1).optional().default(1),
+    ec_target: numberType().min(0).nullish().transform((v) => v ?? undefined),
+    ph_target: numberType().min(0).max(14).nullish().transform((v) => v ?? undefined),
 })
     .passthrough());
 // ---------------------------------------------------------------------------
@@ -5306,12 +5340,25 @@ const ECRampCurvesSchema = unionType([
 // ---------------------------------------------------------------------------
 // Nutrient Inventory
 // ---------------------------------------------------------------------------
+const NUTRIENT_STOCK_TYPES = [
+    'base',
+    'bloom',
+    'calmag',
+    'root',
+    'additive',
+    'microbe',
+];
 const NutrientStockSchema = objectType({
     nutrient_id: stringType(),
     name: stringType(),
     current_ml: numberType(),
     initial_ml: numberType(),
     last_updated: stringType(),
+    brand: stringType().optional().default(''),
+    type: enumType(NUTRIENT_STOCK_TYPES).optional().default('base'),
+    npk: stringType().optional().default(''),
+    dose_ml_l: numberType().optional().default(0),
+    notes: stringType().optional().default(''),
 });
 const NutrientInventorySchema = objectType({
     stocks: recordType(stringType(), NutrientStockSchema),
@@ -5492,6 +5539,7 @@ class GrowspaceAdapter {
             exhaustFanEntities: environment?.exhaust_fan_entities,
             circulationFanEntity: environment?.circulation_fan_entity,
             circulationFanEntities: environment?.circulation_fan_entities,
+            circulationFanConfig: environment?.circulation_fan_config,
             vpd: environment?.vpd,
             soilMoistureValue: environment?.soil_moisture_value,
             exhaustSensor: environment?.exhaust_sensor,
@@ -6433,7 +6481,15 @@ async function configureEnvironment$1(data) {
         payload.power_sensors = data.powerSensors;
     if (data.energySensors?.length)
         payload.energy_sensors = data.energySensors;
+    if (data.circulationFanConfig)
+        payload.circulation_fan_config = data.circulationFanConfig;
     await callService('growspace_manager', 'configure_environment', payload);
+}
+async function configureCirculationFan({ growspaceId, fanConfig, }) {
+    await callService('growspace_manager', 'configure_circulation_fan', {
+        growspace_id: growspaceId,
+        ...fanConfig,
+    });
 }
 
 /**
@@ -7007,8 +7063,18 @@ async function applyIPM$1(data) {
 // ---------------------------------------------------------------------------
 // Write mutators — nutrient inventory
 // ---------------------------------------------------------------------------
-async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl) {
-    await hassCall('growspace_manager/update_nutrient_stock', { nutrient_id: nutrientId, name, current_ml: currentMl, initial_ml: initialMl }, unknownType());
+async function updateNutrientStock$1(nutrientId, name, currentMl, initialMl, brand = '', stockType = 'base', npk = '', doseMlL = 0, notes = '') {
+    await hassCall('growspace_manager/update_nutrient_stock', {
+        nutrient_id: nutrientId,
+        name,
+        current_ml: currentMl,
+        initial_ml: initialMl,
+        brand,
+        stock_type: stockType,
+        npk,
+        dose_ml_l: doseMlL,
+        notes,
+    }, unknownType());
 }
 async function removeNutrientStock$1(nutrientId) {
     await hassCall('growspace_manager/remove_nutrient_stock', { nutrient_id: nutrientId }, unknownType());
@@ -7724,6 +7790,14 @@ async function printLabel$1(params) {
         payload.preview = params.preview;
     if (params.baseUrl !== undefined)
         payload.base_url = params.baseUrl;
+    if (params.fields !== undefined)
+        payload.fields = params.fields;
+    if (params.sizeId !== undefined)
+        payload.label_size = params.sizeId;
+    if (params.density !== undefined)
+        payload.density = params.density;
+    if (params.qrTarget !== undefined)
+        payload.qr_target = params.qrTarget;
     await hassCall('growspace_manager/print_label', payload, unknownType());
 }
 /**
@@ -8015,6 +8089,7 @@ class DataService {
         this.updateGrowspace = (data) => this._growspaceAPI.updateGrowspace(data);
         this.removeGrowspace = (growspaceId) => this._growspaceAPI.removeGrowspace(growspaceId);
         this.configureEnvironment = (data) => configureEnvironment$1(data);
+        this.configureCirculationFan = (data) => configureCirculationFan(data);
         this.setDehumidifierControl = (growspaceId, enabled) => setDehumidifierControl(growspaceId, enabled);
         this.removeEnvironment = (growspaceId) => removeEnvironment$1(growspaceId);
         this.resetWaterTracking = (growspaceId) => resetWaterTracking$1(growspaceId);
@@ -8077,6 +8152,10 @@ class DataService {
             deviceId: params.device_id,
             preview: params.preview,
             baseUrl: params.base_url,
+            fields: params.fields,
+            sizeId: params.size_id,
+            density: params.density,
+            qrTarget: params.qr_target,
         });
         this.scorePlant = (params) => {
             const { plant_id, ...scores } = params;
@@ -8200,26 +8279,26 @@ typeof SuppressedError === "function" ? SuppressedError : function (error, suppr
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$4=globalThis,e$a=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$7=new WeakMap;let n$8 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$a&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$7.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$7.set(s,t));}return t}toString(){return this.cssText}};const r$7=t=>new n$8("string"==typeof t?t:t+"",void 0,s$8),i$6=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$8(o,t,s$8)},S$1=(s,o)=>{if(e$a)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$a?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$7(e)})(t):t;
+const t$4=globalThis,e$b=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$8=Symbol(),o$8=new WeakMap;let n$8 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$8)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$b&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$8.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$8.set(s,t));}return t}toString(){return this.cssText}};const r$7=t=>new n$8("string"==typeof t?t:t+"",void 0,s$8),i$6=(t,...e)=>{const o=1===t.length?t[0]:e.reduce(((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1]),t[0]);return new n$8(o,t,s$8)},S$1=(s,o)=>{if(e$b)s.adoptedStyleSheets=o.map((t=>t instanceof CSSStyleSheet?t:t.styleSheet));else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$b?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$7(e)})(t):t;
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$5,defineProperty:e$9,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$6,getOwnPropertySymbols:o$6,getPrototypeOf:n$7}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$1={attribute:true,type:String,converter:u$3,reflect:false,useDefault:false,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$9(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$7(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$6(t),...o$6(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
+ */const{is:i$5,defineProperty:e$a,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$6,getOwnPropertySymbols:o$7,getPrototypeOf:n$7}=Object,a$1=globalThis,c$4=a$1.trustedTypes,l$2=c$4?c$4.emptyScript:"",p$2=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$2:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$1={attribute:true,type:String,converter:u$3,reflect:false,useDefault:false,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$a(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$7(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$6(t),...o$7(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise((t=>this.enableUpdating=t)),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach((t=>t(this)));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach((t=>t.hostConnected?.()));}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach((t=>t.hostDisconnected?.()));}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i){if(void 0!==t){const e=this.constructor,h=this[t];if(i??=e.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(e._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach((t=>t.hostUpdate?.())),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach((t=>t.hostUpdated?.())),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach((t=>this._$ET(t,this[t]))),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$2?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.1");
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t$3=globalThis,i$4=t$3.trustedTypes,s$7=i$4?i$4.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$8="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$5="?"+h$2,n$6=`<${o$5}>`,r$5=document,l$1=()=>r$5.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$5.createTreeWalker(r$5,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$6:d>=0?(o.push(a),s.slice(0,d)+e$8+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$8)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$4?i$4.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$5)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$5.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}let M$1 = class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$5).importNode(i,true);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$5,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}};class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$5.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(false,true,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={I:R},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
+const t$3=globalThis,i$4=t$3.trustedTypes,s$7=i$4?i$4.createPolicy("lit-html",{createHTML:t=>t}):void 0,e$9="$lit$",h$2=`lit$${Math.random().toFixed(9).slice(2)}$`,o$6="?"+h$2,n$6=`<${o$6}>`,r$5=document,l$1=()=>r$5.createComment(""),c$3=t=>null===t||"object"!=typeof t&&"function"!=typeof t,a=Array.isArray,u$2=t=>a(t)||"function"==typeof t?.[Symbol.iterator],d="[ \t\n\f\r]",f$2=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,v$1=/-->/g,_=/>/g,m$1=RegExp(`>|${d}(?:([^\\s"'>=/]+)(${d}*=${d}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),p$1=/'/g,g=/"/g,$=/^(?:script|style|textarea|title)$/i,y=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),x=y(1),b=y(2),T=Symbol.for("lit-noChange"),E=Symbol.for("lit-nothing"),A=new WeakMap,C=r$5.createTreeWalker(r$5,129);function P(t,i){if(!a(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==s$7?s$7.createHTML(i):i}const V=(t,i)=>{const s=t.length-1,o=[];let r,l=2===i?"<svg>":3===i?"<math>":"",c=f$2;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,y=0;for(;y<s.length&&(c.lastIndex=y,u=c.exec(s),null!==u);)y=c.lastIndex,c===f$2?"!--"===u[1]?c=v$1:void 0!==u[1]?c=_:void 0!==u[2]?($.test(u[2])&&(r=RegExp("</"+u[2],"g")),c=m$1):void 0!==u[3]&&(c=m$1):c===m$1?">"===u[0]?(c=r??f$2,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?m$1:'"'===u[3]?g:p$1):c===g||c===p$1?c=m$1:c===v$1||c===_?c=f$2:(c=m$1,r=void 0);const x=c===m$1&&t[i+1].startsWith("/>")?" ":"";l+=c===f$2?s+n$6:d>=0?(o.push(a),s.slice(0,d)+e$9+s.slice(d)+h$2+x):s+h$2+(-2===d?i:x);}return [P(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),o]};class N{constructor({strings:t,_$litType$:s},n){let r;this.parts=[];let c=0,a=0;const u=t.length-1,d=this.parts,[f,v]=V(t,s);if(this.el=N.createElement(f,n),C.currentNode=this.el.content,2===s||3===s){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=C.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(e$9)){const i=v[a++],s=r.getAttribute(t).split(h$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:c,name:e[2],strings:s,ctor:"."===e[1]?H:"?"===e[1]?I:"@"===e[1]?L:k}),r.removeAttribute(t);}else t.startsWith(h$2)&&(d.push({type:6,index:c}),r.removeAttribute(t));if($.test(r.tagName)){const t=r.textContent.split(h$2),s=t.length-1;if(s>0){r.textContent=i$4?i$4.emptyScript:"";for(let i=0;i<s;i++)r.append(t[i],l$1()),C.nextNode(),d.push({type:2,index:++c});r.append(t[s],l$1());}}}else if(8===r.nodeType)if(r.data===o$6)d.push({type:2,index:c});else {let t=-1;for(;-1!==(t=r.data.indexOf(h$2,t+1));)d.push({type:7,index:c}),t+=h$2.length-1;}c++;}}static createElement(t,i){const s=r$5.createElement("template");return s.innerHTML=t,s}}function S(t,i,s=t,e){if(i===T)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=c$3(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=S(t,h._$AS(t,i.values),h,e)),i}let M$1 = class M{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??r$5).importNode(i,true);C.currentNode=e;let h=C.nextNode(),o=0,n=0,l=s[0];for(;void 0!==l;){if(o===l.index){let i;2===l.type?i=new R(h,h.nextSibling,this,t):1===l.type?i=new l.ctor(h,l.name,l.strings,this,t):6===l.type&&(i=new z(h,this,t)),this._$AV.push(i),l=s[++n];}o!==l?.index&&(h=C.nextNode(),o++);}return C.currentNode=r$5,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}};class R{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=E,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=S(this,t,i),c$3(t)?t===E||null==t||""===t?(this._$AH!==E&&this._$AR(),this._$AH=E):t!==this._$AH&&t!==T&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):u$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==E&&c$3(this._$AH)?this._$AA.nextSibling.data=t:this.T(r$5.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=N.createElement(P(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new M$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=A.get(t.strings);return void 0===i&&A.set(t.strings,i=new N(t)),i}k(t){a(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new R(this.O(l$1()),this.O(l$1()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,i){for(this._$AP?.(false,true,i);t!==this._$AB;){const i=t.nextSibling;t.remove(),t=i;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class k{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=E,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=E;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=S(this,t,i,0),o=!c$3(t)||t!==this._$AH&&t!==T,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=S(this,e[s+n],i,n),r===T&&(r=this._$AH[n]),o||=!c$3(r)||r!==this._$AH[n],r===E?t=E:t!==E&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===E?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class H extends k{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===E?void 0:t;}}class I extends k{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==E);}}class L extends k{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=S(this,t,i,0)??E)===T)return;const s=this._$AH,e=t===E&&s!==E||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==E&&(s===E||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){S(this,t);}}const Z={I:R},j=t$3.litHtmlPolyfillSupport;j?.(N,R),(t$3.litHtmlVersions??=[]).push("3.3.1");const B=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new R(i.insertBefore(l$1(),t),t,void 0,s??{});}return h._$AI(t),h};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const s$6=globalThis;let i$3 = class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(true);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(false);}render(){return T}};i$3._$litElement$=true,i$3["finalized"]=true,s$6.litElementHydrateSupport?.({LitElement:i$3});const o$4=s$6.litElementPolyfillSupport;o$4?.({LitElement:i$3});(s$6.litElementVersions??=[]).push("4.2.1");
+ */const s$6=globalThis;let i$3 = class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=B(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(true);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(false);}render(){return T}};i$3._$litElement$=true,i$3["finalized"]=true,s$6.litElementHydrateSupport?.({LitElement:i$3});const o$5=s$6.litElementPolyfillSupport;o$5?.({LitElement:i$3});(s$6.litElementVersions??=[]).push("4.2.1");
 
 /**
  * @license
@@ -8232,7 +8311,7 @@ const t$2=t=>(e,o)=>{ void 0!==o?o.addInitializer((()=>{customElements.define(t,
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const o$3={attribute:true,type:String,converter:u$3,reflect:false,hasChanged:f$3},r$4=(t=o$3,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=true),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$5(t){return (e,o)=>"object"==typeof o?r$4(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
+ */const o$4={attribute:true,type:String,converter:u$3,reflect:false,hasChanged:f$3},r$4=(t=o$4,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=true),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t);}}throw Error("Unsupported decorator location: "+n)};function n$5(t){return (e,o)=>"object"==typeof o?r$4(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
 
 /**
  * @license
@@ -8245,20 +8324,20 @@ const t$2=t=>(e,o)=>{ void 0!==o?o.addInitializer((()=>{customElements.define(t,
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const e$7=(e,t,c)=>(c.configurable=true,c.enumerable=true,Reflect.decorate&&"object"!=typeof t&&Object.defineProperty(e,t,c),c);
+const e$8=(e,t,c)=>(c.configurable=true,c.enumerable=true,Reflect.decorate&&"object"!=typeof t&&Object.defineProperty(e,t,c),c);
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function e$6(e,r){return (n,s,i)=>{const o=t=>t.renderRoot?.querySelector(e)??null;return e$7(n,s,{get(){return o(this)}})}}
+ */function e$7(e,r){return (n,s,i)=>{const o=t=>t.renderRoot?.querySelector(e)??null;return e$8(n,s,{get(){return o(this)}})}}
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-let e$5;function r$2(r){return (n,o)=>e$7(n,o,{get(){return (this.renderRoot??(e$5??=document.createDocumentFragment())).querySelectorAll(r)}})}
+let e$6;function r$2(r){return (n,o)=>e$8(n,o,{get(){return (this.renderRoot??(e$6??=document.createDocumentFragment())).querySelectorAll(r)}})}
 
 /**
  * @license
@@ -8291,13 +8370,13 @@ let s$3 = class s{get value(){return this.o}set value(s){this.setValue(s);}setVa
  * @license
  * Copyright 2021 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */let e$4 = class e extends Event{constructor(t,s){super("context-provider",{bubbles:true,composed:true}),this.context=t,this.contextTarget=s;}};let i$2 = class i extends s$3{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$5(this.context,i,s,true)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$4(this.context,this.host));}};
+ */let e$5 = class e extends Event{constructor(t,s){super("context-provider",{bubbles:true,composed:true}),this.context=t,this.contextTarget=s;}};let i$2 = class i extends s$3{constructor(s,e,i){super(void 0!==e.context?e.initialValue:i),this.onContextRequest=t=>{if(t.context!==this.context)return;const s=t.contextTarget??t.composedPath()[0];s!==this.host&&(t.stopPropagation(),this.addCallback(t.callback,s,t.subscribe));},this.onProviderRequest=s=>{if(s.context!==this.context)return;if((s.contextTarget??s.composedPath()[0])===this.host)return;const e=new Set;for(const[s,{consumerHost:i}]of this.subscriptions)e.has(s)||(e.add(s),i.dispatchEvent(new s$5(this.context,i,s,true)));s.stopPropagation();},this.host=s,void 0!==e.context?this.context=e.context:this.context=e,this.attachListeners(),this.host.addController?.(this);}attachListeners(){this.host.addEventListener("context-request",this.onContextRequest),this.host.addEventListener("context-provider",this.onProviderRequest);}hostConnected(){this.host.dispatchEvent(new e$5(this.context,this.host));}};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function e$3({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$2(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$2(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:true,enumerable:true};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
+ */function e$4({context:e}){return (n,i)=>{const r=new WeakMap;if("object"==typeof i)return {get(){return n.get.call(this)},set(t){return r.get(this).setValue(t),n.set.call(this,t)},init(n){return r.set(this,new i$2(this,{context:e,initialValue:n})),n}};{n.constructor.addInitializer((n=>{r.set(n,new i$2(n,{context:e}));}));const o=Object.getOwnPropertyDescriptor(n,i);let s;if(void 0===o){const t=new WeakMap;s={get(){return t.get(this)},set(e){r.get(this).setValue(e),t.set(this,e);},configurable:true,enumerable:true};}else {const t=o.set;s={...o,set(e){r.get(this).setValue(e),t?.call(this,e);}};}return void Object.defineProperty(n,i,s)}}}
 
 /**
  * @license
@@ -8988,31 +9067,31 @@ async function fetchAiSettings() {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const t={ATTRIBUTE:1,CHILD:2},e$2=t=>(...e)=>({_$litDirective$:t,values:e});let i$1 = class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}};
+const t={ATTRIBUTE:1,CHILD:2},e$3=t=>(...e)=>({_$litDirective$:t,values:e});let i$1 = class i{constructor(t){}get _$AU(){return this._$AM._$AU}_$AT(t,e,i){this._$Ct=t,this._$AM=e,this._$Ci=i;}_$AS(t,e){return this.update(t,e)}update(t,e){return this.render(...e)}};
 
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const s$1=(i,t)=>{const e=i._$AN;if(void 0===e)return  false;for(const i of e)i._$AO?.(t,false),s$1(i,t);return  true},o$2=i=>{let t,e;do{if(void 0===(t=i._$AM))break;e=t._$AN,e.delete(i),i=t;}while(0===e?.size)},r=i=>{for(let t;t=i._$AM;i=t){let e=t._$AN;if(void 0===e)t._$AN=e=new Set;else if(e.has(i))break;e.add(i),c$1(t);}};function h$1(i){ void 0!==this._$AN?(o$2(this),this._$AM=i,r(this)):this._$AM=i;}function n$3(i,t=false,e=0){const r=this._$AH,h=this._$AN;if(void 0!==h&&0!==h.size)if(t)if(Array.isArray(r))for(let i=e;i<r.length;i++)s$1(r[i],false),o$2(r[i]);else null!=r&&(s$1(r,false),o$2(r));else s$1(this,i);}const c$1=i=>{i.type==t.CHILD&&(i._$AP??=n$3,i._$AQ??=h$1);};class f extends i$1{constructor(){super(...arguments),this._$AN=void 0;}_$AT(i,t,e){super._$AT(i,t,e),r(this),this.isConnected=i._$AU;}_$AO(i,t=true){i!==this.isConnected&&(this.isConnected=i,i?this.reconnected?.():this.disconnected?.()),t&&(s$1(this,i),o$2(this));}setValue(t){if(f$1(this._$Ct))this._$Ct._$AI(t,this);else {const i=[...this._$Ct._$AH];i[this._$Ci]=t,this._$Ct._$AI(i,this,0);}}disconnected(){}reconnected(){}}
+ */const s$1=(i,t)=>{const e=i._$AN;if(void 0===e)return  false;for(const i of e)i._$AO?.(t,false),s$1(i,t);return  true},o$3=i=>{let t,e;do{if(void 0===(t=i._$AM))break;e=t._$AN,e.delete(i),i=t;}while(0===e?.size)},r=i=>{for(let t;t=i._$AM;i=t){let e=t._$AN;if(void 0===e)t._$AN=e=new Set;else if(e.has(i))break;e.add(i),c$1(t);}};function h$1(i){ void 0!==this._$AN?(o$3(this),this._$AM=i,r(this)):this._$AM=i;}function n$3(i,t=false,e=0){const r=this._$AH,h=this._$AN;if(void 0!==h&&0!==h.size)if(t)if(Array.isArray(r))for(let i=e;i<r.length;i++)s$1(r[i],false),o$3(r[i]);else null!=r&&(s$1(r,false),o$3(r));else s$1(this,i);}const c$1=i=>{i.type==t.CHILD&&(i._$AP??=n$3,i._$AQ??=h$1);};class f extends i$1{constructor(){super(...arguments),this._$AN=void 0;}_$AT(i,t,e){super._$AT(i,t,e),r(this),this.isConnected=i._$AU;}_$AO(i,t=true){i!==this.isConnected&&(this.isConnected=i,i?this.reconnected?.():this.disconnected?.()),t&&(s$1(this,i),o$3(this));}setValue(t){if(f$1(this._$Ct))this._$Ct._$AI(t,this);else {const i=[...this._$Ct._$AH];i[this._$Ci]=t,this._$Ct._$AI(i,this,0);}}disconnected(){}reconnected(){}}
 
 /**
  * @license
  * Copyright 2020 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const e$1=()=>new h;class h{}const o$1=new WeakMap,n$2=e$2(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o$1.get(i);void 0===s&&(s=new WeakMap,o$1.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o$1.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
+ */const e$2=()=>new h;class h{}const o$2=new WeakMap,n$2=e$3(class extends f{render(i){return E}update(i,[s]){const e=s!==this.G;return e&&void 0!==this.G&&this.rt(void 0),(e||this.lt!==this.ct)&&(this.G=s,this.ht=i.options?.host,this.rt(this.ct=i.element)),E}rt(t){if(this.isConnected||(t=void 0),"function"==typeof this.G){const i=this.ht??globalThis;let s=o$2.get(i);void 0===s&&(s=new WeakMap,o$2.set(i,s)),void 0!==s.get(this.G)&&this.G.call(this.ht,void 0),s.set(this.G,t),void 0!==t&&this.G.call(this.ht,t);}else this.G.value=t;}get lt(){return "function"==typeof this.G?o$2.get(this.ht??globalThis)?.get(this.G):this.G?.value}disconnected(){this.lt===this.ct&&this.rt(void 0);}reconnected(){this.rt(this.ct);}});
 
 /**
  * @license
  * Copyright 2018 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const e=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"class"!==t$1.name||t$1.strings?.length>2)throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.")}render(t){return " "+Object.keys(t).filter((s=>t[s])).join(" ")+" "}update(s,[i]){if(void 0===this.st){this.st=new Set,void 0!==s.strings&&(this.nt=new Set(s.strings.join(" ").split(/\s/).filter((t=>""!==t))));for(const t in i)i[t]&&!this.nt?.has(t)&&this.st.add(t);return this.render(i)}const r=s.element.classList;for(const t of this.st)t in i||(r.remove(t),this.st.delete(t));for(const t in i){const s=!!i[t];s===this.st.has(t)||this.nt?.has(t)||(s?(r.add(t),this.st.add(t)):(r.remove(t),this.st.delete(t)));}return T}});
+ */const e$1=e$3(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"class"!==t$1.name||t$1.strings?.length>2)throw Error("`classMap()` can only be used in the `class` attribute and must be the only part in the attribute.")}render(t){return " "+Object.keys(t).filter((s=>t[s])).join(" ")+" "}update(s,[i]){if(void 0===this.st){this.st=new Set,void 0!==s.strings&&(this.nt=new Set(s.strings.join(" ").split(/\s/).filter((t=>""!==t))));for(const t in i)i[t]&&!this.nt?.has(t)&&this.st.add(t);return this.render(i)}const r=s.element.classList;for(const t of this.st)t in i||(r.remove(t),this.st.delete(t));for(const t in i){const s=!!i[t];s===this.st.has(t)||this.nt?.has(t)||(s?(r.add(t),this.st.add(t)):(r.remove(t),this.st.delete(t)));}return T}});
 
 /**
  * @license
  * Copyright 2018 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */const n$1="important",i=" !"+n$1,o=e$2(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"style"!==t$1.name||t$1.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce(((e,r)=>{const s=t[r];return null==s?e:e+`${r=r.includes("-")?r:r.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${s};`}),"")}update(e,[r]){const{style:s}=e.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(r)),this.render(r);for(const t of this.ft)null==r[t]&&(this.ft.delete(t),t.includes("-")?s.removeProperty(t):s[t]=null);for(const t in r){const e=r[t];if(null!=e){this.ft.add(t);const r="string"==typeof e&&e.endsWith(i);t.includes("-")||r?s.setProperty(t,r?e.slice(0,-11):e,r?n$1:""):s[t]=e;}}return T}});
+ */const n$1="important",i=" !"+n$1,o$1=e$3(class extends i$1{constructor(t$1){if(super(t$1),t$1.type!==t.ATTRIBUTE||"style"!==t$1.name||t$1.strings?.length>2)throw Error("The `styleMap` directive must be used in the `style` attribute and must be the only part in the attribute.")}render(t){return Object.keys(t).reduce(((e,r)=>{const s=t[r];return null==s?e:e+`${r=r.includes("-")?r:r.replace(/(?:^(webkit|moz|ms|o)|)(?=[A-Z])/g,"-$&").toLowerCase()}:${s};`}),"")}update(e,[r]){const{style:s}=e.element;if(void 0===this.ft)return this.ft=new Set(Object.keys(r)),this.render(r);for(const t of this.ft)null==r[t]&&(this.ft.delete(t),t.includes("-")?s.removeProperty(t):s[t]=null);for(const t in r){const e=r[t];if(null!=e){this.ft.add(t);const r="string"==typeof e&&e.endsWith(i);t.includes("-")||r?s.setProperty(t,r?e.slice(0,-11):e,r?n$1:""):s[t]=e;}}return T}});
 
 class ChartUtils {
     /**
@@ -9414,11 +9493,11 @@ class ChartUtils {
     }
     /**
      * Canonical conversion of a single HA sensor state string to a number.
-     * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT, EXHAUST, HUMIDIFIER)
-     * and falls back to float parsing for all other metrics.
+     * Handles metric-specific binary conversions (DEHUMIDIFIER, LIGHT) and fan entity modes
+     * (ADR-0008: fan domain → attributes.percentage; speed sensor → raw float).
      * Returns undefined for unavailable/unknown/unparseable states.
      */
-    static normalizeSensorValue(ent, key) {
+    static normalizeSensorValue(ent, key, entityDomain, entityUnit) {
         const s = ent.state;
         if (s === EntityState.UNAVAILABLE || s === EntityState.UNKNOWN)
             return undefined;
@@ -9426,6 +9505,10 @@ class ChartUtils {
             return BINARY_ON_STATES.includes(s) || s === 'heating' || s === 'drying' ? 1 : 0;
         }
         if (key === MetricKey.LIGHT) {
+            if (entityUnit === '%') {
+                const val = parseFloat(s);
+                return isNaN(val) ? undefined : val;
+            }
             if (s === EntityState.ON || s === EntityState.TRUE)
                 return 1;
             if (s === EntityState.OFF || s === EntityState.FALSE)
@@ -9434,6 +9517,12 @@ class ChartUtils {
             if (!isNaN(val))
                 return val > 0 ? 1 : 0;
             return undefined;
+        }
+        if (entityDomain === 'fan') {
+            if (s === 'off')
+                return 0;
+            const pct = ent.attributes?.percentage;
+            return pct != null ? Number(pct) : 100;
         }
         const val = parseFloat(s);
         if (isNaN(val)) {
@@ -9450,13 +9539,13 @@ class ChartUtils {
      * Delegates per-point conversion to normalizeSensorValue so all metric-specific
      * logic lives in one place.
      */
-    static normalizeHistory(historyData, metricKey) {
+    static normalizeHistory(historyData, metricKey, entityDomain, entityUnit) {
         if (!historyData || historyData.length === 0)
             return [];
         const sorted = [...historyData].sort((a, b) => new Date(a.last_changed).getTime() - new Date(b.last_changed).getTime());
         const points = [];
         for (const h of sorted) {
-            const val = ChartUtils.normalizeSensorValue(h, metricKey);
+            const val = ChartUtils.normalizeSensorValue(h, metricKey, entityDomain, entityUnit);
             if (val === undefined)
                 continue;
             const point = {
@@ -9808,8 +9897,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
         this._canScrollLeft = false;
         this._canScrollRight = false;
         this._renderSeries = [];
-        this._chipsContainerRef = e$1();
-        this._chartContainerRef = e$1();
+        this._chipsContainerRef = e$2();
+        this._chartContainerRef = e$2();
         // Optimization: Cache bounding rect for tooltip
         this._cachedChartRect = null;
         this._tooltipRafId = null;
@@ -9901,6 +9990,45 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     }
     _invalidateRectCache() {
         this._cachedChartRect = null;
+    }
+    /**
+     * Return the entity domain (e.g. "fan", "sensor", "switch") for the first entity
+     * configured for a fan metric key (EXHAUST or CIRCULATION_FAN).
+     * Returns undefined when no entity is configured or hass is unavailable.
+     */
+    _resolveFanEntityDomain(key) {
+        if (!this.device || !this.hass)
+            return undefined;
+        const env = this.device.environmentAttributes ?? {};
+        let entityId;
+        if (key === MetricKey.EXHAUST) {
+            entityId = (env.exhaustFanEntities ?? [])[0] ?? env.exhaustEntity;
+        }
+        else if (key === MetricKey.CIRCULATION_FAN) {
+            entityId = (env.circulationFanEntities ?? [])[0] ?? env.circulationFanEntity;
+        }
+        if (!entityId)
+            return undefined;
+        return entityId.split('.')[0];
+    }
+    /**
+     * Return the Y-axis scale for a fan metric series based on the configured entity type.
+     * - HA fan entity (fan.* domain): 0–100
+     * - Speed sensor or binary: 0–10 (existing default)
+     */
+    _resolveFanScale(key) {
+        const domain = this._resolveFanEntityDomain(key);
+        if (domain === 'fan')
+            return { min: 0, max: 100 };
+        return { min: 0, max: 10 };
+    }
+    _resolveLightEntityUnit() {
+        if (!this.device || !this.hass)
+            return undefined;
+        const entityId = this.device.environmentAttributes?.lightSensor;
+        if (!entityId)
+            return undefined;
+        return this.hass.states[entityId]?.attributes?.unit_of_measurement;
     }
     _getVpdThresholds() {
         const defaultThresholds = {
@@ -10036,12 +10164,22 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                     break;
                 initialState = h;
             }
+            const fanEntityDomain = key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN
+                ? this._resolveFanEntityDomain(key)
+                : undefined;
+            if (fanEntityDomain === 'fan') {
+                config.unit = '%';
+            }
+            const lightEntityUnit = key === MetricKey.LIGHT ? this._resolveLightEntityUnit() : undefined;
+            if (lightEntityUnit === '%') {
+                config.unit = '%';
+            }
             if (initialState) {
                 const val = key === MetricKey.OPTIMAL || BINARY_ON_STATES.includes(initialState.state)
                     ? BINARY_ON_STATES.includes(initialState.state)
                         ? 1
                         : 0
-                    : ChartUtils.normalizeSensorValue(initialState, key);
+                    : ChartUtils.normalizeSensorValue(initialState, key, fanEntityDomain, lightEntityUnit);
                 if (val !== undefined)
                     dataPoints.push({ time: startTimeMs, value: val });
             }
@@ -10060,7 +10198,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                         dataPoints.push({ time: t, value: val });
                 }
                 else {
-                    val = ChartUtils.normalizeSensorValue(h, key);
+                    val = ChartUtils.normalizeSensorValue(h, key, fanEntityDomain, lightEntityUnit);
                     if (val !== undefined)
                         dataPoints.push({ time: t, value: val });
                 }
@@ -10088,12 +10226,19 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
                 const isStep = config.type === ChartType.STEP ||
                     key === MetricKey.OPTIMAL ||
                     key === MetricKey.DEHUMIDIFIER ||
-                    key === MetricKey.LIGHT ||
+                    (key === MetricKey.LIGHT && lightEntityUnit !== '%') ||
                     key === MetricKey.IRRIGATION ||
                     key === MetricKey.DRAIN;
-                if (key === MetricKey.EXHAUST ||
-                    key === MetricKey.HUMIDIFIER ||
-                    key === MetricKey.CIRCULATION_FAN) {
+                if (key === MetricKey.EXHAUST || key === MetricKey.CIRCULATION_FAN) {
+                    const fanScale = this._resolveFanScale(key);
+                    min = fanScale.min;
+                    max = fanScale.max;
+                }
+                else if (key === MetricKey.LIGHT && lightEntityUnit === '%') {
+                    min = 0;
+                    max = 100;
+                }
+                else if (key === MetricKey.HUMIDIFIER) {
                     min = 0;
                     max = 10;
                 }
@@ -10352,7 +10497,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             const isBinary = defaults?.binary ||
                 series.id === MetricKey.OPTIMAL ||
                 series.id === MetricKey.DEHUMIDIFIER ||
-                series.id === MetricKey.LIGHT ||
+                (series.id === MetricKey.LIGHT && series.unit !== '%') ||
                 series.id === MetricKey.IRRIGATION ||
                 series.id === MetricKey.DRAIN;
             if (isBinary) {
@@ -10413,7 +10558,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
           >
             ${seriesList.map((s) => x `
                 <div
-                  class=${e({
+                  class=${e$1({
             'gs-legend-item': true,
             'mask-left': this._canScrollLeft,
             'mask-right': this._canScrollRight,
@@ -10474,7 +10619,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             return x ``;
         const { x: x$1, time, items } = this._activeTooltip;
         return x `
-      <div class="gs-tooltip" style=${o({ left: `${x$1}px`, top: '0' })}>
+      <div class="gs-tooltip" style=${o$1({ left: `${x$1}px`, top: '0' })}>
         <div
           style="font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:2px;"
         >
@@ -10491,7 +10636,7 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
       </div>
       <div
         class="gs-cursor-line"
-        style=${o({
+        style=${o$1({
             left: `${x$1}px`,
             height: '100%',
             top: '0',
@@ -11500,6 +11645,2764 @@ const dialogStyles = [
   `,
 ];
 
+// ─── Stage colors ─────────────────────────────────────────────────────────────
+const STAGE_COLOR = {
+    veg: 'var(--primary-color, #4caf50)',
+    flower: '#e91e63',
+    seedling: '#00bcd4',
+    clone: '#9c27b0',
+    mother: '#ff9800',
+};
+function stageColor(stage) {
+    return STAGE_COLOR[stage ?? ''] ?? 'var(--secondary-text-color)';
+}
+function draftFromPreset(preset) {
+    return {
+        name: preset.name,
+        stage: preset.stage,
+        week: preset.week,
+        ec_target: preset.ec_target ?? null,
+        ph_target: preset.ph_target ?? null,
+        nutrients: (preset.nutrients ?? []).map((n) => ({ nutrient_id: n.nutrient_id, dose_ml_l: n.dose_ml_l, name: n.name })),
+    };
+}
+// ─── Component ────────────────────────────────────────────────────────────────
+let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.presets = null;
+        this.inventory = null;
+        this.selectedId = null;
+        this.sub = { kind: 'idle' };
+    }
+    _dispatch(event) {
+        this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
+    }
+    render() {
+        const { sub, selectedId } = this;
+        if (sub.kind === 'editing' || sub.kind === 'applying') {
+            return this._renderEditForm(sub);
+        }
+        if (sub.kind === 'confirm-delete') {
+            return this._renderConfirmDelete(sub.id, sub.name);
+        }
+        if (sub.kind === 'error') {
+            return this._renderError(sub);
+        }
+        if (selectedId !== null) {
+            const preset = this.presets?.[selectedId] ?? null;
+            return preset ? this._renderDetail(preset) : E;
+        }
+        return this._renderList();
+    }
+    // ─── Master list ────────────────────────────────────────────────────────────
+    _renderList() {
+        const entries = Object.values(this.presets ?? {});
+        return x `
+      <button
+        class="add-btn"
+        data-action="add"
+        @click=${() => this._dispatch({ type: 'NewItemRequested' })}
+      >
+        <ha-svg-icon .path=${mdiPlus} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        Add Preset
+      </button>
+
+      ${entries.length === 0
+            ? x `<div class="empty-state">No presets defined yet.</div>`
+            : x `
+            <div class="list">
+              ${entries.map((p) => this._renderListItem(p))}
+            </div>
+          `}
+    `;
+    }
+    _renderListItem(preset) {
+        const color = stageColor(preset.stage);
+        const count = preset.nutrients?.length ?? 0;
+        return x `
+      <div
+        class="list-item"
+        data-preset-id=${preset.id}
+        @click=${() => this._dispatch({ type: 'ItemSelected', id: preset.id })}
+      >
+        <div class="stage-dot" style="background:${color}"></div>
+        <div class="item-body">
+          <div class="item-name">${preset.name}</div>
+          <div class="item-meta">
+            ${preset.stage ? x `${preset.stage}` : E}
+            ${preset.week ? x ` · Week ${preset.week}` : E}
+            · ${count} nutrient${count !== 1 ? 's' : ''}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Detail view ────────────────────────────────────────────────────────────
+    _renderDetail(preset) {
+        const color = stageColor(preset.stage);
+        return x `
+      <div class="detail-header">
+        <button
+          class="back-btn"
+          data-action="back"
+          @click=${() => this._dispatch({ type: 'BackToList' })}
+        >
+          <ha-svg-icon .path=${mdiArrowLeft} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+        </button>
+        <h3 class="detail-title">${preset.name}</h3>
+        <div class="detail-actions">
+          <button
+            class="icon-btn"
+            data-action="edit"
+            @click=${() => this._dispatch({ type: 'EditStarted', draft: draftFromPreset(preset) })}
+          >
+            <ha-svg-icon .path=${mdiPencil} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+          </button>
+          <button
+            class="icon-btn danger"
+            data-action="delete"
+            @click=${() => this._dispatch({ type: 'DeleteRequested', id: preset.id, name: preset.name })}
+          >
+            <ha-svg-icon .path=${mdiDelete} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <p class="detail-section-title">Stage</p>
+        <div class="detail-row">
+          <span class="detail-label">Stage</span>
+          <span style="color:${color}">${preset.stage ?? '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Week</span>
+          <span>${preset.week ?? '—'}</span>
+        </div>
+      </div>
+
+      ${preset.ec_target != null || preset.ph_target != null
+            ? x `
+            <div class="detail-section">
+              <p class="detail-section-title">Targets</p>
+              ${preset.ec_target != null
+                ? x `
+                    <div class="detail-row">
+                      <span class="detail-label">EC target</span>
+                      <span>${preset.ec_target} mS/cm</span>
+                    </div>
+                  `
+                : E}
+              ${preset.ph_target != null
+                ? x `
+                    <div class="detail-row">
+                      <span class="detail-label">pH target</span>
+                      <span>${preset.ph_target}</span>
+                    </div>
+                  `
+                : E}
+            </div>
+          `
+            : E}
+
+      <div class="detail-section">
+        <p class="detail-section-title">Nutrient mix</p>
+        ${(preset.nutrients ?? []).map((row) => {
+            const stock = this.inventory?.stocks[row.nutrient_id];
+            const isOrphan = !stock;
+            return x `
+            <div class="mix-row">
+              <ha-svg-icon .path=${mdiFlask} style="width:14px;height:14px;fill:currentColor;opacity:0.5"></ha-svg-icon>
+              ${isOrphan
+                ? x `<span class="orphan-badge" data-orphan style="flex:1">${row.name ?? row.nutrient_id} (missing)</span>`
+                : x `<span style="flex:1">${stock.name}</span>`}
+              <span style="color:var(--secondary-text-color)">${row.dose_ml_l} ml/L</span>
+            </div>
+          `;
+        })}
+      </div>
+    `;
+    }
+    // ─── Edit form ──────────────────────────────────────────────────────────────
+    _renderEditForm(sub) {
+        const { draft } = sub;
+        const applying = sub.kind === 'applying';
+        return x `
+      <div class="form" data-form="preset">
+        <div>
+          <label class="form-label">Name *</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.name}
+            @input=${(e) => this._dispatch({ type: 'PresetDraftChanged', field: 'name', value: e.target.value })}
+          />
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Stage</label>
+            <select
+              class="form-select"
+              .value=${draft.stage ?? ''}
+              @change=${(e) => this._dispatch({ type: 'PresetDraftChanged', field: 'stage', value: e.target.value || undefined })}
+            >
+              <option value="">—</option>
+              <option value="seedling">Seedling</option>
+              <option value="clone">Clone</option>
+              <option value="veg">Veg</option>
+              <option value="flower">Flower</option>
+              <option value="mother">Mother</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Week</label>
+            <input
+              class="form-input"
+              type="number"
+              min="1"
+              .value=${String(draft.week ?? '')}
+              @input=${(e) => {
+            const v = parseInt(e.target.value);
+            this._dispatch({ type: 'PresetDraftChanged', field: 'week', value: isNaN(v) ? undefined : v });
+        }}
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">EC target (mS/cm)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              step="0.1"
+              .value=${String(draft.ec_target ?? '')}
+              @input=${(e) => {
+            const v = parseFloat(e.target.value);
+            this._dispatch({ type: 'PresetDraftChanged', field: 'ec_target', value: isNaN(v) ? null : v });
+        }}
+            />
+          </div>
+          <div>
+            <label class="form-label">pH target</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              max="14"
+              step="0.1"
+              .value=${String(draft.ph_target ?? '')}
+              @input=${(e) => {
+            const v = parseFloat(e.target.value);
+            this._dispatch({ type: 'PresetDraftChanged', field: 'ph_target', value: isNaN(v) ? null : v });
+        }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <div class="nutrient-rows-header">
+            <span class="nutrient-rows-label">Nutrients</span>
+            <button
+              class="add-row-btn"
+              data-action="add-row"
+              @click=${() => this._dispatch({ type: 'PresetNutrientRowAdded' })}
+            >
+              <ha-svg-icon .path=${mdiPlus} style="width:14px;height:14px;fill:currentColor"></ha-svg-icon>
+              Add row
+            </button>
+          </div>
+
+          ${draft.nutrients.map((row, i) => this._renderNutrientRow(row, i))}
+        </div>
+
+        <div class="form-footer">
+          <button
+            class="btn btn-text"
+            data-action="cancel"
+            @click=${() => this._dispatch({ type: 'BackToList' })}
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary"
+            data-action="save"
+            ?disabled=${applying}
+            @click=${() => this._dispatch({ type: 'SaveRequested' })}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+            ${applying ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    _renderNutrientRow(row, index) {
+        const stocks = Object.values(this.inventory?.stocks ?? {});
+        const isOrphan = row.nutrient_id !== '' && !this.inventory?.stocks[row.nutrient_id];
+        return x `
+      <div class="nutrient-row-item" data-nutrient-row>
+        <select
+          class="form-select"
+          style="${isOrphan ? 'border-color:#ff9800' : ''}"
+          @change=${(e) => {
+            const nutrient_id = e.target.value;
+            const name = this.inventory?.stocks[nutrient_id]?.name ?? '';
+            this._dispatch({ type: 'PresetNutrientRowUpdated', index, patch: { nutrient_id, name } });
+        }}
+        >
+          <option value="" ?selected=${row.nutrient_id === ''}>— select nutrient —</option>
+          ${isOrphan ? x `<option value=${row.nutrient_id} selected>${row.name ?? row.nutrient_id} (missing)</option>` : E}
+          ${stocks.map((s) => x `<option value=${s.nutrient_id} ?selected=${s.nutrient_id === row.nutrient_id}>${s.name}</option>`)}
+        </select>
+        <input
+          class="form-input"
+          type="number"
+          min="0"
+          step="0.1"
+          placeholder="ml/L"
+          .value=${String(row.dose_ml_l)}
+          @input=${(e) => this._dispatch({
+            type: 'PresetNutrientRowUpdated',
+            index,
+            patch: { dose_ml_l: parseFloat(e.target.value) || 0 },
+        })}
+        />
+        <button
+          class="btn-icon-small"
+          data-action="remove-row"
+          @click=${() => this._dispatch({ type: 'PresetNutrientRowRemoved', index })}
+        >
+          <ha-svg-icon .path=${mdiDelete} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+        </button>
+      </div>
+    `;
+    }
+    // ─── Confirm delete ─────────────────────────────────────────────────────────
+    _renderConfirmDelete(_id, name) {
+        return x `
+      <div class="confirm-box">
+        <p>Delete <span class="confirm-name">${name}</span>? This cannot be undone.</p>
+        <div class="confirm-box-actions">
+          <button
+            class="btn btn-text"
+            data-action="cancel-delete"
+            @click=${() => this._dispatch({ type: 'DeleteCancelled' })}
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-danger"
+            data-action="confirm-delete"
+            @click=${() => this._dispatch({ type: 'DeleteConfirmed' })}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Error state ────────────────────────────────────────────────────────────
+    _renderError(sub) {
+        return x `
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(244,67,54,0.1);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:0.875rem;color:var(--error-color,#f44336)">
+        <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        ${sub.message}
+      </div>
+      ${this._renderEditForm({ kind: 'editing', draft: sub.draft })}
+    `;
+    }
+};
+GrowspaceNutrientPresetsEditorUI.styles = [
+    dialogStyles,
+    i$6 `
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .list-item:hover { background: rgba(255, 255, 255, 0.08); }
+
+      .stage-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .item-body { flex: 1; min-width: 0; }
+
+      .item-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .item-meta {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-top: 2px;
+      }
+
+      .add-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: background 0.15s;
+        margin-bottom: 12px;
+      }
+
+      .add-btn:hover { background: rgba(255, 255, 255, 0.09); }
+
+      .empty-state {
+        text-align: center;
+        padding: 32px 0;
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+
+      /* Detail */
+      .detail-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .back-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        transition: background 0.15s;
+      }
+
+      .back-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+      .detail-title { flex: 1; font-size: 1rem; font-weight: 500; margin: 0; }
+
+      .detail-actions { display: flex; gap: 8px; }
+
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        color: var(--primary-text-color);
+        transition: background 0.15s;
+      }
+
+      .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .icon-btn.danger { color: var(--error-color, #f44336); }
+
+      .detail-section {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .detail-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--secondary-text-color);
+        margin: 0 0 12px 0;
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        font-size: 0.875rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .detail-row:last-child { border-bottom: none; }
+      .detail-label { color: var(--secondary-text-color); }
+
+      .mix-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 0;
+        font-size: 0.875rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .mix-row:last-child { border-bottom: none; }
+
+      .orphan-badge {
+        font-size: 0.7rem;
+        background: rgba(255, 152, 0, 0.15);
+        color: #ff9800;
+        border-radius: 4px;
+        padding: 2px 6px;
+        text-decoration: line-through;
+      }
+
+      /* Edit form */
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .form-row { display: flex; gap: 12px; }
+      .form-row > * { flex: 1; }
+
+      .form-label {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .form-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.875rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .form-input:focus { border-color: var(--primary-color, #4caf50); }
+
+      .form-select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.875rem;
+        font-family: inherit;
+      }
+
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
+      }
+
+      .nutrient-rows-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .nutrient-rows-label {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--secondary-text-color);
+      }
+
+      .nutrient-row-item {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .nutrient-row-item > .form-select { flex: 2; }
+      .nutrient-row-item > .form-input  { flex: 1; }
+
+      .btn-icon-small {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: var(--error-color, #f44336);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .btn-icon-small:hover { background: rgba(244, 67, 54, 0.1); }
+
+      .add-row-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        padding: 6px 12px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-family: inherit;
+        transition: background 0.15s;
+        width: 100%;
+        justify-content: center;
+      }
+
+      .add-row-btn:hover { background: rgba(255, 255, 255, 0.05); }
+
+      .form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: background 0.15s;
+      }
+
+      .btn:disabled { opacity: 0.5; cursor: default; }
+
+      .btn-text {
+        background: transparent;
+        color: var(--secondary-text-color);
+      }
+
+      .btn-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+
+      .btn-primary {
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+      /* Confirm-delete */
+      .confirm-box {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .confirm-box p { margin: 0 0 16px; font-size: 0.9rem; }
+
+      .confirm-name {
+        font-weight: 600;
+        color: var(--error-color, #f44336);
+      }
+
+      .confirm-box-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-danger {
+        background: var(--error-color, #f44336);
+        color: #fff;
+      }
+
+      .btn-danger:hover { filter: brightness(1.1); }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientPresetsEditorUI.prototype, "presets", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientPresetsEditorUI.prototype, "inventory", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientPresetsEditorUI.prototype, "selectedId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientPresetsEditorUI.prototype, "sub", void 0);
+GrowspaceNutrientPresetsEditorUI = __decorate([
+    t$2('growspace-nutrient-presets-editor-ui')
+], GrowspaceNutrientPresetsEditorUI);
+
+/**
+ * Thin wiring layer that subscribes to the nutrient atoms and passes live
+ * inventory + preset data to the presets editor UI for dropdown population
+ * and orphan detection. The shell (nutrient-dialog) owns the SM and all
+ * fetch calls; this container is a pure pass-through.
+ */
+let GrowspaceNutrientPresetsEditorContainer = class GrowspaceNutrientPresetsEditorContainer extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.selectedId = null;
+        this.sub = { kind: 'idle' };
+        this._presets = new libExports.StoreController(this, nutrientPresets$);
+        this._inventory = new libExports.StoreController(this, nutrientInventory$);
+    }
+    render() {
+        const presets = this._presets.value;
+        const inventory = this._inventory.value;
+        if (presets === null)
+            return E;
+        return x `
+      <growspace-nutrient-presets-editor-ui
+        .presets=${presets}
+        .inventory=${inventory}
+        .selectedId=${this.selectedId}
+        .sub=${this.sub}
+      ></growspace-nutrient-presets-editor-ui>
+    `;
+    }
+};
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientPresetsEditorContainer.prototype, "selectedId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientPresetsEditorContainer.prototype, "sub", void 0);
+GrowspaceNutrientPresetsEditorContainer = __decorate([
+    t$2('growspace-nutrient-presets-editor')
+], GrowspaceNutrientPresetsEditorContainer);
+
+let Md3TextInput = class Md3TextInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.type = 'text';
+        this.placeholder = '';
+        this.suggestions = [];
+        this.list = '';
+        this._listId = `datalist-${Math.random().toString(36).substr(2, 9)}`;
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        const listId = this.suggestions.length > 0 ? this._listId : this.list;
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          .type=${this.type}
+          class="md3-input"
+          .value=${this.value}
+          .placeholder=${this.placeholder}
+          list=${listId || E}
+          @input=${this._handleInput}
+        />
+        ${this.suggestions.length > 0
+            ? x `
+              <datalist id=${this._listId}>
+                ${this.suggestions.map((s) => x `<option value=${s}></option>`)}
+              </datalist>
+            `
+            : E}
+      </div>
+    `;
+    }
+};
+Md3TextInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "value", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "type", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3TextInput.prototype, "suggestions", void 0);
+__decorate([
+    n$5()
+], Md3TextInput.prototype, "list", void 0);
+Md3TextInput = __decorate([
+    t$2('md3-text-input')
+], Md3TextInput);
+
+let Md3NumberInput = class Md3NumberInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = 0;
+        this.min = 0;
+        this.placeholder = '';
+        this.unit = '';
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = Number(value);
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <div style="display: flex; align-items: center;">
+          <input
+            type="number"
+            class="md3-input"
+            .min=${this.min}
+            .max=${this.max}
+            .value=${this.value}
+            .placeholder=${this.placeholder}
+            @input=${this._handleInput}
+            style="${this.unit ? 'padding-bottom: 16px;' : ''}"
+          />
+          ${this.unit
+            ? x `<span
+                style="
+                      position: absolute;
+                      right: 12px;
+                      pointer-events: none;
+                      color: var(--secondary-text-color, rgba(255,255,255,0.5));
+                      font-size: 0.9em;
+                    "
+                >${this.unit}</span
+              >`
+            : E}
+        </div>
+      </div>
+    `;
+    }
+};
+Md3NumberInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5()
+], Md3NumberInput.prototype, "label", void 0);
+__decorate([
+    n$5({ type: Number })
+], Md3NumberInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Number })
+], Md3NumberInput.prototype, "min", void 0);
+__decorate([
+    n$5({ type: Number })
+], Md3NumberInput.prototype, "max", void 0);
+__decorate([
+    n$5()
+], Md3NumberInput.prototype, "placeholder", void 0);
+__decorate([
+    n$5()
+], Md3NumberInput.prototype, "unit", void 0);
+Md3NumberInput = __decorate([
+    t$2('md3-number-input')
+], Md3NumberInput);
+
+let Md3Select = class Md3Select extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.options = [];
+    }
+    _handleChange(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
+          <option value="">Select...</option>
+          ${this.options.map((opt) => {
+            const label = typeof opt === 'string' ? opt : opt.label;
+            const val = typeof opt === 'string' ? opt : opt.value;
+            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
+        })}
+        </select>
+      </div>
+    `;
+    }
+};
+Md3Select.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5()
+], Md3Select.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3Select.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Array })
+], Md3Select.prototype, "options", void 0);
+Md3Select = __decorate([
+    t$2('md3-select')
+], Md3Select);
+
+let Md3DateInput = class Md3DateInput extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.label = '';
+        this.value = '';
+        this.time = false; // if true, uses datetime-local
+    }
+    _handleInput(e) {
+        const value = e.target.value;
+        this.value = value;
+        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
+    }
+    render() {
+        let formattedValue = this.value;
+        if (this.time) {
+            formattedValue = PlantUtils.toDateTimeLocal(this.value);
+        }
+        else {
+            formattedValue = this.value ? this.value.split('T')[0] : '';
+        }
+        return x `
+      <div class="md3-input-group">
+        <label class="md3-label">${this.label}</label>
+        <input
+          .type=${this.time ? 'datetime-local' : 'date'}
+          class="md3-input"
+          .value=${formattedValue}
+          @input=${this._handleInput}
+          @click=${(e) => e.target.showPicker()}
+        />
+      </div>
+    `;
+    }
+};
+Md3DateInput.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+        width: 100%;
+      }
+    `,
+];
+__decorate([
+    n$5()
+], Md3DateInput.prototype, "label", void 0);
+__decorate([
+    n$5()
+], Md3DateInput.prototype, "value", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], Md3DateInput.prototype, "time", void 0);
+Md3DateInput = __decorate([
+    t$2('md3-date-input')
+], Md3DateInput);
+
+let Md3Switch = class Md3Switch extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.checked = false;
+        this.disabled = false;
+    }
+    _handleClick() {
+        if (this.disabled)
+            return;
+        this.checked = !this.checked;
+        this.dispatchEvent(new CustomEvent('change', {
+            detail: { checked: this.checked },
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        return x `
+      <button
+        role="switch"
+        aria-checked=${this.checked}
+        @click=${this._handleClick}
+        ?disabled=${this.disabled}
+      >
+        <div class="handle"></div>
+      </button>
+    `;
+    }
+};
+Md3Switch.styles = i$6 `
+    :host {
+      display: inline-block;
+      vertical-align: middle;
+      --md-switch-width: 52px;
+      --md-switch-height: 32px;
+      --md-switch-handle-size: 24px;
+      --md-switch-track-color-on: var(--primary-color, #2196f3);
+      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
+      --md-switch-handle-color: #fff;
+    }
+
+    button {
+      all: unset;
+      position: relative;
+      width: var(--md-switch-width);
+      height: var(--md-switch-height);
+      border-radius: calc(var(--md-switch-height) / 2);
+      background: var(--md-switch-track-color-off);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+    }
+
+    :host([checked]) button {
+      background: var(--md-switch-track-color-on);
+      border-color: transparent;
+    }
+
+    .handle {
+      position: absolute;
+      top: 50%;
+      left: 4px;
+      transform: translateY(-50%);
+      width: var(--md-switch-handle-size);
+      height: var(--md-switch-handle-size);
+      background: var(--md-switch-handle-color);
+      border-radius: 50%;
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
+    :host([checked]) .handle {
+      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
+    }
+  `;
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], Md3Switch.prototype, "checked", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], Md3Switch.prototype, "disabled", void 0);
+Md3Switch = __decorate([
+    t$2('md3-switch')
+], Md3Switch);
+
+let GsHelpTooltip = class GsHelpTooltip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.content = '';
+        this.placement = 'top';
+        this.label = 'Help';
+        this._popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
+    }
+    render() {
+        if (!this.content)
+            return E;
+        return x `
+      <button
+        class="help-trigger"
+        style="anchor-name: --${this._popoverId};"
+        popovertarget="${this._popoverId}"
+        aria-label="Help: ${this.label}"
+        title="${this.label}"
+      >
+        <svg viewBox="0 0 24 24"><path d="${mdiInformationOutline}"></path></svg>
+      </button>
+      <div
+        id="${this._popoverId}"
+        class="help-popover"
+        popover="auto"
+        style="position-anchor: --${this._popoverId};"
+      >
+        <div class="help-popover-inner">${this.content}</div>
+      </div>
+    `;
+    }
+};
+GsHelpTooltip.styles = i$6 `
+    :host {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .help-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
+      border-radius: 50%;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .help-trigger:hover,
+    .help-trigger:focus-visible {
+      color: var(--primary-color, #2196f3);
+      outline: none;
+    }
+
+    .help-trigger svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+      pointer-events: none;
+    }
+
+    .help-popover {
+      position: fixed;
+      inset: auto;
+      position-try-fallbacks: flip-block, flip-inline;
+      margin: 0;
+      border: none;
+      padding: 0;
+      background: transparent;
+    }
+
+    .help-popover[popover]:popover-open {
+      display: block;
+    }
+
+    .help-popover-inner {
+      background: var(--card-background-color, #2a2a2a);
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+      border-radius: 8px;
+      padding: 8px 12px;
+      max-width: 240px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+      animation: tooltip-fade-in 0.15s ease-out;
+      white-space: normal;
+    }
+
+    @keyframes tooltip-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    :host([placement='top']) .help-popover {
+      bottom: anchor(top);
+      left: anchor(center);
+      translate: -50% -6px;
+    }
+
+    :host([placement='bottom']) .help-popover {
+      top: anchor(bottom);
+      left: anchor(center);
+      translate: -50% 6px;
+    }
+
+    :host([placement='left']) .help-popover {
+      right: anchor(left);
+      top: anchor(center);
+      translate: -6px -50%;
+    }
+
+    :host([placement='right']) .help-popover {
+      left: anchor(right);
+      top: anchor(center);
+      translate: 6px -50%;
+    }
+  `;
+__decorate([
+    n$5({ type: String })
+], GsHelpTooltip.prototype, "content", void 0);
+__decorate([
+    n$5({ type: String, reflect: true })
+], GsHelpTooltip.prototype, "placement", void 0);
+__decorate([
+    n$5({ type: String })
+], GsHelpTooltip.prototype, "label", void 0);
+GsHelpTooltip = __decorate([
+    t$2('gs-help-tooltip')
+], GsHelpTooltip);
+
+/**
+ * Add Plant Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM, no hassCall. All interaction state for
+ * AddPlantDialog lives here. The component calls `transition(sm, event)`
+ * and replaces its single `@state() _sm`.
+ *
+ * Structure:
+ *   SM
+ *     .activeTab          — which tab is visible ('add' | 'clone' | 'seedling')
+ *     .status             — root-level async status
+ *     .toast              — transient message
+ *     .tabs               — one typed state object per tab (draft + sub)
+ */
+// ─── Initial state ────────────────────────────────────────────────────────────
+function defaultAddDraft(row, col) {
+    return {
+        strain: '',
+        strainQuery: '',
+        phenotype: '',
+        addToLibrary: false,
+        sourceType: 'seed',
+        siblingPlantId: null,
+        row,
+        col,
+        seedlingStart: '',
+        vegStart: '',
+        flowerStart: '',
+        motherStart: '',
+        cloneStart: '',
+        dryStart: '',
+        cureStart: '',
+    };
+}
+function defaultTransplantDraft(row, col) {
+    return { selectedPlantId: null, row, col };
+}
+function createInitialSM$a({ row, col }) {
+    return {
+        activeTab: 'add',
+        tabs: {
+            add: { draft: defaultAddDraft(row, col), sub: { kind: 'step-identity' } },
+            clone: { draft: defaultTransplantDraft(row, col), sub: { kind: 'idle' } },
+            seedling: { draft: defaultTransplantDraft(row, col), sub: { kind: 'idle' } },
+        },
+        status: { kind: 'idle' },
+        toast: undefined,
+    };
+}
+// ─── Transition ───────────────────────────────────────────────────────────────
+function transition$a(sm, event) {
+    switch (event.type) {
+        case 'TabSelected': {
+            const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
+            return {
+                ...sm,
+                activeTab: event.tab,
+                tabs: {
+                    ...sm.tabs,
+                    add: { ...sm.tabs.add, sub: addSub },
+                },
+            };
+        }
+        case 'WizardAdvanced': {
+            const { sub, draft } = sm.tabs.add;
+            if (sub.kind === 'step-identity') {
+                if (!draft.strain)
+                    return sm;
+                return setAddSub(sm, { kind: 'step-source' });
+            }
+            if (sub.kind === 'step-source') {
+                return setAddSub(sm, { kind: 'step-schedule' });
+            }
+            return sm;
+        }
+        case 'WizardBacked': {
+            const { sub } = sm.tabs.add;
+            if (sub.kind === 'step-source')
+                return setAddSub(sm, { kind: 'step-identity' });
+            if (sub.kind === 'step-schedule')
+                return setAddSub(sm, { kind: 'step-source' });
+            return sm;
+        }
+        case 'DraftFieldChanged': {
+            if (event.tab === 'add') {
+                return {
+                    ...sm,
+                    tabs: {
+                        ...sm.tabs,
+                        add: {
+                            ...sm.tabs.add,
+                            draft: { ...sm.tabs.add.draft, [event.field]: event.value },
+                        },
+                    },
+                };
+            }
+            if (event.tab === 'clone') {
+                return {
+                    ...sm,
+                    tabs: {
+                        ...sm.tabs,
+                        clone: {
+                            ...sm.tabs.clone,
+                            draft: { ...sm.tabs.clone.draft, [event.field]: event.value },
+                        },
+                    },
+                };
+            }
+            // seedling
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    seedling: {
+                        ...sm.tabs.seedling,
+                        draft: { ...sm.tabs.seedling.draft, [event.field]: event.value },
+                    },
+                },
+            };
+        }
+        case 'SiblingPlantSelected': {
+            const current = sm.tabs.add.draft;
+            const isDeselect = current.strain === event.strain &&
+                current.phenotype === event.phenotype &&
+                current.cloneStart === event.cloneStart &&
+                current.siblingPlantId !== null;
+            if (isDeselect) {
+                return {
+                    ...sm,
+                    tabs: {
+                        ...sm.tabs,
+                        add: {
+                            ...sm.tabs.add,
+                            draft: { ...current, siblingPlantId: null },
+                        },
+                    },
+                };
+            }
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    add: {
+                        ...sm.tabs.add,
+                        draft: {
+                            ...current,
+                            strain: event.strain,
+                            strainQuery: event.strain,
+                            phenotype: event.phenotype,
+                            cloneStart: event.cloneStart,
+                            siblingPlantId: event.strain,
+                        },
+                    },
+                },
+            };
+        }
+        case 'SaveRequested':
+            return { ...sm, status: { kind: 'applying' } };
+        case 'SaveResolved':
+            return { ...sm, status: { kind: 'done' } };
+        case 'SaveFailed':
+            return { ...sm, status: { kind: 'error', message: event.message }, toast: event.message };
+        case 'StatusReset':
+            return { ...sm, status: { kind: 'idle' } };
+        case 'SetToast':
+            return { ...sm, toast: event.message };
+        default:
+            return sm;
+    }
+}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setAddSub(sm, sub) {
+    return {
+        ...sm,
+        tabs: { ...sm.tabs, add: { ...sm.tabs.add, sub } },
+    };
+}
+
+let AddPlantDialog = class AddPlantDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
+        // Render-time args — not draft state
+        this.clonePlants = [];
+        this.seedlingPlants = [];
+        this.targetGrowspaceId = '';
+        this.siblingPlants = [];
+        this._sm = createInitialSM$a({ row: 0, col: 0 });
+    }
+    setInitialState(row, col, strain = '', phenotype = '') {
+        this._sm = createInitialSM$a({ row, col });
+        if (strain) {
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+        }
+        if (phenotype) {
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+        }
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _openStrainCreator() {
+        const { draft } = this._sm.tabs.add;
+        this.dispatchEvent(new CustomEvent('create-new-strain', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                source: 'add-plant',
+                returnPayload: {
+                    row: draft.row,
+                    col: draft.col,
+                    strain: draft.strain,
+                    phenotype: draft.phenotype,
+                    seedling_start: draft.seedlingStart,
+                    veg_start: draft.vegStart,
+                    flower_start: draft.flowerStart,
+                    mother_start: draft.motherStart,
+                    clone_start: draft.cloneStart,
+                    dry_start: draft.dryStart,
+                    cure_start: draft.cureStart,
+                },
+            },
+        }));
+    }
+    _confirm() {
+        const { activeTab, tabs } = this._sm;
+        if (activeTab === 'add') {
+            const today = new Date().toISOString().split('T')[0];
+            const d = tabs.add.draft;
+            const payload = {
+                row: d.row + 1,
+                col: d.col + 1,
+                strain: d.strain,
+                phenotype: d.phenotype,
+                veg_start: d.vegStart,
+                flower_start: d.flowerStart,
+                seedling_start: d.sourceType === 'seed' ? d.seedlingStart || today : '',
+                mother_start: d.motherStart,
+                clone_start: d.sourceType === 'clone' ? d.cloneStart || today : '',
+                dry_start: d.dryStart,
+                cure_start: d.cureStart,
+                addToLibrary: d.addToLibrary,
+            };
+            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
+            this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
+        }
+        else {
+            const tabDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
+            if (!tabDraft.selectedPlantId)
+                return;
+            const plants = activeTab === 'clone' ? this.clonePlants : this.seedlingPlants;
+            const plant = plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId);
+            if (!plant)
+                return;
+            const today = new Date().toISOString().split('T')[0];
+            const payload = {
+                plant_id: plant.attributes.plant_id,
+                source_growspace_id: plant.attributes.growspace_id,
+                target_growspace_id: this.targetGrowspaceId,
+                new_row: tabDraft.row + 1,
+                new_col: tabDraft.col + 1,
+                veg_start: today,
+            };
+            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
+            this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
+        }
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const { activeTab, tabs } = this._sm;
+        const addDraft = tabs.add.draft;
+        const addSub = tabs.add.sub;
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+        const relevantPhenotypes = addDraft.strain
+            ? [
+                ...new Set(this.strainLibrary
+                    .filter((s) => s.strain === addDraft.strain && s.phenotype)
+                    .map((s) => s.phenotype)),
+            ].sort()
+            : [];
+        const dialogTitle = activeTab === 'add'
+            ? 'Add New Plant'
+            : activeTab === 'clone'
+                ? 'Transplant Clone'
+                : 'Transplant Seedling';
+        const dialogSubtitle = activeTab === 'add'
+            ? `Slot ${addDraft.row + 1}–${addDraft.col + 1}`
+            : 'Select a plant to transplant to this location';
+        const isTransplant = activeTab !== 'add';
+        const transplantDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
+        const isButtonDisabled = isTransplant && !transplantDraft.selectedPlantId;
+        const isOnLastStep = addSub.kind === 'step-schedule';
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        without-header
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="large"
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">${dialogTitle}</h2>
+                <gs-help-tooltip
+                  content="Add a new plant to this growspace — enter strain, breeder, and start date."
+                  placement="bottom"
+                  label="Add Plant"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">${dialogSubtitle}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <!-- TAB BAR -->
+          <div class="tab-bar">
+            <button
+              class="tab ${activeTab === 'add' ? 'active' : ''}"
+              @click=${() => {
+            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'add' });
+        }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+              New Plant
+            </button>
+            <button
+              class="tab ${activeTab === 'clone' ? 'active' : ''}"
+              @click=${() => {
+            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'clone' });
+        }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
+              Transplant Clone
+            </button>
+            <button
+              class="tab ${activeTab === 'seedling' ? 'active' : ''}"
+              @click=${() => {
+            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'seedling' });
+        }}
+            >
+              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
+              Transplant Seedling
+            </button>
+          </div>
+
+          <!-- WIZARD STEP INDICATOR (add tab only) -->
+          ${activeTab === 'add' ? this._renderWizardSteps(addSub) : E}
+
+          <div class="overview-grid">
+            ${activeTab === 'add'
+            ? this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
+            : this._renderTransplantForm(activeTab)}
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            ${activeTab === 'add'
+            ? x `
+                  <button
+                    class="md3-button tonal"
+                    @click=${addSub.kind === 'step-identity' ? this._close : () => {
+                this._sm = transition$a(this._sm, { type: 'WizardBacked' });
+            }}
+                  >
+                    ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
+                  </button>
+                  ${!isOnLastStep
+                ? x `
+                        <button
+                          class="md3-button primary"
+                          @click=${() => {
+                    this._sm = transition$a(this._sm, { type: 'WizardAdvanced' });
+                }}
+                          ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
+                        >
+                          Continue
+                          <svg
+                            style="width:16px;height:16px;fill:currentColor;margin-left:4px;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiChevronRight}"></path>
+                          </svg>
+                        </button>
+                      `
+                : x `
+                        <button class="md3-button primary" @click=${this._confirm}>
+                          <svg
+                            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="${mdiSprout}"></path>
+                          </svg>
+                          Add Plant
+                        </button>
+                      `}
+                `
+            : x `
+                  <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+                  <button
+                    class="md3-button primary"
+                    @click=${this._confirm}
+                    ?disabled=${isButtonDisabled}
+                  >
+                    <svg
+                      style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiSprout}"></path>
+                    </svg>
+                    Transplant
+                  </button>
+                `}
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    _renderWizardSteps(sub) {
+        const steps = ['Identity', 'Source', 'Schedule'];
+        const currentIndex = sub.kind === 'step-identity' ? 0 : sub.kind === 'step-source' ? 1 : 2;
+        return x `
+      <div class="wizard-steps">
+        ${steps.map((label, i) => {
+            const isActive = i === currentIndex;
+            const isDone = i < currentIndex;
+            return x `
+            ${i > 0 ? x `<div class="wizard-connector ${isDone ? 'done' : ''}"></div>` : E}
+            <div class="wizard-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}">
+              <div class="wizard-step-num">
+                ${isDone
+                ? x `<svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24">
+                      <path d="${mdiCheck}"></path>
+                    </svg>`
+                : i + 1}
+              </div>
+              ${label}
+            </div>
+          `;
+        })}
+      </div>
+    `;
+    }
+    _renderWizardStep(sub, uniqueStrains, relevantPhenotypes) {
+        if (sub.kind === 'step-identity')
+            return this._renderStep1Identity(uniqueStrains, relevantPhenotypes);
+        if (sub.kind === 'step-source')
+            return this._renderStep2Source();
+        return this._renderStep3Schedule();
+    }
+    _renderStep1Identity(uniqueStrains, relevantPhenotypes) {
+        const { draft } = this._sm.tabs.add;
+        const query = draft.strainQuery.toLowerCase();
+        const filtered = query
+            ? uniqueStrains.filter((s) => s.toLowerCase().includes(query))
+            : uniqueStrains.slice(0, 8);
+        const showDropdown = filtered.length > 0 && draft.strainQuery !== draft.strain;
+        const selectedEntry = draft.strain
+            ? this.strainLibrary.find((s) => s.strain === draft.strain)
+            : null;
+        return x `
+      <div class="detail-card">
+        <h3>What are you growing?</h3>
+
+        <div class="strain-typeahead">
+          <md3-text-input
+            label="Strain *"
+            .value=${draft.strainQuery || draft.strain}
+            placeholder="Search strain library…"
+            @change=${(e) => {
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+            if (e.detail !== draft.strain) {
+                this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+            }
+        }}
+          ></md3-text-input>
+          ${showDropdown
+            ? x `
+                <div class="strain-dropdown">
+                  ${filtered.map((s) => {
+                const entry = this.strainLibrary.find((e) => e.strain === s);
+                return x `
+                      <div
+                        class="strain-option"
+                        @click=${() => {
+                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                }}
+                      >
+                        <span>${s}</span>
+                        ${entry?.breeder
+                    ? x `<span class="strain-option-meta">${entry.breeder}</span>`
+                    : E}
+                      </div>
+                    `;
+            })}
+                </div>
+              `
+            : E}
+        </div>
+
+        ${draft.strain
+            ? x `
+              <md3-text-input
+                label="Phenotype"
+                .value=${draft.phenotype}
+                .suggestions=${relevantPhenotypes}
+                @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+              ></md3-text-input>
+            `
+            : E}
+        ${selectedEntry
+            ? x `
+              <div
+                style="
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(76,175,80,0.06);
+            border: 1px solid rgba(76,175,80,0.2);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.7);
+            display: flex; gap: 16px;
+          "
+              >
+                ${selectedEntry.breeder
+                ? x `<span><b style="color:#fff">${selectedEntry.breeder}</b></span>`
+                : E}
+                ${selectedEntry.type ? x `<span>${selectedEntry.type}</span>` : E}
+                ${selectedEntry.flowering_days_min
+                ? x `<span
+                      >~${selectedEntry.flowering_days_min}–${selectedEntry.flowering_days_max ||
+                    '?'}
+                      days flower</span
+                    >`
+                : E}
+              </div>
+            `
+            : E}
+
+        <div
+          class="toggle-container"
+          style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
+        >
+          <span style="font-size: 0.9rem; color: var(--secondary-text-color);"
+            >Add to Strain Library</span
+          >
+          <md3-switch
+            .checked=${draft.addToLibrary}
+            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
+            ?disabled=${!draft.strain}
+          ></md3-switch>
+        </div>
+      </div>
+
+      <div style="padding-top: 4px;">
+        <button class="md3-button tonal" style="width: 100%;" @click=${this._openStrainCreator}>
+          <svg
+            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiDna}"></path>
+          </svg>
+          Create New Strain
+        </button>
+      </div>
+    `;
+    }
+    _renderStep2Source() {
+        const { draft } = this._sm.tabs.add;
+        const clonable = this.siblingPlants.filter((p) => ['mother', 'veg', 'flower', 'vegetative', 'flowering'].includes((p.state || p.attributes?.stage || '').toLowerCase()));
+        return x `
+      <div class="detail-card">
+        <h3>Plant Source</h3>
+        <div class="source-toggle">
+          <button
+            class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
+            @click=${() => {
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+        }}
+          >
+            🌱 Seed
+          </button>
+          <button
+            class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
+            @click=${() => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+            ?disabled=${clonable.length === 0}
+          >
+            ✂️ Clone
+          </button>
+        </div>
+
+        ${draft.sourceType === 'clone' && clonable.length > 0
+            ? x `
+              <div
+                style="font-size: 0.82rem; color: var(--secondary-text-color); margin-bottom: 8px;"
+              >
+                Select mother plant to clone settings from:
+              </div>
+              <div class="sibling-list">
+                ${clonable.map((p) => {
+                const isSelected = draft.siblingPlantId === p.attributes.plant_id;
+                const stage = p.state || p.attributes?.stage || 'unknown';
+                const days = p.attributes?.days_in_stage;
+                return x `
+                    <div
+                      class="sibling-item ${isSelected ? 'selected' : ''}"
+                      @click=${() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    this._sm = transition$a(this._sm, {
+                        type: 'SiblingPlantSelected',
+                        strain: p.attributes.strain || draft.strain,
+                        phenotype: p.attributes.phenotype || draft.phenotype,
+                        cloneStart: today,
+                    });
+                }}
+                    >
+                      <div>
+                        <div style="font-weight: 500;">
+                          ${p.attributes.strain || 'Unknown'}${p.attributes.phenotype
+                    ? ` · ${p.attributes.phenotype}`
+                    : ''}
+                        </div>
+                        <div class="sibling-meta">
+                          ${stage}${days !== undefined ? ` · D${days}` : ''}
+                        </div>
+                      </div>
+                      ${isSelected
+                    ? x `
+                            <svg style="width:18px;height:18px;fill:#69f0ae;" viewBox="0 0 24 24">
+                              <path d="${mdiCheck}"></path>
+                            </svg>
+                          `
+                    : E}
+                    </div>
+                  `;
+            })}
+              </div>
+            `
+            : E}
+        ${draft.sourceType === 'clone' && clonable.length === 0
+            ? x `
+              <p
+                style="font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic;"
+              >
+                No clonable plants found in this growspace.
+              </p>
+            `
+            : E}
+      </div>
+
+      <div class="detail-card">
+        <h3>Location</h3>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Row"
+            .value=${draft.row + 1}
+            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+          ></md3-number-input>
+          <md3-number-input
+            label="Col"
+            .value=${draft.col + 1}
+            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+          ></md3-number-input>
+        </div>
+      </div>
+    `;
+    }
+    _renderStep3Schedule() {
+        const { draft } = this._sm.tabs.add;
+        return x `
+      <div class="detail-card">
+        <h3>Schedule</h3>
+        ${this._renderTimelineContent(draft)}
+      </div>
+    `;
+    }
+    _renderTimelineContent(draft) {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `<md3-date-input
+        label="Mother Start"
+        .value=${draft.motherStart}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('clone')) {
+            return x `<md3-date-input
+        label="Clone Start"
+        .value=${draft.cloneStart}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('dry')) {
+            return x `<md3-date-input
+        label="Dry Start"
+        .value=${draft.dryStart}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('cure')) {
+            return x `<md3-date-input
+        label="Cure Start"
+        .value=${draft.cureStart}
+        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
+      ></md3-date-input>`;
+        }
+        else {
+            return x `
+        <md3-date-input
+          label="Seedling Start"
+          .value=${draft.seedlingStart}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
+        ></md3-date-input>
+        <md3-date-input
+          label="Veg Start"
+          .value=${draft.vegStart}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
+        ></md3-date-input>
+        <md3-date-input
+          label="Flower Start"
+          .value=${draft.flowerStart}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
+        ></md3-date-input>
+      `;
+        }
+    }
+    _renderTransplantForm(stage) {
+        const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
+        const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
+        const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
+        const tabDraft = stage === 'clone' ? this._sm.tabs.clone.draft : this._sm.tabs.seedling.draft;
+        const options = plants.map((p) => {
+            const strain = p.attributes.strain || 'Unknown';
+            const pheno = p.attributes.phenotype || '-';
+            const growspace = p._growspaceName || 'Unknown';
+            const col = p.attributes.col;
+            const row = p.attributes.row;
+            const days = p.attributes[daysField] || 0;
+            return {
+                value: p.attributes.plant_id,
+                label: `Strain: ${strain}, Phenotype: ${pheno}, Growspace: ${growspace}, Col: ${col}, Row: ${row}, Days: ${days}`,
+            };
+        });
+        const selectedPlant = tabDraft.selectedPlantId
+            ? plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId) || null
+            : null;
+        return x `
+      <!-- SELECT PLANT CARD -->
+      <div class="detail-card">
+        <h3>Select ${stageLabel} to Transplant</h3>
+        ${plants.length === 0
+            ? x `<p style="color: var(--secondary-text-color); font-style: italic;">
+              No ${stageLabel.toLowerCase()}s available for transplant
+            </p>`
+            : x `
+              <md3-select
+                label="Select Plant"
+                .value=${tabDraft.selectedPlantId || ''}
+                .options=${options}
+                @change=${(e) => {
+                this._sm = transition$a(this._sm, {
+                    type: 'DraftFieldChanged',
+                    tab: stage,
+                    field: 'selectedPlantId',
+                    value: plants.find((p) => p.attributes.plant_id === e.detail)
+                        ? e.detail
+                        : null,
+                });
+            }}
+              ></md3-select>
+            `}
+        ${selectedPlant
+            ? x `
+              <div class="plant-info-grid">
+                <span class="info-label">Strain:</span>
+                <span class="info-value">${selectedPlant.attributes.strain}</span>
+
+                <span class="info-label">Phenotype:</span>
+                <span class="info-value">${selectedPlant.attributes.phenotype || 'N/A'}</span>
+
+                <span class="info-label">Current Position:</span>
+                <span class="info-value"
+                  >Row ${selectedPlant.attributes.row}, Col ${selectedPlant.attributes.col}</span
+                >
+
+                <span class="info-label">Days in Stage:</span>
+                <span class="info-value">${selectedPlant.attributes[daysField] || 0} days</span>
+
+                <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
+                <span class="info-value"
+                  >${selectedPlant.attributes[stage === 'clone' ? 'clone_start' : 'seedling_start'] || 'N/A'}</span
+                >
+              </div>
+            `
+            : E}
+      </div>
+
+      <!-- NEW LOCATION CARD -->
+      <div class="detail-card">
+        <h3>New Location</h3>
+        <div class="row-col-grid">
+          <md3-number-input
+            label="Row"
+            .value=${tabDraft.row + 1}
+            @change=${(e) => (this._sm = transition$a(this._sm, {
+            type: 'DraftFieldChanged',
+            tab: stage,
+            field: 'row',
+            value: parseInt(e.detail) - 1,
+        }))}
+          ></md3-number-input>
+          <md3-number-input
+            label="Col"
+            .value=${tabDraft.col + 1}
+            @change=${(e) => (this._sm = transition$a(this._sm, {
+            type: 'DraftFieldChanged',
+            tab: stage,
+            field: 'col',
+            value: parseInt(e.detail) - 1,
+        }))}
+          ></md3-number-input>
+        </div>
+        <p style="margin-top: 12px; font-size: 0.85rem; color: var(--secondary-text-color);">
+          Veg start will be set to today's date upon transplant.
+        </p>
+      </div>
+    `;
+    }
+};
+AddPlantDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
+      }
+
+      /* Tab bar styles */
+      .tab-bar {
+        display: flex;
+        gap: 4px;
+        padding: 8px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .tab {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 8px;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.85rem;
+        font-family: inherit;
+      }
+
+      .tab:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .tab.active {
+        background: rgba(var(--rgb-primary-color), 0.15);
+        color: var(--primary-color);
+      }
+
+      .tab svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+
+      /* Wizard step indicator */
+      .wizard-steps {
+        display: flex;
+        align-items: center;
+        padding: 14px 24px;
+        gap: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.1);
+      }
+
+      .wizard-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+        white-space: nowrap;
+      }
+
+      .wizard-step.active {
+        color: var(--primary-color, #4caf50);
+      }
+
+      .wizard-step.done {
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      .wizard-step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 1.5px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        flex-shrink: 0;
+      }
+
+      .wizard-step.active .wizard-step-num {
+        background: var(--primary-color, #4caf50);
+        border-color: var(--primary-color, #4caf50);
+        color: #fff;
+      }
+
+      .wizard-step.done .wizard-step-num {
+        background: rgba(76, 175, 80, 0.2);
+        border-color: rgba(76, 175, 80, 0.4);
+        color: #69f0ae;
+      }
+
+      .wizard-connector {
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 0 8px;
+      }
+
+      .wizard-connector.done {
+        background: rgba(76, 175, 80, 0.3);
+      }
+
+      /* Strain typeahead */
+      .strain-typeahead {
+        position: relative;
+      }
+
+      .strain-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        background: var(--card-background-color, #2c2c2c);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        margin-top: 4px;
+      }
+
+      .strain-option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.1s;
+      }
+
+      .strain-option:hover {
+        background: rgba(76, 175, 80, 0.12);
+        color: #69f0ae;
+      }
+
+      .strain-option-meta {
+        font-size: 0.72rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      }
+
+      /* Source type toggle */
+      .source-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .source-btn {
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-align: center;
+        transition: all 0.15s;
+      }
+
+      .source-btn.active {
+        border-color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
+        color: var(--primary-color, #4caf50);
+      }
+
+      /* Sibling plant picker */
+      .sibling-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 10px;
+      }
+
+      .sibling-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.15s;
+      }
+
+      .sibling-item:hover {
+        border-color: rgba(76, 175, 80, 0.4);
+        background: rgba(76, 175, 80, 0.06);
+      }
+
+      .sibling-item.selected {
+        border-color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.1);
+        color: #69f0ae;
+      }
+
+      .sibling-meta {
+        font-size: 0.72rem;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      }
+
+      .plant-info-grid {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px 16px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 8px;
+        margin-top: 12px;
+      }
+
+      .info-label {
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+      }
+
+      .info-value {
+        font-weight: 500;
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], AddPlantDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], AddPlantDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "clonePlants", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "seedlingPlants", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantDialog.prototype, "targetGrowspaceId", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantDialog.prototype, "siblingPlants", void 0);
+__decorate([
+    r$3()
+], AddPlantDialog.prototype, "_sm", void 0);
+AddPlantDialog = __decorate([
+    t$2('add-plant-dialog')
+], AddPlantDialog);
+
+let AddPlantsDialog = class AddPlantsDialog extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.strainLibrary = [];
+        this.growspaceName = '';
+        this.open = false;
+        this.strain = '';
+        this.phenotype = '';
+        this.libraryError = '';
+        this.addToLibrary = false;
+        this.amount = 1;
+        this.start_number = 1;
+        // Date fields
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    setInitialState(strain = '') {
+        this.strain = strain;
+        this.amount = 1;
+        this.start_number = 1;
+        this.veg_start = '';
+        this.flower_start = '';
+        this.seedling_start = '';
+        this.mother_start = '';
+        this.clone_start = '';
+        this.dry_start = '';
+        this.cure_start = '';
+    }
+    _close() {
+        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    }
+    _openStrainCreator() {
+        this.dispatchEvent(new CustomEvent('create-new-strain', {
+            bubbles: true,
+            composed: true,
+            detail: {
+                source: 'add-plants',
+                returnPayload: {
+                    strain: this.strain,
+                    phenotype: this.phenotype,
+                    amount: this.amount,
+                    start_number: this.start_number,
+                    seedling_start: this.seedling_start,
+                    veg_start: this.veg_start,
+                    flower_start: this.flower_start,
+                    mother_start: this.mother_start,
+                    clone_start: this.clone_start,
+                    dry_start: this.dry_start,
+                    cure_start: this.cure_start,
+                },
+            },
+        }));
+    }
+    _confirm() {
+        this.libraryError = '';
+        if (this.growspaceDevice) {
+            const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
+            const occupied = this.growspaceDevice.plants?.length || 0;
+            const free = Math.max(0, totalSlots - occupied);
+            if (this.amount > free) {
+                this.dispatchEvent(new CustomEvent('show-toast', {
+                    bubbles: true,
+                    composed: true,
+                    detail: {
+                        message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`,
+                        type: 'error',
+                    },
+                }));
+                return;
+            }
+        }
+        const payload = {
+            strain: this.strain,
+            amount: this.amount,
+            start_number: this.start_number,
+            veg_start: this.veg_start,
+            flower_start: this.flower_start,
+            seedling_start: this.seedling_start,
+            mother_start: this.mother_start,
+            clone_start: this.clone_start,
+            dry_start: this.dry_start,
+            cure_start: this.cure_start,
+            phenotype: this.phenotype,
+            addToLibrary: this.addToLibrary,
+        };
+        this.dispatchEvent(new CustomEvent('add-plants-submit', {
+            detail: payload,
+            bubbles: true,
+            composed: true,
+        }));
+    }
+    render() {
+        if (!this.open)
+            return x ``;
+        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
+        return x `
+      <ha-dialog
+        open
+        @closed=${this._close}
+        hideActions
+        without-header
+        .scrimClickAction=${''}
+        .escapeKeyAction=${'close'}
+        width="large"
+      >
+        <div class="glass-dialog-container">
+          <!-- HEADER -->
+          <div class="dialog-header">
+            <div class="dialog-icon">
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+            </div>
+            <div class="dialog-title-group">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <h2 class="dialog-title">Batch Add Plants</h2>
+                <gs-help-tooltip
+                  content="Add multiple plants at once. This will automatically assign them to available positions in your growspace using a numbered naming pattern."
+                  placement="bottom"
+                  label="Batch Add"
+                ></gs-help-tooltip>
+              </div>
+              <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
+            </div>
+            <button
+              class="md3-button text"
+              @click=${this._close}
+              style="min-width: auto; padding: 8px;"
+            >
+              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiClose}"></path>
+              </svg>
+            </button>
+          </div>
+
+          <div class="overview-grid">
+            <div class="explanation-card">
+              <svg style="width:20px;height:20px;" viewBox="0 0 24 24">
+                <path d="${mdiInformationOutline}"></path>
+              </svg>
+              <div>
+                Batch adding will automatically find available positions in the growspace. Plants
+                will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>. For
+                example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and
+                OG Kush #3.
+              </div>
+            </div>
+
+            <!-- IDENTITY CARD -->
+            <div class="detail-card">
+              <h3>Batch Configuration</h3>
+              <div
+                style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;"
+              >
+                <md3-select
+                  style="width: 100%;"
+                  label="Strain *"
+                  .value=${this.strain}
+                  .options=${uniqueStrains}
+                  @change=${(e) => (this.strain = e.detail)}
+                ></md3-select>
+                <button
+                  class="md3-button tonal"
+                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                  @click=${this._openStrainCreator}
+                  title="Add New Strain"
+                >
+                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
+                    <path d="${mdiDna}"></path>
+                  </svg>
+                </button>
+              </div>
+
+              <md3-text-input
+                label="Phenotype (Optional)"
+                .value=${this.phenotype}
+                @change=${(e) => (this.phenotype = e.detail)}
+              ></md3-text-input>
+
+              <div
+                class="toggle-container"
+                style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
+              >
+                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
+                  >Add to Strain Library</span
+                >
+                <md3-switch
+                  .checked=${this.addToLibrary}
+                  @change=${(e) => (this.addToLibrary = e.target.checked)}
+                  ?disabled=${!this.strain}
+                ></md3-switch>
+              </div>
+
+              ${this.libraryError ? x `<ha-alert alert-type="error">${this.libraryError}</ha-alert>` : E}
+
+              <div class="row-col-grid">
+                <md3-number-input
+                  label="Amount"
+                  .value=${this.amount}
+                  min="1"
+                  @change=${(e) => (this.amount = parseInt(e.detail))}
+                ></md3-number-input>
+                <md3-number-input
+                  label="Start Number"
+                  .value=${this.start_number}
+                  min="1"
+                  @change=${(e) => (this.start_number = parseInt(e.detail))}
+                ></md3-number-input>
+              </div>
+            </div>
+
+            <!-- TIMELINE CARD -->
+            <div class="detail-card">
+              <h3>Timeline</h3>
+              ${this.renderTimelineContent()}
+            </div>
+          </div>
+
+          <!-- ACTION BUTTONS -->
+          <div class="button-group">
+            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
+            <button class="md3-button primary" @click=${this._confirm}>
+              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+                <path d="${mdiSprout}"></path>
+              </svg>
+              Add Plants
+            </button>
+          </div>
+        </div>
+      </ha-dialog>
+    `;
+    }
+    renderTimelineContent() {
+        const name = this.growspaceName.toLowerCase();
+        if (name.includes('mother')) {
+            return x `<md3-date-input
+        label="Mother Start"
+        .value=${this.mother_start}
+        @change=${(e) => (this.mother_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('clone')) {
+            return x `<md3-date-input
+        label="Clone Start"
+        .value=${this.clone_start}
+        @change=${(e) => (this.clone_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('dry')) {
+            return x `<md3-date-input
+        label="Dry Start"
+        .value=${this.dry_start}
+        @change=${(e) => (this.dry_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else if (name.includes('cure')) {
+            return x `<md3-date-input
+        label="Cure Start"
+        .value=${this.cure_start}
+        @change=${(e) => (this.cure_start = e.detail)}
+      ></md3-date-input>`;
+        }
+        else {
+            return x `
+        <md3-date-input
+          label="Seedling Start"
+          .value=${this.seedling_start}
+          @change=${(e) => (this.seedling_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Veg Start"
+          .value=${this.veg_start}
+          @change=${(e) => (this.veg_start = e.detail)}
+        ></md3-date-input>
+        <md3-date-input
+          label="Flower Start"
+          .value=${this.flower_start}
+          @change=${(e) => (this.flower_start = e.detail)}
+        ></md3-date-input>
+      `;
+        }
+    }
+};
+AddPlantsDialog.styles = [
+    dialogStyles,
+    i$6 `
+      :host {
+        display: block;
+      }
+      .overview-grid {
+        padding: 24px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+      .explanation-card {
+        background: rgba(var(--md3-sys-color-primary-container-rgb, 103, 80, 164), 0.1);
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        font-size: 0.9rem;
+        color: var(--md3-sys-color-on-surface-variant);
+        border: 1px solid rgba(var(--md3-sys-color-primary-rgb), 0.1);
+      }
+      .explanation-card svg {
+        flex-shrink: 0;
+        fill: var(--md3-sys-color-primary);
+      }
+      @media (max-width: 450px) {
+        .overview-grid {
+          flex: 1;
+          min-height: 0;
+          padding: 16px;
+        }
+      }
+    `,
+];
+__decorate([
+    c$2({ context: hassContext, subscribe: true })
+], AddPlantsDialog.prototype, "hass", void 0);
+__decorate([
+    n$5({ type: Array })
+], AddPlantsDialog.prototype, "strainLibrary", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "growspaceName", void 0);
+__decorate([
+    n$5({ attribute: false })
+], AddPlantsDialog.prototype, "growspaceDevice", void 0);
+__decorate([
+    n$5({ type: Boolean, reflect: true })
+], AddPlantsDialog.prototype, "open", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "strain", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "phenotype", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "libraryError", void 0);
+__decorate([
+    r$3()
+], AddPlantsDialog.prototype, "addToLibrary", void 0);
+__decorate([
+    n$5({ type: Number })
+], AddPlantsDialog.prototype, "amount", void 0);
+__decorate([
+    n$5({ type: Number })
+], AddPlantsDialog.prototype, "start_number", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "veg_start", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "flower_start", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "seedling_start", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "mother_start", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "clone_start", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "dry_start", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "cure_start", void 0);
+AddPlantsDialog = __decorate([
+    t$2('add-plants-dialog')
+], AddPlantsDialog);
+
 let GrowspaceChip = class GrowspaceChip extends i$3 {
     constructor() {
         super(...arguments);
@@ -11807,7 +14710,7 @@ GsDialog.styles = i$6 `
 
     ha-dialog {
       --dialog-surface-margin-top: 40px;
-      --ha-dialog-min-height: 85vh;
+      --ha-dialog-min-height: var(--ha-dialog-min-height, 85vh);
       --dialog-content-padding: 0;
     }
 
@@ -11937,260 +14840,6 @@ __decorate([
 GsDialog = __decorate([
     t$2('gs-dialog')
 ], GsDialog);
-
-let Md3TextInput = class Md3TextInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.type = 'text';
-        this.placeholder = '';
-        this.suggestions = [];
-        this.list = '';
-        this._listId = `datalist-${Math.random().toString(36).substr(2, 9)}`;
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        const listId = this.suggestions.length > 0 ? this._listId : this.list;
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <input
-          .type=${this.type}
-          class="md3-input"
-          .value=${this.value}
-          .placeholder=${this.placeholder}
-          list=${listId || E}
-          @input=${this._handleInput}
-        />
-        ${this.suggestions.length > 0
-            ? x `
-              <datalist id=${this._listId}>
-                ${this.suggestions.map((s) => x `<option value=${s}></option>`)}
-              </datalist>
-            `
-            : E}
-      </div>
-    `;
-    }
-};
-Md3TextInput.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$5()
-], Md3TextInput.prototype, "label", void 0);
-__decorate([
-    n$5()
-], Md3TextInput.prototype, "value", void 0);
-__decorate([
-    n$5()
-], Md3TextInput.prototype, "type", void 0);
-__decorate([
-    n$5()
-], Md3TextInput.prototype, "placeholder", void 0);
-__decorate([
-    n$5({ type: Array })
-], Md3TextInput.prototype, "suggestions", void 0);
-__decorate([
-    n$5()
-], Md3TextInput.prototype, "list", void 0);
-Md3TextInput = __decorate([
-    t$2('md3-text-input')
-], Md3TextInput);
-
-let Md3NumberInput = class Md3NumberInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = 0;
-        this.min = 0;
-        this.placeholder = '';
-        this.unit = '';
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = Number(value);
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <div style="display: flex; align-items: center;">
-          <input
-            type="number"
-            class="md3-input"
-            .min=${this.min}
-            .max=${this.max}
-            .value=${this.value}
-            .placeholder=${this.placeholder}
-            @input=${this._handleInput}
-            style="${this.unit ? 'padding-bottom: 16px;' : ''}"
-          />
-          ${this.unit
-            ? x `<span
-                style="
-                      position: absolute;
-                      right: 12px;
-                      pointer-events: none;
-                      color: var(--secondary-text-color, rgba(255,255,255,0.5));
-                      font-size: 0.9em;
-                    "
-                >${this.unit}</span
-              >`
-            : E}
-        </div>
-      </div>
-    `;
-    }
-};
-Md3NumberInput.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$5()
-], Md3NumberInput.prototype, "label", void 0);
-__decorate([
-    n$5({ type: Number })
-], Md3NumberInput.prototype, "value", void 0);
-__decorate([
-    n$5({ type: Number })
-], Md3NumberInput.prototype, "min", void 0);
-__decorate([
-    n$5({ type: Number })
-], Md3NumberInput.prototype, "max", void 0);
-__decorate([
-    n$5()
-], Md3NumberInput.prototype, "placeholder", void 0);
-__decorate([
-    n$5()
-], Md3NumberInput.prototype, "unit", void 0);
-Md3NumberInput = __decorate([
-    t$2('md3-number-input')
-], Md3NumberInput);
-
-let Md3Select = class Md3Select extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.options = [];
-    }
-    _handleChange(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <select class="md3-input" .value=${this.value} @change=${this._handleChange}>
-          <option value="">Select...</option>
-          ${this.options.map((opt) => {
-            const label = typeof opt === 'string' ? opt : opt.label;
-            const val = typeof opt === 'string' ? opt : opt.value;
-            return x `<option value="${val}" ?selected=${val === this.value}>${label}</option>`;
-        })}
-        </select>
-      </div>
-    `;
-    }
-};
-Md3Select.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$5()
-], Md3Select.prototype, "label", void 0);
-__decorate([
-    n$5()
-], Md3Select.prototype, "value", void 0);
-__decorate([
-    n$5({ type: Array })
-], Md3Select.prototype, "options", void 0);
-Md3Select = __decorate([
-    t$2('md3-select')
-], Md3Select);
-
-let Md3DateInput = class Md3DateInput extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.label = '';
-        this.value = '';
-        this.time = false; // if true, uses datetime-local
-    }
-    _handleInput(e) {
-        const value = e.target.value;
-        this.value = value;
-        this.dispatchEvent(new CustomEvent('change', { detail: value, bubbles: true, composed: true }));
-    }
-    render() {
-        let formattedValue = this.value;
-        if (this.time) {
-            formattedValue = PlantUtils.toDateTimeLocal(this.value);
-        }
-        else {
-            formattedValue = this.value ? this.value.split('T')[0] : '';
-        }
-        return x `
-      <div class="md3-input-group">
-        <label class="md3-label">${this.label}</label>
-        <input
-          .type=${this.time ? 'datetime-local' : 'date'}
-          class="md3-input"
-          .value=${formattedValue}
-          @input=${this._handleInput}
-          @click=${(e) => e.target.showPicker()}
-        />
-      </div>
-    `;
-    }
-};
-Md3DateInput.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-        width: 100%;
-      }
-    `,
-];
-__decorate([
-    n$5()
-], Md3DateInput.prototype, "label", void 0);
-__decorate([
-    n$5()
-], Md3DateInput.prototype, "value", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], Md3DateInput.prototype, "time", void 0);
-Md3DateInput = __decorate([
-    t$2('md3-date-input')
-], Md3DateInput);
 
 /**
  * Logbook slice — zod schemas for WebSocket response validation.
@@ -12458,7 +15107,7 @@ function formatProbability(value) {
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$2(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$2(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$2(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$2(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$2(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$2(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
+const u=(e,s,t)=>{const r=new Map;for(let l=s;l<=t;l++)r.set(e[l],l);return r},c=e$3(class extends i$1{constructor(e){if(super(e),e.type!==t.CHILD)throw Error("repeat() can only be used in text expressions")}dt(e,s,t){let r;void 0===t?t=s:void 0!==s&&(r=s);const l=[],o=[];let i=0;for(const s of e)l[i]=r?r(s,i):i,o[i]=t(s,i),i++;return {values:o,keys:l}}render(e,s,t){return this.dt(e,s,t).values}update(s,[t,r,c]){const d=p(s),{values:p$1,keys:a}=this.dt(t,r,c);if(!Array.isArray(d))return this.ut=a,p$1;const h=this.ut??=[],v$1=[];let m$1,y,x=0,j=d.length-1,k=0,w=p$1.length-1;for(;x<=j&&k<=w;)if(null===d[x])x++;else if(null===d[j])j--;else if(h[x]===a[k])v$1[k]=v(d[x],p$1[k]),x++,k++;else if(h[j]===a[w])v$1[w]=v(d[j],p$1[w]),j--,w--;else if(h[x]===a[w])v$1[w]=v(d[x],p$1[w]),s$2(s,v$1[w+1],d[x]),x++,w--;else if(h[j]===a[k])v$1[k]=v(d[j],p$1[k]),s$2(s,d[x],d[j]),j--,k++;else if(void 0===m$1&&(m$1=u(a,k,w),y=u(h,x,j)),m$1.has(h[x]))if(m$1.has(h[j])){const e=y.get(a[k]),t=void 0!==e?d[e]:null;if(null===t){const e=s$2(s,d[x]);v(e,p$1[k]),v$1[k]=e;}else v$1[k]=v(t,p$1[k]),s$2(s,d[x],t),d[e]=null;k++;}else M(d[j]),j--;else M(d[x]),x++;for(;k<=w;){const e=s$2(s,v$1[w+1]);v(e,p$1[k]),v$1[k++]=e;}for(;x<=j;){const e=d[x++];null!==e&&M(e);}return this.ut=a,m(s,v$1),T}});
 
 /**
  * @license
@@ -13498,7 +16147,7 @@ class VirtualizeDirective extends f {
         this._virtualizer?.connected();
     }
 }
-const virtualize = e$2(VirtualizeDirective);
+const virtualize = e$3(VirtualizeDirective);
 
 let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
     constructor() {
@@ -13507,8 +16156,8 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
         this._isLoading = false;
         this._activeFilter = 'all';
         this._highlightedTimestamp = null;
-        this._containerRef = e$1();
-        this._filterBarRef = e$1();
+        this._containerRef = e$2();
+        this._filterBarRef = e$2();
         this._hostRO = null;
         this._containerHeight = 0;
     }
@@ -14010,2112 +16659,6 @@ __decorate([
 GrowspaceLogbook = __decorate([
     t$2('growspace-logbook')
 ], GrowspaceLogbook);
-
-let GsHelpTooltip = class GsHelpTooltip extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.content = '';
-        this.placement = 'top';
-        this.label = 'Help';
-        this._popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
-    }
-    render() {
-        if (!this.content)
-            return E;
-        return x `
-      <button
-        class="help-trigger"
-        style="anchor-name: --${this._popoverId};"
-        popovertarget="${this._popoverId}"
-        aria-label="Help: ${this.label}"
-        title="${this.label}"
-      >
-        <svg viewBox="0 0 24 24"><path d="${mdiInformationOutline}"></path></svg>
-      </button>
-      <div
-        id="${this._popoverId}"
-        class="help-popover"
-        popover="auto"
-        style="position-anchor: --${this._popoverId};"
-      >
-        <div class="help-popover-inner">${this.content}</div>
-      </div>
-    `;
-    }
-};
-GsHelpTooltip.styles = i$6 `
-    :host {
-      display: inline-flex;
-      align-items: center;
-      vertical-align: middle;
-    }
-
-    .help-trigger {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px;
-      height: 18px;
-      background: none;
-      border: none;
-      padding: 0;
-      cursor: pointer;
-      color: var(--secondary-text-color, rgba(255, 255, 255, 0.5));
-      border-radius: 50%;
-      transition: color 0.2s;
-      flex-shrink: 0;
-    }
-
-    .help-trigger:hover,
-    .help-trigger:focus-visible {
-      color: var(--primary-color, #2196f3);
-      outline: none;
-    }
-
-    .help-trigger svg {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-      pointer-events: none;
-    }
-
-    .help-popover {
-      position: fixed;
-      inset: auto;
-      position-try-fallbacks: flip-block, flip-inline;
-      margin: 0;
-      border: none;
-      padding: 0;
-      background: transparent;
-    }
-
-    .help-popover[popover]:popover-open {
-      display: block;
-    }
-
-    .help-popover-inner {
-      background: var(--card-background-color, #2a2a2a);
-      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
-      border-radius: 8px;
-      padding: 8px 12px;
-      max-width: 240px;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      color: var(--primary-text-color, rgba(255, 255, 255, 0.9));
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-      animation: tooltip-fade-in 0.15s ease-out;
-      white-space: normal;
-    }
-
-    @keyframes tooltip-fade-in {
-      from {
-        opacity: 0;
-        transform: translateY(-4px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    :host([placement='top']) .help-popover {
-      bottom: anchor(top);
-      left: anchor(center);
-      translate: -50% -6px;
-    }
-
-    :host([placement='bottom']) .help-popover {
-      top: anchor(bottom);
-      left: anchor(center);
-      translate: -50% 6px;
-    }
-
-    :host([placement='left']) .help-popover {
-      right: anchor(left);
-      top: anchor(center);
-      translate: -6px -50%;
-    }
-
-    :host([placement='right']) .help-popover {
-      left: anchor(right);
-      top: anchor(center);
-      translate: 6px -50%;
-    }
-  `;
-__decorate([
-    n$5({ type: String })
-], GsHelpTooltip.prototype, "content", void 0);
-__decorate([
-    n$5({ type: String, reflect: true })
-], GsHelpTooltip.prototype, "placement", void 0);
-__decorate([
-    n$5({ type: String })
-], GsHelpTooltip.prototype, "label", void 0);
-GsHelpTooltip = __decorate([
-    t$2('gs-help-tooltip')
-], GsHelpTooltip);
-
-let GrowspaceNutrientPresetsEditorUI = class GrowspaceNutrientPresetsEditorUI extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.presets = {};
-        this.isSubmitting = false;
-        this.error = null;
-        this._view = 'LIST';
-        this._editingPreset = null;
-    }
-    updated(changedProps) {
-        if (changedProps.has('open') && this.open) {
-            if (!this._editingPreset) {
-                this._view = 'LIST';
-            }
-        }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _handleSave() {
-        if (!this._editingPreset)
-            return;
-        this.dispatchEvent(new CustomEvent('save-preset', {
-            detail: this._editingPreset,
-        }));
-        this._view = 'LIST';
-        this._editingPreset = null;
-    }
-    _handleDelete(presetId) {
-        this.dispatchEvent(new CustomEvent('delete-preset', {
-            detail: { presetId },
-        }));
-    }
-    _startNew() {
-        this._editingPreset = {
-            name: '',
-            nutrients: [{ name: '', dose_ml_l: 0 }],
-        };
-        this._view = 'EDIT';
-    }
-    _editPreset(preset) {
-        this._editingPreset = JSON.parse(JSON.stringify(preset));
-        this._view = 'EDIT';
-    }
-    _addNutrient() {
-        if (!this._editingPreset)
-            return;
-        const nutrients = [...(this._editingPreset.nutrients || []), { name: '', dose_ml_l: 0 }];
-        this._editingPreset = { ...this._editingPreset, nutrients };
-    }
-    _removeNutrient(index) {
-        if (!this._editingPreset)
-            return;
-        const nutrients = [...(this._editingPreset.nutrients || [])];
-        nutrients.splice(index, 1);
-        this._editingPreset = { ...this._editingPreset, nutrients };
-    }
-    _updateNutrient(index, updates) {
-        if (!this._editingPreset)
-            return;
-        const nutrients = [...(this._editingPreset.nutrients || [])];
-        nutrients[index] = { ...nutrients[index], ...updates };
-        this._editingPreset = { ...this._editingPreset, nutrients };
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const title = this._view === 'LIST'
-            ? 'Nutrient Presets'
-            : this._editingPreset?.id
-                ? 'Edit Preset'
-                : 'New Preset';
-        const subtitle = this._view === 'LIST' ? 'Manage your nutrient recipes' : 'Configure products and dosages';
-        return x `
-      <gs-dialog
-        .open=${true}
-        .heading=${title}
-        .subtitle=${subtitle}
-        .iconPath=${mdiBottleTonicPlus}
-        stageColor="var(--primary-color, #4caf50)"
-        .submitting=${this.isSubmitting}
-      >
-        <div class="dialog-content-grid">
-          ${this.error ? x `<div class="error-bar">${this.error}</div>` : E}
-          ${this._view === 'LIST' ? this._renderList() : this._renderEdit()}
-        </div>
-
-        <div class="button-group">${this._renderFooterButtons()}</div>
-      </gs-dialog>
-    `;
-    }
-    _renderFooterButtons() {
-        if (this._view === 'LIST') {
-            return x `
-        <button class="md3-button tonal" @click=${this._close}>Close</button>
-        <button class="md3-button primary" @click=${this._startNew}>
-          <ha-svg-icon .path=${mdiPlus} style="margin-right: 8px;"></ha-svg-icon>
-          Add Preset
-        </button>
-      `;
-        }
-        else {
-            return x `
-        <button class="md3-button tonal" @click=${() => (this._view = 'LIST')}>Cancel</button>
-        <button
-          class="md3-button primary"
-          @click=${this._handleSave}
-          ?disabled=${this.isSubmitting}
-        >
-          <ha-svg-icon .path=${mdiContentSave} style="margin-right: 8px;"></ha-svg-icon>
-          ${this.isSubmitting ? 'Saving...' : 'Save Preset'}
-        </button>
-      `;
-        }
-    }
-    _renderList() {
-        const presetEntries = Object.values(this.presets || {});
-        if (presetEntries.length === 0) {
-            return x `
-        <div class="empty-state">
-          <ha-svg-icon
-            .path=${mdiInformation}
-            style="--mdc-icon-size: 48px; opacity: 0.5; margin-bottom: 16px;"
-          ></ha-svg-icon>
-          <p>No nutrient presets defined yet.</p>
-        </div>
-      `;
-        }
-        return x `
-      <div class="presets-list">
-        ${presetEntries.map((preset) => x `
-            <div class="preset-item">
-              <div class="preset-info">
-                <div class="preset-name">${preset.name}</div>
-                <div class="preset-details">${preset.nutrients.length} nutrients</div>
-              </div>
-              <div class="preset-actions">
-                <button
-                  class="md3-button icon"
-                  @click=${() => this._editPreset(preset)}
-                  title="Edit"
-                >
-                  <ha-svg-icon .path=${mdiPencil}></ha-svg-icon>
-                </button>
-                <button
-                  class="md3-button icon"
-                  @click=${() => this._handleDelete(preset.id)}
-                  title="Delete"
-                  style="color: var(--error-color);"
-                >
-                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                </button>
-              </div>
-            </div>
-          `)}
-      </div>
-    `;
-    }
-    _renderEdit() {
-        if (!this._editingPreset)
-            return E;
-        return x `
-      <div class="preset-form">
-        <div class="form-section">
-          <h3>General Info</h3>
-          <md3-text-input
-            label="Preset Name"
-            .value=${this._editingPreset.name || ''}
-            @change=${(e) => {
-            this._editingPreset = { ...this._editingPreset, name: e.detail };
-        }}
-            placeholder="e.g. Veg Week 1"
-          ></md3-text-input>
-        </div>
-
-        <div class="form-section">
-          <div
-            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-          >
-            <h3 style="margin: 0;">Nutrients</h3>
-            <button
-              class="md3-button text"
-              @click=${this._addNutrient}
-              style="--mdc-button-horizontal-padding: 8px;"
-            >
-              <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-              Add
-            </button>
-          </div>
-
-          ${(this._editingPreset.nutrients || []).map((item, index) => x `
-              <div class="nutrient-row">
-                <md3-text-input
-                  label="Product"
-                  .value=${item.name}
-                  @change=${(e) => this._updateNutrient(index, { name: e.detail })}
-                  placeholder="Product Name"
-                ></md3-text-input>
-                <md3-number-input
-                  label="Dose (ml/L)"
-                  .value=${item.dose_ml_l}
-                  @change=${(e) => this._updateNutrient(index, { dose_ml_l: parseFloat(e.detail) })}
-                  min="0"
-                  step="0.1"
-                ></md3-number-input>
-                <button
-                  class="md3-button icon"
-                  @click=${() => this._removeNutrient(index)}
-                  style="color: var(--error-color);"
-                >
-                  <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                </button>
-              </div>
-            `)}
-        </div>
-      </div>
-    `;
-    }
-};
-GrowspaceNutrientPresetsEditorUI.styles = [
-    dialogStyles,
-    i$6 `
-      .preset-item {
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 8px;
-        margin-bottom: 8px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      }
-      .preset-info {
-        flex: 1;
-      }
-      .preset-name {
-        font-weight: 500;
-        font-size: 1rem;
-      }
-      .preset-details {
-        font-size: 0.8rem;
-        opacity: 0.7;
-      }
-      .preset-actions {
-        display: flex;
-        gap: 8px;
-      }
-      .empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        opacity: 0.6;
-      }
-      .nutrient-row {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .nutrient-row md3-text-input {
-        flex: 2;
-      }
-      .nutrient-row md3-number-input {
-        flex: 1;
-      }
-      .error-bar {
-        background: var(--error-color, #ff5252);
-        color: white;
-        padding: 8px 16px;
-        border-radius: 4px;
-        margin-bottom: 16px;
-        font-size: 0.9rem;
-      }
-      .form-section {
-        margin-bottom: 24px;
-      }
-      .form-section h3 {
-        margin-top: 0;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        opacity: 0.6;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-      }
-    `,
-];
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientPresetsEditorUI.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceNutrientPresetsEditorUI.prototype, "presets", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceNutrientPresetsEditorUI.prototype, "growspaceId", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientPresetsEditorUI.prototype, "isSubmitting", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceNutrientPresetsEditorUI.prototype, "error", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientPresetsEditorUI.prototype, "_view", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientPresetsEditorUI.prototype, "_editingPreset", void 0);
-GrowspaceNutrientPresetsEditorUI = __decorate([
-    t$2('growspace-nutrient-presets-editor-ui')
-], GrowspaceNutrientPresetsEditorUI);
-
-let GrowspaceNutrientPresetsEditorContainer = class GrowspaceNutrientPresetsEditorContainer extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        if (this.store) {
-            this._nutrientPresetsController = new libExports.StoreController(this, nutrientPresets$);
-        }
-    }
-    _handleSave(e) {
-        const preset = e.detail;
-        void this.store.actions.nutrient.savePreset({
-            preset_id: preset.id,
-            name: preset.name || 'Unnamed Preset',
-            nutrients: preset.nutrients?.map((n) => ({
-                name: n.name,
-                dose_ml_l: n.dose_ml_l,
-            })) || [],
-        });
-    }
-    _handleDelete(e) {
-        void this.store.actions.nutrient.removePreset(e.detail.presetId);
-    }
-    render() {
-        if (!this.store || !this._nutrientPresetsController)
-            return E;
-        const nutrientPresets = this._nutrientPresetsController.value ?? {};
-        return x `
-      <growspace-nutrient-presets-editor-ui
-        .open=${this.open}
-        .presets=${nutrientPresets}
-        .growspaceId=${this.growspaceId}
-        @close=${() => this.dispatchEvent(new CustomEvent('close'))}
-        @save-preset=${this._handleSave}
-        @delete-preset=${this._handleDelete}
-      ></growspace-nutrient-presets-editor-ui>
-    `;
-    }
-};
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], GrowspaceNutrientPresetsEditorContainer.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true }),
-    n$5({ attribute: false })
-], GrowspaceNutrientPresetsEditorContainer.prototype, "store", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientPresetsEditorContainer.prototype, "open", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceNutrientPresetsEditorContainer.prototype, "growspaceId", void 0);
-GrowspaceNutrientPresetsEditorContainer = __decorate([
-    t$2('growspace-nutrient-presets-editor')
-], GrowspaceNutrientPresetsEditorContainer);
-
-let Md3Switch = class Md3Switch extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.checked = false;
-        this.disabled = false;
-    }
-    _handleClick() {
-        if (this.disabled)
-            return;
-        this.checked = !this.checked;
-        this.dispatchEvent(new CustomEvent('change', {
-            detail: { checked: this.checked },
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        return x `
-      <button
-        role="switch"
-        aria-checked=${this.checked}
-        @click=${this._handleClick}
-        ?disabled=${this.disabled}
-      >
-        <div class="handle"></div>
-      </button>
-    `;
-    }
-};
-Md3Switch.styles = i$6 `
-    :host {
-      display: inline-block;
-      vertical-align: middle;
-      --md-switch-width: 52px;
-      --md-switch-height: 32px;
-      --md-switch-handle-size: 24px;
-      --md-switch-track-color-on: var(--primary-color, #2196f3);
-      --md-switch-track-color-off: rgba(255, 255, 255, 0.1);
-      --md-switch-handle-color: #fff;
-    }
-
-    button {
-      all: unset;
-      position: relative;
-      width: var(--md-switch-width);
-      height: var(--md-switch-height);
-      border-radius: calc(var(--md-switch-height) / 2);
-      background: var(--md-switch-track-color-off);
-      cursor: pointer;
-      transition: background-color 0.2s;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      box-sizing: border-box;
-    }
-
-    :host([checked]) button {
-      background: var(--md-switch-track-color-on);
-      border-color: transparent;
-    }
-
-    .handle {
-      position: absolute;
-      top: 50%;
-      left: 4px;
-      transform: translateY(-50%);
-      width: var(--md-switch-handle-size);
-      height: var(--md-switch-handle-size);
-      background: var(--md-switch-handle-color);
-      border-radius: 50%;
-      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    }
-
-    :host([checked]) .handle {
-      transform: translate(20px, -50%); /* 52 - 4 - 24 - 4 = 20px move */
-    }
-  `;
-__decorate([
-    n$5({ type: Boolean, reflect: true })
-], Md3Switch.prototype, "checked", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], Md3Switch.prototype, "disabled", void 0);
-Md3Switch = __decorate([
-    t$2('md3-switch')
-], Md3Switch);
-
-/**
- * Add Plant Dialog State Machine
- *
- * Pure module — no Lit, no DOM, no hassCall. All interaction state for
- * AddPlantDialog lives here. The component calls `transition(sm, event)`
- * and replaces its single `@state() _sm`.
- *
- * Structure:
- *   SM
- *     .activeTab          — which tab is visible ('add' | 'clone' | 'seedling')
- *     .status             — root-level async status
- *     .toast              — transient message
- *     .tabs               — one typed state object per tab (draft + sub)
- */
-// ─── Initial state ────────────────────────────────────────────────────────────
-function defaultAddDraft(row, col) {
-    return {
-        strain: '',
-        strainQuery: '',
-        phenotype: '',
-        addToLibrary: false,
-        sourceType: 'seed',
-        siblingPlantId: null,
-        row,
-        col,
-        seedlingStart: '',
-        vegStart: '',
-        flowerStart: '',
-        motherStart: '',
-        cloneStart: '',
-        dryStart: '',
-        cureStart: '',
-    };
-}
-function defaultTransplantDraft(row, col) {
-    return { selectedPlantId: null, row, col };
-}
-function createInitialSM$9({ row, col }) {
-    return {
-        activeTab: 'add',
-        tabs: {
-            add: { draft: defaultAddDraft(row, col), sub: { kind: 'step-identity' } },
-            clone: { draft: defaultTransplantDraft(row, col), sub: { kind: 'idle' } },
-            seedling: { draft: defaultTransplantDraft(row, col), sub: { kind: 'idle' } },
-        },
-        status: { kind: 'idle' },
-        toast: undefined,
-    };
-}
-// ─── Transition ───────────────────────────────────────────────────────────────
-function transition$9(sm, event) {
-    switch (event.type) {
-        case 'TabSelected': {
-            const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
-            return {
-                ...sm,
-                activeTab: event.tab,
-                tabs: {
-                    ...sm.tabs,
-                    add: { ...sm.tabs.add, sub: addSub },
-                },
-            };
-        }
-        case 'WizardAdvanced': {
-            const { sub, draft } = sm.tabs.add;
-            if (sub.kind === 'step-identity') {
-                if (!draft.strain)
-                    return sm;
-                return setAddSub(sm, { kind: 'step-source' });
-            }
-            if (sub.kind === 'step-source') {
-                return setAddSub(sm, { kind: 'step-schedule' });
-            }
-            return sm;
-        }
-        case 'WizardBacked': {
-            const { sub } = sm.tabs.add;
-            if (sub.kind === 'step-source')
-                return setAddSub(sm, { kind: 'step-identity' });
-            if (sub.kind === 'step-schedule')
-                return setAddSub(sm, { kind: 'step-source' });
-            return sm;
-        }
-        case 'DraftFieldChanged': {
-            if (event.tab === 'add') {
-                return {
-                    ...sm,
-                    tabs: {
-                        ...sm.tabs,
-                        add: {
-                            ...sm.tabs.add,
-                            draft: { ...sm.tabs.add.draft, [event.field]: event.value },
-                        },
-                    },
-                };
-            }
-            if (event.tab === 'clone') {
-                return {
-                    ...sm,
-                    tabs: {
-                        ...sm.tabs,
-                        clone: {
-                            ...sm.tabs.clone,
-                            draft: { ...sm.tabs.clone.draft, [event.field]: event.value },
-                        },
-                    },
-                };
-            }
-            // seedling
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    seedling: {
-                        ...sm.tabs.seedling,
-                        draft: { ...sm.tabs.seedling.draft, [event.field]: event.value },
-                    },
-                },
-            };
-        }
-        case 'SiblingPlantSelected': {
-            const current = sm.tabs.add.draft;
-            const isDeselect = current.strain === event.strain &&
-                current.phenotype === event.phenotype &&
-                current.cloneStart === event.cloneStart &&
-                current.siblingPlantId !== null;
-            if (isDeselect) {
-                return {
-                    ...sm,
-                    tabs: {
-                        ...sm.tabs,
-                        add: {
-                            ...sm.tabs.add,
-                            draft: { ...current, siblingPlantId: null },
-                        },
-                    },
-                };
-            }
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    add: {
-                        ...sm.tabs.add,
-                        draft: {
-                            ...current,
-                            strain: event.strain,
-                            strainQuery: event.strain,
-                            phenotype: event.phenotype,
-                            cloneStart: event.cloneStart,
-                            siblingPlantId: event.strain,
-                        },
-                    },
-                },
-            };
-        }
-        case 'SaveRequested':
-            return { ...sm, status: { kind: 'applying' } };
-        case 'SaveResolved':
-            return { ...sm, status: { kind: 'done' } };
-        case 'SaveFailed':
-            return { ...sm, status: { kind: 'error', message: event.message }, toast: event.message };
-        case 'StatusReset':
-            return { ...sm, status: { kind: 'idle' } };
-        case 'SetToast':
-            return { ...sm, toast: event.message };
-        default:
-            return sm;
-    }
-}
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function setAddSub(sm, sub) {
-    return {
-        ...sm,
-        tabs: { ...sm.tabs, add: { ...sm.tabs.add, sub } },
-    };
-}
-
-let AddPlantDialog = class AddPlantDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.growspaceName = '';
-        this.open = false;
-        // Render-time args — not draft state
-        this.clonePlants = [];
-        this.seedlingPlants = [];
-        this.targetGrowspaceId = '';
-        this.siblingPlants = [];
-        this._sm = createInitialSM$9({ row: 0, col: 0 });
-    }
-    setInitialState(row, col, strain = '', phenotype = '') {
-        this._sm = createInitialSM$9({ row, col });
-        if (strain) {
-            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
-            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
-        }
-        if (phenotype) {
-            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
-        }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _openStrainCreator() {
-        const { draft } = this._sm.tabs.add;
-        this.dispatchEvent(new CustomEvent('create-new-strain', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                source: 'add-plant',
-                returnPayload: {
-                    row: draft.row,
-                    col: draft.col,
-                    strain: draft.strain,
-                    phenotype: draft.phenotype,
-                    seedling_start: draft.seedlingStart,
-                    veg_start: draft.vegStart,
-                    flower_start: draft.flowerStart,
-                    mother_start: draft.motherStart,
-                    clone_start: draft.cloneStart,
-                    dry_start: draft.dryStart,
-                    cure_start: draft.cureStart,
-                },
-            },
-        }));
-    }
-    _confirm() {
-        const { activeTab, tabs } = this._sm;
-        if (activeTab === 'add') {
-            const today = new Date().toISOString().split('T')[0];
-            const d = tabs.add.draft;
-            const payload = {
-                row: d.row + 1,
-                col: d.col + 1,
-                strain: d.strain,
-                phenotype: d.phenotype,
-                veg_start: d.vegStart,
-                flower_start: d.flowerStart,
-                seedling_start: d.sourceType === 'seed' ? d.seedlingStart || today : '',
-                mother_start: d.motherStart,
-                clone_start: d.sourceType === 'clone' ? d.cloneStart || today : '',
-                dry_start: d.dryStart,
-                cure_start: d.cureStart,
-                addToLibrary: d.addToLibrary,
-            };
-            this._sm = transition$9(this._sm, { type: 'SaveRequested' });
-            this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
-        }
-        else {
-            const tabDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
-            if (!tabDraft.selectedPlantId)
-                return;
-            const plants = activeTab === 'clone' ? this.clonePlants : this.seedlingPlants;
-            const plant = plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId);
-            if (!plant)
-                return;
-            const today = new Date().toISOString().split('T')[0];
-            const payload = {
-                plant_id: plant.attributes.plant_id,
-                source_growspace_id: plant.attributes.growspace_id,
-                target_growspace_id: this.targetGrowspaceId,
-                new_row: tabDraft.row + 1,
-                new_col: tabDraft.col + 1,
-                veg_start: today,
-            };
-            this._sm = transition$9(this._sm, { type: 'SaveRequested' });
-            this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
-        }
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        const { activeTab, tabs } = this._sm;
-        const addDraft = tabs.add.draft;
-        const addSub = tabs.add.sub;
-        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-        const relevantPhenotypes = addDraft.strain
-            ? [
-                ...new Set(this.strainLibrary
-                    .filter((s) => s.strain === addDraft.strain && s.phenotype)
-                    .map((s) => s.phenotype)),
-            ].sort()
-            : [];
-        const dialogTitle = activeTab === 'add'
-            ? 'Add New Plant'
-            : activeTab === 'clone'
-                ? 'Transplant Clone'
-                : 'Transplant Seedling';
-        const dialogSubtitle = activeTab === 'add'
-            ? `Slot ${addDraft.row + 1}–${addDraft.col + 1}`
-            : 'Select a plant to transplant to this location';
-        const isTransplant = activeTab !== 'add';
-        const transplantDraft = activeTab === 'clone' ? tabs.clone.draft : tabs.seedling.draft;
-        const isButtonDisabled = isTransplant && !transplantDraft.selectedPlantId;
-        const isOnLastStep = addSub.kind === 'step-schedule';
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
-      >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">${dialogTitle}</h2>
-                <gs-help-tooltip
-                  content="Add a new plant to this growspace — enter strain, breeder, and start date."
-                  placement="bottom"
-                  label="Add Plant"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">${dialogSubtitle}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <!-- TAB BAR -->
-          <div class="tab-bar">
-            <button
-              class="tab ${activeTab === 'add' ? 'active' : ''}"
-              @click=${() => {
-            this._sm = transition$9(this._sm, { type: 'TabSelected', tab: 'add' });
-        }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              New Plant
-            </button>
-            <button
-              class="tab ${activeTab === 'clone' ? 'active' : ''}"
-              @click=${() => {
-            this._sm = transition$9(this._sm, { type: 'TabSelected', tab: 'clone' });
-        }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
-              Transplant Clone
-            </button>
-            <button
-              class="tab ${activeTab === 'seedling' ? 'active' : ''}"
-              @click=${() => {
-            this._sm = transition$9(this._sm, { type: 'TabSelected', tab: 'seedling' });
-        }}
-            >
-              <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
-              Transplant Seedling
-            </button>
-          </div>
-
-          <!-- WIZARD STEP INDICATOR (add tab only) -->
-          ${activeTab === 'add' ? this._renderWizardSteps(addSub) : E}
-
-          <div class="overview-grid">
-            ${activeTab === 'add'
-            ? this._renderWizardStep(addSub, uniqueStrains, relevantPhenotypes)
-            : this._renderTransplantForm(activeTab)}
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group">
-            ${activeTab === 'add'
-            ? x `
-                  <button
-                    class="md3-button tonal"
-                    @click=${addSub.kind === 'step-identity' ? this._close : () => {
-                this._sm = transition$9(this._sm, { type: 'WizardBacked' });
-            }}
-                  >
-                    ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
-                  </button>
-                  ${!isOnLastStep
-                ? x `
-                        <button
-                          class="md3-button primary"
-                          @click=${() => {
-                    this._sm = transition$9(this._sm, { type: 'WizardAdvanced' });
-                }}
-                          ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
-                        >
-                          Continue
-                          <svg
-                            style="width:16px;height:16px;fill:currentColor;margin-left:4px;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiChevronRight}"></path>
-                          </svg>
-                        </button>
-                      `
-                : x `
-                        <button class="md3-button primary" @click=${this._confirm}>
-                          <svg
-                            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="${mdiSprout}"></path>
-                          </svg>
-                          Add Plant
-                        </button>
-                      `}
-                `
-            : x `
-                  <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-                  <button
-                    class="md3-button primary"
-                    @click=${this._confirm}
-                    ?disabled=${isButtonDisabled}
-                  >
-                    <svg
-                      style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="${mdiSprout}"></path>
-                    </svg>
-                    Transplant
-                  </button>
-                `}
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    _renderWizardSteps(sub) {
-        const steps = ['Identity', 'Source', 'Schedule'];
-        const currentIndex = sub.kind === 'step-identity' ? 0 : sub.kind === 'step-source' ? 1 : 2;
-        return x `
-      <div class="wizard-steps">
-        ${steps.map((label, i) => {
-            const isActive = i === currentIndex;
-            const isDone = i < currentIndex;
-            return x `
-            ${i > 0 ? x `<div class="wizard-connector ${isDone ? 'done' : ''}"></div>` : E}
-            <div class="wizard-step ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}">
-              <div class="wizard-step-num">
-                ${isDone
-                ? x `<svg style="width:12px;height:12px;fill:currentColor;" viewBox="0 0 24 24">
-                      <path d="${mdiCheck}"></path>
-                    </svg>`
-                : i + 1}
-              </div>
-              ${label}
-            </div>
-          `;
-        })}
-      </div>
-    `;
-    }
-    _renderWizardStep(sub, uniqueStrains, relevantPhenotypes) {
-        if (sub.kind === 'step-identity')
-            return this._renderStep1Identity(uniqueStrains, relevantPhenotypes);
-        if (sub.kind === 'step-source')
-            return this._renderStep2Source();
-        return this._renderStep3Schedule();
-    }
-    _renderStep1Identity(uniqueStrains, relevantPhenotypes) {
-        const { draft } = this._sm.tabs.add;
-        const query = draft.strainQuery.toLowerCase();
-        const filtered = query
-            ? uniqueStrains.filter((s) => s.toLowerCase().includes(query))
-            : uniqueStrains.slice(0, 8);
-        const showDropdown = filtered.length > 0 && draft.strainQuery !== draft.strain;
-        const selectedEntry = draft.strain
-            ? this.strainLibrary.find((s) => s.strain === draft.strain)
-            : null;
-        return x `
-      <div class="detail-card">
-        <h3>What are you growing?</h3>
-
-        <div class="strain-typeahead">
-          <md3-text-input
-            label="Strain *"
-            .value=${draft.strainQuery || draft.strain}
-            placeholder="Search strain library…"
-            @change=${(e) => {
-            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
-            if (e.detail !== draft.strain) {
-                this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
-            }
-        }}
-          ></md3-text-input>
-          ${showDropdown
-            ? x `
-                <div class="strain-dropdown">
-                  ${filtered.map((s) => {
-                const entry = this.strainLibrary.find((e) => e.strain === s);
-                return x `
-                      <div
-                        class="strain-option"
-                        @click=${() => {
-                    this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
-                    this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
-                }}
-                      >
-                        <span>${s}</span>
-                        ${entry?.breeder
-                    ? x `<span class="strain-option-meta">${entry.breeder}</span>`
-                    : E}
-                      </div>
-                    `;
-            })}
-                </div>
-              `
-            : E}
-        </div>
-
-        ${draft.strain
-            ? x `
-              <md3-text-input
-                label="Phenotype"
-                .value=${draft.phenotype}
-                .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
-              ></md3-text-input>
-            `
-            : E}
-        ${selectedEntry
-            ? x `
-              <div
-                style="
-            margin-top: 10px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            background: rgba(76,175,80,0.06);
-            border: 1px solid rgba(76,175,80,0.2);
-            font-size: 0.8rem;
-            color: rgba(255,255,255,0.7);
-            display: flex; gap: 16px;
-          "
-              >
-                ${selectedEntry.breeder
-                ? x `<span><b style="color:#fff">${selectedEntry.breeder}</b></span>`
-                : E}
-                ${selectedEntry.type ? x `<span>${selectedEntry.type}</span>` : E}
-                ${selectedEntry.flowering_days_min
-                ? x `<span
-                      >~${selectedEntry.flowering_days_min}–${selectedEntry.flowering_days_max ||
-                    '?'}
-                      days flower</span
-                    >`
-                : E}
-              </div>
-            `
-            : E}
-
-        <div
-          class="toggle-container"
-          style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
-        >
-          <span style="font-size: 0.9rem; color: var(--secondary-text-color);"
-            >Add to Strain Library</span
-          >
-          <md3-switch
-            .checked=${draft.addToLibrary}
-            @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
-            ?disabled=${!draft.strain}
-          ></md3-switch>
-        </div>
-      </div>
-
-      <div style="padding-top: 4px;">
-        <button class="md3-button tonal" style="width: 100%;" @click=${this._openStrainCreator}>
-          <svg
-            style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
-            viewBox="0 0 24 24"
-          >
-            <path d="${mdiDna}"></path>
-          </svg>
-          Create New Strain
-        </button>
-      </div>
-    `;
-    }
-    _renderStep2Source() {
-        const { draft } = this._sm.tabs.add;
-        const clonable = this.siblingPlants.filter((p) => ['mother', 'veg', 'flower', 'vegetative', 'flowering'].includes((p.state || p.attributes?.stage || '').toLowerCase()));
-        return x `
-      <div class="detail-card">
-        <h3>Plant Source</h3>
-        <div class="source-toggle">
-          <button
-            class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
-            @click=${() => {
-            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
-            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
-        }}
-          >
-            🌱 Seed
-          </button>
-          <button
-            class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
-            @click=${() => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
-            ?disabled=${clonable.length === 0}
-          >
-            ✂️ Clone
-          </button>
-        </div>
-
-        ${draft.sourceType === 'clone' && clonable.length > 0
-            ? x `
-              <div
-                style="font-size: 0.82rem; color: var(--secondary-text-color); margin-bottom: 8px;"
-              >
-                Select mother plant to clone settings from:
-              </div>
-              <div class="sibling-list">
-                ${clonable.map((p) => {
-                const isSelected = draft.siblingPlantId === p.attributes.plant_id;
-                const stage = p.state || p.attributes?.stage || 'unknown';
-                const days = p.attributes?.days_in_stage;
-                return x `
-                    <div
-                      class="sibling-item ${isSelected ? 'selected' : ''}"
-                      @click=${() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    this._sm = transition$9(this._sm, {
-                        type: 'SiblingPlantSelected',
-                        strain: p.attributes.strain || draft.strain,
-                        phenotype: p.attributes.phenotype || draft.phenotype,
-                        cloneStart: today,
-                    });
-                }}
-                    >
-                      <div>
-                        <div style="font-weight: 500;">
-                          ${p.attributes.strain || 'Unknown'}${p.attributes.phenotype
-                    ? ` · ${p.attributes.phenotype}`
-                    : ''}
-                        </div>
-                        <div class="sibling-meta">
-                          ${stage}${days !== undefined ? ` · D${days}` : ''}
-                        </div>
-                      </div>
-                      ${isSelected
-                    ? x `
-                            <svg style="width:18px;height:18px;fill:#69f0ae;" viewBox="0 0 24 24">
-                              <path d="${mdiCheck}"></path>
-                            </svg>
-                          `
-                    : E}
-                    </div>
-                  `;
-            })}
-              </div>
-            `
-            : E}
-        ${draft.sourceType === 'clone' && clonable.length === 0
-            ? x `
-              <p
-                style="font-size: 0.85rem; color: var(--secondary-text-color); font-style: italic;"
-              >
-                No clonable plants found in this growspace.
-              </p>
-            `
-            : E}
-      </div>
-
-      <div class="detail-card">
-        <h3>Location</h3>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Row"
-            .value=${draft.row + 1}
-            @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Col"
-            .value=${draft.col + 1}
-            @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
-          ></md3-number-input>
-        </div>
-      </div>
-    `;
-    }
-    _renderStep3Schedule() {
-        const { draft } = this._sm.tabs.add;
-        return x `
-      <div class="detail-card">
-        <h3>Schedule</h3>
-        ${this._renderTimelineContent(draft)}
-      </div>
-    `;
-    }
-    _renderTimelineContent(draft) {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
-        label="Mother Start"
-        .value=${draft.motherStart}
-        @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
-        label="Clone Start"
-        .value=${draft.cloneStart}
-        @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
-        label="Dry Start"
-        .value=${draft.dryStart}
-        @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
-        label="Cure Start"
-        .value=${draft.cureStart}
-        @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else {
-            return x `
-        <md3-date-input
-          label="Seedling Start"
-          .value=${draft.seedlingStart}
-          @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${draft.vegStart}
-          @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${draft.flowerStart}
-          @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
-        ></md3-date-input>
-      `;
-        }
-    }
-    _renderTransplantForm(stage) {
-        const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
-        const stageLabel = stage === 'clone' ? 'Clone' : 'Seedling';
-        const daysField = stage === 'clone' ? 'clone_days' : 'seedling_days';
-        const tabDraft = stage === 'clone' ? this._sm.tabs.clone.draft : this._sm.tabs.seedling.draft;
-        const options = plants.map((p) => {
-            const strain = p.attributes.strain || 'Unknown';
-            const pheno = p.attributes.phenotype || '-';
-            const growspace = p._growspaceName || 'Unknown';
-            const col = p.attributes.col;
-            const row = p.attributes.row;
-            const days = p.attributes[daysField] || 0;
-            return {
-                value: p.attributes.plant_id,
-                label: `Strain: ${strain}, Phenotype: ${pheno}, Growspace: ${growspace}, Col: ${col}, Row: ${row}, Days: ${days}`,
-            };
-        });
-        const selectedPlant = tabDraft.selectedPlantId
-            ? plants.find((p) => p.attributes.plant_id === tabDraft.selectedPlantId) || null
-            : null;
-        return x `
-      <!-- SELECT PLANT CARD -->
-      <div class="detail-card">
-        <h3>Select ${stageLabel} to Transplant</h3>
-        ${plants.length === 0
-            ? x `<p style="color: var(--secondary-text-color); font-style: italic;">
-              No ${stageLabel.toLowerCase()}s available for transplant
-            </p>`
-            : x `
-              <md3-select
-                label="Select Plant"
-                .value=${tabDraft.selectedPlantId || ''}
-                .options=${options}
-                @change=${(e) => {
-                this._sm = transition$9(this._sm, {
-                    type: 'DraftFieldChanged',
-                    tab: stage,
-                    field: 'selectedPlantId',
-                    value: plants.find((p) => p.attributes.plant_id === e.detail)
-                        ? e.detail
-                        : null,
-                });
-            }}
-              ></md3-select>
-            `}
-        ${selectedPlant
-            ? x `
-              <div class="plant-info-grid">
-                <span class="info-label">Strain:</span>
-                <span class="info-value">${selectedPlant.attributes.strain}</span>
-
-                <span class="info-label">Phenotype:</span>
-                <span class="info-value">${selectedPlant.attributes.phenotype || 'N/A'}</span>
-
-                <span class="info-label">Current Position:</span>
-                <span class="info-value"
-                  >Row ${selectedPlant.attributes.row}, Col ${selectedPlant.attributes.col}</span
-                >
-
-                <span class="info-label">Days in Stage:</span>
-                <span class="info-value">${selectedPlant.attributes[daysField] || 0} days</span>
-
-                <span class="info-label">${stage === 'clone' ? 'Clone' : 'Seedling'} Start:</span>
-                <span class="info-value"
-                  >${selectedPlant.attributes[stage === 'clone' ? 'clone_start' : 'seedling_start'] || 'N/A'}</span
-                >
-              </div>
-            `
-            : E}
-      </div>
-
-      <!-- NEW LOCATION CARD -->
-      <div class="detail-card">
-        <h3>New Location</h3>
-        <div class="row-col-grid">
-          <md3-number-input
-            label="Row"
-            .value=${tabDraft.row + 1}
-            @change=${(e) => (this._sm = transition$9(this._sm, {
-            type: 'DraftFieldChanged',
-            tab: stage,
-            field: 'row',
-            value: parseInt(e.detail) - 1,
-        }))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Col"
-            .value=${tabDraft.col + 1}
-            @change=${(e) => (this._sm = transition$9(this._sm, {
-            type: 'DraftFieldChanged',
-            tab: stage,
-            field: 'col',
-            value: parseInt(e.detail) - 1,
-        }))}
-          ></md3-number-input>
-        </div>
-        <p style="margin-top: 12px; font-size: 0.85rem; color: var(--secondary-text-color);">
-          Veg start will be set to today's date upon transplant.
-        </p>
-      </div>
-    `;
-    }
-};
-AddPlantDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-      .overview-grid {
-        padding: 24px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      @media (max-width: 450px) {
-        .overview-grid {
-          flex: 1;
-          min-height: 0;
-          padding: 16px;
-        }
-      }
-
-      /* Tab bar styles */
-      .tab-bar {
-        display: flex;
-        gap: 4px;
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.03);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .tab {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 8px;
-        background: transparent;
-        border: none;
-        border-radius: 8px;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-size: 0.85rem;
-        font-family: inherit;
-      }
-
-      .tab:hover {
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      .tab.active {
-        background: rgba(var(--rgb-primary-color), 0.15);
-        color: var(--primary-color);
-      }
-
-      .tab svg {
-        width: 18px;
-        height: 18px;
-        fill: currentColor;
-      }
-
-      /* Wizard step indicator */
-      .wizard-steps {
-        display: flex;
-        align-items: center;
-        padding: 14px 24px;
-        gap: 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(0, 0, 0, 0.1);
-      }
-
-      .wizard-step {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.8rem;
-        font-weight: 500;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-        white-space: nowrap;
-      }
-
-      .wizard-step.active {
-        color: var(--primary-color, #4caf50);
-      }
-
-      .wizard-step.done {
-        color: rgba(255, 255, 255, 0.55);
-      }
-
-      .wizard-step-num {
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        border: 1.5px solid currentColor;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-        flex-shrink: 0;
-      }
-
-      .wizard-step.active .wizard-step-num {
-        background: var(--primary-color, #4caf50);
-        border-color: var(--primary-color, #4caf50);
-        color: #fff;
-      }
-
-      .wizard-step.done .wizard-step-num {
-        background: rgba(76, 175, 80, 0.2);
-        border-color: rgba(76, 175, 80, 0.4);
-        color: #69f0ae;
-      }
-
-      .wizard-connector {
-        flex: 1;
-        height: 1px;
-        background: rgba(255, 255, 255, 0.1);
-        margin: 0 8px;
-      }
-
-      .wizard-connector.done {
-        background: rgba(76, 175, 80, 0.3);
-      }
-
-      /* Strain typeahead */
-      .strain-typeahead {
-        position: relative;
-      }
-
-      .strain-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        z-index: 100;
-        background: var(--card-background-color, #2c2c2c);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
-        max-height: 200px;
-        overflow-y: auto;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        margin-top: 4px;
-      }
-
-      .strain-option {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 14px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        transition: background 0.1s;
-      }
-
-      .strain-option:hover {
-        background: rgba(76, 175, 80, 0.12);
-        color: #69f0ae;
-      }
-
-      .strain-option-meta {
-        font-size: 0.72rem;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-      }
-
-      /* Source type toggle */
-      .source-toggle {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        margin-bottom: 16px;
-      }
-
-      .source-btn {
-        padding: 12px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        font-size: 0.85rem;
-        font-weight: 500;
-        text-align: center;
-        transition: all 0.15s;
-      }
-
-      .source-btn.active {
-        border-color: var(--primary-color, #4caf50);
-        background: rgba(76, 175, 80, 0.12);
-        color: var(--primary-color, #4caf50);
-      }
-
-      /* Sibling plant picker */
-      .sibling-list {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        margin-top: 10px;
-      }
-
-      .sibling-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: rgba(255, 255, 255, 0.03);
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: all 0.15s;
-      }
-
-      .sibling-item:hover {
-        border-color: rgba(76, 175, 80, 0.4);
-        background: rgba(76, 175, 80, 0.06);
-      }
-
-      .sibling-item.selected {
-        border-color: var(--primary-color, #4caf50);
-        background: rgba(76, 175, 80, 0.1);
-        color: #69f0ae;
-      }
-
-      .sibling-meta {
-        font-size: 0.72rem;
-        color: var(--secondary-text-color, rgba(255, 255, 255, 0.4));
-      }
-
-      .plant-info-grid {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 8px 16px;
-        padding: 12px;
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 8px;
-        margin-top: 12px;
-      }
-
-      .info-label {
-        color: var(--secondary-text-color);
-        font-size: 0.9rem;
-      }
-
-      .info-value {
-        font-weight: 500;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], AddPlantDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Array })
-], AddPlantDialog.prototype, "strainLibrary", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "growspaceName", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true })
-], AddPlantDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: Array })
-], AddPlantDialog.prototype, "clonePlants", void 0);
-__decorate([
-    n$5({ type: Array })
-], AddPlantDialog.prototype, "seedlingPlants", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantDialog.prototype, "targetGrowspaceId", void 0);
-__decorate([
-    n$5({ type: Array })
-], AddPlantDialog.prototype, "siblingPlants", void 0);
-__decorate([
-    r$3()
-], AddPlantDialog.prototype, "_sm", void 0);
-AddPlantDialog = __decorate([
-    t$2('add-plant-dialog')
-], AddPlantDialog);
-
-let AddPlantsDialog = class AddPlantsDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.strainLibrary = [];
-        this.growspaceName = '';
-        this.open = false;
-        this.strain = '';
-        this.phenotype = '';
-        this.addToLibrary = false;
-        this.amount = 1;
-        this.start_number = 1;
-        // Date fields
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    setInitialState(strain = '') {
-        this.strain = strain;
-        this.amount = 1;
-        this.start_number = 1;
-        this.veg_start = '';
-        this.flower_start = '';
-        this.seedling_start = '';
-        this.mother_start = '';
-        this.clone_start = '';
-        this.dry_start = '';
-        this.cure_start = '';
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _openStrainCreator() {
-        this.dispatchEvent(new CustomEvent('create-new-strain', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                source: 'add-plants',
-                returnPayload: {
-                    strain: this.strain,
-                    phenotype: this.phenotype,
-                    amount: this.amount,
-                    start_number: this.start_number,
-                    seedling_start: this.seedling_start,
-                    veg_start: this.veg_start,
-                    flower_start: this.flower_start,
-                    mother_start: this.mother_start,
-                    clone_start: this.clone_start,
-                    dry_start: this.dry_start,
-                    cure_start: this.cure_start,
-                },
-            },
-        }));
-    }
-    _confirm() {
-        if (this.growspaceDevice) {
-            const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
-            const occupied = this.growspaceDevice.plants?.length || 0;
-            const free = Math.max(0, totalSlots - occupied);
-            if (this.amount > free) {
-                this.dispatchEvent(new CustomEvent('show-toast', {
-                    bubbles: true,
-                    composed: true,
-                    detail: {
-                        message: `Not enough free Plant Slots in the growspace. ${free} Plant Spots free`,
-                        type: 'error',
-                    },
-                }));
-                return;
-            }
-        }
-        const payload = {
-            strain: this.strain,
-            amount: this.amount,
-            start_number: this.start_number,
-            veg_start: this.veg_start,
-            flower_start: this.flower_start,
-            seedling_start: this.seedling_start,
-            mother_start: this.mother_start,
-            clone_start: this.clone_start,
-            dry_start: this.dry_start,
-            cure_start: this.cure_start,
-            phenotype: this.phenotype,
-            addToLibrary: this.addToLibrary,
-        };
-        this.dispatchEvent(new CustomEvent('add-plants-submit', {
-            detail: payload,
-            bubbles: true,
-            composed: true,
-        }));
-    }
-    render() {
-        if (!this.open)
-            return x ``;
-        const uniqueStrains = [...new Set(this.strainLibrary.map((s) => s.strain))].sort();
-        return x `
-      <ha-dialog
-        open
-        @closed=${this._close}
-        hideActions
-        without-header
-        .scrimClickAction=${''}
-        .escapeKeyAction=${'close'}
-        width="large"
-      >
-        <div class="glass-dialog-container">
-          <!-- HEADER -->
-          <div class="dialog-header">
-            <div class="dialog-icon">
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-            </div>
-            <div class="dialog-title-group">
-              <div style="display:flex;align-items:center;gap:6px;">
-                <h2 class="dialog-title">Batch Add Plants</h2>
-                <gs-help-tooltip
-                  content="Add multiple plants at once. This will automatically assign them to available positions in your growspace using a numbered naming pattern."
-                  placement="bottom"
-                  label="Batch Add"
-                ></gs-help-tooltip>
-              </div>
-              <div class="dialog-subtitle">Add multiple plants to ${this.growspaceName}</div>
-            </div>
-            <button
-              class="md3-button text"
-              @click=${this._close}
-              style="min-width: auto; padding: 8px;"
-            >
-              <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiClose}"></path>
-              </svg>
-            </button>
-          </div>
-
-          <div class="overview-grid">
-            <div class="explanation-card">
-              <svg style="width:20px;height:20px;" viewBox="0 0 24 24">
-                <path d="${mdiInformationOutline}"></path>
-              </svg>
-              <div>
-                Batch adding will automatically find available positions in the growspace. Plants
-                will be named using the phenotype pattern: <strong>Strain #StartNumber</strong>. For
-                example, adding 3 "OG Kush" starting at #1 will create OG Kush #1, OG Kush #2, and
-                OG Kush #3.
-              </div>
-            </div>
-
-            <!-- IDENTITY CARD -->
-            <div class="detail-card">
-              <h3>Batch Configuration</h3>
-              <div
-                style="display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start;"
-              >
-                <md3-select
-                  style="width: 100%;"
-                  label="Strain *"
-                  .value=${this.strain}
-                  .options=${uniqueStrains}
-                  @change=${(e) => (this.strain = e.detail)}
-                ></md3-select>
-                <button
-                  class="md3-button tonal"
-                  style="height: 56px; width: 56px; padding: 0; display: flex; align-items: center; justify-content: center;"
-                  @click=${this._openStrainCreator}
-                  title="Add New Strain"
-                >
-                  <svg style="width:24px;height:24px;fill:currentColor;" viewBox="0 0 24 24">
-                    <path d="${mdiDna}"></path>
-                  </svg>
-                </button>
-              </div>
-
-              <md3-text-input
-                label="Phenotype (Optional)"
-                .value=${this.phenotype}
-                @change=${(e) => (this.phenotype = e.detail)}
-              ></md3-text-input>
-
-              <div
-                class="toggle-container"
-                style="margin-top: 8px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; padding: 0 4px;"
-              >
-                <span style="font-size: 0.95rem; color: var(--secondary-text-color);"
-                  >Add to Strain Library</span
-                >
-                <md3-switch
-                  .checked=${this.addToLibrary}
-                  @change=${(e) => (this.addToLibrary = e.target.checked)}
-                  ?disabled=${!this.strain}
-                ></md3-switch>
-              </div>
-
-              <div class="row-col-grid">
-                <md3-number-input
-                  label="Amount"
-                  .value=${this.amount}
-                  min="1"
-                  @change=${(e) => (this.amount = parseInt(e.detail))}
-                ></md3-number-input>
-                <md3-number-input
-                  label="Start Number"
-                  .value=${this.start_number}
-                  min="1"
-                  @change=${(e) => (this.start_number = parseInt(e.detail))}
-                ></md3-number-input>
-              </div>
-            </div>
-
-            <!-- TIMELINE CARD -->
-            <div class="detail-card">
-              <h3>Timeline</h3>
-              ${this.renderTimelineContent()}
-            </div>
-          </div>
-
-          <!-- ACTION BUTTONS -->
-          <div class="button-group">
-            <button class="md3-button tonal" @click=${this._close}>Cancel</button>
-            <button class="md3-button primary" @click=${this._confirm}>
-              <svg style="width:18px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
-                <path d="${mdiSprout}"></path>
-              </svg>
-              Add Plants
-            </button>
-          </div>
-        </div>
-      </ha-dialog>
-    `;
-    }
-    renderTimelineContent() {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
-        label="Mother Start"
-        .value=${this.mother_start}
-        @change=${(e) => (this.mother_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
-        label="Clone Start"
-        .value=${this.clone_start}
-        @change=${(e) => (this.clone_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
-        label="Dry Start"
-        .value=${this.dry_start}
-        @change=${(e) => (this.dry_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
-        label="Cure Start"
-        .value=${this.cure_start}
-        @change=${(e) => (this.cure_start = e.detail)}
-      ></md3-date-input>`;
-        }
-        else {
-            return x `
-        <md3-date-input
-          label="Seedling Start"
-          .value=${this.seedling_start}
-          @change=${(e) => (this.seedling_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${this.veg_start}
-          @change=${(e) => (this.veg_start = e.detail)}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${this.flower_start}
-          @change=${(e) => (this.flower_start = e.detail)}
-        ></md3-date-input>
-      `;
-        }
-    }
-};
-AddPlantsDialog.styles = [
-    dialogStyles,
-    i$6 `
-      :host {
-        display: block;
-      }
-      .overview-grid {
-        padding: 24px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-      .explanation-card {
-        background: rgba(var(--md3-sys-color-primary-container-rgb, 103, 80, 164), 0.1);
-        border-radius: 12px;
-        padding: 16px;
-        display: flex;
-        gap: 12px;
-        align-items: flex-start;
-        font-size: 0.9rem;
-        color: var(--md3-sys-color-on-surface-variant);
-        border: 1px solid rgba(var(--md3-sys-color-primary-rgb), 0.1);
-      }
-      .explanation-card svg {
-        flex-shrink: 0;
-        fill: var(--md3-sys-color-primary);
-      }
-      @media (max-width: 450px) {
-        .overview-grid {
-          flex: 1;
-          min-height: 0;
-          padding: 16px;
-        }
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], AddPlantsDialog.prototype, "hass", void 0);
-__decorate([
-    n$5({ type: Array })
-], AddPlantsDialog.prototype, "strainLibrary", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "growspaceName", void 0);
-__decorate([
-    n$5({ attribute: false })
-], AddPlantsDialog.prototype, "growspaceDevice", void 0);
-__decorate([
-    n$5({ type: Boolean, reflect: true })
-], AddPlantsDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "strain", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "phenotype", void 0);
-__decorate([
-    r$3()
-], AddPlantsDialog.prototype, "addToLibrary", void 0);
-__decorate([
-    n$5({ type: Number })
-], AddPlantsDialog.prototype, "amount", void 0);
-__decorate([
-    n$5({ type: Number })
-], AddPlantsDialog.prototype, "start_number", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "veg_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "flower_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "seedling_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "mother_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "clone_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "dry_start", void 0);
-__decorate([
-    n$5({ type: String })
-], AddPlantsDialog.prototype, "cure_start", void 0);
-AddPlantsDialog = __decorate([
-    t$2('add-plants-dialog')
-], AddPlantsDialog);
 
 let CloneDialog = class CloneDialog extends i$3 {
     constructor() {
@@ -17160,6 +17703,24 @@ function defaultEnvironmentDraft() {
         visionEarlyOffset: 60,
         visionMidHours: 6,
         visionLateOffset: 60,
+        circulationFanConfig: {
+            enabled: false,
+            regulation_mode: 'vpd',
+            min_speed: 0,
+            max_speed: 100,
+            vpd_target: 1.0,
+            vpd_tolerance: 0.2,
+            humidity_target: 60.0,
+            humidity_tolerance: 5.0,
+            temperature_target: 25.0,
+            temperature_tolerance: 2.0,
+            critical_temp_low: null,
+            critical_temp_high: null,
+            critical_temp_hysteresis: 1.0,
+            wind_enabled: false,
+            wind_period_seconds: 60,
+            wind_amplitude_pct: 10,
+        },
     };
 }
 function defaultTabs$2() {
@@ -17250,10 +17811,11 @@ function envDraftFromDevice(device) {
         visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
         visionMidHours: vc?.mid_check_hours ?? 6,
         visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+        circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$8(device) {
+function createInitialSM$9(device) {
     const sm = {
         activeTab: 'sensors',
         tabs: defaultTabs$2(),
@@ -17269,7 +17831,7 @@ function applyDeviceToSM$2(sm, device) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$8(sm, event) {
+function transition$9(sm, event) {
     switch (event.type) {
         // ── Navigation ────────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -17514,7 +18076,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
         // ── Single SM ────────────────────────────────────────────────────────────
-        this._sm = createInitialSM$8();
+        this._sm = createInitialSM$9();
         // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
@@ -17524,10 +18086,11 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._dehumidifierControlEnabled = false;
         this._humidifierControlEnabled = false;
         this._initialStateApplied = false;
+        this._fanTempOverrideExpanded = false;
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
-        this._sm = transition$8(this._sm, event);
+        this._sm = transition$9(this._sm, event);
     }
     get currentTab() {
         return this._sm.activeTab;
@@ -17540,7 +18103,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // through familiar names. The SM is the authoritative source of truth.
     get _d() { return this._sm.environmentDraft; }
     _setEnv(partial) {
-        this._sm = transition$8(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+        this._sm = transition$9(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     }
     get envSelectedId() { return this._d.selectedGrowspaceId; }
     set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
@@ -17857,12 +18420,15 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 visionEarlyOffset: vc?.early_check_offset_minutes ?? 60,
                 visionMidHours: vc?.mid_check_hours ?? 6,
                 visionLateOffset: vc?.late_check_offset_minutes ?? 60,
+                ...(environmentData.circulationFanConfig
+                    ? { circulationFanConfig: environmentData.circulationFanConfig }
+                    : {}),
             }
             : {};
         this._sm = {
-            ...createInitialSM$8(),
+            ...createInitialSM$9(),
             activeTab: currentTab,
-            environmentDraft: { ...createInitialSM$8().environmentDraft, ...envPartial },
+            environmentDraft: { ...createInitialSM$9().environmentDraft, ...envPartial },
         };
         this._dehumidifierControlEnabled = environmentData?.dehumidifierControlEnabled ?? false;
         this._humidifierControlEnabled = environmentData?.humidifierControlEnabled ?? false;
@@ -17934,6 +18500,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 irrigationFlowSensors: d.irrigationFlowSensors,
                 powerSensors: d.powerSensors,
                 energySensors: d.energySensors,
+                circulationFanConfig: d.circulationFanConfig,
             },
             bubbles: true,
             composed: true,
@@ -18545,6 +19112,211 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             >
               Remove Environment
             </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _updateFanConfig(partial) {
+        this._t({
+            type: 'UPDATE_ENV_DRAFT',
+            partial: {
+                circulationFanConfig: { ...this._sm.environmentDraft.circulationFanConfig, ...partial },
+            },
+        });
+    }
+    _renderFanControllerPanel() {
+        const fan = this._sm.environmentDraft.circulationFanConfig;
+        const disabled = !fan.enabled;
+        const mode = fan.regulation_mode;
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiFan}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Fan Controller</h3>
+        </div>
+
+        <!-- Enabled toggle -->
+        <div class="form-section">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              .checked=${fan.enabled}
+              @change=${(e) => this._updateFanConfig({ enabled: e.target.checked })}
+            />
+            <span>Enabled</span>
+          </label>
+        </div>
+
+        <!-- Regulation mode -->
+        <div class="form-section" style="${disabled ? 'opacity:0.5;pointer-events:none;' : ''}">
+          <md3-select
+            label="Regulation Mode"
+            .value=${mode}
+            .options=${[
+            { value: 'vpd', label: 'VPD' },
+            { value: 'humidity', label: 'Humidity' },
+            { value: 'temperature', label: 'Temperature' },
+        ]}
+            @change=${(e) => this._updateFanConfig({ regulation_mode: e.detail })}
+          ></md3-select>
+
+          <!-- Active mode target + tolerance -->
+          <div class="row-col-grid">
+            ${mode === 'vpd'
+            ? x `
+                  <md3-number-input
+                    label="VPD Target (kPa)"
+                    .value=${fan.vpd_target}
+                    @change=${(e) => this._updateFanConfig({ vpd_target: parseFloat(e.detail) })}
+                    step="0.01"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="VPD Tolerance (kPa)"
+                    .value=${fan.vpd_tolerance}
+                    @change=${(e) => this._updateFanConfig({ vpd_tolerance: parseFloat(e.detail) })}
+                    step="0.01"
+                  ></md3-number-input>
+                `
+            : E}
+            ${mode === 'humidity'
+            ? x `
+                  <md3-number-input
+                    label="Humidity Target (%)"
+                    .value=${fan.humidity_target}
+                    @change=${(e) => this._updateFanConfig({ humidity_target: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Humidity Tolerance (%)"
+                    .value=${fan.humidity_tolerance}
+                    @change=${(e) => this._updateFanConfig({ humidity_tolerance: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                `
+            : E}
+            ${mode === 'temperature'
+            ? x `
+                  <md3-number-input
+                    label="Temperature Target (°C)"
+                    .value=${fan.temperature_target}
+                    @change=${(e) => this._updateFanConfig({ temperature_target: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                  <md3-number-input
+                    label="Temperature Tolerance (°C)"
+                    .value=${fan.temperature_tolerance}
+                    @change=${(e) => this._updateFanConfig({ temperature_tolerance: parseFloat(e.detail) })}
+                    step="0.1"
+                  ></md3-number-input>
+                `
+            : E}
+          </div>
+
+          <!-- Temperature Override (VPD mode only, collapsible) -->
+          ${mode === 'vpd'
+            ? x `
+                <div style="margin-top:8px;">
+                  <button
+                    class="md3-button tonal"
+                    style="display:flex;align-items:center;gap:4px;width:100%;justify-content:space-between;"
+                    @click=${() => {
+                this._fanTempOverrideExpanded = !this._fanTempOverrideExpanded;
+            }}
+                  >
+                    <span>Temperature Override</span>
+                    <svg
+                      style="width:18px;height:18px;transition:transform 0.2s;transform:rotate(${this._fanTempOverrideExpanded ? '180deg' : '0deg'});"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="${mdiChevronDown}"></path>
+                    </svg>
+                  </button>
+                  ${this._fanTempOverrideExpanded
+                ? x `
+                        <div class="row-col-grid" style="margin-top:8px;">
+                          <md3-number-input
+                            label="Critical Temp Low (°C)"
+                            .value=${fan.critical_temp_low ?? ''}
+                            @change=${(e) => this._updateFanConfig({
+                    critical_temp_low: e.detail !== '' ? parseFloat(e.detail) : null,
+                })}
+                            step="0.1"
+                          ></md3-number-input>
+                          <md3-number-input
+                            label="Critical Temp High (°C)"
+                            .value=${fan.critical_temp_high ?? ''}
+                            @change=${(e) => this._updateFanConfig({
+                    critical_temp_high: e.detail !== '' ? parseFloat(e.detail) : null,
+                })}
+                            step="0.1"
+                          ></md3-number-input>
+                          <md3-number-input
+                            label="Critical Temp Hysteresis (°C)"
+                            .value=${fan.critical_temp_hysteresis}
+                            @change=${(e) => this._updateFanConfig({
+                    critical_temp_hysteresis: parseFloat(e.detail),
+                })}
+                            step="0.1"
+                          ></md3-number-input>
+                        </div>
+                      `
+                : E}
+                </div>
+              `
+            : E}
+
+          <!-- Min / Max speed -->
+          <div class="row-col-grid" style="margin-top:8px;">
+            <md3-number-input
+              label="Min Speed (%)"
+              .value=${fan.min_speed}
+              @change=${(e) => this._updateFanConfig({ min_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+            <md3-number-input
+              label="Max Speed (%)"
+              .value=${fan.max_speed}
+              @change=${(e) => this._updateFanConfig({ max_speed: parseFloat(e.detail) })}
+              step="1"
+            ></md3-number-input>
+          </div>
+
+          <!-- Dynamic Wind -->
+          <div style="margin-top:8px;">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                .checked=${fan.wind_enabled}
+                @change=${(e) => this._updateFanConfig({ wind_enabled: e.target.checked })}
+              />
+              <span>Dynamic Wind</span>
+            </label>
+            ${fan.wind_enabled
+            ? x `
+                  <div class="row-col-grid" style="margin-top:8px;">
+                    <md3-number-input
+                      label="Wind Period (s)"
+                      .value=${fan.wind_period_seconds}
+                      @change=${(e) => this._updateFanConfig({ wind_period_seconds: parseFloat(e.detail) })}
+                      step="1"
+                    ></md3-number-input>
+                    <md3-number-input
+                      label="Wind Amplitude (%)"
+                      .value=${fan.wind_amplitude_pct}
+                      @change=${(e) => this._updateFanConfig({ wind_amplitude_pct: parseFloat(e.detail) })}
+                      step="1"
+                    ></md3-number-input>
+                  </div>
+                `
+            : E}
           </div>
         </div>
       </div>
@@ -19379,6 +20151,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             : E}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : E}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : E}
+                ${this.currentTab === ConfigTab.CLIMATE
+            ? this._renderFanControllerPanel()
+            : E}
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : E}
                 ${this.currentTab === ConfigTab.IRRIGATION
             ? this._renderIrrigationSection()
@@ -19987,6 +20762,9 @@ __decorate([
 __decorate([
     r$3()
 ], ConfigDialog.prototype, "_humidifierControlEnabled", void 0);
+__decorate([
+    r$3()
+], ConfigDialog.prototype, "_fanTempOverrideExpanded", void 0);
 ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
@@ -20028,7 +20806,7 @@ function defaultTabs$1() {
     };
 }
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$7(device) {
+function createInitialSM$8(device) {
     const sm = {
         activeTab: 'diagnostics',
         tabs: defaultTabs$1(),
@@ -20092,9 +20870,9 @@ function requestTabSwitch$1(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty$1(sm, device)) {
-        return transition$7(sm, { type: 'REQUEST_TAB', tab });
+        return transition$8(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$7(sm, { type: 'SWITCH_TAB', tab });
+    return transition$8(sm, { type: 'SWITCH_TAB', tab });
 }
 function discardAndSwitch$1(sm, device) {
     if (sm.status.kind !== 'confirm-discard')
@@ -20108,7 +20886,7 @@ function discardAndSwitch$1(sm, device) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$7(sm, event) {
+function transition$8(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -20234,7 +21012,7 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
         super(...arguments);
         this.open = false;
         this.growspaceName = '';
-        this._sm = createInitialSM$7();
+        this._sm = createInitialSM$8();
     }
     _device() {
         if (!this.dialogState?.growspaceId)
@@ -20246,11 +21024,11 @@ let CropSteeringDialog = class CropSteeringDialog extends i$3 {
     updated(changed) {
         if (changed.has('open') && this.open) {
             const device = this._device();
-            this._sm = createInitialSM$7(device);
+            this._sm = createInitialSM$8(device);
         }
     }
     _transition(event) {
-        this._sm = transition$7(this._sm, event);
+        this._sm = transition$8(this._sm, event);
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
@@ -20500,7 +21278,7 @@ CropSteeringDialog = __decorate([
  * user interactions become transition(sm, event) calls.
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$6(growspaceName) {
+function createInitialSM$7(growspaceName) {
     return {
         activeThreadId: null,
         composerDraft: '',
@@ -20517,7 +21295,7 @@ function createInitialSM$6(growspaceName) {
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$6(sm, event) {
+function transition$7(sm, event) {
     switch (event.type) {
         case 'THREAD_SELECTED':
             return {
@@ -20580,7 +21358,7 @@ let GmChatPanel = class GmChatPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this.growspacename = '';
-        this._sm = createInitialSM$6();
+        this._sm = createInitialSM$7();
         this._activeThread = new libExports.StoreController(this, activeThreadId$);
         this._threads = new libExports.StoreController(this, conversationThreads$);
         this._loading = new libExports.StoreController(this, isAiLoading$);
@@ -20589,10 +21367,10 @@ let GmChatPanel = class GmChatPanel extends i$3 {
     }
     connectedCallback() {
         super.connectedCallback();
-        this._sm = createInitialSM$6(this.growspacename || undefined);
+        this._sm = createInitialSM$7(this.growspacename || undefined);
     }
     _dispatch(event) {
-        this._sm = transition$6(this._sm, event);
+        this._sm = transition$7(this._sm, event);
     }
     _getActiveThread() {
         const activeMap = this._activeThread.value;
@@ -22308,7 +23086,7 @@ GmBriefingPanel = __decorate([
  * per-tab draft state. Shape is flat.
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$5() {
+function createInitialSM$6() {
     return {
         activeFilter: 'all',
         selectedId: null,
@@ -22318,7 +23096,7 @@ function createInitialSM$5() {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$5(sm, event) {
+function transition$6(sm, event) {
     switch (event.type) {
         case 'FilterSelected':
             return {
@@ -22419,7 +23197,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         super(...arguments);
         this.growspaceid = '';
         this.growspacename = '';
-        this._sm = createInitialSM$5();
+        this._sm = createInitialSM$6();
         this._alerts = new libExports.StoreController(this, aiAlerts$);
         this._aiEnabled = new libExports.StoreController(this, aiEnabled$);
     }
@@ -22460,28 +23238,28 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
         const alertId = this._sm.selectedId;
         if (!alertId)
             return;
-        this._sm = transition$5(this._sm, { type: 'ResolveRequested' });
+        this._sm = transition$6(this._sm, { type: 'ResolveRequested' });
         try {
             await resolveAlert(alertId, note);
-            this._sm = transition$5(this._sm, { type: 'SaveResolved' });
-            this._sm = transition$5(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
+            this._sm = transition$6(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$6(this._sm, { type: 'SET_TOAST', message: 'Alert resolved' });
         }
         catch (e) {
-            this._sm = transition$5(this._sm, { type: 'SaveFailed', message: String(e) });
+            this._sm = transition$6(this._sm, { type: 'SaveFailed', message: String(e) });
         }
     }
     async _handleApplyConfirmed() {
         if (this._sm.status.kind !== 'confirming')
             return;
         const action = this._sm.status.action;
-        this._sm = transition$5(this._sm, { type: 'ActionApplyConfirmed' });
+        this._sm = transition$6(this._sm, { type: 'ActionApplyConfirmed' });
         try {
             await applyAction(action);
-            this._sm = transition$5(this._sm, { type: 'SaveResolved' });
-            this._sm = transition$5(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
+            this._sm = transition$6(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$6(this._sm, { type: 'SET_TOAST', message: 'Action applied' });
         }
         catch (e) {
-            this._sm = transition$5(this._sm, { type: 'SaveFailed', message: String(e) });
+            this._sm = transition$6(this._sm, { type: 'SaveFailed', message: String(e) });
         }
     }
     _renderFilterStrip() {
@@ -22496,7 +23274,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             <button
               class="inbox-filter-pill"
               aria-pressed=${this._sm.activeFilter === key ? 'true' : 'false'}
-              @click=${() => { this._sm = transition$5(this._sm, { type: 'FilterSelected', filter: key }); }}
+              @click=${() => { this._sm = transition$6(this._sm, { type: 'FilterSelected', filter: key }); }}
             >
               ${label}
               <span class="pill-count">${this._countFor(key)}</span>
@@ -22525,7 +23303,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
               <div
                 class="inbox-row"
                 aria-selected=${this._sm.selectedId === a.id ? 'true' : 'false'}
-                @click=${() => { this._sm = transition$5(this._sm, { type: 'AlertSelected', id: a.id }); }}
+                @click=${() => { this._sm = transition$6(this._sm, { type: 'AlertSelected', id: a.id }); }}
               >
                 <div
                   class="inbox-severity-bar"
@@ -22574,7 +23352,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                 ${status.message}
                 <button
                   class="error-dismiss-btn"
-                  @click=${() => { this._sm = transition$5(this._sm, { type: 'ErrorDismissed' }); }}
+                  @click=${() => { this._sm = transition$6(this._sm, { type: 'ErrorDismissed' }); }}
                 >Dismiss</button>
               </div>
             `
@@ -22621,7 +23399,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                     <div class="reco-row-body">${action.description}</div>
                     <button
                       class="apply-btn"
-                      @click=${() => { this._sm = transition$5(this._sm, { type: 'ActionApplyRequested', action }); }}
+                      @click=${() => { this._sm = transition$6(this._sm, { type: 'ActionApplyRequested', action }); }}
                     >Apply</button>
                   </div>
                 `)}
@@ -22636,7 +23414,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                 <div class="confirm-overlay-actions">
                   <button
                     class="confirm-cancel-btn"
-                    @click=${() => { this._sm = transition$5(this._sm, { type: 'ActionApplyCancelled' }); }}
+                    @click=${() => { this._sm = transition$6(this._sm, { type: 'ActionApplyCancelled' }); }}
                   >Cancel</button>
                   <button
                     class="confirm-apply-btn"
@@ -22661,7 +23439,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
                     placeholder="Add a note…"
                     .value=${status.text}
                     @input=${(e) => {
-                this._sm = transition$5(this._sm, {
+                this._sm = transition$6(this._sm, {
                     type: 'NoteChanged',
                     text: e.target.value,
                 });
@@ -22676,7 +23454,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
             : x `
                 <button
                   class="add-note-btn"
-                  @click=${() => { this._sm = transition$5(this._sm, { type: 'AddNoteOpened' }); }}
+                  @click=${() => { this._sm = transition$6(this._sm, { type: 'AddNoteOpened' }); }}
                 >Add note</button>
                 <button
                   class="resolve-btn"
@@ -22701,7 +23479,7 @@ let GmInboxPanel = class GmInboxPanel extends i$3 {
           class="mark-all-read-btn"
           ?disabled=${!this._hasUnread}
           @click=${() => {
-            this._sm = transition$5(this._sm, {
+            this._sm = transition$6(this._sm, {
                 type: 'MarkAllRead',
                 ids: this._filtered().map((a) => a.id),
             });
@@ -24150,7 +24928,7 @@ GrowMasterDialog = __decorate([
  *     .tabs               — one typed state object per tab (draft + sub)
  */
 // ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$4(seed) {
+function createInitialSM$5(seed) {
     return {
         activeTab: 'scoring',
         tabs: {
@@ -24210,7 +24988,7 @@ function parseMetrics(draft) {
     return result;
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$4(sm, event) {
+function transition$5(sm, event) {
     switch (event.type) {
         case 'TabSelected':
             if (sm.status.kind !== 'idle')
@@ -24308,15 +25086,15 @@ let HarvestScoringDialog = class HarvestScoringDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        this._sm = createInitialSM$4();
+        this._sm = createInitialSM$5();
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
-            this._sm = createInitialSM$4(this.dialogState);
+            this._sm = createInitialSM$5(this.dialogState);
         }
     }
     _transition(event) {
-        this._sm = transition$4(this._sm, event);
+        this._sm = transition$5(this._sm, event);
     }
     _selectTab(tab) {
         this._transition({ type: 'TabSelected', tab });
@@ -24940,7 +25718,7 @@ function defaultTabs() {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$3(device) {
+function createInitialSM$4(device) {
     const sm = {
         activeTab: 'schedules',
         tabs: defaultTabs(),
@@ -25194,7 +25972,7 @@ function resetActiveTabDraft(sm, device) {
 }
 // ─── Transition function ────────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$3(sm, event) {
+function transition$4(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -25528,9 +26306,9 @@ function requestTabSwitch(sm, tab, device) {
     if (sm.activeTab === tab)
         return sm;
     if (isActiveTabDirty(sm, device)) {
-        return transition$3(sm, { type: 'REQUEST_TAB', tab });
+        return transition$4(sm, { type: 'REQUEST_TAB', tab });
     }
-    return transition$3(sm, { type: 'SWITCH_TAB', tab });
+    return transition$4(sm, { type: 'SWITCH_TAB', tab });
 }
 /**
  * Discard the active tab's draft (reset to device state) and switch to the pending tab.
@@ -25693,7 +26471,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this.initialTab = undefined;
         this.scrollToField = undefined;
         /** Single reactive state atom. All 35 former @state() flags live here. */
-        this._sm = createInitialSM$3();
+        this._sm = createInitialSM$4();
         // ─── Tanks tab state ────────────────────────────────────────────────────
         this._editingTankIndex = null;
         this._tankDraft = null;
@@ -25794,14 +26572,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._fetchStageAnalytics();
             this._ecRampFetched = false;
             if (this.initialTab) {
-                this._sm = transition$3(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
+                this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
         }
         if (this.hass && (changedProps.has('hass') || !this._dataService)) {
             this._dataService = new DataService(this.hass);
         }
         if (!this._visibleTabs.includes(this._sm.activeTab)) {
-            this._sm = transition$3(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
+            this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
         }
         // EC Ramp: reset view when navigating to the tab; lazy-fetch on first visit.
         if (changedProps.has('_sm')) {
@@ -25837,7 +26615,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _initializeState() {
         if (!this.device)
             return;
-        this._sm = transition$3(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
+        this._sm = transition$4(this._sm, { type: 'RESET_FROM_DEVICE', device: this.device });
     }
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
@@ -25879,7 +26657,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this._dataService)
             return;
         const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
-        this._sm = transition$3(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'SET_STAGE_AGGREGATES',
             data: result?.stage_aggregates ?? null,
         });
@@ -25887,12 +26665,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _handleRunNow() {
         if (!this.device?.deviceId || !this.store)
             return;
-        this._sm = transition$3(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
+        this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
         try {
             await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
         }
         finally {
-            this._sm = transition$3(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
+            this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
         }
     }
     async _saveStrategy() {
@@ -25908,7 +26686,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     async _saveDrainConfig() {
         if (!this.device?.deviceId || !this._dataService)
             return;
-        this._sm = transition$3(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
+        this._sm = transition$4(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
         const d = this._sm.tabs.drain_ec.draft;
         try {
             await this._dataService.configureDrainMonitoring(this.device.deviceId, {
@@ -25921,7 +26699,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to save drain config');
         }
         finally {
-            this._sm = transition$3(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
+            this._sm = transition$4(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
         }
     }
     // ─── Schedule mutations ───────────────────────────────────────────────────
@@ -25929,7 +26707,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         await addIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: formattedTime,
@@ -25945,7 +26723,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!this.device?.deviceId || !this.store)
             return;
         const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await addDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -25975,7 +26753,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$3(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_ADD_IRRIGATION',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.irrigationDuration,
@@ -25986,14 +26764,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const totalMinutes = Math.round(pct * 24 * 60);
         const h = Math.floor(totalMinutes / 60);
         const m = totalMinutes % 60;
-        this._sm = transition$3(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_ADD_DRAIN',
             time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
             duration: this._sm.tabs.schedules.draft.drainDuration,
         });
     }
     _startEditingIrrigationTime(timeStr, duration) {
-        this._sm = transition$3(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_EDIT_IRRIGATION',
             originalTime: timeStr,
             originalDuration: duration,
@@ -26002,7 +26780,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         });
     }
     _startEditingDrainTime(timeStr, duration) {
-        this._sm = transition$3(this._sm, {
+        this._sm = transition$4(this._sm, {
             type: 'BEGIN_EDIT_DRAIN',
             originalTime: timeStr,
             originalDuration: duration,
@@ -26023,7 +26801,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         await removeIrrigationTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -26047,7 +26825,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return;
             }
         }
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         await removeDrainTime(this.store.context, {
             growspaceId: this.device.deviceId,
             time: originalTime,
@@ -26063,7 +26841,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeIrrigationTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26079,7 +26857,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store)
             return;
         const { originalTime } = sub;
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         try {
             await removeDrainTime(this.store.context, {
                 growspaceId: this.device.deviceId,
@@ -26091,18 +26869,18 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _close() {
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
-        this._sm = transition$3(this._sm, { type: 'SET_TOAST', message: undefined });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
     _showErrorToast(message) {
-        this._sm = transition$3(this._sm, { type: 'SET_TOAST', message });
+        this._sm = transition$4(this._sm, { type: 'SET_TOAST', message });
         setTimeout(() => {
-            this._sm = transition$3(this._sm, { type: 'SET_TOAST', message: undefined });
+            this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
         }, 5000);
     }
     _updateStrategyField(field, value) {
-        this._sm = transition$3(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
+        this._sm = transition$4(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
     }
     async _handleResetWaterTracking() {
         if (!this.device?.deviceId || !this._dataService)
@@ -26128,7 +26906,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Feed EC and Drain EC must be > 0');
             return;
         }
-        this._sm = transition$3(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
+        this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
         try {
             await this._dataService.logDrainReading(this.device.deviceId, {
                 feedEc: d.logFeedEc,
@@ -26141,7 +26919,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._showErrorToast('Failed to log drain reading');
         }
         finally {
-            this._sm = transition$3(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
+            this._sm = transition$4(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
         }
     }
     // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -26296,7 +27074,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   .iconPath=${mdiAlert}
                   stageColor="var(--warning-color, #ff9800)"
                   @close=${() => {
-                this._sm = transition$3(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$4(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                 >
                   <div style="padding:20px;">
@@ -26311,7 +27089,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     <button
                       class="md3-button tonal"
                       @click=${() => {
-                this._sm = transition$3(this._sm, { type: 'CANCEL_TAB_SWITCH' });
+                this._sm = transition$4(this._sm, { type: 'CANCEL_TAB_SWITCH' });
             }}
                     >
                       Stay
@@ -26939,12 +27717,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$3(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_ADD_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$3(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
+                    this._sm = transition$4(this._sm, { type: 'UPDATE_ADD_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -26971,12 +27749,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$3(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_ADD_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$3(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_ADD_DRAIN',
                             duration: val,
                         });
@@ -27022,12 +27800,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const val = e.target.value || e.detail;
                 if (type === 'irrigation')
-                    this._sm = transition$3(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_EDIT_IRRIGATION',
                         time: val,
                     });
                 else
-                    this._sm = transition$3(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
+                    this._sm = transition$4(this._sm, { type: 'UPDATE_EDIT_DRAIN', time: val });
             }}
                   ></md3-text-input>
                   <div
@@ -27054,12 +27832,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 const val = parseInt(e.detail);
                 if (!isNaN(val)) {
                     if (type === 'irrigation')
-                        this._sm = transition$3(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_EDIT_IRRIGATION',
                             duration: val,
                         });
                     else
-                        this._sm = transition$3(this._sm, {
+                        this._sm = transition$4(this._sm, {
                             type: 'UPDATE_EDIT_DRAIN',
                             duration: val,
                         });
@@ -27100,14 +27878,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _openAddTimeDialog(type) {
         if (type === 'irrigation') {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'BEGIN_ADD_IRRIGATION',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.irrigationDuration,
             });
         }
         else {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'BEGIN_ADD_DRAIN',
                 time: '12:00',
                 duration: this._sm.tabs.schedules.draft.drainDuration,
@@ -27115,22 +27893,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         }
     }
     _cancelAddTime(_type) {
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
     }
     _cancelEditTime(_type) {
-        this._sm = transition$3(this._sm, { type: 'CANCEL_INLINE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
     }
     _handlePhaseCardClick(phaseId) {
         if (this._sm.tabs.steering.phase === phaseId)
             return;
-        this._sm = transition$3(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
+        this._sm = transition$4(this._sm, { type: 'REQUEST_PHASE_CHANGE', phase: phaseId });
     }
     _confirmPhaseChange() {
-        this._sm = transition$3(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
+        this._sm = transition$4(this._sm, { type: 'CONFIRM_PHASE_CHANGE' });
         this._saveSettings();
     }
     _cancelPhaseChange() {
-        this._sm = transition$3(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
+        this._sm = transition$4(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
     // ─── Steering tab ─────────────────────────────────────────────────────────
     _renderSteeringTab(_color) {
@@ -27288,7 +28066,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP1ToP2"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP1ToP2}
               @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP1ToP2: e.target.checked },
             });
@@ -27306,7 +28084,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="autoAdvanceP2ToP3"
               .checked=${this._sm.tabs.config.draft.autoAdvanceP2ToP3}
               @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { autoAdvanceP2ToP3: e.target.checked },
             });
@@ -27324,7 +28102,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               data-field="haltOnRunoffEc"
               .checked=${this._sm.tabs.config.draft.haltOnRunoffEcThreshold !== null}
               @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { haltOnRunoffEcThreshold: e.target.checked ? 4.0 : null },
             });
@@ -27343,7 +28121,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     @change=${(e) => {
                 const v = parseFloat(e.detail ?? e.target.value);
                 if (!isNaN(v))
-                    this._sm = transition$3(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { haltOnRunoffEcThreshold: v },
                     });
@@ -27395,13 +28173,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div class="section-header"><h3>Pump Configuration</h3></div>
         <div class="section-content">
           ${this._renderEntitySelect('Irrigation Pump', this._sm.tabs.schedules.draft.irrigationPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { irrigationPumpEntity: e.target.value },
             });
         })}
           ${this._renderEntitySelect('Drain Pump (Optional)', this._sm.tabs.schedules.draft.drainPumpEntity, ['switch', 'input_boolean'], (e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_SCHEDULES_DRAFT',
                 partial: { drainPumpEntity: e.target.value },
             });
@@ -27433,7 +28211,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { soilTriggerPercent: v ? parseFloat(v) : null },
             });
@@ -27453,7 +28231,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
             });
@@ -27473,7 +28251,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               placeholder="Off"
               @change=${(e) => {
             const v = e.target.value;
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_CONFIG_DRAFT',
                 partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
             });
@@ -27491,7 +28269,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'No cycles between lights-off and lights-on',
                 get: () => this._sm.tabs.config.draft.skipDuringDark,
                 set: (v) => {
-                    this._sm = transition$3(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { skipDuringDark: v },
                     });
@@ -27502,7 +28280,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Halt cycles when any tank is below warning level',
                 get: () => this._sm.tabs.config.draft.pauseOnLowTank,
                 set: (v) => {
-                    this._sm = transition$3(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { pauseOnLowTank: v },
                     });
@@ -27513,7 +28291,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 desc: 'Record start, duration, and moisture delta per cycle',
                 get: () => this._sm.tabs.config.draft.logToLogbook,
                 set: (v) => {
-                    this._sm = transition$3(this._sm, {
+                    this._sm = transition$4(this._sm, {
                         type: 'UPDATE_CONFIG_DRAFT',
                         partial: { logToLogbook: v },
                     });
@@ -28412,7 +29190,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           <md3-switch
             .checked=${drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { enabled: e.target.checked },
             });
@@ -28427,7 +29205,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             min="0.1"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { maxEcDelta: parseFloat(e.detail) || 1.0 },
             });
@@ -28441,7 +29219,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="5"
             ?disabled=${!drainDraft.enabled}
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { targetRunoffPercent: parseInt(e.detail) || 20 },
             });
@@ -28463,7 +29241,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedEc: parseFloat(e.detail) || 0 },
             });
@@ -28475,7 +29253,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="0.1"
             min="0"
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainEc: parseFloat(e.detail) || 0 },
             });
@@ -28487,7 +29265,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logFeedVolume: parseInt(e.detail) || 0 },
             });
@@ -28499,7 +29277,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             step="100"
             min="0"
             @change=${(e) => {
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_DRAIN_EC_DRAFT',
                 partial: { logDrainVolume: parseInt(e.detail) || 0 },
             });
@@ -28672,7 +29450,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.minEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
             });
@@ -28690,7 +29468,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                       .value=${String(range.maxEc)}
                       @input=${(e) => {
             const val = parseFloat(e.target.value) || 0;
-            this._sm = transition$3(this._sm, {
+            this._sm = transition$4(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
                 ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
             });
@@ -31157,714 +31935,2687 @@ LogbookDialog = __decorate([
     t$2('logbook-dialog')
 ], LogbookDialog);
 
-let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogUI extends i$3 {
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */class e extends i$1{constructor(i){if(super(i),this.it=E,i.type!==t.CHILD)throw Error(this.constructor.directiveName+"() can only be used in child bindings")}render(r){if(r===E||null==r)return this._t=void 0,this.it=r;if(r===T)return r;if("string"!=typeof r)throw Error(this.constructor.directiveName+"() called with a non-string value");if(r===this.it)return this._t;this.it=r;const s=[r];return s.raw=s,this._t={_$litType$:this.constructor.resultType,strings:s,values:[]}}}e.directiveName="unsafeHTML",e.resultType=1;const o=e$3(e);
+
+//---------------------------------------------------------------------
+//
+// QR Code Generator for JavaScript
+//
+// Copyright (c) 2009 Kazuhiko Arase
+//
+// URL: http://www.d-project.com/
+//
+// Licensed under the MIT license:
+//  http://www.opensource.org/licenses/mit-license.php
+//
+// The word 'QR Code' is registered trademark of
+// DENSO WAVE INCORPORATED
+//  http://www.denso-wave.com/qrcode/faqpatent-e.html
+//
+//---------------------------------------------------------------------
+
+//---------------------------------------------------------------------
+// qrcode
+//---------------------------------------------------------------------
+
+/**
+ * qrcode
+ * @param typeNumber 1 to 40
+ * @param errorCorrectionLevel 'L','M','Q','H'
+ */
+const qrcode = function(typeNumber, errorCorrectionLevel) {
+
+  const PAD0 = 0xEC;
+  const PAD1 = 0x11;
+
+  let _typeNumber = typeNumber;
+  const _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+  let _modules = null;
+  let _moduleCount = 0;
+  let _dataCache = null;
+  const _dataList = [];
+
+  const _this = {};
+
+  const makeImpl = function(test, maskPattern) {
+
+    _moduleCount = _typeNumber * 4 + 17;
+    _modules = function(moduleCount) {
+      const modules = new Array(moduleCount);
+      for (let row = 0; row < moduleCount; row += 1) {
+        modules[row] = new Array(moduleCount);
+        for (let col = 0; col < moduleCount; col += 1) {
+          modules[row][col] = null;
+        }
+      }
+      return modules;
+    }(_moduleCount);
+
+    setupPositionProbePattern(0, 0);
+    setupPositionProbePattern(_moduleCount - 7, 0);
+    setupPositionProbePattern(0, _moduleCount - 7);
+    setupPositionAdjustPattern();
+    setupTimingPattern();
+    setupTypeInfo(test, maskPattern);
+
+    if (_typeNumber >= 7) {
+      setupTypeNumber(test);
+    }
+
+    if (_dataCache == null) {
+      _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+    }
+
+    mapData(_dataCache, maskPattern);
+  };
+
+  const setupPositionProbePattern = function(row, col) {
+
+    for (let r = -1; r <= 7; r += 1) {
+
+      if (row + r <= -1 || _moduleCount <= row + r) continue;
+
+      for (let c = -1; c <= 7; c += 1) {
+
+        if (col + c <= -1 || _moduleCount <= col + c) continue;
+
+        if ( (0 <= r && r <= 6 && (c == 0 || c == 6) )
+            || (0 <= c && c <= 6 && (r == 0 || r == 6) )
+            || (2 <= r && r <= 4 && 2 <= c && c <= 4) ) {
+          _modules[row + r][col + c] = true;
+        } else {
+          _modules[row + r][col + c] = false;
+        }
+      }
+    }
+  };
+
+  const getBestMaskPattern = function() {
+
+    let minLostPoint = 0;
+    let pattern = 0;
+
+    for (let i = 0; i < 8; i += 1) {
+
+      makeImpl(true, i);
+
+      const lostPoint = QRUtil.getLostPoint(_this);
+
+      if (i == 0 || minLostPoint > lostPoint) {
+        minLostPoint = lostPoint;
+        pattern = i;
+      }
+    }
+
+    return pattern;
+  };
+
+  const setupTimingPattern = function() {
+
+    for (let r = 8; r < _moduleCount - 8; r += 1) {
+      if (_modules[r][6] != null) {
+        continue;
+      }
+      _modules[r][6] = (r % 2 == 0);
+    }
+
+    for (let c = 8; c < _moduleCount - 8; c += 1) {
+      if (_modules[6][c] != null) {
+        continue;
+      }
+      _modules[6][c] = (c % 2 == 0);
+    }
+  };
+
+  const setupPositionAdjustPattern = function() {
+
+    const pos = QRUtil.getPatternPosition(_typeNumber);
+
+    for (let i = 0; i < pos.length; i += 1) {
+
+      for (let j = 0; j < pos.length; j += 1) {
+
+        const row = pos[i];
+        const col = pos[j];
+
+        if (_modules[row][col] != null) {
+          continue;
+        }
+
+        for (let r = -2; r <= 2; r += 1) {
+
+          for (let c = -2; c <= 2; c += 1) {
+
+            if (r == -2 || r == 2 || c == -2 || c == 2
+                || (r == 0 && c == 0) ) {
+              _modules[row + r][col + c] = true;
+            } else {
+              _modules[row + r][col + c] = false;
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const setupTypeNumber = function(test) {
+
+    const bits = QRUtil.getBCHTypeNumber(_typeNumber);
+
+    for (let i = 0; i < 18; i += 1) {
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+      _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+    }
+
+    for (let i = 0; i < 18; i += 1) {
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+      _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+    }
+  };
+
+  const setupTypeInfo = function(test, maskPattern) {
+
+    const data = (_errorCorrectionLevel << 3) | maskPattern;
+    const bits = QRUtil.getBCHTypeInfo(data);
+
+    // vertical
+    for (let i = 0; i < 15; i += 1) {
+
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+
+      if (i < 6) {
+        _modules[i][8] = mod;
+      } else if (i < 8) {
+        _modules[i + 1][8] = mod;
+      } else {
+        _modules[_moduleCount - 15 + i][8] = mod;
+      }
+    }
+
+    // horizontal
+    for (let i = 0; i < 15; i += 1) {
+
+      const mod = (!test && ( (bits >> i) & 1) == 1);
+
+      if (i < 8) {
+        _modules[8][_moduleCount - i - 1] = mod;
+      } else if (i < 9) {
+        _modules[8][15 - i - 1 + 1] = mod;
+      } else {
+        _modules[8][15 - i - 1] = mod;
+      }
+    }
+
+    // fixed module
+    _modules[_moduleCount - 8][8] = (!test);
+  };
+
+  const mapData = function(data, maskPattern) {
+
+    let inc = -1;
+    let row = _moduleCount - 1;
+    let bitIndex = 7;
+    let byteIndex = 0;
+    const maskFunc = QRUtil.getMaskFunction(maskPattern);
+
+    for (let col = _moduleCount - 1; col > 0; col -= 2) {
+
+      if (col == 6) col -= 1;
+
+      while (true) {
+
+        for (let c = 0; c < 2; c += 1) {
+
+          if (_modules[row][col - c] == null) {
+
+            let dark = false;
+
+            if (byteIndex < data.length) {
+              dark = ( ( (data[byteIndex] >>> bitIndex) & 1) == 1);
+            }
+
+            const mask = maskFunc(row, col - c);
+
+            if (mask) {
+              dark = !dark;
+            }
+
+            _modules[row][col - c] = dark;
+            bitIndex -= 1;
+
+            if (bitIndex == -1) {
+              byteIndex += 1;
+              bitIndex = 7;
+            }
+          }
+        }
+
+        row += inc;
+
+        if (row < 0 || _moduleCount <= row) {
+          row -= inc;
+          inc = -inc;
+          break;
+        }
+      }
+    }
+  };
+
+  const createBytes = function(buffer, rsBlocks) {
+
+    let offset = 0;
+
+    let maxDcCount = 0;
+    let maxEcCount = 0;
+
+    const dcdata = new Array(rsBlocks.length);
+    const ecdata = new Array(rsBlocks.length);
+
+    for (let r = 0; r < rsBlocks.length; r += 1) {
+
+      const dcCount = rsBlocks[r].dataCount;
+      const ecCount = rsBlocks[r].totalCount - dcCount;
+
+      maxDcCount = Math.max(maxDcCount, dcCount);
+      maxEcCount = Math.max(maxEcCount, ecCount);
+
+      dcdata[r] = new Array(dcCount);
+
+      for (let i = 0; i < dcdata[r].length; i += 1) {
+        dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
+      }
+      offset += dcCount;
+
+      const rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+      const rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+
+      const modPoly = rawPoly.mod(rsPoly);
+      ecdata[r] = new Array(rsPoly.getLength() - 1);
+      for (let i = 0; i < ecdata[r].length; i += 1) {
+        const modIndex = i + modPoly.getLength() - ecdata[r].length;
+        ecdata[r][i] = (modIndex >= 0)? modPoly.getAt(modIndex) : 0;
+      }
+    }
+
+    let totalCodeCount = 0;
+    for (let i = 0; i < rsBlocks.length; i += 1) {
+      totalCodeCount += rsBlocks[i].totalCount;
+    }
+
+    const data = new Array(totalCodeCount);
+    let index = 0;
+
+    for (let i = 0; i < maxDcCount; i += 1) {
+      for (let r = 0; r < rsBlocks.length; r += 1) {
+        if (i < dcdata[r].length) {
+          data[index] = dcdata[r][i];
+          index += 1;
+        }
+      }
+    }
+
+    for (let i = 0; i < maxEcCount; i += 1) {
+      for (let r = 0; r < rsBlocks.length; r += 1) {
+        if (i < ecdata[r].length) {
+          data[index] = ecdata[r][i];
+          index += 1;
+        }
+      }
+    }
+
+    return data;
+  };
+
+  const createData = function(typeNumber, errorCorrectionLevel, dataList) {
+
+    const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
+
+    const buffer = qrBitBuffer();
+
+    for (let i = 0; i < dataList.length; i += 1) {
+      const data = dataList[i];
+      buffer.put(data.getMode(), 4);
+      buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+      data.write(buffer);
+    }
+
+    // calc num max data.
+    let totalDataCount = 0;
+    for (let i = 0; i < rsBlocks.length; i += 1) {
+      totalDataCount += rsBlocks[i].dataCount;
+    }
+
+    if (buffer.getLengthInBits() > totalDataCount * 8) {
+      throw 'code length overflow. ('
+        + buffer.getLengthInBits()
+        + '>'
+        + totalDataCount * 8
+        + ')';
+    }
+
+    // end code
+    if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+      buffer.put(0, 4);
+    }
+
+    // padding
+    while (buffer.getLengthInBits() % 8 != 0) {
+      buffer.putBit(false);
+    }
+
+    // padding
+    while (true) {
+
+      if (buffer.getLengthInBits() >= totalDataCount * 8) {
+        break;
+      }
+      buffer.put(PAD0, 8);
+
+      if (buffer.getLengthInBits() >= totalDataCount * 8) {
+        break;
+      }
+      buffer.put(PAD1, 8);
+    }
+
+    return createBytes(buffer, rsBlocks);
+  };
+
+  _this.addData = function(data, mode) {
+
+    mode = mode || 'Byte';
+
+    let newData = null;
+
+    switch(mode) {
+    case 'Numeric' :
+      newData = qrNumber(data);
+      break;
+    case 'Alphanumeric' :
+      newData = qrAlphaNum(data);
+      break;
+    case 'Byte' :
+      newData = qr8BitByte(data);
+      break;
+    case 'Kanji' :
+      newData = qrKanji(data);
+      break;
+    default :
+      throw 'mode:' + mode;
+    }
+
+    _dataList.push(newData);
+    _dataCache = null;
+  };
+
+  _this.isDark = function(row, col) {
+    if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+      throw row + ',' + col;
+    }
+    return _modules[row][col];
+  };
+
+  _this.getModuleCount = function() {
+    return _moduleCount;
+  };
+
+  _this.make = function() {
+    if (_typeNumber < 1) {
+      let typeNumber = 1;
+
+      for (; typeNumber < 40; typeNumber++) {
+        const rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
+        const buffer = qrBitBuffer();
+
+        for (let i = 0; i < _dataList.length; i++) {
+          const data = _dataList[i];
+          buffer.put(data.getMode(), 4);
+          buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber) );
+          data.write(buffer);
+        }
+
+        let totalDataCount = 0;
+        for (let i = 0; i < rsBlocks.length; i++) {
+          totalDataCount += rsBlocks[i].dataCount;
+        }
+
+        if (buffer.getLengthInBits() <= totalDataCount * 8) {
+          break;
+        }
+      }
+
+      _typeNumber = typeNumber;
+    }
+
+    makeImpl(false, getBestMaskPattern() );
+  };
+
+  _this.createTableTag = function(cellSize, margin) {
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    let qrHtml = '';
+
+    qrHtml += '<table style="';
+    qrHtml += ' border-width: 0px; border-style: none;';
+    qrHtml += ' border-collapse: collapse;';
+    qrHtml += ' padding: 0px; margin: ' + margin + 'px;';
+    qrHtml += '">';
+    qrHtml += '<tbody>';
+
+    for (let r = 0; r < _this.getModuleCount(); r += 1) {
+
+      qrHtml += '<tr>';
+
+      for (let c = 0; c < _this.getModuleCount(); c += 1) {
+        qrHtml += '<td style="';
+        qrHtml += ' border-width: 0px; border-style: none;';
+        qrHtml += ' border-collapse: collapse;';
+        qrHtml += ' padding: 0px; margin: 0px;';
+        qrHtml += ' width: ' + cellSize + 'px;';
+        qrHtml += ' height: ' + cellSize + 'px;';
+        qrHtml += ' background-color: ';
+        qrHtml += _this.isDark(r, c)? '#000000' : '#ffffff';
+        qrHtml += ';';
+        qrHtml += '"/>';
+      }
+
+      qrHtml += '</tr>';
+    }
+
+    qrHtml += '</tbody>';
+    qrHtml += '</table>';
+
+    return qrHtml;
+  };
+
+  _this.createSvgTag = function(cellSize, margin, alt, title) {
+
+    let opts = {};
+    if (typeof arguments[0] == 'object') {
+      // Called by options.
+      opts = arguments[0];
+      // overwrite cellSize and margin.
+      cellSize = opts.cellSize;
+      margin = opts.margin;
+      alt = opts.alt;
+      title = opts.title;
+    }
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    // Compose alt property surrogate
+    alt = (typeof alt === 'string') ? {text: alt} : alt || {};
+    alt.text = alt.text || null;
+    alt.id = (alt.text) ? alt.id || 'qrcode-description' : null;
+
+    // Compose title property surrogate
+    title = (typeof title === 'string') ? {text: title} : title || {};
+    title.text = title.text || null;
+    title.id = (title.text) ? title.id || 'qrcode-title' : null;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    let c, mc, r, mr, qrSvg='', rect;
+
+    rect = 'l' + cellSize + ',0 0,' + cellSize +
+      ' -' + cellSize + ',0 0,-' + cellSize + 'z ';
+
+    qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+    qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : '';
+    qrSvg += ' viewBox="0 0 ' + size + ' ' + size + '" ';
+    qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+    qrSvg += (title.text || alt.text) ? ' role="img" aria-labelledby="' +
+        escapeXml([title.id, alt.id].join(' ').trim() ) + '"' : '';
+    qrSvg += '>';
+    qrSvg += (title.text) ? '<title id="' + escapeXml(title.id) + '">' +
+        escapeXml(title.text) + '</title>' : '';
+    qrSvg += (alt.text) ? '<description id="' + escapeXml(alt.id) + '">' +
+        escapeXml(alt.text) + '</description>' : '';
+    qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+    qrSvg += '<path d="';
+
+    for (r = 0; r < _this.getModuleCount(); r += 1) {
+      mr = r * cellSize + margin;
+      for (c = 0; c < _this.getModuleCount(); c += 1) {
+        if (_this.isDark(r, c) ) {
+          mc = c*cellSize+margin;
+          qrSvg += 'M' + mc + ',' + mr + rect;
+        }
+      }
+    }
+
+    qrSvg += '" stroke="transparent" fill="black"/>';
+    qrSvg += '</svg>';
+
+    return qrSvg;
+  };
+
+  _this.createDataURL = function(cellSize, margin) {
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    const min = margin;
+    const max = size - margin;
+
+    return createDataURL(size, size, function(x, y) {
+      if (min <= x && x < max && min <= y && y < max) {
+        const c = Math.floor( (x - min) / cellSize);
+        const r = Math.floor( (y - min) / cellSize);
+        return _this.isDark(r, c)? 0 : 1;
+      } else {
+        return 1;
+      }
+    } );
+  };
+
+  _this.createImgTag = function(cellSize, margin, alt) {
+
+    cellSize = cellSize || 2;
+    margin = (typeof margin == 'undefined')? cellSize * 4 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+
+    let img = '';
+    img += '<img';
+    img += '\u0020src="';
+    img += _this.createDataURL(cellSize, margin);
+    img += '"';
+    img += '\u0020width="';
+    img += size;
+    img += '"';
+    img += '\u0020height="';
+    img += size;
+    img += '"';
+    if (alt) {
+      img += '\u0020alt="';
+      img += escapeXml(alt);
+      img += '"';
+    }
+    img += '/>';
+
+    return img;
+  };
+
+  const escapeXml = function(s) {
+    let escaped = '';
+    for (let i = 0; i < s.length; i += 1) {
+      const c = s.charAt(i);
+      switch(c) {
+      case '<': escaped += '&lt;'; break;
+      case '>': escaped += '&gt;'; break;
+      case '&': escaped += '&amp;'; break;
+      case '"': escaped += '&quot;'; break;
+      default : escaped += c; break;
+      }
+    }
+    return escaped;
+  };
+
+  const _createHalfASCII = function(margin) {
+    const cellSize = 1;
+    margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    const min = margin;
+    const max = size - margin;
+
+    let y, x, r1, r2, p;
+
+    const blocks = {
+      '██': '█',
+      '█ ': '▀',
+      ' █': '▄',
+      '  ': ' '
+    };
+
+    const blocksLastLineNoMargin = {
+      '██': '▀',
+      '█ ': '▀',
+      ' █': ' ',
+      '  ': ' '
+    };
+
+    let ascii = '';
+    for (y = 0; y < size; y += 2) {
+      r1 = Math.floor((y - min) / cellSize);
+      r2 = Math.floor((y + 1 - min) / cellSize);
+      for (x = 0; x < size; x += 1) {
+        p = '█';
+
+        if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+          p = ' ';
+        }
+
+        if (min <= x && x < max && min <= y+1 && y+1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+          p += ' ';
+        }
+        else {
+          p += '█';
+        }
+
+        // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+        ascii += (margin < 1 && y+1 >= max) ? blocksLastLineNoMargin[p] : blocks[p];
+      }
+
+      ascii += '\n';
+    }
+
+    if (size % 2 && margin > 0) {
+      return ascii.substring(0, ascii.length - size - 1) + Array(size+1).join('▀');
+    }
+
+    return ascii.substring(0, ascii.length-1);
+  };
+
+  _this.createASCII = function(cellSize, margin) {
+    cellSize = cellSize || 1;
+
+    if (cellSize < 2) {
+      return _createHalfASCII(margin);
+    }
+
+    cellSize -= 1;
+    margin = (typeof margin == 'undefined')? cellSize * 2 : margin;
+
+    const size = _this.getModuleCount() * cellSize + margin * 2;
+    const min = margin;
+    const max = size - margin;
+
+    let y, x, r, p;
+
+    const white = Array(cellSize+1).join('██');
+    const black = Array(cellSize+1).join('  ');
+
+    let ascii = '';
+    let line = '';
+    for (y = 0; y < size; y += 1) {
+      r = Math.floor( (y - min) / cellSize);
+      line = '';
+      for (x = 0; x < size; x += 1) {
+        p = 1;
+
+        if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+          p = 0;
+        }
+
+        // Output 2 characters per pixel, to create full square. 1 character per pixels gives only half width of square.
+        line += p ? white : black;
+      }
+
+      for (r = 0; r < cellSize; r += 1) {
+        ascii += line + '\n';
+      }
+    }
+
+    return ascii.substring(0, ascii.length-1);
+  };
+
+  _this.renderTo2dContext = function(context, cellSize) {
+    cellSize = cellSize || 2;
+    const length = _this.getModuleCount();
+    for (let row = 0; row < length; row++) {
+      for (let col = 0; col < length; col++) {
+        context.fillStyle = _this.isDark(row, col) ? 'black' : 'white';
+        context.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+      }
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrcode.stringToBytes
+//---------------------------------------------------------------------
+
+qrcode.stringToBytes = function(s) {
+  const bytes = [];
+  for (let i = 0; i < s.length; i += 1) {
+    const c = s.charCodeAt(i);
+    bytes.push(c & 0xff);
+  }
+  return bytes;
+};
+
+//---------------------------------------------------------------------
+// qrcode.createStringToBytes
+//---------------------------------------------------------------------
+
+/**
+ * @param unicodeData base64 string of byte array.
+ * [16bit Unicode],[16bit Bytes], ...
+ * @param numChars
+ */
+qrcode.createStringToBytes = function(unicodeData, numChars) {
+
+  // create conversion map.
+
+  const unicodeMap = function() {
+
+    const bin = base64DecodeInputStream(unicodeData);
+    const read = function() {
+      const b = bin.read();
+      if (b == -1) throw 'eof';
+      return b;
+    };
+
+    let count = 0;
+    const unicodeMap = {};
+    while (true) {
+      const b0 = bin.read();
+      if (b0 == -1) break;
+      const b1 = read();
+      const b2 = read();
+      const b3 = read();
+      const k = String.fromCharCode( (b0 << 8) | b1);
+      const v = (b2 << 8) | b3;
+      unicodeMap[k] = v;
+      count += 1;
+    }
+    if (count != numChars) {
+      throw count + ' != ' + numChars;
+    }
+
+    return unicodeMap;
+  }();
+
+  const unknownChar = '?'.charCodeAt(0);
+
+  return function(s) {
+    const bytes = [];
+    for (let i = 0; i < s.length; i += 1) {
+      const c = s.charCodeAt(i);
+      if (c < 128) {
+        bytes.push(c);
+      } else {
+        const b = unicodeMap[s.charAt(i)];
+        if (typeof b == 'number') {
+          if ( (b & 0xff) == b) {
+            // 1byte
+            bytes.push(b);
+          } else {
+            // 2bytes
+            bytes.push(b >>> 8);
+            bytes.push(b & 0xff);
+          }
+        } else {
+          bytes.push(unknownChar);
+        }
+      }
+    }
+    return bytes;
+  };
+};
+
+//---------------------------------------------------------------------
+// QRMode
+//---------------------------------------------------------------------
+
+const QRMode = {
+  MODE_NUMBER :    1 << 0,
+  MODE_ALPHA_NUM : 1 << 1,
+  MODE_8BIT_BYTE : 1 << 2,
+  MODE_KANJI :     1 << 3
+};
+
+//---------------------------------------------------------------------
+// QRErrorCorrectionLevel
+//---------------------------------------------------------------------
+
+const QRErrorCorrectionLevel = {
+  L : 1,
+  M : 0,
+  Q : 3,
+  H : 2
+};
+
+//---------------------------------------------------------------------
+// QRMaskPattern
+//---------------------------------------------------------------------
+
+const QRMaskPattern = {
+  PATTERN000 : 0,
+  PATTERN001 : 1,
+  PATTERN010 : 2,
+  PATTERN011 : 3,
+  PATTERN100 : 4,
+  PATTERN101 : 5,
+  PATTERN110 : 6,
+  PATTERN111 : 7
+};
+
+//---------------------------------------------------------------------
+// QRUtil
+//---------------------------------------------------------------------
+
+const QRUtil = function() {
+
+  const PATTERN_POSITION_TABLE = [
+    [],
+    [6, 18],
+    [6, 22],
+    [6, 26],
+    [6, 30],
+    [6, 34],
+    [6, 22, 38],
+    [6, 24, 42],
+    [6, 26, 46],
+    [6, 28, 50],
+    [6, 30, 54],
+    [6, 32, 58],
+    [6, 34, 62],
+    [6, 26, 46, 66],
+    [6, 26, 48, 70],
+    [6, 26, 50, 74],
+    [6, 30, 54, 78],
+    [6, 30, 56, 82],
+    [6, 30, 58, 86],
+    [6, 34, 62, 90],
+    [6, 28, 50, 72, 94],
+    [6, 26, 50, 74, 98],
+    [6, 30, 54, 78, 102],
+    [6, 28, 54, 80, 106],
+    [6, 32, 58, 84, 110],
+    [6, 30, 58, 86, 114],
+    [6, 34, 62, 90, 118],
+    [6, 26, 50, 74, 98, 122],
+    [6, 30, 54, 78, 102, 126],
+    [6, 26, 52, 78, 104, 130],
+    [6, 30, 56, 82, 108, 134],
+    [6, 34, 60, 86, 112, 138],
+    [6, 30, 58, 86, 114, 142],
+    [6, 34, 62, 90, 118, 146],
+    [6, 30, 54, 78, 102, 126, 150],
+    [6, 24, 50, 76, 102, 128, 154],
+    [6, 28, 54, 80, 106, 132, 158],
+    [6, 32, 58, 84, 110, 136, 162],
+    [6, 26, 54, 82, 110, 138, 166],
+    [6, 30, 58, 86, 114, 142, 170]
+  ];
+  const G15 = (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0);
+  const G18 = (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0);
+  const G15_MASK = (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1);
+
+  const _this = {};
+
+  const getBCHDigit = function(data) {
+    let digit = 0;
+    while (data != 0) {
+      digit += 1;
+      data >>>= 1;
+    }
+    return digit;
+  };
+
+  _this.getBCHTypeInfo = function(data) {
+    let d = data << 10;
+    while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+      d ^= (G15 << (getBCHDigit(d) - getBCHDigit(G15) ) );
+    }
+    return ( (data << 10) | d) ^ G15_MASK;
+  };
+
+  _this.getBCHTypeNumber = function(data) {
+    let d = data << 12;
+    while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+      d ^= (G18 << (getBCHDigit(d) - getBCHDigit(G18) ) );
+    }
+    return (data << 12) | d;
+  };
+
+  _this.getPatternPosition = function(typeNumber) {
+    return PATTERN_POSITION_TABLE[typeNumber - 1];
+  };
+
+  _this.getMaskFunction = function(maskPattern) {
+
+    switch (maskPattern) {
+
+    case QRMaskPattern.PATTERN000 :
+      return function(i, j) { return (i + j) % 2 == 0; };
+    case QRMaskPattern.PATTERN001 :
+      return function(i, j) { return i % 2 == 0; };
+    case QRMaskPattern.PATTERN010 :
+      return function(i, j) { return j % 3 == 0; };
+    case QRMaskPattern.PATTERN011 :
+      return function(i, j) { return (i + j) % 3 == 0; };
+    case QRMaskPattern.PATTERN100 :
+      return function(i, j) { return (Math.floor(i / 2) + Math.floor(j / 3) ) % 2 == 0; };
+    case QRMaskPattern.PATTERN101 :
+      return function(i, j) { return (i * j) % 2 + (i * j) % 3 == 0; };
+    case QRMaskPattern.PATTERN110 :
+      return function(i, j) { return ( (i * j) % 2 + (i * j) % 3) % 2 == 0; };
+    case QRMaskPattern.PATTERN111 :
+      return function(i, j) { return ( (i * j) % 3 + (i + j) % 2) % 2 == 0; };
+
+    default :
+      throw 'bad maskPattern:' + maskPattern;
+    }
+  };
+
+  _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+    let a = qrPolynomial([1], 0);
+    for (let i = 0; i < errorCorrectLength; i += 1) {
+      a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0) );
+    }
+    return a;
+  };
+
+  _this.getLengthInBits = function(mode, type) {
+
+    if (1 <= type && type < 10) {
+
+      // 1 - 9
+
+      switch(mode) {
+      case QRMode.MODE_NUMBER    : return 10;
+      case QRMode.MODE_ALPHA_NUM : return 9;
+      case QRMode.MODE_8BIT_BYTE : return 8;
+      case QRMode.MODE_KANJI     : return 8;
+      default :
+        throw 'mode:' + mode;
+      }
+
+    } else if (type < 27) {
+
+      // 10 - 26
+
+      switch(mode) {
+      case QRMode.MODE_NUMBER    : return 12;
+      case QRMode.MODE_ALPHA_NUM : return 11;
+      case QRMode.MODE_8BIT_BYTE : return 16;
+      case QRMode.MODE_KANJI     : return 10;
+      default :
+        throw 'mode:' + mode;
+      }
+
+    } else if (type < 41) {
+
+      // 27 - 40
+
+      switch(mode) {
+      case QRMode.MODE_NUMBER    : return 14;
+      case QRMode.MODE_ALPHA_NUM : return 13;
+      case QRMode.MODE_8BIT_BYTE : return 16;
+      case QRMode.MODE_KANJI     : return 12;
+      default :
+        throw 'mode:' + mode;
+      }
+
+    } else {
+      throw 'type:' + type;
+    }
+  };
+
+  _this.getLostPoint = function(qrcode) {
+
+    const moduleCount = qrcode.getModuleCount();
+
+    let lostPoint = 0;
+
+    // LEVEL1
+
+    for (let row = 0; row < moduleCount; row += 1) {
+      for (let col = 0; col < moduleCount; col += 1) {
+
+        let sameCount = 0;
+        const dark = qrcode.isDark(row, col);
+
+        for (let r = -1; r <= 1; r += 1) {
+
+          if (row + r < 0 || moduleCount <= row + r) {
+            continue;
+          }
+
+          for (let c = -1; c <= 1; c += 1) {
+
+            if (col + c < 0 || moduleCount <= col + c) {
+              continue;
+            }
+
+            if (r == 0 && c == 0) {
+              continue;
+            }
+
+            if (dark == qrcode.isDark(row + r, col + c) ) {
+              sameCount += 1;
+            }
+          }
+        }
+
+        if (sameCount > 5) {
+          lostPoint += (3 + sameCount - 5);
+        }
+      }
+    }
+    // LEVEL2
+
+    for (let row = 0; row < moduleCount - 1; row += 1) {
+      for (let col = 0; col < moduleCount - 1; col += 1) {
+        let count = 0;
+        if (qrcode.isDark(row, col) ) count += 1;
+        if (qrcode.isDark(row + 1, col) ) count += 1;
+        if (qrcode.isDark(row, col + 1) ) count += 1;
+        if (qrcode.isDark(row + 1, col + 1) ) count += 1;
+        if (count == 0 || count == 4) {
+          lostPoint += 3;
+        }
+      }
+    }
+
+    // LEVEL3
+
+    for (let row = 0; row < moduleCount; row += 1) {
+      for (let col = 0; col < moduleCount - 6; col += 1) {
+        if (qrcode.isDark(row, col)
+            && !qrcode.isDark(row, col + 1)
+            &&  qrcode.isDark(row, col + 2)
+            &&  qrcode.isDark(row, col + 3)
+            &&  qrcode.isDark(row, col + 4)
+            && !qrcode.isDark(row, col + 5)
+            &&  qrcode.isDark(row, col + 6) ) {
+          lostPoint += 40;
+        }
+      }
+    }
+
+    for (let col = 0; col < moduleCount; col += 1) {
+      for (let row = 0; row < moduleCount - 6; row += 1) {
+        if (qrcode.isDark(row, col)
+            && !qrcode.isDark(row + 1, col)
+            &&  qrcode.isDark(row + 2, col)
+            &&  qrcode.isDark(row + 3, col)
+            &&  qrcode.isDark(row + 4, col)
+            && !qrcode.isDark(row + 5, col)
+            &&  qrcode.isDark(row + 6, col) ) {
+          lostPoint += 40;
+        }
+      }
+    }
+
+    // LEVEL4
+
+    let darkCount = 0;
+
+    for (let col = 0; col < moduleCount; col += 1) {
+      for (let row = 0; row < moduleCount; row += 1) {
+        if (qrcode.isDark(row, col) ) {
+          darkCount += 1;
+        }
+      }
+    }
+
+    const ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+    lostPoint += ratio * 10;
+
+    return lostPoint;
+  };
+
+  return _this;
+}();
+
+//---------------------------------------------------------------------
+// QRMath
+//---------------------------------------------------------------------
+
+const QRMath = function() {
+
+  const EXP_TABLE = new Array(256);
+  const LOG_TABLE = new Array(256);
+
+  // initialize tables
+  for (let i = 0; i < 8; i += 1) {
+    EXP_TABLE[i] = 1 << i;
+  }
+  for (let i = 8; i < 256; i += 1) {
+    EXP_TABLE[i] = EXP_TABLE[i - 4]
+      ^ EXP_TABLE[i - 5]
+      ^ EXP_TABLE[i - 6]
+      ^ EXP_TABLE[i - 8];
+  }
+  for (let i = 0; i < 255; i += 1) {
+    LOG_TABLE[EXP_TABLE[i] ] = i;
+  }
+
+  const _this = {};
+
+  _this.glog = function(n) {
+
+    if (n < 1) {
+      throw 'glog(' + n + ')';
+    }
+
+    return LOG_TABLE[n];
+  };
+
+  _this.gexp = function(n) {
+
+    while (n < 0) {
+      n += 255;
+    }
+
+    while (n >= 256) {
+      n -= 255;
+    }
+
+    return EXP_TABLE[n];
+  };
+
+  return _this;
+}();
+
+//---------------------------------------------------------------------
+// qrPolynomial
+//---------------------------------------------------------------------
+
+const qrPolynomial = function(num, shift) {
+
+  if (typeof num.length == 'undefined') {
+    throw num.length + '/' + shift;
+  }
+
+  const _num = function() {
+    let offset = 0;
+    while (offset < num.length && num[offset] == 0) {
+      offset += 1;
+    }
+    const _num = new Array(num.length - offset + shift);
+    for (let i = 0; i < num.length - offset; i += 1) {
+      _num[i] = num[i + offset];
+    }
+    return _num;
+  }();
+
+  const _this = {};
+
+  _this.getAt = function(index) {
+    return _num[index];
+  };
+
+  _this.getLength = function() {
+    return _num.length;
+  };
+
+  _this.multiply = function(e) {
+
+    const num = new Array(_this.getLength() + e.getLength() - 1);
+
+    for (let i = 0; i < _this.getLength(); i += 1) {
+      for (let j = 0; j < e.getLength(); j += 1) {
+        num[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i) ) + QRMath.glog(e.getAt(j) ) );
+      }
+    }
+
+    return qrPolynomial(num, 0);
+  };
+
+  _this.mod = function(e) {
+
+    if (_this.getLength() - e.getLength() < 0) {
+      return _this;
+    }
+
+    const ratio = QRMath.glog(_this.getAt(0) ) - QRMath.glog(e.getAt(0) );
+
+    const num = new Array(_this.getLength() );
+    for (let i = 0; i < _this.getLength(); i += 1) {
+      num[i] = _this.getAt(i);
+    }
+
+    for (let i = 0; i < e.getLength(); i += 1) {
+      num[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i) ) + ratio);
+    }
+
+    // recursive call
+    return qrPolynomial(num, 0).mod(e);
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// QRRSBlock
+//---------------------------------------------------------------------
+
+const QRRSBlock = function() {
+
+  const RS_BLOCK_TABLE = [
+
+    // L
+    // M
+    // Q
+    // H
+
+    // 1
+    [1, 26, 19],
+    [1, 26, 16],
+    [1, 26, 13],
+    [1, 26, 9],
+
+    // 2
+    [1, 44, 34],
+    [1, 44, 28],
+    [1, 44, 22],
+    [1, 44, 16],
+
+    // 3
+    [1, 70, 55],
+    [1, 70, 44],
+    [2, 35, 17],
+    [2, 35, 13],
+
+    // 4
+    [1, 100, 80],
+    [2, 50, 32],
+    [2, 50, 24],
+    [4, 25, 9],
+
+    // 5
+    [1, 134, 108],
+    [2, 67, 43],
+    [2, 33, 15, 2, 34, 16],
+    [2, 33, 11, 2, 34, 12],
+
+    // 6
+    [2, 86, 68],
+    [4, 43, 27],
+    [4, 43, 19],
+    [4, 43, 15],
+
+    // 7
+    [2, 98, 78],
+    [4, 49, 31],
+    [2, 32, 14, 4, 33, 15],
+    [4, 39, 13, 1, 40, 14],
+
+    // 8
+    [2, 121, 97],
+    [2, 60, 38, 2, 61, 39],
+    [4, 40, 18, 2, 41, 19],
+    [4, 40, 14, 2, 41, 15],
+
+    // 9
+    [2, 146, 116],
+    [3, 58, 36, 2, 59, 37],
+    [4, 36, 16, 4, 37, 17],
+    [4, 36, 12, 4, 37, 13],
+
+    // 10
+    [2, 86, 68, 2, 87, 69],
+    [4, 69, 43, 1, 70, 44],
+    [6, 43, 19, 2, 44, 20],
+    [6, 43, 15, 2, 44, 16],
+
+    // 11
+    [4, 101, 81],
+    [1, 80, 50, 4, 81, 51],
+    [4, 50, 22, 4, 51, 23],
+    [3, 36, 12, 8, 37, 13],
+
+    // 12
+    [2, 116, 92, 2, 117, 93],
+    [6, 58, 36, 2, 59, 37],
+    [4, 46, 20, 6, 47, 21],
+    [7, 42, 14, 4, 43, 15],
+
+    // 13
+    [4, 133, 107],
+    [8, 59, 37, 1, 60, 38],
+    [8, 44, 20, 4, 45, 21],
+    [12, 33, 11, 4, 34, 12],
+
+    // 14
+    [3, 145, 115, 1, 146, 116],
+    [4, 64, 40, 5, 65, 41],
+    [11, 36, 16, 5, 37, 17],
+    [11, 36, 12, 5, 37, 13],
+
+    // 15
+    [5, 109, 87, 1, 110, 88],
+    [5, 65, 41, 5, 66, 42],
+    [5, 54, 24, 7, 55, 25],
+    [11, 36, 12, 7, 37, 13],
+
+    // 16
+    [5, 122, 98, 1, 123, 99],
+    [7, 73, 45, 3, 74, 46],
+    [15, 43, 19, 2, 44, 20],
+    [3, 45, 15, 13, 46, 16],
+
+    // 17
+    [1, 135, 107, 5, 136, 108],
+    [10, 74, 46, 1, 75, 47],
+    [1, 50, 22, 15, 51, 23],
+    [2, 42, 14, 17, 43, 15],
+
+    // 18
+    [5, 150, 120, 1, 151, 121],
+    [9, 69, 43, 4, 70, 44],
+    [17, 50, 22, 1, 51, 23],
+    [2, 42, 14, 19, 43, 15],
+
+    // 19
+    [3, 141, 113, 4, 142, 114],
+    [3, 70, 44, 11, 71, 45],
+    [17, 47, 21, 4, 48, 22],
+    [9, 39, 13, 16, 40, 14],
+
+    // 20
+    [3, 135, 107, 5, 136, 108],
+    [3, 67, 41, 13, 68, 42],
+    [15, 54, 24, 5, 55, 25],
+    [15, 43, 15, 10, 44, 16],
+
+    // 21
+    [4, 144, 116, 4, 145, 117],
+    [17, 68, 42],
+    [17, 50, 22, 6, 51, 23],
+    [19, 46, 16, 6, 47, 17],
+
+    // 22
+    [2, 139, 111, 7, 140, 112],
+    [17, 74, 46],
+    [7, 54, 24, 16, 55, 25],
+    [34, 37, 13],
+
+    // 23
+    [4, 151, 121, 5, 152, 122],
+    [4, 75, 47, 14, 76, 48],
+    [11, 54, 24, 14, 55, 25],
+    [16, 45, 15, 14, 46, 16],
+
+    // 24
+    [6, 147, 117, 4, 148, 118],
+    [6, 73, 45, 14, 74, 46],
+    [11, 54, 24, 16, 55, 25],
+    [30, 46, 16, 2, 47, 17],
+
+    // 25
+    [8, 132, 106, 4, 133, 107],
+    [8, 75, 47, 13, 76, 48],
+    [7, 54, 24, 22, 55, 25],
+    [22, 45, 15, 13, 46, 16],
+
+    // 26
+    [10, 142, 114, 2, 143, 115],
+    [19, 74, 46, 4, 75, 47],
+    [28, 50, 22, 6, 51, 23],
+    [33, 46, 16, 4, 47, 17],
+
+    // 27
+    [8, 152, 122, 4, 153, 123],
+    [22, 73, 45, 3, 74, 46],
+    [8, 53, 23, 26, 54, 24],
+    [12, 45, 15, 28, 46, 16],
+
+    // 28
+    [3, 147, 117, 10, 148, 118],
+    [3, 73, 45, 23, 74, 46],
+    [4, 54, 24, 31, 55, 25],
+    [11, 45, 15, 31, 46, 16],
+
+    // 29
+    [7, 146, 116, 7, 147, 117],
+    [21, 73, 45, 7, 74, 46],
+    [1, 53, 23, 37, 54, 24],
+    [19, 45, 15, 26, 46, 16],
+
+    // 30
+    [5, 145, 115, 10, 146, 116],
+    [19, 75, 47, 10, 76, 48],
+    [15, 54, 24, 25, 55, 25],
+    [23, 45, 15, 25, 46, 16],
+
+    // 31
+    [13, 145, 115, 3, 146, 116],
+    [2, 74, 46, 29, 75, 47],
+    [42, 54, 24, 1, 55, 25],
+    [23, 45, 15, 28, 46, 16],
+
+    // 32
+    [17, 145, 115],
+    [10, 74, 46, 23, 75, 47],
+    [10, 54, 24, 35, 55, 25],
+    [19, 45, 15, 35, 46, 16],
+
+    // 33
+    [17, 145, 115, 1, 146, 116],
+    [14, 74, 46, 21, 75, 47],
+    [29, 54, 24, 19, 55, 25],
+    [11, 45, 15, 46, 46, 16],
+
+    // 34
+    [13, 145, 115, 6, 146, 116],
+    [14, 74, 46, 23, 75, 47],
+    [44, 54, 24, 7, 55, 25],
+    [59, 46, 16, 1, 47, 17],
+
+    // 35
+    [12, 151, 121, 7, 152, 122],
+    [12, 75, 47, 26, 76, 48],
+    [39, 54, 24, 14, 55, 25],
+    [22, 45, 15, 41, 46, 16],
+
+    // 36
+    [6, 151, 121, 14, 152, 122],
+    [6, 75, 47, 34, 76, 48],
+    [46, 54, 24, 10, 55, 25],
+    [2, 45, 15, 64, 46, 16],
+
+    // 37
+    [17, 152, 122, 4, 153, 123],
+    [29, 74, 46, 14, 75, 47],
+    [49, 54, 24, 10, 55, 25],
+    [24, 45, 15, 46, 46, 16],
+
+    // 38
+    [4, 152, 122, 18, 153, 123],
+    [13, 74, 46, 32, 75, 47],
+    [48, 54, 24, 14, 55, 25],
+    [42, 45, 15, 32, 46, 16],
+
+    // 39
+    [20, 147, 117, 4, 148, 118],
+    [40, 75, 47, 7, 76, 48],
+    [43, 54, 24, 22, 55, 25],
+    [10, 45, 15, 67, 46, 16],
+
+    // 40
+    [19, 148, 118, 6, 149, 119],
+    [18, 75, 47, 31, 76, 48],
+    [34, 54, 24, 34, 55, 25],
+    [20, 45, 15, 61, 46, 16]
+  ];
+
+  const qrRSBlock = function(totalCount, dataCount) {
+    const _this = {};
+    _this.totalCount = totalCount;
+    _this.dataCount = dataCount;
+    return _this;
+  };
+
+  const _this = {};
+
+  const getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+
+    switch(errorCorrectionLevel) {
+    case QRErrorCorrectionLevel.L :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+    case QRErrorCorrectionLevel.M :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+    case QRErrorCorrectionLevel.Q :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+    case QRErrorCorrectionLevel.H :
+      return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+    default :
+      return undefined;
+    }
+  };
+
+  _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+
+    const rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+
+    if (typeof rsBlock == 'undefined') {
+      throw 'bad rs block @ typeNumber:' + typeNumber +
+          '/errorCorrectionLevel:' + errorCorrectionLevel;
+    }
+
+    const length = rsBlock.length / 3;
+
+    const list = [];
+
+    for (let i = 0; i < length; i += 1) {
+
+      const count = rsBlock[i * 3 + 0];
+      const totalCount = rsBlock[i * 3 + 1];
+      const dataCount = rsBlock[i * 3 + 2];
+
+      for (let j = 0; j < count; j += 1) {
+        list.push(qrRSBlock(totalCount, dataCount) );
+      }
+    }
+
+    return list;
+  };
+
+  return _this;
+}();
+
+//---------------------------------------------------------------------
+// qrBitBuffer
+//---------------------------------------------------------------------
+
+const qrBitBuffer = function() {
+
+  const _buffer = [];
+  let _length = 0;
+
+  const _this = {};
+
+  _this.getBuffer = function() {
+    return _buffer;
+  };
+
+  _this.getAt = function(index) {
+    const bufIndex = Math.floor(index / 8);
+    return ( (_buffer[bufIndex] >>> (7 - index % 8) ) & 1) == 1;
+  };
+
+  _this.put = function(num, length) {
+    for (let i = 0; i < length; i += 1) {
+      _this.putBit( ( (num >>> (length - i - 1) ) & 1) == 1);
+    }
+  };
+
+  _this.getLengthInBits = function() {
+    return _length;
+  };
+
+  _this.putBit = function(bit) {
+
+    const bufIndex = Math.floor(_length / 8);
+    if (_buffer.length <= bufIndex) {
+      _buffer.push(0);
+    }
+
+    if (bit) {
+      _buffer[bufIndex] |= (0x80 >>> (_length % 8) );
+    }
+
+    _length += 1;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrNumber
+//---------------------------------------------------------------------
+
+const qrNumber = function(data) {
+
+  const _mode = QRMode.MODE_NUMBER;
+  const _data = data;
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return _data.length;
+  };
+
+  _this.write = function(buffer) {
+
+    const data = _data;
+
+    let i = 0;
+
+    while (i + 2 < data.length) {
+      buffer.put(strToNum(data.substring(i, i + 3) ), 10);
+      i += 3;
+    }
+
+    if (i < data.length) {
+      if (data.length - i == 1) {
+        buffer.put(strToNum(data.substring(i, i + 1) ), 4);
+      } else if (data.length - i == 2) {
+        buffer.put(strToNum(data.substring(i, i + 2) ), 7);
+      }
+    }
+  };
+
+  const strToNum = function(s) {
+    let num = 0;
+    for (let i = 0; i < s.length; i += 1) {
+      num = num * 10 + chatToNum(s.charAt(i) );
+    }
+    return num;
+  };
+
+  const chatToNum = function(c) {
+    if ('0' <= c && c <= '9') {
+      return c.charCodeAt(0) - '0'.charCodeAt(0);
+    }
+    throw 'illegal char :' + c;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrAlphaNum
+//---------------------------------------------------------------------
+
+const qrAlphaNum = function(data) {
+
+  const _mode = QRMode.MODE_ALPHA_NUM;
+  const _data = data;
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return _data.length;
+  };
+
+  _this.write = function(buffer) {
+
+    const s = _data;
+
+    let i = 0;
+
+    while (i + 1 < s.length) {
+      buffer.put(
+        getCode(s.charAt(i) ) * 45 +
+        getCode(s.charAt(i + 1) ), 11);
+      i += 2;
+    }
+
+    if (i < s.length) {
+      buffer.put(getCode(s.charAt(i) ), 6);
+    }
+  };
+
+  const getCode = function(c) {
+
+    if ('0' <= c && c <= '9') {
+      return c.charCodeAt(0) - '0'.charCodeAt(0);
+    } else if ('A' <= c && c <= 'Z') {
+      return c.charCodeAt(0) - 'A'.charCodeAt(0) + 10;
+    } else {
+      switch (c) {
+      case '\u0020' : return 36;
+      case '$' : return 37;
+      case '%' : return 38;
+      case '*' : return 39;
+      case '+' : return 40;
+      case '-' : return 41;
+      case '.' : return 42;
+      case '/' : return 43;
+      case ':' : return 44;
+      default :
+        throw 'illegal char :' + c;
+      }
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qr8BitByte
+//---------------------------------------------------------------------
+
+const qr8BitByte = function(data) {
+
+  const _mode = QRMode.MODE_8BIT_BYTE;
+  const _bytes = qrcode.stringToBytes(data);
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return _bytes.length;
+  };
+
+  _this.write = function(buffer) {
+    for (let i = 0; i < _bytes.length; i += 1) {
+      buffer.put(_bytes[i], 8);
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// qrKanji
+//---------------------------------------------------------------------
+
+const qrKanji = function(data) {
+
+  const _mode = QRMode.MODE_KANJI;
+
+  const stringToBytes = qrcode.stringToBytes;
+  !function(c, code) {
+    // self test for sjis support.
+    const test = stringToBytes(c);
+    if (test.length != 2 || ( (test[0] << 8) | test[1]) != code) {
+      throw 'sjis not supported.';
+    }
+  }('\u53cb', 0x9746);
+
+  const _bytes = stringToBytes(data);
+
+  const _this = {};
+
+  _this.getMode = function() {
+    return _mode;
+  };
+
+  _this.getLength = function(buffer) {
+    return ~~(_bytes.length / 2);
+  };
+
+  _this.write = function(buffer) {
+
+    const data = _bytes;
+
+    let i = 0;
+
+    while (i + 1 < data.length) {
+
+      let c = ( (0xff & data[i]) << 8) | (0xff & data[i + 1]);
+
+      if (0x8140 <= c && c <= 0x9FFC) {
+        c -= 0x8140;
+      } else if (0xE040 <= c && c <= 0xEBBF) {
+        c -= 0xC140;
+      } else {
+        throw 'illegal char at ' + (i + 1) + '/' + c;
+      }
+
+      c = ( (c >>> 8) & 0xff) * 0xC0 + (c & 0xff);
+
+      buffer.put(c, 13);
+
+      i += 2;
+    }
+
+    if (i < data.length) {
+      throw 'illegal char at ' + (i + 1);
+    }
+  };
+
+  return _this;
+};
+
+//=====================================================================
+// GIF Support etc.
+//
+
+//---------------------------------------------------------------------
+// byteArrayOutputStream
+//---------------------------------------------------------------------
+
+const byteArrayOutputStream = function() {
+
+  const _bytes = [];
+
+  const _this = {};
+
+  _this.writeByte = function(b) {
+    _bytes.push(b & 0xff);
+  };
+
+  _this.writeShort = function(i) {
+    _this.writeByte(i);
+    _this.writeByte(i >>> 8);
+  };
+
+  _this.writeBytes = function(b, off, len) {
+    off = off || 0;
+    len = len || b.length;
+    for (let i = 0; i < len; i += 1) {
+      _this.writeByte(b[i + off]);
+    }
+  };
+
+  _this.writeString = function(s) {
+    for (let i = 0; i < s.length; i += 1) {
+      _this.writeByte(s.charCodeAt(i) );
+    }
+  };
+
+  _this.toByteArray = function() {
+    return _bytes;
+  };
+
+  _this.toString = function() {
+    let s = '';
+    s += '[';
+    for (let i = 0; i < _bytes.length; i += 1) {
+      if (i > 0) {
+        s += ',';
+      }
+      s += _bytes[i];
+    }
+    s += ']';
+    return s;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// base64EncodeOutputStream
+//---------------------------------------------------------------------
+
+const base64EncodeOutputStream = function() {
+
+  let _buffer = 0;
+  let _buflen = 0;
+  let _length = 0;
+  let _base64 = '';
+
+  const _this = {};
+
+  const writeEncoded = function(b) {
+    _base64 += String.fromCharCode(encode(b & 0x3f) );
+  };
+
+  const encode = function(n) {
+    if (n < 0) {
+      throw 'n:' + n;
+    } else if (n < 26) {
+      return 0x41 + n;
+    } else if (n < 52) {
+      return 0x61 + (n - 26);
+    } else if (n < 62) {
+      return 0x30 + (n - 52);
+    } else if (n == 62) {
+      return 0x2b;
+    } else if (n == 63) {
+      return 0x2f;
+    } else {
+      throw 'n:' + n;
+    }
+  };
+
+  _this.writeByte = function(n) {
+
+    _buffer = (_buffer << 8) | (n & 0xff);
+    _buflen += 8;
+    _length += 1;
+
+    while (_buflen >= 6) {
+      writeEncoded(_buffer >>> (_buflen - 6) );
+      _buflen -= 6;
+    }
+  };
+
+  _this.flush = function() {
+
+    if (_buflen > 0) {
+      writeEncoded(_buffer << (6 - _buflen) );
+      _buffer = 0;
+      _buflen = 0;
+    }
+
+    if (_length % 3 != 0) {
+      // padding
+      const padlen = 3 - _length % 3;
+      for (let i = 0; i < padlen; i += 1) {
+        _base64 += '=';
+      }
+    }
+  };
+
+  _this.toString = function() {
+    return _base64;
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// base64DecodeInputStream
+//---------------------------------------------------------------------
+
+const base64DecodeInputStream = function(str) {
+
+  const _str = str;
+  let _pos = 0;
+  let _buffer = 0;
+  let _buflen = 0;
+
+  const _this = {};
+
+  _this.read = function() {
+
+    while (_buflen < 8) {
+
+      if (_pos >= _str.length) {
+        if (_buflen == 0) {
+          return -1;
+        }
+        throw 'unexpected end of file./' + _buflen;
+      }
+
+      const c = _str.charAt(_pos);
+      _pos += 1;
+
+      if (c == '=') {
+        _buflen = 0;
+        return -1;
+      } else if (c.match(/^\s$/) ) {
+        // ignore if whitespace.
+        continue;
+      }
+
+      _buffer = (_buffer << 6) | decode(c.charCodeAt(0) );
+      _buflen += 6;
+    }
+
+    const n = (_buffer >>> (_buflen - 8) ) & 0xff;
+    _buflen -= 8;
+    return n;
+  };
+
+  const decode = function(c) {
+    if (0x41 <= c && c <= 0x5a) {
+      return c - 0x41;
+    } else if (0x61 <= c && c <= 0x7a) {
+      return c - 0x61 + 26;
+    } else if (0x30 <= c && c <= 0x39) {
+      return c - 0x30 + 52;
+    } else if (c == 0x2b) {
+      return 62;
+    } else if (c == 0x2f) {
+      return 63;
+    } else {
+      throw 'c:' + c;
+    }
+  };
+
+  return _this;
+};
+
+//---------------------------------------------------------------------
+// gifImage (B/W)
+//---------------------------------------------------------------------
+
+const gifImage = function(width, height) {
+
+  const _width = width;
+  const _height = height;
+  const _data = new Array(width * height);
+
+  const _this = {};
+
+  _this.setPixel = function(x, y, pixel) {
+    _data[y * _width + x] = pixel;
+  };
+
+  _this.write = function(out) {
+
+    //---------------------------------
+    // GIF Signature
+
+    out.writeString('GIF87a');
+
+    //---------------------------------
+    // Screen Descriptor
+
+    out.writeShort(_width);
+    out.writeShort(_height);
+
+    out.writeByte(0x80); // 2bit
+    out.writeByte(0);
+    out.writeByte(0);
+
+    //---------------------------------
+    // Global Color Map
+
+    // black
+    out.writeByte(0x00);
+    out.writeByte(0x00);
+    out.writeByte(0x00);
+
+    // white
+    out.writeByte(0xff);
+    out.writeByte(0xff);
+    out.writeByte(0xff);
+
+    //---------------------------------
+    // Image Descriptor
+
+    out.writeString(',');
+    out.writeShort(0);
+    out.writeShort(0);
+    out.writeShort(_width);
+    out.writeShort(_height);
+    out.writeByte(0);
+
+    //---------------------------------
+    // Local Color Map
+
+    //---------------------------------
+    // Raster Data
+
+    const lzwMinCodeSize = 2;
+    const raster = getLZWRaster(lzwMinCodeSize);
+
+    out.writeByte(lzwMinCodeSize);
+
+    let offset = 0;
+
+    while (raster.length - offset > 255) {
+      out.writeByte(255);
+      out.writeBytes(raster, offset, 255);
+      offset += 255;
+    }
+
+    out.writeByte(raster.length - offset);
+    out.writeBytes(raster, offset, raster.length - offset);
+    out.writeByte(0x00);
+
+    //---------------------------------
+    // GIF Terminator
+    out.writeString(';');
+  };
+
+  const bitOutputStream = function(out) {
+
+    const _out = out;
+    let _bitLength = 0;
+    let _bitBuffer = 0;
+
+    const _this = {};
+
+    _this.write = function(data, length) {
+
+      if ( (data >>> length) != 0) {
+        throw 'length over';
+      }
+
+      while (_bitLength + length >= 8) {
+        _out.writeByte(0xff & ( (data << _bitLength) | _bitBuffer) );
+        length -= (8 - _bitLength);
+        data >>>= (8 - _bitLength);
+        _bitBuffer = 0;
+        _bitLength = 0;
+      }
+
+      _bitBuffer = (data << _bitLength) | _bitBuffer;
+      _bitLength = _bitLength + length;
+    };
+
+    _this.flush = function() {
+      if (_bitLength > 0) {
+        _out.writeByte(_bitBuffer);
+      }
+    };
+
+    return _this;
+  };
+
+  const getLZWRaster = function(lzwMinCodeSize) {
+
+    const clearCode = 1 << lzwMinCodeSize;
+    const endCode = (1 << lzwMinCodeSize) + 1;
+    let bitLength = lzwMinCodeSize + 1;
+
+    // Setup LZWTable
+    const table = lzwTable();
+
+    for (let i = 0; i < clearCode; i += 1) {
+      table.add(String.fromCharCode(i) );
+    }
+    table.add(String.fromCharCode(clearCode) );
+    table.add(String.fromCharCode(endCode) );
+
+    const byteOut = byteArrayOutputStream();
+    const bitOut = bitOutputStream(byteOut);
+
+    // clear code
+    bitOut.write(clearCode, bitLength);
+
+    let dataIndex = 0;
+
+    let s = String.fromCharCode(_data[dataIndex]);
+    dataIndex += 1;
+
+    while (dataIndex < _data.length) {
+
+      const c = String.fromCharCode(_data[dataIndex]);
+      dataIndex += 1;
+
+      if (table.contains(s + c) ) {
+
+        s = s + c;
+
+      } else {
+
+        bitOut.write(table.indexOf(s), bitLength);
+
+        if (table.size() < 0xfff) {
+
+          if (table.size() == (1 << bitLength) ) {
+            bitLength += 1;
+          }
+
+          table.add(s + c);
+        }
+
+        s = c;
+      }
+    }
+
+    bitOut.write(table.indexOf(s), bitLength);
+
+    // end code
+    bitOut.write(endCode, bitLength);
+
+    bitOut.flush();
+
+    return byteOut.toByteArray();
+  };
+
+  const lzwTable = function() {
+
+    const _map = {};
+    let _size = 0;
+
+    const _this = {};
+
+    _this.add = function(key) {
+      if (_this.contains(key) ) {
+        throw 'dup key:' + key;
+      }
+      _map[key] = _size;
+      _size += 1;
+    };
+
+    _this.size = function() {
+      return _size;
+    };
+
+    _this.indexOf = function(key) {
+      return _map[key];
+    };
+
+    _this.contains = function(key) {
+      return typeof _map[key] != 'undefined';
+    };
+
+    return _this;
+  };
+
+  return _this;
+};
+
+const createDataURL = function(width, height, getPixel) {
+  const gif = gifImage(width, height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      gif.setPixel(x, y, getPixel(x, y) );
+    }
+  }
+
+  const b = byteArrayOutputStream();
+  gif.write(b);
+
+  const base64 = base64EncodeOutputStream();
+  const bytes = b.toByteArray();
+  for (let i = 0; i < bytes.length; i += 1) {
+    base64.writeByte(bytes[i]);
+  }
+  base64.flush();
+
+  return 'data:image/gif;base64,' + base64;
+};
+
+qrcode.stringToBytes;
+
+const LAYOUT_MAP = {
+    '50x30': 'std',
+    '40x30': 'std',
+    '50x50': 'tall',
+    '50x80': 'tall',
+    '50x15': 'wide',
+};
+const ASPECT_MAP = {
+    '50x30': '5 / 3',
+    '40x30': '4 / 3',
+    '50x50': '1 / 1',
+    '50x80': '5 / 8',
+    '50x15': '10 / 3',
+};
+function buildQrSvg(data) {
+    const qr = qrcode(0, 'M');
+    qr.addData(data);
+    qr.make();
+    const count = qr.getModuleCount();
+    const cellSize = 4;
+    const size = count * cellSize;
+    const cells = [];
+    for (let r = 0; r < count; r++) {
+        for (let c = 0; c < count; c++) {
+            if (qr.isDark(r, c)) {
+                cells.push(`<rect x="${c * cellSize}" y="${r * cellSize}" width="${cellSize}" height="${cellSize}" fill="currentColor"/>`);
+            }
+        }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${cells.join('')}</svg>`;
+}
+let LabelPreview = class LabelPreview extends i$3 {
     constructor() {
         super(...arguments);
-        this.open = false;
-        this.embedded = false;
-        this.inventory = null;
-        this.isLoading = false;
-        this.error = null;
-        this.isSaving = false;
-        this._editingId = null;
-        this._editName = '';
-        this._editCurrent = 0;
-        this._editInitial = 0;
-        this._isAdding = false;
+        this.sizeId = '50x30';
+        this.fields = {
+            name: true, phenotype: true, breeder: true, lineage: true,
+            startDate: true, stageAge: true, plantId: true, logo: true, qr: true,
+        };
+        this.values = {
+            name: '', phenotype: '', breeder: '', lineage: '',
+            startDate: '', stageAge: '', plantId: '', logo: '',
+        };
+        this.qrValue = '';
+        this.density = 'normal';
     }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
+    get _layout() {
+        return LAYOUT_MAP[this.sizeId] ?? 'std';
     }
-    _startEdit(stock) {
-        this._editingId = stock.nutrient_id;
-        this._editName = stock.name;
-        this._editCurrent = stock.current_ml;
-        this._editInitial = stock.initial_ml;
-        this._isAdding = false;
+    update(changed) {
+        super.update(changed);
+        this.setAttribute('data-layout', this._layout);
+        this.setAttribute('data-density', this.density);
+        const aspect = ASPECT_MAP[this.sizeId] ?? '5 / 3';
+        this.style.aspectRatio = aspect;
     }
-    _startAdd() {
-        this._editingId = null;
-        this._editName = '';
-        this._editCurrent = 1000;
-        this._editInitial = 1000;
-        this._isAdding = true;
+    _renderQr() {
+        if (!this.fields.qr)
+            return E;
+        const svg = buildQrSvg(this.qrValue || 'https://growspace.app');
+        return x `<div class="field-qr">${o(svg)}</div>`;
     }
-    _cancelEdit() {
-        this._editingId = null;
-        this._isAdding = false;
-    }
-    _handleSave() {
-        if (!this._editName.trim())
-            return;
-        this.dispatchEvent(new CustomEvent('update-stock', {
-            detail: {
-                id: this._editingId || this._editName.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-                name: this._editName,
-                current: this._editCurrent,
-                initial: this._editInitial,
-            },
-        }));
-        this._cancelEdit();
-    }
-    _handleDelete(id) {
-        if (!confirm('Are you sure you want to delete this nutrient stock?'))
-            return;
-        this.dispatchEvent(new CustomEvent('remove-stock', { detail: { id } }));
+    _renderTextCols() {
+        return x `
+      <div class="text-cols">
+        ${this.fields.phenotype ? x `<span class="field-phenotype">${this.values.phenotype}</span>` : E}
+        ${this.fields.breeder ? x `<span class="field-breeder">${this.values.breeder}</span>` : E}
+        ${this.fields.lineage ? x `<span class="field-lineage">${this.values.lineage}</span>` : E}
+        ${this.fields.startDate ? x `<span class="field-startDate">${this.values.startDate}</span>` : E}
+        ${this.fields.stageAge ? x `<span class="field-stageAge">${this.values.stageAge}</span>` : E}
+        ${this.fields.plantId ? x `<span class="field-plantId">${this.values.plantId}</span>` : E}
+        ${this.fields.logo ? x `<div class="field-logo"><img src="${this.values.logo}" alt="logo" /></div>` : E}
+      </div>
+    `;
     }
     render() {
-        if (!this.open && !this.embedded)
-            return E;
-        const innerContent = x `
-      ${this.isLoading
-            ? x `<ha-circular-progress active></ha-circular-progress>`
-            : this.error
-                ? x `<div class="error-banner">
-              <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-              ${this.error}
-            </div>`
-                : this._renderContent()}
+        return x `
+      <div class="corner-marker tl"></div>
+      <div class="corner-marker tr"></div>
+      <div class="corner-marker bl"></div>
+      <div class="corner-marker br"></div>
+      <div class="label-inner">
+        ${this.fields.name ? x `<div class="field-name">${this.values.name}</div>` : E}
+        <div class="lower-row">
+          ${this._renderTextCols()}
+          ${this._renderQr()}
+        </div>
+      </div>
     `;
-        if (this.embedded) {
+    }
+};
+LabelPreview.styles = i$6 `
+    :host {
+      display: block;
+      position: relative;
+      box-sizing: border-box;
+      border: 1px solid #333;
+      background: #fff;
+      color: #000;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    :host([data-density='low']) { opacity: 0.6; filter: contrast(0.7); }
+    :host([data-density='normal']) { opacity: 1; filter: contrast(1); }
+    :host([data-density='high']) { opacity: 1; filter: contrast(1.3); }
+
+    .label-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 4px;
+      box-sizing: border-box;
+    }
+
+    /* --- std layout (50x30, 40x30) --- */
+    :host([data-layout='std']) .label-inner { flex-direction: column; }
+    :host([data-layout='std']) .field-name { font-size: 1em; font-weight: bold; width: 100%; border-bottom: 1px solid #000; padding-bottom: 3px; margin-bottom: 3px; }
+    :host([data-layout='std']) .lower-row { display: flex; flex: 1; gap: 8px; }
+    :host([data-layout='std']) .text-cols { display: flex; flex-direction: column; flex: 1; gap: 2px; font-size: 0.7em; }
+    :host([data-layout='std']) .text-cols .field-phenotype,
+    :host([data-layout='std']) .text-cols .field-lineage { font-weight: bold; }
+    :host([data-layout='std']) .field-qr { width: auto; display: flex; align-items: center; justify-content: center; }
+    :host([data-layout='std']) .field-qr svg { max-width: 48px; max-height: 48px; width: 100%; height: auto; }
+
+    /* --- tall layout (50x50, 50x80) --- */
+    :host([data-layout='tall']) .label-inner { flex-direction: column; align-items: center; }
+    :host([data-layout='tall']) .field-name { font-size: 1em; font-weight: bold; width: 100%; }
+    :host([data-layout='tall']) .lower-row { display: flex; flex-direction: column; width: 100%; gap: 2px; }
+    :host([data-layout='tall']) .text-cols { display: flex; flex-direction: column; gap: 2px; font-size: 0.7em; }
+    :host([data-layout='tall']) .field-qr { display: flex; justify-content: center; margin-top: 4px; }
+    :host([data-layout='tall']) .field-qr svg { width: 60%; height: auto; }
+
+    /* --- wide layout (50x15) --- */
+    :host([data-layout='wide']) .label-inner { flex-direction: row; align-items: center; gap: 4px; }
+    :host([data-layout='wide']) .field-name { font-size: 0.8em; font-weight: bold; white-space: nowrap; }
+    :host([data-layout='wide']) .lower-row { display: flex; flex: 1; gap: 4px; align-items: center; }
+    :host([data-layout='wide']) .text-cols { display: flex; flex-wrap: wrap; gap: 2px; font-size: 0.6em; }
+    :host([data-layout='wide']) .field-qr { display: flex; align-items: center; }
+    :host([data-layout='wide']) .field-qr svg { width: 32px; height: 32px; }
+
+    /* Corner markers */
+    .corner-marker {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      border-color: #333;
+      border-style: solid;
+    }
+    .corner-marker.tl { top: 1px; left: 1px; border-width: 2px 0 0 2px; }
+    .corner-marker.tr { top: 1px; right: 1px; border-width: 2px 2px 0 0; }
+    .corner-marker.bl { bottom: 1px; left: 1px; border-width: 0 0 2px 2px; }
+    .corner-marker.br { bottom: 1px; right: 1px; border-width: 0 2px 2px 0; }
+
+    .field-logo img { max-height: 20px; max-width: 40px; object-fit: contain; }
+  `;
+__decorate([
+    n$5({ type: String })
+], LabelPreview.prototype, "sizeId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], LabelPreview.prototype, "fields", void 0);
+__decorate([
+    n$5({ attribute: false })
+], LabelPreview.prototype, "values", void 0);
+__decorate([
+    n$5({ type: String })
+], LabelPreview.prototype, "qrValue", void 0);
+__decorate([
+    n$5({ type: String })
+], LabelPreview.prototype, "density", void 0);
+LabelPreview = __decorate([
+    t$2('label-preview')
+], LabelPreview);
+
+function getPrinters(hass) {
+    if (!hass || !hass.states)
+        return [];
+    return Object.keys(hass.states)
+        .filter((eid) => eid.startsWith('image.') && eid.endsWith('_last_label_made'))
+        .map((eid) => {
+        const mac = eid.slice('image.'.length, -'_last_label_made'.length);
+        const friendlyName = hass.states[eid].attributes.friendly_name || eid;
+        const name = friendlyName.replace(' Last Label Made', '');
+        const connectionEntity = hass.states[`binary_sensor.${mac}_connection`];
+        const connected = connectionEntity?.state === 'on';
+        const batteryEntity = hass.states[`sensor.${mac}_battery`];
+        const batteryPct = batteryEntity ? parseFloat(batteryEntity.state) : null;
+        const paperEntity = hass.states[`binary_sensor.${mac}_paper_loaded`];
+        const paperLoaded = paperEntity?.state === 'on';
+        return { id: eid, name, mac, batteryPct, connected, paperLoaded };
+    });
+}
+function batteryColorClass(printer) {
+    if (!printer.connected)
+        return 'grey';
+    if (printer.batteryPct === null)
+        return 'grey';
+    if (printer.batteryPct > 50)
+        return 'green';
+    if (printer.batteryPct > 20)
+        return 'amber';
+    return 'red';
+}
+let PrinterStatusStrip = class PrinterStatusStrip extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.selectedDeviceId = '';
+    }
+    render() {
+        if (!this.selectedDeviceId) {
             return x `
-        <div class="glass-dialog-container" style="background: none; border: none; padding: 0;">
-          <div class="dialog-content-grid" style="padding: 0;">${innerContent}</div>
+        <div class="no-printer">
+          <ha-svg-icon .path=${mdiPrinter} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+          No Niimbot printers discovered. You can still try printing if you have a default printer
+          configured in the integration.
         </div>
       `;
         }
+        const printer = getPrinters(this.hass).find((p) => p.id === this.selectedDeviceId);
+        if (!printer)
+            return E;
+        const colorClass = batteryColorClass(printer);
         return x `
-      <gs-dialog
-        .open=${true}
-        .heading=${'Nutrient Inventory'}
-        .subtitle=${'Manage stock levels'}
-        .iconPath=${mdiBottleTonicPlus}
-        stageColor="var(--primary-color, #4caf50)"
-        .submitting=${this.isSaving}
-      >
-        <div class="dialog-content-grid">${innerContent}</div>
-      </gs-dialog>
-    `;
-    }
-    _renderContent() {
-        const stocks = this.inventory ? Object.values(this.inventory.stocks) : [];
-        return x `
-      ${!this._isAdding
-            ? x `
-            <button class="md3-button tonal add-button" @click=${this._startAdd}>
-              <ha-svg-icon .path=${mdiPlus} style="margin-right:8px"></ha-svg-icon>
-              Add Nutrient
-            </button>
-          `
-            : this._renderEditForm()}
-
-      <div class="inventory-list">
-        ${stocks.length === 0 && !this._isAdding
-            ? x `<p style="text-align:center; opacity:0.6">No nutrient stock items tracked.</p>`
-            : stocks.map((stock) => this._renderStockItem(stock))}
-      </div>
-    `;
-    }
-    _renderStockItem(stock) {
-        const isEditing = this._editingId === stock.nutrient_id;
-        if (isEditing)
-            return this._renderEditForm();
-        const percent = Math.max(0, Math.min(100, (stock.current_ml / stock.initial_ml) * 100));
-        let statusClass = '';
-        if (percent <= 20)
-            statusClass = 'danger';
-        else if (percent <= 40)
-            statusClass = 'warning';
-        return x `
-      <div class="stock-item">
-        <div class="stock-info">
-          <div class="stock-name">${stock.name}</div>
-          <div class="stock-meta">
-            ${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml
-            (${percent.toFixed(0)}%)
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill ${statusClass}" style="width: ${percent}%"></div>
-          </div>
+      <div class="strip">
+        <div class="connection">
+          ${printer.connected
+            ? x `<div class="pulse-dot"></div>`
+            : x `<div class="offline-dot"></div>`}
+          <span class="connection-label">${printer.connected ? 'Connected' : 'Offline'}</span>
         </div>
 
-        <div class="stock-actions">
-          <button class="md3-button text" @click=${() => this._startEdit(stock)}>Edit</button>
-          <button
-            class="md3-button icon"
-            style="color: var(--error-color, #F44336)"
-            @click=${() => this._handleDelete(stock.nutrient_id)}
-          >
-            <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-          </button>
+        <div class="divider"></div>
+
+        <ha-svg-icon .path=${mdiBluetooth} style="--mdc-icon-size: 16px; opacity: 0.6;"></ha-svg-icon>
+
+        <div class="divider"></div>
+
+        <span class="printer-name">${printer.name} · ${printer.mac}</span>
+
+        <div class="divider"></div>
+
+        <div class="battery ${colorClass}">
+          <ha-svg-icon .path=${mdiBattery} style="--mdc-icon-size: 16px;"></ha-svg-icon>
+          ${printer.connected && printer.batteryPct !== null
+            ? x `<span>${printer.batteryPct}%</span>`
+            : E}
         </div>
-      </div>
-    `;
-    }
-    _renderEditForm() {
-        return x `
-      <div class="stock-item" style="border-color: var(--primary-color);">
-        <div class="edit-form">
-          <h3 style="margin:0 0 12px 0;">${this._isAdding ? 'Add Nutrient' : 'Edit Nutrient'}</h3>
 
-          <md3-text-input
-            label="Name"
-            .value=${this._editName}
-            @change=${(e) => (this._editName = e.detail)}
-          ></md3-text-input>
+        <div class="divider"></div>
 
-          <div class="form-row">
-            <md3-number-input
-              label="Current (ml)"
-              .value=${this._editCurrent}
-              @change=${(e) => (this._editCurrent = parseFloat(e.detail))}
-            ></md3-number-input>
-
-            <md3-number-input
-              label="Total Capacity (ml)"
-              .value=${this._editInitial}
-              @change=${(e) => (this._editInitial = parseFloat(e.detail))}
-            ></md3-number-input>
-          </div>
-
-          <div class="form-row" style="justify-content: flex-end; margin-top: 8px;">
-            <button class="md3-button text" @click=${this._cancelEdit}>Cancel</button>
-            <button
-              class="md3-button primary"
-              @click=${this._handleSave}
-              ?disabled=${this.isSaving}
-            >
-              <ha-svg-icon .path=${mdiCheck} style="margin-right:8px"></ha-svg-icon>
-              ${this.isSaving ? 'Saving...' : 'Save'}
-            </button>
-          </div>
+        <div class="paper-indicator ${printer.paperLoaded ? '' : 'muted'}">
+          <ha-svg-icon .path=${mdiPrinter} style="--mdc-icon-size: 16px;"></ha-svg-icon>
         </div>
       </div>
     `;
     }
 };
-GrowspaceNutrientInventoryDialogUI.styles = [
-    dialogStyles,
-    i$6 `
-      .inventory-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        margin-top: 16px;
-      }
-      .stock-item {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 16px;
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 12px;
-        align-items: center;
-      }
-      .stock-info {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .stock-name {
-        font-weight: 500;
-        font-size: 1rem;
-      }
-      .stock-meta {
-        font-size: 0.85rem;
-        color: var(--secondary-text-color);
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .stock-actions {
-        display: flex;
-        gap: 8px;
-      }
-      .edit-form {
-        grid-column: 1 / -1;
-        background: rgba(0, 0, 0, 0.2);
-        padding: 16px;
-        border-radius: 8px;
-        margin-top: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .form-row {
-        display: flex;
-        gap: 12px;
-      }
-      .add-button {
-        margin-bottom: 16px;
-        width: 100%;
-      }
-      .progress-bar {
-        height: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 3px;
-        overflow: hidden;
-        margin-top: 8px;
-        width: 100%;
-      }
-      .progress-fill {
-        height: 100%;
-        background: var(--primary-color, #4caf50);
-        transition: width 0.3s ease;
-      }
-      .progress-fill.warning {
-        background: #ff9800;
-      }
-      .progress-fill.danger {
-        background: #f44336;
-      }
-      .error-banner {
-        background: rgba(211, 47, 47, 0.2);
-        color: var(--error-color, #f44336);
-        padding: 12px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-    `,
-];
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientInventoryDialogUI.prototype, "open", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientInventoryDialogUI.prototype, "embedded", void 0);
+PrinterStatusStrip.styles = i$6 `
+    :host {
+      display: block;
+      font-size: 0.85rem;
+    }
+
+    .no-printer {
+      color: var(--warning-color);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      opacity: 0.8;
+    }
+
+    .strip {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4caf50;
+      animation: pulse 2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+      70% { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    }
+
+    .offline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      flex-shrink: 0;
+    }
+
+    .connection-label {
+      opacity: 0.7;
+    }
+
+    .divider {
+      width: 1px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .printer-name {
+      font-family: monospace;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    .battery {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .battery.green { color: #4caf50; }
+    .battery.amber { color: #ffa726; }
+    .battery.red   { color: #ef5350; }
+    .battery.grey  { color: rgba(255, 255, 255, 0.3); }
+
+    .paper-indicator {
+      display: flex;
+      align-items: center;
+      opacity: 1;
+    }
+
+    .paper-indicator.muted {
+      opacity: 0.25;
+    }
+  `;
 __decorate([
     n$5({ attribute: false })
-], GrowspaceNutrientInventoryDialogUI.prototype, "inventory", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientInventoryDialogUI.prototype, "isLoading", void 0);
+], PrinterStatusStrip.prototype, "hass", void 0);
 __decorate([
     n$5({ type: String })
-], GrowspaceNutrientInventoryDialogUI.prototype, "error", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceNutrientInventoryDialogUI.prototype, "isSaving", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientInventoryDialogUI.prototype, "_editingId", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientInventoryDialogUI.prototype, "_editName", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientInventoryDialogUI.prototype, "_editCurrent", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientInventoryDialogUI.prototype, "_editInitial", void 0);
-__decorate([
-    r$3()
-], GrowspaceNutrientInventoryDialogUI.prototype, "_isAdding", void 0);
-GrowspaceNutrientInventoryDialogUI = __decorate([
-    t$2('growspace-nutrient-inventory-dialog-ui')
-], GrowspaceNutrientInventoryDialogUI);
+], PrinterStatusStrip.prototype, "selectedDeviceId", void 0);
+PrinterStatusStrip = __decorate([
+    t$2('printer-status-strip')
+], PrinterStatusStrip);
 
-let NutrientDialog = class NutrientDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this._activeTab = 'inventory';
-    }
-    _initControllers() {
-        if (this.store && !this._inventoryController) {
-            this._inventoryController = new libExports.StoreController(this, nutrientInventory$);
-        }
-    }
-    connectedCallback() {
-        super.connectedCallback();
-        this._initControllers();
-    }
-    willUpdate(changedProps) {
-        if (changedProps.has('store')) {
-            this._initControllers();
-        }
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close'));
-    }
-    _setTab(tab) {
-        this._activeTab = tab;
-    }
-    render() {
-        if (!this.open)
-            return E;
-        return x `
-      <gs-dialog
-        .open=${this.open}
-        heading="Nutrients"
-        subtitle="Manage inventory and recipes"
-        .iconPath=${mdiBottleTonicPlus}
-        @close=${this._close}
-      >
-        <div class="tab-bar">
-          <div
-            class="tab ${this._activeTab === 'inventory' ? 'active' : ''}"
-            @click=${() => this._setTab('inventory')}
-          >
-            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiClipboardList}"></path>
-            </svg>
-            Inventory
-            <gs-help-tooltip
-              content="Track your nutrient bottles — name, brand, and stock level. Add all nutrients you own so they appear in your feeding presets."
-              placement="bottom"
-              label="Inventory"
-            ></gs-help-tooltip>
-          </div>
-          <div
-            class="tab ${this._activeTab === 'presets' ? 'active' : ''}"
-            @click=${() => this._setTab('presets')}
-          >
-            <svg style="width:20px;height:20px;fill:currentColor;" viewBox="0 0 24 24">
-              <path d="${mdiFormatListBulleted}"></path>
-            </svg>
-            Presets
-            <gs-help-tooltip
-              content="Feeding recipes that define how much of each nutrient to add per litre. Create one preset per growth stage (e.g. 'Week 3 Veg', 'Week 5 Flower'). The watering dialog uses these to calculate your mix."
-              placement="bottom"
-              label="Presets"
-            ></gs-help-tooltip>
-          </div>
-        </div>
-
-        <div class="content-area">
-          ${this._activeTab === 'inventory'
-            ? x `<growspace-nutrient-inventory-dialog-ui
-                .open=${true}
-                .embedded=${true}
-                .inventory=${this._inventoryController?.value ?? null}
-                @update-stock=${(e) => this.store.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-                @add-stock=${(e) => this.store.actions.library.updateNutrientStock(e.detail.id || `nutrient_${Date.now()}`, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-              ></growspace-nutrient-inventory-dialog-ui>`
-            : x `<growspace-nutrient-presets-editor
-                .open=${true}
-                .embedded=${true}
-              ></growspace-nutrient-presets-editor>`}
-        </div>
-      </gs-dialog>
-    `;
-    }
+const DEFAULT_FIELDS = {
+    name: true,
+    phenotype: true,
+    breeder: true,
+    lineage: true,
+    startDate: true,
+    stageAge: true,
+    plantId: true,
+    logo: true,
+    qr: true,
 };
-NutrientDialog.styles = [
-    dialogStyles,
-    i$6 `
-      .dialog-header {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 16px;
-        margin-bottom: 0 !important;
-      }
-
-      .tab-bar {
-        display: flex;
-        gap: 24px;
-        padding: 0 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 24px;
-      }
-
-      .tab {
-        padding: 16px 0;
-        color: var(--secondary-text-color);
-        cursor: pointer;
-        position: relative;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .tab:hover {
-        color: var(--primary-text-color);
-      }
-
-      .tab.active {
-        color: var(--primary-color, #4caf50);
-      }
-
-      .tab.active::after {
-        content: '';
-        position: absolute;
-        bottom: -1px;
-        left: 0;
-        width: 100%;
-        height: 2px;
-        background: var(--primary-color, #4caf50);
-        border-radius: 2px 2px 0 0;
-      }
-
-      .content-area {
-        min-height: 400px;
-        max-height: 70vh;
-        overflow-y: auto;
-        padding: 0 24px 24px;
-      }
-
-      /* Scrollbar styling */
-      .content-area::-webkit-scrollbar {
-        width: 8px;
-      }
-      .content-area::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.1);
-      }
-      .content-area::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-      }
-    `,
+const LABEL_SIZES$1 = [
+    { id: '50x30', label: '50×30' },
+    { id: '40x30', label: '40×30' },
+    { id: '50x50', label: '50×50' },
+    { id: '50x80', label: '50×80' },
+    { id: '50x15', label: '50×15' },
 ];
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], NutrientDialog.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true }),
-    n$5({ attribute: false })
-], NutrientDialog.prototype, "store", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], NutrientDialog.prototype, "open", void 0);
-__decorate([
-    r$3()
-], NutrientDialog.prototype, "_activeTab", void 0);
-NutrientDialog = __decorate([
-    t$2('nutrient-dialog')
-], NutrientDialog);
-
 let PrintLabelDialog = class PrintLabelDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
         this._selectedDeviceId = '';
-        this._isSubmitting = false;
-        this._previewImage = null;
-        this._previewLoading = false;
-        this._previewError = null;
+        this._fields = { ...DEFAULT_FIELDS };
+        this._sizeId = '50x30';
+        this._density = 'normal';
+        this._qrTarget = 'web';
+        this._copies = 1;
+        this._printState = 'idle';
+        this._printProgress = 0;
+        this._settingsOpen = false;
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
             this._resetForm();
-            this._fetchPreview();
         }
     }
     _resetForm() {
-        this._selectedDeviceId = this.dialogState?.deviceId || '';
-        this._isSubmitting = false;
-        this._previewImage = null;
-        this._previewError = null;
-        // Auto-select first available niimbot if none selected
-        if (!this._selectedDeviceId) {
-            const printers = this._getPrinters();
+        const ds = this.dialogState;
+        this._printState = 'idle';
+        this._printProgress = 0;
+        this._settingsOpen = false;
+        this._copies = 1;
+        this._sizeId = ds?.defaultSizeId ?? '50x30';
+        this._density = ds?.defaultDensity ?? 'normal';
+        this._qrTarget = ds?.defaultQrTarget ?? 'web';
+        this._fields = { ...DEFAULT_FIELDS, ...(ds?.defaultFields ?? {}) };
+        if (!this._selectedDeviceId && this.hass) {
+            const printers = getPrinters(this.hass);
             if (printers.length > 0) {
-                this._selectedDeviceId = printers[0].value;
+                this._selectedDeviceId = printers[0].id;
             }
         }
     }
-    async _fetchPreview() {
-        if (!this.dialogState || !this._selectedDeviceId)
+    _toggleField(field) {
+        if (field === 'name')
             return;
-        if (!this.dialogState.plantId && !this.dialogState.strainName)
-            return;
-        this._previewLoading = true;
-        this._previewError = null;
-        try {
-            // 1. Trigger the generation
-            await this.store.actions.plant.printLabel({
-                plantId: this.dialogState.plantId,
-                strain: this.dialogState.strainName,
-                phenotype: this.dialogState.phenotype,
-                breeder: this.dialogState.breeder,
-                lineage: this.dialogState.lineage,
-                breederLogo: this.dialogState.breederLogo,
-                deviceId: undefined,
-                preview: true,
-            });
-            // 2. Wait for HA state propagation
-            await new Promise((r) => setTimeout(r, 800));
-            // 3. Grab the image URL from the entity state
-            const stateObj = this.hass.states[this._selectedDeviceId]; // e.g., image.b1_...
-            if (stateObj?.attributes.entity_picture) {
-                // FIX: Append a timestamp to force a cache refresh
-                const cacheBuster = `&v=${Date.now()}`;
-                this._previewImage = `${stateObj.attributes.entity_picture}${cacheBuster}`;
-            }
-            else {
-                this._previewError = 'Image entity updated, but no picture attribute found.';
-            }
-        }
-        catch (e) {
-            this._previewError = e instanceof Error ? e.message : 'Failed to fetch preview';
-        }
-        finally {
-            this._previewLoading = false;
-        }
-    }
-    _getPrinters() {
-        if (!this.hass)
-            return [];
-        return Object.keys(this.hass.states)
-            .filter((eid) => {
-            // Looking at your screenshot, Niimbot entities start with binary_sensor.b1_...
-            // or image.b1_... (where b1 is the model).
-            this.hass.states[eid];
-            // Filter: We want the main 'image' entity or the 'connection' binary sensor
-            // because they represent the printer device.
-            return eid.startsWith('image.') && eid.includes('_last_label_made');
-        })
-            .map((eid) => {
-            // This will take "B1-H113120940 Last Label Made"
-            // and clean it up to just the printer name if you prefer.
-            const name = this.hass.states[eid].attributes.friendly_name || eid;
-            return {
-                label: name.replace(' Last Label Made', ''),
-                value: eid,
-            };
-        });
+        this._fields = { ...this._fields, [field]: !this._fields[field] };
     }
     async _submit() {
         if (!this.store || !this.dialogState)
             return;
-        this._isSubmitting = true;
+        this._printState = 'printing';
+        this._printProgress = 0;
         try {
-            await this.store.actions.plant.printLabel({
-                plantId: this.dialogState.plantId,
-                strain: this.dialogState.strainName,
-                phenotype: this.dialogState.phenotype,
-                breeder: this.dialogState.breeder,
-                lineage: this.dialogState.lineage,
-                breederLogo: this.dialogState.breederLogo,
-                deviceId: this._selectedDeviceId || undefined,
-                preview: false,
-            });
-            this.store.actions.ui.toast('Label printing command sent', 'success');
-            this._close();
+            for (let i = 0; i < this._copies; i++) {
+                await this.store.actions.plant.printLabel({
+                    plantId: this.dialogState.plantId,
+                    fields: this._fields,
+                    sizeId: this._sizeId,
+                    density: this._density,
+                    qrTarget: this._qrTarget,
+                    deviceId: this._selectedDeviceId || undefined,
+                });
+                this._printProgress = Math.round(((i + 1) / this._copies) * 100);
+            }
+            this._printState = 'done';
         }
-        catch (e) {
-            const error = e instanceof Error ? e.message : 'Unknown error';
-            console.error('Failed to print label:', e);
-            this.store?.actions.ui.toast(`Error: ${error}`, 'error');
-        }
-        finally {
-            this._isSubmitting = false;
+        catch (_e) {
+            this._printState = 'error';
         }
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close'));
-    }
-    render() {
-        if (!this.open)
-            return E;
-        const plantId = this.dialogState?.plantId;
-        const plant = this._getPlant(plantId);
-        const strainName = plant?.attributes.strain || this.dialogState?.strainName || 'Unknown';
-        const subtitle = plantId ? `${strainName} (${plantId})` : strainName;
-        const printers = this._getPrinters();
-        return x `
-      <gs-dialog
-        .open=${this.open}
-        heading="Print Label"
-        .subtitle=${subtitle}
-        .iconPath=${mdiPrinter}
-        stageColor="#2196F3"
-        .submitting=${this._isSubmitting}
-        @close=${this._close}
-      >
-        <div class="dialog-content-grid" style="display: block;">
-          <div class="form-section">
-            <h3>
-              Label Preview
-              <button
-                class="md3-button text icon refresh-btn"
-                @click=${this._fetchPreview}
-                ?disabled=${this._previewLoading}
-              >
-                <ha-svg-icon .path=${mdiRefresh}></ha-svg-icon>
-              </button>
-            </h3>
-            <div class="preview-container">
-              ${this._previewLoading
-            ? x `
-                    <div class="preview-loading">
-                      <ha-circular-progress active size="small"></ha-circular-progress>
-                      <span>Generating preview...</span>
-                    </div>
-                  `
-            : this._previewError
-                ? x `
-                      <div class="preview-error">
-                        <ha-svg-icon .path=${mdiAlertCircle}></ha-svg-icon>
-                        <span>${this._previewError}</span>
-                        <button class="md3-button tonal small" @click=${this._fetchPreview}>
-                          Try Again
-                        </button>
-                      </div>
-                    `
-                : this._previewImage
-                    ? x `
-                        <img src=${this._previewImage} class="preview-image" alt="Label Preview" />
-                      `
-                    : x `
-                        <div class="preview-loading">
-                          <span>No preview available</span>
-                        </div>
-                      `}
-            </div>
-          </div>
-
-          <div class="form-section">
-            <h3>Printer Settings</h3>
-            <md3-select
-              label="Niimbot Printer"
-              .value=${this._selectedDeviceId || ''}
-              .options=${[{ label: 'Default / Auto', value: '' }, ...printers]}
-              @change=${(e) => {
-            this._selectedDeviceId = e.detail;
-        }}
-            ></md3-select>
-
-            ${printers.length === 0
-            ? x `
-                  <div
-                    style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;"
-                  >
-                    <ha-svg-icon
-                      .path=${mdiInformation}
-                      style="--mdc-icon-size: 16px;"
-                    ></ha-svg-icon>
-                    No Niimbot printers discovered. You can still try printing if you have a default
-                    printer configured in the integration.
-                  </div>
-                `
-            : E}
-          </div>
-        </div>
-
-        <div class="button-group">
-          <button class="md3-button tonal" @click=${this._close} ?disabled=${this._isSubmitting}>
-            Cancel
-          </button>
-          <button
-            class="md3-button primary"
-            style="background-color: #2196F3; --mdc-theme-primary: #2196F3;"
-            @click=${this._submit}
-            ?disabled=${this._isSubmitting || this._previewLoading}
-          >
-            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-            ${this._isSubmitting
-            ? 'Printing...'
-            : this._previewLoading
-                ? 'Warming up...'
-                : 'Print Now'}
-          </button>
-        </div>
-      </gs-dialog>
-    `;
     }
     _getPlant(plantId) {
         if (!plantId)
@@ -31877,89 +34628,552 @@ let PrintLabelDialog = class PrintLabelDialog extends i$3 {
         }
         return null;
     }
-    _getStrain(strainName, phenotype) {
-        if (!strainName)
-            return null;
-        const library = strainLibrary$.get();
-        const pheno = phenotype || 'default';
-        return library.find((s) => s.strain === strainName && s.phenotype === pheno) || null;
+    _getFieldValues() {
+        const ds = this.dialogState;
+        const plant = this._getPlant(ds?.plantId);
+        const attrs = plant?.attributes;
+        const startDate = attrs?.veg_start
+            ? this._formatDate(attrs.veg_start)
+            : attrs?.flower_start
+                ? this._formatDate(attrs.flower_start)
+                : '';
+        const stageAge = attrs?.days_in_stage != null ? `Day ${attrs.days_in_stage}` : '';
+        return {
+            name: attrs?.strain ?? ds?.strainName ?? '',
+            phenotype: attrs?.phenotype ?? ds?.phenotype ?? '',
+            breeder: attrs?.breeder ?? ds?.breeder ?? '',
+            lineage: attrs?.lineage ?? ds?.lineage ?? '',
+            startDate,
+            stageAge,
+            plantId: ds?.plantId ?? '',
+            logo: attrs?.breeder_logo ?? ds?.breederLogo ?? '',
+        };
     }
     _formatDate(dateStr) {
         if (!dateStr)
-            return 'N/A';
+            return '';
         try {
             const date = new Date(dateStr);
+            if (isNaN(date.getTime())) {
+                return dateStr;
+            }
             return date.toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
                 year: '2-digit',
             });
         }
-        catch (e) {
+        catch (_e) {
             return dateStr;
         }
+    }
+    _renderFooterMeta() {
+        const { _printState, _copies, _printProgress } = this;
+        if (_printState === 'printing') {
+            return x `<span class="footer-meta">Sending to printer… (${_printProgress}%)</span>`;
+        }
+        if (_printState === 'done') {
+            return x `<span class="footer-meta">Printed ${_copies} label(s) ✓</span>`;
+        }
+        if (_printState === 'error') {
+            return x `<span class="footer-meta error">Printer offline — check Bluetooth</span>`;
+        }
+        const sizeLabel = LABEL_SIZES$1.find((s) => s.id === this._sizeId)?.label ?? this._sizeId;
+        return x `<span class="footer-meta">${_copies} × ${sizeLabel} · Thermal 203 dpi</span>`;
+    }
+    _renderFieldRow(field, label) {
+        const locked = field === 'name';
+        const on = this._fields[field];
+        return x `
+      <div
+        class="field-toggle-row ${locked ? 'locked' : ''}"
+        @click=${locked ? E : () => this._toggleField(field)}
+      >
+        <span class="field-toggle-label">${label}</span>
+        <div class="toggle-dot ${on ? 'on' : ''}"></div>
+      </div>
+    `;
+    }
+    render() {
+        if (!this.open)
+            return E;
+        const ds = this.dialogState;
+        const values = this._getFieldValues();
+        const printers = this.hass ? getPrinters(this.hass) : [];
+        const isPrinting = this._printState === 'printing';
+        const sizeLabel = LABEL_SIZES$1.find((s) => s.id === this._sizeId)?.label ?? this._sizeId;
+        const qrValue = this._qrTarget === 'deeplink'
+            ? `growspace://plant/${ds?.plantId ?? ''}`
+            : `https://growspace.app/plant/${ds?.plantId ?? ''}`;
+        return x `
+      <gs-dialog
+        .open=${this.open}
+        heading="Print Label"
+        .subtitle=${values.name || 'Label'}
+        .iconPath=${mdiPrinter}
+        stageColor="#2196F3"
+        @close=${this._close}
+      >
+        <div class="two-col">
+          <!-- Settings (first in DOM so mobile stacks it above preview) -->
+          <div class="settings-wrapper">
+            <button
+              class="mobile-pill-toggle ${this._settingsOpen ? 'open' : ''}"
+              @click=${() => { this._settingsOpen = !this._settingsOpen; }}
+            >
+              <span>Print settings</span>
+              <span class="pill-chevron ${this._settingsOpen ? 'open' : ''}">›</span>
+            </button>
+            <div class="settings-col ${this._settingsOpen ? 'mobile-open' : ''}">
+            <!-- Label content -->
+            <div class="settings-section">
+              <div class="settings-section-title">Label content</div>
+              ${this._renderFieldRow('name', 'Strain name')}
+              ${this._renderFieldRow('phenotype', 'Phenotype')}
+              ${this._renderFieldRow('breeder', 'Breeder')}
+              ${this._renderFieldRow('lineage', 'Lineage')}
+              ${this._renderFieldRow('startDate', 'Start date')}
+              ${this._renderFieldRow('stageAge', 'Stage & age')}
+              ${this._renderFieldRow('plantId', 'Plant ID')}
+              ${this._renderFieldRow('logo', 'Logo')}
+              ${this._renderFieldRow('qr', 'QR code')}
+            </div>
+
+            <!-- QR target (only when qr is on) -->
+            ${this._fields.qr
+            ? x `
+                  <div class="qr-target-card">
+                    <div class="settings-section-title">QR code links to</div>
+                    <md3-select
+                      .value=${this._qrTarget}
+                      .options=${[
+                { label: 'Web (default)', value: 'web' },
+                { label: 'Deep link', value: 'deeplink' },
+            ]}
+                      @change=${(e) => {
+                this._qrTarget = e.detail;
+            }}
+                    ></md3-select>
+                    <div class="qr-url-hint">${qrValue}</div>
+                  </div>
+                `
+            : E}
+
+            <!-- Copies + density -->
+            <div class="settings-section">
+              <div class="settings-section-title">Copies &amp; density</div>
+              <div class="copies-density-row">
+                <div class="copies-stepper">
+                  <button
+                    @click=${() => {
+            if (this._copies > 1)
+                this._copies--;
+        }}
+                  >−</button>
+                  <span class="copies-value">${this._copies}</span>
+                  <button
+                    @click=${() => {
+            if (this._copies < 50)
+                this._copies++;
+        }}
+                  >+</button>
+                </div>
+                <div class="density-seg">
+                  ${['low', 'normal', 'high'].map((d) => x `
+                      <button
+                        class=${this._density === d ? 'active' : ''}
+                        @click=${() => {
+            this._density = d;
+        }}
+                      >
+                        ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
+                      </button>
+                    `)}
+                </div>
+              </div>
+            </div>
+
+            <!-- Size chips -->
+            <div class="settings-section">
+              <div class="settings-section-title">Print settings</div>
+              <div class="size-chips">
+                ${LABEL_SIZES$1.map((s) => x `
+                    <button
+                      class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
+                      @click=${() => {
+            this._sizeId = s.id;
+        }}
+                    >
+                      ${s.label}
+                    </button>
+                  `)}
+              </div>
+            </div>
+
+            <!-- Printer -->
+            <div class="settings-section">
+              <div class="settings-section-title">Printer</div>
+              <md3-select
+                label="Niimbot Printer"
+                .value=${this._selectedDeviceId || ''}
+                .options=${[
+            { label: 'Default / Auto', value: '' },
+            ...printers.map((p) => ({ label: p.name, value: p.id })),
+        ]}
+                @change=${(e) => {
+            this._selectedDeviceId = e.detail;
+        }}
+              ></md3-select>
+            </div>
+          </div>
+          </div>
+
+          <!-- Preview (second in DOM; CSS grid places it in col 1 on desktop) -->
+          <div class="preview-col">
+            <div class="preview-stage">
+              <label-preview
+                .sizeId=${this._sizeId}
+                .fields=${this._fields}
+                .values=${values}
+                .qrValue=${qrValue}
+                .density=${this._density}
+              ></label-preview>
+            </div>
+            <div class="preview-meta">${sizeLabel} · Thermal 203 dpi</div>
+            <printer-status-strip
+              .hass=${this.hass}
+              .selectedDeviceId=${this._selectedDeviceId}
+            ></printer-status-strip>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="dialog-footer">
+          ${this._renderFooterMeta()}
+          <div class="footer-actions">
+            <button class="md3-button tonal" @click=${this._close} ?disabled=${isPrinting}>
+              Cancel
+            </button>
+            <button
+              class="btn-print"
+              @click=${this._submit}
+              ?disabled=${isPrinting}
+            >
+              <ha-svg-icon .path=${mdiCheck}></ha-svg-icon>
+              ${isPrinting ? `Printing… ${this._printProgress}%` : 'Print Now'}
+            </button>
+          </div>
+        </div>
+      </gs-dialog>
+    `;
     }
 };
 PrintLabelDialog.styles = [
     dialogStyles,
     i$6 `
-      .preview-container {
-        background: rgba(var(--card-background-color, 255, 255, 255), 0.05);
-        border: 1px dashed var(--divider-color, rgba(255, 255, 255, 0.2));
-        border-radius: 12px;
+      .two-col {
+        display: grid;
+        grid-template-columns: 1fr 1.4fr;
+        gap: 20px;
+        min-height: 600px;
+      }
+
+      /* Left — preview stage (explicit column placement so DOM order can be settings-first) */
+      .preview-col {
+        grid-column: 1;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      /* Settings wrapper occupies right column on desktop */
+      .settings-wrapper {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      /* Pill toggle button — desktop: hidden, mobile: shown */
+      .mobile-pill-toggle {
+        display: none;
+      }
+      .preview-stage {
+        position: relative;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
         padding: 16px;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        margin-bottom: 24px;
-        min-height: 200px;
-        position: relative;
+        flex: 1;
       }
-      .preview-image {
-        max-width: 100%;
-        max-height: 200px;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        background: white;
+      .preview-stage label-preview {
+        width: 100%;
+        max-width: 300px;
       }
-      .preview-loading {
+      .preview-meta {
+        font-size: 0.78rem;
+        opacity: 0.55;
+        text-align: center;
+      }
+
+      /* Right — settings panel */
+      .settings-col {
+        overflow-y: auto;
         display: flex;
         flex-direction: column;
+        gap: 16px;
+        max-height: 525px;
+        padding-right: 4px;
+        padding-top: 12px;
+      }
+
+      /* Mobile: single column, pill collapsed above preview */
+      @media (max-width: 600px) {
+        .two-col {
+          display: flex;
+          flex-direction: column;
+          min-height: unset;
+          gap: 12px;
+        }
+
+        .preview-col {
+          grid-column: unset;
+          grid-row: unset;
+        }
+
+        .settings-wrapper {
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 12px;
+          overflow: hidden;
+          grid-row: unset;
+          grid-column: unset;
+        }
+
+        .mobile-pill-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 12px 16px;
+          background: none;
+          border: none;
+          color: var(--primary-text-color, #fff);
+          cursor: pointer;
+          font-size: 0.88rem;
+          font-weight: 500;
+        }
+        .mobile-pill-toggle.open {
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pill-chevron {
+          font-size: 1.1rem;
+          opacity: 0.5;
+          display: inline-block;
+          transform: rotate(90deg);
+          transition: transform 0.2s;
+        }
+        .pill-chevron.open {
+          transform: rotate(270deg);
+        }
+
+        .settings-col {
+          display: none;
+          max-height: none;
+          overflow-y: visible;
+          padding: 12px 16px;
+        }
+        .settings-col.mobile-open {
+          display: flex;
+        }
+      }
+
+      .settings-section {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .settings-section-title {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        opacity: 0.5;
+        margin-bottom: 4px;
+      }
+
+      /* Field toggle rows */
+      .field-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 8px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .field-toggle-row:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .field-toggle-row.locked {
+        cursor: default;
+        opacity: 0.5;
+      }
+      .field-toggle-label {
+        font-size: 0.88rem;
+      }
+      .toggle-dot {
+        width: 28px;
+        height: 16px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.15);
+        position: relative;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+      .toggle-dot.on {
+        background: var(--primary-color, #4caf50);
+      }
+      .toggle-dot::after {
+        content: '';
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: white;
+        top: 2px;
+        left: 2px;
+        transition: transform 0.2s;
+      }
+      .toggle-dot.on::after {
+        transform: translateX(12px);
+      }
+
+      /* QR target card */
+      .qr-target-card {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .qr-url-hint {
+        font-size: 0.72rem;
+        opacity: 0.4;
+        margin-top: 4px;
+        word-break: break-all;
+      }
+
+      /* Copies + density */
+      .copies-density-row {
+        display: flex;
         align-items: center;
         gap: 12px;
-        opacity: 0.6;
+        flex-wrap: wrap;
       }
-      .preview-error {
-        color: var(--error-color);
+      .copies-stepper {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+      }
+      .copies-stepper button {
+        background: rgba(255, 255, 255, 0.08);
+        border: none;
+        border-radius: 6px;
+        color: var(--primary-text-color, #fff);
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .copies-value {
+        min-width: 28px;
         text-align: center;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
       }
-      .refresh-btn {
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        --mdc-icon-size: 18px;
+      .density-seg {
+        display: flex;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .density-seg button {
+        background: transparent;
+        border: none;
+        color: var(--primary-text-color, #fff);
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
         opacity: 0.6;
-        transition: opacity 0.2s;
+        transition: background 0.15s, opacity 0.15s;
       }
-      .refresh-btn:hover {
+      .density-seg button.active {
+        background: rgba(255, 255, 255, 0.12);
         opacity: 1;
       }
-      .form-section h3 {
-        margin-top: 0;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        opacity: 0.6;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
+
+      /* Size chips */
+      .size-chips {
         display: flex;
-        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .size-chip {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        color: var(--primary-text-color, #fff);
+        transition: background 0.15s;
+      }
+      .size-chip.active {
+        background: var(--primary-color, #4caf50);
+        border-color: transparent;
+      }
+
+      /* Footer */
+      .dialog-footer {
+        display: flex;
         align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+      }
+      .footer-meta {
+        font-size: 0.82rem;
+        opacity: 0.6;
+        flex: 1;
+      }
+      .footer-meta.error {
+        color: var(--error-color, #f44336);
+        opacity: 1;
+      }
+      .footer-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-print {
+        background: #2196f3;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 18px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: opacity 0.15s;
+      }
+      .btn-print:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
     `,
 ];
@@ -31980,20 +35194,39 @@ __decorate([
 ], PrintLabelDialog.prototype, "_selectedDeviceId", void 0);
 __decorate([
     r$3()
-], PrintLabelDialog.prototype, "_isSubmitting", void 0);
+], PrintLabelDialog.prototype, "_fields", void 0);
 __decorate([
     r$3()
-], PrintLabelDialog.prototype, "_previewImage", void 0);
+], PrintLabelDialog.prototype, "_sizeId", void 0);
 __decorate([
     r$3()
-], PrintLabelDialog.prototype, "_previewLoading", void 0);
+], PrintLabelDialog.prototype, "_density", void 0);
 __decorate([
     r$3()
-], PrintLabelDialog.prototype, "_previewError", void 0);
+], PrintLabelDialog.prototype, "_qrTarget", void 0);
+__decorate([
+    r$3()
+], PrintLabelDialog.prototype, "_copies", void 0);
+__decorate([
+    r$3()
+], PrintLabelDialog.prototype, "_printState", void 0);
+__decorate([
+    r$3()
+], PrintLabelDialog.prototype, "_printProgress", void 0);
+__decorate([
+    r$3()
+], PrintLabelDialog.prototype, "_settingsOpen", void 0);
 PrintLabelDialog = __decorate([
     t$2('print-label-dialog')
 ], PrintLabelDialog);
 
+const LABEL_SIZES = [
+    { id: '50x30', label: '50×30' },
+    { id: '40x30', label: '40×30' },
+    { id: '50x50', label: '50×50' },
+    { id: '50x80', label: '50×80' },
+    { id: '50x15', label: '50×15' },
+];
 let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -32002,6 +35235,8 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         this._copies = 1;
         this._isSubmitting = false;
         this._progress = 0;
+        this._sizeId = '50x30';
+        this._density = 'normal';
     }
     willUpdate(changedProps) {
         if (changedProps.has('open') && this.open) {
@@ -32012,6 +35247,8 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         this._isSubmitting = false;
         this._progress = 0;
         this._copies = 1;
+        this._sizeId = '50x30';
+        this._density = 'normal';
         if (!this._selectedDeviceId) {
             const printers = this._getPrinters();
             if (printers.length > 0) {
@@ -32058,10 +35295,12 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
                     await this.store.actions.plant.printLabel({
                         plantId,
                         deviceId: this._selectedDeviceId || undefined,
+                        sizeId: this._sizeId,
+                        density: this._density,
                         preview: false,
                     });
                 }
-                catch (e) {
+                catch (_e) {
                     errors.push(plantId);
                 }
                 completed++;
@@ -32096,6 +35335,10 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         <div class="dialog-content-grid" style="display: block;">
           <div class="form-section">
             <h3>Printer Settings</h3>
+            <printer-status-strip
+              .hass=${this.hass}
+              .selectedDeviceId=${this._selectedDeviceId}
+            ></printer-status-strip>
             <md3-select
               label="Niimbot Printer"
               .value=${this._selectedDeviceId || ''}
@@ -32105,20 +35348,31 @@ let BatchPrintLabelDialog = class BatchPrintLabelDialog extends i$3 {
         }}
             ></md3-select>
 
-            ${printers.length === 0
-            ? x `
-                  <div
-                    style="margin-top: 12px; color: var(--warning-color); font-size: 0.85rem; display: flex; gap: 8px; align-items: center; opacity: 0.8;"
+            <div class="size-chips">
+              ${LABEL_SIZES.map((s) => x `
+                  <button
+                    class="size-chip ${this._sizeId === s.id ? 'active' : ''}"
+                    @click=${() => {
+            this._sizeId = s.id;
+        }}
                   >
-                    <ha-svg-icon
-                      .path=${mdiInformation}
-                      style="--mdc-icon-size: 16px;"
-                    ></ha-svg-icon>
-                    No Niimbot printers discovered. You can still try printing if you have a default
-                    printer configured.
-                  </div>
-                `
-            : E}
+                    ${s.label}
+                  </button>
+                `)}
+            </div>
+
+            <div class="density-seg">
+              ${['low', 'normal', 'high'].map((d) => x `
+                  <button
+                    class=${this._density === d ? 'active' : ''}
+                    @click=${() => {
+            this._density = d;
+        }}
+                  >
+                    ${d === 'low' ? 'Light' : d === 'normal' ? 'Normal' : 'Dark'}
+                  </button>
+                `)}
+            </div>
 
             <div class="copies-row">
               <label>Copies per plant</label>
@@ -32206,6 +35460,47 @@ BatchPrintLabelDialog.styles = [
         height: 100%;
         transition: width 0.3s ease;
       }
+      .size-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .size-chip {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        color: var(--primary-text-color, #fff);
+        transition: background 0.15s;
+      }
+      .size-chip.active {
+        background: var(--primary-color, #4caf50);
+        border-color: transparent;
+      }
+      .density-seg {
+        display: flex;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-top: 8px;
+      }
+      .density-seg button {
+        background: transparent;
+        border: none;
+        color: var(--primary-text-color, #fff);
+        padding: 4px 10px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        opacity: 0.6;
+        transition: background 0.15s, opacity 0.15s;
+      }
+      .density-seg button.active {
+        background: rgba(255, 255, 255, 0.12);
+        opacity: 1;
+      }
     `,
 ];
 __decorate([
@@ -32232,6 +35527,12 @@ __decorate([
 __decorate([
     r$3()
 ], BatchPrintLabelDialog.prototype, "_progress", void 0);
+__decorate([
+    r$3()
+], BatchPrintLabelDialog.prototype, "_sizeId", void 0);
+__decorate([
+    r$3()
+], BatchPrintLabelDialog.prototype, "_density", void 0);
 BatchPrintLabelDialog = __decorate([
     t$2('batch-print-label-dialog')
 ], BatchPrintLabelDialog);
@@ -32906,7 +36207,7 @@ SnapshotsDialog = __decorate([
  *     .toast       — transient message
  */
 // ─── Factory ──────────────────────────────────────────────────────────────────
-function createInitialSM$2() {
+function createInitialSM$3() {
     return {
         activeView: 'list',
         views: {
@@ -32921,7 +36222,7 @@ function createInitialSM$2() {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$2(sm, event) {
+function transition$3(sm, event) {
     switch (event.type) {
         case 'EDIT_REQUESTED':
             return {
@@ -33019,11 +36320,11 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         super(...arguments);
         this.strains = [];
         this.open = false;
-        this._sm = createInitialSM$2();
+        this._sm = createInitialSM$3();
     }
     willUpdate(changed) {
         if (changed.has('open') && !this.open) {
-            this._sm = createInitialSM$2();
+            this._sm = createInitialSM$3();
         }
     }
     _close() {
@@ -33104,7 +36405,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         ${breeders.map((b) => x `
             <div
               class="breeder-card"
-              @click=${() => (this._sm = transition$2(this._sm, {
+              @click=${() => (this._sm = transition$3(this._sm, {
             type: 'EDIT_REQUESTED',
             name: b.name,
             logo: b.logo,
@@ -33128,7 +36429,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                   class="action-btn"
                   @click=${(e) => {
             e.stopPropagation();
-            this._sm = transition$2(this._sm, {
+            this._sm = transition$3(this._sm, {
                 type: 'EDIT_REQUESTED',
                 name: b.name,
                 logo: b.logo,
@@ -33143,7 +36444,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                   class="action-btn"
                   @click=${(e) => {
             e.stopPropagation();
-            this._sm = transition$2(this._sm, { type: 'DELETE_REQUESTED', name: b.name });
+            this._sm = transition$3(this._sm, { type: 'DELETE_REQUESTED', name: b.name });
         }}
                   style="color:var(--error-color, #f44336);"
                 >
@@ -33168,14 +36469,14 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             const file = e.target.files?.[0];
             if (!file)
                 return;
-            this._sm = transition$2(this._sm, { type: 'LOGO_UPLOAD_STARTED' });
+            this._sm = transition$3(this._sm, { type: 'LOGO_UPLOAD_STARTED' });
             PlantUtils.compressImage(file)
                 .then((base64) => {
-                this._sm = transition$2(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64 });
+                this._sm = transition$3(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64 });
             })
                 .catch((err) => {
                 console.error('Error compressing logo:', err);
-                this._sm = transition$2(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: draft.logo });
+                this._sm = transition$3(this._sm, { type: 'LOGO_UPLOAD_RESOLVED', base64: draft.logo });
             });
         };
         return x `
@@ -33184,7 +36485,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => (this._sm = transition$2(this._sm, { type: 'BACK_TO_LIST' }))}
+            @click=${() => (this._sm = transition$3(this._sm, { type: 'BACK_TO_LIST' }))}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -33207,7 +36508,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             placeholder="e.g. Royal Queen Seeds"
             .value=${draft.name}
             @input=${(e) => {
-            this._sm = transition$2(this._sm, {
+            this._sm = transition$3(this._sm, {
                 type: 'FIELD_CHANGED',
                 field: 'name',
                 value: e.target.value,
@@ -33258,7 +36559,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                       class="md3-button text"
                       style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
                       @click=${() => {
-                this._sm = transition$2(this._sm, {
+                this._sm = transition$3(this._sm, {
                     type: 'FIELD_CHANGED',
                     field: 'logo',
                     value: '',
@@ -33299,7 +36600,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
           <button
             class="md3-button tonal"
-            @click=${() => (this._sm = transition$2(this._sm, { type: 'BACK_TO_LIST' }))}
+            @click=${() => (this._sm = transition$3(this._sm, { type: 'BACK_TO_LIST' }))}
           >
             Cancel
           </button>
@@ -33323,7 +36624,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
       <ha-dialog
         open
         @closed=${() => {
-            this._sm = transition$2(this._sm, { type: 'CANCEL_DELETE' });
+            this._sm = transition$3(this._sm, { type: 'CANCEL_DELETE' });
         }}
         hideActions
         without-header
@@ -33346,7 +36647,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             <button
               class="md3-button tonal"
               @click=${() => {
-            this._sm = transition$2(this._sm, { type: 'CANCEL_DELETE' });
+            this._sm = transition$3(this._sm, { type: 'CANCEL_DELETE' });
         }}
             >
               Cancel
@@ -33375,7 +36676,7 @@ let GsBreederManager = class GsBreederManager extends i$3 {
             return;
         const newName = draft.name.trim();
         const isEdit = draft.originalName !== null;
-        this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
+        this._sm = transition$3(this._sm, { type: 'SAVE_REQUESTED' });
         if (isEdit) {
             this.dispatchEvent(new CustomEvent('update-breeder', {
                 detail: { oldName: draft.originalName, newName, logo: draft.logo },
@@ -33386,16 +36687,16 @@ let GsBreederManager = class GsBreederManager extends i$3 {
                 detail: { name: newName, logo: draft.logo },
             }));
         }
-        this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
+        this._sm = transition$3(this._sm, { type: 'SAVE_RESOLVED' });
     }
     _confirmDelete() {
         const sub = this._sm.views.list.sub;
         if (sub.kind !== 'confirm-delete')
             return;
         const name = sub.name;
-        this._sm = transition$2(this._sm, { type: 'DELETE_CONFIRMED' });
+        this._sm = transition$3(this._sm, { type: 'DELETE_CONFIRMED' });
         this.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name } }));
-        this._sm = transition$2(this._sm, { type: 'DELETE_RESOLVED' });
+        this._sm = transition$3(this._sm, { type: 'DELETE_RESOLVED' });
     }
 };
 GsBreederManager.styles = [
@@ -33609,6 +36910,35 @@ GsFilterChips = GsFilterChips_1 = __decorate([
     t$2('gs-filter-chips')
 ], GsFilterChips);
 
+const STRAIN_ITEMS_PER_PAGE = 15;
+function applyLibraryFilter(strains, filter, activePlantCounts) {
+    if (filter === 'active')
+        return strains.filter((s) => (activePlantCounts[s.strain] ?? 0) > 0);
+    if (filter === 'library')
+        return strains.filter((s) => !s.is_stub);
+    return strains;
+}
+function filterAndSortStrains(strains, query, filter, activePlantCounts) {
+    const terms = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t.length > 0);
+    return applyLibraryFilter(strains, filter, activePlantCounts)
+        .filter((s) => {
+        if (terms.length === 0)
+            return true;
+        const text = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
+        return terms.every((term) => text.includes(term));
+    })
+        .sort((a, b) => a.strain.localeCompare(b.strain));
+}
+function paginateStrains(strains, page, itemsPerPage = STRAIN_ITEMS_PER_PAGE) {
+    const totalPages = Math.max(1, Math.ceil(strains.length / itemsPerPage));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * itemsPerPage;
+    return { paged: strains.slice(start, start + itemsPerPage), totalPages, currentPage };
+}
+
 let StrainBrowseView = class StrainBrowseView extends i$3 {
     constructor() {
         super(...arguments);
@@ -33619,26 +36949,12 @@ let StrainBrowseView = class StrainBrowseView extends i$3 {
         this._currentPage = 1;
         this._mobileMenuOpen = false;
         this._pendingDeleteKey = null;
-        this.ITEMS_PER_PAGE = 15;
     }
     render() {
         const query = (this._searchQuery || '').toLowerCase();
-        const terms = query.split(/\s+/).filter((t) => t.length > 0);
-        const filteredStrains = this._applyFilter(this.strains)
-            .filter((s) => {
-            if (terms.length === 0)
-                return true;
-            const text = `${s.strain} ${s.breeder || ''} ${s.phenotype || ''}`.toLowerCase();
-            return terms.every((term) => text.includes(term));
-        })
-            .sort((a, b) => a.strain.localeCompare(b.strain));
-        const totalPages = Math.ceil(filteredStrains.length / this.ITEMS_PER_PAGE);
-        if (this._currentPage > totalPages && totalPages > 0)
-            this._currentPage = totalPages;
-        if (this._currentPage < 1)
-            this._currentPage = 1;
-        const start = (this._currentPage - 1) * this.ITEMS_PER_PAGE;
-        const paged = filteredStrains.slice(start, start + this.ITEMS_PER_PAGE);
+        const filteredStrains = filterAndSortStrains(this.strains, query, this.libraryFilter, this.activePlantCounts);
+        const { paged, totalPages, currentPage } = paginateStrains(filteredStrains, this._currentPage);
+        this._currentPage = currentPage;
         return x `
       <div class="dialog-header">
         <div class="dialog-icon">
@@ -33981,15 +37297,6 @@ let StrainBrowseView = class StrainBrowseView extends i$3 {
         </div>
       </div>
     `;
-    }
-    _applyFilter(strains) {
-        if (this.libraryFilter === 'active') {
-            return strains.filter((s) => (this.activePlantCounts[s.strain] ?? 0) > 0);
-        }
-        if (this.libraryFilter === 'library') {
-            return strains.filter((s) => !s.is_stub);
-        }
-        return strains;
     }
     _confirmDelete() {
         if (this._pendingDeleteKey) {
@@ -34967,7 +38274,7 @@ function defaultViews() {
         harvest: { eventId: '', draft: defaultHarvestDraft(), sub: { kind: 'idle' } },
     };
 }
-function createInitialSM$1(seed) {
+function createInitialSM$2(seed) {
     const views = defaultViews();
     let activeView = 'list';
     if (seed?.initialView === 'log-pollination') {
@@ -35002,7 +38309,7 @@ function validateHarvestDraft(draft, eventId) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$1(sm, event) {
+function transition$2(sm, event) {
     switch (event.type) {
         // ── Navigation ──────────────────────────────────────────────────────────
         case 'BEGIN_ADD_BATCH':
@@ -35133,7 +38440,7 @@ function transition$1(sm, event) {
         case 'SAVE_RESOLVED': {
             if (sm.activeView === 'list')
                 return sm;
-            return transition$1(sm, { type: 'NAVIGATE_BACK' });
+            return transition$2(sm, { type: 'NAVIGATE_BACK' });
         }
         case 'SAVE_FAILED': {
             const view = sm.activeView;
@@ -35232,6 +38539,39 @@ function transition$1(sm, event) {
     }
 }
 
+const ELIGIBLE_STAGES = ['flower', 'veg'];
+function getFlowerVegPlants(devices) {
+    return devices.flatMap((device) => device.plants
+        .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
+        .map((p) => {
+        const stage = p.attributes.stage;
+        const stageDays = p.attributes[`${stage}_days`];
+        const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
+        const strain = p.attributes.strain ?? '';
+        const phenotype = p.attributes.phenotype;
+        const phenoStr = phenotype ? ` (${phenotype})` : '';
+        const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
+        return { plant_id: p.attributes.plant_id, label };
+    }));
+}
+function getPlantLabel(devices, plant_id) {
+    for (const device of devices) {
+        for (const p of device.plants) {
+            if (p.attributes.plant_id === plant_id) {
+                const strain = p.attributes.strain ?? '';
+                const phenotype = p.attributes.phenotype;
+                return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
+            }
+        }
+    }
+    // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
+    if (plant_id && plant_id.includes('||')) {
+        const [strain, phenotype] = plant_id.split('||', 2);
+        return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
+    }
+    return plant_id;
+}
+
 let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     constructor() {
         super(...arguments);
@@ -35239,16 +38579,16 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
         this.seedBatches = [];
         this.pollinationEvents = [];
         this.plants = [];
-        this._sm = createInitialSM$1();
+        this._sm = createInitialSM$2();
         this._submitAddBatch = async () => {
             const view = this._sm.views['add-batch'];
             const { draft, editingBatchId } = view;
             const error = validateBatchDraft(draft);
             if (error) {
-                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                this._sm = transition$2(this._sm, { type: 'SAVE_FAILED', message: error });
                 return;
             }
-            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
             const resolveKey = (key) => {
                 if (!key)
                     return { strain: null, phenotype: null };
@@ -35287,12 +38627,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                         notes: draft.notes,
                     });
                 }
-                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
                 this.onSeedDataChanged?.();
             }
             catch (e) {
                 console.error('Failed to save seed batch', e);
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SAVE_FAILED',
                     message: 'Failed to save. Please check your connection and try again.',
                 });
@@ -35303,10 +38643,10 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             const { draft, editingEventId } = view;
             const error = validatePollinationDraft(draft);
             if (error) {
-                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                this._sm = transition$2(this._sm, { type: 'SAVE_FAILED', message: error });
                 return;
             }
-            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
             try {
                 if (editingEventId) {
                     await this.onUpdatePollination?.({
@@ -35325,12 +38665,12 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                         notes: draft.notes,
                     });
                 }
-                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
                 this.onSeedDataChanged?.();
             }
             catch (e) {
                 console.error('Failed to log pollination', e);
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SAVE_FAILED',
                     message: 'Failed to save. Please check your connection and try again.',
                 });
@@ -35341,18 +38681,18 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             const { draft, eventId } = view;
             const error = validateHarvestDraft(draft, eventId);
             if (error) {
-                this._sm = transition$1(this._sm, { type: 'SAVE_FAILED', message: error });
+                this._sm = transition$2(this._sm, { type: 'SAVE_FAILED', message: error });
                 return;
             }
-            this._sm = transition$1(this._sm, { type: 'SAVE_REQUESTED' });
+            this._sm = transition$2(this._sm, { type: 'SAVE_REQUESTED' });
             try {
                 await this.onHarvestSeeds?.({ event_id: eventId, quantity: draft.quantity, notes: draft.notes });
-                this._sm = transition$1(this._sm, { type: 'SAVE_RESOLVED' });
+                this._sm = transition$2(this._sm, { type: 'SAVE_RESOLVED' });
                 this.onSeedDataChanged?.();
             }
             catch (e) {
                 console.error('Failed to harvest seeds', e);
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SAVE_FAILED',
                     message: 'Failed to save. Please check your connection and try again.',
                 });
@@ -35362,43 +38702,17 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
     connectedCallback() {
         super.connectedCallback();
         if (this.initialSubView === 'log-pollination') {
-            this._sm = createInitialSM$1({
+            this._sm = createInitialSM$2({
                 initialView: 'log-pollination',
                 prefilledReceiverId: this.prefilledReceiverId,
             });
         }
     }
     get _flowerVegPlants() {
-        const ELIGIBLE_STAGES = ['flower', 'veg'];
-        return this.plants.flatMap((device) => device.plants
-            .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
-            .map((p) => {
-            const stage = p.attributes.stage;
-            const stageDays = p.attributes[`${stage}_days`];
-            const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
-            const strain = p.attributes.strain ?? '';
-            const phenotype = p.attributes.phenotype;
-            const phenoStr = phenotype ? ` (${phenotype})` : '';
-            const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
-            return { plant_id: p.attributes.plant_id, label };
-        }));
+        return getFlowerVegPlants(this.plants);
     }
     _getPlantLabel(plant_id) {
-        for (const device of this.plants) {
-            for (const p of device.plants) {
-                if (p.attributes.plant_id === plant_id) {
-                    const strain = p.attributes.strain ?? '';
-                    const phenotype = p.attributes.phenotype;
-                    return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
-                }
-            }
-        }
-        // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
-        if (plant_id && plant_id.includes('||')) {
-            const [strain, phenotype] = plant_id.split('||', 2);
-            return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
-        }
-        return plant_id;
+        return getPlantLabel(this.plants, plant_id);
     }
     render() {
         const { activeView } = this._sm;
@@ -35441,7 +38755,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button filled"
               @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'BEGIN_ADD_BATCH' });
+            this._sm = transition$2(this._sm, { type: 'BEGIN_ADD_BATCH' });
         }}
             >
               Add batch
@@ -35456,7 +38770,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             <button
               class="md3-button tonal"
               @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
+            this._sm = transition$2(this._sm, { type: 'BEGIN_LOG_POLLINATION' });
         }}
             >
               Log pollination
@@ -35494,7 +38808,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     : '',
                 notes: b.notes ?? '',
             };
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'BEGIN_EDIT_BATCH',
                 batchId: b.batch_id,
                 draft,
@@ -35542,10 +38856,10 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             style="font-size:12px;"
             @click=${() => {
             if (isSowOpen) {
-                this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'SOW_CANCELLED' });
             }
             else {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SOW_OPENED',
                     batchId: b.batch_id,
                     defaultGrowspaceId: this.plants[0]?.deviceId ?? '',
@@ -35563,7 +38877,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   title="Confirm delete"
                   @click=${async () => {
                 await this.onDeleteSeedBatch?.(b.batch_id);
-                this._sm = transition$1(this._sm, { type: 'DELETE_CONFIRMED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CONFIRMED' });
                 this.onSeedDataChanged?.();
             }}
                 >
@@ -35575,7 +38889,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="icon-btn"
                   title="Cancel"
                   @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'DELETE_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CANCELLED' });
             }}
                 >
                   <svg viewBox="0 0 24 24" width="16" height="16">
@@ -35588,7 +38902,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="icon-btn danger"
                   title="Delete batch"
                   @click=${() => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'DELETE_BATCH_REQUESTED',
                     batchId: b.batch_id,
                 });
@@ -35607,7 +38921,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="sow-select"
                   .value=${listSub.growspaceId}
                   @change=${(e) => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SOW_FIELD_CHANGED',
                     partial: { growspaceId: e.target.value },
                 });
@@ -35626,7 +38940,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   max=${b.quantity}
                   .value=${String(listSub.quantity)}
                   @input=${(e) => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'SOW_FIELD_CHANGED',
                     partial: { quantity: Number(e.target.value) },
                 });
@@ -35640,7 +38954,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   @click=${async () => {
                 if (!listSub.growspaceId || listSub.kind !== 'sow')
                     return;
-                this._sm = transition$1(this._sm, { type: 'SOW_APPLY_REQUESTED' });
+                this._sm = transition$2(this._sm, { type: 'SOW_APPLY_REQUESTED' });
                 try {
                     await this.onSowSeeds?.({
                         growspace_id: listSub.growspaceId,
@@ -35649,11 +38963,11 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                         seed_batch_id: b.batch_id,
                         generation: b.generation,
                     });
-                    this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                    this._sm = transition$2(this._sm, { type: 'SOW_CANCELLED' });
                     this.onSeedDataChanged?.();
                 }
                 catch {
-                    this._sm = transition$1(this._sm, { type: 'SOW_APPLY_FAILED' });
+                    this._sm = transition$2(this._sm, { type: 'SOW_APPLY_FAILED' });
                 }
             }}
                 >
@@ -35663,7 +38977,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                   class="md3-button text"
                   style="font-size:12px;"
                   @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'SOW_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'SOW_CANCELLED' });
             }}
                 >
                   Cancel
@@ -35692,7 +39006,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                 notes: e.notes ?? '',
                 donorActivePlantsOnly: !e.donor_plant_id.includes('||'),
             };
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'BEGIN_EDIT_POLLINATION',
                 eventId: e.event_id,
                 draft,
@@ -35711,7 +39025,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     title="Confirm delete"
                     @click=${async () => {
                 await this.onDeletePollination?.(e.event_id);
-                this._sm = transition$1(this._sm, { type: 'DELETE_CONFIRMED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CONFIRMED' });
                 this.onSeedDataChanged?.();
             }}
                   >
@@ -35723,7 +39037,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     class="icon-btn"
                     title="Cancel"
                     @click=${() => {
-                this._sm = transition$1(this._sm, { type: 'DELETE_CANCELLED' });
+                this._sm = transition$2(this._sm, { type: 'DELETE_CANCELLED' });
             }}
                   >
                     <svg viewBox="0 0 24 24" width="16" height="16">
@@ -35736,7 +39050,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
                     class="icon-btn danger"
                     title="Delete"
                     @click=${() => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'DELETE_POLLINATION_REQUESTED',
                     eventId: e.event_id,
                 });
@@ -35762,7 +39076,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
               <button
                 class="md3-button tonal"
                 @click=${() => {
-                this._sm = transition$1(this._sm, {
+                this._sm = transition$2(this._sm, {
                     type: 'BEGIN_HARVEST',
                     eventId: e.event_id,
                 });
@@ -35797,7 +39111,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -35810,7 +39124,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.strainName}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { strainName: e.target.value },
             });
@@ -35824,7 +39138,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             list="batch-breeder-suggestions"
             .value=${draft.breeder}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { breeder: e.target.value },
             });
@@ -35838,7 +39152,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             min="1"
             .value=${String(draft.quantity)}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { quantity: parseInt(e.target.value) || 1 },
             });
@@ -35851,7 +39165,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="date"
             .value=${draft.acquisitionDate}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { acquisitionDate: e.target.value },
             });
@@ -35865,7 +39179,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             placeholder="F1, S1, BX1…"
             .value=${draft.generation}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { generation: e.target.value },
             });
@@ -35876,7 +39190,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Parent 1
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { parent1Key: e.target.value },
             });
@@ -35892,7 +39206,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Parent 2
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { parent2Key: e.target.value },
             });
@@ -35910,7 +39224,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.notes}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_BATCH_DRAFT',
                 partial: { notes: e.target.value },
             });
@@ -35922,7 +39236,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
@@ -35958,7 +39272,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -35971,7 +39285,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="date"
             .value=${draft.date}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { date: e.target.value },
             });
@@ -35982,7 +39296,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Donor plant (male / pollen donor)
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { donorPlantId: e.target.value },
             });
@@ -36004,7 +39318,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="checkbox"
             .checked=${draft.donorActivePlantsOnly}
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: {
                     donorActivePlantsOnly: e.target.checked,
@@ -36019,7 +39333,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           >Receiver plant (female / seed bearer)
           <select
             @change=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { receiverPlantId: e.target.value },
             });
@@ -36039,7 +39353,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.notes}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_POLLINATION_DRAFT',
                 partial: { notes: e.target.value },
             });
@@ -36051,7 +39365,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
@@ -36076,7 +39390,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             ← Back
@@ -36090,7 +39404,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             min="1"
             .value=${String(draft.quantity)}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_HARVEST_DRAFT',
                 partial: { quantity: parseInt(e.target.value) || 1 },
             });
@@ -36103,7 +39417,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
             type="text"
             .value=${draft.notes}
             @input=${(e) => {
-            this._sm = transition$1(this._sm, {
+            this._sm = transition$2(this._sm, {
                 type: 'UPDATE_HARVEST_DRAFT',
                 partial: { notes: e.target.value },
             });
@@ -36115,7 +39429,7 @@ let SeedsGeneticsTab = class SeedsGeneticsTab extends i$3 {
           <button
             class="md3-button tonal"
             @click=${() => {
-            this._sm = transition$1(this._sm, { type: 'NAVIGATE_BACK' });
+            this._sm = transition$2(this._sm, { type: 'NAVIGATE_BACK' });
         }}
           >
             Cancel
@@ -37007,7 +40321,7 @@ LineageTreeEditor = __decorate([
  *     .sub       — mutually-exclusive overlay state
  */
 // ─── Factory ──────────────────────────────────────────────────────────────────
-function createInitialSM(draft = {}) {
+function createInitialSM$1(draft = {}) {
     return {
         draft,
         history: [],
@@ -37017,7 +40331,7 @@ function createInitialSM(draft = {}) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition(sm, event) {
+function transition$1(sm, event) {
     switch (event.type) {
         case 'DraftFieldChanged':
             return { ...sm, draft: { ...sm.draft, [event.field]: event.value } };
@@ -37100,7 +40414,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     constructor() {
         super(...arguments);
         this.strains = [];
-        this._sm = createInitialSM();
+        this._sm = createInitialSM$1();
         this._lineageTree = null;
     }
     _dispatchStateChange() {
@@ -37137,7 +40451,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 // Preserve overlay sub-state across strain switches, but reset lineage-editing
                 // since lineage tree is strain-specific.
                 const sub = this._sm.sub.kind === 'lineage-editing' ? { kind: 'idle' } : this._sm.sub;
-                this._sm = { ...createInitialSM(draft), sub };
+                this._sm = { ...createInitialSM$1(draft), sub };
                 this._lineageTree = null;
                 this._dispatchStateChange();
             }
@@ -37151,13 +40465,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         }));
     }
     _navigateToAncestor(match) {
-        this._sm = transition(this._sm, { type: 'NavigateToRelated', strain: { ...match } });
+        this._sm = transition$1(this._sm, { type: 'NavigateToRelated', strain: { ...match } });
         this._lineageTree = null;
         this._dispatchStateChange();
     }
     _goBack() {
         if (this._sm.history.length > 0) {
-            this._sm = transition(this._sm, { type: 'NavigateBack' });
+            this._sm = transition$1(this._sm, { type: 'NavigateBack' });
             this._lineageTree = null;
             this._dispatchStateChange();
         }
@@ -37168,7 +40482,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     async _handleSave() {
         if (!this._sm.draft.strain)
             return;
-        this._sm = transition(this._sm, { type: 'SaveRequested' });
+        this._sm = transition$1(this._sm, { type: 'SaveRequested' });
         try {
             const images = this._sm.draft.images ?? [];
             const hasRemote = images.some((img) => img.path.startsWith('http'));
@@ -37188,13 +40502,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                         image_crop_meta: promoted[0].crop_meta,
                     };
                 }
-                this._sm = transition(this._sm, {
+                this._sm = transition$1(this._sm, {
                     type: 'DraftFieldChanged',
                     field: 'images',
                     value: updatedDraft.images,
                 });
                 if (updatedDraft.image !== this._sm.draft.image) {
-                    this._sm = transition(this._sm, {
+                    this._sm = transition$1(this._sm, {
                         type: 'DraftFieldChanged',
                         field: 'image',
                         value: updatedDraft.image,
@@ -37215,12 +40529,12 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                     composed: true,
                 }));
             }
-            this._sm = transition(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$1(this._sm, { type: 'SaveResolved' });
             this.dispatchEvent(new CustomEvent('editor-back', { bubbles: true, composed: true }));
         }
         catch (err) {
             const message = err instanceof Error ? err.message : 'Save failed';
-            this._sm = transition(this._sm, { type: 'SaveFailed', message });
+            this._sm = transition$1(this._sm, { type: 'SaveFailed', message });
         }
     }
     async _downloadRemoteImages(images) {
@@ -37272,20 +40586,20 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         if (field === 'image_crop_meta' && newDraft.images?.length) {
             newDraft.images = newDraft.images.map((img) => img.is_thumbnail ? { ...img, crop_meta: value } : img);
         }
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: field,
             value: newDraft[field],
         });
         if (field === 'breeder' && newDraft.breeder_logo !== this._sm.draft.breeder_logo) {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'DraftFieldChanged',
                 field: 'breeder_logo',
                 value: newDraft.breeder_logo,
             });
         }
         if (field === 'image_crop_meta' && newDraft.images) {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'DraftFieldChanged',
                 field: 'images',
                 value: newDraft.images,
@@ -37310,7 +40624,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         }));
     }
     _toggleCropMode(active) {
-        this._sm = transition(this._sm, { type: active ? 'CropRequested' : 'CropExited' });
+        this._sm = transition$1(this._sm, { type: active ? 'CropRequested' : 'CropExited' });
     }
     getCropStyle(path, meta) {
         const safeUrl = PlantUtils.encodeLocalPath(path);
@@ -37328,7 +40642,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             const file = e.target.files?.[0];
             if (file) {
                 this.dispatchEvent(new CustomEvent('import-library', { detail: { file, replace } }));
-                this._sm = transition(this._sm, { type: 'ImportCompleted' });
+                this._sm = transition$1(this._sm, { type: 'ImportCompleted' });
             }
         };
         input.click();
@@ -37359,14 +40673,14 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     }
     _startBreederEdit(name, logo) {
         if (name) {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'BreederEditRequested',
                 name,
                 logo: logo ?? '',
             });
         }
         else {
-            this._sm = transition(this._sm, { type: 'BreederAddRequested' });
+            this._sm = transition$1(this._sm, { type: 'BreederAddRequested' });
         }
     }
     _handleSaveBreeder() {
@@ -37385,19 +40699,19 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         else {
             this.dispatchEvent(new CustomEvent('save-breeder', { detail: { name: newName, logo: draft.logo } }));
         }
-        this._sm = transition(this._sm, { type: 'BreederSaved' });
+        this._sm = transition$1(this._sm, { type: 'BreederSaved' });
     }
     _handleDeleteBreeder(breederName) {
-        this._sm = transition(this._sm, { type: 'BreederDeleteRequested', name: breederName });
+        this._sm = transition$1(this._sm, { type: 'BreederDeleteRequested', name: breederName });
     }
     _confirmDeleteBreeder() {
         if (this._sm.sub.kind !== 'breeder-confirm-delete')
             return;
         this.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name: this._sm.sub.name } }));
-        this._sm = transition(this._sm, { type: 'BreederDeleteConfirmed' });
+        this._sm = transition$1(this._sm, { type: 'BreederDeleteConfirmed' });
     }
     _cancelDeleteBreeder() {
-        this._sm = transition(this._sm, { type: 'BreederDeleteCancelled' });
+        this._sm = transition$1(this._sm, { type: 'BreederDeleteCancelled' });
     }
     _handleSeedfinderImport(e) {
         const data = e.detail;
@@ -37415,14 +40729,14 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         // Apply merged fields individually via DraftFieldChanged
         for (const [key, value] of Object.entries(merged)) {
             if (merged[key] !== this._sm.draft[key]) {
-                this._sm = transition(this._sm, {
+                this._sm = transition$1(this._sm, {
                     type: 'DraftFieldChanged',
                     field: key,
                     value,
                 });
             }
         }
-        this._sm = transition(this._sm, { type: 'SeedfinderClosed' });
+        this._sm = transition$1(this._sm, { type: 'SeedfinderClosed' });
         this._dispatchStateChange();
         this.requestUpdate();
     }
@@ -37430,7 +40744,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         return this._sm.draft.images ?? [];
     }
     async _handleGalleryUpload(file) {
-        this._sm = transition(this._sm, { type: 'SaveRequested' });
+        this._sm = transition$1(this._sm, { type: 'SaveRequested' });
         try {
             const base64 = await PlantUtils.compressImage(file);
             const strain = this._sm.draft.strain ?? 'unknown';
@@ -37445,13 +40759,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 ...this._gallery(),
                 { path: response.path, is_thumbnail: this._gallery().length === 0 },
             ];
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'DraftFieldChanged',
                 field: 'images',
                 value: gallery,
             });
             if (gallery.length === 1) {
-                this._sm = transition(this._sm, {
+                this._sm = transition$1(this._sm, {
                     type: 'DraftFieldChanged',
                     field: 'image',
                     value: response.path,
@@ -37463,15 +40777,15 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             console.error('Gallery upload failed:', err);
         }
         finally {
-            this._sm = transition(this._sm, { type: 'SaveResolved' });
+            this._sm = transition$1(this._sm, { type: 'SaveResolved' });
         }
     }
     _handleSetThumbnail(index) {
         const gallery = this._gallery().map((img, i) => ({ ...img, is_thumbnail: i === index }));
         const thumb = gallery[index];
-        this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
-        this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'image', value: thumb.path });
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
+        this._sm = transition$1(this._sm, { type: 'DraftFieldChanged', field: 'image', value: thumb.path });
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: 'image_crop_meta',
             value: thumb.crop_meta,
@@ -37486,13 +40800,13 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             gallery[0] = { ...gallery[0], is_thumbnail: true };
         }
         const thumb = gallery.find((img) => img.is_thumbnail);
-        this._sm = transition(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, { type: 'DraftFieldChanged', field: 'images', value: gallery });
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: 'image',
             value: thumb?.path ?? '',
         });
-        this._sm = transition(this._sm, {
+        this._sm = transition$1(this._sm, {
             type: 'DraftFieldChanged',
             field: 'image_crop_meta',
             value: thumb?.crop_meta,
@@ -37570,7 +40884,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                 <button
                   class="md3-button text"
                   style="height:24px; padding:0 8px; font-size:0.75rem; color:var(--accent-green); min-width:auto;"
-                  @click=${() => { this._sm = transition(this._sm, { type: 'SeedfinderOpened' }); }}
+                  @click=${() => { this._sm = transition$1(this._sm, { type: 'SeedfinderOpened' }); }}
                 >
                   <svg
                     style="width:14px;height:14px;fill:currentColor; margin-right:4px;"
@@ -37828,7 +41142,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                     type="button"
                     @click=${async () => {
             const entering = this._sm.sub.kind !== 'lineage-editing';
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: entering ? 'LineageEditRequested' : 'LineageEditExited',
             });
             if (entering && s.strain) {
@@ -38060,7 +41374,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             if (file)
                 this._handleGalleryUpload(file);
             e.target.value = '';
-            this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
+            this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
         };
         const handleDrop = (e) => {
             e.preventDefault();
@@ -38148,7 +41462,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             ?disabled=${this._sm.status.kind === 'applying'}
             @click=${() => {
             if (this._sm.status.kind !== 'applying') {
-                this._sm = transition(this._sm, { type: 'PhotoMenuToggled' });
+                this._sm = transition$1(this._sm, { type: 'PhotoMenuToggled' });
             }
         }}
           >
@@ -38195,7 +41509,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             ? x `
               <div
                 style="position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.5);"
-                @click=${() => { this._sm = transition(this._sm, { type: 'PhotoMenuClosed' }); }}
+                @click=${() => { this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' }); }}
               ></div>
               <div
                 style="position:fixed; bottom:0; left:0; right:0; z-index:501; background:var(--card-background-color, #1e1e1e); border-radius:16px 16px 0 0; padding:16px 16px 32px; display:flex; flex-direction:column; gap:8px;"
@@ -38207,7 +41521,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
                   @click=${(e) => {
                 e.stopPropagation();
-                this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
+                this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
                 this.shadowRoot?.getElementById('gallery-camera-input')?.click();
             }}
                 >
@@ -38223,7 +41537,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   style="display:flex; align-items:center; gap:16px; padding:16px; border-radius:12px; border:none; background:rgba(255,255,255,0.05); color:var(--primary-text-color,#fff); font-size:1rem; font-family:inherit; cursor:pointer; text-align:left;"
                   @click=${(e) => {
                 e.stopPropagation();
-                this._sm = transition(this._sm, { type: 'PhotoMenuClosed' });
+                this._sm = transition$1(this._sm, { type: 'PhotoMenuClosed' });
                 this.shadowRoot?.getElementById('gallery-library-input')?.click();
             }}
                 >
@@ -38242,7 +41556,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     `;
     }
     renderImportDialog() {
-        const close = () => { this._sm = transition(this._sm, { type: 'ImportCancelled' }); };
+        const close = () => { this._sm = transition$1(this._sm, { type: 'ImportCancelled' }); };
         return x `
       <ha-dialog
         open
@@ -38289,7 +41603,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   name="import_mode"
                   .checked=${this._sm.sub.kind === 'importing' && !this._sm.sub.replace}
                   @change=${() => { if (this._sm.sub.kind === 'importing' && this._sm.sub.replace)
-            this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
+            this._sm = transition$1(this._sm, { type: 'ImportReplaceToggled' }); }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -38308,7 +41622,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                   name="import_mode"
                   .checked=${this._sm.sub.kind === 'importing' && this._sm.sub.replace}
                   @change=${() => { if (this._sm.sub.kind === 'importing' && !this._sm.sub.replace)
-            this._sm = transition(this._sm, { type: 'ImportReplaceToggled' }); }}
+            this._sm = transition$1(this._sm, { type: 'ImportReplaceToggled' }); }}
                   style="accent-color: var(--accent-green); transform: scale(1.2);"
                 />
                 <div>
@@ -38336,7 +41650,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
     }
     renderBreederDialog() {
         const breeders = this._getUniqueBreeders();
-        const close = () => { this._sm = transition(this._sm, { type: 'BreederDialogClosed' }); };
+        const close = () => { this._sm = transition$1(this._sm, { type: 'BreederDialogClosed' }); };
         return x `
       <ha-dialog
         open
@@ -38465,7 +41779,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             if (file) {
                 PlantUtils.compressImage(file)
                     .then((base64) => {
-                    this._sm = transition(this._sm, {
+                    this._sm = transition$1(this._sm, {
                         type: 'BreederEditFieldChanged',
                         field: 'logo',
                         value: base64,
@@ -38480,7 +41794,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
           <button
             class="md3-button tonal"
             style="padding:0 12px; height:32px;"
-            @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}
+            @click=${() => { this._sm = transition$1(this._sm, { type: 'BreederSaved' }); }}
           >
             <svg
               style="width:18px;height:18px;fill:currentColor;margin-right:4px;"
@@ -38503,7 +41817,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             placeholder="e.g. Royal Queen Seeds"
             .value=${state.name}
             @input=${(e) => {
-            this._sm = transition(this._sm, {
+            this._sm = transition$1(this._sm, {
                 type: 'BreederEditFieldChanged',
                 field: 'name',
                 value: e.target.value,
@@ -38553,7 +41867,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
                       class="md3-button text"
                       style="height:36px; padding:0 12px; color:var(--error-color, #ff5252);"
                       @click=${() => {
-                this._sm = transition(this._sm, { type: 'BreederEditFieldChanged', field: 'logo', value: '' });
+                this._sm = transition$1(this._sm, { type: 'BreederEditFieldChanged', field: 'logo', value: '' });
             }}
                     >
                       <svg style="width:16px;height:16px;fill:currentColor;" viewBox="0 0 24 24">
@@ -38588,7 +41902,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
             : E}
 
         <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:8px;">
-          <button class="md3-button tonal" @click=${() => { this._sm = transition(this._sm, { type: 'BreederSaved' }); }}>
+          <button class="md3-button tonal" @click=${() => { this._sm = transition$1(this._sm, { type: 'BreederSaved' }); }}>
             Cancel
           </button>
           <button
@@ -38656,7 +41970,7 @@ let StrainEditorView = class StrainEditorView extends i$3 {
         .open=${this._sm.sub.kind === 'seedfinder'}
         .initialStrain=${this._sm.draft.strain}
         .initialPheno=${this._sm.draft.phenotype}
-        @close=${() => { this._sm = transition(this._sm, { type: 'SeedfinderClosed' }); }}
+        @close=${() => { this._sm = transition$1(this._sm, { type: 'SeedfinderClosed' }); }}
         @import=${this._handleSeedfinderImport}
       ></strain-import-dialog>
     `;
@@ -40021,11 +43335,6 @@ let GeneticsTreeView = class GeneticsTreeView extends i$3 {
               </select>
             `
             : E}
-
-        <button class="pill-btn" @click=${() => this._fitToScreen()} title="Fit to screen">
-          <svg viewBox="0 0 24 24"><path d="${mdiFitToPageOutline}" /></svg>
-          Fit
-        </button>
 
         <div class="toolbar-spacer"></div>
         <div class="count-chip">
@@ -43694,317 +47003,1639 @@ GrowspaceIPMDialogUI = __decorate([
     t$2('growspace-ipm-dialog-ui')
 ], GrowspaceIPMDialogUI);
 
-let GrowspaceWateringDialogUI = class GrowspaceWateringDialogUI extends i$3 {
+// ─── Type-color map ───────────────────────────────────────────────────────────
+const TYPE_COLOR = {
+    base: 'var(--primary-color, #4caf50)',
+    bloom: '#e91e63',
+    calmag: '#ff9800',
+    root: '#795548',
+    additive: '#9c27b0',
+    microbe: '#00bcd4',
+};
+const TYPE_ICON = {
+    base: mdiFlask,
+    bloom: mdiLeaf,
+    calmag: mdiMoleculeCo2,
+    root: mdiSprout,
+    additive: mdiTestTube,
+    microbe: mdiBug,
+};
+function stockColor(type) {
+    return TYPE_COLOR[type] ?? 'var(--primary-color, #4caf50)';
+}
+function stockIcon(type) {
+    return TYPE_ICON[type] ?? mdiBottleTonicPlus;
+}
+function fillPercent(stock) {
+    if (stock.initial_ml === 0)
+        return 0;
+    return Math.max(0, Math.min(100, (stock.current_ml / stock.initial_ml) * 100));
+}
+function fillClass(pct) {
+    if (pct <= 10)
+        return 'danger';
+    if (pct <= 25)
+        return 'warning';
+    return '';
+}
+function draftFromStock(stock) {
+    return {
+        name: stock.name,
+        current_ml: stock.current_ml,
+        initial_ml: stock.initial_ml,
+        brand: stock.brand ?? '',
+        stockType: stock.type ?? 'base',
+        npk: stock.npk ?? '',
+        dose_ml_l: stock.dose_ml_l ?? 0,
+        notes: stock.notes ?? '',
+    };
+}
+// ─── Component ────────────────────────────────────────────────────────────────
+let GrowspaceNutrientInventoryDialogUI = class GrowspaceNutrientInventoryDialogUI extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.inventory = null;
+        this.selectedId = null;
+        this.sub = { kind: 'idle' };
+    }
+    _dispatch(event) {
+        this.dispatchEvent(new CustomEvent('sm-event', { detail: event, bubbles: true, composed: true }));
+    }
+    render() {
+        const { sub, selectedId } = this;
+        if (sub.kind === 'editing' || sub.kind === 'applying') {
+            return this._renderEditForm(sub);
+        }
+        if (sub.kind === 'confirm-delete') {
+            return this._renderConfirmDelete(sub.id, sub.name);
+        }
+        if (sub.kind === 'error') {
+            return this._renderError(sub);
+        }
+        if (selectedId !== null) {
+            const stock = this.inventory?.stocks[selectedId] ?? null;
+            return stock ? this._renderDetail(stock) : E;
+        }
+        return this._renderList();
+    }
+    // ─── Master list ────────────────────────────────────────────────────────────
+    _renderList() {
+        const stocks = this.inventory ? Object.values(this.inventory.stocks) : [];
+        return x `
+      <button
+        class="add-btn"
+        data-action="add"
+        @click=${() => this._dispatch({ type: 'NewItemRequested' })}
+      >
+        <ha-svg-icon .path=${mdiPlus} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        Add Nutrient
+      </button>
+
+      ${stocks.length === 0
+            ? x `<div class="empty-state">No nutrient stock items tracked.</div>`
+            : x `
+            <div class="list">
+              ${stocks.map((s) => this._renderListItem(s))}
+            </div>
+          `}
+    `;
+    }
+    _renderListItem(stock) {
+        const pct = fillPercent(stock);
+        const color = stockColor(stock.type);
+        const icon = stockIcon(stock.type);
+        return x `
+      <div
+        class="list-item"
+        data-stock-id=${stock.nutrient_id}
+        @click=${() => this._dispatch({ type: 'ItemSelected', id: stock.nutrient_id })}
+      >
+        <div class="type-icon" style="background:${color}22;color:${color}">
+          <ha-svg-icon .path=${icon} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+        </div>
+        <div class="item-body">
+          <div class="item-name">${stock.name}</div>
+          <div class="item-meta">${stock.current_ml.toFixed(0)} / ${stock.initial_ml.toFixed(0)} ml</div>
+          <div class="fill-bar-wrap">
+            <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Detail view ────────────────────────────────────────────────────────────
+    _renderDetail(stock) {
+        const pct = fillPercent(stock);
+        const color = stockColor(stock.type);
+        return x `
+      <div class="detail-header">
+        <button
+          class="back-btn"
+          data-action="back"
+          @click=${() => this._dispatch({ type: 'BackToList' })}
+        >
+          <ha-svg-icon .path=${mdiArrowLeft} style="width:20px;height:20px;fill:currentColor"></ha-svg-icon>
+        </button>
+        <h3 class="detail-title">${stock.name}</h3>
+        <div class="detail-actions">
+          <button
+            class="icon-btn"
+            data-action="edit"
+            @click=${() => this._dispatch({ type: 'EditStarted', draft: draftFromStock(stock) })}
+          >
+            <ha-svg-icon .path=${mdiPencil} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+          </button>
+          <button
+            class="icon-btn danger"
+            data-action="delete"
+            @click=${() => this._dispatch({ type: 'DeleteRequested', id: stock.nutrient_id, name: stock.name })}
+          >
+            <ha-svg-icon .path=${mdiDelete} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <p class="detail-section-title">Container</p>
+        <div class="detail-row">
+          <span class="detail-label">Current</span>
+          <span>${stock.current_ml.toFixed(0)} ml</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Capacity</span>
+          <span>${stock.initial_ml.toFixed(0)} ml</span>
+        </div>
+        <div class="detail-fill-bar-wrap" data-fill-bar>
+          <div class="fill-bar ${fillClass(pct)}" style="width:${pct}%;background:${color}"></div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <p class="detail-section-title">Identity</p>
+        <div class="detail-row">
+          <span class="detail-label">Brand</span>
+          <span>${stock.brand || '—'}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Type</span>
+          <span style="color:${color}">${stock.type}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">NPK</span>
+          <span>${stock.npk || '—'}</span>
+        </div>
+      </div>
+
+      ${stock.dose_ml_l > 0
+            ? x `
+            <div class="detail-section">
+              <p class="detail-section-title">Composition</p>
+              <div class="detail-row">
+                <span class="detail-label">Default dose</span>
+                <span>${stock.dose_ml_l} ml/L</span>
+              </div>
+            </div>
+          `
+            : E}
+
+      ${stock.notes
+            ? x `
+            <div class="detail-section">
+              <p class="detail-section-title">Notes</p>
+              <p style="margin:0;font-size:0.875rem">${stock.notes}</p>
+            </div>
+          `
+            : E}
+    `;
+    }
+    // ─── Edit form ──────────────────────────────────────────────────────────────
+    _renderEditForm(sub) {
+        const { draft } = sub;
+        const applying = sub.kind === 'applying';
+        return x `
+      <div class="form" data-form="stock">
+        <div>
+          <label class="form-label">Name *</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.name}
+            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'name', value: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <label class="form-label">Brand</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.brand}
+            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'brand', value: e.target.value })}
+          />
+        </div>
+
+        <div>
+          <label class="form-label">Type</label>
+          <select
+            class="form-select"
+            .value=${draft.stockType}
+            @change=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'stockType', value: e.target.value })}
+          >
+            <option value="base">Base</option>
+            <option value="bloom">Bloom</option>
+            <option value="calmag">Cal-Mag</option>
+            <option value="root">Root</option>
+            <option value="additive">Additive</option>
+            <option value="microbe">Microbe</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">Current (ml)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              .value=${String(draft.current_ml)}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'current_ml', value: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+          <div>
+            <label class="form-label">Capacity (ml)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              .value=${String(draft.initial_ml)}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'initial_ml', value: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div>
+            <label class="form-label">NPK</label>
+            <input
+              class="form-input"
+              type="text"
+              .value=${draft.npk}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'npk', value: e.target.value })}
+            />
+          </div>
+          <div>
+            <label class="form-label">Default dose (ml/L)</label>
+            <input
+              class="form-input"
+              type="number"
+              min="0"
+              step="0.1"
+              .value=${String(draft.dose_ml_l)}
+              @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'dose_ml_l', value: parseFloat(e.target.value) || 0 })}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Notes</label>
+          <input
+            class="form-input"
+            type="text"
+            .value=${draft.notes}
+            @input=${(e) => this._dispatch({ type: 'StockDraftChanged', field: 'notes', value: e.target.value })}
+          />
+        </div>
+
+        <div class="form-footer">
+          <button
+            class="btn btn-text"
+            data-action="cancel"
+            @click=${() => this._dispatch({ type: 'BackToList' })}
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-primary"
+            data-action="save"
+            ?disabled=${applying}
+            @click=${() => this._dispatch({ type: 'SaveRequested' })}
+          >
+            <ha-svg-icon .path=${mdiCheck} style="width:16px;height:16px;fill:currentColor"></ha-svg-icon>
+            ${applying ? 'Saving…' : 'Save'}
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Confirm delete ─────────────────────────────────────────────────────────
+    _renderConfirmDelete(id, name) {
+        return x `
+      <div class="confirm-box">
+        <p>Delete <span class="confirm-name">${name}</span>? This cannot be undone.</p>
+        <div class="confirm-box-actions">
+          <button
+            class="btn btn-text"
+            data-action="cancel-delete"
+            @click=${() => this._dispatch({ type: 'DeleteCancelled' })}
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-danger"
+            data-action="confirm-delete"
+            @click=${() => this._dispatch({ type: 'DeleteConfirmed' })}
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    `;
+    }
+    // ─── Error state ────────────────────────────────────────────────────────────
+    _renderError(sub) {
+        return x `
+      <div class="error-banner">
+        <ha-svg-icon .path=${mdiAlertCircle} style="width:18px;height:18px;fill:currentColor"></ha-svg-icon>
+        ${sub.message}
+      </div>
+      ${this._renderEditForm({ kind: 'editing', draft: sub.draft })}
+    `;
+    }
+};
+GrowspaceNutrientInventoryDialogUI.styles = [
+    dialogStyles,
+    i$6 `
+      .list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .list-item:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .type-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .item-body {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .item-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .item-meta {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-top: 2px;
+      }
+
+      .fill-bar-wrap {
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin-top: 4px;
+        overflow: hidden;
+      }
+
+      .fill-bar {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--primary-color, #4caf50);
+        transition: width 0.3s ease;
+      }
+
+      .fill-bar.warning { background: #ff9800; }
+      .fill-bar.danger  { background: #f44336; }
+
+      .add-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 10px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px dashed rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: background 0.15s;
+        margin-bottom: 12px;
+      }
+
+      .add-btn:hover { background: rgba(255, 255, 255, 0.09); }
+
+      .empty-state {
+        text-align: center;
+        padding: 32px 0;
+        color: var(--secondary-text-color);
+        font-size: 0.9rem;
+        opacity: 0.7;
+      }
+
+      /* Detail view */
+      .detail-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .back-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        transition: background 0.15s;
+      }
+
+      .back-btn:hover { background: rgba(255, 255, 255, 0.08); }
+
+      .detail-title {
+        flex: 1;
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0;
+      }
+
+      .detail-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .icon-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        transition: background 0.15s;
+        color: var(--primary-text-color);
+      }
+
+      .icon-btn:hover { background: rgba(255, 255, 255, 0.08); }
+      .icon-btn.danger { color: var(--error-color, #f44336); }
+
+      .detail-section {
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+      }
+
+      .detail-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--secondary-text-color);
+        margin: 0 0 12px 0;
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 0;
+        font-size: 0.875rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .detail-row:last-child { border-bottom: none; }
+      .detail-label { color: var(--secondary-text-color); }
+
+      .detail-fill-bar-wrap {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+        margin-top: 8px;
+        overflow: hidden;
+      }
+
+      /* Edit form */
+      .form {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .form-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .form-row > * { flex: 1; }
+
+      .form-label {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
+        display: block;
+      }
+
+      .form-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.875rem;
+        font-family: inherit;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+
+      .form-input:focus { border-color: var(--primary-color, #4caf50); }
+
+      .form-select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 8px;
+        color: var(--primary-text-color);
+        font-size: 0.875rem;
+        font-family: inherit;
+      }
+
+      .form-select option {
+        background-color: var(--card-background-color, #1e1e1e);
+        color: var(--primary-text-color, #ffffff);
+      }
+
+      .form-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        transition: background 0.15s;
+      }
+
+      .btn:disabled { opacity: 0.5; cursor: default; }
+
+      .btn-text {
+        background: transparent;
+        color: var(--secondary-text-color);
+      }
+
+      .btn-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+
+      .btn-primary {
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+
+      /* Confirm-delete overlay */
+      .confirm-box {
+        background: rgba(244, 67, 54, 0.1);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .confirm-box p { margin: 0 0 16px; font-size: 0.9rem; }
+
+      .confirm-box .confirm-name {
+        font-weight: 600;
+        color: var(--error-color, #f44336);
+      }
+
+      .confirm-box-actions {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+      }
+
+      .btn-danger {
+        background: var(--error-color, #f44336);
+        color: #fff;
+      }
+
+      .btn-danger:hover { filter: brightness(1.1); }
+
+      /* Error banner */
+      .error-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(244, 67, 54, 0.1);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+        font-size: 0.875rem;
+        color: var(--error-color, #f44336);
+      }
+    `,
+];
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientInventoryDialogUI.prototype, "inventory", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientInventoryDialogUI.prototype, "selectedId", void 0);
+__decorate([
+    n$5({ attribute: false })
+], GrowspaceNutrientInventoryDialogUI.prototype, "sub", void 0);
+GrowspaceNutrientInventoryDialogUI = __decorate([
+    t$2('growspace-nutrient-inventory-dialog-ui')
+], GrowspaceNutrientInventoryDialogUI);
+
+/**
+ * Feed & Water Dialog State Machine
+ *
+ * Pure module — no Lit, no DOM, no hassCall. All interaction state for
+ * FeedAndWaterDialog lives here. The component calls `transition(sm, event)`
+ * and replaces its single `@state() _sm`.
+ *
+ * Satisfies DialogStateMachine.
+ *
+ * Structure:
+ *   SM
+ *     .activeTab          — 'watering' | 'inventory' | 'presets'
+ *     .tabs               — per-tab state stubs (content added in follow-on issues)
+ *     .status             — root confirm-discard guard
+ *     .toast              — transient feedback message
+ */
+const DEFAULT_WATERING_DRAFT = { volume: 1.0, presetId: '' };
+// ─── Initial state ────────────────────────────────────────────────────────────
+function createInitialSM() {
+    return {
+        activeTab: 'watering',
+        tabs: {
+            watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
+            inventory: { selectedId: null, sub: { kind: 'idle' } },
+            presets: { selectedId: null, sub: { kind: 'idle' } },
+        },
+        status: { kind: 'idle' },
+        toast: undefined,
+    };
+}
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function isTabDirty(sm, tab) {
+    const sub = sm.tabs[tab].sub;
+    return sub.kind === 'editing' || sub.kind === 'applying';
+}
+function emptyPresetDraft() {
+    return { name: '', nutrients: [] };
+}
+function emptyStockDraft() {
+    return { name: '', current_ml: 0, initial_ml: 0, brand: '', stockType: 'base', npk: '', dose_ml_l: 0, notes: '' };
+}
+// ─── Transition ───────────────────────────────────────────────────────────────
+function transition(sm, event) {
+    switch (event.type) {
+        case 'TabSelected': {
+            if (event.tab === sm.activeTab)
+                return sm;
+            if (sm.status.kind !== 'idle')
+                return sm;
+            if (isTabDirty(sm, sm.activeTab)) {
+                return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
+            }
+            return { ...sm, activeTab: event.tab };
+        }
+        case 'DiscardConfirmed': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            const { pendingTab } = sm.status;
+            return {
+                ...sm,
+                activeTab: pendingTab,
+                status: { kind: 'idle' },
+                tabs: {
+                    ...sm.tabs,
+                    [sm.activeTab]: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'DiscardCancelled': {
+            if (sm.status.kind !== 'confirm-discard')
+                return sm;
+            return { ...sm, status: { kind: 'idle' } };
+        }
+        case 'SetToast':
+            return { ...sm, toast: event.message };
+        case 'AdHocToggled':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, adHocOpen: !sm.tabs.watering.adHocOpen },
+                },
+            };
+        case 'WateringVolumeChanged':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, volume: event.volume } },
+                },
+            };
+        case 'WateringPresetChanged':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, draft: { ...sm.tabs.watering.draft, presetId: event.presetId } },
+                },
+            };
+        case 'WateringSubmitRequested': {
+            if (sm.tabs.watering.sub.kind === 'submitting')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { ...sm.tabs.watering, sub: { kind: 'submitting' } },
+                },
+            };
+        }
+        case 'WateringSubmitCompleted': {
+            if (sm.tabs.watering.sub.kind !== 'submitting')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    watering: { sub: { kind: 'idle' }, draft: { ...DEFAULT_WATERING_DRAFT }, adHocOpen: false },
+                },
+            };
+        }
+        // ─── Inventory ─────────────────────────────────────────────────────────
+        case 'ItemSelected': {
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: event.id, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'BackToList': {
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'NewItemRequested': {
+            if (sm.tabs.inventory.sub.kind === 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'editing', draft: emptyStockDraft() } },
+                },
+            };
+        }
+        case 'EditStarted': {
+            const inv = sm.tabs.inventory;
+            if (inv.selectedId === null && inv.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'editing', draft: event.draft } },
+                },
+            };
+        }
+        case 'StockDraftChanged': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: {
+                        ...inv,
+                        sub: { kind: 'editing', draft: { ...inv.sub.draft, [event.field]: event.value } },
+                    },
+                },
+            };
+        }
+        case 'SaveRequested': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'applying', draft: inv.sub.draft } },
+                },
+            };
+        }
+        case 'SaveResolved': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                toast: 'Saved',
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'SaveFailed': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'error', draft: inv.sub.draft, message: event.message } },
+                },
+            };
+        }
+        case 'ErrorDismissed': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'error')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'editing', draft: inv.sub.draft } },
+                },
+            };
+        }
+        case 'DeleteRequested': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind === 'editing' || inv.sub.kind === 'applying')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'confirm-delete', id: event.id, name: event.name } },
+                },
+            };
+        }
+        case 'DeleteConfirmed': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'applying', draft: emptyStockDraft() } },
+                },
+            };
+        }
+        case 'DeleteResolved': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                toast: 'Deleted',
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { selectedId: null, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        case 'DeleteCancelled': {
+            const inv = sm.tabs.inventory;
+            if (inv.sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    inventory: { ...inv, sub: { kind: 'idle' } },
+                },
+            };
+        }
+        // ─── Presets ────────────────────────────────────────────────────────────
+        case 'PresetItemSelected': {
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { selectedId: event.id, sub: { kind: 'idle' } } },
+            };
+        }
+        case 'PresetBackToList': {
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'idle' } } },
+            };
+        }
+        case 'PresetNewItemRequested': {
+            if (sm.tabs.presets.sub.kind === 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'editing', draft: emptyPresetDraft() } } },
+            };
+        }
+        case 'PresetEditStarted': {
+            const presets = sm.tabs.presets;
+            if (presets.selectedId === null && presets.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'editing', draft: event.draft } } },
+            };
+        }
+        case 'PresetDraftChanged': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    presets: { ...presets, sub: { kind: 'editing', draft: { ...presets.sub.draft, [event.field]: event.value } } },
+                },
+            };
+        }
+        case 'PresetNutrientRowAdded': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    presets: {
+                        ...presets,
+                        sub: { kind: 'editing', draft: { ...presets.sub.draft, nutrients: [...presets.sub.draft.nutrients, { nutrient_id: '', dose_ml_l: 0 }] } },
+                    },
+                },
+            };
+        }
+        case 'PresetNutrientRowRemoved': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    presets: {
+                        ...presets,
+                        sub: { kind: 'editing', draft: { ...presets.sub.draft, nutrients: presets.sub.draft.nutrients.filter((_, i) => i !== event.index) } },
+                    },
+                },
+            };
+        }
+        case 'PresetNutrientRowUpdated': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    presets: {
+                        ...presets,
+                        sub: {
+                            kind: 'editing',
+                            draft: {
+                                ...presets.sub.draft,
+                                nutrients: presets.sub.draft.nutrients.map((row, i) => i === event.index ? { ...row, ...event.patch } : row),
+                            },
+                        },
+                    },
+                },
+            };
+        }
+        case 'PresetSaveRequested': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'applying', draft: presets.sub.draft } } },
+            };
+        }
+        case 'PresetSaveResolved': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                toast: 'Saved',
+                tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'idle' } } },
+            };
+        }
+        case 'PresetSaveFailed': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'error', draft: presets.sub.draft, message: event.message } } },
+            };
+        }
+        case 'PresetErrorDismissed': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'error')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'editing', draft: presets.sub.draft } } },
+            };
+        }
+        case 'PresetDeleteRequested': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind === 'editing' || presets.sub.kind === 'applying')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'confirm-delete', id: event.id, name: event.name } } },
+            };
+        }
+        case 'PresetDeleteConfirmed': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'applying', draft: emptyPresetDraft() } } },
+            };
+        }
+        case 'PresetDeleteResolved': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'applying')
+                return sm;
+            return {
+                ...sm,
+                toast: 'Deleted',
+                tabs: { ...sm.tabs, presets: { selectedId: null, sub: { kind: 'idle' } } },
+            };
+        }
+        case 'PresetDeleteCancelled': {
+            const presets = sm.tabs.presets;
+            if (presets.sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, presets: { ...presets, sub: { kind: 'idle' } } },
+            };
+        }
+        default:
+            return sm;
+    }
+}
+
+let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
     constructor() {
         super(...arguments);
         this.open = false;
-        this.growspaceName = '';
-        this.targetText = '';
         this.presetOptions = [];
-        this.nutrientSuggestions = [];
-        this.isSubmitting = false;
+        this.targetText = '';
         this.hasPhiWarning = false;
         this.phiWarningText = '';
-        this._volume = 1.0;
-        this._nutrients = [];
-        this._selectedPresetId = '';
+        this.inventory = null;
+        this.presets = null;
+        this._sm = createInitialSM();
+        this._handleRecordWatering = () => {
+            const { draft } = this._sm.tabs.watering;
+            this._applyEvent({ type: 'WateringSubmitRequested' });
+            this.dispatchEvent(new CustomEvent('submit-watering', {
+                detail: { volume: draft.volume, presetId: draft.presetId },
+                bubbles: true,
+                composed: true,
+            }));
+        };
+        this._handleContentSmEvent = (e) => {
+            if (this._sm.activeTab === 'presets') {
+                this._applyPresetEvent(e.detail);
+            }
+            else {
+                this._applyEvent(e.detail);
+            }
+        };
     }
-    updated(changedProps) {
-        if (changedProps.has('open') && this.open) {
-            this._resetForm();
+    updated(changed) {
+        super.updated(changed);
+        if (changed.has('_sm')) {
+            this._triggerAsyncIfNeeded(this._prevSm);
+        }
+        this._prevSm = this._sm;
+    }
+    _triggerAsyncIfNeeded(prev) {
+        const tab = this._sm.activeTab;
+        const sub = this._sm.tabs[tab].sub;
+        const prevSub = prev?.tabs[tab].sub;
+        if (sub.kind !== 'applying' || sub.kind === prevSub?.kind)
+            return;
+        if (tab === 'inventory') {
+            this._runInventoryApply(sub.draft, prev?.tabs.inventory.sub);
+        }
+        else if (tab === 'presets') {
+            this._runPresetsApply(sub.draft, prev?.tabs.presets.sub);
         }
     }
-    _resetForm() {
-        this._volume = 1.0;
-        this._nutrients = [];
-        this._selectedPresetId = '';
+    async _runInventoryApply(draft, prevSub) {
+        const selectedId = this._sm.tabs.inventory.selectedId;
+        try {
+            if (prevSub?.kind === 'confirm-delete') {
+                await removeNutrientStock$1(prevSub.id);
+                this._applyEvent({ type: 'DeleteResolved' });
+            }
+            else {
+                await updateNutrientStock$1(selectedId ?? `nutrient_${Date.now()}`, draft.name, draft.current_ml, draft.initial_ml, draft.brand, draft.stockType, draft.npk, draft.dose_ml_l, draft.notes);
+                this._applyEvent({ type: 'SaveResolved' });
+                await fetchNutrientInventory$1();
+            }
+        }
+        catch (err) {
+            this._applyEvent({ type: 'SaveFailed', message: String(err) });
+        }
+    }
+    async _runPresetsApply(draft, prevSub) {
+        const selectedId = this._sm.tabs.presets.selectedId;
+        try {
+            if (prevSub?.kind === 'confirm-delete') {
+                await removeNutrientPreset$1(prevSub.id);
+                this._applyEvent({ type: 'PresetDeleteResolved' });
+            }
+            else {
+                await saveNutrientPreset$1({
+                    preset_id: selectedId ?? undefined,
+                    name: draft.name,
+                    nutrients: draft.nutrients,
+                    stage: draft.stage,
+                    week: draft.week,
+                    ec_target: draft.ec_target,
+                    ph_target: draft.ph_target,
+                });
+                this._applyEvent({ type: 'PresetSaveResolved' });
+                await fetchNutrientPresets$1();
+            }
+        }
+        catch (err) {
+            this._applyEvent({ type: 'PresetSaveFailed', message: String(err) });
+        }
+    }
+    _applyEvent(event) {
+        this._sm = transition(this._sm, event);
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
     }
-    _handlePresetChange(e) {
-        const presetId = e.detail;
-        this._selectedPresetId = presetId;
-        this.dispatchEvent(new CustomEvent('preset-changed', { detail: presetId }));
-    }
-    // Allow container to set nutrients when preset changes
-    setNutrients(nutrients) {
-        this._nutrients = [...nutrients];
-    }
-    _addNutrient() {
-        this._nutrients = [...this._nutrients, { name: '', concentration: 0 }];
-    }
-    _updateNutrient(index, field, value) {
-        const updated = [...this._nutrients];
-        updated[index] = { ...updated[index], [field]: value };
-        this._nutrients = updated;
-    }
-    _removeNutrient(index) {
-        this._nutrients = this._nutrients.filter((_, i) => i !== index);
-    }
-    _calculateTotalMl(concentration) {
-        return this._volume * concentration;
-    }
-    _getTotalNutrientsMl() {
-        return this._nutrients.reduce((sum, n) => sum + this._calculateTotalMl(n.concentration), 0);
-    }
-    _handleSubmit() {
-        this.dispatchEvent(new CustomEvent('submit-watering', {
-            detail: {
-                volume: this._volume,
-                nutrients: this._nutrients,
-                presetId: this._selectedPresetId,
-            },
-        }));
+    _isFooterBlocked() {
+        const { activeTab, tabs } = this._sm;
+        return (activeTab !== 'watering' ||
+            tabs.watering.sub.kind === 'submitting');
     }
     render() {
         if (!this.open)
             return E;
-        const dialogColor = '#2196F3';
+        const { _sm } = this;
         return x `
       <gs-dialog
         .open=${true}
-        .heading=${'Record Watering'}
-        .subtitle=${this.growspaceName}
-        .iconPath=${mdiWaterPlus}
-        stageColor="${dialogColor}"
-        .submitting=${this.isSubmitting}
+        heading="Feed & Water"
+        subtitle="Record watering and manage nutrients"
+        .iconPath=${mdiWaterOutline}
+        containerStyle="min-height: 400px;"
+        @close=${this._close}
       >
-        <div class="dialog-content-grid">
-          ${this.hasPhiWarning
-            ? x `
-                <div class="error-bar">
-                  <ha-svg-icon .path=${mdiInformation} style="margin-right: 8px;"></ha-svg-icon>
-                  ${this.phiWarningText}
-                </div>
-              `
-            : E}
-
-          <div class="form-section">
-            <h3>Watering Settings</h3>
-            <md3-number-input
-              label="Volume (Liters)"
-              .value=${this._volume}
-              .min=${0.1}
-              .step=${0.1}
-              @change=${(e) => (this._volume = parseFloat(e.detail) || 0)}
-            ></md3-number-input>
-
-            <div style="margin-top: 12px;">
-              <md3-select
-                label="Nutrient Preset"
-                .value=${this._selectedPresetId || ''}
-                .options=${this.presetOptions}
-                @change=${this._handlePresetChange}
-              ></md3-select>
-            </div>
-
-            <div class="apply-summary">
-              Targeting: <span class="apply-target">${this.targetText}</span>
+        <div class="glass-dialog-container">
+          <div class="body">
+            ${this._renderNavRail(_sm)}
+            <div class="content" @sm-event=${this._handleContentSmEvent}>
+              ${this._renderContent(_sm.activeTab)}
             </div>
           </div>
-
-          <div class="form-section">
-            <div
-              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;"
-            >
-              <h3 style="margin: 0;">Nutrients</h3>
-              <button class="md3-button text" @click=${this._addNutrient}>
-                <ha-svg-icon .path=${mdiPlus}></ha-svg-icon>
-                Add
-              </button>
-            </div>
-
-            ${this._nutrients.length === 0
-            ? x `
-                  <div style="text-align: center; opacity: 0.6; padding: 20px;">
-                    <ha-svg-icon .path=${mdiInformation}></ha-svg-icon>
-                    <div>No nutrients added</div>
-                  </div>
-                `
-            : E}
-            ${this._nutrients.map((nutrient, index) => x `
-                <div class="product-row">
-                  <md3-text-input
-                    label="Nutrient Name"
-                    .value=${nutrient.name}
-                    .suggestions=${this.nutrientSuggestions}
-                    @change=${(e) => this._updateNutrient(index, 'name', e.target.value || e.detail)}
-                    placeholder="e.g. CalMag"
-                  ></md3-text-input>
-                  <md3-number-input
-                    label="ml/L"
-                    .value=${nutrient.concentration}
-                    min="0"
-                    step="0.1"
-                    @change=${(e) => this._updateNutrient(index, 'concentration', parseFloat(e.detail) || 0)}
-                  ></md3-number-input>
-                  <button
-                    class="md3-button icon"
-                    @click=${() => this._removeNutrient(index)}
-                    style="color: var(--error-color);"
-                  >
-                    <ha-svg-icon .path=${mdiDelete}></ha-svg-icon>
-                  </button>
-                </div>
-              `)}
-          </div>
-
-          ${this._nutrients.length > 0
-            ? x `
-                <div class="form-section">
-                  <h3>Summary</h3>
-                  <div class="calculation-preview">
-                    ${this._nutrients
-                .filter((n) => n.name && n.concentration > 0)
-                .map((nutrient) => x `
-                          <div class="calculation-row">
-                            <span class="calculation-label">${nutrient.name}</span>
-                            <span class="calculation-value">
-                              ${this._volume}L × ${nutrient.concentration} ml/L =
-                              <strong>
-                                ${this._calculateTotalMl(nutrient.concentration).toFixed(1)} ml
-                              </strong>
-                            </span>
-                          </div>
-                        `)}
-                    <div class="calculation-row">
-                      <span class="calculation-label">Total Nutrients</span>
-                      <span class="calculation-value">
-                        <strong>${this._getTotalNutrientsMl().toFixed(1)} ml</strong>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              `
-            : E}
-        </div>
-
-        <div class="button-group">
-          <button class="md3-button tonal" @click=${this._close} ?disabled=${this.isSubmitting}>
-            Cancel
-          </button>
-          <button
-            class="md3-button primary"
-            style="background-color: ${dialogColor}; --mdc-theme-primary: ${dialogColor};"
-            @click=${this._handleSubmit}
-            ?disabled=${this.isSubmitting || this._volume <= 0}
-          >
-            <ha-svg-icon .path=${mdiCheck} style="margin-right: 8px;"></ha-svg-icon>
-            ${this.isSubmitting ? 'Recording...' : 'Record Watering'}
-          </button>
+          ${this._renderFooter()}
+          ${_sm.status.kind === 'confirm-discard' ? this._renderConfirmDiscard() : E}
+          ${_sm.toast ? x `<div class="toast">${_sm.toast}</div>` : E}
         </div>
       </gs-dialog>
     `;
     }
+    _renderNavRail(sm) {
+        const navItems = [
+            { tab: 'watering', icon: mdiWaterOutline, label: 'Watering' },
+            { tab: 'inventory', icon: mdiBottleTonicPlus, label: 'Inventory' },
+            { tab: 'presets', icon: mdiFormatListBulleted, label: 'Presets' },
+        ];
+        return x `
+      <nav class="nav-rail">
+        ${navItems.map(({ tab, icon, label }) => x `
+            <button
+              class="nav-item"
+              data-nav=${tab}
+              aria-pressed=${sm.activeTab === tab ? 'true' : 'false'}
+              @click=${() => this._applyEvent({ type: 'TabSelected', tab })}
+            >
+              <ha-svg-icon .path=${icon} style="width:22px;height:22px;fill:currentColor"></ha-svg-icon>
+              <span>${label}</span>
+            </button>
+          `)}
+      </nav>
+    `;
+    }
+    _renderContent(activeTab) {
+        if (activeTab === 'watering')
+            return this._renderWateringTab();
+        if (activeTab === 'inventory')
+            return this._renderInventoryTab();
+        return this._renderPresetsTab();
+    }
+    _renderInventoryTab() {
+        const { inventory: invTab } = this._sm.tabs;
+        return x `
+      <growspace-nutrient-inventory-dialog-ui
+        .inventory=${this.inventory}
+        .selectedId=${invTab.selectedId}
+        .sub=${invTab.sub}
+      ></growspace-nutrient-inventory-dialog-ui>
+    `;
+    }
+    _renderPresetsTab() {
+        const { presets: presetsTab } = this._sm.tabs;
+        return x `
+      <growspace-nutrient-presets-editor-ui
+        .presets=${this.presets}
+        .inventory=${this.inventory}
+        .selectedId=${presetsTab.selectedId}
+        .sub=${presetsTab.sub}
+      ></growspace-nutrient-presets-editor-ui>
+    `;
+    }
+    _applyPresetEvent(event) {
+        const PRESET_MAP = {
+            ItemSelected: 'PresetItemSelected',
+            BackToList: 'PresetBackToList',
+            NewItemRequested: 'PresetNewItemRequested',
+            EditStarted: 'PresetEditStarted',
+            SaveRequested: 'PresetSaveRequested',
+            SaveResolved: 'PresetSaveResolved',
+            SaveFailed: 'PresetSaveFailed',
+            ErrorDismissed: 'PresetErrorDismissed',
+            DeleteRequested: 'PresetDeleteRequested',
+            DeleteConfirmed: 'PresetDeleteConfirmed',
+            DeleteResolved: 'PresetDeleteResolved',
+            DeleteCancelled: 'PresetDeleteCancelled',
+        };
+        const mappedType = PRESET_MAP[event.type] ?? event.type;
+        this._applyEvent({ ...event, type: mappedType });
+    }
+    _renderWateringTab() {
+        const { draft } = this._sm.tabs.watering;
+        return x `
+      <div data-tab="watering">
+        ${this.hasPhiWarning
+            ? x `
+              <div class="phi-warning" data-testid="phi-warning">
+                <ha-svg-icon .path=${mdiInformation} style="width:18px;height:18px;fill:currentColor;flex-shrink:0"></ha-svg-icon>
+                ${this.phiWarningText}
+              </div>
+            `
+            : E}
+
+        <md3-number-input
+          label="Volume (Liters)"
+          .value=${draft.volume}
+          .min=${0.1}
+          unit="L"
+          @change=${(e) => {
+            const v = parseFloat(e.detail);
+            if (!isNaN(v) && v > 0)
+                this._applyEvent({ type: 'WateringVolumeChanged', volume: v });
+        }}
+        ></md3-number-input>
+
+        <md3-select
+          label="Nutrient Preset"
+          .value=${draft.presetId}
+          .options=${this.presetOptions}
+          @change=${(e) => this._applyEvent({ type: 'WateringPresetChanged', presetId: e.detail })}
+        ></md3-select>
+
+        ${this.targetText
+            ? x `
+              <div class="targeting-summary">
+                <span class="targeting-label">Targeting:</span>
+                <span class="targeting-value">${this.targetText}</span>
+              </div>
+            `
+            : E}
+      </div>
+    `;
+    }
+    _renderFooter() {
+        const blocked = this._isFooterBlocked();
+        return x `
+      <div class="footer">
+        <button
+          class="btn-record"
+          data-action="record-watering"
+          ?disabled=${blocked}
+          @click=${this._handleRecordWatering}
+        >
+          Record Watering
+        </button>
+      </div>
+    `;
+    }
+    _renderConfirmDiscard() {
+        return x `
+      <div class="confirm-discard-overlay">
+        <div class="confirm-discard-box">
+          <h3>Discard changes?</h3>
+          <p>You have unsaved changes. If you switch sections now, your edits will be lost.</p>
+          <div class="confirm-discard-actions">
+            <button
+              class="btn btn-text"
+              @click=${() => this._applyEvent({ type: 'DiscardCancelled' })}
+            >
+              Keep editing
+            </button>
+            <button
+              class="btn btn-danger"
+              @click=${() => this._applyEvent({ type: 'DiscardConfirmed' })}
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    }
 };
-GrowspaceWateringDialogUI.styles = [
+FeedAndWaterDialog.styles = [
     dialogStyles,
     i$6 `
-      .product-row {
+      :host { display: contents; }
+
+      /* Body: nav-rail + content */
+      .body {
         display: flex;
-        gap: 12px;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-      .product-row md3-text-input {
-        flex: 2;
-      }
-      .product-row md3-number-input {
         flex: 1;
+        min-height: 0;
+        overflow: hidden;
       }
-      .form-section {
-        margin-bottom: 24px;
-      }
-      .form-section h3 {
-        margin-top: 0;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        opacity: 0.6;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-      }
-      .apply-summary {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        padding: 16px;
-        border-radius: 8px;
-        margin-top: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-      }
-      .apply-target {
-        font-weight: 500;
-        color: var(--primary-color, #4caf50);
-      }
-      .calculation-preview {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 12px;
-        padding: 16px;
-      }
-      .calculation-row {
+
+      .nav-rail {
         display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px 8px;
+        border-right: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.1));
+        width: 72px;
+        align-items: center;
+        flex-shrink: 0;
       }
-      .calculation-row:last-child {
-        border-bottom: none;
-        font-weight: 600;
+
+      .nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 6px;
+        border-radius: 12px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.6));
+        font-size: 0.6875rem;
+        font-family: inherit;
+        width: 56px;
+        transition: background 0.15s, color 0.15s;
       }
-      .calculation-label {
-        color: var(--secondary-text-color);
+
+      .nav-item:hover { background: rgba(255, 255, 255, 0.06); }
+
+      .nav-item[aria-pressed='true'] {
+        color: var(--primary-color, #4caf50);
+        background: rgba(76, 175, 80, 0.12);
       }
-      .calculation-value {
-        color: var(--primary-text-color);
+
+      .content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+        min-height: 0;
       }
-      .error-bar {
-        background: rgba(255, 152, 0, 0.2);
+
+      /* Footer */
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 12px 24px;
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        background: var(--secondary-background-color, rgba(0, 0, 0, 0.2));
+        flex-shrink: 0;
+      }
+
+      .btn-record {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+        font-weight: 500;
+        background: var(--primary-color, #4caf50);
+        color: #fff;
+        transition: filter 0.15s, opacity 0.15s;
+      }
+
+      .btn-record:hover:not(:disabled) { filter: brightness(1.1); }
+
+      .btn-record:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+
+      /* Confirm-discard overlay */
+      .confirm-discard-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .confirm-discard-box {
+        background: var(--card-background-color, #1c1c1c);
+        border-radius: 16px;
+        padding: 24px;
+        max-width: 360px;
+        width: 100%;
+        margin: 16px;
+      }
+
+      .confirm-discard-box h3 { margin: 0 0 8px; font-size: 1rem; }
+      .confirm-discard-box p { margin: 0 0 20px; font-size: 0.875rem; color: var(--secondary-text-color); }
+
+      .confirm-discard-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-family: inherit;
+      }
+
+      .btn-text { background: transparent; color: var(--secondary-text-color); }
+      .btn-text:hover { background: rgba(255,255,255,0.06); }
+
+      .btn-danger { background: var(--error-color, #f44336); color: #fff; }
+      .btn-danger:hover { filter: brightness(1.1); }
+
+      /* Toast */
+      .toast {
+        position: absolute;
+        bottom: 72px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.85);
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        pointer-events: none;
+        z-index: 20;
+      }
+
+      /* Tab placeholder */
+      .tab-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: var(--secondary-text-color, rgba(255,255,255,0.5));
+        font-size: 0.875rem;
+      }
+
+      /* Watering tab */
+      .phi-warning {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 152, 0, 0.15);
         color: #ff9800;
         border: 1px solid #ff9800;
-        padding: 8px 16px;
-        border-radius: 4px;
-        margin-bottom: 16px;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin-bottom: 20px;
+        font-size: 0.875rem;
+      }
+
+      .targeting-summary {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        margin-top: 8px;
+      }
+
+      .targeting-label {
+        opacity: 0.6;
+        margin-right: 6px;
+      }
+
+      .targeting-value {
+        color: var(--primary-color, #4caf50);
+        font-weight: 500;
       }
     `,
 ];
 __decorate([
     n$5({ type: Boolean })
-], GrowspaceWateringDialogUI.prototype, "open", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceWateringDialogUI.prototype, "growspaceName", void 0);
-__decorate([
-    n$5({ type: String })
-], GrowspaceWateringDialogUI.prototype, "targetText", void 0);
+], FeedAndWaterDialog.prototype, "open", void 0);
 __decorate([
     n$5({ attribute: false })
-], GrowspaceWateringDialogUI.prototype, "presetOptions", void 0);
-__decorate([
-    n$5({ attribute: false })
-], GrowspaceWateringDialogUI.prototype, "nutrientSuggestions", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceWateringDialogUI.prototype, "isSubmitting", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], GrowspaceWateringDialogUI.prototype, "hasPhiWarning", void 0);
+], FeedAndWaterDialog.prototype, "presetOptions", void 0);
 __decorate([
     n$5({ type: String })
-], GrowspaceWateringDialogUI.prototype, "phiWarningText", void 0);
+], FeedAndWaterDialog.prototype, "targetText", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], FeedAndWaterDialog.prototype, "hasPhiWarning", void 0);
+__decorate([
+    n$5({ type: String })
+], FeedAndWaterDialog.prototype, "phiWarningText", void 0);
+__decorate([
+    n$5({ attribute: false })
+], FeedAndWaterDialog.prototype, "inventory", void 0);
+__decorate([
+    n$5({ attribute: false })
+], FeedAndWaterDialog.prototype, "presets", void 0);
 __decorate([
     r$3()
-], GrowspaceWateringDialogUI.prototype, "_volume", void 0);
-__decorate([
-    r$3()
-], GrowspaceWateringDialogUI.prototype, "_nutrients", void 0);
-__decorate([
-    r$3()
-], GrowspaceWateringDialogUI.prototype, "_selectedPresetId", void 0);
-GrowspaceWateringDialogUI = __decorate([
-    t$2('growspace-watering-dialog-ui')
-], GrowspaceWateringDialogUI);
+], FeedAndWaterDialog.prototype, "_sm", void 0);
+FeedAndWaterDialog = __decorate([
+    t$2('feed-and-water-dialog')
+], FeedAndWaterDialog);
 
 /**
  * Plant Overview ViewModel
@@ -48212,6 +52843,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         super(...arguments);
         this._controllersInitialized = false;
         this._geneticsLoaded = false;
+        this._addPlantsLibraryError = '';
     }
     connectedCallback() {
         super.connectedCallback();
@@ -48296,7 +52928,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 case 'NUTRIENT_INVENTORY':
                     return this._renderNutrientInventoryDialog(active, nutrientInventory, effectiveDeviceData);
                 case 'NUTRIENTS':
-                    return this._renderNutrientDialog(active, effectiveDeviceData);
+                    return this._renderNutrientDialog(active, nutrientPresets, nutrientInventory);
                 case 'PRINT_LABEL':
                     return this._renderPrintLabelDialog(active, effectiveDeviceData);
                 case 'BATCH_PRINT_LABELS':
@@ -48477,9 +53109,18 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .clone_start=${active.payload?.clone_start || ''}
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
-        @close=${() => this._closeDialogIfActive('ADD_PLANTS')}
+        .libraryError=${this._addPlantsLibraryError}
+        @close=${() => { this._addPlantsLibraryError = ''; this._closeDialogIfActive('ADD_PLANTS'); }}
         @show-toast=${(e) => this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
-        @add-plants-submit=${(e) => this.store?.actions.plant.addBatch(e.detail)}
+        @add-plants-submit=${async (e) => {
+            this._addPlantsLibraryError = '';
+            try {
+                await this.store?.actions.plant.addBatch(e.detail);
+            }
+            catch (err) {
+                this._addPlantsLibraryError = err instanceof Error ? err.message : 'Failed to add strains to library';
+            }
+        }}
         @create-new-strain=${(e) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
       ></add-plants-dialog>
@@ -48786,6 +53427,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 irrigationFlowSensors: detail.irrigationFlowSensors,
                 powerSensors: detail.powerSensors,
                 energySensors: detail.energySensors,
+                circulationFanConfig: detail.circulationFanConfig,
             });
             this.store?.actions.ui.closeDialog();
         }
@@ -48897,19 +53539,23 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         if (active.type !== 'WATERING')
             return x ``;
         const payload = active.payload;
+        const presetOptions = Object.values(nutrientPresets).map((p) => ({
+            label: p.name,
+            value: p.id,
+        }));
+        const targetText = payload?.mode === 'plant'
+            ? `${(payload.plantIds || []).length} plant(s)`
+            : selectedDeviceData?.name || 'Entire growspace';
         return x `
-      <growspace-watering-dialog-ui
+      <feed-and-water-dialog
         .open=${true}
-        .plantIds=${payload?.plantIds || []}
-        .growspaceId=${selectedDeviceData?.deviceId || ''}
-        .nutrientPresets=${nutrientPresets}
-        .nutrientInventory=${nutrientInventory}
+        .presetOptions=${presetOptions}
+        .targetText=${targetText}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('WATERING')}
         @submit-watering=${(e) => this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
-        @save-preset=${(e) => this.store?.actions.nutrient.savePreset(e.detail)}
-        @update-stock=${(e) => this.store?.actions.library.updateNutrientStock(e.detail.id, e.detail.name, e.detail.current_ml, e.detail.initial_ml)}
-        @data-changed=${() => this._handleDataChanged()}
-      ></growspace-watering-dialog-ui>
+      ></feed-and-water-dialog>
     `;
     }
     async _handleWateringSubmit(e, payload, fallbackGrowspaceId) {
@@ -49089,15 +53735,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
       ></clone-dialog>
     `;
     }
-    _renderNutrientDialog(active, _selectedDeviceData) {
+    _renderNutrientDialog(active, nutrientPresets, nutrientInventory) {
         if (active.type !== 'NUTRIENTS')
             return x ``;
         return x `
-      <nutrient-dialog
+      <feed-and-water-dialog
         .open=${true}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('NUTRIENTS')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></nutrient-dialog>
+      ></feed-and-water-dialog>
     `;
     }
     _renderPrintLabelDialog(active, _selectedDeviceData) {
@@ -49186,17 +53833,20 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
 };
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceDialogHost.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: storeContext }),
+    e$4({ context: storeContext }),
     n$5({ attribute: false })
 ], GrowspaceDialogHost.prototype, "store", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceDialogHost.prototype, "config", void 0);
+__decorate([
+    r$3()
+], GrowspaceDialogHost.prototype, "_addPlantsLibraryError", void 0);
 GrowspaceDialogHost = __decorate([
     t$2('growspace-dialog-host')
 ], GrowspaceDialogHost);
@@ -49258,7 +53908,7 @@ let EditModeBanner = class EditModeBanner extends i$3 {
         this.selectedCount = 0;
         this._canScrollLeft = false;
         this._canScrollRight = false;
-        this._actionsContainerRef = e$1();
+        this._actionsContainerRef = e$2();
         this._resizeController = new ResizeController(this, () => this._checkScroll());
     }
     firstUpdated() {
@@ -58138,7 +62788,18 @@ class MetricsUtils {
                     s.state &&
                     s.state !== EntityState.UNAVAILABLE &&
                     s.state !== EntityState.UNKNOWN) {
-                    states.push(s.state);
+                    if (id.startsWith('fan.')) {
+                        if (s.state === 'off') {
+                            states.push('Off');
+                        }
+                        else {
+                            const pct = s.attributes?.percentage;
+                            states.push(pct != null ? `${Math.round(Number(pct))}%` : 'On');
+                        }
+                    }
+                    else {
+                        states.push(s.state);
+                    }
                 }
                 else {
                     states.push('-');
@@ -59389,7 +64050,7 @@ __decorate([
     r$3()
 ], ScrollContainer.prototype, "_canScrollRight", void 0);
 __decorate([
-    e$6('.scroll-content')
+    e$7('.scroll-content')
 ], ScrollContainer.prototype, "_scrollContent", void 0);
 ScrollContainer = __decorate([
     t$2('scroll-container')
@@ -60292,7 +64953,7 @@ __decorate([
     r$3()
 ], GrowspaceHeaderHeroUI.prototype, "_deckIndex", void 0);
 __decorate([
-    e$6('.deck-scroll')
+    e$7('.deck-scroll')
 ], GrowspaceHeaderHeroUI.prototype, "_deckEl", void 0);
 GrowspaceHeaderHeroUI = __decorate([
     t$2('growspace-header-hero-ui')
@@ -61029,7 +65690,7 @@ let GrowspaceToastUI = class GrowspaceToastUI extends i$3 {
         const isVisible = !!this.notification;
         return x `
       <div
-        class=${e({
+        class=${e$1({
             'toast-notification': true,
             visible: isVisible,
             [this.notification?.type || 'info']: true,
@@ -63429,8 +68090,8 @@ let GrowspacePlantStats = class GrowspacePlantStats extends i$3 {
         return x `
       ${this.stages.map((d) => {
             return x `
-          <div class=${e({ 'pc-stat-item': true, 'current-stage': d.isCurrent })}>
-            <svg style=${o({ color: d.color })} viewBox="0 0 24 24">
+          <div class=${e$1({ 'pc-stat-item': true, 'current-stage': d.isCurrent })}>
+            <svg style=${o$1({ color: d.color })} viewBox="0 0 24 24">
               <path d="${d.icon}"></path>
             </svg>
             <div class="pc-stat-text">${d.days}d</div>
@@ -63495,7 +68156,7 @@ let PlantCardUI = class PlantCardUI extends i$3 {
         return x `
       <div
         class="plant-card-rich"
-        style=${o({ '--stage-color': stageColor })}
+        style=${o$1({ '--stage-color': stageColor })}
         draggable="${this.isDraggable}"
         tabindex="0"
         role="button"
@@ -63541,7 +68202,7 @@ let PlantCardUI = class PlantCardUI extends i$3 {
         }
         return x `
       <div
-        class=${e({ 'plant-card-checkbox': true, selected: this.isSelected })}
+        class=${e$1({ 'plant-card-checkbox': true, selected: this.isSelected })}
         role="checkbox"
         aria-checked=${this.isSelected ? 'true' : 'false'}
         tabindex="0"
@@ -63551,7 +68212,7 @@ let PlantCardUI = class PlantCardUI extends i$3 {
       >
         <svg
           viewBox="0 0 24 24"
-          style=${o({
+          style=${o$1({
             width: '24px',
             height: '24px',
             fill: this.isSelected ? 'var(--primary-color)' : 'rgba(255,255,255,0.7)',
@@ -63773,7 +68434,7 @@ __decorate([
     n$5()
 ], PlantCardUI.prototype, "checkboxAriaLabel", void 0);
 __decorate([
-    e$6('.plant-card-rich')
+    e$7('.plant-card-rich')
 ], PlantCardUI.prototype, "_card", void 0);
 PlantCardUI = __decorate([
     t$2('plant-card-ui')
@@ -63907,7 +68568,7 @@ __decorate([
     n$5({ type: Boolean })
 ], PlantCardContainer.prototype, "forceDraggable", void 0);
 __decorate([
-    e$6('plant-card-ui')
+    e$7('plant-card-ui')
 ], PlantCardContainer.prototype, "_cardUI", void 0);
 __decorate([
     c$2({ context: storeContext, subscribe: true }),
@@ -64221,7 +68882,7 @@ let GrowspaceGridUI = class GrowspaceGridUI extends i$3 {
         this.overlayMode = GridOverlayMode.NONE;
         // Drag state (managed internally by UI component)
         this._draggedPlant = null;
-        this._gridRef = e$1();
+        this._gridRef = e$2();
     }
     focusCard(index) {
         const cards = this._plantCards;
@@ -64915,7 +69576,7 @@ __decorate([
     n$5({ attribute: false })
 ], GrowspaceGridContainer.prototype, "store", void 0);
 __decorate([
-    e$6('growspace-grid-ui')
+    e$7('growspace-grid-ui')
 ], GrowspaceGridContainer.prototype, "_gridUI", void 0);
 __decorate([
     n$5({ type: Array })
@@ -121074,7 +125735,7 @@ let Heatmap3D = class Heatmap3D extends i$3 {
         const strainInfo = this.strainLibrary.find((s) => s.strain === strainName &&
             (pheno ? s.phenotype === pheno : !s.phenotype || s.phenotype === 'default'));
         const breeder = strainInfo?.breeder || 'Unknown';
-        const style = o({
+        const style = o$1({
             left: `${this._tooltipPos.x + 15}px`,
             top: `${this._tooltipPos.y + 15}px`,
             opacity: '1',
@@ -121777,7 +126438,7 @@ __decorate([
     c$2({ context: storeContext, subscribe: true })
 ], Heatmap3D.prototype, "store", void 0);
 __decorate([
-    e$6('#container')
+    e$7('#container')
 ], Heatmap3D.prototype, "container", void 0);
 Heatmap3D = __decorate([
     t$2('heatmap-3d')
@@ -122515,22 +127176,7 @@ class GrowspaceHistoryStore {
         if (!device)
             return;
         const { start, end } = this.calculateTimeRange(range);
-        const metricsToFetch = [
-            'optimal',
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'irrigation_tank_level',
-            'soil_moisture',
-            'exhaust',
-            'humidifier',
-            'dehumidifier',
-            'circulation_fan',
-            'irrigation',
-            'drain',
-        ];
+        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
         const entitiesToFetch = new Set();
         // 1. Identify Overview Entity
         if (device.overviewEntityId) {
@@ -122593,22 +127239,7 @@ class GrowspaceHistoryStore {
             return;
         }
         const now = new Date();
-        const metricsToFetch = [
-            'optimal',
-            'temperature',
-            'humidity',
-            'vpd',
-            'co2',
-            'light',
-            'irrigation_tank_level',
-            'soil_moisture',
-            'exhaust',
-            'humidifier',
-            'dehumidifier',
-            'circulation_fan',
-            'irrigation',
-            'drain',
-        ];
+        const metricsToFetch = ['optimal', ...Object.keys(METRIC_ENTITY_KEYS)];
         const entityMap = {};
         const entitiesToFetch = new Set();
         // Overview
@@ -122749,6 +127380,11 @@ class GrowspaceHistoryStore {
         const envAttrs = (device.environmentAttributes ||
             device.environment_attributes ||
             {});
+        // Primary key is already a string[] (e.g. energySensors, powerSensors)
+        const directValue = envAttrs[mapping.primary];
+        if (Array.isArray(directValue) && (directValue.length === 0 || typeof directValue[0] === 'string')) {
+            return directValue;
+        }
         // 1. Try plural keys first
         const pluralKey = mapping.primary.endsWith('Sensor')
             ? mapping.primary.replace('Sensor', 'Sensors')
@@ -123501,33 +128137,33 @@ async function confirmAddPlants(ctx, detail) {
         ctx.ui.showToast('No growspace selected', 'error');
         return;
     }
+    if (detail.addToLibrary) {
+        const amount = detail.amount || 1;
+        const startNumber = detail.start_number || 1;
+        const promises = [];
+        for (let i = 0; i < amount; i++) {
+            const currentNumber = startNumber + i;
+            const phenoName = detail.phenotype
+                ? `${detail.phenotype} #${currentNumber}`
+                : `Strain #${currentNumber}`;
+            if (detail.strain) {
+                promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
+            }
+        }
+        try {
+            await Promise.all(promises);
+            await fetchStrainLibrary(ctx, true);
+            ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
+        }
+        catch (e) {
+            console.error('Failed to add strains to library:', e);
+            throw e instanceof Error ? e : new Error('Failed to add strains to library');
+        }
+    }
     const beforeDevices = devices$.get();
     const beforeIds = new Set();
     beforeDevices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
     await withAction(ctx, async () => {
-        if (detail.addToLibrary) {
-            try {
-                const amount = detail.amount || 1;
-                const startNumber = detail.start_number || 1;
-                const promises = [];
-                for (let i = 0; i < amount; i++) {
-                    const currentNumber = startNumber + i;
-                    const phenoName = detail.phenotype
-                        ? `${detail.phenotype} #${currentNumber}`
-                        : `Strain #${currentNumber}`;
-                    if (detail.strain) {
-                        promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
-                    }
-                }
-                await Promise.all(promises);
-                await fetchStrainLibrary(ctx, true);
-                ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
-            }
-            catch (e) {
-                console.error('Failed to add strains to library:', e);
-                ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
-            }
-        }
         const { addToLibrary: _, ...apiPayload } = detail;
         await ctx.dataService.addPlants({
             ...apiPayload,
@@ -123561,7 +128197,7 @@ async function confirmAddPlants(ctx, detail) {
  * Print a label for a plant or strain.
  */
 async function printLabel(ctx, params) {
-    const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview } = params;
+    const { plantId, strain, phenotype, breeder, lineage, breederLogo, deviceId, preview, fields, sizeId, density, qrTarget } = params;
     const baseUrl = window.location.origin + window.location.pathname;
     try {
         const result = await ctx.dataService.printLabel({
@@ -123574,6 +128210,10 @@ async function printLabel(ctx, params) {
             device_id: deviceId,
             preview,
             base_url: baseUrl,
+            fields,
+            size_id: sizeId,
+            density,
+            qr_target: qrTarget,
         });
         if (!preview) {
             ctx.ui.showToast('Label printing command sent', 'success');
@@ -124019,6 +128659,7 @@ function openConfigDialog(ctx, device) {
                 irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],
                 powerSensors: device?.environmentAttributes?.powerSensors || [],
                 energySensors: device?.environmentAttributes?.energySensors || [],
+                circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
             },
         },
     });
@@ -124313,6 +128954,17 @@ async function waterGrowspace(ctx, growspaceId, amount, nutrients, presetId) {
         if (nutrients && Object.keys(nutrients).length > 0)
             await fetchNutrientInventory(ctx, true);
     }, { errorPrefix: 'Failed to water growspace', rethrow: true });
+}
+/** Configure the circulation fan controller for a growspace */
+async function configureFanController(ctx, data) {
+    await withAction(ctx, async () => {
+        await ctx.dataService.configureCirculationFan(data);
+        await ctx.refreshData();
+    }, {
+        success: 'Fan controller configured successfully!',
+        errorPrefix: 'Failed to configure fan controller',
+        rethrow: true,
+    });
 }
 
 /**
@@ -124833,6 +129485,7 @@ class ActionDispatcher {
         };
         this.environment = {
             configure: (data) => configureEnvironment(this.ctx, data),
+            configureFanController: (data) => configureFanController(this.ctx, data),
             remove: (growspaceId) => removeEnvironment(this.ctx, growspaceId),
             resetWaterTracking: (growspaceId) => resetWaterTracking(this.ctx, growspaceId),
             waterPlant: (plantId, amount, nutrients, presetId) => waterPlant(this.ctx, plantId, amount, nutrients, presetId),
@@ -124910,6 +129563,9 @@ function _normalizeLightSensor(entity) {
         return 'On';
     if (entity.state === 'off')
         return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return String(Math.round(n));
     return undefined;
 }
 /** Normalize an on/off device entity state to "On", "Off", or undefined. */
@@ -124918,6 +129574,43 @@ function _normalizeOnOff(entity) {
         return undefined;
     if (UNAVAILABLE_STATES.has(entity.state))
         return undefined;
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return n > 0 ? 'On' : 'Off';
+    return undefined;
+}
+/**
+ * Normalize a fan entity state for chip display.
+ *
+ * Three Fan Entity Modes (see ADR-0008):
+ *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
+ *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
+ *   - Binary (switch / input_boolean): "On" / "Off"
+ */
+function _normalizeFanDevice(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    const isFanDomain = entity.entity_id.startsWith('fan.');
+    if (isFanDomain) {
+        if (entity.state === 'off')
+            return 'Off';
+        const pct = entity.attributes?.percentage;
+        return pct != null ? `${Math.round(Number(pct))}%` : 'On';
+    }
+    const numVal = parseFloat(entity.state);
+    if (!isNaN(numVal)) {
+        const domain = entity.entity_id.split('.')[0];
+        const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
+        if (!isBinaryDomain)
+            return String(Math.round(numVal));
+        return numVal > 0 ? 'On' : 'Off';
+    }
     if (entity.state === 'on')
         return 'On';
     if (entity.state === 'off')
@@ -124965,8 +129658,8 @@ function computeDeviceSnapshot(device, hassStates) {
     const dehumidifierIds = env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
     return {
         lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
-        exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeOnOff),
-        circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeOnOff),
+        exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
+        circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeFanDevice),
         humidifiers: _buildEntry(humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
         dehumidifiers: _buildEntry(dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
     };
@@ -125687,9 +130380,12 @@ class GrowspaceStoreRegistry {
     constructor() {
         this._entry = null;
     }
+    createStore() {
+        return new GrowspaceSharedStore();
+    }
     acquire() {
         if (!this._entry) {
-            this._entry = { store: new GrowspaceSharedStore(), refs: 0 };
+            this._entry = { store: this.createStore(), refs: 0 };
         }
         this._entry.refs++;
         return this._entry.store;
@@ -126014,18 +130710,18 @@ let GrowspaceManagerCard = class GrowspaceManagerCard extends i$3 {
 };
 GrowspaceManagerCard.styles = [variables, sharedStyles, uiStyles, growspaceCardStyles];
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceManagerCard.prototype, "store", void 0);
 __decorate([
-    e$3({ context: strainLibraryContext }),
+    e$4({ context: strainLibraryContext }),
     r$3()
 ], GrowspaceManagerCard.prototype, "_strainLibrary", void 0);
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceManagerCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceManagerCard.prototype, "_config", void 0);
 GrowspaceManagerCard = __decorate([
@@ -126226,14 +130922,14 @@ GrowspaceGridCard.styles = [
     `,
 ];
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceGridCard.prototype, "store", void 0);
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceGridCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceGridCard.prototype, "_config", void 0);
 GrowspaceGridCard = __decorate([
@@ -126365,14 +131061,14 @@ GrowspaceAnalyticsCard.styles = [
     `,
 ];
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceAnalyticsCard.prototype, "store", void 0);
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceAnalyticsCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceAnalyticsCard.prototype, "_config", void 0);
 GrowspaceAnalyticsCard = __decorate([
@@ -126658,14 +131354,14 @@ GrowspaceAiInsightCard.styles = [
     `,
 ];
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceAiInsightCard.prototype, "store", void 0);
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceAiInsightCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceAiInsightCard.prototype, "_config", void 0);
 __decorate([
@@ -127191,14 +131887,14 @@ GrowspaceTankCard.styles = [
     `,
 ];
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceTankCard.prototype, "store", void 0);
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceTankCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceTankCard.prototype, "_config", void 0);
 GrowspaceTankCard = __decorate([
@@ -127745,14 +132441,14 @@ GrowspaceSubareaCard.styles = [
         `,
 ];
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceSubareaCard.prototype, "store", void 0);
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceSubareaCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceSubareaCard.prototype, "_config", void 0);
 __decorate([
@@ -127984,18 +132680,18 @@ GrowspaceLogbookCard.styles = [
     `,
 ];
 __decorate([
-    e$3({ context: hassContext }),
+    e$4({ context: hassContext }),
     n$5({ attribute: false })
 ], GrowspaceLogbookCard.prototype, "hass", void 0);
 __decorate([
-    e$3({ context: configContext }),
+    e$4({ context: configContext }),
     r$3()
 ], GrowspaceLogbookCard.prototype, "_config", void 0);
 __decorate([
     r$3()
 ], GrowspaceLogbookCard.prototype, "_activeTab", void 0);
 __decorate([
-    e$3({ context: storeContext })
+    e$4({ context: storeContext })
 ], GrowspaceLogbookCard.prototype, "_store", void 0);
 GrowspaceLogbookCard = __decorate([
     t$2('growspace-logbook-card')
@@ -128162,7 +132858,7 @@ __decorate([
     r$3()
 ], GrowspaceCarouselCard.prototype, "_config", void 0);
 __decorate([
-    e$6('.carousel-wrapper')
+    e$7('.carousel-wrapper')
 ], GrowspaceCarouselCard.prototype, "_wrapper", void 0);
 GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')

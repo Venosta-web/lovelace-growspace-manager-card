@@ -61,11 +61,11 @@ vi.mock('../../../../../src/features/ui/components/growspace-ipm-dialog-ui', () 
     return { GrowspaceIPMDialogUI: class extends HTMLElement { } };
 });
 
-vi.mock('../../../../../src/features/ui/components/growspace-watering-dialog-ui', () => {
-    if (!customElements.get('growspace-watering-dialog-ui')) {
-        customElements.define('growspace-watering-dialog-ui', class extends HTMLElement { });
+vi.mock('../../../../../src/dialogs/feed-and-water-dialog', () => {
+    if (!customElements.get('feed-and-water-dialog')) {
+        customElements.define('feed-and-water-dialog', class extends HTMLElement { });
     }
-    return { GrowspaceWateringDialogUI: class extends HTMLElement { } };
+    return { FeedAndWaterDialog: class extends HTMLElement { } };
 });
 
 vi.mock('../../../../../src/features/ui/components/growspace-nutrient-inventory-dialog-ui', () => {
@@ -483,21 +483,20 @@ describe('GrowspaceDialogHostContainer', () => {
         expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled();
     });
 
-    it('should render growspace-watering-dialog-ui for WATERING type', async () => {
+    it('should render feed-and-water-dialog for WATERING type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { plantIds: ['p1'], mode: 'plant' } });
         await element.updateComplete;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('growspace-watering-dialog-ui')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector('feed-and-water-dialog')).toBeTruthy();
     });
 
     it('should handle @submit-watering plant mode on watering dialog', async () => {
         mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { mode: 'plant', plant_id: 'p1' } });
         await element.updateComplete;
-        const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
-        
-        // Emitting the event exactly as growspace-watering-dialog-ui does
+        const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog');
+
         dialog?.dispatchEvent(new CustomEvent('submit-watering', {
-            detail: { volume: 500, nutrients: {}, presetId: 'preset1' }
+            detail: { volume: 500, presetId: 'preset1' }
         }));
 
         await vi.waitFor(() => {
@@ -508,10 +507,10 @@ describe('GrowspaceDialogHostContainer', () => {
     it('should handle @submit-watering growspace mode on watering dialog', async () => {
         mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { mode: 'growspace', growspace_id: 'gs1' } });
         await element.updateComplete;
-        const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
-        
+        const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog');
+
         dialog?.dispatchEvent(new CustomEvent('submit-watering', {
-            detail: { volume: 500, nutrients: {}, presetId: 'preset1' }
+            detail: { volume: 500, presetId: 'preset1' }
         }));
 
         await vi.waitFor(() => {
@@ -519,26 +518,26 @@ describe('GrowspaceDialogHostContainer', () => {
         });
     });
 
-    it('should handle @save-preset on watering dialog', async () => {
-        mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { plantIds: [] } });
+    it('should pass inventory from store to feed-and-water-dialog', async () => {
+        const inventory = { stocks: { n1: { nutrient_id: 'n1', name: 'Veg Boost', current_ml: 500, initial_ml: 1000, last_updated: '' } } };
+        mockStore.dataService.$nutrientInventory.set(inventory);
+        mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { mode: 'growspace', growspace_id: 'gs1' } });
         await element.updateComplete;
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
-        dialog?.dispatchEvent(new CustomEvent('save-preset', { detail: { name: 'My Preset' } }));
-        expect(mockStore.actions.nutrient.savePreset).toHaveBeenCalledWith({ name: 'My Preset' });
+        const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog') as any;
+        expect(dialog?.inventory).toEqual(inventory);
     });
 
-    it('should handle @update-stock on watering dialog', async () => {
-        mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { plantIds: [] } });
+    it('should pass presets from store to feed-and-water-dialog', async () => {
+        const presets = { p1: { id: 'p1', name: 'Veg Mix', nutrients: [], stage: 'veg', week: 1 } };
+        mockStore.dataService.$nutrientPresets.set(presets);
+        mockStore.ui.$activeDialog.set({ type: 'WATERING', payload: { mode: 'growspace', growspace_id: 'gs1' } });
         await element.updateComplete;
         await element.updateComplete;
 
-        const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
-        dialog?.dispatchEvent(new CustomEvent('update-stock', {
-            detail: { id: 'n1', name: 'CalMag', current_ml: 500, initial_ml: 1000 }
-        }));
-        expect(mockStore.actions.library.updateNutrientStock).toHaveBeenCalledWith('n1', 'CalMag', 500, 1000);
+        const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog') as any;
+        expect(dialog?.presets).toEqual(presets);
     });
 
     it('should render nutrient-presets-editor for NUTRIENT_PRESETS type', async () => {
@@ -617,11 +616,11 @@ describe('GrowspaceDialogHostContainer', () => {
         );
     });
 
-    it('should render nutrient-dialog for NUTRIENTS type', async () => {
+    it('should render feed-and-water-dialog for NUTRIENTS type', async () => {
         mockStore.ui.$activeDialog.set({ type: 'NUTRIENTS', payload: {} });
         await element.updateComplete;
         await element.updateComplete;
-        expect(element.shadowRoot?.querySelector('nutrient-dialog')).toBeTruthy();
+        expect(element.shadowRoot?.querySelector('feed-and-water-dialog')).toBeTruthy();
     });
 
     it('should render print-label-dialog for PRINT_LABEL type', async () => {
@@ -1006,8 +1005,8 @@ describe('GrowspaceDialogHostContainer', () => {
             testDialogEvent('LOGBOOK', 'logbook-dialog', 'close', () => 
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
-        it('should handle @close on WATERING', () => 
-            testDialogEvent('WATERING', 'growspace-watering-dialog-ui', 'close', () => 
+        it('should handle @close on WATERING', () =>
+            testDialogEvent('WATERING', 'feed-and-water-dialog', 'close', () =>
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
         it('should handle @close on NUTRIENT_PRESETS', () => 
@@ -1036,15 +1035,6 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.useFakeTimers();
             const refreshSpy = vi.spyOn(mockStore, 'refreshData');
             await testDialogEvent('LOGBOOK', 'logbook-dialog', 'data-changed', () => {});
-            vi.runAllTimers();
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
-        });
-
-        it('should handle @data-changed on NUTRIENTS', async () => {
-            vi.useFakeTimers();
-            const refreshSpy = vi.spyOn(mockStore, 'refreshData');
-            await testDialogEvent('NUTRIENTS', 'nutrient-dialog', 'data-changed', () => {});
             vi.runAllTimers();
             expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
             vi.useRealTimers();
@@ -1123,13 +1113,9 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
 
-        it('should handle @data-changed on WATERING', async () => {
-            vi.useFakeTimers();
-            const refreshSpy = vi.spyOn(mockStore, 'refreshData');
-            await testDialogEvent('WATERING', 'growspace-watering-dialog-ui', 'data-changed', () => {});
-            vi.runAllTimers();
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
+        it('should handle @close on feed-and-water-dialog via WATERING', async () => {
+            await testDialogEvent('WATERING', 'feed-and-water-dialog', 'close', () =>
+                expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled());
         });
 
         it('should handle @close on SNAPSHOTS', () => 
@@ -1148,8 +1134,8 @@ describe('GrowspaceDialogHostContainer', () => {
             testDialogEvent('TAKE_CLONE', 'clone-dialog', 'close', () => 
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
-        it('should handle @close on NUTRIENTS', () => 
-            testDialogEvent('NUTRIENTS', 'nutrient-dialog', 'close', () => 
+        it('should handle @close on NUTRIENTS', () =>
+            testDialogEvent('NUTRIENTS', 'feed-and-water-dialog', 'close', () =>
                 expect(mockStore.actions.ui.closeDialog).toHaveBeenCalled()));
 
         it('should handle @close on PRINT_LABEL', () => 
@@ -1248,6 +1234,48 @@ describe('GrowspaceDialogHostContainer', () => {
             vi.advanceTimersByTime(500);
             expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
             vi.useRealTimers();
+        });
+
+        it('should surface library error inline when addBatch rejects and keep dialog open', async () => {
+            const libraryError = new Error('Strain name is required');
+            mockStore.actions.plant.addBatch = vi.fn().mockRejectedValue(libraryError);
+            mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
+            await element.updateComplete;
+
+            const addPlantsDialog = element.shadowRoot?.querySelector('add-plants-dialog') as any;
+            addPlantsDialog?.dispatchEvent(new CustomEvent('add-plants-submit', {
+                detail: { strain: '', amount: 1, addToLibrary: true },
+                bubbles: true,
+                composed: true,
+            }));
+
+            await vi.waitFor(() => {
+                expect(addPlantsDialog?.libraryError).toBe('Strain name is required');
+            });
+            expect(mockStore.actions.ui.setActiveDialog).not.toHaveBeenCalledWith(
+                expect.objectContaining({ type: expect.stringMatching(/^(?!ADD_PLANTS)/) })
+            );
+        });
+
+        it('should clear library error on subsequent successful addBatch', async () => {
+            mockStore.actions.plant.addBatch = vi.fn()
+                .mockRejectedValueOnce(new Error('First attempt failed'))
+                .mockResolvedValueOnce(undefined);
+            mockStore.ui.$activeDialog.set({ type: 'ADD_PLANTS', payload: {} });
+            await element.updateComplete;
+
+            const addPlantsDialog = element.shadowRoot?.querySelector('add-plants-dialog') as any;
+            const submitEvent = () => addPlantsDialog?.dispatchEvent(new CustomEvent('add-plants-submit', {
+                detail: { strain: 'Blue Dream', amount: 1, addToLibrary: true },
+                bubbles: true,
+                composed: true,
+            }));
+
+            submitEvent();
+            await vi.waitFor(() => { expect(addPlantsDialog?.libraryError).toBe('First attempt failed'); });
+
+            submitEvent();
+            await vi.waitFor(() => { expect(addPlantsDialog?.libraryError).toBe(''); });
         });
 
         it('should handle strain library seed and pollination events', async () => {
@@ -1373,12 +1401,12 @@ describe('GrowspaceDialogHostContainer', () => {
                 { type: 'STRAIN_RECOMMENDATION', selector: 'strain-recommendation-dialog' },
                 { type: 'IRRIGATION', selector: 'irrigation-dialog' },
                 { type: 'LOGBOOK', selector: 'logbook-dialog' },
-                { type: 'WATERING', selector: 'growspace-watering-dialog-ui' },
+                { type: 'WATERING', selector: 'feed-and-water-dialog' },
                 { type: 'NUTRIENT_PRESETS', selector: 'growspace-nutrient-presets-editor' },
                 { type: 'TAKE_CLONE', selector: 'clone-dialog' },
                 { type: 'IPM', selector: 'growspace-ipm-dialog-ui' },
                 { type: 'NUTRIENT_INVENTORY', selector: 'growspace-nutrient-inventory-dialog-ui' },
-                { type: 'NUTRIENTS', selector: 'nutrient-dialog' },
+                { type: 'NUTRIENTS', selector: 'feed-and-water-dialog' },
                 { type: 'PRINT_LABEL', selector: 'print-label-dialog' },
                 { type: 'HARVEST_SCORING', selector: 'harvest-scoring-dialog' },
                 { type: 'SNAPSHOTS', selector: 'snapshots-dialog' },
@@ -2061,19 +2089,15 @@ describe('GrowspaceDialogHostContainer', () => {
             });
         });
 
-        it('should handle @submit-watering with array nutrients', async () => {
+        it('should handle @submit-watering with presetId', async () => {
             await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
-            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog');
             dialog?.dispatchEvent(new CustomEvent('submit-watering', {
-                detail: {
-                    volume: 500,
-                    nutrients: [{ name: 'CalMag', concentration: 2.5 }, { name: '', concentration: 0 }],
-                    presetId: null
-                }
+                detail: { volume: 500, presetId: 'preset-xyz' }
             }));
             await vi.waitFor(() => {
                 expect(sliceWaterPlant).toHaveBeenCalledWith(
-                    'p1', 500, { CalMag: 2.5 }, null
+                    'p1', 500, {}, 'preset-xyz'
                 );
             });
         });
@@ -2081,9 +2105,9 @@ describe('GrowspaceDialogHostContainer', () => {
         it('should handle @submit-watering failure', async () => {
             vi.mocked(sliceWaterPlant).mockRejectedValueOnce(new Error('Water failed'));
             await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
-            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog');
             dialog?.dispatchEvent(new CustomEvent('submit-watering', {
-                detail: { volume: 100, nutrients: {}, presetId: null }
+                detail: { volume: 100, presetId: null }
             }));
             await vi.waitFor(() => {
                 expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
@@ -2096,9 +2120,9 @@ describe('GrowspaceDialogHostContainer', () => {
         it('should handle @submit-watering failure with string error', async () => {
             vi.mocked(sliceWaterPlant).mockRejectedValueOnce('Water failed string');
             await openDialog('WATERING', { mode: 'plant', plant_id: 'p1' });
-            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog');
             dialog?.dispatchEvent(new CustomEvent('submit-watering', {
-                detail: { volume: 100, nutrients: {}, presetId: null }
+                detail: { volume: 100, presetId: null }
             }));
             await vi.waitFor(() => {
                 expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
@@ -2110,9 +2134,9 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle @submit-watering growspace mode with no growspaceId (skips call)', async () => {
             await openDialog('WATERING', { mode: 'growspace', growspace_id: '' });
-            const dialog = element.shadowRoot?.querySelector('growspace-watering-dialog-ui');
+            const dialog = element.shadowRoot?.querySelector('feed-and-water-dialog');
             dialog?.dispatchEvent(new CustomEvent('submit-watering', {
-                detail: { volume: 100, nutrients: {}, presetId: null }
+                detail: { volume: 100, presetId: null }
             }));
             await new Promise(r => setTimeout(r, 50));
             expect(mockStore.actions.environment.waterGrowspace).not.toHaveBeenCalled();

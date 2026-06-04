@@ -99,6 +99,14 @@ describe('addStrain', () => {
       'error'
     );
   });
+
+  it('passes converted flowering_days_min and max when set', async () => {
+    await addStrain(ctx, { ...strainData, flowering_days_min: 56, flowering_days_max: 70 });
+
+    expect(strainSlice.addStrain).toHaveBeenCalledWith(
+      expect.objectContaining({ flowering_days_min: 56, flowering_days_max: 70 })
+    );
+  });
 });
 
 // ─── updateStrain ─────────────────────────────────────────────────────────────

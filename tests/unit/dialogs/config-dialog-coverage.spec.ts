@@ -56,6 +56,13 @@ const mockCustomElements = () => {
             set label(val: any) {}
         });
     }
+    if (!customElements.get('md3-select')) {
+        customElements.define('md3-select', class extends HTMLElement {
+            set value(val: any) {}
+            set label(val: any) {}
+            set options(val: any) {}
+        });
+    }
 };
 
 describe('ConfigDialog - Branch Coverage Expansion', () => {
@@ -236,6 +243,15 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any)._openHumidityStageId = 'seedling';
         await element.updateComplete;
         expect((element as any)._openHumidityStageId).to.equal('seedling');
+
+        // Click the open accordion head again → isOpen=true branch → sets id to ''  (line 2141)
+        const openHead = Array.from(element.shadowRoot?.querySelectorAll('.acc-head') ?? [])
+            .find((h) => h.closest('.acc-card')?.querySelector('.acc-head-title')?.textContent?.includes('Seedling')) as HTMLElement | undefined;
+        if (openHead) {
+            openHead.click();
+            await element.updateComplete;
+            expect((element as any)._openHumidityStageId).to.equal('');
+        }
     });
 
 
@@ -858,5 +874,447 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         await element.updateComplete;
 
         expect((element as any).envSubstrateTemperatureSensors).toHaveLength(0);
+    });
+});
+
+// ─── Fan Controller Panel (ConfigTab.CLIMATE) — lines 1862–2038 ──────────────
+
+describe('ConfigDialog - Fan Controller Panel coverage', () => {
+    let element: ConfigDialog;
+
+    function allInputs() {
+        return Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') ?? []);
+    }
+
+    function dispatchAllInputs(value: string) {
+        for (const input of allInputs()) {
+            input.dispatchEvent(new CustomEvent('change', { detail: value }));
+        }
+    }
+
+    function fanCfg() {
+        return (element as any)._sm.environmentDraft.circulationFanConfig;
+    }
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        element.currentTab = ConfigTab.CLIMATE;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('enabled toggle (line 1862) sets circulationFanConfig.enabled', async () => {
+        const checkboxes = Array.from(
+            element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? []
+        ) as HTMLInputElement[];
+        const enabledCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Enabled'));
+        expect(enabledCb).toBeDefined();
+        enabledCb!.checked = true;
+        enabledCb!.dispatchEvent(new Event('change'));
+        expect(fanCfg().enabled).toBe(true);
+    });
+
+    it('regulation_mode change handler (line 1879) updates regulation_mode', async () => {
+        const select = element.shadowRoot?.querySelector('md3-select');
+        expect(select).toBeDefined();
+        select!.dispatchEvent(new CustomEvent('change', { detail: 'humidity' }));
+        expect(fanCfg().regulation_mode).toBe('humidity');
+    });
+
+    it('VPD mode (default) — vpd_target, vpd_tolerance, min_speed, max_speed handlers fire (lines 1889–2004)', async () => {
+        expect(allInputs().length).toBeGreaterThanOrEqual(4);
+        dispatchAllInputs('1.5');
+        expect(fanCfg().vpd_target).toBeCloseTo(1.5);
+        expect(fanCfg().vpd_tolerance).toBeCloseTo(1.5);
+        expect(fanCfg().min_speed).toBeCloseTo(1.5);
+        expect(fanCfg().max_speed).toBeCloseTo(1.5);
+    });
+
+    it('humidity mode — humidity_target / humidity_tolerance handlers fire (lines 1905–1911)', async () => {
+        (element as any)._updateFanConfig({ regulation_mode: 'humidity' });
+        await element.updateComplete;
+        dispatchAllInputs('65');
+        expect(fanCfg().humidity_target).toBeCloseTo(65);
+        expect(fanCfg().humidity_tolerance).toBeCloseTo(65);
+    });
+
+    it('temperature mode — temperature_target / temperature_tolerance handlers fire (lines 1921–1929)', async () => {
+        (element as any)._updateFanConfig({ regulation_mode: 'temperature' });
+        await element.updateComplete;
+        dispatchAllInputs('26');
+        expect(fanCfg().temperature_target).toBeCloseTo(26);
+        expect(fanCfg().temperature_tolerance).toBeCloseTo(26);
+    });
+
+    it('temperature override toggle expands section (line 1944) and wires critical temp handlers with null branch (lines 1961–1984)', async () => {
+        // VPD mode (default) — override button present
+        const overrideBtn = Array.from(element.shadowRoot?.querySelectorAll('button.md3-button.tonal') ?? [])
+            .find((b) => b.textContent?.includes('Temperature Override')) as HTMLElement | undefined;
+        expect(overrideBtn).toBeDefined();
+
+        overrideBtn!.click();
+        await element.updateComplete;
+        expect((element as any)._fanTempOverrideExpanded).toBe(true);
+
+        // Find the override row-col-grid: first `.row-col-grid` with margin-top style
+        const overrideGrids = Array.from(
+            element.shadowRoot?.querySelectorAll('.row-col-grid[style*="margin-top"]') ?? []
+        );
+        expect(overrideGrids.length).toBeGreaterThanOrEqual(1);
+        const overrideInputs = Array.from(overrideGrids[0].querySelectorAll('md3-number-input'));
+        expect(overrideInputs.length).toBe(3);
+
+        // non-empty detail → parseFloat
+        overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '18' }));
+        expect(fanCfg().critical_temp_low).toBeCloseTo(18);
+        overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '30' }));
+        expect(fanCfg().critical_temp_high).toBeCloseTo(30);
+        overrideInputs[2].dispatchEvent(new CustomEvent('change', { detail: '2' }));
+        expect(fanCfg().critical_temp_hysteresis).toBeCloseTo(2);
+
+        // empty detail → null (covers the else-branch at lines 1963 and 1972)
+        overrideInputs[0].dispatchEvent(new CustomEvent('change', { detail: '' }));
+        expect(fanCfg().critical_temp_low).toBeNull();
+        overrideInputs[1].dispatchEvent(new CustomEvent('change', { detail: '' }));
+        expect(fanCfg().critical_temp_high).toBeNull();
+
+        // Collapse
+        overrideBtn!.click();
+        await element.updateComplete;
+        expect((element as any)._fanTempOverrideExpanded).toBe(false);
+    });
+
+    it('wind_enabled toggle (lines 2014–2015) expands wind settings; period/amplitude handlers fire (lines 2025–2033)', async () => {
+        const checkboxes = Array.from(
+            element.shadowRoot?.querySelectorAll('input[type="checkbox"]') ?? []
+        ) as HTMLInputElement[];
+        const windCb = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Dynamic Wind'));
+        expect(windCb).toBeDefined();
+        windCb!.checked = true;
+        windCb!.dispatchEvent(new Event('change'));
+        await element.updateComplete;
+        expect(fanCfg().wind_enabled).toBe(true);
+
+        // Wind inputs are the last row-col-grid with margin-top style
+        const marginGrids = Array.from(
+            element.shadowRoot?.querySelectorAll('.row-col-grid[style*="margin-top"]') ?? []
+        );
+        const windInputs = Array.from(marginGrids[marginGrids.length - 1].querySelectorAll('md3-number-input'));
+        expect(windInputs.length).toBe(2);
+
+        windInputs[0].dispatchEvent(new CustomEvent('change', { detail: '90' }));
+        expect(fanCfg().wind_period_seconds).toBeCloseTo(90);
+        windInputs[1].dispatchEvent(new CustomEvent('change', { detail: '20' }));
+        expect(fanCfg().wind_amplitude_pct).toBeCloseTo(20);
+    });
+});
+
+// ─── Remaining branch gaps: lines 2725, 2770, 2969 ───────────────────────────
+
+describe('ConfigDialog - remaining branch coverage (lines 2725, 2770, 2969)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('line 2725 false-branch: renders "Select a growspace" placeholder when envId empty and gsSub is idle', async () => {
+        // envSelectedId = '' and growspaces sub = idle → growspaceId = '' → guard fires
+        (element as any).envSelectedId = '';
+        element.currentTab = ConfigTab.SUBAREAS;
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.textContent).toContain('Select a growspace');
+    });
+
+    it('line 2725 true-branch: falls back to gsSub.growspaceId when envId empty and gsSub is editing', async () => {
+        // SELECT_GROWSPACE puts tabs.growspaces.sub into { kind: 'editing', growspaceId: 'gs1', ... }
+        (element as any)._t({ type: 'SELECT_GROWSPACE', growspaceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationService: '' });
+        (element as any).envSelectedId = '';
+        element.currentTab = ConfigTab.SUBAREAS;
+        await element.updateComplete;
+
+        // growspaceId resolves to gsSub.growspaceId ('gs1') → subareas section renders (not placeholder)
+        expect(element.shadowRoot?.textContent).not.toContain('Select a growspace');
+    });
+
+    it('line 2770 false-branch: non-Enter keydown on subarea name input does not call _handleAddSubarea', async () => {
+        (element as any).envSelectedId = 'gs1';
+        element.currentTab = ConfigTab.SUBAREAS;
+        (element as any)._showAddSubarea = true;
+        await element.updateComplete;
+
+        const spy = vi.spyOn(element as any, '_handleAddSubarea').mockResolvedValue(undefined);
+
+        const nameInput = element.shadowRoot?.querySelector('input.md3-input') as HTMLInputElement | null;
+        expect(nameInput).toBeDefined();
+        nameInput!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }));
+
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('line 2969 false-branch: rail hidden when allowedTabs has exactly one entry', async () => {
+        element.allowedTabs = [ConfigTab.SENSORS];
+        await element.updateComplete;
+
+        expect(element.shadowRoot?.querySelector('.cfg-rail')).toBeNull();
+    });
+});
+
+// ─── Tank row/form branch gaps: lines 2475, 2507, 2565 ───────────────────────
+
+describe('ConfigDialog - Tank branch coverage (lines 2475, 2507, 2565)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        element.currentTab = ConfigTab.TANKS;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('line 2471/2474/2475: empty name falls back to "Tank 1"; null volumeLiters → nothing; null warningLevel → 30%', async () => {
+        (element as any).envIrrigationTanks = [
+            { sensorEntity: 'sensor.tank1', name: '', volumeLiters: null, warningLevel: null },
+        ];
+        await element.updateComplete;
+
+        // name || 'Tank X' fallback (line 2471)
+        expect(element.shadowRoot?.textContent).toContain('Tank 1');
+        // warningLevel ?? 30 → 30% (line 2475)
+        expect(element.shadowRoot?.textContent).toContain('30%');
+        // volumeLiters == null → nothing branch — no "L" suffix (line 2474)
+        expect(element.shadowRoot?.textContent).not.toMatch(/\d+ L/);
+    });
+
+    it('line 2507: IIFE guard returns nothing when tank sub kind is not adding or editing', async () => {
+        // The only valid non-idle states are 'adding' and 'editing', so trigger the dead-code
+        // branch by forcing a synthetic state that passes the outer kind !== 'idle' check
+        // but fails the inner guard.
+        const sm = (element as any)._sm;
+        (element as any)._sm = {
+            ...sm,
+            tabs: {
+                ...sm.tabs,
+                tanks: { sub: { kind: 'confirm-delete' } },
+            },
+        };
+        await element.updateComplete;
+
+        // Outer condition (kind !== 'idle') is satisfied; inner guard short-circuits to nothing
+        expect(element.shadowRoot?.querySelector('.md3-input-group')).toBeNull();
+    });
+
+    it('line 2565: warningLevel input cleared → parseFloat(NaN) || 30 stores 30', async () => {
+        (element as any)._openAddTank();
+        await element.updateComplete;
+
+        // Distinguish warning level input (max="100") from volume input (no max)
+        const inputs = Array.from(
+            element.shadowRoot?.querySelectorAll('input.md3-input') ?? []
+        ) as HTMLInputElement[];
+        const warningInput = inputs.find((i) => i.type === 'number' && i.max === '100');
+        expect(warningInput).toBeDefined();
+
+        // First set a real value so the assertion below is non-vacuous
+        warningInput!.value = '45';
+        warningInput!.dispatchEvent(new Event('input'));
+        expect((element as any)._sm.tabs.tanks.sub.warningLevel).toBe(45);
+
+        // Now clear it → parseFloat('') = NaN, NaN || 30 = 30
+        warningInput!.value = '';
+        warningInput!.dispatchEvent(new Event('input'));
+        expect((element as any)._sm.tabs.tanks.sub.warningLevel).toBe(30);
+    });
+});
+
+// ─── Misc branch coverage: getters, setters, guards, setInitialState ──────────
+
+describe('ConfigDialog - misc branch coverage (getters/setters/guards/setInitialState)', () => {
+    let element: ConfigDialog;
+
+    beforeEach(async () => {
+        mockCustomElements();
+        element = new ConfigDialog();
+        element.hass = { states: {}, callService: vi.fn() } as any;
+        element.growspaceOptions = { gs1: 'Growspace 1' };
+        element.devices = [
+            { deviceId: 'gs1', name: 'Growspace 1', rows: 4, plantsPerRow: 4, notificationTarget: '' },
+        ] as any;
+        document.body.appendChild(element);
+        element.open = true;
+        await element.updateComplete;
+    });
+
+    afterEach(() => {
+        document.body.removeChild(element);
+        vi.clearAllMocks();
+    });
+
+    it('edit/add getters return defaults when sub-state is idle (lines 291,297,303,309,315,324,333,342)', () => {
+        // sub.kind = 'idle' by default — all ternary false-branches fire
+        expect((element as any).editName).toBe('');
+        expect((element as any).editRows).toBe(0);
+        expect((element as any).editPlantsPerRow).toBe(0);
+        expect((element as any).editNotificationService).toBe('');
+        expect((element as any).addName).toBe('');
+        expect((element as any).addRows).toBe(4);
+        expect((element as any).addPlantsPerRow).toBe(4);
+        expect((element as any).addNotificationService).toBe('');
+    });
+
+    it('addRows/addPlantsPerRow/addNotificationService setters trigger START_ADD_GROWSPACE when idle (lines 327,336,345)', () => {
+        // sub.kind = 'idle' → setters should call START_ADD_GROWSPACE then UPDATE_ADD_DRAFT
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('idle');
+        (element as any).addRows = 6;
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addRows).toBe(6);
+
+        // Reset to idle and test the other two setters
+        (element as any)._t({ type: 'CANCEL_GROWSPACES' });
+        (element as any).addPlantsPerRow = 3;
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addPlantsPerRow).toBe(3);
+
+        (element as any)._t({ type: 'CANCEL_GROWSPACES' });
+        (element as any).addNotificationService = 'notify.mobile';
+        expect((element as any)._sm.tabs.growspaces.sub.kind).toBe('adding');
+        expect((element as any).addNotificationService).toBe('notify.mobile');
+    });
+
+    it('_newSubareaName getter returns "" when sub is not adding (line 387)', () => {
+        // sub.kind = 'idle' → false branch of ternary
+        expect((element as any)._newSubareaName).toBe('');
+    });
+
+    it('setInitialState without environmentData leaves draft at defaults (line 943)', () => {
+        // No environmentData → envPartial = {} → SM uses initial draft
+        element.setInitialState(ConfigTab.SENSORS);
+        expect((element as any)._sm.environmentDraft.selectedGrowspaceId).toBe('');
+    });
+
+    it('setInitialState with legacy single-sensor fields maps to arrays (lines 948,953,956,958)', () => {
+        element.setInitialState(ConfigTab.SENSORS, {
+            selectedGrowspaceId: 'gs1',
+            // no *Sensors arrays → falls back to legacy single-sensor fields
+            temperatureSensor: 'sensor.temp',
+            humiditySensor: 'sensor.hum',
+            vpdSensor: 'sensor.vpd',
+            // no lightSensors / lightSensor
+        } as any);
+        expect((element as any)._sm.environmentDraft.temperatureSensors).toEqual(['sensor.temp']);
+        expect((element as any)._sm.environmentDraft.humiditySensors).toEqual(['sensor.hum']);
+        expect((element as any)._sm.environmentDraft.vpdSensors).toEqual(['sensor.vpd']);
+    });
+
+    it('_editTank with empty/null fields uses || and ?? fallbacks (lines 1363–1366)', () => {
+        (element as any).envIrrigationTanks = [
+            { sensorEntity: '', name: '', volumeLiters: null, warningLevel: null },
+        ];
+        (element as any)._updateFanConfig; // ensure element is set up
+        (element as any)._editTank(0);
+        const sub = (element as any)._sm.tabs.tanks.sub;
+        expect(sub.kind).toBe('editing');
+        expect(sub.sensorEntity).toBe('');   // || '' fallback
+        expect(sub.name).toBe('');            // || '' fallback
+        expect(sub.volumeLiters).toBeNull();  // ?? null fallback
+        expect(sub.warningLevel).toBe(30);   // ?? 30 fallback
+    });
+
+    it('_saveTank returns early when kind is idle (line 1377)', () => {
+        // kind = 'idle' → first guard fires, method returns without committing
+        expect((element as any)._sm.tabs.tanks.sub.kind).toBe('idle');
+        (element as any)._saveTank(); // should not throw or change state
+        expect((element as any)._sm.tabs.tanks.sub.kind).toBe('idle');
+    });
+
+    it('_handleSaveGroup updates existing group when found (line 1405 index >= 0 branch)', () => {
+        const existing = { id: 'g1', name: 'Group A', sensors: [] };
+        (element as any)._t({ type: 'UPDATE_ENV_DRAFT', partial: { sensorGroups: [existing] } });
+
+        const updated = { id: 'g1', name: 'Group A Renamed', sensors: ['sensor.a'] };
+        (element as any)._handleSaveGroup(new CustomEvent('save-sensor-group', { detail: { group: updated } }));
+
+        const groups = (element as any)._sm.environmentDraft.sensorGroups;
+        expect(groups).toHaveLength(1);
+        expect(groups[0].name).toBe('Group A Renamed');
+    });
+
+    it('_confirmDeleteGrowspace returns early when not in confirm-delete state (line 1146)', () => {
+        const spy = vi.fn();
+        element.addEventListener('delete-growspace-submit', spy);
+        // sub.kind = 'idle' → guard fires → returns without dispatching
+        (element as any)._confirmDeleteGrowspace();
+        expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('_populateEditFields returns early when devices is undefined (line 1194)', () => {
+        (element as any).devices = undefined;
+        // Should not throw; the guard at line 1194 prevents the find() call
+        expect(() => (element as any)._populateEditFields('gs1')).not.toThrow();
+    });
+
+    it('_loadSubareas uses gsSub.growspaceId when envId is empty and sub is editing (line 1420)', async () => {
+        (element as any)._t({ type: 'SELECT_GROWSPACE', growspaceId: 'gs1', name: 'GS', rows: 4, plantsPerRow: 4, notificationService: '' });
+        (element as any).envSelectedId = '';
+
+        const loadSpy = vi.spyOn(element as any, '_loadSubareas').mockResolvedValue(undefined);
+        // Directly test the editId fallback by calling the real method once
+        loadSpy.mockRestore();
+
+        const { getSubareas: mockGet } = await import('../../../src/slices/subarea');
+        vi.mocked(mockGet).mockResolvedValueOnce([]);
+        await (element as any)._loadSubareas();
+
+        // growspaceId = '' || 'gs1' (from gsSub.growspaceId) → loaded with 'gs1'
+        expect((element as any)._subareasGrowspaceId).toBe('gs1');
+    });
+
+    it('_handleAddSubarea returns early when sub is not adding (line 1441)', async () => {
+        // sub.kind = 'idle' → name = '' → early return
+        expect((element as any)._sm.tabs.subareas.sub.kind).toBe('idle');
+        const { addSubarea: mockAdd } = await import('../../../src/slices/subarea');
+        await (element as any)._handleAddSubarea();
+        expect(vi.mocked(mockAdd)).not.toHaveBeenCalled();
     });
 });

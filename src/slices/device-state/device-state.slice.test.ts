@@ -368,6 +368,213 @@ describe('computeDeviceSnapshot — icon field', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Cycle 11 — light sensor numeric fallback (non-% unit, non-binary state)
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — light sensor numeric fallback', () => {
+  it('returns rounded integer string for a numeric lux state without a % unit', () => {
+    const device = makeDevice({
+      environmentAttributes: { lightSensors: ['sensor.tent_1_lux'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.tent_1_lux': makeHassEntity('sensor.tent_1_lux', '520.7', {
+        unit_of_measurement: 'lux',
+      }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors!.value).toBe('521');
+  });
+
+  it('returns undefined for a light sensor with an unrecognized non-numeric state', () => {
+    const device = makeDevice({
+      environmentAttributes: { lightSensors: ['sensor.tent_1_light'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.tent_1_light': makeHassEntity('sensor.tent_1_light', 'measuring', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.lightSensors!.value).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 12 — on/off device numeric fallback (humidifier / dehumidifier)
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — on/off device numeric fallback', () => {
+  it.each([
+    ['humidifiers', 'humidifierEntities', 'switch.humi'],
+    ['dehumidifiers', 'dehumidifierEntities', 'switch.dehumi'],
+  ] as const)(
+    '%s: returns "On" when entity state is numeric "1"',
+    (deviceType, entityAttr, entityId) => {
+      const device = makeDevice({ environmentAttributes: { [entityAttr]: [entityId] } });
+      const hassStates: HassStates = {
+        [entityId]: makeHassEntity(entityId, '1', {}),
+      };
+
+      const snapshot = computeDeviceSnapshot(device, hassStates);
+
+      expect(snapshot[deviceType]!.value).toBe('On');
+    }
+  );
+
+  it.each([
+    ['humidifiers', 'humidifierEntities', 'switch.humi'],
+    ['dehumidifiers', 'dehumidifierEntities', 'switch.dehumi'],
+  ] as const)(
+    '%s: returns "Off" when entity state is numeric "0"',
+    (deviceType, entityAttr, entityId) => {
+      const device = makeDevice({ environmentAttributes: { [entityAttr]: [entityId] } });
+      const hassStates: HassStates = {
+        [entityId]: makeHassEntity(entityId, '0', {}),
+      };
+
+      const snapshot = computeDeviceSnapshot(device, hassStates);
+
+      expect(snapshot[deviceType]!.value).toBe('Off');
+    }
+  );
+
+  it('returns undefined for a humidifier with an unrecognized non-numeric state', () => {
+    const device = makeDevice({
+      environmentAttributes: { humidifierEntities: ['switch.humi'] },
+    });
+    const hassStates: HassStates = {
+      'switch.humi': makeHassEntity('switch.humi', 'idle', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.humidifiers!.value).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 13 — fan device binary domain with numeric state (line 114)
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — fan device binary domain with numeric state', () => {
+  it.each([
+    ['switch', '1', 'On'],
+    ['switch', '0', 'Off'],
+    ['input_boolean', '1', 'On'],
+    ['input_boolean', '0', 'Off'],
+  ] as const)(
+    '%s domain with numeric state "%s" shows "%s"',
+    (domain, state, expected) => {
+      const entityId = `${domain}.fan`;
+      const device = makeDevice({
+        environmentAttributes: { exhaustFanEntities: [entityId] },
+      });
+      const hassStates: HassStates = {
+        [entityId]: makeHassEntity(entityId, state, {}),
+      };
+
+      const snapshot = computeDeviceSnapshot(device, hassStates);
+
+      expect(snapshot.exhaustFans!.value).toBe(expected);
+    }
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 14 — fan device total fallthrough (non-fan, non-numeric, non-on/off)
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — fan device unrecognized state', () => {
+  it('returns undefined for a non-fan entity with an unrecognized non-numeric state', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['sensor.fan'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.fan': makeHassEntity('sensor.fan', 'idle', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 9 — HA fan entity (fan.* domain) chip display
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — HA fan entity (fan.* domain)', () => {
+  it('shows percentage when an exhaust fan entity is a HA fan entity with state "on"', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['fan.tent_1_exhaust'] },
+    });
+    const hassStates: HassStates = {
+      'fan.tent_1_exhaust': makeHassEntity('fan.tent_1_exhaust', 'on', { percentage: 70 }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('70%');
+  });
+
+  it('shows "Off" when a HA fan entity state is "off"', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanEntities: ['fan.tent_1_circ'] },
+    });
+    const hassStates: HassStates = {
+      'fan.tent_1_circ': makeHassEntity('fan.tent_1_circ', 'off', { percentage: 0 }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.circulationFans!.value).toBe('Off');
+  });
+
+  it('shows raw integer for a speed sensor (numeric state, non-fan domain)', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['sensor.tent_1_fan_speed'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.tent_1_fan_speed': makeHassEntity('sensor.tent_1_fan_speed', '5', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('5');
+  });
+
+  it('still shows "On"/"Off" for a binary switch fan', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['switch.tent_1_exhaust'] },
+    });
+    const hassStates: HassStates = {
+      'switch.tent_1_exhaust': makeHassEntity('switch.tent_1_exhaust', 'on', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('On');
+  });
+
+  it('shows "Multiple" with percentage multiValues for multiple HA fan entities', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanEntities: ['fan.circ_a', 'fan.circ_b'] },
+    });
+    const hassStates: HassStates = {
+      'fan.circ_a': makeHassEntity('fan.circ_a', 'on', { percentage: 70 }),
+      'fan.circ_b': makeHassEntity('fan.circ_b', 'on', { percentage: 50 }),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.circulationFans!.value).toBe('Multiple');
+    expect(snapshot.circulationFans!.multiValues).toEqual(['70%', '50%']);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Cycle 8 — deviceSnapshots$ atom and setDeviceSnapshot bootstrap write
 // ---------------------------------------------------------------------------
 
@@ -407,6 +614,64 @@ describe('deviceSnapshots$ atom and setDeviceSnapshot', () => {
 
     expect(deviceSnapshots$.get().get('gs1')!.exhaustFans!.value).toBe('Off');
   });
+
+// ---------------------------------------------------------------------------
+// Cycle 10 — Speed sensor at 0 and 1 (issue #224)
+// ---------------------------------------------------------------------------
+
+describe('computeDeviceSnapshot — speed sensor at boundary values', () => {
+  it('shows "0" for a speed sensor with state "0" (not "-")', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['sensor.fan_speed'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '0', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('0');
+  });
+
+  it('shows "1" for a speed sensor with state "1" (not "-")', () => {
+    const device = makeDevice({
+      environmentAttributes: { circulationFanEntities: ['sensor.fan_speed'] },
+    });
+    const hassStates: HassStates = {
+      'sensor.fan_speed': makeHassEntity('sensor.fan_speed', '1', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.circulationFans!.value).toBe('1');
+  });
+
+  it('still shows "On" for a switch domain at state "1"', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['switch.fan'] },
+    });
+    const hassStates: HassStates = {
+      'switch.fan': makeHassEntity('switch.fan', 'on', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('On');
+  });
+
+  it('still shows "Off" for an input_boolean domain at state "off"', () => {
+    const device = makeDevice({
+      environmentAttributes: { exhaustFanEntities: ['input_boolean.fan'] },
+    });
+    const hassStates: HassStates = {
+      'input_boolean.fan': makeHassEntity('input_boolean.fan', 'off', {}),
+    };
+
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+
+    expect(snapshot.exhaustFans!.value).toBe('Off');
+  });
+});
 
   it('setDeviceSnapshot stores independent snapshots for different growspaces', () => {
     const device1 = makeDevice({

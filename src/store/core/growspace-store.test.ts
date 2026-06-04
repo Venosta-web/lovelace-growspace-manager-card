@@ -1,0 +1,414 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { GrowspaceStore } from './growspace-store';
+import { GrowspaceSharedStore } from './growspace-shared-store';
+import { devices$, setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
+import { nutrientPresets$, ipmPresets$, nutrientInventory$ } from '../../slices/nutrient';
+import * as plantSlice from '../../slices/plant';
+import * as aiActions from '../system/ai-actions';
+
+vi.mock('../../slices/plant', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('../../slices/plant')>();
+  return { ...mod, updatePlant: vi.fn() };
+});
+
+vi.mock('../system/ai-actions', () => ({
+  getStrainRecommendation: vi.fn(),
+}));
+
+function makeStore() {
+  const shared = new GrowspaceSharedStore();
+  const store = new GrowspaceStore(shared);
+  return { store, shared };
+}
+
+function makeHass(overrides: Record<string, unknown> = {}) {
+  return { language: 'en', states: {}, ...overrides } as any;
+}
+
+describe('GrowspaceStore – computed atoms', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+  });
+
+  afterEach(() => {
+    setDevices([]);
+    nutrientPresets$.set(null);
+    ipmPresets$.set(null);
+    nutrientInventory$.set(null);
+  });
+
+  it('$plantCardViewState exposes isEditMode, selectedPlants, devices, nutrientPresets', () => {
+    const state = store.$plantCardViewState.get();
+    expect(state).toHaveProperty('isEditMode');
+    expect(state).toHaveProperty('selectedPlants');
+    expect(state).toHaveProperty('devices');
+    expect(state).toHaveProperty('nutrientPresets');
+  });
+
+  it('$plantCardViewState defaults nutrientPresets to {} when atom is null', () => {
+    nutrientPresets$.set(null);
+    expect(store.$plantCardViewState.get().nutrientPresets).toEqual({});
+  });
+
+  it('$sharedCardViewState exposes grid and ui', () => {
+    const state = store.$sharedCardViewState.get();
+    expect(state).toHaveProperty('grid');
+    expect(state).toHaveProperty('ui');
+  });
+
+  it('$viewStandardState exposes devices', () => {
+    const device = { deviceId: 'gs1', name: 'GS1', plants: [] } as any;
+    setDevices([device]);
+    expect(store.$viewStandardState.get().devices).toHaveLength(1);
+  });
+
+  it('$headerState exposes devices, nutrientInventory, history', () => {
+    const state = store.$headerState.get();
+    expect(state).toHaveProperty('devices');
+    expect(state).toHaveProperty('nutrientInventory');
+    expect(state).toHaveProperty('history');
+  });
+
+  it('$mainCardState exposes grid, ui, strainLibrary', () => {
+    const state = store.$mainCardState.get();
+    expect(state).toHaveProperty('grid');
+    expect(state).toHaveProperty('ui');
+    expect(state).toHaveProperty('strainLibrary');
+  });
+
+  it('$dialogHostState defaults nutrientPresets and ipmPresets to {} when atoms are null', () => {
+    nutrientPresets$.set(null);
+    ipmPresets$.set(null);
+    const state = store.$dialogHostState.get();
+    expect(state.nutrientPresets).toEqual({});
+    expect(state.ipmPresets).toEqual({});
+  });
+});
+
+describe('GrowspaceStore – initialize and destroy', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+  });
+
+  it('initialize sets hass and calls updateHass', () => {
+    const updateSpy = vi.spyOn(store, 'updateHass');
+    const hass = makeHass();
+    store.initialize(hass);
+    expect(store.hass).toBe(hass);
+    expect(updateSpy).toHaveBeenCalledWith(hass);
+  });
+
+  it('destroy calls history.destroy and eventBus.clear', () => {
+    const historySpy = vi.spyOn(store.history, 'destroy');
+    const busSpy = vi.spyOn(store.eventBus, 'clear');
+    store.destroy();
+    expect(historySpy).toHaveBeenCalledOnce();
+    expect(busSpy).toHaveBeenCalledOnce();
+  });
+
+  it('destroy unsubscribes from shared stale events', () => {
+    const refreshSpy = vi
+      .spyOn(store.syncService, 'refreshGrowspaceData')
+      .mockResolvedValue(undefined);
+    store.destroy();
+    (store as any)._shared._handleEvent({});
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('GrowspaceStore – undo/redo delegation', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+  });
+
+  it('pushUndoAction delegates to undoRedoManager', () => {
+    const spy = vi.spyOn(store.undoRedoManager, 'pushAction');
+    const action = { undo: vi.fn(), redo: vi.fn(), description: 'test' };
+    store.pushUndoAction(action as any);
+    expect(spy).toHaveBeenCalledWith(action);
+  });
+
+  it('canUndo reflects undoRedoManager state', () => {
+    expect(store.canUndo).toBe(store.undoRedoManager.canUndo);
+  });
+
+  it('canRedo reflects undoRedoManager state', () => {
+    expect(store.canRedo).toBe(store.undoRedoManager.canRedo);
+  });
+
+  it('undo delegates to undoRedoManager', async () => {
+    const spy = vi.spyOn(store.undoRedoManager, 'undo').mockResolvedValue(undefined);
+    await store.undo();
+    expect(spy).toHaveBeenCalledOnce();
+  });
+
+  it('redo delegates to undoRedoManager', async () => {
+    const spy = vi.spyOn(store.undoRedoManager, 'redo').mockResolvedValue(undefined);
+    await store.redo();
+    expect(spy).toHaveBeenCalledOnce();
+  });
+});
+
+describe('GrowspaceStore – updateHass', () => {
+  let store: GrowspaceStore;
+  let shared: GrowspaceSharedStore;
+
+  beforeEach(() => {
+    ({ store, shared } = makeStore());
+  });
+
+  it('propagates hass to shared store and syncService', () => {
+    const sharedSpy = vi.spyOn(shared, 'updateHass');
+    const syncSpy = vi.spyOn(store.syncService, 'updateHass');
+    const hass = makeHass();
+    store.updateHass(hass);
+    expect(sharedSpy).toHaveBeenCalledWith(hass);
+    expect(syncSpy).toHaveBeenCalledWith(hass);
+    expect(store.hass).toBe(hass);
+  });
+
+  it('updates ui language when hass.language differs', () => {
+    const spy = vi.spyOn(store.ui, 'setLanguage');
+    store.updateHass(makeHass({ language: 'de' }));
+    expect(spy).toHaveBeenCalledWith('de');
+  });
+
+  it('does not update ui language when hass.language is unchanged', () => {
+    store.ui.$language.set('en');
+    const spy = vi.spyOn(store.ui, 'setLanguage');
+    store.updateHass(makeHass({ language: 'en' }));
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
+describe('GrowspaceStore – refreshData', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    setDevices([]);
+    optimisticDeletedPlantIds$.set(new Set());
+  });
+
+  it('calls syncService.refreshGrowspaceData', async () => {
+    await store.refreshData();
+    expect(store.syncService.refreshGrowspaceData).toHaveBeenCalledOnce();
+  });
+
+  it('invalidates cache when force=true', async () => {
+    const invalidateSpy = vi.spyOn(store.dataService, 'invalidateCache');
+    await store.refreshData(true);
+    expect(invalidateSpy).toHaveBeenCalledOnce();
+  });
+
+  it('does not invalidate cache when force=false', async () => {
+    const invalidateSpy = vi.spyOn(store.dataService, 'invalidateCache');
+    await store.refreshData(false);
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('GrowspaceStore – _pruneOptimisticDeletions', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    setDevices([]);
+    optimisticDeletedPlantIds$.set(new Set());
+  });
+
+  it('removes optimistic IDs that no longer appear in any device plants', async () => {
+    optimisticDeletedPlantIds$.set(new Set(['gone-plant']));
+    setDevices([]);
+    await store.refreshData();
+    expect(optimisticDeletedPlantIds$.get().has('gone-plant')).toBe(false);
+  });
+
+  it('keeps optimistic IDs that still appear in device plants', async () => {
+    const plant = { entity_id: 'sensor.keep-plant', attributes: { plant_id: 'keep-plant' } } as any;
+    setDevices([{ deviceId: 'gs1', name: 'GS1', plants: [plant] } as any]);
+    optimisticDeletedPlantIds$.set(new Set(['keep-plant']));
+    await store.refreshData();
+    expect(optimisticDeletedPlantIds$.get().has('keep-plant')).toBe(true);
+  });
+
+  it('does nothing when optimistic set is empty', async () => {
+    optimisticDeletedPlantIds$.set(new Set());
+    await store.refreshData();
+    expect(optimisticDeletedPlantIds$.get().size).toBe(0);
+  });
+});
+
+describe('GrowspaceStore – initializeSelectedDevice and handleDeviceChange', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+  });
+
+  it('initializeSelectedDevice does nothing when config is falsy', () => {
+    const spy = vi.spyOn(store.syncService, 'setCardConfig');
+    store.initializeSelectedDevice(null as any);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('initializeSelectedDevice delegates to syncService', () => {
+    const setConfigSpy = vi.spyOn(store.syncService, 'setCardConfig');
+    const updateSpy = vi.spyOn(store.syncService, 'updateDevicesState');
+    const config = { default_growspace: 'gs1' } as any;
+    store.initializeSelectedDevice(config);
+    expect(setConfigSpy).toHaveBeenCalledWith(config);
+    expect(updateSpy).toHaveBeenCalledOnce();
+  });
+
+  it('handleDeviceChange sets selected device on grid', () => {
+    store.handleDeviceChange('gs2');
+    expect(store.grid.$selectedDevice.get()).toBe('gs2');
+  });
+});
+
+describe('GrowspaceStore – updateGrid', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+  });
+
+  it('calls dataService.updateHass when hass is set', () => {
+    const hass = makeHass();
+    store.hass = hass;
+    const spy = vi.spyOn(store.dataService, 'updateHass');
+    store.updateGrid();
+    expect(spy).toHaveBeenCalledWith(hass);
+  });
+
+  it('skips dataService.updateHass when hass is not set', () => {
+    const spy = vi.spyOn(store.dataService, 'updateHass');
+    store.updateGrid();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('calls refreshData after updating', () => {
+    const refreshSpy = vi.spyOn(store, 'refreshData');
+    store.updateGrid();
+    expect(refreshSpy).toHaveBeenCalledOnce();
+  });
+});
+
+describe('GrowspaceStore – movePlant', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+    vi.spyOn(store.syncService, 'refreshGrowspaceData').mockResolvedValue(undefined);
+  });
+
+  it('calls updatePlant and then updateGrid on success', async () => {
+    vi.mocked(plantSlice.updatePlant).mockResolvedValue(undefined as any);
+    const gridSpy = vi.spyOn(store, 'updateGrid');
+    const plant = { entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } } as any;
+    await store.movePlant(plant, 1, 2);
+    expect(plantSlice.updatePlant).toHaveBeenCalledWith('p1', { row: 1, col: 2 });
+    expect(gridSpy).toHaveBeenCalledOnce();
+  });
+
+  it('uses entity_id fallback when plant_id is absent', async () => {
+    vi.mocked(plantSlice.updatePlant).mockResolvedValue(undefined as any);
+    const plant = { entity_id: 'sensor.my-plant', attributes: {} } as any;
+    await store.movePlant(plant, 0, 0);
+    expect(plantSlice.updatePlant).toHaveBeenCalledWith('my-plant', expect.any(Object));
+  });
+
+  it('logs error and skips updateGrid when updatePlant rejects', async () => {
+    vi.mocked(plantSlice.updatePlant).mockRejectedValue(new Error('move failed'));
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+    const gridSpy = vi.spyOn(store, 'updateGrid');
+    const plant = { entity_id: 'sensor.p1', attributes: { plant_id: 'p1' } } as any;
+    await store.movePlant(plant, 0, 0);
+    expect(consoleSpy).toHaveBeenCalled();
+    expect(gridSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('GrowspaceStore – getStrainRecommendation', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+  });
+
+  it('returns result and updates dialog when type matches', async () => {
+    store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
+    vi.mocked(aiActions.getStrainRecommendation).mockResolvedValue('Great strain!');
+    const result = await store.getStrainRecommendation('best indica');
+    expect(result).toBe('Great strain!');
+    const dialog = store.ui.$activeDialog.get() as any;
+    expect(dialog.payload.isLoading).toBe(false);
+    expect(dialog.payload.response).toBe('Great strain!');
+  });
+
+  it('stringifies non-string result', async () => {
+    store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
+    vi.mocked(aiActions.getStrainRecommendation).mockResolvedValue({ text: 'hi' } as any);
+    await store.getStrainRecommendation('query');
+    const dialog = store.ui.$activeDialog.get() as any;
+    expect(dialog.payload.response).toBe(JSON.stringify({ text: 'hi' }));
+  });
+
+  it('updates dialog with error response and rethrows on failure', async () => {
+    store.ui.setActiveDialog({ type: 'STRAIN_RECOMMENDATION', payload: { isLoading: false, response: '' } });
+    vi.mocked(aiActions.getStrainRecommendation).mockRejectedValue(new Error('AI down'));
+    vi.spyOn(console, 'error').mockImplementation(() => { });
+    await expect(store.getStrainRecommendation('query')).rejects.toThrow('AI down');
+    const dialog = store.ui.$activeDialog.get() as any;
+    expect(dialog.payload.response).toContain('Error: AI down');
+    expect(dialog.payload.isLoading).toBe(false);
+  });
+
+  it('does not update dialog when dialog type does not match', async () => {
+    store.ui.setActiveDialog({ type: 'NONE' });
+    vi.mocked(aiActions.getStrainRecommendation).mockResolvedValue('result');
+    await store.getStrainRecommendation('query');
+    expect(store.ui.$activeDialog.get().type).toBe('NONE');
+  });
+});
+
+describe('GrowspaceStore – context getter', () => {
+  let store: GrowspaceStore;
+
+  beforeEach(() => {
+    ({ store } = makeStore());
+  });
+
+  it('returns ActionContext with expected keys', () => {
+    const ctx = store.context;
+    expect(ctx).toHaveProperty('dataService');
+    expect(ctx).toHaveProperty('ui');
+    expect(ctx).toHaveProperty('grid');
+    expect(ctx).toHaveProperty('undoRedoManager');
+    expect(ctx).toHaveProperty('optimisticManager');
+    expect(ctx).toHaveProperty('closeDialog');
+    expect(ctx).toHaveProperty('refreshData');
+  });
+
+  it('closeDialog in context calls ui.closeDialog', () => {
+    const spy = vi.spyOn(store.ui, 'closeDialog');
+    store.context.closeDialog();
+    expect(spy).toHaveBeenCalledOnce();
+  });
+});

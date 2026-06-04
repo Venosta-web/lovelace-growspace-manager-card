@@ -388,6 +388,30 @@ describe('StrainImportDialog', () => {
     expect(selectSpy).toHaveBeenCalledWith(mockResults[0]);
   });
 
+  it('downloads images via sendMessagePromise when available', async () => {
+    const mockDetails = {
+      name: 'Gelato',
+      breeder: 'Sherbinski',
+      type: 'Hybrid',
+      images: ['https://example.com/gelato.jpg'],
+    };
+    element.open = true;
+    await element.updateComplete;
+    (element as any)._details = mockDetails;
+
+    mockHass.connection = { sendMessagePromise: vi.fn().mockResolvedValue({ path: '/local/dl/gelato.jpg' }) };
+    element.hass = mockHass;
+
+    const importSpy = vi.fn();
+    element.addEventListener('import', importSpy);
+
+    await (element as any)._import();
+
+    const eventDetail = importSpy.mock.calls[0][0].detail;
+    expect(eventDetail.image).toBe('/local/dl/gelato.jpg');
+    expect(eventDetail.images).toEqual(['/local/dl/gelato.jpg']);
+  });
+
   it('handles image field click in UI', async () => {
     const mockDetails = { name: 'S', breeder: 'B', type: 'T', image: 'img.png' };
     element.open = true;

@@ -236,4 +236,54 @@ describe('GrowspaceSubareaCardEditor', () => {
         const firstOption = subareaField?.selector?.select?.options?.[0];
         expect(firstOption?.label).toBe('Select a growspace first');
     });
+
+    test('_computeSchema maps subareas into options when list is non-empty', () => {
+        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: 'gs1' };
+        (element as any)._subareas = [
+            { id: 'sa1', name: 'Veg Area' },
+            { id: 'sa2', name: 'Flower Area' },
+        ];
+
+        const schema = (element as any)._computeSchema();
+        const subareaField = schema.find((s: any) => s.name === 'subarea_id');
+        expect(subareaField.selector.select.options[0].label).toBe('Select a subarea...');
+        expect(subareaField.selector.select.options[1]).toEqual({ label: 'Veg Area', value: 'sa1' });
+        expect(subareaField.selector.select.options[2]).toEqual({ label: 'Flower Area', value: 'sa2' });
+    });
+
+    test('_computeSchema maps controller growspace options when populated', () => {
+        (element as any).willUpdate(new Map([['hass', null]]));
+        (element as any)._config = { type: 'custom:growspace-subarea-card', growspace_id: 'gs1' };
+
+        const schema = (element as any)._computeSchema();
+        const growspaceField = schema.find((s: any) => s.name === 'growspace_id');
+        expect(growspaceField.selector.select.options.length).toBe(3); // 1 default + 2 from mock
+        expect(growspaceField.selector.select.options[1]).toEqual({ label: 'Tent 1', value: 'gs1' });
+        expect(growspaceField.selector.select.options[2]).toEqual({ label: 'Tent 2', value: 'gs2' });
+    });
+
+    test('renders loading indicator when _loadingSubareas is true', async () => {
+        const el = await fixture<GrowspaceSubareaCardEditor>(html`
+            <growspace-subarea-card-editor></growspace-subarea-card-editor>
+        `);
+        el.hass = mockHass;
+        el.setConfig({ type: 'custom:growspace-subarea-card', growspace_id: 'gs1' } as any);
+        (el as any)._loadingSubareas = true;
+        await el.updateComplete;
+
+        expect(el.shadowRoot?.querySelector('.loading-text')).not.toBeNull();
+    });
+
+    test('renders form without loading indicator when _loadingSubareas is false', async () => {
+        const el = await fixture<GrowspaceSubareaCardEditor>(html`
+            <growspace-subarea-card-editor></growspace-subarea-card-editor>
+        `);
+        el.hass = mockHass;
+        el.setConfig({ type: 'custom:growspace-subarea-card' } as any);
+        (el as any)._loadingSubareas = false;
+        await el.updateComplete;
+
+        expect(el.shadowRoot?.querySelector('.loading-text')).toBeNull();
+        expect(el.shadowRoot?.querySelector('.card-config')).not.toBeNull();
+    });
 });

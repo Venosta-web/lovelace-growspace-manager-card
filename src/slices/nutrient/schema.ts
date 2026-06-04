@@ -12,8 +12,9 @@ export const NutrientPresetsSchema = z.record(
       name: z.string(),
       nutrients: z.array(
         z.object({
-          name: z.string(),
+          nutrient_id: z.string(),
           dose_ml_l: z.number(),
+          name: z.string().optional(),
         })
       ),
       stage: z
@@ -24,6 +25,9 @@ export const NutrientPresetsSchema = z.record(
         .number()
         .nullish()
         .transform((v) => v || undefined),
+      week: z.number().int().min(1).optional().default(1),
+      ec_target: z.number().min(0).nullish().transform((v) => v ?? undefined),
+      ph_target: z.number().min(0).max(14).nullish().transform((v) => v ?? undefined),
     })
     .passthrough()
 );
@@ -100,12 +104,28 @@ export type ECRampCurvesResponse = Record<string, ECRampCurve>;
 // Nutrient Inventory
 // ---------------------------------------------------------------------------
 
+export const NUTRIENT_STOCK_TYPES = [
+  'base',
+  'bloom',
+  'calmag',
+  'root',
+  'additive',
+  'microbe',
+] as const;
+
+export type NutrientStockType = (typeof NUTRIENT_STOCK_TYPES)[number];
+
 export const NutrientStockSchema = z.object({
   nutrient_id: z.string(),
   name: z.string(),
   current_ml: z.number(),
   initial_ml: z.number(),
   last_updated: z.string(),
+  brand: z.string().optional().default(''),
+  type: z.enum(NUTRIENT_STOCK_TYPES).optional().default('base'),
+  npk: z.string().optional().default(''),
+  dose_ml_l: z.number().optional().default(0),
+  notes: z.string().optional().default(''),
 });
 
 export const NutrientInventorySchema = z.object({

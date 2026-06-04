@@ -168,6 +168,11 @@ describe('Coverage Top-off', () => {
 
 
         it('scrollToTimestamp should scroll to element if found', async () => {
+            const rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb: any) => {
+                cb(0);
+                return 0;
+            });
+
             const mockEl = { scrollIntoView: vi.fn() };
             const mockContainer = {
                 querySelector: vi.fn().mockReturnValue(mockEl)
@@ -182,6 +187,8 @@ describe('Coverage Top-off', () => {
 
             expect(mockContainer.querySelector).toHaveBeenCalled();
             expect(mockEl.scrollIntoView).toHaveBeenCalled();
+
+            rafSpy.mockRestore();
         });
     });
 });

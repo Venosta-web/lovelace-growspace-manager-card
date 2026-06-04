@@ -68,6 +68,27 @@ const DrainConfigSchema = z
   .nullable()
   .optional();
 
+export const CirculationFanConfigSchema = z.object({
+  enabled: z.boolean(),
+  regulation_mode: z.enum(['vpd', 'humidity', 'temperature']),
+  min_speed: z.number(),
+  max_speed: z.number(),
+  vpd_target: z.number(),
+  vpd_tolerance: z.number(),
+  humidity_target: z.number(),
+  humidity_tolerance: z.number(),
+  temperature_target: z.number(),
+  temperature_tolerance: z.number(),
+  critical_temp_low: z.number().nullable(),
+  critical_temp_high: z.number().nullable(),
+  critical_temp_hysteresis: z.number(),
+  wind_enabled: z.boolean(),
+  wind_period_seconds: z.number(),
+  wind_amplitude_pct: z.number(),
+});
+
+export type CirculationFanConfig = z.infer<typeof CirculationFanConfigSchema>;
+
 export const GrowspaceAPIResponseSchema = z
   .object({
     identity: z
@@ -98,6 +119,7 @@ export const GrowspaceAPIResponseSchema = z
         dehumidifier_control_enabled: z.boolean().optional(),
         circulation_fan_entity: z.string().optional(),
         circulation_fan_entities: z.array(z.string()).optional().default([]),
+        circulation_fan_config: CirculationFanConfigSchema.optional(),
         exhaust_fan_entities: z.array(z.string()).optional().default([]),
         humidifier_entities: z.array(z.string()).optional().default([]),
         dehumidifier_entities: z.array(z.string()).optional().default([]),

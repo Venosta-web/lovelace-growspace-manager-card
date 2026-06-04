@@ -16,7 +16,9 @@ import {
   setHumidifierControl,
   updateSensorCoordinates,
   configureEnvironment,
+  configureCirculationFan,
 } from './index';
+import type { CirculationFanConfig } from './schema';
 
 vi.mock('../../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
@@ -521,6 +523,67 @@ describe('configureEnvironment', () => {
         power_sensors: ['sensor.power'],
         energy_sensors: ['sensor.energy'],
       })
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// configureCirculationFan
+// ---------------------------------------------------------------------------
+
+const fanConfig: CirculationFanConfig = {
+  enabled: true,
+  regulation_mode: 'vpd',
+  min_speed: 10,
+  max_speed: 90,
+  vpd_target: 1.1,
+  vpd_tolerance: 0.2,
+  humidity_target: 60,
+  humidity_tolerance: 5,
+  temperature_target: 25,
+  temperature_tolerance: 2,
+  critical_temp_low: 18,
+  critical_temp_high: 32,
+  critical_temp_hysteresis: 1,
+  wind_enabled: true,
+  wind_period_seconds: 120,
+  wind_amplitude_pct: 20,
+};
+
+describe('configureCirculationFan', () => {
+  it('calls configure_circulation_fan with growspace_id and full fan config payload', async () => {
+    await configureCirculationFan({ growspaceId: 'gs-1', fanConfig });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'configure_circulation_fan',
+      {
+        growspace_id: 'gs-1',
+        enabled: true,
+        regulation_mode: 'vpd',
+        min_speed: 10,
+        max_speed: 90,
+        vpd_target: 1.1,
+        vpd_tolerance: 0.2,
+        humidity_target: 60,
+        humidity_tolerance: 5,
+        temperature_target: 25,
+        temperature_tolerance: 2,
+        critical_temp_low: 18,
+        critical_temp_high: 32,
+        critical_temp_hysteresis: 1,
+        wind_enabled: true,
+        wind_period_seconds: 120,
+        wind_amplitude_pct: 20,
+      }
+    );
+  });
+
+  it('propagates errors from callService', async () => {
+    vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('fan-err'));
+
+    await expect(configureCirculationFan({ growspaceId: 'gs-1', fanConfig })).rejects.toThrow(
+      'fan-err'
     );
   });
 });

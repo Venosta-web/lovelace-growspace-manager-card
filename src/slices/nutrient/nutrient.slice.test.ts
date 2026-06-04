@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NutrientPresetsSchema } from './schema';
 import * as hassCallModule from '../../services/hass-call';
 import {
   nutrientPresets$,
@@ -209,7 +210,7 @@ describe('fetchECRampCurves', () => {
 
 describe('saveNutrientPreset', () => {
   it('calls callService with the correct domain, service, and payload', async () => {
-    const data = { name: 'Veg Week 1', nutrients: [{ name: 'Base', dose_ml_l: 2 }], stage: 'veg' };
+    const data = { name: 'Veg Week 1', nutrients: [{ nutrient_id: 'base_nutrient', dose_ml_l: 2 }], stage: 'veg' };
 
     await saveNutrientPreset(data);
 
@@ -327,11 +328,43 @@ describe('updateNutrientStock', () => {
   it('calls hassCall with the update_nutrient_stock WS command and all fields', async () => {
     vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
 
+    await updateNutrientStock('n1', 'Grow A', 500, 1000, 'Canna', 'bloom', '0-15-14', 1.5, 'Use late');
+
+    expect(hassCallModule.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/update_nutrient_stock',
+      {
+        nutrient_id: 'n1',
+        name: 'Grow A',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: 'Canna',
+        stock_type: 'bloom',
+        npk: '0-15-14',
+        dose_ml_l: 1.5,
+        notes: 'Use late',
+      },
+      expect.anything()
+    );
+  });
+
+  it('calls hassCall with defaults when new fields are omitted', async () => {
+    vi.mocked(hassCallModule.hassCall).mockResolvedValueOnce(undefined);
+
     await updateNutrientStock('n1', 'Grow A', 500, 1000);
 
     expect(hassCallModule.hassCall).toHaveBeenCalledWith(
       'growspace_manager/update_nutrient_stock',
-      { nutrient_id: 'n1', name: 'Grow A', current_ml: 500, initial_ml: 1000 },
+      {
+        nutrient_id: 'n1',
+        name: 'Grow A',
+        current_ml: 500,
+        initial_ml: 1000,
+        brand: '',
+        stock_type: 'base',
+        npk: '',
+        dose_ml_l: 0,
+        notes: '',
+      },
       expect.anything()
     );
   });
@@ -418,6 +451,62 @@ describe('saveECRampCurve', () => {
     vi.mocked(hassCallModule.callService).mockRejectedValueOnce(new Error('save failed'));
 
     await expect(saveECRampCurve({ name: 'X', points: [] })).rejects.toThrow('save failed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// NutrientPresetsSchema — new fields (issue #409)
+// ---------------------------------------------------------------------------
+
+describe('NutrientPresetsSchema new fields', () => {
+  it('parses a preset without week/ec_target/ph_target and applies defaults', () => {
+    const raw = {
+      p1: { id: 'p1', name: 'Veg Mix', nutrients: [{ nutrient_id: 'id-a', dose_ml_l: 1 }] },
+    };
+    const result = NutrientPresetsSchema.parse(raw);
+    expect(result['p1'].week).toBe(1);
+    expect(result['p1'].ec_target).toBeUndefined();
+    expect(result['p1'].ph_target).toBeUndefined();
+  });
+
+  it('parses a preset with week, ec_target and ph_target', () => {
+    const raw = {
+      p2: {
+        id: 'p2',
+        name: 'Bloom Week 3',
+        nutrients: [{ nutrient_id: 'id-bloom', dose_ml_l: 2 }],
+        week: 3,
+        ec_target: 1.8,
+        ph_target: 6.0,
+      },
+    };
+    const result = NutrientPresetsSchema.parse(raw);
+    expect(result['p2'].week).toBe(3);
+    expect(result['p2'].ec_target).toBe(1.8);
+    expect(result['p2'].ph_target).toBe(6.0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveNutrientPreset — new fields (issue #409)
+// ---------------------------------------------------------------------------
+
+describe('saveNutrientPreset with new fields', () => {
+  it('forwards week, ec_target, ph_target to callService when provided', async () => {
+    const data = {
+      name: 'Week 3 Bloom',
+      nutrients: [{ nutrient_id: 'bloom_nutrient', dose_ml_l: 3 }],
+      week: 3,
+      ec_target: 1.8,
+      ph_target: 6.0,
+    };
+    await saveNutrientPreset(data);
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'save_nutrient_preset',
+      data
+    );
   });
 });
 

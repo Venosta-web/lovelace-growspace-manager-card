@@ -1,6 +1,7 @@
 import { computed, ReadableAtom } from 'nanostores';
 import { HomeAssistant } from 'custom-card-helpers';
 import { PlantEntity, GrowspaceManagerCardConfig } from '../../types';
+import type { NutrientPresetsResponse } from '../../slices/nutrient';
 import { DataService } from '../../services/data-service';
 
 // Sub-stores
@@ -58,7 +59,7 @@ export class GrowspaceStore {
     devices: import('../../types').GrowspaceDevice[];
     selectedDevice: string | null;
     strainLibrary: import('../../types').StrainEntry[];
-    nutrientPresets: Record<string, import('../../types').NutrientPreset>;
+    nutrientPresets: NutrientPresetsResponse;
     ipmPresets: Record<string, import('../../types').IPMPreset>;
     nutrientInventory: import('../../types').NutrientInventory | null;
   }>;
@@ -84,7 +85,7 @@ export class GrowspaceStore {
     isEditMode: boolean;
     selectedPlants: Set<string>;
     devices: import('../../types').GrowspaceDevice[];
-    nutrientPresets: Record<string, import('../../types').NutrientPreset>;
+    nutrientPresets: NutrientPresetsResponse;
   }>;
 
   /** Combined atom for growspace-view-standard. */

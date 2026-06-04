@@ -218,6 +218,17 @@ describe('BatchPrintLabelDialog – _resetForm', () => {
     expect((el as any)._progress).toBe(0);
   });
 
+  it('resets sizeId to 50x30 and density to normal', () => {
+    const el = createElement();
+    (el as any)._sizeId = '50x80';
+    (el as any)._density = 'high';
+
+    (el as any)._resetForm();
+
+    expect((el as any)._sizeId).toBe('50x30');
+    expect((el as any)._density).toBe('normal');
+  });
+
   it('auto-selects the first printer when none is selected', () => {
     const el = createElement();
     (el as any)._selectedDeviceId = '';
@@ -411,6 +422,39 @@ describe('BatchPrintLabelDialog – _submit', () => {
     const batchCall = mockStore.actions.plant.printLabel.mock.calls[1];
     expect(batchCall[0].deviceId).toBeUndefined();
   });
+
+  it('passes sizeId and density to each batch printLabel call', async () => {
+    const mockStore = makeMockStore();
+    const el = createElement(mockStore);
+    (el as any).dialogState = { plantIds: ['p1', 'p2'] };
+    (el as any)._sizeId = '40x30';
+    (el as any)._density = 'high';
+
+    await (el as any)._submit();
+
+    // calls[0] is warm-up (preview:true), calls[1] and [2] are batch
+    const batchCall1 = mockStore.actions.plant.printLabel.mock.calls[1][0];
+    const batchCall2 = mockStore.actions.plant.printLabel.mock.calls[2][0];
+    expect(batchCall1.sizeId).toBe('40x30');
+    expect(batchCall1.density).toBe('high');
+    expect(batchCall2.sizeId).toBe('40x30');
+    expect(batchCall2.density).toBe('high');
+  });
+
+  it('warm-up call does not include sizeId or density', async () => {
+    const mockStore = makeMockStore();
+    const el = createElement(mockStore);
+    (el as any).dialogState = { plantIds: ['p1'] };
+    (el as any)._sizeId = '50x50';
+    (el as any)._density = 'low';
+
+    await (el as any)._submit();
+
+    const warmUpCall = mockStore.actions.plant.printLabel.mock.calls[0][0];
+    expect(warmUpCall.preview).toBe(true);
+    expect(warmUpCall.sizeId).toBeUndefined();
+    expect(warmUpCall.density).toBeUndefined();
+  });
 });
 
 describe('BatchPrintLabelDialog – willUpdate', () => {
@@ -489,15 +533,87 @@ describe('BatchPrintLabelDialog – render', () => {
     expect((el as any)._copies).toBe(10);
   });
 
-  it('shows warning when no printers discovered', async () => {
+  it('renders printer-status-strip above the printer selector', async () => {
+    const hass = makeHass();
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    expect(el.shadowRoot!.querySelector('printer-status-strip')).not.toBeNull();
+  });
+
+  it('does not show inline "No Niimbot printers" warning (covered by status strip)', async () => {
     const hass = { states: {} } as any;
     const el = await fixture<BatchPrintLabelDialog>(html`
       <batch-print-label-dialog .open=${true} .hass=${hass}></batch-print-label-dialog>
     `);
     await el.updateComplete;
-    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).toContain(
+    expect(el.shadowRoot!.querySelector('.form-section')?.textContent).not.toContain(
       'No Niimbot printers discovered'
     );
+  });
+
+  it('renders size chip buttons for all five label sizes', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    const chips = el.shadowRoot!.querySelectorAll('.size-chip');
+    expect(chips.length).toBe(5);
+  });
+
+  it('marks 50x30 size chip as active by default', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    const activeChip = el.shadowRoot!.querySelector('.size-chip.active');
+    expect(activeChip?.textContent?.trim()).toBe('50×30');
+  });
+
+  it('renders density segmented control with three buttons', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    const seg = el.shadowRoot!.querySelector('.density-seg');
+    expect(seg).not.toBeNull();
+    expect(seg!.querySelectorAll('button').length).toBe(3);
+  });
+
+  it('marks Normal density as active by default', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    const activeBtn = el.shadowRoot!.querySelector('.density-seg button.active');
+    expect(activeBtn?.textContent?.trim()).toBe('Normal');
+  });
+
+  it('clicking a size chip updates _sizeId', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    const chips = el.shadowRoot!.querySelectorAll('.size-chip') as NodeListOf<HTMLButtonElement>;
+    // click the second chip (40x30)
+    chips[1].click();
+    await el.updateComplete;
+    expect((el as any)._sizeId).toBe('40x30');
+    expect(chips[1].classList.contains('active')).toBe(true);
+  });
+
+  it('clicking a density button updates _density', async () => {
+    const el = await fixture<BatchPrintLabelDialog>(html`
+      <batch-print-label-dialog .open=${true}></batch-print-label-dialog>
+    `);
+    await el.updateComplete;
+    const btns = el.shadowRoot!.querySelectorAll('.density-seg button') as NodeListOf<HTMLButtonElement>;
+    // click "Light" (index 0)
+    btns[0].click();
+    await el.updateComplete;
+    expect((el as any)._density).toBe('low');
+    expect(btns[0].classList.contains('active')).toBe(true);
   });
 
   it('ignores invalid copies input', async () => {

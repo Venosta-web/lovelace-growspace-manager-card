@@ -13,6 +13,7 @@ import {
   type BatchDraft,
   type PollinationDraft,
 } from './seeds-genetics-tab-sm';
+import { getFlowerVegPlants, getPlantLabel } from './seeds-genetics-tab-logic';
 
 @customElement('seeds-genetics-tab')
 export class SeedsGeneticsTab extends LitElement {
@@ -403,42 +404,11 @@ export class SeedsGeneticsTab extends LitElement {
   ];
 
   private get _flowerVegPlants(): Array<{ plant_id: string; label: string }> {
-    const ELIGIBLE_STAGES = ['flower', 'veg'];
-    return this.plants.flatMap((device) =>
-      device.plants
-        .filter((p) => ELIGIBLE_STAGES.includes(p.attributes.stage))
-        .map((p) => {
-          const stage = p.attributes.stage;
-          const stageDays = p.attributes[`${stage}_days` as keyof typeof p.attributes] as
-            | number
-            | null
-            | undefined;
-          const daysStr = stageDays != null ? ` · Day ${stageDays}` : '';
-          const strain = p.attributes.strain ?? '';
-          const phenotype = p.attributes.phenotype;
-          const phenoStr = phenotype ? ` (${phenotype})` : '';
-          const label = `${strain}${phenoStr} · ${stage}${daysStr} · ${device.name}`;
-          return { plant_id: p.attributes.plant_id, label };
-        })
-    );
+    return getFlowerVegPlants(this.plants);
   }
 
   private _getPlantLabel(plant_id: string): string {
-    for (const device of this.plants) {
-      for (const p of device.plants) {
-        if (p.attributes.plant_id === plant_id) {
-          const strain = p.attributes.strain ?? '';
-          const phenotype = p.attributes.phenotype;
-          return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
-        }
-      }
-    }
-    // Fall back to strain library for library-keyed donor IDs ("strain||phenotype")
-    if (plant_id && plant_id.includes('||')) {
-      const [strain, phenotype] = plant_id.split('||', 2);
-      return phenotype ? `${strain} (${phenotype})` : strain || plant_id;
-    }
-    return plant_id;
+    return getPlantLabel(this.plants, plant_id);
   }
 
   render(): TemplateResult {

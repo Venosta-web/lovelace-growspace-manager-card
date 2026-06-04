@@ -1,8 +1,10 @@
 import type { PlantEntity, PlantAttributes, StrainEntry } from '../../features/plants/types';
 import type { SensorGroup } from '../../features/environment/types';
 import type { VisionCheckupConfig } from '../../slices/camera';
+import type { CirculationFanConfig } from '../../slices/growspace/schema';
 
 export type { VisionCheckupConfig };
+export type { CirculationFanConfig };
 
 export interface VisionCheckupResult {
   severity: string;
@@ -126,6 +128,7 @@ export interface EnvironmentConfigData {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
 }
 
 export interface VisionCheckupConfigEventDetail {
@@ -175,6 +178,7 @@ export interface EnvironmentConfigEventDetail {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
 }
 
 export interface ConfigDialogState {
@@ -230,6 +234,8 @@ export interface IPMDialogState {
   plantIds?: string[];
 }
 
+export type QrTarget = 'web' | 'deeplink';
+
 export interface PrintLabelDialogState {
   plantId?: string;
   strainName?: string;
@@ -238,6 +244,10 @@ export interface PrintLabelDialogState {
   breeder?: string;
   breederLogo?: string;
   deviceId?: string;
+  defaultFields?: Partial<LabelFieldVisibility>;
+  defaultSizeId?: LabelSizeId;
+  defaultDensity?: PrintDensity;
+  defaultQrTarget?: QrTarget;
 }
 
 export interface BatchPrintLabelsDialogState {
@@ -270,4 +280,31 @@ export interface BatchCloneDialogState {
 export interface IrrigationDialogState {
   initialTab?: string;
   scrollToField?: string;
+}
+
+export type LabelSizeId = '50x30' | '40x30' | '50x50' | '50x80' | '50x15';
+
+export type PrintDensity = 'low' | 'normal' | 'high';
+
+export interface LabelFieldVisibility {
+  name: boolean;
+  phenotype: boolean;
+  breeder: boolean;
+  lineage: boolean;
+  startDate: boolean;
+  stageAge: boolean;
+  plantId: boolean;
+  logo: boolean;
+  qr: boolean;
+}
+
+export interface LabelFieldValues {
+  name: string;
+  phenotype: string;
+  breeder: string;
+  lineage: string;
+  startDate: string;
+  stageAge: string;
+  plantId: string;
+  logo: string;
 }

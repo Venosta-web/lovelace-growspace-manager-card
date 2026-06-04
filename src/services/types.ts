@@ -6,6 +6,7 @@ import type {
 } from '../features/plants/types';
 import type { SensorGroup } from '../features/environment/types';
 import type { VisionCheckupConfig } from '../lib/types/dialog';
+import type { CirculationFanConfig } from '../slices/growspace/schema';
 
 // --- Irrigation ---
 
@@ -387,6 +388,7 @@ export interface EnvironmentAttributes {
   exhaustFanEntities?: string[];
   circulationFanEntity?: string;
   circulationFanEntities?: string[];
+  circulationFanConfig?: CirculationFanConfig;
   irrigationPumpState?: string;
   drainPumpState?: string;
   vpd?: string;
@@ -544,8 +546,9 @@ export function createGrowspaceDevice(
 // --- Nutrients & IPM ---
 
 export interface NutrientItem {
-  name: string;
+  nutrient_id: string;
   dose_ml_l: number;
+  name?: string;
 }
 
 export interface NutrientPreset {

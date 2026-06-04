@@ -24,6 +24,7 @@ import type {
   VisionCheckupConfigEventDetail,
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
+import type { NutrientPresetsResponse } from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
 import '../../../dialogs/add-plant-dialog';
@@ -35,7 +36,6 @@ import '../../../dialogs/grow-master-dialog';
 import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
 import '../../../dialogs/logbook-dialog';
-import '../../../dialogs/nutrient-dialog';
 import '../../../dialogs/print-label-dialog';
 import '../../../dialogs/batch-print-label-dialog';
 import '../../../dialogs/batch-clone-dialog';
@@ -46,8 +46,8 @@ import '../../../dialogs/training-dialog';
 import '../../shared/ui/error-boundary';
 
 import '../components/growspace-ipm-dialog-ui';
-import '../components/growspace-watering-dialog-ui';
 import '../components/growspace-nutrient-inventory-dialog-ui';
+import '../../../dialogs/feed-and-water-dialog';
 import '../../plants/containers/plant-overview.container';
 
 import { HomeAssistant } from 'custom-card-helpers';
@@ -72,7 +72,7 @@ export class GrowspaceDialogHost extends LitElement {
     devices: GrowspaceDevice[];
     selectedDevice: string | null;
     strainLibrary: StrainEntry[];
-    nutrientPresets: Record<string, NutrientPreset>;
+    nutrientPresets: NutrientPresetsResponse;
     ipmPresets: Record<string, IPMPreset>;
     nutrientInventory: NutrientInventory | null;
   }>;
@@ -81,6 +81,7 @@ export class GrowspaceDialogHost extends LitElement {
   private _controllersInitialized = false;
   private _dataChangeTimeout?: any;
   private _geneticsLoaded = false;
+  @state() private _addPlantsLibraryError = '';
 
   connectedCallback() {
     super.connectedCallback();
@@ -189,7 +190,7 @@ export class GrowspaceDialogHost extends LitElement {
               effectiveDeviceData
             );
           case 'NUTRIENTS':
-            return this._renderNutrientDialog(active, effectiveDeviceData);
+            return this._renderNutrientDialog(active, nutrientPresets, nutrientInventory);
           case 'PRINT_LABEL':
             return this._renderPrintLabelDialog(active, effectiveDeviceData);
           case 'BATCH_PRINT_LABELS':
@@ -397,10 +398,18 @@ export class GrowspaceDialogHost extends LitElement {
         .clone_start=${active.payload?.clone_start || ''}
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
-        @close=${() => this._closeDialogIfActive('ADD_PLANTS')}
+        .libraryError=${this._addPlantsLibraryError}
+        @close=${() => { this._addPlantsLibraryError = ''; this._closeDialogIfActive('ADD_PLANTS'); }}
         @show-toast=${(e: CustomEvent) =>
         this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
-        @add-plants-submit=${(e: CustomEvent) => this.store?.actions.plant.addBatch(e.detail)}
+        @add-plants-submit=${async (e: CustomEvent) => {
+          this._addPlantsLibraryError = '';
+          try {
+            await this.store?.actions.plant.addBatch(e.detail);
+          } catch (err) {
+            this._addPlantsLibraryError = err instanceof Error ? err.message : 'Failed to add strains to library';
+          }
+        }}
         @create-new-strain=${(e: CustomEvent) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
       ></add-plants-dialog>
@@ -756,6 +765,7 @@ export class GrowspaceDialogHost extends LitElement {
         irrigationFlowSensors: detail.irrigationFlowSensors,
         powerSensors: detail.powerSensors,
         energySensors: detail.energySensors,
+        circulationFanConfig: detail.circulationFanConfig,
       });
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {
@@ -886,33 +896,34 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _renderWateringDialog(
     active: ActiveDialogState,
-    nutrientPresets: Record<string, NutrientPreset>,
+    nutrientPresets: NutrientPresetsResponse,
     nutrientInventory: NutrientInventory | null,
     selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {
     if (active.type !== 'WATERING') return html``;
     const payload = active.payload as any;
 
+    const presetOptions = Object.values(nutrientPresets).map((p) => ({
+      label: p.name,
+      value: p.id,
+    }));
+
+    const targetText =
+      payload?.mode === 'plant'
+        ? `${(payload.plantIds || []).length} plant(s)`
+        : selectedDeviceData?.name || 'Entire growspace';
+
     return html`
-      <growspace-watering-dialog-ui
+      <feed-and-water-dialog
         .open=${true}
-        .plantIds=${payload?.plantIds || []}
-        .growspaceId=${selectedDeviceData?.deviceId || ''}
-        .nutrientPresets=${nutrientPresets}
-        .nutrientInventory=${nutrientInventory}
+        .presetOptions=${presetOptions}
+        .targetText=${targetText}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('WATERING')}
         @submit-watering=${(e: CustomEvent) =>
         this._handleWateringSubmit(e, payload, selectedDeviceData?.deviceId)}
-        @save-preset=${(e: CustomEvent) => this.store?.actions.nutrient.savePreset(e.detail)}
-        @update-stock=${(e: CustomEvent) =>
-        this.store?.actions.library.updateNutrientStock(
-          e.detail.id,
-          e.detail.name,
-          e.detail.current_ml,
-          e.detail.initial_ml
-        )}
-        @data-changed=${() => this._handleDataChanged()}
-      ></growspace-watering-dialog-ui>
+      ></feed-and-water-dialog>
     `;
   }
 
@@ -1144,15 +1155,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private _renderNutrientDialog(
     active: ActiveDialogState,
-    _selectedDeviceData?: GrowspaceDevice
+    nutrientPresets: NutrientPresetsResponse,
+    nutrientInventory: NutrientInventory | null
   ): TemplateResult {
     if (active.type !== 'NUTRIENTS') return html``;
     return html`
-      <nutrient-dialog
+      <feed-and-water-dialog
         .open=${true}
+        .inventory=${nutrientInventory}
+        .presets=${nutrientPresets}
         @close=${() => this._closeDialogIfActive('NUTRIENTS')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></nutrient-dialog>
+      ></feed-and-water-dialog>
     `;
   }
 

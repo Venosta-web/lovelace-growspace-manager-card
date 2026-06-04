@@ -501,6 +501,69 @@ describe('StrainLibraryDialog - Coverage Tests', () => {
       expect(allFiltered).toHaveLength(2);
     });
 
+    it('toggles _treeMaximized when maximize button is clicked (line 1451)', async () => {
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const maximizeBtn = element.shadowRoot?.querySelector('.tab-maximize-btn') as HTMLElement | null;
+      expect(maximizeBtn).toBeTruthy();
+      expect((element as any)._treeMaximized).toBe(false);
+
+      maximizeBtn?.click();
+      expect((element as any)._treeMaximized).toBe(true);
+
+      maximizeBtn?.click();
+      expect((element as any)._treeMaximized).toBe(false);
+    });
+
+    it('updates _libraryFilter when gs-filter-chips dispatches filter-changed (line 1483)', async () => {
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const chips = element.shadowRoot?.querySelector('gs-filter-chips');
+      expect(chips).toBeTruthy();
+
+      chips?.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'active' }, bubbles: true, composed: true }));
+      expect((element as any)._libraryFilter).toBe('active');
+
+      chips?.dispatchEvent(new CustomEvent('filter-changed', { detail: { filter: 'library' }, bubbles: true, composed: true }));
+      expect((element as any)._libraryFilter).toBe('library');
+    });
+
+    it('handles open-strain-editor from genetics-tree-view for a known strain (lines 1526-1530)', async () => {
+      (element as any)._activeMainTab = 'tree';
+      await element.updateComplete;
+
+      const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
+      expect(treeView).toBeTruthy();
+
+      treeView?.dispatchEvent(new CustomEvent('open-strain-editor', {
+        detail: { id: mockStrains[0].key },
+        bubbles: true,
+        composed: true,
+      }));
+
+      expect((element as any)._editingStrain).toEqual(mockStrains[0]);
+      expect((element as any)._view).toBe('editor');
+      expect((element as any)._activeMainTab).toBe('strains');
+    });
+
+    it('ignores open-strain-editor from genetics-tree-view for an unknown strain key', async () => {
+      (element as any)._activeMainTab = 'tree';
+      (element as any)._view = 'list';
+      await element.updateComplete;
+
+      const treeView = element.shadowRoot?.querySelector('genetics-tree-view');
+      treeView?.dispatchEvent(new CustomEvent('open-strain-editor', {
+        detail: { id: 'nonexistent-key' },
+        bubbles: true,
+        composed: true,
+      }));
+
+      expect((element as any)._view).toBe('list');
+      expect((element as any)._editingStrain).toBeFalsy();
+    });
+
     it('builds tree nodes with structured parents, legacy lineage strings, stubs, and seed batches', async () => {
       element.strains = [
         {

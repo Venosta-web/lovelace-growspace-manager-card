@@ -117,6 +117,24 @@ A dot-separated string in the format `section.key`, resolved by the `localize()`
 **GrowspaceDataStore**
 Nanostores-based reactive store holding plant data (devices, strain library, config) for a growspace. Uses lazy initialization — only activates when it has subscribers. Nutrient domain data (presets, IPM presets, inventory, EC ramp curves) has been migrated to the [[Nutrient Slice]] and is no longer stored here.
 
+## Environment Control
+
+**Circulation Fan Controller**
+The backend closed-loop controller (`CirculationFanCoordinator`) that automatically regulates circulation fan speed to a target value. Configured via `CirculationFanConfig` (a sub-object of `EnvironmentConfig`). The controller polls every 10 seconds, reads the active sensor, linearly maps the error to a fan speed between `min_speed` and `max_speed`, and optionally overlays a sinusoidal wind effect. Enabled/disabled independently of the circulation fan entity list — the entities may be assigned without the controller being active. Distinct from exhaust fan control, which is not closed-loop.
+
+**Fan Regulation Mode**
+The control variable the [[Circulation Fan Controller]] targets: `vpd`, `humidity`, or `temperature`. Exactly one mode is active at a time; switching mode changes which target+tolerance pair is used. In VPD mode, a temperature override (critical_temp_low / critical_temp_high) can override the computed speed to min or max when the measured temperature leaves a safe band. The override fields are only evaluated in VPD mode.
+
+**Fan Controller Panel**
+The config dialog panel (inside the Climate tab, between the Climate Control panel and the Humidity Control panel) that exposes all `CirculationFanConfig` fields: enabled toggle, regulation mode selector, active-mode target+tolerance pair, VPD-mode-only temperature override sub-section (collapsed by default), min/max speed, and dynamic wind settings (period + amplitude revealed when wind_enabled is toggled on). Disabled fields are greyed out when `enabled` is false, not hidden. Submitted as part of the existing `configure-environment-submit` event; the dialog host dispatches the `configure_circulation_fan` HA service call separately from `configure_environment`.
+
+**Fan Entity Mode**
+The display and graph scale behaviour for a fan chip, determined by the entity domain at runtime (not a static config flag). Three modes:
+- **HA fan entity** (`fan.*` domain): chip shows `percentage` attribute as `"70%"` (or `"Off"` when state is `off`); graph Y-axis is 0–100, unit `%`.
+- **Speed sensor** (numeric state, domain not `fan.*`): chip shows raw integer (e.g. `"5"`); graph Y-axis is 0–10, no unit suffix.
+- **Binary fan** (switch / input_boolean / other non-numeric): chip shows `"On"` / `"Off"`; graph is binary 0/1.
+Detection runs in `computeDeviceSnapshot` (chip) and `env-chart.ts` series builder (graph) by inspecting `hass.states[entityId].domain` and `attributes.percentage`. See ADR-0008.
+
 ## Architecture
 
 **Slice**
@@ -285,6 +303,35 @@ User-selectable ink darkness: Light, Normal, or Dark. Mapped to a numeric `densi
 
 **QR Target**
 The URL encoded in the label's QR code. Options: HA deep link to the plant, or raw plant UUID.
+
+## Nutrients
+
+**Feed & Water Dialog** (`feed-and-water-dialog`)
+The combined modal for recording a watering event and managing nutrient inventory and feeding presets. Replaces the standalone `growspace-watering-dialog-ui` and the previous two-tab [[Nutrient Dialog]]. Uses the Design A shell with a three-item left nav rail: **Watering**, **Inventory**, **Presets**. A persistent "Record Watering" footer button is visible on all three tabs. Opened from two entry points with context-aware default tabs: the watering action (plant grid / header) opens on the Watering tab; the nutrient management entry point opens on the Presets tab. Interaction state is owned by [[Feed & Water Dialog SM]].
+
+**Feed & Water Dialog SM**
+The state machine for `feed-and-water-dialog.ts`. Extends [[DialogStateMachine]] with `activeTab: 'watering' | 'inventory' | 'presets'`. The Watering tab owns `{ draft: WateringDraft; sub: WateringSubState }` where `WateringDraft` holds `volume`, `selectedPresetId`, and `customNutrients` (ad-hoc entries, hidden behind a toggle by default). The Inventory and Presets tabs carry the same `NutrientTabState` shape as the previous [[Nutrient Dialog SM]]. A `confirm-discard` guard fires when switching tabs while `sub.kind === 'editing'` and the draft is dirty. The "Record Watering" footer button is disabled (blocked) while any tab has `sub.kind === 'editing'` — the cultivator must save or discard the edit first.
+
+**Nutrient Dialog** (`nutrient-dialog`)
+Superseded by [[Feed & Water Dialog]]. Previously the standalone modal for managing nutrient inventory and feeding presets.
+
+**Nutrient Dialog SM**
+Superseded by [[Feed & Water Dialog SM]]. The state machine for the retired `nutrient-dialog.ts`.
+
+**NutrientStock Type Color**
+Each [[NutrientStock]] `type` value maps to a fixed accent color used for the bottle icon in the Inventory master list: `base` → `--primary-color`; `bloom` → `#e91e63`; `calmag` → `#ff9800`; `root` → `#795548`; `additive` → `#9c27b0`; `microbe` → `#00bcd4`. Derived at render time — no user-configurable color field.
+
+**Low Stock**
+A [[NutrientStock]] whose fill level (`current_ml / initial_ml`) is ≤ 0.25 (25%). Surfaces as a Stock Indicator in the Nutrient Dialog nav rail. No separate threshold field — computed from existing `current_ml` and `initial_ml`.
+
+**Nutrient Orphan**
+A preset item whose `nutrient_id` no longer matches any entry in the current [[NutrientInventory]]. Displayed in the preset's nutrient-mixing table with a warning indicator (amber icon + strikethrough name). The preset is not blocked from saving; the orphan is not silently hidden. The user must manually remove or replace the orphaned item.
+
+**Nutrient Dialog Navigation**
+The Inventory and Presets sections each use **drill-down** navigation: selecting an item in the master list replaces the list with a detail view (no side-by-side split). `selectedId !== null` + `sub.kind === 'idle'` = read-only detail; `sub.kind === 'editing'` = edit form. `selectedId === null` + `sub.kind === 'editing'` = new-item form. The dialog's max-width (600px) minus the 72px nav rail leaves insufficient room for a side-by-side split at typical viewport sizes.
+
+**Nutrient Presets Container** (`growspace-nutrient-presets-editor.container`)
+Pure pass-through container that subscribes to `nutrientInventory$` and threads the live inventory value into `growspace-nutrient-presets-editor-ui` for dropdown population and [[Nutrient Orphan]] detection. Does not fetch — the [[Nutrient Dialog]] shell owns all fetching (`fetchNutrientInventory`, `fetchNutrientPresets`) on open.
 
 ## Build
 

@@ -3,7 +3,12 @@ import { atom } from 'nanostores';
 import { hassCall, callService } from '../../services/hass-call';
 import { mutate } from '../../services/mutate';
 import { GrowspaceAdapter } from '../../adapters/growspace-adapter';
-import { GrowspaceAPICollectionSchema, GrowReportSchema, type GrowReport } from './schema';
+import {
+  GrowspaceAPICollectionSchema,
+  GrowReportSchema,
+  type GrowReport,
+  type CirculationFanConfig,
+} from './schema';
 import type { SensorGroup } from '../../features/environment/types';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
 
@@ -171,6 +176,7 @@ export async function configureEnvironment(data: {
   irrigationFlowSensors?: string[];
   powerSensors?: string[];
   energySensors?: string[];
+  circulationFanConfig?: CirculationFanConfig;
 }): Promise<void> {
   const payload: Record<string, unknown> = { growspace_id: data.growspaceId };
 
@@ -221,8 +227,22 @@ export async function configureEnvironment(data: {
   if (data.irrigationFlowSensors?.length) payload.irrigation_flow_sensors = data.irrigationFlowSensors;
   if (data.powerSensors?.length) payload.power_sensors = data.powerSensors;
   if (data.energySensors?.length) payload.energy_sensors = data.energySensors;
+  if (data.circulationFanConfig) payload.circulation_fan_config = data.circulationFanConfig;
 
   await callService('growspace_manager', 'configure_environment', payload);
+}
+
+export async function configureCirculationFan({
+  growspaceId,
+  fanConfig,
+}: {
+  growspaceId: string;
+  fanConfig: CirculationFanConfig;
+}): Promise<void> {
+  await callService('growspace_manager', 'configure_circulation_fan', {
+    growspace_id: growspaceId,
+    ...fanConfig,
+  });
 }
 
 export async function fetchGrowspaceData(): Promise<void> {

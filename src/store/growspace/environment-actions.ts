@@ -8,6 +8,7 @@
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import * as libraryActions from '../plant/library-actions';
+import type { CirculationFanConfig } from '../../slices/growspace/schema';
 
 type ConfigureEnvironmentData = Parameters<ActionContext['dataService']['configureEnvironment']>[0];
 
@@ -97,5 +98,24 @@ export async function waterGrowspace(
         await libraryActions.fetchNutrientInventory(ctx, true);
     },
     { errorPrefix: 'Failed to water growspace', rethrow: true }
+  );
+}
+
+/** Configure the circulation fan controller for a growspace */
+export async function configureFanController(
+  ctx: ActionContext,
+  data: { growspaceId: string; fanConfig: CirculationFanConfig }
+): Promise<void> {
+  await withAction(
+    ctx,
+    async () => {
+      await ctx.dataService.configureCirculationFan(data);
+      await ctx.refreshData();
+    },
+    {
+      success: 'Fan controller configured successfully!',
+      errorPrefix: 'Failed to configure fan controller',
+      rethrow: true,
+    }
   );
 }

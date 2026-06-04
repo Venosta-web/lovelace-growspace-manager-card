@@ -198,4 +198,123 @@ describe('HarvestScoringDialog', () => {
 
     expect(element.shadowRoot?.querySelector('.error-banner')).not.toBeNull();
   });
+
+  it('clicking a star sets that score in the draft', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+
+    const starBtn = element.shadowRoot?.querySelector('.star-btn') as HTMLButtonElement;
+    starBtn.click();
+    await element.updateComplete;
+
+    const sm = (element as any)._sm;
+    const firstKey = Object.keys(sm.tabs.scoring.draft)[0] as keyof typeof sm.tabs.scoring.draft;
+    expect(sm.tabs.scoring.draft[firstKey]).not.toBeNull();
+  });
+
+  it('clicking the same star twice toggles the score back to null', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+
+    const starBtn = element.shadowRoot?.querySelector('.star-btn') as HTMLButtonElement;
+    starBtn.click();
+    await element.updateComplete;
+    starBtn.click();
+    await element.updateComplete;
+
+    const sm = (element as any)._sm;
+    const firstKey = Object.keys(sm.tabs.scoring.draft)[0] as keyof typeof sm.tabs.scoring.draft;
+    expect(sm.tabs.scoring.draft[firstKey]).toBeNull();
+  });
+
+  it('clicking the scoring tab button while on metrics switches back', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    tabs[1].click();
+    await element.updateComplete;
+    expect((element as any)._sm.activeTab).toBe('metrics');
+
+    tabs[0].click();
+    await element.updateComplete;
+    expect((element as any)._sm.activeTab).toBe('scoring');
+  });
+
+  it('firing input on wet-weight updates the metrics draft', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    tabs[1].click();
+    await element.updateComplete;
+
+    const input = element.shadowRoot?.querySelector('#wet-weight') as HTMLInputElement;
+    input.value = '120';
+    input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    await element.updateComplete;
+
+    expect((element as any)._sm.tabs.metrics.draft.wetWeight).toBe('120');
+  });
+
+  it('firing input on all metric fields updates each draft field', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+
+    const tabs = element.shadowRoot?.querySelectorAll('.tab-btn') as NodeListOf<HTMLButtonElement>;
+    tabs[1].click();
+    await element.updateComplete;
+
+    const fields: Array<[string, string, string]> = [
+      ['#dry-weight', 'dryWeight', '28'],
+      ['#trim-weight', 'trimWeight', '5'],
+      ['#thc-pct', 'thcPercentage', '24.5'],
+      ['#cbd-pct', 'cbdPercentage', '0.3'],
+    ];
+
+    for (const [selector, key, value] of fields) {
+      const input = element.shadowRoot?.querySelector(selector) as HTMLInputElement;
+      input.value = value;
+      input.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      await element.updateComplete;
+      expect((element as any)._sm.tabs.metrics.draft[key]).toBe(value);
+    }
+
+    const textarea = element.shadowRoot?.querySelector('#terpene-profile') as HTMLTextAreaElement;
+    textarea.value = 'myrcene';
+    textarea.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    await element.updateComplete;
+    expect((element as any)._sm.tabs.metrics.draft.terpeneProfile).toBe('myrcene');
+  });
+
+  it('calls scorePhenotype when harvest confirmed with non-empty scoring', async () => {
+    element.dialogState = { plant: aPlant() };
+    element.open = true;
+    await element.updateComplete;
+
+    // Set a score by clicking the first star of the first dimension
+    const starBtn = element.shadowRoot?.querySelector('.star-btn') as HTMLButtonElement;
+    starBtn.click();
+    await element.updateComplete;
+
+    // Save → confirming
+    const saveBtn = element.shadowRoot?.querySelector('.md3-button.filled') as HTMLButtonElement;
+    saveBtn.click();
+    await element.updateComplete;
+
+    // Confirm harvest
+    const confirmBtn = element.shadowRoot?.querySelector('.confirm-bar .md3-button.filled') as HTMLButtonElement;
+    confirmBtn.click();
+    await element.updateComplete;
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalled();
+    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+  });
 });
+
