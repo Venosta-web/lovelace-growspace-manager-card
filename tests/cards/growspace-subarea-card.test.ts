@@ -630,6 +630,86 @@ describe('GrowspaceSubareaCard', () => {
         expect(heroUI?.chips[2].value).toBe('1.0 kPa');
     });
 
+    test('_loadHistory fetches history for UUID-based calculated VPD when no explicit VPD sensor is configured', async () => {
+        const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
+        (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensor: 'sensor.veg_temp',
+                humidity_sensor: 'sensor.veg_humidity',
+                // no vpd_sensor — relies on calculated VPD
+            }
+        }]);
+
+        const calcVpdId = 'sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd';
+        mockHass.states[calcVpdId] = { state: '1.0', attributes: { unit_of_measurement: 'kPa' } };
+        element.hass = mockHass;
+
+        const calcVpdHistory = [
+            { entity_id: calcVpdId, state: '1.0', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
+            { entity_id: calcVpdId, state: '1.1', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
+        ];
+        mockDataService.getBatchHistory.mockResolvedValue({
+            'sensor.veg_temp': [
+                { entity_id: 'sensor.veg_temp', state: '22.5', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
+                { entity_id: 'sensor.veg_temp', state: '23.0', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
+            ],
+            [calcVpdId]: calcVpdHistory,
+        });
+
+        await (element as any)._loadSubarea();
+        await element.updateComplete;
+
+        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+            expect.arrayContaining([calcVpdId]),
+            expect.any(Date),
+            expect.any(Date)
+        );
+        expect((element as any)._historyCache['vpd']).toEqual(calcVpdHistory);
+    });
+
+    test('_loadHistory fetches history for name-based calculated VPD when no explicit VPD sensor is configured', async () => {
+        const fakeDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} };
+        (element as any)._viewController = { value: { grid: { devices: [fakeDevice] } } };
+        mockDataService.getSubareas.mockResolvedValue([{
+            id: 'sa1',
+            name: 'Veg Area',
+            environment_config: {
+                temperature_sensor: 'sensor.veg_temp',
+                humidity_sensor: 'sensor.veg_humidity',
+            }
+        }]);
+
+        // Only name-based entity exists (no UUID-based)
+        const nameVpdId = 'sensor.tent_1_veg_area_calculated_vpd';
+        mockHass.states[nameVpdId] = { state: '1.2', attributes: { unit_of_measurement: 'kPa' } };
+        element.hass = mockHass;
+
+        const nameVpdHistory = [
+            { entity_id: nameVpdId, state: '1.2', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
+            { entity_id: nameVpdId, state: '1.3', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
+        ];
+        mockDataService.getBatchHistory.mockResolvedValue({
+            'sensor.veg_temp': [
+                { entity_id: 'sensor.veg_temp', state: '22.5', last_changed: '2024-01-01T10:00:00Z', attributes: {} },
+                { entity_id: 'sensor.veg_temp', state: '23.0', last_changed: '2024-01-01T11:00:00Z', attributes: {} },
+            ],
+            [nameVpdId]: nameVpdHistory,
+        });
+
+        await (element as any)._loadSubarea();
+        await element.updateComplete;
+
+        expect(mockDataService.getBatchHistory).toHaveBeenCalledWith(
+            expect.arrayContaining([nameVpdId]),
+            expect.any(Date),
+            expect.any(Date)
+        );
+        expect((element as any)._historyCache['vpd']).toEqual(nameVpdHistory);
+    });
+
     test.each([
         ['1h' as const, 1 * 60 * 60 * 1000],
         ['6h' as const, 6 * 60 * 60 * 1000],
