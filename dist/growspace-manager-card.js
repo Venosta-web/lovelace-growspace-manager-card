@@ -67322,6 +67322,170 @@ const growspaceCardStyles = i$6 `
   }
 `;
 
+const TankWaterBucketSchema = objectType({
+    timestamp: stringType(),
+    liters: numberType(),
+});
+const TankWaterHistorySchema = objectType({
+    buckets: arrayType(TankWaterBucketSchema),
+});
+let TankWaterChart = class TankWaterChart extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.range = '24h';
+        this._buckets = [];
+        this._loading = false;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._fetch();
+    }
+    updated(changed) {
+        if (changed.has('range') || changed.has('device')) {
+            this._fetch();
+        }
+    }
+    async _fetch() {
+        if (!this.device)
+            return;
+        this._loading = true;
+        try {
+            const result = await hassCall('growspace_manager/get_tank_water_history', { growspace_id: this.device.deviceId, range: this.range }, TankWaterHistorySchema);
+            this._buckets = result.buckets;
+        }
+        catch {
+            this._buckets = [];
+        }
+        finally {
+            this._loading = false;
+        }
+    }
+    render() {
+        if (this._loading) {
+            return x `
+        <div class="chart-wrapper">
+          <div class="chart-title">Water Consumption</div>
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+          </div>
+        </div>
+      `;
+        }
+        if (this._buckets.length === 0) {
+            return x `
+        <div class="chart-wrapper">
+          <div class="chart-title">Water Consumption</div>
+          <div class="empty">No water data for this period.</div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="chart-wrapper">
+        <div class="chart-title">Water Consumption</div>
+        ${this._renderBars()}
+      </div>
+    `;
+    }
+    _renderBars() {
+        const max = Math.max(...this._buckets.map((b) => b.liters), 0.001);
+        const chartH = 80;
+        const barW = Math.floor(100 / this._buckets.length);
+        const gap = 2;
+        return x `
+      <svg viewBox="0 0 100 ${chartH}" preserveAspectRatio="none" height="${chartH}">
+        ${this._buckets.map((bucket, i) => {
+            const barH = (bucket.liters / max) * (chartH - 16);
+            const x$1 = i * barW + gap / 2;
+            const y = chartH - barH - 14;
+            return x `
+            <rect
+              class="bar"
+              x="${x$1}"
+              y="${y}"
+              width="${barW - gap}"
+              height="${barH}"
+              rx="1"
+            >
+              <title>${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L</title>
+            </rect>
+          `;
+        })}
+      </svg>
+    `;
+    }
+};
+TankWaterChart.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .chart-wrapper {
+      background: var(--card-background-color, #1c1c1e);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .chart-title {
+      font-size: 13px;
+      color: var(--secondary-text-color, #9e9e9e);
+      margin-bottom: 12px;
+    }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--secondary-text-color, #666);
+      gap: 12px;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--primary-color, #03a9f4);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .empty {
+      padding: 32px;
+      text-align: center;
+      color: var(--secondary-text-color, #666);
+      font-size: 13px;
+    }
+    svg {
+      width: 100%;
+      overflow: visible;
+    }
+    .bar {
+      fill: var(--primary-color, #03a9f4);
+      opacity: 0.85;
+    }
+    .bar:hover {
+      opacity: 1;
+    }
+    .axis-label {
+      font-size: 10px;
+      fill: var(--secondary-text-color, #9e9e9e);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], TankWaterChart.prototype, "device", void 0);
+__decorate([
+    n$5({ type: String })
+], TankWaterChart.prototype, "range", void 0);
+__decorate([
+    r$3()
+], TankWaterChart.prototype, "_buckets", void 0);
+__decorate([
+    r$3()
+], TankWaterChart.prototype, "_loading", void 0);
+TankWaterChart = __decorate([
+    t$2('tank-water-chart')
+], TankWaterChart);
+
 let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
     constructor() {
         super(...arguments);
@@ -67385,6 +67549,14 @@ let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
           @unlink-graphs=${(e) => this._redispatch('unlink-graphs', e.detail)}
           @unlink-graph=${(e) => this._redispatch('unlink-graph', e.detail)}
         ></growspace-env-chart>
+      `;
+        }
+        if (item.metrics[0] === MetricKey.WATER) {
+            return x `
+        <tank-water-chart
+          .device=${this.device}
+          .range=${this.range}
+        ></tank-water-chart>
       `;
         }
         return x `

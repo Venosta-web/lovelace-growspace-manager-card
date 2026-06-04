@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
+import { LitElement, html, css, type TemplateResult } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -6,6 +6,8 @@ import type { GrowspaceDevice, SensorHistories, HistoryTimeRange } from '../../.
 import { growspaceCardStyles } from '../../../styles/growspace-card.styles';
 import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
+import { MetricKey } from '../../environment/constants';
+import '../../environment/components/tank-water-chart';
 
 export type AnalyticsItem = {
   type: 'group' | 'single';
@@ -106,6 +108,14 @@ export class GrowspaceAnalyticsUI extends LitElement {
           @unlink-graphs=${(e: CustomEvent) => this._redispatch('unlink-graphs', e.detail)}
           @unlink-graph=${(e: CustomEvent) => this._redispatch('unlink-graph', e.detail)}
         ></growspace-env-chart>
+      `;
+    }
+    if (item.metrics[0] === MetricKey.WATER) {
+      return html`
+        <tank-water-chart
+          .device=${this.device}
+          .range=${this.range}
+        ></tank-water-chart>
       `;
     }
     return html`
