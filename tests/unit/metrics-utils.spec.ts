@@ -771,4 +771,67 @@ describe('MetricsUtils', () => {
             expect(vpdChip?.value).toBe('1.5 kPa');
         });
     });
+
+    describe('MetricKey.WATER chip visibility (tank-derived mode)', () => {
+        beforeEach(() => {
+            mockDevice.waterUsage = { litersToday: 5.2 };
+        });
+
+        it('shows WATER chip when tanks present and no flow or drain sensors', () => {
+            mockDevice.environmentAttributes = {
+                irrigationTanks: [{ entity_id: 'sensor.tank1' }],
+                irrigationFlowSensors: [],
+                drainVolumeSensors: [],
+            };
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const waterChip = res.mainChips.find(c => c.key === MetricKey.WATER);
+            expect(waterChip).toBeDefined();
+            expect(waterChip?.value).toBe('5.2 L/d');
+        });
+
+        it('hides WATER chip when irrigationFlowSensors are present', () => {
+            mockDevice.environmentAttributes = {
+                irrigationTanks: [{ entity_id: 'sensor.tank1' }],
+                irrigationFlowSensors: ['sensor.flow1'],
+                drainVolumeSensors: [],
+            };
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const waterChip = res.mainChips.find(c => c.key === MetricKey.WATER);
+            expect(waterChip).toBeUndefined();
+        });
+
+        it('hides WATER chip when drainVolumeSensors are present', () => {
+            mockDevice.environmentAttributes = {
+                irrigationTanks: [{ entity_id: 'sensor.tank1' }],
+                irrigationFlowSensors: [],
+                drainVolumeSensors: ['sensor.drain1'],
+            };
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const waterChip = res.mainChips.find(c => c.key === MetricKey.WATER);
+            expect(waterChip).toBeUndefined();
+        });
+
+        it('hides WATER chip when no irrigation tanks', () => {
+            mockDevice.environmentAttributes = {
+                irrigationTanks: [],
+                irrigationFlowSensors: [],
+                drainVolumeSensors: [],
+            };
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const waterChip = res.mainChips.find(c => c.key === MetricKey.WATER);
+            expect(waterChip).toBeUndefined();
+        });
+
+        it('hides WATER chip when litersToday is undefined', () => {
+            mockDevice.waterUsage = {};
+            mockDevice.environmentAttributes = {
+                irrigationTanks: [{ entity_id: 'sensor.tank1' }],
+                irrigationFlowSensors: [],
+                drainVolumeSensors: [],
+            };
+            const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+            const waterChip = res.mainChips.find(c => c.key === MetricKey.WATER);
+            expect(waterChip).toBeUndefined();
+        });
+    });
 });

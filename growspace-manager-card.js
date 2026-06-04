@@ -5713,6 +5713,7 @@ class GrowspaceAdapter {
                 totalLiters: waterUsageRaw.total_liters,
                 cycleStartDate: waterUsageRaw.cycle_start_date,
                 dailyReadings: waterUsageRaw.daily_readings,
+                ...(waterUsageRaw.liters_today != null ? { litersToday: waterUsageRaw.liters_today } : {}),
             }
             : null;
         // 8. Construct Device
@@ -62872,7 +62873,9 @@ class MetricsUtils {
         const energyValue = device.energyTracking?.dailyKwh != null
             ? device.energyTracking.dailyKwh.toFixed(2)
             : undefined;
-        const waterValue = device.waterUsage?.litersToday != null ? device.waterUsage.litersToday.toFixed(1) : undefined;
+        const waterValue = device.waterUsage?.litersToday != null
+            ? `${device.waterUsage.litersToday.toFixed(1)} L/d`
+            : undefined;
         const substrateTempAgg = getAggregateSensorState(undefined, envAttrs.substrateTemperatureSensors, '°C');
         if (tanks.length > 0) {
             tankEntityIds = tanks.map((t) => t.sensorEntity).filter(Boolean);
@@ -62994,7 +62997,11 @@ class MetricsUtils {
             createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId], undefined, undefined, 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.'),
             createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId], undefined, undefined, 'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'),
             createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
-            createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
+            tanks.length > 0 &&
+                !(envAttrs.irrigationFlowSensors?.length) &&
+                !(envAttrs.drainVolumeSensors?.length)
+                ? createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined)
+                : null,
         ].filter((c) => c !== null);
         // Device Chips
         const getAggregateState = (single, multi, sensor) => {

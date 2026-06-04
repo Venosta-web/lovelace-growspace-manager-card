@@ -271,6 +271,7 @@ export class GrowspaceAdapter {
           totalLiters: waterUsageRaw.total_liters,
           cycleStartDate: waterUsageRaw.cycle_start_date,
           dailyReadings: waterUsageRaw.daily_readings as Array<Record<string, unknown>>,
+          ...(waterUsageRaw.liters_today != null ? { litersToday: waterUsageRaw.liters_today } : {}),
         }
       : null;
 
