@@ -63,6 +63,7 @@ tests/e2e/test-reports/
 
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 
 
 playwright-report-mock/index.html
