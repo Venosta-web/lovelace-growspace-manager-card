@@ -47,7 +47,7 @@ describe('GrowspaceSharedStore.updateHass', () => {
     let capturedCb: ((e: unknown) => void) | undefined;
     const hass = makeMockHass(async (cb) => {
       capturedCb = cb;
-      return vi.fn();
+      return vi.fn() as () => void;
     });
     store.updateHass(hass);
     await new Promise((r) => setTimeout(r, 0));

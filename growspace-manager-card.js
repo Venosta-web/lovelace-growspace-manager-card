@@ -14028,6 +14028,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         this.open = false;
         this.strain = '';
         this.phenotype = '';
+        this.libraryError = '';
         this.addToLibrary = false;
         this.amount = 1;
         this.start_number = 1;
@@ -14078,6 +14079,7 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
         }));
     }
     _confirm() {
+        this.libraryError = '';
         if (this.growspaceDevice) {
             const totalSlots = (this.growspaceDevice.rows || 0) * (this.growspaceDevice.plantsPerRow || 0);
             const occupied = this.growspaceDevice.plants?.length || 0;
@@ -14215,6 +14217,8 @@ let AddPlantsDialog = class AddPlantsDialog extends i$3 {
                   ?disabled=${!this.strain}
                 ></md3-switch>
               </div>
+
+              ${this.libraryError ? x `<ha-alert alert-type="error">${this.libraryError}</ha-alert>` : E}
 
               <div class="row-col-grid">
                 <md3-number-input
@@ -14362,6 +14366,9 @@ __decorate([
 __decorate([
     n$5({ type: String })
 ], AddPlantsDialog.prototype, "phenotype", void 0);
+__decorate([
+    n$5({ type: String })
+], AddPlantsDialog.prototype, "libraryError", void 0);
 __decorate([
     r$3()
 ], AddPlantsDialog.prototype, "addToLibrary", void 0);
@@ -52836,6 +52843,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         super(...arguments);
         this._controllersInitialized = false;
         this._geneticsLoaded = false;
+        this._addPlantsLibraryError = '';
     }
     connectedCallback() {
         super.connectedCallback();
@@ -53101,9 +53109,18 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         .clone_start=${active.payload?.clone_start || ''}
         .dry_start=${active.payload?.dry_start || ''}
         .cure_start=${active.payload?.cure_start || ''}
-        @close=${() => this._closeDialogIfActive('ADD_PLANTS')}
+        .libraryError=${this._addPlantsLibraryError}
+        @close=${() => { this._addPlantsLibraryError = ''; this._closeDialogIfActive('ADD_PLANTS'); }}
         @show-toast=${(e) => this.store?.actions.ui.showToast(e.detail.message, e.detail.type)}
-        @add-plants-submit=${(e) => this.store?.actions.plant.addBatch(e.detail)}
+        @add-plants-submit=${async (e) => {
+            this._addPlantsLibraryError = '';
+            try {
+                await this.store?.actions.plant.addBatch(e.detail);
+            }
+            catch (err) {
+                this._addPlantsLibraryError = err instanceof Error ? err.message : 'Failed to add strains to library';
+            }
+        }}
         @create-new-strain=${(e) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
       ></add-plants-dialog>
@@ -53827,6 +53844,9 @@ __decorate([
     e$4({ context: configContext }),
     n$5({ attribute: false })
 ], GrowspaceDialogHost.prototype, "config", void 0);
+__decorate([
+    r$3()
+], GrowspaceDialogHost.prototype, "_addPlantsLibraryError", void 0);
 GrowspaceDialogHost = __decorate([
     t$2('growspace-dialog-host')
 ], GrowspaceDialogHost);
@@ -128117,33 +128137,33 @@ async function confirmAddPlants(ctx, detail) {
         ctx.ui.showToast('No growspace selected', 'error');
         return;
     }
+    if (detail.addToLibrary) {
+        const amount = detail.amount || 1;
+        const startNumber = detail.start_number || 1;
+        const promises = [];
+        for (let i = 0; i < amount; i++) {
+            const currentNumber = startNumber + i;
+            const phenoName = detail.phenotype
+                ? `${detail.phenotype} #${currentNumber}`
+                : `Strain #${currentNumber}`;
+            if (detail.strain) {
+                promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
+            }
+        }
+        try {
+            await Promise.all(promises);
+            await fetchStrainLibrary(ctx, true);
+            ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
+        }
+        catch (e) {
+            console.error('Failed to add strains to library:', e);
+            throw e instanceof Error ? e : new Error('Failed to add strains to library');
+        }
+    }
     const beforeDevices = devices$.get();
     const beforeIds = new Set();
     beforeDevices.forEach((d) => d.plants?.forEach((p) => beforeIds.add(p.attributes.plant_id || '')));
     await withAction(ctx, async () => {
-        if (detail.addToLibrary) {
-            try {
-                const amount = detail.amount || 1;
-                const startNumber = detail.start_number || 1;
-                const promises = [];
-                for (let i = 0; i < amount; i++) {
-                    const currentNumber = startNumber + i;
-                    const phenoName = detail.phenotype
-                        ? `${detail.phenotype} #${currentNumber}`
-                        : `Strain #${currentNumber}`;
-                    if (detail.strain) {
-                        promises.push(ctx.dataService.addStrain({ strain: detail.strain, phenotype: phenoName }));
-                    }
-                }
-                await Promise.all(promises);
-                await fetchStrainLibrary(ctx, true);
-                ctx.ui.showToast(`Added ${amount} strain variants to library`, 'success');
-            }
-            catch (e) {
-                console.error('Failed to add strains to library:', e);
-                ctx.ui.showToast(`Failed to add strains to library, conducting plant addition`, 'info');
-            }
-        }
         const { addToLibrary: _, ...apiPayload } = detail;
         await ctx.dataService.addPlants({
             ...apiPayload,

@@ -34,7 +34,7 @@ describe('GrowspaceNutrientPresetsEditorContainer', () => {
   it('renders the editor-ui when presets atom is populated', async () => {
     nutrientPresets$.set(aPresets());
     nutrientInventory$.set(aInventory());
-    const el = await fixture(html`<growspace-nutrient-presets-editor></growspace-nutrient-presets-editor>`);
+    const el = await fixture<any>(html`<growspace-nutrient-presets-editor></growspace-nutrient-presets-editor>`);
     await el.updateComplete;
     expect(el.shadowRoot?.querySelector('growspace-nutrient-presets-editor-ui')).not.toBeNull();
   });

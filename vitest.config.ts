@@ -2,9 +2,6 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 
 export default defineConfig({
-    define: {
-        __VERSION__: JSON.stringify('test'),
-    },
     test: {
         browser: {
             enabled: true,
