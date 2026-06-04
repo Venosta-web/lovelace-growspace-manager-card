@@ -1844,6 +1844,10 @@ describe('IrrigationDialog', () => {
                 const configTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Configuration'));
                 (configTab as HTMLElement)?.click();
                 await element.updateComplete;
+
+                // Cycle Parameters only render when crop steering is ON
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+                await element.updateComplete;
             });
 
             it('should update _soilTriggerPercent from the Soil Trigger input', async () => {
@@ -1965,6 +1969,83 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
 
                 expect((element as any)._sm.tabs.config.draft.logToLogbook).toBe(false);
+            });
+        });
+
+        describe('Config tab conditional display based on crop steering', () => {
+            beforeEach(async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const configTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Configuration'));
+                (configTab as HTMLElement)?.click();
+                await element.updateComplete;
+            });
+
+            it('hides Cycle Parameters when crop steering is OFF', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
+                await element.updateComplete;
+
+                expect(element.shadowRoot?.innerHTML).not.toContain('Cycle Parameters');
+            });
+
+            it('shows Cycle Parameters when crop steering is ON', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+                await element.updateComplete;
+
+                expect(element.shadowRoot?.innerHTML).toContain('Cycle Parameters');
+            });
+
+            it('shows Skip During Dark when crop steering is OFF', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
+                await element.updateComplete;
+
+                expect(element.shadowRoot?.innerHTML).toContain('Skip During Dark Period');
+            });
+
+            it('hides Skip During Dark when crop steering is ON', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+                await element.updateComplete;
+
+                expect(element.shadowRoot?.innerHTML).not.toContain('Skip During Dark Period');
+            });
+
+            it('always shows Pause on Tank Low regardless of crop steering', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
+                await element.updateComplete;
+                expect(element.shadowRoot?.innerHTML).toContain('Pause on Tank Low');
+
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+                await element.updateComplete;
+                expect(element.shadowRoot?.innerHTML).toContain('Pause on Tank Low');
+            });
+
+            it('always shows Log to Logbook regardless of crop steering', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
+                await element.updateComplete;
+                expect(element.shadowRoot?.innerHTML).toContain('Log to Logbook');
+
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+                await element.updateComplete;
+                expect(element.shadowRoot?.innerHTML).toContain('Log to Logbook');
+            });
+
+            it('shows correct switch count when crop steering is OFF (3 switches)', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
+                await element.updateComplete;
+
+                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+                expect(switches?.length).toBe(3); // skipDuringDark + pauseOnLowTank + logToLogbook
+            });
+
+            it('shows correct switch count when crop steering is ON (2 switches)', async () => {
+                (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
+                await element.updateComplete;
+
+                const switches = element.shadowRoot?.querySelectorAll('.stub-row md3-switch');
+                expect(switches?.length).toBe(2); // pauseOnLowTank + logToLogbook
             });
         });
 

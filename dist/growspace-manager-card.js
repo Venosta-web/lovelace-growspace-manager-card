@@ -28410,6 +28410,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       </div>
 
+      ${this._sm.tabs.steering.draft.enabled ? x `
       <div class="detail-card">
         <div
           style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
@@ -28483,21 +28484,28 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           </div>
         </div>
       </div>
+      ` : E}
 
       <div class="detail-card">
         <h3 style="margin:0 0 14px;">Behaviour</h3>
+        ${!this._sm.tabs.steering.draft.enabled ? x `
+            <div class="stub-row" style="margin-bottom:8px;">
+              <div>
+                <div class="stub-row-label">Skip During Dark Period</div>
+                <div class="stub-row-desc">No cycles between lights-off and lights-on</div>
+              </div>
+              <md3-switch
+                .checked=${this._sm.tabs.config.draft.skipDuringDark}
+                @change=${(e) => {
+            this._sm = transition$4(this._sm, {
+                type: 'UPDATE_CONFIG_DRAFT',
+                partial: { skipDuringDark: e.target.checked },
+            });
+        }}
+              ></md3-switch>
+            </div>
+        ` : E}
         ${[
-            {
-                label: 'Skip During Dark Period',
-                desc: 'No cycles between lights-off and lights-on',
-                get: () => this._sm.tabs.config.draft.skipDuringDark,
-                set: (v) => {
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { skipDuringDark: v },
-                    });
-                },
-            },
             {
                 label: 'Pause on Tank Low',
                 desc: 'Halt cycles when any tank is below warning level',
