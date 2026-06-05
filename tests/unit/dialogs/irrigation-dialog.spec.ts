@@ -679,7 +679,7 @@ describe('IrrigationDialog', () => {
 
             const strategyFields = [
                 { label: 'Target VWC (%)', key: 'targetVwcPercent', val: '60', expected: 60 },
-                { label: 'Dryback (%)', key: 'maintenanceDrybackPercent', val: '5', expected: 5 },
+                { label: 'VWC Delta (%)', key: 'maintenanceDrybackPercent', val: '5', expected: 5 },
                 { label: 'P0 Duration (min)', key: 'p0DurationMinutes', val: '30', expected: 30 },
                 { label: 'P2 Stop Buffer (min)', key: 'p2StopBeforeLightsOffMinutes', val: '60', expected: 60 },
                 { label: 'Shot Duration (sec)', key: 'shotDurationSeconds', val: '10', expected: 10 },

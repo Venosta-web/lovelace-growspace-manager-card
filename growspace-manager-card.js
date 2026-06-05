@@ -251,7 +251,8 @@ var MetricKey;
     MetricKey["WATER"] = "water";
     MetricKey["PH"] = "ph";
     MetricKey["FEED_EC"] = "feed_ec";
-    MetricKey["SUBSTRATE_EC"] = "substrate_ec";
+    MetricKey["BULK_EC"] = "bulk_ec";
+    MetricKey["PORE_EC"] = "pore_ec";
     MetricKey["RUNOFF_EC"] = "runoff_ec";
     MetricKey["DRAIN_VOLUME"] = "drain_volume";
     MetricKey["IRRIGATION_FLOW"] = "irrigation_flow";
@@ -279,7 +280,8 @@ const METRIC_SORT_ORDER = [
     MetricKey.WATER,
     MetricKey.PH,
     MetricKey.FEED_EC,
-    MetricKey.SUBSTRATE_EC,
+    MetricKey.BULK_EC,
+    MetricKey.PORE_EC,
     MetricKey.RUNOFF_EC,
     MetricKey.DRAIN_VOLUME,
     MetricKey.IRRIGATION_FLOW,
@@ -394,9 +396,15 @@ const METRIC_CONFIG = {
         unit: 'mS/cm',
         icon: mdiLightningBolt,
     },
-    [MetricKey.SUBSTRATE_EC]: {
+    [MetricKey.BULK_EC]: {
         color: '#ff7043',
-        title: 'Substrate EC',
+        title: 'Bulk EC',
+        unit: 'mS/cm',
+        icon: mdiLightningBolt,
+    },
+    [MetricKey.PORE_EC]: {
+        color: '#ef5350',
+        title: 'Pore EC',
         unit: 'mS/cm',
         icon: mdiLightningBolt,
     },
@@ -501,7 +509,8 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.POWER]: { primary: 'powerSensors' },
     [MetricKey.PH]: { primary: 'phSensors' },
     [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
-    [MetricKey.SUBSTRATE_EC]: { primary: 'substrateEcSensors' },
+    [MetricKey.BULK_EC]: { primary: 'bulkEcSensors' },
+    [MetricKey.PORE_EC]: { primary: 'poreEcSensors' },
     [MetricKey.RUNOFF_EC]: { primary: 'runoffEcSensors' },
     [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
     [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
@@ -5610,7 +5619,8 @@ class GrowspaceAdapter {
             energySensors: environment?.energy_sensors,
             phSensors: environment?.ph_sensors,
             feedEcSensors: environment?.feed_ec_sensors,
-            substrateEcSensors: environment?.substrate_ec_sensors,
+            bulkEcSensors: environment?.bulk_ec_sensors,
+            poreEcSensors: environment?.pore_ec_sensors,
             runoffEcSensors: environment?.runoff_ec_sensors,
             drainVolumeSensors: environment?.drain_volume_sensors,
             irrigationFlowSensors: environment?.irrigation_flow_sensors,
@@ -6510,8 +6520,10 @@ async function configureEnvironment$1(data) {
         payload.ph_sensors = data.phSensors;
     if (data.feedEcSensors?.length)
         payload.feed_ec_sensors = data.feedEcSensors;
-    if (data.substrateEcSensors?.length)
-        payload.substrate_ec_sensors = data.substrateEcSensors;
+    if (data.bulkEcSensors?.length)
+        payload.bulk_ec_sensors = data.bulkEcSensors;
+    if (data.poreEcSensors?.length)
+        payload.pore_ec_sensors = data.poreEcSensors;
     if (data.runoffEcSensors?.length)
         payload.runoff_ec_sensors = data.runoffEcSensors;
     if (data.drainVolumeSensors?.length)
@@ -11651,6 +11663,26 @@ const dialogStyles = [
     .row-col-grid > * {
       flex: 1;
       min-width: 0;
+    }
+
+    .vwc-targets-group {
+      grid-column: span 2;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 8px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .vwc-targets-group-title {
+      grid-column: span 2;
+      margin: 0 0 4px 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0.9;
+      letter-spacing: 0.1px;
     }
 
     @media (max-width: 450px) {
@@ -17262,7 +17294,8 @@ const EnvironmentConfigSchema = objectType({
     lung_room_temp_sensors: arrayType(stringType()).optional(),
     ph_sensors: arrayType(stringType()).optional(),
     feed_ec_sensors: arrayType(stringType()).optional(),
-    substrate_ec_sensors: arrayType(stringType()).optional(),
+    bulk_ec_sensors: arrayType(stringType()).optional(),
+    pore_ec_sensors: arrayType(stringType()).optional(),
     runoff_ec_sensors: arrayType(stringType()).optional(),
     drain_volume_sensors: arrayType(stringType()).optional(),
     irrigation_flow_sensors: arrayType(stringType()).optional(),
@@ -17898,7 +17931,8 @@ function defaultEnvironmentDraft() {
         substrateTemperatureSensors: [],
         phSensors: [],
         feedEcSensors: [],
-        substrateEcSensors: [],
+        bulkEcSensors: [],
+        poreEcSensors: [],
         runoffEcSensors: [],
         drainVolumeSensors: [],
         irrigationFlowSensors: [],
@@ -18030,7 +18064,8 @@ function envDraftFromDevice(device) {
         substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
         phSensors: attrs.phSensors ?? [],
         feedEcSensors: attrs.feedEcSensors ?? [],
-        substrateEcSensors: attrs.substrateEcSensors ?? [],
+        bulkEcSensors: attrs.bulkEcSensors ?? [],
+        poreEcSensors: attrs.poreEcSensors ?? [],
         runoffEcSensors: attrs.runoffEcSensors ?? [],
         drainVolumeSensors: attrs.drainVolumeSensors ?? [],
         irrigationFlowSensors: attrs.irrigationFlowSensors ?? [],
@@ -18549,8 +18584,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     set envPhSensors(v) { this._setEnv({ phSensors: v }); }
     get envFeedEcSensors() { return this._d.feedEcSensors; }
     set envFeedEcSensors(v) { this._setEnv({ feedEcSensors: v }); }
-    get envSubstrateEcSensors() { return this._d.substrateEcSensors; }
-    set envSubstrateEcSensors(v) { this._setEnv({ substrateEcSensors: v }); }
+    get envBulkEcSensors() { return this._d.bulkEcSensors; }
+    set envBulkEcSensors(v) { this._setEnv({ bulkEcSensors: v }); }
+    get envPoreEcSensors() { return this._d.poreEcSensors; }
+    set envPoreEcSensors(v) { this._setEnv({ poreEcSensors: v }); }
     get envRunoffEcSensors() { return this._d.runoffEcSensors; }
     set envRunoffEcSensors(v) { this._setEnv({ runoffEcSensors: v }); }
     get envDrainVolumeSensors() { return this._d.drainVolumeSensors; }
@@ -18808,7 +18845,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 substrateTemperatureSensors: environmentData.substrateTemperatureSensors || [],
                 phSensors: environmentData.phSensors || [],
                 feedEcSensors: environmentData.feedEcSensors || [],
-                substrateEcSensors: environmentData.substrateEcSensors || [],
+                bulkEcSensors: environmentData.bulkEcSensors || [],
+                poreEcSensors: environmentData.poreEcSensors || [],
                 runoffEcSensors: environmentData.runoffEcSensors || [],
                 drainVolumeSensors: environmentData.drainVolumeSensors || [],
                 irrigationFlowSensors: environmentData.irrigationFlowSensors || [],
@@ -18894,7 +18932,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 substrateTemperatureSensors: d.substrateTemperatureSensors,
                 phSensors: d.phSensors,
                 feedEcSensors: d.feedEcSensors,
-                substrateEcSensors: d.substrateEcSensors,
+                bulkEcSensors: d.bulkEcSensors,
+                poreEcSensors: d.poreEcSensors,
                 runoffEcSensors: d.runoffEcSensors,
                 drainVolumeSensors: d.drainVolumeSensors,
                 irrigationFlowSensors: d.irrigationFlowSensors,
@@ -19321,7 +19360,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     substrateTemperatureSensors: [],
                     phSensors: [],
                     feedEcSensors: [],
-                    substrateEcSensors: [],
+                    bulkEcSensors: [],
+                    poreEcSensors: [],
                     runoffEcSensors: [],
                     drainVolumeSensors: [],
                     irrigationFlowSensors: [],
@@ -20268,7 +20308,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ${this._renderMultiEntitySelect('Feed EC Sensors', this._sm.environmentDraft.feedEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { feedEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Substrate EC Sensors', this._sm.environmentDraft.substrateEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateEcSensors: v } }))}
+            ${this._renderMultiEntitySelect('Bulk EC Sensors', this._sm.environmentDraft.bulkEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } }))}
+            ${this._renderMultiEntitySelect('Pore EC Sensors', this._sm.environmentDraft.poreEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } }))}
             ${this._renderMultiEntitySelect('Runoff EC Sensors', this._sm.environmentDraft.runoffEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { runoffEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
@@ -27201,7 +27242,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const drainEnabled = !!this.device?.drainConfig?.enabled;
         const hasEcSensors = (env?.feedEcSensors?.length ?? 0) > 0 ||
             (env?.runoffEcSensors?.length ?? 0) > 0 ||
-            (env?.substrateEcSensors?.length ?? 0) > 0 ||
+            (env?.bulkEcSensors?.length ?? 0) > 0 ||
+            (env?.poreEcSensors?.length ?? 0) > 0 ||
             (env?.phSensors?.length ?? 0) > 0;
         if (drainEnabled || hasDrainReadings || hasEcSensors)
             tabs.push('drain_ec');
@@ -27210,7 +27252,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         // EC Ramp: visible when pump + at least one schedule + at least one EC sensor
         const hasEcSensorsForRamp = (env?.feedEcSensors?.length ?? 0) > 0 ||
             (env?.runoffEcSensors?.length ?? 0) > 0 ||
-            (env?.substrateEcSensors?.length ?? 0) > 0;
+            (env?.bulkEcSensors?.length ?? 0) > 0 ||
+            (env?.poreEcSensors?.length ?? 0) > 0;
         const hasSchedules = (this.device?.irrigationConfig?.irrigationTimes?.length ?? 0) > 0;
         if (hasPump && hasSchedules && hasEcSensorsForRamp)
             tabs.push('ec_ramp');
@@ -28687,21 +28730,19 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div
-            style="grid-column:span 2;border-bottom:1px solid rgba(255,255,255,0.1);margin:4px 0;"
-          ></div>
-          <h4 style="grid-column:span 2;margin:4px 0;">Targets</h4>
-
-          <md3-number-input
-            label="Target VWC (%)"
-            .value=${this._sm.tabs.steering.draft.targetVwcPercent}
-            @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Dryback (%)"
-            .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
-            @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
-          ></md3-number-input>
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title">VWC Parameters</div>
+            <md3-number-input
+              label="Target VWC (%)"
+              .value=${this._sm.tabs.steering.draft.targetVwcPercent}
+              @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="VWC Delta (%)"
+              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
+              @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+          </div>
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
 
@@ -54125,7 +54166,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 substrateTemperatureSensors: detail.substrateTemperatureSensors,
                 phSensors: detail.phSensors,
                 feedEcSensors: detail.feedEcSensors,
-                substrateEcSensors: detail.substrateEcSensors,
+                bulkEcSensors: detail.bulkEcSensors,
+                poreEcSensors: detail.poreEcSensors,
                 runoffEcSensors: detail.runoffEcSensors,
                 drainVolumeSensors: detail.drainVolumeSensors,
                 irrigationFlowSensors: detail.irrigationFlowSensors,
@@ -63689,12 +63731,14 @@ class MetricsUtils {
         const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
         const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
         const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
-        const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
+        const bulkEcAgg = getAggregateState(undefined, ec.bulk_ec_sensors, '');
+        const poreEcAgg = getAggregateState(undefined, ec.pore_ec_sensors, '');
         const secondaryChips = [
             createChipData(MetricKey.SUBSTRATE_TEMPERATURE, '', subTempAgg.value, subTempAgg.multiValues, subTempAgg.entityIds, 'Substrate Temp'),
             createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
             createChipData('feed_ec', '', feedEcAgg.value, feedEcAgg.multiValues, feedEcAgg.entityIds, 'Feed EC'),
-            createChipData('substrate_ec', '', subEcAgg.value, subEcAgg.multiValues, subEcAgg.entityIds, 'Substrate EC'),
+            createChipData('bulk_ec', '', bulkEcAgg.value, bulkEcAgg.multiValues, bulkEcAgg.entityIds, 'Bulk EC'),
+            createChipData('pore_ec', '', poreEcAgg.value, poreEcAgg.multiValues, poreEcAgg.entityIds, 'Pore EC'),
         ].filter((c) => c !== null);
         const getAggregateDeviceState = (entities) => {
             const ids = new Set();
@@ -64059,9 +64103,12 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     const feedEcChip = _makeSensorReadingChip(MetricKey.FEED_EC, mdiLightningBolt, envSnapshot?.feedEc ?? null, ' mS/cm', { label: 'Feed EC', tooltip: 'Electrical conductivity of the irrigation feed solution.' }, activeEnvGraphs, linkedGraphGroups);
     if (feedEcChip)
         chips.push(feedEcChip);
-    const subEcChip = _makeSensorReadingChip(MetricKey.SUBSTRATE_EC, mdiLightningBolt, envSnapshot?.substrateEc ?? null, ' mS/cm', { label: 'Sub EC', tooltip: 'Electrical conductivity inside the substrate.' }, activeEnvGraphs, linkedGraphGroups);
-    if (subEcChip)
-        chips.push(subEcChip);
+    const bulkEcChip = _makeSensorReadingChip(MetricKey.BULK_EC, mdiLightningBolt, envSnapshot?.bulkEc ?? null, ' mS/cm', { label: 'Bulk EC', tooltip: 'Overall electrical conductivity of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
+    if (bulkEcChip)
+        chips.push(bulkEcChip);
+    const poreEcChip = _makeSensorReadingChip(MetricKey.PORE_EC, mdiLightningBolt, envSnapshot?.poreEc ?? null, ' mS/cm', { label: 'Pore EC', tooltip: 'Electrical conductivity of water in the substrate pore space.' }, activeEnvGraphs, linkedGraphGroups);
+    if (poreEcChip)
+        chips.push(poreEcChip);
     const runoffEcChip = _makeSensorReadingChip(MetricKey.RUNOFF_EC, mdiLightningBolt, envSnapshot?.runoffEc ?? null, ' mS/cm', { label: 'Runoff EC', tooltip: 'Electrical conductivity of drain / runoff water.' }, activeEnvGraphs, linkedGraphGroups);
     if (runoffEcChip)
         chips.push(runoffEcChip);
@@ -64282,7 +64329,8 @@ function computeEnvSnapshot(device, hassStates) {
     // Irrigation monitoring sensors
     const ph = _resolveSensors(undefined, envAttrs?.phSensors, hassStates);
     const feedEc = _resolveSensors(undefined, envAttrs?.feedEcSensors, hassStates);
-    const substrateEc = _resolveSensors(undefined, envAttrs?.substrateEcSensors, hassStates);
+    const bulkEc = _resolveSensors(undefined, envAttrs?.bulkEcSensors, hassStates);
+    const poreEc = _resolveSensors(undefined, envAttrs?.poreEcSensors, hassStates);
     const runoffEc = _resolveSensors(undefined, envAttrs?.runoffEcSensors, hassStates);
     const drainVolume = _resolveSensors(undefined, envAttrs?.drainVolumeSensors, hassStates);
     const irrigationFlow = _resolveSensors(undefined, envAttrs?.irrigationFlowSensors, hassStates);
@@ -64302,7 +64350,8 @@ function computeEnvSnapshot(device, hassStates) {
         substrateTemperature,
         ph,
         feedEc,
-        substrateEc,
+        bulkEc,
+        poreEc,
         runoffEc,
         drainVolume,
         irrigationFlow,
@@ -129558,7 +129607,8 @@ function openConfigDialog(ctx, device) {
                 substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
                 phSensors: device?.environmentAttributes?.phSensors || [],
                 feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
-                substrateEcSensors: device?.environmentAttributes?.substrateEcSensors || [],
+                bulkEcSensors: device?.environmentAttributes?.bulkEcSensors || [],
+                poreEcSensors: device?.environmentAttributes?.poreEcSensors || [],
                 runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
                 drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
                 irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],

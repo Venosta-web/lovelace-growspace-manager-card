@@ -39,7 +39,7 @@ Comprehensive end-to-end testing suite for the Lovelace Growspace Manager Card, 
 - ✅ **Crop Steering (VWC) - All 8 fields:**
   - Enable/Disable steering
   - Target VWC (%): 48.5
-  - Dryback (%): 4.0
+  - VWC Delta (%): 4.0
   - Lights On Time: 07:00:00
   - P0 Duration (min): 90
   - P2 Stop Buffer (min): 150

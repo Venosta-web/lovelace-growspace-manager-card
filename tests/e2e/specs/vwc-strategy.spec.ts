@@ -41,7 +41,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     }
 
     await dialog.fillNumberField('Target VWC (%)', SENTINEL.targetVwcPercent);
-    await dialog.fillNumberField('Dryback (%)', SENTINEL.maintenanceDrybackPercent);
+    await dialog.fillNumberField('VWC Delta (%)', SENTINEL.maintenanceDrybackPercent);
     await dialog.fillTimeField('Lights On Time', SENTINEL.lightsOnTime);
     await dialog.fillNumberField('P0 Duration (min)', SENTINEL.p0DurationMinutes);
     await dialog.fillNumberField('P2 Stop Buffer (min)', SENTINEL.p2StopBeforeLightsOffMinutes);
@@ -56,7 +56,7 @@ test.describe('VWC strategy — Schedules tab conditional display', () => {
     await dialog.clickTab('steering');
 
     await expect(dialog.getNumberField('Target VWC (%)')).toHaveValue(String(SENTINEL.targetVwcPercent));
-    await expect(dialog.getNumberField('Dryback (%)')).toHaveValue(String(SENTINEL.maintenanceDrybackPercent));
+    await expect(dialog.getNumberField('VWC Delta (%)')).toHaveValue(String(SENTINEL.maintenanceDrybackPercent));
     await expect(dialog.getTimeField('Lights On Time')).toHaveValue(SENTINEL.lightsOnTime);
     await expect(dialog.getNumberField('P0 Duration (min)')).toHaveValue(String(SENTINEL.p0DurationMinutes));
     await expect(dialog.getNumberField('P2 Stop Buffer (min)')).toHaveValue(String(SENTINEL.p2StopBeforeLightsOffMinutes));
