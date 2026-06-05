@@ -135,22 +135,6 @@ export class GmSettingsPanel extends LitElement {
         </div>
       </div>
 
-      <!-- Alerts -->
-      <div class="section">
-        <div class="section-heading">Alerts</div>
-        <div class="field-row">
-          <div>
-            <div class="field-label">Auto Alerts</div>
-            <div class="field-hint">Enrich triage alerts with AI reasoning</div>
-          </div>
-          <md3-switch
-            data-field="ai_auto_alerts"
-            .checked=${d.ai_auto_alerts ?? true}
-            @change=${(e: CustomEvent) => this._patch({ ai_auto_alerts: e.detail.checked })}
-          ></md3-switch>
-        </div>
-      </div>
-
       <!-- Vision -->
       <div class="section">
         <div class="section-heading">Vision</div>

@@ -452,7 +452,6 @@ export type AiSettingsDraft = {
   ai_enabled?: boolean;
   assistant_id?: string | null;
   notification_personality?: string;
-  ai_auto_alerts?: boolean;
   max_response_length?: number;
   vision_checkup_enabled?: boolean;
   ai_task_entity_id?: string | null;
