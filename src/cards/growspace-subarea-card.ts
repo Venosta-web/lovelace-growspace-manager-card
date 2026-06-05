@@ -468,41 +468,13 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
       `;
         }
 
-        if (this._loading) {
-            return html`
-        <ha-card>
-          <div class="loading-container">
-            <ha-circular-progress active></ha-circular-progress>
-          </div>
-        </ha-card>
-      `;
-        }
-
-        if (this._error) {
-            return html`
-        <ha-card>
-          <div class="error">${this._error}</div>
-        </ha-card>
-      `;
-        }
-
-        if (!this._subarea) {
-            return html`
-        <ha-card>
-          <div class="no-data">Subarea not found.</div>
-        </ha-card>
-      `;
-        }
-
-        const ec = this._subarea.environment_config;
-        const parentName = this._parentGrowspaceName || this._config.growspace_id;
-        const { devices } = this._viewController.value.grid;
+        // Compute these outside the loading guard so the config-dialog stays alive
+        // even while the card body is reloading (DATA_STALE_EVENT).
+        const devices = this._viewController.value?.grid?.devices ?? [];
         const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
-
         const growspaceOptions: Record<string, string> = Object.fromEntries(
             devices.map((d: any) => [d.deviceId, d.name])
         );
-
         const parentEnvAttrs = parentDevice?.environmentAttributes;
         const configEnvData = {
             selectedGrowspaceId: this._config.growspace_id,
@@ -530,6 +502,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             irrigationTanks: parentEnvAttrs?.irrigationTanks || [],
             cameraEntities: parentEnvAttrs?.cameraEntities || [],
         };
+        const parentName = this._parentGrowspaceName || this._config.growspace_id;
 
         return html`
       <error-boundary
@@ -537,37 +510,49 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         .onError=${this._handleError}
       >
         <ha-card>
-          <div class="unified-growspace-card glass-surface glass-panel">
-            <div class="subarea-inner">
-              <div class="subarea-header">
-                <div class="subarea-header-text">
-                  <h2 class="subarea-title">${this._subarea.name}</h2>
-                  <p class="subarea-subtitle">
-                    <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
-                    ${parentName}
-                  </p>
+          ${this._loading
+                ? html`
+                <div class="loading-container">
+                  <ha-circular-progress active></ha-circular-progress>
                 </div>
-                <button
-                  class="config-button"
-                  title="Configure subareas"
-                  @click=${() => {
-                this._configEnvDataSnapshot = configEnvData;
-                this._showConfigDialog = true;
-            }}
-                >
-                  <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                </button>
-              </div>
+              `
+                : this._error
+                    ? html`<div class="error">${this._error}</div>`
+                    : !this._subarea
+                        ? html`<div class="no-data">Subarea not found.</div>`
+                        : html`
+                <div class="unified-growspace-card glass-surface glass-panel">
+                  <div class="subarea-inner">
+                    <div class="subarea-header">
+                      <div class="subarea-header-text">
+                        <h2 class="subarea-title">${this._subarea.name}</h2>
+                        <p class="subarea-subtitle">
+                          <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
+                          ${parentName}
+                        </p>
+                      </div>
+                      <button
+                        class="config-button"
+                        title="Configure subareas"
+                        @click=${() => {
+                            this._configEnvDataSnapshot = configEnvData;
+                            this._showConfigDialog = true;
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      </button>
+                    </div>
 
-              ${this._renderHeaderMetrics(ec, parentDevice)}
-              ${parentDevice
-                ? html`<growspace-analytics
-                    .device=${parentDevice}
-                    @set-range=${this._handleSubareaRangeChange}
-                  ></growspace-analytics>`
-                : ''}
-            </div>
-          </div>
+                    ${this._renderHeaderMetrics(this._subarea.environment_config, parentDevice)}
+                    ${parentDevice
+                            ? html`<growspace-analytics
+                            .device=${parentDevice}
+                            @set-range=${this._handleSubareaRangeChange}
+                          ></growspace-analytics>`
+                            : ''}
+                  </div>
+                </div>
+              `}
         </ha-card>
 
         ${this._showConfigDialog

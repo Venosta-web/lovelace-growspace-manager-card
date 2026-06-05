@@ -75,7 +75,7 @@ describe('TankWaterChart – _fetch', () => {
     el.device = { deviceId: 'gs-1' } as any;
     await el.updateComplete;
     const callsBefore = mockHassCall.mock.calls.length;
-    el.range = '30d';
+    el.range = '7d';
     await el.updateComplete;
     expect(mockHassCall.mock.calls.length).toBeGreaterThan(callsBefore);
   });

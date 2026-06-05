@@ -13168,6 +13168,10 @@ function deriveDefaultStage(growspaceName) {
         return 'dry';
     if (name.includes('cure'))
         return 'cure';
+    if (name.includes('flower'))
+        return 'flower';
+    if (name.includes('veg'))
+        return 'veg';
     return 'seedling';
 }
 let AddPlantDialog = class AddPlantDialog extends i$3 {
@@ -17737,17 +17741,10 @@ let StageVpdOverridesTable = class StageVpdOverridesTable extends i$3 {
         return this.overrides[key]?.[slot] ?? FAN_VPD_STAGE_DEFAULTS[key][slot];
     }
     _handleChange(key, slot, raw) {
-        const value = parseFloat(raw);
-        const updated = { ...this.overrides };
-        if (isNaN(value)) {
-            if (!(key in updated))
-                return;
-            delete updated[key];
-        }
-        else {
-            const existing = updated[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
-            updated[key] = { ...existing, [slot]: value };
-        }
+        const parsed = parseFloat(raw);
+        const value = isNaN(parsed) ? FAN_VPD_STAGE_DEFAULTS[key][slot] : parsed;
+        const existing = this.overrides[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
+        const updated = { ...this.overrides, [key]: { ...existing, [slot]: value } };
         this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
     }
     _handleReset() {
@@ -132348,6 +132345,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         this._parentGrowspaceName = '';
         this._showConfigDialog = false;
         this._historyCache = {};
+        this._configEnvDataSnapshot = null;
         this._handleError = (error, errorInfo) => {
             console.error('Growspace Subarea Card caught error:', error, errorInfo);
             if (this.hass) {
@@ -132605,32 +132603,9 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         </ha-card>
       `;
         }
-        if (this._loading) {
-            return x `
-        <ha-card>
-          <div class="loading-container">
-            <ha-circular-progress active></ha-circular-progress>
-          </div>
-        </ha-card>
-      `;
-        }
-        if (this._error) {
-            return x `
-        <ha-card>
-          <div class="error">${this._error}</div>
-        </ha-card>
-      `;
-        }
-        if (!this._subarea) {
-            return x `
-        <ha-card>
-          <div class="no-data">Subarea not found.</div>
-        </ha-card>
-      `;
-        }
-        const ec = this._subarea.environment_config;
-        const parentName = this._parentGrowspaceName || this._config.growspace_id;
-        const { devices } = this._viewController.value.grid;
+        // Compute these outside the loading guard so the config-dialog stays alive
+        // even while the card body is reloading (DATA_STALE_EVENT).
+        const { devices } = this._viewController.value?.grid ?? { devices: [] };
         const parentDevice = devices.find((d) => d.deviceId === this._config.growspace_id);
         const growspaceOptions = Object.fromEntries(devices.map((d) => [d.deviceId, d.name]));
         const parentEnvAttrs = parentDevice?.environmentAttributes;
@@ -132660,42 +132635,56 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             irrigationTanks: parentEnvAttrs?.irrigationTanks || [],
             cameraEntities: parentEnvAttrs?.cameraEntities || [],
         };
+        const parentName = this._parentGrowspaceName || this._config.growspace_id;
         return x `
       <error-boundary
         .fallbackMessage=${'Failed to load Subarea Card'}
         .onError=${this._handleError}
       >
         <ha-card>
-          <div class="unified-growspace-card glass-surface glass-panel">
-            <div class="subarea-inner">
-              <div class="subarea-header">
-                <div class="subarea-header-text">
-                  <h2 class="subarea-title">${this._subarea.name}</h2>
-                  <p class="subarea-subtitle">
-                    <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
-                    ${parentName}
-                  </p>
+          ${this._loading
+            ? x `
+                <div class="loading-container">
+                  <ha-circular-progress active></ha-circular-progress>
                 </div>
-                <button
-                  class="config-button"
-                  title="Configure subareas"
-                  @click=${() => {
-            this._showConfigDialog = true;
-        }}
-                >
-                  <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
-                </button>
-              </div>
+              `
+            : this._error
+                ? x `<div class="error">${this._error}</div>`
+                : !this._subarea
+                    ? x `<div class="no-data">Subarea not found.</div>`
+                    : x `
+                <div class="unified-growspace-card glass-surface glass-panel">
+                  <div class="subarea-inner">
+                    <div class="subarea-header">
+                      <div class="subarea-header-text">
+                        <h2 class="subarea-title">${this._subarea.name}</h2>
+                        <p class="subarea-subtitle">
+                          <ha-icon icon="mdi:sprout" style="--mdi-icon-size: 16px;"></ha-icon>
+                          ${parentName}
+                        </p>
+                      </div>
+                      <button
+                        class="config-button"
+                        title="Configure subareas"
+                        @click=${() => {
+                        this._configEnvDataSnapshot = configEnvData;
+                        this._showConfigDialog = true;
+                    }}
+                      >
+                        <svg viewBox="0 0 24 24"><path d="${mdiCog}"></path></svg>
+                      </button>
+                    </div>
 
-              ${this._renderHeaderMetrics(ec, parentDevice)}
-              ${parentDevice
-            ? x `<growspace-analytics
-                    .device=${parentDevice}
-                    @set-range=${this._handleSubareaRangeChange}
-                  ></growspace-analytics>`
-            : ''}
-            </div>
-          </div>
+                    ${this._renderHeaderMetrics(this._subarea.environment_config, parentDevice)}
+                    ${parentDevice
+                        ? x `<growspace-analytics
+                            .device=${parentDevice}
+                            @set-range=${this._handleSubareaRangeChange}
+                          ></growspace-analytics>`
+                        : ''}
+                  </div>
+                </div>
+              `}
         </ha-card>
 
         ${this._showConfigDialog
@@ -132707,7 +132696,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 .growspaceOptions=${growspaceOptions}
                 .initialTab=${ConfigTab.SUBAREAS}
                 .allowedTabs=${[ConfigTab.SUBAREAS]}
-                .environmentData=${configEnvData}
+                .environmentData=${this._configEnvDataSnapshot}
                 @close=${() => {
                 this._showConfigDialog = false;
             }}
