@@ -582,16 +582,27 @@ export function computeHeaderMetrics(
   );
   if (feedEcChip) chips.push(feedEcChip);
 
-  const subEcChip = _makeSensorReadingChip(
-    MetricKey.SUBSTRATE_EC,
+  const bulkEcChip = _makeSensorReadingChip(
+    MetricKey.BULK_EC,
     mdiLightningBolt,
-    envSnapshot?.substrateEc ?? null,
+    envSnapshot?.bulkEc ?? null,
     ' mS/cm',
-    { label: 'Sub EC', tooltip: 'Electrical conductivity inside the substrate.' },
+    { label: 'Bulk EC', tooltip: 'Overall electrical conductivity of the substrate.' },
     activeEnvGraphs,
     linkedGraphGroups
   );
-  if (subEcChip) chips.push(subEcChip);
+  if (bulkEcChip) chips.push(bulkEcChip);
+
+  const poreEcChip = _makeSensorReadingChip(
+    MetricKey.PORE_EC,
+    mdiLightningBolt,
+    envSnapshot?.poreEc ?? null,
+    ' mS/cm',
+    { label: 'Pore EC', tooltip: 'Electrical conductivity of water in the substrate pore space.' },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+  if (poreEcChip) chips.push(poreEcChip);
 
   const runoffEcChip = _makeSensorReadingChip(
     MetricKey.RUNOFF_EC,

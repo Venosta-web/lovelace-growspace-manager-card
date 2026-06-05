@@ -55,7 +55,8 @@ describe('envSensorCoordinates', () => {
 
 describe('env sensor array setters (lines 219–231)', () => {
   it.each([
-    ['envSubstrateEcSensors', ['sensor.substrate_ec']],
+    ['envBulkEcSensors', ['sensor.bulk_ec']],
+    ['envPoreEcSensors', ['sensor.pore_ec']],
     ['envRunoffEcSensors', ['sensor.runoff_ec']],
     ['envDrainVolumeSensors', ['sensor.drain_vol']],
     ['envIrrigationFlowSensors', ['sensor.irr_flow']],

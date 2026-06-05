@@ -246,8 +246,11 @@ export class ConfigDialog extends LitElement {
   get envFeedEcSensors() { return this._d.feedEcSensors; }
   set envFeedEcSensors(v: string[]) { this._setEnv({ feedEcSensors: v }); }
 
-  get envSubstrateEcSensors() { return this._d.substrateEcSensors; }
-  set envSubstrateEcSensors(v: string[]) { this._setEnv({ substrateEcSensors: v }); }
+  get envBulkEcSensors() { return this._d.bulkEcSensors; }
+  set envBulkEcSensors(v: string[]) { this._setEnv({ bulkEcSensors: v }); }
+
+  get envPoreEcSensors() { return this._d.poreEcSensors; }
+  set envPoreEcSensors(v: string[]) { this._setEnv({ poreEcSensors: v }); }
 
   get envRunoffEcSensors() { return this._d.runoffEcSensors; }
   set envRunoffEcSensors(v: string[]) { this._setEnv({ runoffEcSensors: v }); }
@@ -1016,7 +1019,8 @@ export class ConfigDialog extends LitElement {
           substrateTemperatureSensors: environmentData.substrateTemperatureSensors || [],
           phSensors: environmentData.phSensors || [],
           feedEcSensors: environmentData.feedEcSensors || [],
-          substrateEcSensors: environmentData.substrateEcSensors || [],
+          bulkEcSensors: environmentData.bulkEcSensors || [],
+          poreEcSensors: environmentData.poreEcSensors || [],
           runoffEcSensors: environmentData.runoffEcSensors || [],
           drainVolumeSensors: environmentData.drainVolumeSensors || [],
           irrigationFlowSensors: environmentData.irrigationFlowSensors || [],
@@ -1111,7 +1115,8 @@ export class ConfigDialog extends LitElement {
           substrateTemperatureSensors: d.substrateTemperatureSensors,
           phSensors: d.phSensors,
           feedEcSensors: d.feedEcSensors,
-          substrateEcSensors: d.substrateEcSensors,
+          bulkEcSensors: d.bulkEcSensors,
+          poreEcSensors: d.poreEcSensors,
           runoffEcSensors: d.runoffEcSensors,
           drainVolumeSensors: d.drainVolumeSensors,
           irrigationFlowSensors: d.irrigationFlowSensors,
@@ -1595,7 +1600,8 @@ export class ConfigDialog extends LitElement {
           substrateTemperatureSensors: [],
           phSensors: [],
           feedEcSensors: [],
-          substrateEcSensors: [],
+          bulkEcSensors: [],
+          poreEcSensors: [],
           runoffEcSensors: [],
           drainVolumeSensors: [],
           irrigationFlowSensors: [],
@@ -2753,11 +2759,18 @@ export class ConfigDialog extends LitElement {
           </div>
           <div class="row-col-grid">
             ${this._renderMultiEntitySelect(
-              'Substrate EC Sensors',
-              this._sm.environmentDraft.substrateEcSensors,
+              'Bulk EC Sensors',
+              this._sm.environmentDraft.bulkEcSensors,
               ['sensor', 'input_number', 'number'],
               null,
-              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateEcSensors: v } })
+              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } })
+            )}
+            ${this._renderMultiEntitySelect(
+              'Pore EC Sensors',
+              this._sm.environmentDraft.poreEcSensors,
+              ['sensor', 'input_number', 'number'],
+              null,
+              (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } })
             )}
             ${this._renderMultiEntitySelect(
               'Runoff EC Sensors',

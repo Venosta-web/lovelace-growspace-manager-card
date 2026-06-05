@@ -76,7 +76,7 @@ describe('IrrigationDialog', () => {
         environmentAttributes: {
             soilMoistureSensor: 'sensor.sm1',
             irrigationTanks: [{ name: 'Tank 1' }],
-            substrateEcSensors: [{ entity_id: 'sensor.ec1' }]
+            bulkEcSensors: [{ entity_id: 'sensor.ec1' }]
         } as any,
         stats: {} as any,
         waterUsage: {

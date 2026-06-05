@@ -55,7 +55,8 @@ export interface EnvSnapshot {
   // Irrigation monitoring sensors (Irrigation tab)
   ph: SensorReadings | null;
   feedEc: SensorReadings | null;
-  substrateEc: SensorReadings | null;
+  bulkEc: SensorReadings | null;
+  poreEc: SensorReadings | null;
   runoffEc: SensorReadings | null;
   drainVolume: SensorReadings | null;
   irrigationFlow: SensorReadings | null;
@@ -291,7 +292,8 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
   // Irrigation monitoring sensors
   const ph = _resolveSensors(undefined, envAttrs?.phSensors, hassStates);
   const feedEc = _resolveSensors(undefined, envAttrs?.feedEcSensors, hassStates);
-  const substrateEc = _resolveSensors(undefined, envAttrs?.substrateEcSensors, hassStates);
+  const bulkEc = _resolveSensors(undefined, envAttrs?.bulkEcSensors, hassStates);
+  const poreEc = _resolveSensors(undefined, envAttrs?.poreEcSensors, hassStates);
   const runoffEc = _resolveSensors(undefined, envAttrs?.runoffEcSensors, hassStates);
   const drainVolume = _resolveSensors(undefined, envAttrs?.drainVolumeSensors, hassStates);
   const irrigationFlow = _resolveSensors(undefined, envAttrs?.irrigationFlowSensors, hassStates);
@@ -312,7 +314,8 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
     substrateTemperature,
     ph,
     feedEc,
-    substrateEc,
+    bulkEc,
+    poreEc,
     runoffEc,
     drainVolume,
     irrigationFlow,

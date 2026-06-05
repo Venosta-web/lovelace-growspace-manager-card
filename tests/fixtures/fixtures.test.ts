@@ -63,9 +63,10 @@ describe('anEnvSnapshot', () => {
   it('defaults irrigation monitoring group to realistic sensor readings', () => {
     const snap = anEnvSnapshot();
     expect(snap.feedEc?.avg).toBe(1.8);
+    expect(snap.bulkEc?.avg).toBe(2.1);
+    expect(snap.poreEc?.avg).toBe(2.3);
     expect(snap.runoffEc?.avg).toBe(1.9);
     expect(snap.ph?.avg).toBe(6.2);
-    expect(snap.substrateEc?.avg).toBe(2.1);
     expect(snap.drainVolume?.avg).toBe(0.5);
     expect(snap.irrigationFlow?.avg).toBe(2.3);
     expect(snap.power?.avg).toBe(420);

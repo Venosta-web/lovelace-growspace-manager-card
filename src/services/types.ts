@@ -283,7 +283,8 @@ export interface SerializedEnvironmentAttributes {
   // EC / pH / flow sensors
   ph_sensors?: string[];
   feed_ec_sensors?: string[];
-  substrate_ec_sensors?: string[];
+  bulk_ec_sensors?: string[];
+  pore_ec_sensors?: string[];
   runoff_ec_sensors?: string[];
   drain_volume_sensors?: string[];
   irrigation_flow_sensors?: string[];
@@ -413,7 +414,8 @@ export interface EnvironmentAttributes {
   // EC / pH / flow sensors
   phSensors?: string[];
   feedEcSensors?: string[];
-  substrateEcSensors?: string[];
+  bulkEcSensors?: string[];
+  poreEcSensors?: string[];
   runoffEcSensors?: string[];
   drainVolumeSensors?: string[];
   irrigationFlowSensors?: string[];
@@ -451,7 +453,8 @@ export interface EnvironmentConfig {
   lung_room_temp_sensors?: string[];
   ph_sensors?: string[];
   feed_ec_sensors?: string[];
-  substrate_ec_sensors?: string[];
+  bulk_ec_sensors?: string[];
+  pore_ec_sensors?: string[];
   runoff_ec_sensors?: string[];
   drain_volume_sensors?: string[];
   irrigation_flow_sensors?: string[];

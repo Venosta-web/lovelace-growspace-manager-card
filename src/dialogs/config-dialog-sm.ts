@@ -61,7 +61,8 @@ export interface EnvironmentDraft {
   substrateTemperatureSensors: string[];
   phSensors: string[];
   feedEcSensors: string[];
-  substrateEcSensors: string[];
+  bulkEcSensors: string[];
+  poreEcSensors: string[];
   runoffEcSensors: string[];
   drainVolumeSensors: string[];
   irrigationFlowSensors: string[];
@@ -340,7 +341,8 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     substrateTemperatureSensors: [],
     phSensors: [],
     feedEcSensors: [],
-    substrateEcSensors: [],
+    bulkEcSensors: [],
+    poreEcSensors: [],
     runoffEcSensors: [],
     drainVolumeSensors: [],
     irrigationFlowSensors: [],
@@ -475,7 +477,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
     phSensors: attrs.phSensors ?? [],
     feedEcSensors: attrs.feedEcSensors ?? [],
-    substrateEcSensors: attrs.substrateEcSensors ?? [],
+    bulkEcSensors: attrs.bulkEcSensors ?? [],
+    poreEcSensors: attrs.poreEcSensors ?? [],
     runoffEcSensors: attrs.runoffEcSensors ?? [],
     drainVolumeSensors: attrs.drainVolumeSensors ?? [],
     irrigationFlowSensors: attrs.irrigationFlowSensors ?? [],

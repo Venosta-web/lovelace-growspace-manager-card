@@ -32,7 +32,8 @@ function makeEnvSnapshot(overrides: Partial<EnvSnapshot> = {}): EnvSnapshot {
     substrateTemperature: null,
     ph: null,
     feedEc: null,
-    substrateEc: null,
+    bulkEc: null,
+    poreEc: null,
     runoffEc: null,
     drainVolume: null,
     irrigationFlow: null,
@@ -668,7 +669,8 @@ describe('Cycle N — irrigation monitoring chips', () => {
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     expect(chips.find((c) => c.key === MetricKey.PH)).toBeUndefined();
     expect(chips.find((c) => c.key === MetricKey.FEED_EC)).toBeUndefined();
-    expect(chips.find((c) => c.key === MetricKey.SUBSTRATE_EC)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.BULK_EC)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.PORE_EC)).toBeUndefined();
     expect(chips.find((c) => c.key === MetricKey.RUNOFF_EC)).toBeUndefined();
     expect(chips.find((c) => c.key === MetricKey.DRAIN_VOLUME)).toBeUndefined();
     expect(chips.find((c) => c.key === MetricKey.IRRIGATION_FLOW)).toBeUndefined();
@@ -695,6 +697,46 @@ describe('Cycle N — irrigation monitoring chips', () => {
     const chip = chips.find((c) => c.key === MetricKey.FEED_EC);
     expect(chip!.value).toBe('2.1 mS/cm');
     expect(chip!.label).toBe('Feed EC');
+  });
+
+  it('emits bulk EC chip with unit and correct label', () => {
+    const env = makeEnvSnapshot({
+      bulkEc: { avg: 1.8, sum: 1.8, perSensor: [1.8], entityIds: ['sensor.bulk_ec_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.BULK_EC);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('1.8 mS/cm');
+    expect(chip!.label).toBe('Bulk EC');
+  });
+
+  it('emits pore EC chip with unit and correct label', () => {
+    const env = makeEnvSnapshot({
+      poreEc: { avg: 2.0, sum: 2.0, perSensor: [2.0], entityIds: ['sensor.pore_ec_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.PORE_EC);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('2.0 mS/cm');
+    expect(chip!.label).toBe('Pore EC');
+  });
+
+  it('orders bulk EC before pore EC, pore EC before runoff EC', () => {
+    const env = makeEnvSnapshot({
+      feedEc: { avg: 2.1, sum: 2.1, perSensor: [2.1], entityIds: ['sensor.feed_ec_1'] },
+      bulkEc: { avg: 1.8, sum: 1.8, perSensor: [1.8], entityIds: ['sensor.bulk_ec_1'] },
+      poreEc: { avg: 2.0, sum: 2.0, perSensor: [2.0], entityIds: ['sensor.pore_ec_1'] },
+      runoffEc: { avg: 2.4, sum: 2.4, perSensor: [2.4], entityIds: ['sensor.runoff_ec_1'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const keys = chips.map((c) => c.key);
+    const feedIdx = keys.indexOf(MetricKey.FEED_EC);
+    const bulkIdx = keys.indexOf(MetricKey.BULK_EC);
+    const poreIdx = keys.indexOf(MetricKey.PORE_EC);
+    const runoffIdx = keys.indexOf(MetricKey.RUNOFF_EC);
+    expect(feedIdx).toBeLessThan(bulkIdx);
+    expect(bulkIdx).toBeLessThan(poreIdx);
+    expect(poreIdx).toBeLessThan(runoffIdx);
   });
 
   it('emits power chip with W unit', () => {

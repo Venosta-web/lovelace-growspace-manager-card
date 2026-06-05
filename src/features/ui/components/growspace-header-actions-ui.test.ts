@@ -55,7 +55,8 @@ describe('GrowspaceHeaderActionsUI – EC Ramp Curves menu item', () => {
           environmentAttributes: {
             feedEcSensors: ['sensor.feed_ec'],
             runoffEcSensors: [],
-            substrateEcSensors: [],
+            bulkEcSensors: [],
+            poreEcSensors: [],
           },
         }}
       ></growspace-header-actions-ui>

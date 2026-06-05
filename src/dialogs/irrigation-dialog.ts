@@ -1005,7 +1005,8 @@ export class IrrigationDialog extends LitElement {
     const hasEcSensors =
       (env?.feedEcSensors?.length ?? 0) > 0 ||
       (env?.runoffEcSensors?.length ?? 0) > 0 ||
-      (env?.substrateEcSensors?.length ?? 0) > 0 ||
+      (env?.bulkEcSensors?.length ?? 0) > 0 ||
+      (env?.poreEcSensors?.length ?? 0) > 0 ||
       (env?.phSensors?.length ?? 0) > 0;
     if (drainEnabled || hasDrainReadings || hasEcSensors) tabs.push('drain_ec');
 
@@ -1015,7 +1016,8 @@ export class IrrigationDialog extends LitElement {
     const hasEcSensorsForRamp =
       (env?.feedEcSensors?.length ?? 0) > 0 ||
       (env?.runoffEcSensors?.length ?? 0) > 0 ||
-      (env?.substrateEcSensors?.length ?? 0) > 0;
+      (env?.bulkEcSensors?.length ?? 0) > 0 ||
+      (env?.poreEcSensors?.length ?? 0) > 0;
     const hasSchedules = (this.device?.irrigationConfig?.irrigationTimes?.length ?? 0) > 0;
     if (hasPump && hasSchedules && hasEcSensorsForRamp) tabs.push('ec_ramp');
 

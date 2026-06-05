@@ -62,7 +62,7 @@ const mockDevice: GrowspaceDevice = {
     irrigationTanks: [
       { name: 'Tank 1', fillLevel: 50, isWarning: false, hoursRemaining: 48, depletionStatus: 'depleting' },
     ],
-    substrateEcSensors: [{ entity_id: 'sensor.ec1' }],
+    bulkEcSensors: [{ entity_id: 'sensor.ec1' }],
   } as any,
   waterUsage: {
     litersToday: 10.5,
