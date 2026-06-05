@@ -457,10 +457,10 @@ describe('ConfigDialog', () => {
             inputs[0]?.dispatchEvent(new CustomEvent('change', { detail: '0.5' }));
             await element.updateComplete;
 
-            // Check deep structure created
-            expect((element as any).envDehumidifierThresholds.drying.day.on).toBe(0.5);
+            // Check deep structure created — key is 'dry' (backend PlantStage.DRY value)
+            expect((element as any).envDehumidifierThresholds.dry.day.on).toBe(0.5);
             // Verify other defaults
-            expect((element as any).envDehumidifierThresholds.drying.day.off).toBe(0);
+            expect((element as any).envDehumidifierThresholds.dry.day.off).toBe(0);
         });
     });
 
@@ -608,11 +608,11 @@ describe('ConfigDialog', () => {
             expect((element as any).currentTab).toBe(ConfigTab.HUMIDITY);
         });
 
-        it('should return 0 for missing threshold value', async () => {
+        it('should return 0 for unknown stage threshold value', async () => {
             (element as any).envDehumidifierThresholds = undefined;
             await element.updateComplete;
 
-            const result = (element as any)._getThresholdValue('veg', 'day', 'on');
+            const result = (element as any)._getThresholdValue('unknown_stage', 'day', 'on');
             expect(result).toBe(0);
         });
 

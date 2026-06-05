@@ -42,20 +42,20 @@ var DehumidifierStage;
     DehumidifierStage["SEEDLING"] = "seedling";
     DehumidifierStage["MOTHER"] = "mother";
     DehumidifierStage["VEG"] = "veg";
-    DehumidifierStage["EARLY_FLOWER"] = "early_flower";
-    DehumidifierStage["MID_FLOWER"] = "mid_flower";
-    DehumidifierStage["LATE_FLOWER"] = "late_flower";
-    DehumidifierStage["DRYING"] = "drying";
-    DehumidifierStage["CURING"] = "curing";
+    DehumidifierStage["EARLY_FLOWER"] = "flower_early";
+    DehumidifierStage["MID_FLOWER"] = "flower_mid";
+    DehumidifierStage["LATE_FLOWER"] = "flower_late";
+    DehumidifierStage["DRY"] = "dry";
+    DehumidifierStage["CURE"] = "cure";
 })(DehumidifierStage || (DehumidifierStage = {}));
 var HumidifierStage;
 (function (HumidifierStage) {
     HumidifierStage["SEEDLING"] = "seedling";
     HumidifierStage["MOTHER"] = "mother";
     HumidifierStage["VEG"] = "veg";
-    HumidifierStage["EARLY_FLOWER"] = "early_flower";
-    HumidifierStage["MID_FLOWER"] = "mid_flower";
-    HumidifierStage["LATE_FLOWER"] = "late_flower";
+    HumidifierStage["EARLY_FLOWER"] = "flower_early";
+    HumidifierStage["MID_FLOWER"] = "flower_mid";
+    HumidifierStage["LATE_FLOWER"] = "flower_late";
     HumidifierStage["DRY"] = "dry";
     HumidifierStage["CURE"] = "cure";
 })(HumidifierStage || (HumidifierStage = {}));
@@ -18229,6 +18229,26 @@ function transition$9(sm, event) {
     }
 }
 
+const DEFAULT_DEHUM_THRESHOLDS = {
+    seedling: { day: { on: 0.5, off: 0.6 }, night: { on: 0.55, off: 0.65 } },
+    mother: { day: { on: 0.6, off: 0.7 }, night: { on: 0.65, off: 0.75 } },
+    veg: { day: { on: 0.6, off: 0.7 }, night: { on: 0.65, off: 0.75 } },
+    flower_early: { day: { on: 1.1, off: 1.2 }, night: { on: 0.7, off: 0.9 } },
+    flower_mid: { day: { on: 1.25, off: 1.35 }, night: { on: 0.9, off: 1.0 } },
+    flower_late: { day: { on: 1.35, off: 1.4 }, night: { on: 0.95, off: 1.05 } },
+    dry: { day: { on: 0.8, off: 1.0 }, night: { on: 0.85, off: 1.05 } },
+    cure: { day: { on: 0.9, off: 1.1 }, night: { on: 0.95, off: 1.15 } },
+};
+const DEFAULT_HUM_THRESHOLDS = {
+    seedling: { day: { on: 0.7, off: 0.5 }, night: { on: 0.75, off: 0.55 } },
+    mother: { day: { on: 0.9, off: 0.7 }, night: { on: 0.85, off: 0.65 } },
+    veg: { day: { on: 1.0, off: 0.8 }, night: { on: 0.85, off: 0.65 } },
+    flower_early: { day: { on: 1.4, off: 1.2 }, night: { on: 1.0, off: 0.8 } },
+    flower_mid: { day: { on: 1.6, off: 1.4 }, night: { on: 1.2, off: 1.0 } },
+    flower_late: { day: { on: 1.7, off: 1.5 }, night: { on: 1.3, off: 1.1 } },
+    dry: { day: { on: 1.2, off: 1.0 }, night: { on: 1.2, off: 1.0 } },
+    cure: { day: { on: 1.2, off: 1.0 }, night: { on: 1.2, off: 1.0 } },
+};
 // Unified stage list for the accordion — maps display id → both stage enums
 const HUMIDITY_STAGES = [
     {
@@ -18257,8 +18277,8 @@ const HUMIDITY_STAGES = [
         dehum: DehumidifierStage.LATE_FLOWER,
         hum: HumidifierStage.LATE_FLOWER,
     },
-    { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRYING, hum: HumidifierStage.DRY },
-    { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURING, hum: HumidifierStage.CURE },
+    { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRY, hum: HumidifierStage.DRY },
+    { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURE, hum: HumidifierStage.CURE },
 ];
 let ConfigDialog = class ConfigDialog extends i$3 {
     constructor() {
@@ -18900,7 +18920,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     // ── Threshold helpers ────────────────────────────────────────────────────
     _getThresholdValue(stage, cycle, point) {
-        return this._sm.environmentDraft.dehumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+        return (this._sm.environmentDraft.dehumidifierThresholds?.[stage]?.[cycle]?.[point] ??
+            DEFAULT_DEHUM_THRESHOLDS[stage]?.[cycle]?.[point] ??
+            0);
     }
     _updateThreshold(stage, cycle, point, value) {
         if (isNaN(value))
@@ -18914,7 +18936,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this._t({ type: 'UPDATE_ENV_DRAFT', partial: { dehumidifierThresholds: t } });
     }
     _getHumidifierThresholdValue(stage, cycle, point) {
-        return this._sm.environmentDraft.humidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+        return (this._sm.environmentDraft.humidifierThresholds?.[stage]?.[cycle]?.[point] ??
+            DEFAULT_HUM_THRESHOLDS[stage]?.[cycle]?.[point] ??
+            0);
     }
     _updateHumidifierThreshold(stage, cycle, point, value) {
         if (isNaN(value))
@@ -19636,8 +19660,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   ${!isOpen
                 ? x `
                         <div class="acc-head-desc">
-                          Dehum on &gt; ${dhDay > 0 ? dhDay + '%' : '—'} &nbsp;·&nbsp; Hum on &lt;
-                          ${huDay > 0 ? huDay + '%' : '—'}
+                          Dehum on &gt; ${dhDay > 0 ? dhDay.toFixed(2) + ' kPa' : '—'} &nbsp;·&nbsp; Hum on &lt;
+                          ${huDay > 0 ? huDay.toFixed(2) + ' kPa' : '—'}
                         </div>
                       `
                 : E}
@@ -19666,16 +19690,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Above %"
+                                  label="On Above (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'day', 'on')}
                                   @change=${(e) => this._updateThreshold(stage.dehum, 'day', 'on', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Below %"
+                                  label="Off Below (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'day', 'off')}
                                   @change=${(e) => this._updateThreshold(stage.dehum, 'day', 'off', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>
@@ -19688,16 +19712,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Above %"
+                                  label="On Above (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'night', 'on')}
                                   @change=${(e) => this._updateThreshold(stage.dehum, 'night', 'on', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Below %"
+                                  label="Off Below (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'night', 'off')}
                                   @change=${(e) => this._updateThreshold(stage.dehum, 'night', 'off', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>
@@ -19721,16 +19745,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Below %"
+                                  label="On Below (kPa)"
                                   .value=${this._getHumidifierThresholdValue(stage.hum, 'day', 'on')}
                                   @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'day', 'on', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Above %"
+                                  label="Off Above (kPa)"
                                   .value=${this._getHumidifierThresholdValue(stage.hum, 'day', 'off')}
                                   @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'day', 'off', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>
@@ -19743,16 +19767,16 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Below %"
+                                  label="On Below (kPa)"
                                   .value=${this._getHumidifierThresholdValue(stage.hum, 'night', 'on')}
                                   @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'night', 'on', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Above %"
+                                  label="Off Above (kPa)"
                                   .value=${this._getHumidifierThresholdValue(stage.hum, 'night', 'off')}
                                   @change=${(e) => this._updateHumidifierThreshold(stage.hum, 'night', 'off', parseFloat(e.detail))}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>

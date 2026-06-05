@@ -23,20 +23,20 @@ export enum DehumidifierStage {
   SEEDLING = 'seedling',
   MOTHER = 'mother',
   VEG = 'veg',
-  EARLY_FLOWER = 'early_flower',
-  MID_FLOWER = 'mid_flower',
-  LATE_FLOWER = 'late_flower',
-  DRYING = 'drying',
-  CURING = 'curing',
+  EARLY_FLOWER = 'flower_early',
+  MID_FLOWER = 'flower_mid',
+  LATE_FLOWER = 'flower_late',
+  DRY = 'dry',
+  CURE = 'cure',
 }
 
 export enum HumidifierStage {
   SEEDLING = 'seedling',
   MOTHER = 'mother',
   VEG = 'veg',
-  EARLY_FLOWER = 'early_flower',
-  MID_FLOWER = 'mid_flower',
-  LATE_FLOWER = 'late_flower',
+  EARLY_FLOWER = 'flower_early',
+  MID_FLOWER = 'flower_mid',
+  LATE_FLOWER = 'flower_late',
   DRY = 'dry',
   CURE = 'cure',
 }
