@@ -18675,8 +18675,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 exhaustFanEntities: d.exhaustFanEntities,
                 humidifierEntities: d.humidifierEntities,
                 humidifierThresholds: d.humidifierThresholds,
+                humidifierControlEnabled: this._humidifierControlEnabled,
                 dehumidifierEntities: d.dehumidifierEntities,
                 dehumidifierThresholds: d.dehumidifierThresholds,
+                dehumidifierControlEnabled: this._dehumidifierControlEnabled,
                 soilMoistureSensor: d.soilMoistureSensor,
                 sensorGroups: d.sensorGroups,
                 sensorCoordinates: d.sensorCoordinates,
@@ -132605,7 +132607,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         }
         // Compute these outside the loading guard so the config-dialog stays alive
         // even while the card body is reloading (DATA_STALE_EVENT).
-        const { devices } = this._viewController.value?.grid ?? { devices: [] };
+        const devices = this._viewController.value?.grid?.devices ?? [];
         const parentDevice = devices.find((d) => d.deviceId === this._config.growspace_id);
         const growspaceOptions = Object.fromEntries(devices.map((d) => [d.deviceId, d.name]));
         const parentEnvAttrs = parentDevice?.environmentAttributes;
