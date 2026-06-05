@@ -138,6 +138,65 @@ describe('_loadSubareas error handling', () => {
   });
 });
 
+// ─── Timed Notifications ─────────────────────────────────────────────────────
+
+describe('timed notifications — add flow', () => {
+  it('_startAddTimedNotification transitions sub to adding', () => {
+    const el = makeEl();
+    (el as any)._startAddTimedNotification();
+    expect((el as any)._sm.tabs.notifications.sub.kind).toBe('adding');
+  });
+});
+
+describe('timed notifications — edit flow', () => {
+  it('_startEditTimedNotification transitions sub to editing with pre-populated draft', () => {
+    const el = makeEl();
+    const draft = { message: 'Check roots', triggerType: 'veg_start' as const, day: 7, growspaceIds: ['gs1'] };
+    (el as any)._startEditTimedNotification('notif-1', draft);
+    const sub = (el as any)._sm.tabs.notifications.sub;
+    expect(sub.kind).toBe('editing');
+    expect(sub.id).toBe('notif-1');
+    expect(sub.draft).toEqual(draft);
+  });
+});
+
+describe('timed notifications — confirm-delete flow', () => {
+  it('_requestDeleteTimedNotification transitions sub to confirm-delete', () => {
+    const el = makeEl();
+    (el as any)._requestDeleteTimedNotification('notif-1');
+    const sub = (el as any)._sm.tabs.notifications.sub;
+    expect(sub.kind).toBe('confirm-delete');
+    expect(sub.id).toBe('notif-1');
+  });
+
+  it('_confirmDeleteTimedNotification removes the notification and returns to idle', () => {
+    const el = makeEl();
+    // seed a notification via SM directly
+    (el as any)._sm = {
+      ...(el as any)._sm,
+      tabs: {
+        ...(el as any)._sm.tabs,
+        notifications: {
+          draft: (el as any)._sm.tabs.notifications.draft,
+          timedNotifications: [{ id: 'notif-1', message: 'msg', triggerType: 'veg_start', day: 3, growspaceIds: [] }],
+          sub: { kind: 'confirm-delete', id: 'notif-1' },
+        },
+      },
+    };
+    (el as any)._confirmDeleteTimedNotification();
+    const tab = (el as any)._sm.tabs.notifications;
+    expect(tab.timedNotifications).toHaveLength(0);
+    expect(tab.sub.kind).toBe('idle');
+  });
+
+  it('_cancelTimedNotification returns sub to idle', () => {
+    const el = makeEl();
+    (el as any)._startAddTimedNotification();
+    (el as any)._cancelTimedNotification();
+    expect((el as any)._sm.tabs.notifications.sub.kind).toBe('idle');
+  });
+});
+
 // ─── _updateFanConfig (line 1829) ────────────────────────────────────────────
 
 describe('_updateFanConfig', () => {
