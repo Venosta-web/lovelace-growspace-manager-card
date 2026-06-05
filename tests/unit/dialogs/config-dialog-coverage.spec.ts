@@ -98,7 +98,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         element.currentTab = ConfigTab.VISION;
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).to.exist;
 
         // Toggle vision enabled
@@ -122,7 +122,7 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         }
 
         // Submit vision config
-        const visionSaveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        const visionSaveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
         expect(visionSaveBtn).to.exist;
         if (visionSaveBtn) {
             // Call directly to ensure coverage of the method itself and its branches

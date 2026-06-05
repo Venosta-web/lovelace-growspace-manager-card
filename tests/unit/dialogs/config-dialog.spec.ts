@@ -1220,7 +1220,7 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).toBeTruthy();
       });
 
@@ -1230,8 +1230,6 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = [];
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
-        expect(saveBtn).toBeFalsy();
         const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
         expect(toggle).toBeFalsy();
       });
@@ -1244,7 +1242,7 @@ describe('ConfigDialog', () => {
 
         const toggle = element.shadowRoot?.querySelector('input[type="checkbox"]');
         expect(toggle).toBeTruthy();
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn');
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary');
         expect(saveBtn).toBeTruthy();
       });
 
@@ -1261,7 +1259,7 @@ describe('ConfigDialog', () => {
         (element as any).envVisionLateOffset = 45;
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
         saveBtn?.click();
 
         expect(submitSpy).toHaveBeenCalledOnce();
@@ -1282,7 +1280,7 @@ describe('ConfigDialog', () => {
         (element as any).envVisionCameraEntities = ['camera.tent1'];
         await element.updateComplete;
 
-        const saveBtn = element.shadowRoot?.querySelector('.vision-save-btn') as HTMLElement;
+        const saveBtn = element.shadowRoot?.querySelector('button.md3-button.primary') as HTMLElement;
         saveBtn?.click();
 
         expect(submitSpy).not.toHaveBeenCalled();

@@ -536,12 +536,13 @@ export function computeHeaderMetrics(
   }
 
   // Substrate / medium sensors (Monitoring tab)
+  const soilMoistureLabel = irrigationStrategy?.enabled ? 'VWC' : 'Moisture';
   const soilChip = _makeSensorReadingChip(
     MetricKey.SOIL_MOISTURE,
     mdiWaterPercent,
     envSnapshot?.soilMoisture ?? null,
     '%',
-    { label: 'Moisture', tooltip: 'Volumetric water content of the substrate.' },
+    { label: soilMoistureLabel, tooltip: 'Volumetric water content of the substrate.' },
     activeEnvGraphs,
     linkedGraphGroups
   );

@@ -17859,6 +17859,23 @@ StageVpdOverridesTable = __decorate([
  *     .tabs               — per-tab sub-state
  */
 // ─── Default draft ────────────────────────────────────────────────────────────
+function defaultNotificationsDraft() {
+    return {
+        criticalCooldownMinutes: 60,
+        warningCooldownMinutes: 30,
+        recoveryCooldownMinutes: 15,
+        escalationDelayMinutes: 30,
+        minStressDurationSeconds: 300,
+        warningPersistenceMinutes: 60,
+        aiAutoAlerts: true,
+    };
+}
+function defaultTimedNotificationDraft() {
+    return { message: '', triggerType: 'clone_start', day: 1, growspaceIds: [] };
+}
+function defaultNotificationsTabState() {
+    return { draft: defaultNotificationsDraft(), timedNotifications: [], sub: { kind: 'idle' } };
+}
 function defaultEnvironmentDraft() {
     return {
         selectedGrowspaceId: '',
@@ -17919,6 +17936,7 @@ function defaultEnvironmentDraft() {
 function defaultTabs$2() {
     return {
         growspaces: { sub: { kind: 'idle' } },
+        notifications: defaultNotificationsTabState(),
         sensors: { sub: { kind: 'idle' } },
         climate: { sub: { kind: 'idle' } },
         humidity: { sub: { kind: 'idle' } },
@@ -17927,6 +17945,32 @@ function defaultTabs$2() {
         vision: { sub: { kind: 'idle' } },
         heatmap: { sub: { kind: 'idle' } },
         subareas: { sub: { kind: 'idle' } },
+    };
+}
+/** Seed NotificationsTabState from a GrowspaceDevice. */
+function notificationsTabFromDevice(device) {
+    const ns = device.notificationSettings ?? {};
+    const defaults = defaultNotificationsDraft();
+    return {
+        draft: {
+            criticalCooldownMinutes: ns.criticalCooldownMinutes ?? defaults.criticalCooldownMinutes,
+            warningCooldownMinutes: ns.warningCooldownMinutes ?? defaults.warningCooldownMinutes,
+            recoveryCooldownMinutes: ns.recoveryCooldownMinutes ?? defaults.recoveryCooldownMinutes,
+            escalationDelayMinutes: ns.escalationDelayMinutes ?? defaults.escalationDelayMinutes,
+            minStressDurationSeconds: ns.minStressDurationSeconds ?? defaults.minStressDurationSeconds,
+            warningPersistenceMinutes: ns.warningPersistenceMinutes ?? defaults.warningPersistenceMinutes,
+            aiAutoAlerts: ns.aiAutoAlerts ?? defaults.aiAutoAlerts,
+        },
+        timedNotifications: device.timedNotifications
+            ? device.timedNotifications.map((n) => ({
+                id: n.id,
+                message: n.message,
+                triggerType: n.triggerType,
+                day: n.day,
+                growspaceIds: n.growspaceIds,
+            }))
+            : [],
+        sub: { kind: 'idle' },
     };
 }
 /** Seed EnvironmentDraft from a GrowspaceDevice. */
@@ -18018,9 +18062,13 @@ function createInitialSM$9(device) {
     };
     return sm;
 }
-/** Rebuild environmentDraft from device data (used on open and after RESET_FROM_DEVICE). */
+/** Rebuild environmentDraft and notifications tab from device data (used on open and after RESET_FROM_DEVICE). */
 function applyDeviceToSM$2(sm, device) {
-    return { ...sm, environmentDraft: envDraftFromDevice(device) };
+    return {
+        ...sm,
+        environmentDraft: envDraftFromDevice(device),
+        tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(device) },
+    };
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
@@ -18109,6 +18157,132 @@ function transition$9(sm, event) {
             return {
                 ...sm,
                 tabs: { ...sm.tabs, growspaces: { sub: { kind: 'idle' } } },
+            };
+        // ── Notifications ─────────────────────────────────────────────────────────
+        case 'UPDATE_NOTIFICATIONS_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        draft: { ...sm.tabs.notifications.draft, ...event.partial },
+                    },
+                },
+            };
+        case 'UPDATE_TIMED_DRAFT': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'adding' && sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { ...sub, draft: { ...sub.draft, ...event.partial } },
+                    },
+                },
+            };
+        }
+        case 'START_ADD_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { kind: 'adding', draft: defaultTimedNotificationDraft() },
+                    },
+                },
+            };
+        case 'START_EDIT_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { kind: 'editing', id: event.id, draft: { ...event.draft } },
+                    },
+                },
+            };
+        case 'ADD_TIMED_NOTIFICATION': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'adding')
+                return sm;
+            const newItem = { id: event.id, ...sub.draft };
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        timedNotifications: [...sm.tabs.notifications.timedNotifications, newItem],
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'EDIT_TIMED_NOTIFICATION': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            const updated = sm.tabs.notifications.timedNotifications.map((n) => n.id === sub.id ? { id: sub.id, ...sub.draft } : n);
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        timedNotifications: updated,
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'DELETE_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { kind: 'confirm-delete', id: event.id },
+                    },
+                },
+            };
+        case 'CONFIRM_DELETE': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        timedNotifications: sm.tabs.notifications.timedNotifications.filter((n) => n.id !== sub.id),
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'CANCEL_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: { ...sm.tabs.notifications, sub: { kind: 'idle' } },
+                },
+            };
+        case 'SAVE_NOTIFICATIONS':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: { ...sm.tabs.notifications, sub: { kind: 'idle' } },
+                },
             };
         // ── Environment ───────────────────────────────────────────────────────────
         case 'UPDATE_ENV_DRAFT':

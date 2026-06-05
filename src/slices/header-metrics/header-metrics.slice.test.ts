@@ -599,6 +599,44 @@ describe('Cycle N — soil moisture chip', () => {
     expect(chip!.multiValues).toEqual(['40.0%', '60.0%']);
     expect(chip!.entityIds).toEqual(['sensor.sm_1', 'sensor.sm_2']);
   });
+
+  it('sets label to "VWC" for a single sensor when crop steering is enabled', () => {
+    const env = makeEnvSnapshot({
+      soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
+    });
+    const strategy = makeIrrigationStrategy({ enabled: true });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main', new Set(), [], strategy);
+    const chip = chips.find((c) => c.key === MetricKey.SOIL_MOISTURE);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('VWC');
+  });
+
+  it('sets label to "VWC" for multiple sensors when crop steering is enabled', () => {
+    const env = makeEnvSnapshot({
+      soilMoisture: {
+        avg: 50,
+        sum: 100,
+        perSensor: [40, 60],
+        entityIds: ['sensor.sm_1', 'sensor.sm_2'],
+      },
+    });
+    const strategy = makeIrrigationStrategy({ enabled: true });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main', new Set(), [], strategy);
+    const chip = chips.find((c) => c.key === MetricKey.SOIL_MOISTURE);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('VWC');
+  });
+
+  it('sets label to "Moisture" when crop steering is disabled', () => {
+    const env = makeEnvSnapshot({
+      soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
+    });
+    const strategy = makeIrrigationStrategy({ enabled: false });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main', new Set(), [], strategy);
+    const chip = chips.find((c) => c.key === MetricKey.SOIL_MOISTURE);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Moisture');
+  });
 });
 
 describe('Cycle N — substrate temperature chip', () => {
