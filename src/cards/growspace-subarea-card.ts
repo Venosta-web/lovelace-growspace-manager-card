@@ -470,7 +470,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
         // Compute these outside the loading guard so the config-dialog stays alive
         // even while the card body is reloading (DATA_STALE_EVENT).
-        const { devices } = this._viewController.value?.grid ?? { devices: [] };
+        const devices = this._viewController.value?.grid?.devices ?? [];
         const parentDevice = devices.find((d: any) => d.deviceId === this._config.growspace_id);
         const growspaceOptions: Record<string, string> = Object.fromEntries(
             devices.map((d: any) => [d.deviceId, d.name])
