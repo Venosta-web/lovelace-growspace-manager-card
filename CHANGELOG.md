@@ -1,3 +1,22 @@
+# [1.1.0-next.23](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.22...v1.1.0-next.23) (2026-06-05)
+
+
+### Bug Fixes
+
+* **vision:** map vision_checkup_config from backend response in adapter ([7ba0e4b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7ba0e4bba133abeb14bcf2fd5ce30f636c09e49c))
+
+
+### Features
+
+* add Substrate EC section header in config dialog ([230f427](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/230f427f4bd708b21f7954e4601bf50aab591f69)), closes [#241](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/241)
+* group vwc p2 configuration options ([6edba51](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6edba5111836bbcef72c03f171e3df48b246a9ef))
+* implement notifications tab for AI auto-alerts configuration and update associated dialog logic ([5fab25d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5fab25d76c27d4ad3a4245404e3be5bb315c6afa))
+* **notifications:** add notifications tab state machine to config dialog SM ([eec1380](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/eec13800e5c827c183094a89b62b721c1a3362a9))
+* **notifications:** add Timed Notifications CRUD UI to config dialog ([7da2b8e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7da2b8ed25ee85e1eba1cee3efd679e60b2c6b42)), closes [#238](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/238)
+* **notifications:** render global settings panel with Save in config dialog ([86f41a9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/86f41a98acbbace64a665ee3ad7dcdf4baa9bebf)), closes [#237](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/237)
+* remove ai_auto_alerts from Growmaster Settings Panel ([9738b08](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9738b08de1788417913fdf37744317ff74e277b9)), closes [#239](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/239)
+* replace substrate_ec with bulk_ec / pore_ec split ([2b0c692](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2b0c692e65aff3d3fcc4dbab0fe51f75ce246368))
+
 # [1.1.0-next.22](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.21...v1.1.0-next.22) (2026-06-05)
 
 
