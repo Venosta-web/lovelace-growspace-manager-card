@@ -10,6 +10,7 @@ import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { HeaderDragController } from '../../../controllers/header-drag-controller';
 import { MetricsUtils, HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
 import { computeHeaderMetrics } from '../../../slices/header-metrics';
+import { filterChips } from '../../../utils/chip-filter';
 import { envSnapshots$ } from '../../../slices/environment';
 import { plants$ } from '../../../slices/plant';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
@@ -131,7 +132,13 @@ export class GrowspaceHeaderContainer extends LitElement {
       linkedGraphGroups
     );
 
-    return { heroChips, secondaryChips, deviceChips, dominant };
+    const hidden = this.config?.hidden_chips;
+    return {
+      heroChips,
+      secondaryChips: filterChips(secondaryChips, hidden),
+      deviceChips: filterChips(deviceChips, hidden),
+      dominant,
+    };
   }
 
   willUpdate(changedProps: Map<PropertyKey, unknown>) {
@@ -245,8 +252,11 @@ export class GrowspaceHeaderContainer extends LitElement {
       case 'edit': {
         const newEditMode = !this.store.ui.$isEditMode.get();
         this.store.ui.setEditMode(newEditMode);
-        if (newEditMode && this.store.ui.$viewMode.get() === ViewMode.COMPACT) {
-          this.store.ui.setViewMode(ViewMode.STANDARD);
+        if (newEditMode) {
+          const currentMode = this.store.ui.$viewMode.get();
+          if (currentMode === ViewMode.COMPACT || currentMode === ViewMode.HEADER) {
+            this.store.ui.setViewMode(ViewMode.STANDARD);
+          }
         }
         break;
       }

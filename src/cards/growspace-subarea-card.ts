@@ -40,6 +40,7 @@ import '../features/ui/components/growspace-header-hero-ui';
 import '../features/ui/components/growspace-header-secondary-ui';
 import '../features/shared/ui/growspace-chip';
 import { MetricsUtils } from '../utils/metrics-utils';
+import { filterChips } from '../utils/chip-filter';
 
 import { sharedStyles } from '../styles/shared.styles';
 import { uiStyles } from '../styles/ui.styles';
@@ -311,6 +312,41 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         }
     }
 
+    private _resolveCalculatedVpdIds(subarea: Subarea, tempIds: string[], humIds: string[]): string[] {
+        const slugify = (text: string) =>
+            text.toString().toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^\w-]+/g, '')
+                .replace(/[_-]+/g, '_')
+                .replace(/^[_-]+/, '')
+                .replace(/[_-]+$/, '');
+
+        const growspaceId = this._config.growspace_id;
+        const subareaId = subarea.id;
+        const numPairs = Math.min(tempIds.length, humIds.length);
+        const resolved: string[] = [];
+
+        for (let i = 0; i < numPairs; i++) {
+            const nameSuffix = numPairs > 1 ? ` ${i + 1}` : '';
+            const uuidSuffix = numPairs > 1 ? `_${i}` : '';
+
+            const nameId = this._parentGrowspaceName && subarea.name
+                ? `sensor.${slugify(`${this._parentGrowspaceName} ${subarea.name} Calculated VPD${nameSuffix}`)}`
+                : '';
+            const uuidId = `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`;
+
+            if (nameId && this.hass?.states[nameId]) {
+                resolved.push(nameId);
+            } else if (this.hass?.states[uuidId]) {
+                resolved.push(uuidId);
+            } else {
+                resolved.push(nameId || uuidId);
+            }
+        }
+
+        return resolved;
+    }
+
     private async _loadHistory(subarea: Subarea, range?: HistoryTimeRange): Promise<void> {
         if (!this._dataService) return;
 
@@ -331,7 +367,14 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             : ec.humidity_sensor
                 ? [ec.humidity_sensor]
                 : [];
-        const vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        let vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+
+        // When no explicit VPD sensor is configured, resolve the same calculated-VPD entity IDs
+        // that MetricsUtils.computeSubareaMetrics() uses, so the history cache keys match.
+        if (vpdIds.length === 0 && tempIds.length > 0 && humIds.length > 0) {
+            vpdIds = this._resolveCalculatedVpdIds(subarea, tempIds, humIds);
+        }
+
         const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
 
         if (tempIds.length) metricEntities.push({ metric: 'temperature', entityIds: tempIds });
@@ -559,10 +602,15 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             this._subarea?.name
         );
 
+        const hidden = this._config?.hidden_chips;
+        const heroChips = filterChips(metrics.heroChips, hidden);
+        const secondaryChips = filterChips(metrics.secondaryChips, hidden);
+        const deviceChips = filterChips(metrics.deviceChips, hidden);
+
         const hasAny =
-            metrics.heroChips.length > 0 ||
-            metrics.secondaryChips.length > 0 ||
-            metrics.deviceChips.length > 0;
+            heroChips.length > 0 ||
+            secondaryChips.length > 0 ||
+            deviceChips.length > 0;
         const isMobile = this._resizeController.isMobile;
         const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
 
@@ -573,12 +621,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
               <div class="no-sensors">No environment sensors configured for this subarea.</div>
             `
                 : ''}
-        ${metrics.deviceChips.length > 0
+        ${deviceChips.length > 0
                 ? html`
               ${isMobile
                         ? html`
                     <growspace-header-hero-ui
-                      .chips=${metrics.deviceChips}
+                      .chips=${deviceChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -591,7 +639,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                     <div
                       style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto; scrollbar-width: none;"
                     >
-                      ${metrics.deviceChips.map(
+                      ${deviceChips.map(
                             (chip) => html`
                           <growspace-chip
                             .icon=${chip.icon}
@@ -610,10 +658,10 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                   `}
             `
                 : ''}
-        ${metrics.heroChips.length > 0
+        ${heroChips.length > 0
                 ? html`
               <growspace-header-hero-ui
-                .chips=${metrics.heroChips}
+                .chips=${heroChips}
                 .historyCache=${this._historyCache}
                 .device=${parentDevice}
                 .hass=${this.hass}
@@ -623,12 +671,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
               ></growspace-header-hero-ui>
             `
                 : ''}
-        ${metrics.secondaryChips.length > 0
+        ${secondaryChips.length > 0
                 ? html`
               ${isMobile
                         ? html`
                     <growspace-header-hero-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -639,7 +687,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                   `
                         : html`
                     <growspace-header-secondary-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       @toggle-graph=${(e: CustomEvent) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-secondary-ui>
                   `}

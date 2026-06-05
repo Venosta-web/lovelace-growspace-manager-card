@@ -190,6 +190,7 @@ export interface SerializedWaterUsage {
   total_liters?: number;
   cycle_start_date?: string;
   daily_readings?: Array<Record<string, unknown>>;
+  liters_today?: number | null;
 }
 
 export interface WaterUsage {

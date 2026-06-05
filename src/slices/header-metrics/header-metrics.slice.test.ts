@@ -566,7 +566,7 @@ describe('Cycle N — soil moisture chip', () => {
 
   it('omits the soil moisture chip when all sensors are unavailable', () => {
     const env = makeEnvSnapshot({
-      soilMoisture: { avg: null, perSensor: [null], entityIds: ['sensor.sm_1'] },
+      soilMoisture: { avg: null, sum: null, perSensor: [null], entityIds: ['sensor.sm_1'] },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     expect(chips.find((c) => c.key === MetricKey.SOIL_MOISTURE)).toBeUndefined();
@@ -574,7 +574,7 @@ describe('Cycle N — soil moisture chip', () => {
 
   it('emits a soil moisture chip with formatted value for a single sensor', () => {
     const env = makeEnvSnapshot({
-      soilMoisture: { avg: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
+      soilMoisture: { avg: 42.5, sum: 42.5, perSensor: [42.5], entityIds: ['sensor.sm_1'] },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.SOIL_MOISTURE);
@@ -587,6 +587,7 @@ describe('Cycle N — soil moisture chip', () => {
     const env = makeEnvSnapshot({
       soilMoisture: {
         avg: 50,
+        sum: 100,
         perSensor: [40, 60],
         entityIds: ['sensor.sm_1', 'sensor.sm_2'],
       },
@@ -609,7 +610,7 @@ describe('Cycle N — substrate temperature chip', () => {
 
   it('emits a substrate temperature chip with formatted value', () => {
     const env = makeEnvSnapshot({
-      substrateTemperature: { avg: 20.5, perSensor: [20.5], entityIds: ['sensor.st_1'] },
+      substrateTemperature: { avg: 20.5, sum: 20.5, perSensor: [20.5], entityIds: ['sensor.st_1'] },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.SUBSTRATE_TEMPERATURE);
@@ -639,7 +640,7 @@ describe('Cycle N — irrigation monitoring chips', () => {
 
   it('emits ph chip with formatted value', () => {
     const env = makeEnvSnapshot({
-      ph: { avg: 6.2, perSensor: [6.2], entityIds: ['sensor.ph_1'] },
+      ph: { avg: 6.2, sum: 6.2, perSensor: [6.2], entityIds: ['sensor.ph_1'] },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.PH);
@@ -650,7 +651,7 @@ describe('Cycle N — irrigation monitoring chips', () => {
 
   it('emits feed EC chip with unit', () => {
     const env = makeEnvSnapshot({
-      feedEc: { avg: 2.1, perSensor: [2.1], entityIds: ['sensor.ec_1'] },
+      feedEc: { avg: 2.1, sum: 2.1, perSensor: [2.1], entityIds: ['sensor.ec_1'] },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.FEED_EC);
@@ -660,17 +661,40 @@ describe('Cycle N — irrigation monitoring chips', () => {
 
   it('emits power chip with W unit', () => {
     const env = makeEnvSnapshot({
-      power: { avg: 450, perSensor: [450], entityIds: ['sensor.pwr_1'] },
+      power: { avg: 450, sum: 450, perSensor: [450], entityIds: ['sensor.pwr_1'] },
     });
     const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
     const chip = chips.find((c) => c.key === MetricKey.POWER);
     expect(chip!.value).toBe('450.0 W');
   });
 
+  it('emits summed power value (not "Multiple") when two power sensors are configured', () => {
+    const env = makeEnvSnapshot({
+      power: { avg: 325, sum: 650, perSensor: [300, 350], entityIds: ['sensor.pwr_1', 'sensor.pwr_2'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.POWER);
+    expect(chip!.value).toBe('650.0 W');
+    expect(chip!.multiValues).toBeUndefined();
+    expect(chip!.entityIds).toEqual(['sensor.pwr_1', 'sensor.pwr_2']);
+  });
+
+  it('emits summed energy value (not "Multiple") when two energy sensors are configured', () => {
+    const env = makeEnvSnapshot({
+      energy: { avg: 4.5, sum: 9.0, perSensor: [4.0, 5.0], entityIds: ['sensor.energy_1', 'sensor.energy_2'] },
+    });
+    const { chips } = computeHeaderMetrics(env, [], null, [], 'main');
+    const chip = chips.find((c) => c.key === MetricKey.ENERGY);
+    expect(chip!.value).toBe('9.0 kWh');
+    expect(chip!.multiValues).toBeUndefined();
+    expect(chip!.entityIds).toEqual(['sensor.energy_1', 'sensor.energy_2']);
+  });
+
   it('emits "Multiple" for runoff EC with two sensors', () => {
     const env = makeEnvSnapshot({
       runoffEc: {
         avg: 2.25,
+        sum: 4.5,
         perSensor: [2.1, 2.4],
         entityIds: ['sensor.runoff_1', 'sensor.runoff_2'],
       },

@@ -33,5 +33,20 @@ document.body.style.backgroundColor = '#111111';
 // Provide the build-time constant so src/index.ts can be imported in tests.
 (globalThis as any).__VERSION__ = 'test';
 
+// Disable all CSS animations and transitions so visual snapshots are stable.
+// Without this, transitions like `transition: all 300ms` keep changing the DOM
+// between Playwright's consecutive screenshot captures, triggering "could not
+// capture a stable screenshot" failures.
+const noMotionStyle = document.createElement('style');
+noMotionStyle.textContent =
+  '*, *::before, *::after {' +
+  '  animation-duration: 0s !important;' +
+  '  animation-delay: 0s !important;' +
+  '  animation-iteration-count: 1 !important;' +
+  '  transition-duration: 0s !important;' +
+  '  transition-delay: 0s !important;' +
+  '}';
+document.head.appendChild(noMotionStyle);
+
 // Only mock native APIs if the browser doesn't have them or we need to force a state.
 // Chromium has matchMedia and ResizeObserver natively.

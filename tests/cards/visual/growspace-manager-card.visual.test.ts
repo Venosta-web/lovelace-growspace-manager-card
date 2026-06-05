@@ -27,6 +27,8 @@ test('growspace-manager-card visual snapshot', async () => {
     setDevices([aGrowspaceDevice()]);
     element.store.grid.$selectedDevice.set('test_tent');
     await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
 
     await expect(page.elementLocator(element)).toMatchScreenshot();
 });

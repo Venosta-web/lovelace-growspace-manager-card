@@ -504,6 +504,39 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
     [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
 };
+const FAN_VPD_STAGE_KEYS = [
+    'seedling',
+    'clone',
+    'mother',
+    'veg',
+    'flower_early',
+    'flower_mid',
+    'flower_late',
+    'dry',
+    'cure',
+];
+const FAN_VPD_STAGE_LABELS = {
+    seedling: 'Seedling',
+    clone: 'Clone',
+    mother: 'Mother',
+    veg: 'Veg',
+    flower_early: 'Flower (Early)',
+    flower_mid: 'Flower (Mid)',
+    flower_late: 'Flower (Late)',
+    dry: 'Dry',
+    cure: 'Cure',
+};
+const FAN_VPD_STAGE_DEFAULTS = {
+    seedling: { day: 0.6, night: 0.6 },
+    clone: { day: 0.5, night: 0.5 },
+    mother: { day: 0.7, night: 0.6 },
+    veg: { day: 0.7, night: 0.6 },
+    flower_early: { day: 1.15, night: 1.0 },
+    flower_mid: { day: 1.2, night: 1.0 },
+    flower_late: { day: 1.25, night: 1.05 },
+    dry: { day: 0.95, night: 0.95 },
+    cure: { day: 0.75, night: 0.75 },
+};
 
 // --- Utils ---
 function createGrowspaceDevice(params) {
@@ -5134,6 +5167,10 @@ const CirculationFanConfigSchema = objectType({
     wind_enabled: booleanType(),
     wind_period_seconds: numberType(),
     wind_amplitude_pct: numberType(),
+    stage_vpd_enabled: booleanType(),
+    stage_vpd_overrides: recordType(stringType(), objectType({ day: numberType(), night: numberType() }))
+        .optional()
+        .default({}),
 });
 const GrowspaceAPIResponseSchema = objectType({
     identity: objectType({
@@ -5676,6 +5713,7 @@ class GrowspaceAdapter {
                 totalLiters: waterUsageRaw.total_liters,
                 cycleStartDate: waterUsageRaw.cycle_start_date,
                 dailyReadings: waterUsageRaw.daily_readings,
+                ...(waterUsageRaw.liters_today != null ? { litersToday: waterUsageRaw.liters_today } : {}),
             }
             : null;
         // 8. Construct Device
@@ -12902,6 +12940,16 @@ GsHelpTooltip = __decorate([
  *     .toast              — transient message
  *     .tabs               — one typed state object per tab (draft + sub)
  */
+// Maps each stage value to its corresponding AddDraft date field
+const STAGE_DATE_FIELD = {
+    seedling: 'seedlingStart',
+    clone: 'cloneStart',
+    mother: 'motherStart',
+    veg: 'vegStart',
+    flower: 'flowerStart',
+    dry: 'dryStart',
+    cure: 'cureStart',
+};
 // ─── Initial state ────────────────────────────────────────────────────────────
 function defaultAddDraft(row, col) {
     return {
@@ -12913,6 +12961,7 @@ function defaultAddDraft(row, col) {
         siblingPlantId: null,
         row,
         col,
+        stage: 'seedling',
         seedlingStart: '',
         vegStart: '',
         flowerStart: '',
@@ -12973,6 +13022,31 @@ function transition$a(sm, event) {
         }
         case 'DraftFieldChanged': {
             if (event.tab === 'add') {
+                if (event.field === 'stage') {
+                    const today = new Date().toISOString().split('T')[0];
+                    const dateField = STAGE_DATE_FIELD[event.value];
+                    return {
+                        ...sm,
+                        tabs: {
+                            ...sm.tabs,
+                            add: {
+                                ...sm.tabs.add,
+                                draft: {
+                                    ...sm.tabs.add.draft,
+                                    stage: event.value,
+                                    seedlingStart: '',
+                                    cloneStart: '',
+                                    motherStart: '',
+                                    vegStart: '',
+                                    flowerStart: '',
+                                    dryStart: '',
+                                    cureStart: '',
+                                    ...(dateField ? { [dateField]: today } : {}),
+                                },
+                            },
+                        },
+                    };
+                }
                 return {
                     ...sm,
                     tabs: {
@@ -13066,6 +13140,36 @@ function setAddSub(sm, sub) {
     };
 }
 
+const STAGE_OPTIONS = [
+    { value: 'seedling', label: 'Seedling' },
+    { value: 'clone', label: 'Clone' },
+    { value: 'mother', label: 'Mother' },
+    { value: 'veg', label: 'Veg' },
+    { value: 'flower', label: 'Flower' },
+    { value: 'dry', label: 'Dry' },
+    { value: 'cure', label: 'Cure' },
+];
+const STAGE_DATE_LABELS = {
+    seedling: 'Seedling Start',
+    clone: 'Clone Start',
+    mother: 'Mother Start',
+    veg: 'Veg Start',
+    flower: 'Flower Start',
+    dry: 'Dry Start',
+    cure: 'Cure Start',
+};
+function deriveDefaultStage(growspaceName) {
+    const name = growspaceName.toLowerCase();
+    if (name.includes('mother'))
+        return 'mother';
+    if (name.includes('clone'))
+        return 'clone';
+    if (name.includes('dry'))
+        return 'dry';
+    if (name.includes('cure'))
+        return 'cure';
+    return 'seedling';
+}
 let AddPlantDialog = class AddPlantDialog extends i$3 {
     constructor() {
         super(...arguments);
@@ -13081,6 +13185,12 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
     }
     setInitialState(row, col, strain = '', phenotype = '') {
         this._sm = createInitialSM$a({ row, col });
+        this._sm = transition$a(this._sm, {
+            type: 'DraftFieldChanged',
+            tab: 'add',
+            field: 'stage',
+            value: deriveDefaultStage(this.growspaceName),
+        });
         if (strain) {
             this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
             this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
@@ -13125,13 +13235,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 col: d.col + 1,
                 strain: d.strain,
                 phenotype: d.phenotype,
-                veg_start: d.vegStart,
-                flower_start: d.flowerStart,
-                seedling_start: d.sourceType === 'seed' ? d.seedlingStart || today : '',
-                mother_start: d.motherStart,
-                clone_start: d.sourceType === 'clone' ? d.cloneStart || today : '',
-                dry_start: d.dryStart,
-                cure_start: d.cureStart,
+                seedling_start: d.stage === 'seedling' ? d.seedlingStart || today : '',
+                clone_start: d.stage === 'clone' ? d.cloneStart || today : '',
+                mother_start: d.stage === 'mother' ? d.motherStart || today : '',
+                veg_start: d.stage === 'veg' ? d.vegStart || today : '',
+                flower_start: d.stage === 'flower' ? d.flowerStart || today : '',
+                dry_start: d.stage === 'dry' ? d.dryStart || today : '',
+                cure_start: d.stage === 'cure' ? d.cureStart || today : '',
                 addToLibrary: d.addToLibrary,
             };
             this._sm = transition$a(this._sm, { type: 'SaveRequested' });
@@ -13580,62 +13690,27 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
     }
     _renderStep3Schedule() {
         const { draft } = this._sm.tabs.add;
+        const dateField = STAGE_DATE_FIELD[draft.stage];
+        const dateValue = dateField ? draft[dateField] : '';
+        const dateLabel = STAGE_DATE_LABELS[draft.stage] ?? 'Start Date';
         return x `
       <div class="detail-card">
         <h3>Schedule</h3>
-        ${this._renderTimelineContent(draft)}
+        <md3-select
+          label="Stage"
+          .value=${draft.stage}
+          .options=${STAGE_OPTIONS}
+          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: e.detail }))}
+        ></md3-select>
+        ${dateField
+            ? x `<md3-date-input
+              label=${dateLabel}
+              .value=${dateValue}
+              @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: dateField, value: e.detail }))}
+            ></md3-date-input>`
+            : E}
       </div>
     `;
-    }
-    _renderTimelineContent(draft) {
-        const name = this.growspaceName.toLowerCase();
-        if (name.includes('mother')) {
-            return x `<md3-date-input
-        label="Mother Start"
-        .value=${draft.motherStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'motherStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('clone')) {
-            return x `<md3-date-input
-        label="Clone Start"
-        .value=${draft.cloneStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cloneStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('dry')) {
-            return x `<md3-date-input
-        label="Dry Start"
-        .value=${draft.dryStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'dryStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else if (name.includes('cure')) {
-            return x `<md3-date-input
-        label="Cure Start"
-        .value=${draft.cureStart}
-        @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'cureStart', value: e.detail }))}
-      ></md3-date-input>`;
-        }
-        else {
-            return x `
-        <md3-date-input
-          label="Seedling Start"
-          .value=${draft.seedlingStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'seedlingStart', value: e.detail }))}
-        ></md3-date-input>
-        <md3-date-input
-          label="Veg Start"
-          .value=${draft.vegStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'vegStart', value: e.detail }))}
-        ></md3-date-input>
-        <md3-date-input
-          label="Flower Start"
-          .value=${draft.flowerStart}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'flowerStart', value: e.detail }))}
-        ></md3-date-input>
-      `;
-        }
     }
     _renderTransplantForm(stage) {
         const plants = stage === 'clone' ? this.clonePlants : this.seedlingPlants;
@@ -17653,6 +17728,124 @@ SubareaConfigDialog = __decorate([
     t$2('subarea-config-dialog')
 ], SubareaConfigDialog);
 
+let StageVpdOverridesTable = class StageVpdOverridesTable extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.overrides = {};
+    }
+    _getDisplayValue(key, slot) {
+        return this.overrides[key]?.[slot] ?? FAN_VPD_STAGE_DEFAULTS[key][slot];
+    }
+    _handleChange(key, slot, raw) {
+        const value = parseFloat(raw);
+        const updated = { ...this.overrides };
+        if (isNaN(value)) {
+            if (!(key in updated))
+                return;
+            delete updated[key];
+        }
+        else {
+            const existing = updated[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
+            updated[key] = { ...existing, [slot]: value };
+        }
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
+    }
+    _handleReset() {
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="header-row">
+        <span>Stage</span>
+        <span>Day (kPa)</span>
+        <span>Night (kPa)</span>
+      </div>
+      ${FAN_VPD_STAGE_KEYS.map((key) => x `
+          <div class="stage-row">
+            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
+            <input
+              type="number"
+              min="0.1"
+              max="3.0"
+              step="0.01"
+              .value=${String(this._getDisplayValue(key, 'day'))}
+              @change=${(e) => this._handleChange(key, 'day', e.target.value)}
+            />
+            <input
+              type="number"
+              min="0.1"
+              max="3.0"
+              step="0.01"
+              .value=${String(this._getDisplayValue(key, 'night'))}
+              @change=${(e) => this._handleChange(key, 'night', e.target.value)}
+            />
+          </div>
+        `)}
+      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
+    `;
+    }
+};
+StageVpdOverridesTable.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .header-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 8px;
+      padding: 0 4px 4px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      margin-bottom: 4px;
+    }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 8px;
+      align-items: center;
+      padding: 4px;
+    }
+    .stage-label {
+      font-size: 0.875rem;
+      color: var(--primary-text-color);
+    }
+    input[type='number'] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      color: var(--primary-text-color);
+      font-size: 0.875rem;
+      padding: 4px 6px;
+      border-radius: 4px 4px 0 0;
+      outline: none;
+    }
+    input[type='number']:focus {
+      border-bottom: 2px solid var(--primary-color, #6200ee);
+    }
+    .reset-button {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      border-radius: 4px;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+    }
+    .reset-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], StageVpdOverridesTable.prototype, "overrides", void 0);
+StageVpdOverridesTable = __decorate([
+    t$2('stage-vpd-overrides-table')
+], StageVpdOverridesTable);
+
 /**
  * Config Dialog State Machine
  *
@@ -17720,6 +17913,8 @@ function defaultEnvironmentDraft() {
             wind_enabled: false,
             wind_period_seconds: 60,
             wind_amplitude_pct: 10,
+            stage_vpd_enabled: false,
+            stage_vpd_overrides: {},
         },
     };
 }
@@ -19168,12 +19363,41 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             @change=${(e) => this._updateFanConfig({ regulation_mode: e.detail })}
           ></md3-select>
 
+          <!-- Stage-Aware VPD toggle (VPD mode only) -->
+          ${mode === 'vpd'
+            ? x `
+                <div style="margin-top:8px;">
+                  <label class="checkbox-label">
+                    <input
+                      type="checkbox"
+                      .checked=${fan.stage_vpd_enabled}
+                      @change=${(e) => this._updateFanConfig({
+                stage_vpd_enabled: e.target.checked,
+            })}
+                    />
+                    <span>Stage-Aware VPD</span>
+                  </label>
+                </div>
+                ${fan.stage_vpd_enabled
+                ? x `
+                      <div style="margin-top:12px;">
+                        <stage-vpd-overrides-table
+                          .overrides=${(fan.stage_vpd_overrides ?? {})}
+                          @overrides-change=${(e) => this._updateFanConfig({ stage_vpd_overrides: e.detail })}
+                        ></stage-vpd-overrides-table>
+                      </div>
+                    `
+                : E}
+              `
+            : E}
+
           <!-- Active mode target + tolerance -->
           <div class="row-col-grid">
             ${mode === 'vpd'
             ? x `
                   <md3-number-input
-                    label="VPD Target (kPa)"
+                    label="${fan.stage_vpd_enabled ? 'Fallback VPD Target (kPa)' : 'VPD Target (kPa)'}"
+                    style="${fan.stage_vpd_enabled ? 'opacity:0.5;' : ''}"
                     .value=${fan.vpd_target}
                     @change=${(e) => this._updateFanConfig({ vpd_target: parseFloat(e.detail) })}
                     step="0.01"
@@ -28187,6 +28411,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       </div>
 
+      ${this._sm.tabs.steering.draft.enabled ? x `
       <div class="detail-card">
         <div
           style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
@@ -28260,21 +28485,28 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           </div>
         </div>
       </div>
+      ` : E}
 
       <div class="detail-card">
         <h3 style="margin:0 0 14px;">Behaviour</h3>
+        ${!this._sm.tabs.steering.draft.enabled ? x `
+            <div class="stub-row" style="margin-bottom:8px;">
+              <div>
+                <div class="stub-row-label">Skip During Dark Period</div>
+                <div class="stub-row-desc">No cycles between lights-off and lights-on</div>
+              </div>
+              <md3-switch
+                .checked=${this._sm.tabs.config.draft.skipDuringDark}
+                @change=${(e) => {
+            this._sm = transition$4(this._sm, {
+                type: 'UPDATE_CONFIG_DRAFT',
+                partial: { skipDuringDark: e.target.checked },
+            });
+        }}
+              ></md3-switch>
+            </div>
+        ` : E}
         ${[
-            {
-                label: 'Skip During Dark Period',
-                desc: 'No cycles between lights-off and lights-on',
-                get: () => this._sm.tabs.config.draft.skipDuringDark,
-                set: (v) => {
-                    this._sm = transition$4(this._sm, {
-                        type: 'UPDATE_CONFIG_DRAFT',
-                        partial: { skipDuringDark: v },
-                    });
-                },
-            },
             {
                 label: 'Pause on Tank Low',
                 desc: 'Halt cycles when any tank is below warning level',
@@ -62641,7 +62873,9 @@ class MetricsUtils {
         const energyValue = device.energyTracking?.dailyKwh != null
             ? device.energyTracking.dailyKwh.toFixed(2)
             : undefined;
-        const waterValue = device.waterUsage?.litersToday != null ? device.waterUsage.litersToday.toFixed(1) : undefined;
+        const waterValue = device.waterUsage?.litersToday != null
+            ? `${device.waterUsage.litersToday.toFixed(1)} L/d`
+            : undefined;
         const substrateTempAgg = getAggregateSensorState(undefined, envAttrs.substrateTemperatureSensors, '°C');
         if (tanks.length > 0) {
             tankEntityIds = tanks.map((t) => t.sensorEntity).filter(Boolean);
@@ -62763,7 +62997,11 @@ class MetricsUtils {
             createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId], undefined, undefined, 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.'),
             createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId], undefined, undefined, 'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'),
             createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
-            createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
+            tanks.length > 0 &&
+                !(envAttrs.irrigationFlowSensors?.length) &&
+                !(envAttrs.drainVolumeSensors?.length)
+                ? createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined)
+                : null,
         ].filter((c) => c !== null);
         // Device Chips
         const getAggregateState = (single, multi, sensor) => {
@@ -63102,13 +63340,19 @@ function _makeChip(key, icon, value, opts = {}, activeEnvGraphs, linkedGraphGrou
  * configured the chip shows "Multiple" and carries the individual formatted
  * values in multiValues so the chip component can render them side-by-side.
  */
-function _makeSensorReadingChip(key, icon, readings, unit, opts, activeEnvGraphs, linkedGraphGroups) {
+function _makeSensorReadingChip(key, icon, readings, unit, opts, activeEnvGraphs, linkedGraphGroups, useSum = false) {
     if (readings === null)
         return null;
     if (readings.avg === null && readings.perSensor.every((v) => v === null))
         return null;
     const { entityIds, perSensor } = readings;
     if (entityIds.length > 1) {
+        if (useSum) {
+            const value = readings.sum !== null ? `${readings.sum.toFixed(1)}${unit}` : undefined;
+            if (!value)
+                return null;
+            return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
+        }
         const multiValues = perSensor.map((v) => (v !== null ? `${v.toFixed(1)}${unit}` : '-'));
         return _makeChip(key, icon, 'Multiple', { ...opts, multiValues, entityIds }, activeEnvGraphs, linkedGraphGroups);
     }
@@ -63354,13 +63598,19 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     const flowChip = _makeSensorReadingChip(MetricKey.IRRIGATION_FLOW, mdiWaterPump, envSnapshot?.irrigationFlow ?? null, ' L/h', { label: 'Flow', tooltip: 'Irrigation flow rate.' }, activeEnvGraphs, linkedGraphGroups);
     if (flowChip)
         chips.push(flowChip);
-    const powerChip = _makeSensorReadingChip(MetricKey.POWER, mdiFlash, envSnapshot?.power ?? null, ' W', { label: 'Power', tooltip: 'Current power draw.' }, activeEnvGraphs, linkedGraphGroups);
+    const powerChip = _makeSensorReadingChip(MetricKey.POWER, mdiFlash, envSnapshot?.power ?? null, ' W', { label: 'Power', tooltip: 'Current power draw.' }, activeEnvGraphs, linkedGraphGroups, true);
     if (powerChip)
         chips.push(powerChip);
-    const energyChip = _makeSensorReadingChip(MetricKey.ENERGY, mdiFlash, envSnapshot?.energy ?? null, ' kWh', { label: 'Energy', tooltip: 'Energy consumed.' }, activeEnvGraphs, linkedGraphGroups);
+    const energyChip = _makeSensorReadingChip(MetricKey.ENERGY, mdiFlash, envSnapshot?.energy ?? null, ' kWh', { label: 'Energy', tooltip: 'Energy consumed.' }, activeEnvGraphs, linkedGraphGroups, true);
     if (energyChip)
         chips.push(energyChip);
     return { hero, chips, dominant };
+}
+
+function filterChips(chips, hiddenKeys) {
+    if (!hiddenKeys?.length)
+        return chips;
+    return chips.filter((chip) => !hiddenKeys.includes(chip.key));
 }
 
 /**
@@ -63482,8 +63732,9 @@ function _resolveSensors(single, multi, hassStates) {
         return null;
     const perSensor = ids.map((id) => _parseState(hassStates[id]));
     const defined = perSensor.filter((v) => v !== null);
-    const avg = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) / defined.length : null;
-    return { avg, perSensor, entityIds: ids };
+    const total = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : null;
+    const avg = total !== null ? total / defined.length : null;
+    return { avg, sum: total, perSensor, entityIds: ids };
 }
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(vpd, overviewEntity) {
@@ -65489,7 +65740,13 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
         // MetricsUtils until the DeviceState slice is implemented (issue #144).
         const { deviceChips } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);
-        return { heroChips, secondaryChips, deviceChips, dominant };
+        const hidden = this.config?.hidden_chips;
+        return {
+            heroChips,
+            secondaryChips: filterChips(secondaryChips, hidden),
+            deviceChips: filterChips(deviceChips, hidden),
+            dominant,
+        };
     }
     willUpdate(changedProps) {
         if (changedProps.has('store')) {
@@ -65591,8 +65848,11 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
             case 'edit': {
                 const newEditMode = !this.store.ui.$isEditMode.get();
                 this.store.ui.setEditMode(newEditMode);
-                if (newEditMode && this.store.ui.$viewMode.get() === ViewMode.COMPACT) {
-                    this.store.ui.setViewMode(ViewMode.STANDARD);
+                if (newEditMode) {
+                    const currentMode = this.store.ui.$viewMode.get();
+                    if (currentMode === ViewMode.COMPACT || currentMode === ViewMode.HEADER) {
+                        this.store.ui.setViewMode(ViewMode.STANDARD);
+                    }
                 }
                 break;
             }
@@ -67074,6 +67334,170 @@ const growspaceCardStyles = i$6 `
   }
 `;
 
+const TankWaterBucketSchema = objectType({
+    timestamp: stringType(),
+    liters: numberType(),
+});
+const TankWaterHistorySchema = objectType({
+    buckets: arrayType(TankWaterBucketSchema),
+});
+let TankWaterChart = class TankWaterChart extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.range = '24h';
+        this._buckets = [];
+        this._loading = false;
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        this._fetch();
+    }
+    updated(changed) {
+        if (changed.has('range') || changed.has('device')) {
+            this._fetch();
+        }
+    }
+    async _fetch() {
+        if (!this.device)
+            return;
+        this._loading = true;
+        try {
+            const result = await hassCall('growspace_manager/get_tank_water_history', { growspace_id: this.device.deviceId, range: this.range }, TankWaterHistorySchema);
+            this._buckets = result.buckets;
+        }
+        catch {
+            this._buckets = [];
+        }
+        finally {
+            this._loading = false;
+        }
+    }
+    render() {
+        if (this._loading) {
+            return x `
+        <div class="chart-wrapper">
+          <div class="chart-title">Water Consumption</div>
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+          </div>
+        </div>
+      `;
+        }
+        if (this._buckets.length === 0) {
+            return x `
+        <div class="chart-wrapper">
+          <div class="chart-title">Water Consumption</div>
+          <div class="empty">No water data for this period.</div>
+        </div>
+      `;
+        }
+        return x `
+      <div class="chart-wrapper">
+        <div class="chart-title">Water Consumption</div>
+        ${this._renderBars()}
+      </div>
+    `;
+    }
+    _renderBars() {
+        const max = Math.max(...this._buckets.map((b) => b.liters), 0.001);
+        const chartH = 80;
+        const barW = Math.floor(100 / this._buckets.length);
+        const gap = 2;
+        return x `
+      <svg viewBox="0 0 100 ${chartH}" preserveAspectRatio="none" height="${chartH}">
+        ${this._buckets.map((bucket, i) => {
+            const barH = (bucket.liters / max) * (chartH - 16);
+            const x$1 = i * barW + gap / 2;
+            const y = chartH - barH - 14;
+            return x `
+            <rect
+              class="bar"
+              x="${x$1}"
+              y="${y}"
+              width="${barW - gap}"
+              height="${barH}"
+              rx="1"
+            >
+              <title>${new Date(bucket.timestamp).toLocaleTimeString()} — ${bucket.liters.toFixed(1)} L</title>
+            </rect>
+          `;
+        })}
+      </svg>
+    `;
+    }
+};
+TankWaterChart.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .chart-wrapper {
+      background: var(--card-background-color, #1c1c1e);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .chart-title {
+      font-size: 13px;
+      color: var(--secondary-text-color, #9e9e9e);
+      margin-bottom: 12px;
+    }
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      color: var(--secondary-text-color, #666);
+      gap: 12px;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--primary-color, #03a9f4);
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .empty {
+      padding: 32px;
+      text-align: center;
+      color: var(--secondary-text-color, #666);
+      font-size: 13px;
+    }
+    svg {
+      width: 100%;
+      overflow: visible;
+    }
+    .bar {
+      fill: var(--primary-color, #03a9f4);
+      opacity: 0.85;
+    }
+    .bar:hover {
+      opacity: 1;
+    }
+    .axis-label {
+      font-size: 10px;
+      fill: var(--secondary-text-color, #9e9e9e);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], TankWaterChart.prototype, "device", void 0);
+__decorate([
+    n$5({ type: String })
+], TankWaterChart.prototype, "range", void 0);
+__decorate([
+    r$3()
+], TankWaterChart.prototype, "_buckets", void 0);
+__decorate([
+    r$3()
+], TankWaterChart.prototype, "_loading", void 0);
+TankWaterChart = __decorate([
+    t$2('tank-water-chart')
+], TankWaterChart);
+
 let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
     constructor() {
         super(...arguments);
@@ -67137,6 +67561,14 @@ let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
           @unlink-graphs=${(e) => this._redispatch('unlink-graphs', e.detail)}
           @unlink-graph=${(e) => this._redispatch('unlink-graph', e.detail)}
         ></growspace-env-chart>
+      `;
+        }
+        if (item.metrics[0] === MetricKey.WATER) {
+            return x `
+        <tank-water-chart
+          .device=${this.device}
+          .range=${this.range}
+        ></tank-water-chart>
       `;
         }
         return x `
@@ -132034,6 +132466,36 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 return new Date(now.getTime() - 24 * 60 * 60 * 1000);
         }
     }
+    _resolveCalculatedVpdIds(subarea, tempIds, humIds) {
+        const slugify = (text) => text.toString().toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/[_-]+/g, '_')
+            .replace(/^[_-]+/, '')
+            .replace(/[_-]+$/, '');
+        const growspaceId = this._config.growspace_id;
+        const subareaId = subarea.id;
+        const numPairs = Math.min(tempIds.length, humIds.length);
+        const resolved = [];
+        for (let i = 0; i < numPairs; i++) {
+            const nameSuffix = numPairs > 1 ? ` ${i + 1}` : '';
+            const uuidSuffix = numPairs > 1 ? `_${i}` : '';
+            const nameId = this._parentGrowspaceName && subarea.name
+                ? `sensor.${slugify(`${this._parentGrowspaceName} ${subarea.name} Calculated VPD${nameSuffix}`)}`
+                : '';
+            const uuidId = `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`;
+            if (nameId && this.hass?.states[nameId]) {
+                resolved.push(nameId);
+            }
+            else if (this.hass?.states[uuidId]) {
+                resolved.push(uuidId);
+            }
+            else {
+                resolved.push(nameId || uuidId);
+            }
+        }
+        return resolved;
+    }
     async _loadHistory(subarea, range) {
         if (!this._dataService)
             return;
@@ -132052,7 +132514,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             : ec.humidity_sensor
                 ? [ec.humidity_sensor]
                 : [];
-        const vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        let vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
+        // When no explicit VPD sensor is configured, resolve the same calculated-VPD entity IDs
+        // that MetricsUtils.computeSubareaMetrics() uses, so the history cache keys match.
+        if (vpdIds.length === 0 && tempIds.length > 0 && humIds.length > 0) {
+            vpdIds = this._resolveCalculatedVpdIds(subarea, tempIds, humIds);
+        }
         const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
         if (tempIds.length)
             metricEntities.push({ metric: 'temperature', entityIds: tempIds });
@@ -132252,9 +132719,13 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     }
     _renderHeaderMetrics(ec, parentDevice) {
         const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(), parentDevice?.deviceId, parentDevice?.name || this._parentGrowspaceName, this._subarea?.id, this._subarea?.name);
-        const hasAny = metrics.heroChips.length > 0 ||
-            metrics.secondaryChips.length > 0 ||
-            metrics.deviceChips.length > 0;
+        const hidden = this._config?.hidden_chips;
+        const heroChips = filterChips(metrics.heroChips, hidden);
+        const secondaryChips = filterChips(metrics.secondaryChips, hidden);
+        const deviceChips = filterChips(metrics.deviceChips, hidden);
+        const hasAny = heroChips.length > 0 ||
+            secondaryChips.length > 0 ||
+            deviceChips.length > 0;
         const isMobile = this._resizeController.isMobile;
         const timeRange = this._analyticsStateController?.value?.timeRange || '24h';
         return x `
@@ -132264,12 +132735,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
               <div class="no-sensors">No environment sensors configured for this subarea.</div>
             `
             : ''}
-        ${metrics.deviceChips.length > 0
+        ${deviceChips.length > 0
             ? x `
               ${isMobile
                 ? x `
                     <growspace-header-hero-ui
-                      .chips=${metrics.deviceChips}
+                      .chips=${deviceChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -132282,7 +132753,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                     <div
                       style="display: flex; gap: 8px; padding: 0 4px; overflow-x: auto; scrollbar-width: none;"
                     >
-                      ${metrics.deviceChips.map((chip) => x `
+                      ${deviceChips.map((chip) => x `
                           <growspace-chip
                             .icon=${chip.icon}
                             .label=${chip.label}
@@ -132299,10 +132770,10 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                   `}
             `
             : ''}
-        ${metrics.heroChips.length > 0
+        ${heroChips.length > 0
             ? x `
               <growspace-header-hero-ui
-                .chips=${metrics.heroChips}
+                .chips=${heroChips}
                 .historyCache=${this._historyCache}
                 .device=${parentDevice}
                 .hass=${this.hass}
@@ -132312,12 +132783,12 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
               ></growspace-header-hero-ui>
             `
             : ''}
-        ${metrics.secondaryChips.length > 0
+        ${secondaryChips.length > 0
             ? x `
               ${isMobile
                 ? x `
                     <growspace-header-hero-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       .historyCache=${this._historyCache}
                       .device=${parentDevice}
                       .hass=${this.hass}
@@ -132328,7 +132799,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                   `
                 : x `
                     <growspace-header-secondary-ui
-                      .chips=${metrics.secondaryChips}
+                      .chips=${secondaryChips}
                       @toggle-graph=${(e) => this._toggleMetricGraph(e.detail.metric)}
                     ></growspace-header-secondary-ui>
                   `}
@@ -132864,7 +133335,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.16"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.1-next.17"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',
@@ -133905,6 +134376,7 @@ const FIELD_LABELS = {
     keyboard_rotate_enabled: 'Keyboard Rotation (3D View)',
     keyboard_rotate_speed: 'Rotation Speed',
     default_view: 'Default View',
+    hidden_chips: 'Hidden Chips',
 };
 const computeEditorLabel = (schema) => FIELD_LABELS[schema.name] ?? schema.name;
 
@@ -134023,6 +134495,33 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
             },
             { name: 'keyboard_rotate_enabled', selector: { boolean: {} } },
             { name: 'keyboard_rotate_speed', selector: { number: { min: 0.1, max: 5.0, step: 0.1 } } },
+            {
+                name: 'hidden_chips',
+                selector: {
+                    select: {
+                        multiple: true,
+                        options: [
+                            { label: 'Light', value: 'light' },
+                            { label: 'Exhaust Fan', value: 'exhaust' },
+                            { label: 'Circulation Fan', value: 'circulation_fan' },
+                            { label: 'Humidifier', value: 'humidifier' },
+                            { label: 'Dehumidifier', value: 'dehumidifier' },
+                            { label: 'Temperature', value: 'temperature' },
+                            { label: 'Humidity', value: 'humidity' },
+                            { label: 'VPD', value: 'vpd' },
+                            { label: 'CO2', value: 'co2' },
+                            { label: 'Soil Moisture', value: 'soil_moisture' },
+                            { label: 'Substrate Temperature', value: 'substrate_temperature' },
+                            { label: 'Tank Level', value: 'irrigation_tank_level' },
+                            { label: 'DLI', value: 'dli' },
+                            { label: 'Energy', value: 'energy' },
+                            { label: 'Water', value: 'water' },
+                            { label: 'Optimal Conditions', value: 'optimal' },
+                            { label: 'Crop Steering', value: 'crop_steering' },
+                        ],
+                    },
+                },
+            },
         ];
     }
     render() {
@@ -134535,6 +135034,33 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
                 },
             },
             { name: 'subarea_id', selector: { select: { options: subareaOptions } } },
+            {
+                name: 'hidden_chips',
+                selector: {
+                    select: {
+                        multiple: true,
+                        options: [
+                            { label: 'Light', value: 'light' },
+                            { label: 'Exhaust Fan', value: 'exhaust' },
+                            { label: 'Circulation Fan', value: 'circulation_fan' },
+                            { label: 'Humidifier', value: 'humidifier' },
+                            { label: 'Dehumidifier', value: 'dehumidifier' },
+                            { label: 'Temperature', value: 'temperature' },
+                            { label: 'Humidity', value: 'humidity' },
+                            { label: 'VPD', value: 'vpd' },
+                            { label: 'CO2', value: 'co2' },
+                            { label: 'Soil Moisture', value: 'soil_moisture' },
+                            { label: 'Substrate Temperature', value: 'substrate_temperature' },
+                            { label: 'Tank Level', value: 'irrigation_tank_level' },
+                            { label: 'DLI', value: 'dli' },
+                            { label: 'Energy', value: 'energy' },
+                            { label: 'Water', value: 'water' },
+                            { label: 'Optimal Conditions', value: 'optimal' },
+                            { label: 'Crop Steering', value: 'crop_steering' },
+                        ],
+                    },
+                },
+            },
         ];
     }
     _valueChanged(ev) {
@@ -134801,5 +135327,5 @@ var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, FAN_VPD_STAGE_DEFAULTS, FAN_VPD_STAGE_KEYS, FAN_VPD_STAGE_LABELS, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

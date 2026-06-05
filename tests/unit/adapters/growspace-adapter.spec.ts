@@ -517,4 +517,39 @@ describe('GrowspaceAdapter', () => {
     expect(coords['sensor.temp']).toEqual({ x: 100, y: 100, z: 0 });
     expect(coords['sensor.light']).toEqual({ x: 100, y: 100, z: 0 });
   });
+
+  describe('waterUsage.litersToday mapping', () => {
+    it('populates litersToday from irrigation.water_usage.liters_today', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          water_usage: {
+            total_liters: 100,
+            cycle_start_date: '2026-01-01',
+            daily_readings: [],
+            liters_today: 3.7,
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.waterUsage?.litersToday).toBe(3.7);
+    });
+
+    it('leaves litersToday undefined when liters_today is absent from payload', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          water_usage: {
+            total_liters: 50,
+            cycle_start_date: '2026-01-01',
+            daily_readings: [],
+          },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.waterUsage?.litersToday).toBeUndefined();
+    });
+  });
 });

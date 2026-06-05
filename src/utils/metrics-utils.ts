@@ -395,7 +395,9 @@ export class MetricsUtils {
         : undefined;
 
     const waterValue =
-      device.waterUsage?.litersToday != null ? device.waterUsage.litersToday.toFixed(1) : undefined;
+      device.waterUsage?.litersToday != null
+        ? `${device.waterUsage.litersToday.toFixed(1)} L/d`
+        : undefined;
 
     const substrateTempAgg = getAggregateSensorState(
       undefined,
@@ -622,7 +624,11 @@ export class MetricsUtils {
         'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'
       ),
       createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
-      createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined),
+      tanks.length > 0 &&
+      !(envAttrs.irrigationFlowSensors?.length) &&
+      !(envAttrs.drainVolumeSensors?.length)
+        ? createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined)
+        : null,
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 
     // Device Chips

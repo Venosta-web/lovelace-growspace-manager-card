@@ -56,8 +56,8 @@ describe('anEnvSnapshot', () => {
 
   it('defaults substrate sensor group to realistic readings', () => {
     const snap = anEnvSnapshot();
-    expect(snap.soilMoisture).toEqual({ avg: 65, perSensor: [65], entityIds: ['sensor.test_tent_soil_moisture'] });
-    expect(snap.substrateTemperature).toEqual({ avg: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] });
+    expect(snap.soilMoisture).toEqual({ avg: 65, sum: 65, perSensor: [65], entityIds: ['sensor.test_tent_soil_moisture'] });
+    expect(snap.substrateTemperature).toEqual({ avg: 22.0, sum: 22.0, perSensor: [22.0], entityIds: ['sensor.test_tent_substrate_temp'] });
   });
 
   it('defaults irrigation monitoring group to realistic sensor readings', () => {
@@ -76,7 +76,7 @@ describe('anEnvSnapshot', () => {
     const snap = anEnvSnapshot({
       temperature: 28,
       vpdStatus: 'warning',
-      soilMoisture: { avg: 45, perSensor: [45], entityIds: ['sensor.soil_1'] },
+      soilMoisture: { avg: 45, sum: 45, perSensor: [45], entityIds: ['sensor.soil_1'] },
     });
     expect(snap.temperature).toBe(28);
     expect(snap.vpdStatus).toBe('warning');

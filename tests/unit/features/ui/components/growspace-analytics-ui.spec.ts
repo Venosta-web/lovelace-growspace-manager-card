@@ -1,9 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceAnalyticsUI } from '../../../../../src/features/ui/components/growspace-analytics-ui';
+import { MetricKey } from '../../../../../src/features/environment/constants';
+import type { AnalyticsItem } from '../../../../../src/features/ui/components/growspace-analytics-ui';
 
 if (!customElements.get('growspace-analytics-ui')) {
   customElements.define('growspace-analytics-ui', GrowspaceAnalyticsUI);
+}
+
+if (!customElements.get('tank-water-chart')) {
+  customElements.define('tank-water-chart', class extends HTMLElement {});
 }
 
 describe('growspace-analytics-ui', () => {
@@ -99,6 +105,38 @@ describe('growspace-analytics-ui', () => {
     chart!.dispatchEvent(new CustomEvent('toggle-graph', { detail: 'test-single-toggle' }));
     expect(toggleHandler).toHaveBeenCalledOnce();
     expect(toggleHandler.mock.calls[0][0].detail).toBe('test-single-toggle');
+  });
+});
+
+describe('growspace-analytics-ui – _renderItem routing', () => {
+  it('renders tank-water-chart for MetricKey.WATER', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.WATER] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
+  });
+
+  it('renders growspace-env-chart for MetricKey.TEMPERATURE', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.TEMPERATURE] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).toBeNull();
+  });
+
+  it('renders growspace-env-chart for grouped items regardless of metrics', async () => {
+    const item: AnalyticsItem = { type: 'group', metrics: [MetricKey.TEMPERATURE, MetricKey.HUMIDITY] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('tank-water-chart')).toBeNull();
   });
 });
 
