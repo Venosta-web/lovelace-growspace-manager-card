@@ -1,3 +1,10 @@
+# [1.1.0-next.19](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.18...v1.1.0-next.19) (2026-06-05)
+
+
+### Bug Fixes
+
+* **subareas:** snapshot configEnvData at dialog-open time to prevent SM reset on hass updates ([222c3f4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/222c3f4f0f21e3b19c053cd939808ebe1760621b))
+
 # [1.1.0-next.18](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.17...v1.1.0-next.18) (2026-06-05)
 
 
