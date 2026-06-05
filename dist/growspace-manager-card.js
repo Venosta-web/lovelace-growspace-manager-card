@@ -5602,6 +5602,7 @@ class GrowspaceAdapter {
             electricityCostPerKwh: environment?.electricity_cost_per_kwh,
             substrateTemperatureSensors: environment?.substrate_temperature_sensors,
             cameraEntities: environment?.camera_entities,
+            visionCheckupConfig: environment?.vision_checkup_config,
             lungroomTempSensors: environment?.lung_room_temp_sensors,
             powerSensors: environment?.power_sensors,
             energySensors: environment?.energy_sensors,
