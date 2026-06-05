@@ -12,6 +12,7 @@ import {
   discardAndSwitch,
   isGrowspacesDirty,
   isActiveTabDirty,
+  isNotificationsDirty,
   type ConfigDialogSM,
   type ConfigTabId,
 } from './config-dialog-sm';
@@ -62,6 +63,7 @@ describe('createInitialSM', () => {
   it('starts with all tabs in idle sub-state', () => {
     const sm = createInitialSM();
     expect(sm.tabs.growspaces.sub.kind).toBe('idle');
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
     expect(sm.tabs.sensors.sub.kind).toBe('idle');
     expect(sm.tabs.climate.sub.kind).toBe('idle');
     expect(sm.tabs.humidity.sub.kind).toBe('idle');
@@ -70,6 +72,13 @@ describe('createInitialSM', () => {
     expect(sm.tabs.vision.sub.kind).toBe('idle');
     expect(sm.tabs.heatmap.sub.kind).toBe('idle');
     expect(sm.tabs.subareas.sub.kind).toBe('idle');
+  });
+
+  it('starts notifications tab with default draft values', () => {
+    const sm = createInitialSM();
+    expect(sm.tabs.notifications.draft.criticalCooldownMinutes).toBe(60);
+    expect(sm.tabs.notifications.draft.aiAutoAlerts).toBe(true);
+    expect(sm.tabs.notifications.timedNotifications).toEqual([]);
   });
 
   it('starts with empty environment draft', () => {
@@ -131,6 +140,176 @@ describe('createInitialSM', () => {
     expect(sm.environmentDraft.visionEarlyOffset).toBe(30);
     expect(sm.environmentDraft.visionMidHours).toBe(4);
     expect(sm.environmentDraft.visionLateOffset).toBe(45);
+  });
+});
+
+// ─── Notifications tab seeding ────────────────────────────────────────────────
+
+describe('notifications tab seeding', () => {
+  it('seeds global notification settings from device', () => {
+    const device = makeDevice({
+      notificationSettings: {
+        criticalCooldownMinutes: 90,
+        warningCooldownMinutes: 45,
+        aiAutoAlerts: false,
+      },
+    });
+    const sm = createInitialSM(device);
+    expect(sm.tabs.notifications.draft.criticalCooldownMinutes).toBe(90);
+    expect(sm.tabs.notifications.draft.warningCooldownMinutes).toBe(45);
+    expect(sm.tabs.notifications.draft.aiAutoAlerts).toBe(false);
+  });
+
+  it('falls back to defaults for missing notification settings fields', () => {
+    const device = makeDevice({ notificationSettings: { criticalCooldownMinutes: 120 } });
+    const sm = createInitialSM(device);
+    expect(sm.tabs.notifications.draft.criticalCooldownMinutes).toBe(120);
+    expect(sm.tabs.notifications.draft.warningCooldownMinutes).toBe(30);
+    expect(sm.tabs.notifications.draft.aiAutoAlerts).toBe(true);
+  });
+
+  it('seeds timed notifications list from device', () => {
+    const notification = {
+      id: 'n1',
+      message: 'Check roots',
+      triggerType: 'clone_start' as const,
+      day: 7,
+      growspaceIds: ['gs1'],
+    };
+    const device = makeDevice({ timedNotifications: [notification] });
+    const sm = createInitialSM(device);
+    expect(sm.tabs.notifications.timedNotifications).toEqual([notification]);
+  });
+
+  it('defaults to empty timed notifications when device has none', () => {
+    const sm = createInitialSM(makeDevice());
+    expect(sm.tabs.notifications.timedNotifications).toEqual([]);
+  });
+});
+
+// ─── UPDATE_NOTIFICATIONS_DRAFT ──────────────────────────────────────────────
+
+describe('UPDATE_NOTIFICATIONS_DRAFT', () => {
+  it('patches the global notifications draft', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, {
+      type: 'UPDATE_NOTIFICATIONS_DRAFT',
+      partial: { criticalCooldownMinutes: 120, aiAutoAlerts: false },
+    });
+    expect(next.tabs.notifications.draft.criticalCooldownMinutes).toBe(120);
+    expect(next.tabs.notifications.draft.aiAutoAlerts).toBe(false);
+    expect(next.tabs.notifications.draft.warningCooldownMinutes).toBe(30);
+  });
+});
+
+// ─── isNotificationsDirty ────────────────────────────────────────────────────
+
+describe('isNotificationsDirty', () => {
+  it('returns false when draft matches device and no timed notifications changed', () => {
+    const device = makeDevice({
+      notificationSettings: { criticalCooldownMinutes: 90 },
+      timedNotifications: [],
+    });
+    const sm = createInitialSM(device);
+    expect(isNotificationsDirty(sm, device)).toBe(false);
+  });
+
+  it('returns true when a global draft field differs from device', () => {
+    const device = makeDevice({ notificationSettings: { criticalCooldownMinutes: 60 } });
+    const sm = createInitialSM(device);
+    const dirty = transition(sm, {
+      type: 'UPDATE_NOTIFICATIONS_DRAFT',
+      partial: { criticalCooldownMinutes: 90 },
+    });
+    expect(isNotificationsDirty(dirty, device)).toBe(true);
+  });
+
+  it('returns true when timed notifications list differs from device', () => {
+    const device = makeDevice({ timedNotifications: [] });
+    const sm = createInitialSM(device);
+    const withItem = transition(sm, { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' });
+    // no adding sub — ADD_TIMED_NOTIFICATION is a no-op without prior START_ADD; seed one manually
+    const smWithAdd = transition(
+      transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }),
+      { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' }
+    );
+    expect(isNotificationsDirty(smWithAdd, device)).toBe(true);
+  });
+
+  it('returns true when sub is adding with a non-empty message', () => {
+    const device = makeDevice();
+    const sm = createInitialSM(device);
+    const adding = transition(
+      transition(sm, { type: 'START_ADD_TIMED_NOTIFICATION' }),
+      { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Check roots' } }
+    );
+    expect(isNotificationsDirty(adding, device)).toBe(true);
+  });
+
+  it('returns false when sub is adding but draft is empty', () => {
+    const device = makeDevice();
+    const sm = transition(createInitialSM(device), { type: 'START_ADD_TIMED_NOTIFICATION' });
+    expect(isNotificationsDirty(sm, device)).toBe(false);
+  });
+
+  it('returns true when sub is editing with a changed draft', () => {
+    const notification = {
+      id: 'n1', message: 'Original', triggerType: 'clone_start' as const, day: 7, growspaceIds: [],
+    };
+    const device = makeDevice({ timedNotifications: [notification] });
+    const sm = createInitialSM(device);
+    const editing = transition(
+      transition(sm, {
+        type: 'START_EDIT_TIMED_NOTIFICATION',
+        id: 'n1',
+        draft: { message: 'Original', triggerType: 'clone_start', day: 7, growspaceIds: [] },
+      }),
+      { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Changed' } }
+    );
+    expect(isNotificationsDirty(editing, device)).toBe(true);
+  });
+});
+
+// ─── Notifications dirty guard ────────────────────────────────────────────────
+
+describe('notifications dirty guard', () => {
+  it('isActiveTabDirty returns true when on notifications tab with changed draft', () => {
+    const device = makeDevice();
+    const sm = transition(
+      { ...createInitialSM(device), activeTab: 'notifications' },
+      { type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: 120 } }
+    );
+    expect(isActiveTabDirty(sm, device)).toBe(true);
+  });
+
+  it('REQUEST_TAB triggers confirm-discard when notifications tab is dirty', () => {
+    const device = makeDevice();
+    const sm = transition(
+      { ...createInitialSM(device), activeTab: 'notifications' },
+      { type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: 120 } }
+    );
+    const next = requestTabSwitch(sm, 'sensors', device);
+    expect(next.status.kind).toBe('confirm-discard');
+    if (next.status.kind === 'confirm-discard') {
+      expect(next.status.pendingTab).toBe('sensors');
+    }
+  });
+
+  it('discardAndSwitch resets notifications tab from device and switches', () => {
+    const device = makeDevice({ notificationSettings: { criticalCooldownMinutes: 60 } });
+    const sm = transition(
+      { ...createInitialSM(device), activeTab: 'notifications', status: { kind: 'confirm-discard', pendingTab: 'sensors' } },
+      { type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: 120 } }
+    );
+    const dirtyThenRequest = {
+      ...sm,
+      status: { kind: 'confirm-discard' as const, pendingTab: 'sensors' as const },
+    };
+    const next = discardAndSwitch(dirtyThenRequest, device);
+    expect(next.activeTab).toBe('sensors');
+    expect(next.tabs.notifications.draft.criticalCooldownMinutes).toBe(60);
+    expect(next.tabs.notifications.sub.kind).toBe('idle');
+    expect(next.status.kind).toBe('idle');
   });
 });
 
@@ -816,5 +995,178 @@ describe('circulationFanConfig in EnvironmentDraft', () => {
       stage_vpd_enabled: false,
       stage_vpd_overrides: {},
     });
+  });
+});
+
+// ─── Timed Notification CRUD ──────────────────────────────────────────────────
+
+describe('START_ADD_TIMED_NOTIFICATION', () => {
+  it('enters adding sub-state with empty draft', () => {
+    const sm = transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' });
+    expect(sm.tabs.notifications.sub.kind).toBe('adding');
+    if (sm.tabs.notifications.sub.kind === 'adding') {
+      expect(sm.tabs.notifications.sub.draft.message).toBe('');
+      expect(sm.tabs.notifications.sub.draft.day).toBe(1);
+    }
+  });
+});
+
+describe('UPDATE_TIMED_DRAFT', () => {
+  it('patches the adding draft', () => {
+    const sm = transition(
+      transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
+      { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Check roots', day: 7 } }
+    );
+    const sub = sm.tabs.notifications.sub;
+    expect(sub.kind).toBe('adding');
+    if (sub.kind === 'adding') {
+      expect(sub.draft.message).toBe('Check roots');
+      expect(sub.draft.day).toBe(7);
+    }
+  });
+
+  it('is a no-op when sub is idle', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Ignored' } });
+    expect(next.tabs.notifications.sub.kind).toBe('idle');
+  });
+});
+
+describe('ADD_TIMED_NOTIFICATION', () => {
+  it('commits the draft to timedNotifications and returns to idle', () => {
+    const sm = transition(
+      transition(
+        transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
+        { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Check roots', day: 7, growspaceIds: ['gs1'] } }
+      ),
+      { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+    expect(sm.tabs.notifications.timedNotifications).toHaveLength(1);
+    expect(sm.tabs.notifications.timedNotifications[0]).toEqual({
+      id: 'n1', message: 'Check roots', triggerType: 'clone_start', day: 7, growspaceIds: ['gs1'],
+    });
+  });
+
+  it('is a no-op when sub is not adding', () => {
+    const sm = createInitialSM();
+    const next = transition(sm, { type: 'ADD_TIMED_NOTIFICATION', id: 'n1' });
+    expect(next.tabs.notifications.timedNotifications).toHaveLength(0);
+  });
+});
+
+describe('START_EDIT_TIMED_NOTIFICATION', () => {
+  it('enters editing sub-state with the given draft', () => {
+    const draft = { message: 'Original', triggerType: 'veg_start' as const, day: 14, growspaceIds: ['gs1'] };
+    const sm = transition(createInitialSM(), { type: 'START_EDIT_TIMED_NOTIFICATION', id: 'n1', draft });
+    const sub = sm.tabs.notifications.sub;
+    expect(sub.kind).toBe('editing');
+    if (sub.kind === 'editing') {
+      expect(sub.id).toBe('n1');
+      expect(sub.draft.message).toBe('Original');
+    }
+  });
+});
+
+describe('EDIT_TIMED_NOTIFICATION', () => {
+  it('updates the item in the list and returns to idle', () => {
+    const existing = {
+      id: 'n1', message: 'Original', triggerType: 'clone_start' as const, day: 7, growspaceIds: [],
+    };
+    const device = makeDevice({ timedNotifications: [existing] });
+    const sm = transition(
+      transition(
+        transition(createInitialSM(device), {
+          type: 'START_EDIT_TIMED_NOTIFICATION',
+          id: 'n1',
+          draft: { message: 'Original', triggerType: 'clone_start', day: 7, growspaceIds: [] },
+        }),
+        { type: 'UPDATE_TIMED_DRAFT', partial: { message: 'Updated', day: 10 } }
+      ),
+      { type: 'EDIT_TIMED_NOTIFICATION' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+    expect(sm.tabs.notifications.timedNotifications[0]).toEqual({
+      id: 'n1', message: 'Updated', triggerType: 'clone_start', day: 10, growspaceIds: [],
+    });
+  });
+});
+
+describe('CANCEL_TIMED_NOTIFICATION', () => {
+  it('resets sub to idle from adding', () => {
+    const sm = transition(
+      transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
+      { type: 'CANCEL_TIMED_NOTIFICATION' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+  });
+
+  it('resets sub to idle from editing', () => {
+    const draft = { message: 'X', triggerType: 'veg_start' as const, day: 1, growspaceIds: [] };
+    const sm = transition(
+      transition(createInitialSM(), { type: 'START_EDIT_TIMED_NOTIFICATION', id: 'n1', draft }),
+      { type: 'CANCEL_TIMED_NOTIFICATION' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+  });
+
+  it('resets sub to idle from confirm-delete', () => {
+    const sm = transition(
+      transition(createInitialSM(), { type: 'DELETE_TIMED_NOTIFICATION', id: 'n1' }),
+      { type: 'CANCEL_TIMED_NOTIFICATION' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+  });
+});
+
+describe('DELETE_TIMED_NOTIFICATION + CONFIRM_DELETE', () => {
+  it('enters confirm-delete sub-state', () => {
+    const sm = transition(createInitialSM(), { type: 'DELETE_TIMED_NOTIFICATION', id: 'n1' });
+    const sub = sm.tabs.notifications.sub;
+    expect(sub.kind).toBe('confirm-delete');
+    if (sub.kind === 'confirm-delete') expect(sub.id).toBe('n1');
+  });
+
+  it('removes the item from the list on CONFIRM_DELETE', () => {
+    const existing = {
+      id: 'n1', message: 'Delete me', triggerType: 'clone_start' as const, day: 3, growspaceIds: [],
+    };
+    const device = makeDevice({ timedNotifications: [existing] });
+    const sm = transition(
+      transition(createInitialSM(device), { type: 'DELETE_TIMED_NOTIFICATION', id: 'n1' }),
+      { type: 'CONFIRM_DELETE' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+    expect(sm.tabs.notifications.timedNotifications).toHaveLength(0);
+  });
+});
+
+describe('SAVE_NOTIFICATIONS', () => {
+  it('resets sub to idle', () => {
+    const sm = transition(
+      transition(createInitialSM(), { type: 'START_ADD_TIMED_NOTIFICATION' }),
+      { type: 'SAVE_NOTIFICATIONS' }
+    );
+    expect(sm.tabs.notifications.sub.kind).toBe('idle');
+  });
+});
+
+describe('RESET_FROM_DEVICE re-seeds notifications', () => {
+  it('updates notifications draft and list when device changes', () => {
+    const device1 = makeDevice({ notificationSettings: { criticalCooldownMinutes: 60 } });
+    const sm = transition(
+      transition(createInitialSM(device1), {
+        type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: 120 },
+      }),
+      {
+        type: 'RESET_FROM_DEVICE',
+        device: makeDevice({ notificationSettings: { criticalCooldownMinutes: 90 }, timedNotifications: [
+          { id: 'n1', message: 'New', triggerType: 'veg_start', day: 5, growspaceIds: [] },
+        ] }),
+      }
+    );
+    expect(sm.tabs.notifications.draft.criticalCooldownMinutes).toBe(90);
+    expect(sm.tabs.notifications.timedNotifications).toHaveLength(1);
+    expect(sm.tabs.notifications.timedNotifications[0].message).toBe('New');
   });
 });
