@@ -1,3 +1,10 @@
+# [1.1.0-next.20](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.19...v1.1.0-next.20) (2026-06-05)
+
+
+### Bug Fixes
+
+* **subareas:** keep config-dialog alive during card reload to prevent flash and SM reset ([4410f79](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4410f794b36841c2cfcd13fe22cec78930c714d6))
+
 # [1.1.0-next.19](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.18...v1.1.0-next.19) (2026-06-05)
 
 
