@@ -1,3 +1,25 @@
+# [1.1.0-next.18](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.17...v1.1.0-next.18) (2026-06-05)
+
+
+### Bug Fixes
+
+* expand to standard view when entering edit mode from header-only mode ([1dcff0e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1dcff0e4a2f293f88b32cd6b5f6ed0f20fea16fb))
+* **fan-controller:** snap cleared VPD override slot to default; extend deriveDefaultStage ([1b4918e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1b4918ed531a697a8fdd156ce4cb57768dfc9a16))
+* fetch history for calculated VPD sensors when no explicit VPD sensor is configured ([0bb28d2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0bb28d2e1aabf7d7eb3c92790550873e44270819))
+* **stage-vpd:** clearing an input now removes the stage override instead of silently ignoring ([ca3e569](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ca3e5694b003ee81b178fd088ca80541965d14c9))
+
+
+### Features
+
+* add stage selector to New Plant wizard schedule step ([78cabc3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/78cabc324e0c3fe819a2c51d1adfbc416bbf3925))
+* add stage-aware VPD configuration toggle to fan settings ([ef122a4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ef122a4b68ba03e5434937047cf0e3e9c2a3076e))
+* **chips:** allow hiding chips by type via card editor ([8fa9795](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8fa979592f8d049f17cfa5a81e51426ddaaadf21))
+* **environment:** add tank-water-chart + route MetricKey.WATER in analytics UI ([66978bf](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/66978bffe177666ee3f3ca2cf70a54f4a3961f86)), closes [#231](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/231)
+* **irrigation:** conditionally show Cycle Parameters and Skip During Dark based on crop steering mode ([1d68549](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1d68549ea6ea595040839c6179229eefb02bb96d))
+* **metrics:** wire tank-derived water chip end-to-end ([3293a74](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3293a74dec2ace9c6ac919661635325b304bd3b4))
+* stage VPD overrides table in fan controller config ([#228](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/228)) ([20c524e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/20c524e4e62ba7d3862ba3c8ae240cd2e8da3ae8))
+* sum multiple power/energy sensors instead of showing "Multiple" ([585c0d9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/585c0d98c5a9a6ac99e30f18a06778ae17e9b004))
+
 # [1.1.0-next.17](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.16...v1.1.0-next.17) (2026-06-04)
 
 
