@@ -1,3 +1,11 @@
+# [1.1.0-next.21](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.20...v1.1.0-next.21) (2026-06-05)
+
+
+### Bug Fixes
+
+* **humidity:** correct stage keys, show kPa units, and load defaults ([9975e22](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9975e22471bd006828175b96bfbacbd4f9c4ffb5))
+* **humidity:** include humidifier/dehumidifier control flags in save payload ([adfe0c0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/adfe0c0e7bf54bc5801891e4397f0c9334d307bd))
+
 # [1.1.0-next.20](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.19...v1.1.0-next.20) (2026-06-05)
 
 
