@@ -451,7 +451,8 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         (element as any).envSelectedId = 'gs1';
         (element as any).envPhSensors = ['sensor.ph'];
         (element as any).envFeedEcSensors = ['sensor.feed_ec'];
-        (element as any).envSubstrateEcSensors = ['sensor.sub_ec'];
+        (element as any).envBulkEcSensors = ['sensor.bulk_ec'];
+        (element as any).envPoreEcSensors = ['sensor.pore_ec'];
         (element as any).envRunoffEcSensors = ['sensor.runoff_ec'];
         (element as any).envDrainVolumeSensors = ['sensor.drain'];
         (element as any).envIrrigationFlowSensors = ['sensor.flow'];
@@ -463,10 +464,12 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         const labelTexts = labels.map((l) => l.textContent?.trim());
         expect(labelTexts).toContain('pH Sensors');
         expect(labelTexts).toContain('Feed EC Sensors');
+        expect(labelTexts).toContain('Bulk EC Sensors');
+        expect(labelTexts).toContain('Pore EC Sensors');
         expect(labelTexts).toContain('Power Sensors');
         expect(labelTexts).toContain('Energy Sensors');
 
-        // Click every chip-remove × to invoke all 8 changeHandler arrow fns (lines 1615-1628)
+        // Click every chip-remove × to invoke all changeHandler arrow fns
         const chipRemoves = Array.from(element.shadowRoot?.querySelectorAll('.chip-remove') ?? []) as HTMLElement[];
         for (const chip of chipRemoves) {
             chip.click();
@@ -476,7 +479,19 @@ describe('ConfigDialog - Branch Coverage Expansion', () => {
         // All sensor arrays should now be empty
         expect((element as any).envPhSensors).toHaveLength(0);
         expect((element as any).envFeedEcSensors).toHaveLength(0);
+        expect((element as any).envBulkEcSensors).toHaveLength(0);
+        expect((element as any).envPoreEcSensors).toHaveLength(0);
         expect((element as any).envEnergySensors).toHaveLength(0);
+    });
+
+    it('renders a "Substrate EC" section header in the IRRIGATION tab', async () => {
+        element.currentTab = ConfigTab.IRRIGATION;
+        (element as any).envSelectedId = 'gs1';
+        await element.updateComplete;
+
+        const h3s = Array.from(element.shadowRoot?.querySelectorAll('h3') ?? []);
+        const headings = h3s.map((h) => h.textContent?.trim());
+        expect(headings).toContain('Substrate EC');
     });
 
     it('renders the tank list and toggles add/edit/delete form in the TANKS tab', async () => {

@@ -20308,8 +20308,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ${this._renderMultiEntitySelect('Feed EC Sensors', this._sm.environmentDraft.feedEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { feedEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Bulk EC Sensors', this._sm.environmentDraft.bulkEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } }))}
-            ${this._renderMultiEntitySelect('Pore EC Sensors', this._sm.environmentDraft.poreEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } }))}
             ${this._renderMultiEntitySelect('Runoff EC Sensors', this._sm.environmentDraft.runoffEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { runoffEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
@@ -20319,6 +20317,29 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <div class="row-col-grid">
             ${this._renderMultiEntitySelect('Power Sensors', this._sm.environmentDraft.powerSensors, ['sensor', 'input_number', 'number'], 'power', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { powerSensors: v } }))}
             ${this._renderMultiEntitySelect('Energy Sensors', this._sm.environmentDraft.energySensors, ['sensor', 'input_number', 'number'], 'energy', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { energySensors: v } }))}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderSubstrateEcSection() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiLightningBolt}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Substrate EC</h3>
+        </div>
+        <div class="form-section">
+          <div class="row-col-grid">
+            ${this._renderMultiEntitySelect('Bulk EC Sensors', this._sm.environmentDraft.bulkEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } }))}
+            ${this._renderMultiEntitySelect('Pore EC Sensors', this._sm.environmentDraft.poreEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } }))}
           </div>
         </div>
       </div>
@@ -20897,6 +20918,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : E}
                 ${this.currentTab === ConfigTab.IRRIGATION
             ? this._renderIrrigationSection()
+            : E}
+                ${this.currentTab === ConfigTab.IRRIGATION
+            ? this._renderSubstrateEcSection()
             : E}
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksSection() : E}
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : E}
