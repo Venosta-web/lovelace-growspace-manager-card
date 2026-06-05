@@ -20036,14 +20036,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   min="1"
                 >
                 </md3-number-input>
-                <div style="display:flex;justify-content:flex-end;">
-                  <button
-                    class="md3-button primary vision-save-btn"
-                    @click=${this._submitVisionCheckupConfig}
-                  >
-                    Save Vision Config
-                  </button>
-                </div>
               </div>
             `}
       </div>
@@ -20462,11 +20454,17 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ConfigTab.HUMIDITY,
             ConfigTab.IRRIGATION,
             ConfigTab.TANKS,
-            ConfigTab.VISION,
             ConfigTab.HEATMAP,
         ].includes(this.currentTab)
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
+                    Save Configuration
+                  </button>
+                `
+            : E}
+            ${this.currentTab === ConfigTab.VISION
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitVisionCheckupConfig}>
                     Save Configuration
                   </button>
                 `
