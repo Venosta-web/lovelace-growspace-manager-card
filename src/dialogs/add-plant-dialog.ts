@@ -46,6 +46,8 @@ function deriveDefaultStage(growspaceName: string): string {
   if (name.includes('clone')) return 'clone';
   if (name.includes('dry')) return 'dry';
   if (name.includes('cure')) return 'cure';
+  if (name.includes('flower')) return 'flower';
+  if (name.includes('veg')) return 'veg';
   return 'seedling';
 }
 

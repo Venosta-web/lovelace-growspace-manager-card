@@ -73,15 +73,10 @@ export class StageVpdOverridesTable extends LitElement {
   }
 
   private _handleChange(key: FanVpdStageKey, slot: 'day' | 'night', raw: string) {
-    const value = parseFloat(raw);
-    const updated = { ...this.overrides };
-    if (isNaN(value)) {
-      if (!(key in updated)) return;
-      delete updated[key];
-    } else {
-      const existing = updated[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
-      updated[key] = { ...existing, [slot]: value };
-    }
+    const parsed = parseFloat(raw);
+    const value = isNaN(parsed) ? FAN_VPD_STAGE_DEFAULTS[key][slot] : parsed;
+    const existing = this.overrides[key] ?? { ...FAN_VPD_STAGE_DEFAULTS[key] };
+    const updated = { ...this.overrides, [key]: { ...existing, [slot]: value } };
     this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
   }
 

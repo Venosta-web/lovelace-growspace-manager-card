@@ -103,7 +103,7 @@ describe('StageVpdOverridesTable – sparse updates', () => {
     expect(received[0].seedling?.day).toBe(0.65);
   });
 
-  it('fires no event when clearing an input that had no prior override', async () => {
+  it('snaps cleared slot to default even when no prior override existed', async () => {
     const el = createElement({});
     await el.updateComplete;
 
@@ -116,10 +116,12 @@ describe('StageVpdOverridesTable – sparse updates', () => {
     input.value = '';
     input.dispatchEvent(new Event('change'));
 
-    expect(received).toHaveLength(0);
+    expect(received).toHaveLength(1);
+    // seedling day snaps to default; night also comes from default since no prior override
+    expect(received[0].seedling).toEqual(FAN_VPD_STAGE_DEFAULTS.seedling);
   });
 
-  it('removes the entire stage key when either slot is cleared', async () => {
+  it('snaps only the cleared slot to default while preserving the other slot override', async () => {
     const el = createElement({ veg: { day: 0.9, night: 0.8 } });
     await el.updateComplete;
 
@@ -134,7 +136,9 @@ describe('StageVpdOverridesTable – sparse updates', () => {
     vegDayInput.dispatchEvent(new Event('change'));
 
     expect(received).toHaveLength(1);
-    expect(received[0]).not.toHaveProperty('veg');
+    // day reverts to default; night override (0.8) is preserved
+    expect(received[0].veg?.day).toBe(FAN_VPD_STAGE_DEFAULTS.veg.day);
+    expect(received[0].veg?.night).toBe(0.8);
   });
 });
 
