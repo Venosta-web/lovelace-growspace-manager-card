@@ -28755,7 +28755,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
           <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title">VWC Parameters</div>
+            <div class="vwc-targets-group-title">Targets P2</div>
             <md3-number-input
               label="Target VWC (%)"
               .value=${this._sm.tabs.steering.draft.targetVwcPercent}

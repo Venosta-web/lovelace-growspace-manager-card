@@ -2049,6 +2049,24 @@ describe('IrrigationDialog', () => {
             });
         });
 
+        describe('Crop Steering tab VWC group title', () => {
+            beforeEach(async () => {
+                element.open = true;
+                document.body.appendChild(element);
+                await element.updateComplete;
+
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
+                (steeringTab as HTMLElement)?.click();
+                await element.updateComplete;
+            });
+
+            it('labels the VWC targets group "Targets P2"', async () => {
+                const title = element.shadowRoot?.querySelector('.vwc-targets-group-title');
+                expect(title?.textContent).toBe('Targets P2');
+            });
+        });
+
         describe('Empty tanks state in _renderTanksTab (line 2313)', () => {
             it('should return an empty-state template when no tanks are configured', () => {
                 element.device = {
