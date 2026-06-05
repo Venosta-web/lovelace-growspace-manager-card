@@ -51,6 +51,30 @@ import {
   type ConfigTabId,
 } from './config-dialog-sm';
 
+type StageThresholds = Record<string, Record<string, { on: number; off: number }>>;
+
+const DEFAULT_DEHUM_THRESHOLDS: StageThresholds = {
+  seedling:     { day: { on: 0.5,  off: 0.6  }, night: { on: 0.55, off: 0.65 } },
+  mother:       { day: { on: 0.6,  off: 0.7  }, night: { on: 0.65, off: 0.75 } },
+  veg:          { day: { on: 0.6,  off: 0.7  }, night: { on: 0.65, off: 0.75 } },
+  flower_early: { day: { on: 1.1,  off: 1.2  }, night: { on: 0.7,  off: 0.9  } },
+  flower_mid:   { day: { on: 1.25, off: 1.35 }, night: { on: 0.9,  off: 1.0  } },
+  flower_late:  { day: { on: 1.35, off: 1.4  }, night: { on: 0.95, off: 1.05 } },
+  dry:          { day: { on: 0.8,  off: 1.0  }, night: { on: 0.85, off: 1.05 } },
+  cure:         { day: { on: 0.9,  off: 1.1  }, night: { on: 0.95, off: 1.15 } },
+};
+
+const DEFAULT_HUM_THRESHOLDS: StageThresholds = {
+  seedling:     { day: { on: 0.7, off: 0.5  }, night: { on: 0.75, off: 0.55 } },
+  mother:       { day: { on: 0.9, off: 0.7  }, night: { on: 0.85, off: 0.65 } },
+  veg:          { day: { on: 1.0, off: 0.8  }, night: { on: 0.85, off: 0.65 } },
+  flower_early: { day: { on: 1.4, off: 1.2  }, night: { on: 1.0,  off: 0.8  } },
+  flower_mid:   { day: { on: 1.6, off: 1.4  }, night: { on: 1.2,  off: 1.0  } },
+  flower_late:  { day: { on: 1.7, off: 1.5  }, night: { on: 1.3,  off: 1.1  } },
+  dry:          { day: { on: 1.2, off: 1.0  }, night: { on: 1.2,  off: 1.0  } },
+  cure:         { day: { on: 1.2, off: 1.0  }, night: { on: 1.2,  off: 1.0  } },
+};
+
 // Unified stage list for the accordion — maps display id → both stage enums
 const HUMIDITY_STAGES = [
   {
@@ -79,8 +103,8 @@ const HUMIDITY_STAGES = [
     dehum: DehumidifierStage.LATE_FLOWER,
     hum: HumidifierStage.LATE_FLOWER,
   },
-  { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRYING, hum: HumidifierStage.DRY },
-  { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURING, hum: HumidifierStage.CURE },
+  { id: 'drying', label: 'Drying', dehum: DehumidifierStage.DRY, hum: HumidifierStage.DRY },
+  { id: 'curing', label: 'Curing', dehum: DehumidifierStage.CURE, hum: HumidifierStage.CURE },
 ] as const;
 
 type HumidityStageId = (typeof HUMIDITY_STAGES)[number]['id'];
@@ -1066,8 +1090,10 @@ export class ConfigDialog extends LitElement {
           exhaustFanEntities: d.exhaustFanEntities,
           humidifierEntities: d.humidifierEntities,
           humidifierThresholds: d.humidifierThresholds,
+          humidifierControlEnabled: this._humidifierControlEnabled,
           dehumidifierEntities: d.dehumidifierEntities,
           dehumidifierThresholds: d.dehumidifierThresholds,
+          dehumidifierControlEnabled: this._dehumidifierControlEnabled,
           soilMoistureSensor: d.soilMoistureSensor,
           sensorGroups: d.sensorGroups,
           sensorCoordinates: d.sensorCoordinates,
@@ -1084,7 +1110,7 @@ export class ConfigDialog extends LitElement {
           powerSensors: d.powerSensors,
           energySensors: d.energySensors,
           circulationFanConfig: d.circulationFanConfig,
-        } as EnvironmentConfigEventDetail,
+        } satisfies EnvironmentConfigEventDetail,
         bubbles: true,
         composed: true,
       })
@@ -1321,7 +1347,11 @@ export class ConfigDialog extends LitElement {
   // ── Threshold helpers ────────────────────────────────────────────────────
 
   private _getThresholdValue(stage: string, cycle: string, point: 'on' | 'off'): number {
-    return this._sm.environmentDraft.dehumidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+    return (
+      this._sm.environmentDraft.dehumidifierThresholds?.[stage]?.[cycle]?.[point] ??
+      DEFAULT_DEHUM_THRESHOLDS[stage]?.[cycle]?.[point] ??
+      0
+    );
   }
 
   private _updateThreshold(stage: string, cycle: string, point: 'on' | 'off', value: number) {
@@ -1334,7 +1364,11 @@ export class ConfigDialog extends LitElement {
   }
 
   private _getHumidifierThresholdValue(stage: string, cycle: string, point: 'on' | 'off'): number {
-    return this._sm.environmentDraft.humidifierThresholds?.[stage]?.[cycle]?.[point] ?? 0;
+    return (
+      this._sm.environmentDraft.humidifierThresholds?.[stage]?.[cycle]?.[point] ??
+      DEFAULT_HUM_THRESHOLDS[stage]?.[cycle]?.[point] ??
+      0
+    );
   }
 
   private _updateHumidifierThreshold(
@@ -2179,8 +2213,8 @@ export class ConfigDialog extends LitElement {
                   ${!isOpen
                     ? html`
                         <div class="acc-head-desc">
-                          Dehum on &gt; ${dhDay > 0 ? dhDay + '%' : '—'} &nbsp;·&nbsp; Hum on &lt;
-                          ${huDay > 0 ? huDay + '%' : '—'}
+                          Dehum on &gt; ${dhDay > 0 ? dhDay.toFixed(2) + ' kPa' : '—'} &nbsp;·&nbsp; Hum on &lt;
+                          ${huDay > 0 ? huDay.toFixed(2) + ' kPa' : '—'}
                         </div>
                       `
                     : nothing}
@@ -2209,7 +2243,7 @@ export class ConfigDialog extends LitElement {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Above %"
+                                  label="On Above (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'day', 'on')}
                                   @change=${(e: CustomEvent) =>
                                     this._updateThreshold(
@@ -2218,10 +2252,10 @@ export class ConfigDialog extends LitElement {
                                       'on',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Below %"
+                                  label="Off Below (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'day', 'off')}
                                   @change=${(e: CustomEvent) =>
                                     this._updateThreshold(
@@ -2230,7 +2264,7 @@ export class ConfigDialog extends LitElement {
                                       'off',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>
@@ -2243,7 +2277,7 @@ export class ConfigDialog extends LitElement {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Above %"
+                                  label="On Above (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'night', 'on')}
                                   @change=${(e: CustomEvent) =>
                                     this._updateThreshold(
@@ -2252,10 +2286,10 @@ export class ConfigDialog extends LitElement {
                                       'on',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Below %"
+                                  label="Off Below (kPa)"
                                   .value=${this._getThresholdValue(stage.dehum, 'night', 'off')}
                                   @change=${(e: CustomEvent) =>
                                     this._updateThreshold(
@@ -2264,7 +2298,7 @@ export class ConfigDialog extends LitElement {
                                       'off',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>
@@ -2288,7 +2322,7 @@ export class ConfigDialog extends LitElement {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Below %"
+                                  label="On Below (kPa)"
                                   .value=${this._getHumidifierThresholdValue(
                                     stage.hum,
                                     'day',
@@ -2301,10 +2335,10 @@ export class ConfigDialog extends LitElement {
                                       'on',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Above %"
+                                  label="Off Above (kPa)"
                                   .value=${this._getHumidifierThresholdValue(
                                     stage.hum,
                                     'day',
@@ -2317,7 +2351,7 @@ export class ConfigDialog extends LitElement {
                                       'off',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>
@@ -2330,7 +2364,7 @@ export class ConfigDialog extends LitElement {
                                 style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"
                               >
                                 <md3-number-input
-                                  label="On Below %"
+                                  label="On Below (kPa)"
                                   .value=${this._getHumidifierThresholdValue(
                                     stage.hum,
                                     'night',
@@ -2343,10 +2377,10 @@ export class ConfigDialog extends LitElement {
                                       'on',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                                 <md3-number-input
-                                  label="Off Above %"
+                                  label="Off Above (kPa)"
                                   .value=${this._getHumidifierThresholdValue(
                                     stage.hum,
                                     'night',
@@ -2359,7 +2393,7 @@ export class ConfigDialog extends LitElement {
                                       'off',
                                       parseFloat(e.detail)
                                     )}
-                                  step="1"
+                                  step="0.05"
                                 ></md3-number-input>
                               </div>
                             </div>

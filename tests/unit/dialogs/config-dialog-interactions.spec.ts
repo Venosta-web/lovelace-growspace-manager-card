@@ -95,16 +95,20 @@ describe('ConfigDialog Interactions', () => {
         }
     });
 
-    it('configure-environment-submit payload does not include dehumidifierControlEnabled', async () => {
+    it('configure-environment-submit payload includes dehumidifierControlEnabled and humidifierControlEnabled', async () => {
         element.setInitialState(ConfigTab.HUMIDITY, { selectedGrowspaceId: 'gs1' } as any);
         await element.updateComplete;
+
+        (element as any)._dehumidifierControlEnabled = true;
+        (element as any)._humidifierControlEnabled = false;
 
         const listener = vi.fn();
         element.addEventListener('configure-environment-submit', listener);
         (element as any)._submitEnvironment();
 
         expect(listener).toHaveBeenCalledOnce();
-        expect(listener.mock.calls[0][0].detail).not.toHaveProperty('dehumidifierControlEnabled');
+        expect(listener.mock.calls[0][0].detail).toHaveProperty('dehumidifierControlEnabled', true);
+        expect(listener.mock.calls[0][0].detail).toHaveProperty('humidifierControlEnabled', false);
     });
 
     it('toggling dehumidifier control checkbox calls setDehumidifierControl immediately', async () => {
