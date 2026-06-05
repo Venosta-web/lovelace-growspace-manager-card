@@ -113,15 +113,11 @@ describe('GmSettingsPanel — controls', () => {
     expect(changes[0]).toMatchObject({ max_response_length: 500 });
   });
 
-  it('renders md3-switch for ai_auto_alerts and emits draft-change when toggled', async () => {
-    element.draft = { ai_auto_alerts: true };
+  it('does not render an ai_auto_alerts toggle', async () => {
+    element.draft = {};
     await element.updateComplete;
     const sw = element.shadowRoot?.querySelector('md3-switch[data-field="ai_auto_alerts"]');
-    expect(sw).toBeTruthy();
-    const changes: any[] = [];
-    element.addEventListener('draft-change', (e) => changes.push((e as CustomEvent).detail));
-    sw?.dispatchEvent(new CustomEvent('change', { detail: { checked: false }, bubbles: true, composed: true }));
-    expect(changes[0]).toMatchObject({ ai_auto_alerts: false });
+    expect(sw).toBeNull();
   });
 
   it('renders md3-switch for vision_checkup_enabled and emits draft-change when toggled', async () => {

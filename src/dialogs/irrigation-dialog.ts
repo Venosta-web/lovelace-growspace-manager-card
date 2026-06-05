@@ -1005,7 +1005,8 @@ export class IrrigationDialog extends LitElement {
     const hasEcSensors =
       (env?.feedEcSensors?.length ?? 0) > 0 ||
       (env?.runoffEcSensors?.length ?? 0) > 0 ||
-      (env?.substrateEcSensors?.length ?? 0) > 0 ||
+      (env?.bulkEcSensors?.length ?? 0) > 0 ||
+      (env?.poreEcSensors?.length ?? 0) > 0 ||
       (env?.phSensors?.length ?? 0) > 0;
     if (drainEnabled || hasDrainReadings || hasEcSensors) tabs.push('drain_ec');
 
@@ -1015,7 +1016,8 @@ export class IrrigationDialog extends LitElement {
     const hasEcSensorsForRamp =
       (env?.feedEcSensors?.length ?? 0) > 0 ||
       (env?.runoffEcSensors?.length ?? 0) > 0 ||
-      (env?.substrateEcSensors?.length ?? 0) > 0;
+      (env?.bulkEcSensors?.length ?? 0) > 0 ||
+      (env?.poreEcSensors?.length ?? 0) > 0;
     const hasSchedules = (this.device?.irrigationConfig?.irrigationTimes?.length ?? 0) > 0;
     if (hasPump && hasSchedules && hasEcSensorsForRamp) tabs.push('ec_ramp');
 
@@ -2587,23 +2589,21 @@ export class IrrigationDialog extends LitElement {
         : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div
-            style="grid-column:span 2;border-bottom:1px solid rgba(255,255,255,0.1);margin:4px 0;"
-          ></div>
-          <h4 style="grid-column:span 2;margin:4px 0;">Targets</h4>
-
-          <md3-number-input
-            label="Target VWC (%)"
-            .value=${this._sm.tabs.steering.draft.targetVwcPercent}
-            @change=${(e: CustomEvent) =>
-        this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Dryback (%)"
-            .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
-            @change=${(e: CustomEvent) =>
-        this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
-          ></md3-number-input>
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title">VWC Parameters</div>
+            <md3-number-input
+              label="Target VWC (%)"
+              .value=${this._sm.tabs.steering.draft.targetVwcPercent}
+              @change=${(e: CustomEvent) =>
+          this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="VWC Delta (%)"
+              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
+              @change=${(e: CustomEvent) =>
+          this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+          </div>
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
 

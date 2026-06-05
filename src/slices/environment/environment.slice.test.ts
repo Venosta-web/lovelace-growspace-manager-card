@@ -670,7 +670,8 @@ const NULL_SENSOR_FIELDS = {
   substrateTemperature: null,
   ph: null,
   feedEc: null,
-  substrateEc: null,
+  bulkEc: null,
+  poreEc: null,
   runoffEc: null,
   drainVolume: null,
   irrigationFlow: null,
@@ -754,7 +755,8 @@ describe('computeEnvSnapshot — irrigation monitoring sensors', () => {
     const snapshot = computeEnvSnapshot(makeDevice(), {});
     expect(snapshot.ph).toBeNull();
     expect(snapshot.feedEc).toBeNull();
-    expect(snapshot.substrateEc).toBeNull();
+    expect(snapshot.bulkEc).toBeNull();
+    expect(snapshot.poreEc).toBeNull();
     expect(snapshot.runoffEc).toBeNull();
     expect(snapshot.drainVolume).toBeNull();
     expect(snapshot.irrigationFlow).toBeNull();
@@ -767,7 +769,8 @@ describe('computeEnvSnapshot — irrigation monitoring sensors', () => {
       environmentAttributes: {
         phSensors: ['sensor.ph_1'],
         feedEcSensors: ['sensor.feed_ec_1'],
-        substrateEcSensors: ['sensor.sub_ec_1'],
+        bulkEcSensors: ['sensor.bulk_ec_1'],
+        poreEcSensors: ['sensor.pore_ec_1'],
         runoffEcSensors: ['sensor.runoff_ec_1'],
         drainVolumeSensors: ['sensor.drain_1'],
         irrigationFlowSensors: ['sensor.flow_1'],
@@ -778,7 +781,8 @@ describe('computeEnvSnapshot — irrigation monitoring sensors', () => {
     const hassStates: HassStates = {
       'sensor.ph_1': makeHassEntity('sensor.ph_1', '6.2'),
       'sensor.feed_ec_1': makeHassEntity('sensor.feed_ec_1', '2.1'),
-      'sensor.sub_ec_1': makeHassEntity('sensor.sub_ec_1', '1.8'),
+      'sensor.bulk_ec_1': makeHassEntity('sensor.bulk_ec_1', '1.8'),
+      'sensor.pore_ec_1': makeHassEntity('sensor.pore_ec_1', '2.0'),
       'sensor.runoff_ec_1': makeHassEntity('sensor.runoff_ec_1', '2.4'),
       'sensor.drain_1': makeHassEntity('sensor.drain_1', '0.5'),
       'sensor.flow_1': makeHassEntity('sensor.flow_1', '12.0'),
@@ -788,7 +792,8 @@ describe('computeEnvSnapshot — irrigation monitoring sensors', () => {
     const snapshot = computeEnvSnapshot(device, hassStates);
     expect(snapshot.ph!.avg).toBe(6.2);
     expect(snapshot.feedEc!.avg).toBe(2.1);
-    expect(snapshot.substrateEc!.avg).toBe(1.8);
+    expect(snapshot.bulkEc!.avg).toBe(1.8);
+    expect(snapshot.poreEc!.avg).toBe(2.0);
     expect(snapshot.runoffEc!.avg).toBe(2.4);
     expect(snapshot.drainVolume!.avg).toBe(0.5);
     expect(snapshot.irrigationFlow!.avg).toBe(12.0);

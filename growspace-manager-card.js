@@ -95,6 +95,7 @@ var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.
 var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
 var mdiBattery = "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
+var mdiBell = "M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21";
 var mdiBluetooth = "M14.88,16.29L13,18.17V14.41M13,5.83L14.88,7.71L13,9.58M17.71,7.71L12,2H11V9.58L6.41,5L5,6.41L10.59,12L5,17.58L6.41,19L11,14.41V22H12L17.71,16.29L13.41,12L17.71,7.71Z";
 var mdiBookOpenVariant = "M12 21.5C10.65 20.65 8.2 20 6.5 20C4.85 20 3.15 20.3 1.75 21.05C1.65 21.1 1.6 21.1 1.5 21.1C1.25 21.1 1 20.85 1 20.6V6C1.6 5.55 2.25 5.25 3 5C4.11 4.65 5.33 4.5 6.5 4.5C8.45 4.5 10.55 4.9 12 6C13.45 4.9 15.55 4.5 17.5 4.5C18.67 4.5 19.89 4.65 21 5C21.75 5.25 22.4 5.55 23 6V20.6C23 20.85 22.75 21.1 22.5 21.1C22.4 21.1 22.35 21.1 22.25 21.05C20.85 20.3 19.15 20 17.5 20C15.8 20 13.35 20.65 12 21.5M12 8V19.5C13.35 18.65 15.8 18 17.5 18C18.7 18 19.9 18.15 21 18.5V7C19.9 6.65 18.7 6.5 17.5 6.5C15.8 6.5 13.35 7.15 12 8M13 11.5C14.11 10.82 15.6 10.5 17.5 10.5C18.41 10.5 19.26 10.59 20 10.78V9.23C19.13 9.08 18.29 9 17.5 9C15.73 9 14.23 9.28 13 9.84V11.5M17.5 11.67C15.79 11.67 14.29 11.93 13 12.46V14.15C14.11 13.5 15.6 13.16 17.5 13.16C18.54 13.16 19.38 13.24 20 13.4V11.9C19.13 11.74 18.29 11.67 17.5 11.67M20 14.57C19.13 14.41 18.29 14.33 17.5 14.33C15.67 14.33 14.17 14.6 13 15.13V16.82C14.11 16.16 15.6 15.83 17.5 15.83C18.54 15.83 19.38 15.91 20 16.07V14.57Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
@@ -250,7 +251,8 @@ var MetricKey;
     MetricKey["WATER"] = "water";
     MetricKey["PH"] = "ph";
     MetricKey["FEED_EC"] = "feed_ec";
-    MetricKey["SUBSTRATE_EC"] = "substrate_ec";
+    MetricKey["BULK_EC"] = "bulk_ec";
+    MetricKey["PORE_EC"] = "pore_ec";
     MetricKey["RUNOFF_EC"] = "runoff_ec";
     MetricKey["DRAIN_VOLUME"] = "drain_volume";
     MetricKey["IRRIGATION_FLOW"] = "irrigation_flow";
@@ -278,7 +280,8 @@ const METRIC_SORT_ORDER = [
     MetricKey.WATER,
     MetricKey.PH,
     MetricKey.FEED_EC,
-    MetricKey.SUBSTRATE_EC,
+    MetricKey.BULK_EC,
+    MetricKey.PORE_EC,
     MetricKey.RUNOFF_EC,
     MetricKey.DRAIN_VOLUME,
     MetricKey.IRRIGATION_FLOW,
@@ -393,9 +396,15 @@ const METRIC_CONFIG = {
         unit: 'mS/cm',
         icon: mdiLightningBolt,
     },
-    [MetricKey.SUBSTRATE_EC]: {
+    [MetricKey.BULK_EC]: {
         color: '#ff7043',
-        title: 'Substrate EC',
+        title: 'Bulk EC',
+        unit: 'mS/cm',
+        icon: mdiLightningBolt,
+    },
+    [MetricKey.PORE_EC]: {
+        color: '#ef5350',
+        title: 'Pore EC',
         unit: 'mS/cm',
         icon: mdiLightningBolt,
     },
@@ -453,6 +462,7 @@ var GridOverlayMode;
 var ConfigTab;
 (function (ConfigTab) {
     ConfigTab["GROWSPACES"] = "growspaces";
+    ConfigTab["NOTIFICATIONS"] = "notifications";
     ConfigTab["SENSORS"] = "sensors";
     ConfigTab["CLIMATE"] = "climate";
     ConfigTab["HUMIDITY"] = "humidity";
@@ -499,7 +509,8 @@ const METRIC_ENTITY_KEYS = {
     [MetricKey.POWER]: { primary: 'powerSensors' },
     [MetricKey.PH]: { primary: 'phSensors' },
     [MetricKey.FEED_EC]: { primary: 'feedEcSensors' },
-    [MetricKey.SUBSTRATE_EC]: { primary: 'substrateEcSensors' },
+    [MetricKey.BULK_EC]: { primary: 'bulkEcSensors' },
+    [MetricKey.PORE_EC]: { primary: 'poreEcSensors' },
     [MetricKey.RUNOFF_EC]: { primary: 'runoffEcSensors' },
     [MetricKey.DRAIN_VOLUME]: { primary: 'drainVolumeSensors' },
     [MetricKey.IRRIGATION_FLOW]: { primary: 'irrigationFlowSensors' },
@@ -5602,12 +5613,14 @@ class GrowspaceAdapter {
             electricityCostPerKwh: environment?.electricity_cost_per_kwh,
             substrateTemperatureSensors: environment?.substrate_temperature_sensors,
             cameraEntities: environment?.camera_entities,
+            visionCheckupConfig: environment?.vision_checkup_config,
             lungroomTempSensors: environment?.lung_room_temp_sensors,
             powerSensors: environment?.power_sensors,
             energySensors: environment?.energy_sensors,
             phSensors: environment?.ph_sensors,
             feedEcSensors: environment?.feed_ec_sensors,
-            substrateEcSensors: environment?.substrate_ec_sensors,
+            bulkEcSensors: environment?.bulk_ec_sensors,
+            poreEcSensors: environment?.pore_ec_sensors,
             runoffEcSensors: environment?.runoff_ec_sensors,
             drainVolumeSensors: environment?.drain_volume_sensors,
             irrigationFlowSensors: environment?.irrigation_flow_sensors,
@@ -6507,8 +6520,10 @@ async function configureEnvironment$1(data) {
         payload.ph_sensors = data.phSensors;
     if (data.feedEcSensors?.length)
         payload.feed_ec_sensors = data.feedEcSensors;
-    if (data.substrateEcSensors?.length)
-        payload.substrate_ec_sensors = data.substrateEcSensors;
+    if (data.bulkEcSensors?.length)
+        payload.bulk_ec_sensors = data.bulkEcSensors;
+    if (data.poreEcSensors?.length)
+        payload.pore_ec_sensors = data.poreEcSensors;
     if (data.runoffEcSensors?.length)
         payload.runoff_ec_sensors = data.runoffEcSensors;
     if (data.drainVolumeSensors?.length)
@@ -11648,6 +11663,26 @@ const dialogStyles = [
     .row-col-grid > * {
       flex: 1;
       min-width: 0;
+    }
+
+    .vwc-targets-group {
+      grid-column: span 2;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 8px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .vwc-targets-group-title {
+      grid-column: span 2;
+      margin: 0 0 4px 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0.9;
+      letter-spacing: 0.1px;
     }
 
     @media (max-width: 450px) {
@@ -17259,7 +17294,8 @@ const EnvironmentConfigSchema = objectType({
     lung_room_temp_sensors: arrayType(stringType()).optional(),
     ph_sensors: arrayType(stringType()).optional(),
     feed_ec_sensors: arrayType(stringType()).optional(),
-    substrate_ec_sensors: arrayType(stringType()).optional(),
+    bulk_ec_sensors: arrayType(stringType()).optional(),
+    pore_ec_sensors: arrayType(stringType()).optional(),
     runoff_ec_sensors: arrayType(stringType()).optional(),
     drain_volume_sensors: arrayType(stringType()).optional(),
     irrigation_flow_sensors: arrayType(stringType()).optional(),
@@ -17858,6 +17894,23 @@ StageVpdOverridesTable = __decorate([
  *     .tabs               — per-tab sub-state
  */
 // ─── Default draft ────────────────────────────────────────────────────────────
+function defaultNotificationsDraft() {
+    return {
+        criticalCooldownMinutes: 60,
+        warningCooldownMinutes: 30,
+        recoveryCooldownMinutes: 15,
+        escalationDelayMinutes: 30,
+        minStressDurationSeconds: 300,
+        warningPersistenceMinutes: 60,
+        aiAutoAlerts: true,
+    };
+}
+function defaultTimedNotificationDraft() {
+    return { message: '', triggerType: 'clone_start', day: 1, growspaceIds: [] };
+}
+function defaultNotificationsTabState() {
+    return { draft: defaultNotificationsDraft(), timedNotifications: [], sub: { kind: 'idle' } };
+}
 function defaultEnvironmentDraft() {
     return {
         selectedGrowspaceId: '',
@@ -17878,7 +17931,8 @@ function defaultEnvironmentDraft() {
         substrateTemperatureSensors: [],
         phSensors: [],
         feedEcSensors: [],
-        substrateEcSensors: [],
+        bulkEcSensors: [],
+        poreEcSensors: [],
         runoffEcSensors: [],
         drainVolumeSensors: [],
         irrigationFlowSensors: [],
@@ -17918,6 +17972,7 @@ function defaultEnvironmentDraft() {
 function defaultTabs$2() {
     return {
         growspaces: { sub: { kind: 'idle' } },
+        notifications: defaultNotificationsTabState(),
         sensors: { sub: { kind: 'idle' } },
         climate: { sub: { kind: 'idle' } },
         humidity: { sub: { kind: 'idle' } },
@@ -17926,6 +17981,32 @@ function defaultTabs$2() {
         vision: { sub: { kind: 'idle' } },
         heatmap: { sub: { kind: 'idle' } },
         subareas: { sub: { kind: 'idle' } },
+    };
+}
+/** Seed NotificationsTabState from a GrowspaceDevice. */
+function notificationsTabFromDevice(device) {
+    const ns = device.notificationSettings ?? {};
+    const defaults = defaultNotificationsDraft();
+    return {
+        draft: {
+            criticalCooldownMinutes: ns.criticalCooldownMinutes ?? defaults.criticalCooldownMinutes,
+            warningCooldownMinutes: ns.warningCooldownMinutes ?? defaults.warningCooldownMinutes,
+            recoveryCooldownMinutes: ns.recoveryCooldownMinutes ?? defaults.recoveryCooldownMinutes,
+            escalationDelayMinutes: ns.escalationDelayMinutes ?? defaults.escalationDelayMinutes,
+            minStressDurationSeconds: ns.minStressDurationSeconds ?? defaults.minStressDurationSeconds,
+            warningPersistenceMinutes: ns.warningPersistenceMinutes ?? defaults.warningPersistenceMinutes,
+            aiAutoAlerts: ns.aiAutoAlerts ?? defaults.aiAutoAlerts,
+        },
+        timedNotifications: device.timedNotifications
+            ? device.timedNotifications.map((n) => ({
+                id: n.id,
+                message: n.message,
+                triggerType: n.triggerType,
+                day: n.day,
+                growspaceIds: n.growspaceIds,
+            }))
+            : [],
+        sub: { kind: 'idle' },
     };
 }
 /** Seed EnvironmentDraft from a GrowspaceDevice. */
@@ -17983,7 +18064,8 @@ function envDraftFromDevice(device) {
         substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
         phSensors: attrs.phSensors ?? [],
         feedEcSensors: attrs.feedEcSensors ?? [],
-        substrateEcSensors: attrs.substrateEcSensors ?? [],
+        bulkEcSensors: attrs.bulkEcSensors ?? [],
+        poreEcSensors: attrs.poreEcSensors ?? [],
         runoffEcSensors: attrs.runoffEcSensors ?? [],
         drainVolumeSensors: attrs.drainVolumeSensors ?? [],
         irrigationFlowSensors: attrs.irrigationFlowSensors ?? [],
@@ -18017,9 +18099,13 @@ function createInitialSM$9(device) {
     };
     return sm;
 }
-/** Rebuild environmentDraft from device data (used on open and after RESET_FROM_DEVICE). */
+/** Rebuild environmentDraft and notifications tab from device data (used on open and after RESET_FROM_DEVICE). */
 function applyDeviceToSM$2(sm, device) {
-    return { ...sm, environmentDraft: envDraftFromDevice(device) };
+    return {
+        ...sm,
+        environmentDraft: envDraftFromDevice(device),
+        tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(device) },
+    };
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
@@ -18108,6 +18194,132 @@ function transition$9(sm, event) {
             return {
                 ...sm,
                 tabs: { ...sm.tabs, growspaces: { sub: { kind: 'idle' } } },
+            };
+        // ── Notifications ─────────────────────────────────────────────────────────
+        case 'UPDATE_NOTIFICATIONS_DRAFT':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        draft: { ...sm.tabs.notifications.draft, ...event.partial },
+                    },
+                },
+            };
+        case 'UPDATE_TIMED_DRAFT': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'adding' && sub.kind !== 'editing')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { ...sub, draft: { ...sub.draft, ...event.partial } },
+                    },
+                },
+            };
+        }
+        case 'START_ADD_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { kind: 'adding', draft: defaultTimedNotificationDraft() },
+                    },
+                },
+            };
+        case 'START_EDIT_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { kind: 'editing', id: event.id, draft: { ...event.draft } },
+                    },
+                },
+            };
+        case 'ADD_TIMED_NOTIFICATION': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'adding')
+                return sm;
+            const newItem = { id: event.id, ...sub.draft };
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        timedNotifications: [...sm.tabs.notifications.timedNotifications, newItem],
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'EDIT_TIMED_NOTIFICATION': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'editing')
+                return sm;
+            const updated = sm.tabs.notifications.timedNotifications.map((n) => n.id === sub.id ? { id: sub.id, ...sub.draft } : n);
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        timedNotifications: updated,
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'DELETE_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        sub: { kind: 'confirm-delete', id: event.id },
+                    },
+                },
+            };
+        case 'CONFIRM_DELETE': {
+            const sub = sm.tabs.notifications.sub;
+            if (sub.kind !== 'confirm-delete')
+                return sm;
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: {
+                        ...sm.tabs.notifications,
+                        timedNotifications: sm.tabs.notifications.timedNotifications.filter((n) => n.id !== sub.id),
+                        sub: { kind: 'idle' },
+                    },
+                },
+            };
+        }
+        case 'CANCEL_TIMED_NOTIFICATION':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: { ...sm.tabs.notifications, sub: { kind: 'idle' } },
+                },
+            };
+        case 'SAVE_NOTIFICATIONS':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    notifications: { ...sm.tabs.notifications, sub: { kind: 'idle' } },
+                },
             };
         // ── Environment ───────────────────────────────────────────────────────────
         case 'UPDATE_ENV_DRAFT':
@@ -18224,6 +18436,11 @@ function transition$9(sm, event) {
             return { ...sm, toast: event.message };
         case 'RESET_FROM_DEVICE':
             return applyDeviceToSM$2(sm, event.device);
+        case 'SEED_NOTIFICATIONS_FROM_DEVICE':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(event.device) },
+            };
         default:
             return sm;
     }
@@ -18367,8 +18584,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     set envPhSensors(v) { this._setEnv({ phSensors: v }); }
     get envFeedEcSensors() { return this._d.feedEcSensors; }
     set envFeedEcSensors(v) { this._setEnv({ feedEcSensors: v }); }
-    get envSubstrateEcSensors() { return this._d.substrateEcSensors; }
-    set envSubstrateEcSensors(v) { this._setEnv({ substrateEcSensors: v }); }
+    get envBulkEcSensors() { return this._d.bulkEcSensors; }
+    set envBulkEcSensors(v) { this._setEnv({ bulkEcSensors: v }); }
+    get envPoreEcSensors() { return this._d.poreEcSensors; }
+    set envPoreEcSensors(v) { this._setEnv({ poreEcSensors: v }); }
     get envRunoffEcSensors() { return this._d.runoffEcSensors; }
     set envRunoffEcSensors(v) { this._setEnv({ runoffEcSensors: v }); }
     get envDrainVolumeSensors() { return this._d.drainVolumeSensors; }
@@ -18572,6 +18791,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 if (!this._initialStateApplied) {
                     this._initialStateApplied = true;
                 }
+                const firstDevice = this.devices?.[0];
+                if (firstDevice) {
+                    this._t({ type: 'SEED_NOTIFICATIONS_FROM_DEVICE', device: firstDevice });
+                }
             }
             else {
                 this._initialStateApplied = false;
@@ -18622,7 +18845,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 substrateTemperatureSensors: environmentData.substrateTemperatureSensors || [],
                 phSensors: environmentData.phSensors || [],
                 feedEcSensors: environmentData.feedEcSensors || [],
-                substrateEcSensors: environmentData.substrateEcSensors || [],
+                bulkEcSensors: environmentData.bulkEcSensors || [],
+                poreEcSensors: environmentData.poreEcSensors || [],
                 runoffEcSensors: environmentData.runoffEcSensors || [],
                 drainVolumeSensors: environmentData.drainVolumeSensors || [],
                 irrigationFlowSensors: environmentData.irrigationFlowSensors || [],
@@ -18708,7 +18932,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 substrateTemperatureSensors: d.substrateTemperatureSensors,
                 phSensors: d.phSensors,
                 feedEcSensors: d.feedEcSensors,
-                substrateEcSensors: d.substrateEcSensors,
+                bulkEcSensors: d.bulkEcSensors,
+                poreEcSensors: d.poreEcSensors,
                 runoffEcSensors: d.runoffEcSensors,
                 drainVolumeSensors: d.drainVolumeSensors,
                 irrigationFlowSensors: d.irrigationFlowSensors,
@@ -18719,6 +18944,46 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             bubbles: true,
             composed: true,
         }));
+    }
+    _startAddTimedNotification() {
+        this._t({ type: 'START_ADD_TIMED_NOTIFICATION' });
+    }
+    _startEditTimedNotification(id, draft) {
+        this._t({ type: 'START_EDIT_TIMED_NOTIFICATION', id, draft });
+    }
+    _requestDeleteTimedNotification(id) {
+        this._t({ type: 'DELETE_TIMED_NOTIFICATION', id });
+    }
+    _confirmDeleteTimedNotification() {
+        this._t({ type: 'CONFIRM_DELETE' });
+    }
+    _cancelTimedNotification() {
+        this._t({ type: 'CANCEL_TIMED_NOTIFICATION' });
+    }
+    _commitAddTimedNotification() {
+        this._t({ type: 'ADD_TIMED_NOTIFICATION', id: crypto.randomUUID() });
+    }
+    _commitEditTimedNotification() {
+        this._t({ type: 'EDIT_TIMED_NOTIFICATION' });
+    }
+    _submitNotifications() {
+        const draft = this._sm.tabs.notifications.draft;
+        this.dispatchEvent(new CustomEvent('save-notification-settings-submit', {
+            detail: {
+                notification_settings: {
+                    criticalCooldownMinutes: draft.criticalCooldownMinutes,
+                    warningCooldownMinutes: draft.warningCooldownMinutes,
+                    recoveryCooldownMinutes: draft.recoveryCooldownMinutes,
+                    escalationDelayMinutes: draft.escalationDelayMinutes,
+                    minStressDurationSeconds: draft.minStressDurationSeconds,
+                    warningPersistenceMinutes: draft.warningPersistenceMinutes,
+                },
+                ai_auto_alerts: draft.aiAutoAlerts,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        this._t({ type: 'SAVE_NOTIFICATIONS' });
     }
     _submitVisionCheckupConfig() {
         const d = this._sm.environmentDraft;
@@ -19095,7 +19360,8 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     substrateTemperatureSensors: [],
                     phSensors: [],
                     feedEcSensors: [],
-                    substrateEcSensors: [],
+                    bulkEcSensors: [],
+                    poreEcSensors: [],
                     runoffEcSensors: [],
                     drainVolumeSensors: [],
                     irrigationFlowSensors: [],
@@ -19110,6 +19376,236 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     // ── Section renderers ────────────────────────────────────────────────────
+    _renderNotificationsSection() {
+        const draft = this._sm.tabs.notifications.draft;
+        return x `
+      <div class="form-section">
+        <md3-number-input
+          data-notif="criticalCooldownMinutes"
+          label="Critical Cooldown (min)"
+          .value=${draft.criticalCooldownMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningCooldownMinutes"
+          label="Warning Cooldown (min)"
+          .value=${draft.warningCooldownMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="recoveryCooldownMinutes"
+          label="Recovery Cooldown (min)"
+          .value=${draft.recoveryCooldownMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { recoveryCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="escalationDelayMinutes"
+          label="Escalation Delay (min)"
+          .value=${draft.escalationDelayMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { escalationDelayMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="minStressDurationSeconds"
+          label="Min Stress Duration (sec)"
+          .value=${draft.minStressDurationSeconds}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { minStressDurationSeconds: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningPersistenceMinutes"
+          label="Warning Persistence (min)"
+          .value=${draft.warningPersistenceMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningPersistenceMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            data-notif="aiAutoAlerts"
+            .checked=${draft.aiAutoAlerts}
+            @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { aiAutoAlerts: e.target.checked } })}
+          />
+          <span>AI Auto-Alerts</span>
+        </label>
+      </div>
+      ${this._renderTimedNotificationsSection()}
+    `;
+    }
+    _renderTimedNotificationsSection() {
+        const tab = this._sm.tabs.notifications;
+        const sub = tab.sub;
+        const notifications = tab.timedNotifications;
+        return x `
+      <div class="form-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <h3 style="margin:0;font-size:1rem;font-weight:600;">Timed Notifications</h3>
+          ${sub.kind === 'idle'
+            ? x `
+                <button class="md3-button outlined" style="padding:4px 12px;" @click=${this._startAddTimedNotification}>
+                  Add
+                </button>
+              `
+            : E}
+        </div>
+
+        ${sub.kind === 'confirm-delete'
+            ? x `
+              <div class="detail-card" style="text-align:center;padding:24px 16px;">
+                <p style="margin:0 0 16px;color:var(--secondary-text-color);">
+                  Delete this timed notification?
+                </p>
+                <div style="display:flex;gap:8px;justify-content:center;">
+                  <button class="md3-button outlined" @click=${this._cancelTimedNotification}>Cancel</button>
+                  <button class="md3-button primary" style="background:var(--error-color,#ff5252);" @click=${this._confirmDeleteTimedNotification}>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            `
+            : E}
+
+        ${sub.kind === 'adding' || sub.kind === 'editing'
+            ? this._renderTimedNotificationForm(sub)
+            : E}
+
+        ${notifications.length === 0 && sub.kind === 'idle'
+            ? x `
+              <div
+                data-timed="empty-state"
+                style="text-align:center;padding:24px;color:var(--secondary-text-color);"
+              >
+                No timed notifications configured
+              </div>
+            `
+            : E}
+
+        ${sub.kind === 'idle' || sub.kind === 'confirm-delete'
+            ? notifications.map((n) => x `
+                <div
+                  class="cfg-gs-row"
+                  data-timed-id=${n.id}
+                  style="display:flex;align-items:center;justify-content:space-between;"
+                >
+                  <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    ${n.message} · ${n.triggerType} · Day ${n.day}
+                  </span>
+                  <div style="display:flex;gap:4px;flex-shrink:0;">
+                    <button
+                      class="md3-button text"
+                      style="padding:4px 8px;"
+                      data-timed-edit=${n.id}
+                      @click=${() => this._startEditTimedNotification(n.id, {
+                message: n.message,
+                triggerType: n.triggerType,
+                day: n.day,
+                growspaceIds: n.growspaceIds,
+            })}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      class="md3-button text"
+                      style="padding:4px 8px;color:var(--error-color,#ff5252);"
+                      data-timed-delete=${n.id}
+                      @click=${() => this._requestDeleteTimedNotification(n.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              `)
+            : E}
+      </div>
+    `;
+    }
+    _renderTimedNotificationForm(sub) {
+        const isAdding = sub.kind === 'adding';
+        const draft = sub.draft;
+        const triggerOptions = [
+            { value: 'clone_start', label: 'Clone Start' },
+            { value: 'veg_start', label: 'Veg Start' },
+            { value: 'flower_start', label: 'Flower Start' },
+            { value: 'dry_start', label: 'Dry Start' },
+        ];
+        return x `
+      <div class="detail-card" style="margin-bottom:12px;">
+        <h4 style="margin:0 0 12px;font-size:0.9rem;font-weight:600;">
+          ${isAdding ? 'Add Timed Notification' : 'Edit Timed Notification'}
+        </h4>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Message</label>
+          <input
+            class="md3-input"
+            type="text"
+            data-timed-field="message"
+            .value=${draft.message}
+            @input=${(e) => this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { message: e.target.value } })}
+          />
+        </div>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Trigger</label>
+          <select
+            class="md3-input"
+            data-timed-field="triggerType"
+            .value=${draft.triggerType}
+            @change=${(e) => this._t({
+            type: 'UPDATE_TIMED_DRAFT',
+            partial: { triggerType: e.target.value },
+        })}
+          >
+            ${triggerOptions.map((o) => x `
+                <option value="${o.value}" ?selected=${draft.triggerType === o.value}>${o.label}</option>
+              `)}
+          </select>
+        </div>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Day</label>
+          <input
+            class="md3-input"
+            type="number"
+            min="1"
+            data-timed-field="day"
+            .value=${String(draft.day)}
+            @change=${(e) => this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { day: Number(e.target.value) } })}
+          />
+        </div>
+
+        <div class="md3-input-group">
+          <label class="md3-label">Growspaces</label>
+          <div style="display:flex;flex-direction:column;gap:4px;max-height:160px;overflow-y:auto;padding:4px 0;">
+            ${Object.entries(this.growspaceOptions).map(([id, name]) => x `
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                  <input
+                    type="checkbox"
+                    data-timed-gs=${id}
+                    .checked=${draft.growspaceIds.includes(id)}
+                    @change=${(e) => {
+            const checked = e.target.checked;
+            const next = checked
+                ? [...draft.growspaceIds, id]
+                : draft.growspaceIds.filter((g) => g !== id);
+            this._t({ type: 'UPDATE_TIMED_DRAFT', partial: { growspaceIds: next } });
+        }}
+                  />
+                  ${name}
+                </label>
+              `)}
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button class="md3-button outlined" @click=${this._cancelTimedNotification}>Cancel</button>
+          <button
+            class="md3-button primary"
+            @click=${isAdding ? this._commitAddTimedNotification : this._commitEditTimedNotification}
+          >
+            ${isAdding ? 'Add' : 'Save'}
+          </button>
+        </div>
+      </div>
+    `;
+    }
     _renderGrowspacesSection() {
         const sub = this._sm.tabs.growspaces.sub;
         if (sub.kind === 'confirm-delete') {
@@ -19812,7 +20308,6 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ${this._renderMultiEntitySelect('Feed EC Sensors', this._sm.environmentDraft.feedEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { feedEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
-            ${this._renderMultiEntitySelect('Substrate EC Sensors', this._sm.environmentDraft.substrateEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { substrateEcSensors: v } }))}
             ${this._renderMultiEntitySelect('Runoff EC Sensors', this._sm.environmentDraft.runoffEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { runoffEcSensors: v } }))}
           </div>
           <div class="row-col-grid">
@@ -19822,6 +20317,29 @@ let ConfigDialog = class ConfigDialog extends i$3 {
           <div class="row-col-grid">
             ${this._renderMultiEntitySelect('Power Sensors', this._sm.environmentDraft.powerSensors, ['sensor', 'input_number', 'number'], 'power', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { powerSensors: v } }))}
             ${this._renderMultiEntitySelect('Energy Sensors', this._sm.environmentDraft.energySensors, ['sensor', 'input_number', 'number'], 'energy', (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { energySensors: v } }))}
+          </div>
+        </div>
+      </div>
+    `;
+    }
+    _renderSubstrateEcSection() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiLightningBolt}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">Substrate EC</h3>
+        </div>
+        <div class="form-section">
+          <div class="row-col-grid">
+            ${this._renderMultiEntitySelect('Bulk EC Sensors', this._sm.environmentDraft.bulkEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { bulkEcSensors: v } }))}
+            ${this._renderMultiEntitySelect('Pore EC Sensors', this._sm.environmentDraft.poreEcSensors, ['sensor', 'input_number', 'number'], null, (v) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { poreEcSensors: v } }))}
           </div>
         </div>
       </div>
@@ -20299,7 +20817,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         ></subarea-config-dialog>
       `;
         }
-        const showContextBar = this.currentTab !== ConfigTab.GROWSPACES;
+        const showContextBar = this.currentTab !== ConfigTab.GROWSPACES && this.currentTab !== ConfigTab.NOTIFICATIONS;
         const showRail = !this.allowedTabs || this.allowedTabs.length !== 1;
         return x `
       <ha-dialog
@@ -20342,6 +20860,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   <div class="cfg-rail">
                     <div class="cfg-rail-caps">Setup</div>
                     ${this._navItem(ConfigTab.GROWSPACES, mdiViewDashboard, 'Growspaces')}
+                    ${this._navItem(ConfigTab.NOTIFICATIONS, mdiBell, 'Notifications')}
 
                     <div class="cfg-rail-caps">Environment</div>
                     ${this._navItem(ConfigTab.SENSORS, mdiThermometer, 'Sensors')}
@@ -20388,6 +20907,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ${this.currentTab === ConfigTab.GROWSPACES
             ? this._renderGrowspacesSection()
             : E}
+                ${this.currentTab === ConfigTab.NOTIFICATIONS
+            ? this._renderNotificationsSection()
+            : E}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : E}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : E}
                 ${this.currentTab === ConfigTab.CLIMATE
@@ -20396,6 +20918,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ${this.currentTab === ConfigTab.HUMIDITY ? this._renderHumiditySection() : E}
                 ${this.currentTab === ConfigTab.IRRIGATION
             ? this._renderIrrigationSection()
+            : E}
+                ${this.currentTab === ConfigTab.IRRIGATION
+            ? this._renderSubstrateEcSection()
             : E}
                 ${this.currentTab === ConfigTab.TANKS ? this._renderTanksSection() : E}
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : E}
@@ -20459,6 +20984,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
+                  </button>
+                `
+            : E}
+            ${this.currentTab === ConfigTab.NOTIFICATIONS
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitNotifications}>
+                    Save Notifications
                   </button>
                 `
             : E}
@@ -24574,22 +25106,6 @@ let GmSettingsPanel = class GmSettingsPanel extends i$3 {
         </div>
       </div>
 
-      <!-- Alerts -->
-      <div class="section">
-        <div class="section-heading">Alerts</div>
-        <div class="field-row">
-          <div>
-            <div class="field-label">Auto Alerts</div>
-            <div class="field-hint">Enrich triage alerts with AI reasoning</div>
-          </div>
-          <md3-switch
-            data-field="ai_auto_alerts"
-            .checked=${d.ai_auto_alerts ?? true}
-            @change=${(e) => this._patch({ ai_auto_alerts: e.detail.checked })}
-          ></md3-switch>
-        </div>
-      </div>
-
       <!-- Vision -->
       <div class="section">
         <div class="section-heading">Vision</div>
@@ -26750,7 +27266,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const drainEnabled = !!this.device?.drainConfig?.enabled;
         const hasEcSensors = (env?.feedEcSensors?.length ?? 0) > 0 ||
             (env?.runoffEcSensors?.length ?? 0) > 0 ||
-            (env?.substrateEcSensors?.length ?? 0) > 0 ||
+            (env?.bulkEcSensors?.length ?? 0) > 0 ||
+            (env?.poreEcSensors?.length ?? 0) > 0 ||
             (env?.phSensors?.length ?? 0) > 0;
         if (drainEnabled || hasDrainReadings || hasEcSensors)
             tabs.push('drain_ec');
@@ -26759,7 +27276,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         // EC Ramp: visible when pump + at least one schedule + at least one EC sensor
         const hasEcSensorsForRamp = (env?.feedEcSensors?.length ?? 0) > 0 ||
             (env?.runoffEcSensors?.length ?? 0) > 0 ||
-            (env?.substrateEcSensors?.length ?? 0) > 0;
+            (env?.bulkEcSensors?.length ?? 0) > 0 ||
+            (env?.poreEcSensors?.length ?? 0) > 0;
         const hasSchedules = (this.device?.irrigationConfig?.irrigationTimes?.length ?? 0) > 0;
         if (hasPump && hasSchedules && hasEcSensorsForRamp)
             tabs.push('ec_ramp');
@@ -28236,21 +28754,19 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             : ''}
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div
-            style="grid-column:span 2;border-bottom:1px solid rgba(255,255,255,0.1);margin:4px 0;"
-          ></div>
-          <h4 style="grid-column:span 2;margin:4px 0;">Targets</h4>
-
-          <md3-number-input
-            label="Target VWC (%)"
-            .value=${this._sm.tabs.steering.draft.targetVwcPercent}
-            @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Dryback (%)"
-            .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
-            @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
-          ></md3-number-input>
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title">VWC Parameters</div>
+            <md3-number-input
+              label="Target VWC (%)"
+              .value=${this._sm.tabs.steering.draft.targetVwcPercent}
+              @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="VWC Delta (%)"
+              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
+              @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+          </div>
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
 
@@ -53674,7 +54190,8 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 substrateTemperatureSensors: detail.substrateTemperatureSensors,
                 phSensors: detail.phSensors,
                 feedEcSensors: detail.feedEcSensors,
-                substrateEcSensors: detail.substrateEcSensors,
+                bulkEcSensors: detail.bulkEcSensors,
+                poreEcSensors: detail.poreEcSensors,
                 runoffEcSensors: detail.runoffEcSensors,
                 drainVolumeSensors: detail.drainVolumeSensors,
                 irrigationFlowSensors: detail.irrigationFlowSensors,
@@ -63238,12 +63755,14 @@ class MetricsUtils {
         const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
         const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
         const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
-        const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
+        const bulkEcAgg = getAggregateState(undefined, ec.bulk_ec_sensors, '');
+        const poreEcAgg = getAggregateState(undefined, ec.pore_ec_sensors, '');
         const secondaryChips = [
             createChipData(MetricKey.SUBSTRATE_TEMPERATURE, '', subTempAgg.value, subTempAgg.multiValues, subTempAgg.entityIds, 'Substrate Temp'),
             createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
             createChipData('feed_ec', '', feedEcAgg.value, feedEcAgg.multiValues, feedEcAgg.entityIds, 'Feed EC'),
-            createChipData('substrate_ec', '', subEcAgg.value, subEcAgg.multiValues, subEcAgg.entityIds, 'Substrate EC'),
+            createChipData('bulk_ec', '', bulkEcAgg.value, bulkEcAgg.multiValues, bulkEcAgg.entityIds, 'Bulk EC'),
+            createChipData('pore_ec', '', poreEcAgg.value, poreEcAgg.multiValues, poreEcAgg.entityIds, 'Pore EC'),
         ].filter((c) => c !== null);
         const getAggregateDeviceState = (entities) => {
             const ids = new Set();
@@ -63594,7 +64113,8 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
         chips.push(_makeChip(MetricKey.OPTIMAL, isOptimal ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, { status: isOptimal ? 'optimal' : 'warning' }, activeEnvGraphs, linkedGraphGroups));
     }
     // Substrate / medium sensors (Monitoring tab)
-    const soilChip = _makeSensorReadingChip(MetricKey.SOIL_MOISTURE, mdiWaterPercent, envSnapshot?.soilMoisture ?? null, '%', { label: 'Moisture', tooltip: 'Volumetric water content of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
+    const soilMoistureLabel = irrigationStrategy?.enabled ? 'VWC' : 'Moisture';
+    const soilChip = _makeSensorReadingChip(MetricKey.SOIL_MOISTURE, mdiWaterPercent, envSnapshot?.soilMoisture ?? null, '%', { label: soilMoistureLabel, tooltip: 'Volumetric water content of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
     if (soilChip)
         chips.push(soilChip);
     const subTempChip = _makeSensorReadingChip(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, envSnapshot?.substrateTemperature ?? null, '°C', { label: 'Sub Temp', tooltip: 'Temperature inside the substrate / growing medium.' }, activeEnvGraphs, linkedGraphGroups);
@@ -63607,9 +64127,12 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     const feedEcChip = _makeSensorReadingChip(MetricKey.FEED_EC, mdiLightningBolt, envSnapshot?.feedEc ?? null, ' mS/cm', { label: 'Feed EC', tooltip: 'Electrical conductivity of the irrigation feed solution.' }, activeEnvGraphs, linkedGraphGroups);
     if (feedEcChip)
         chips.push(feedEcChip);
-    const subEcChip = _makeSensorReadingChip(MetricKey.SUBSTRATE_EC, mdiLightningBolt, envSnapshot?.substrateEc ?? null, ' mS/cm', { label: 'Sub EC', tooltip: 'Electrical conductivity inside the substrate.' }, activeEnvGraphs, linkedGraphGroups);
-    if (subEcChip)
-        chips.push(subEcChip);
+    const bulkEcChip = _makeSensorReadingChip(MetricKey.BULK_EC, mdiLightningBolt, envSnapshot?.bulkEc ?? null, ' mS/cm', { label: 'Bulk EC', tooltip: 'Overall electrical conductivity of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
+    if (bulkEcChip)
+        chips.push(bulkEcChip);
+    const poreEcChip = _makeSensorReadingChip(MetricKey.PORE_EC, mdiLightningBolt, envSnapshot?.poreEc ?? null, ' mS/cm', { label: 'Pore EC', tooltip: 'Electrical conductivity of water in the substrate pore space.' }, activeEnvGraphs, linkedGraphGroups);
+    if (poreEcChip)
+        chips.push(poreEcChip);
     const runoffEcChip = _makeSensorReadingChip(MetricKey.RUNOFF_EC, mdiLightningBolt, envSnapshot?.runoffEc ?? null, ' mS/cm', { label: 'Runoff EC', tooltip: 'Electrical conductivity of drain / runoff water.' }, activeEnvGraphs, linkedGraphGroups);
     if (runoffEcChip)
         chips.push(runoffEcChip);
@@ -63830,7 +64353,8 @@ function computeEnvSnapshot(device, hassStates) {
     // Irrigation monitoring sensors
     const ph = _resolveSensors(undefined, envAttrs?.phSensors, hassStates);
     const feedEc = _resolveSensors(undefined, envAttrs?.feedEcSensors, hassStates);
-    const substrateEc = _resolveSensors(undefined, envAttrs?.substrateEcSensors, hassStates);
+    const bulkEc = _resolveSensors(undefined, envAttrs?.bulkEcSensors, hassStates);
+    const poreEc = _resolveSensors(undefined, envAttrs?.poreEcSensors, hassStates);
     const runoffEc = _resolveSensors(undefined, envAttrs?.runoffEcSensors, hassStates);
     const drainVolume = _resolveSensors(undefined, envAttrs?.drainVolumeSensors, hassStates);
     const irrigationFlow = _resolveSensors(undefined, envAttrs?.irrigationFlowSensors, hassStates);
@@ -63850,7 +64374,8 @@ function computeEnvSnapshot(device, hassStates) {
         substrateTemperature,
         ph,
         feedEc,
-        substrateEc,
+        bulkEc,
+        poreEc,
         runoffEc,
         drainVolume,
         irrigationFlow,
@@ -129106,7 +129631,8 @@ function openConfigDialog(ctx, device) {
                 substrateTemperatureSensors: device?.environmentAttributes?.substrateTemperatureSensors || [],
                 phSensors: device?.environmentAttributes?.phSensors || [],
                 feedEcSensors: device?.environmentAttributes?.feedEcSensors || [],
-                substrateEcSensors: device?.environmentAttributes?.substrateEcSensors || [],
+                bulkEcSensors: device?.environmentAttributes?.bulkEcSensors || [],
+                poreEcSensors: device?.environmentAttributes?.poreEcSensors || [],
                 runoffEcSensors: device?.environmentAttributes?.runoffEcSensors || [],
                 drainVolumeSensors: device?.environmentAttributes?.drainVolumeSensors || [],
                 irrigationFlowSensors: device?.environmentAttributes?.irrigationFlowSensors || [],

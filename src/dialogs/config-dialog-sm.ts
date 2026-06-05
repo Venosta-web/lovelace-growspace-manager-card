@@ -22,6 +22,7 @@ import type { CirculationFanConfig } from '../slices/growspace/schema';
 
 export type ConfigTabId =
   | 'growspaces'
+  | 'notifications'
   | 'sensors'
   | 'climate'
   | 'humidity'
@@ -60,7 +61,8 @@ export interface EnvironmentDraft {
   substrateTemperatureSensors: string[];
   phSensors: string[];
   feedEcSensors: string[];
-  substrateEcSensors: string[];
+  bulkEcSensors: string[];
+  poreEcSensors: string[];
   runoffEcSensors: string[];
   drainVolumeSensors: string[];
   irrigationFlowSensors: string[];
@@ -118,6 +120,47 @@ export interface GrowspacesTabState {
   sub: GrowspacesSubState;
 }
 
+// ─── Notifications tab ────────────────────────────────────────────────────────
+
+export type TimedNotificationTrigger = 'clone_start' | 'veg_start' | 'flower_start' | 'dry_start';
+
+export interface TimedNotification {
+  id: string;
+  message: string;
+  triggerType: TimedNotificationTrigger;
+  day: number;
+  growspaceIds: string[];
+}
+
+export interface TimedNotificationDraft {
+  message: string;
+  triggerType: TimedNotificationTrigger;
+  day: number;
+  growspaceIds: string[];
+}
+
+export interface NotificationsDraft {
+  criticalCooldownMinutes: number;
+  warningCooldownMinutes: number;
+  recoveryCooldownMinutes: number;
+  escalationDelayMinutes: number;
+  minStressDurationSeconds: number;
+  warningPersistenceMinutes: number;
+  aiAutoAlerts: boolean;
+}
+
+export type NotificationsTabSub =
+  | { kind: 'idle' }
+  | { kind: 'adding'; draft: TimedNotificationDraft }
+  | { kind: 'editing'; id: string; draft: TimedNotificationDraft }
+  | { kind: 'confirm-delete'; id: string };
+
+export interface NotificationsTabState {
+  draft: NotificationsDraft;
+  timedNotifications: TimedNotification[];
+  sub: NotificationsTabSub;
+}
+
 // ─── Env-group tabs (sensors / climate / humidity / irrigation / vision) ──────
 // These tabs share environmentDraft at the SM root — their per-tab state is minimal.
 
@@ -167,6 +210,7 @@ export interface SubareasTabState {
 
 export interface ConfigTabStates {
   growspaces: GrowspacesTabState;
+  notifications: NotificationsTabState;
   sensors: EnvTabState;
   climate: EnvTabState;
   humidity: EnvTabState;
@@ -215,6 +259,18 @@ export type ConfigDialogEvent =
   | { type: 'REQUEST_DELETE_GROWSPACE'; growspaceId: string; name: string }
   | { type: 'CANCEL_GROWSPACES' }
 
+  // ── Notifications ──
+  | { type: 'UPDATE_NOTIFICATIONS_DRAFT'; partial: Partial<NotificationsDraft> }
+  | { type: 'UPDATE_TIMED_DRAFT'; partial: Partial<TimedNotificationDraft> }
+  | { type: 'START_ADD_TIMED_NOTIFICATION' }
+  | { type: 'START_EDIT_TIMED_NOTIFICATION'; id: string; draft: TimedNotificationDraft }
+  | { type: 'ADD_TIMED_NOTIFICATION'; id: string }
+  | { type: 'EDIT_TIMED_NOTIFICATION' }
+  | { type: 'DELETE_TIMED_NOTIFICATION'; id: string }
+  | { type: 'CONFIRM_DELETE' }
+  | { type: 'CANCEL_TIMED_NOTIFICATION' }
+  | { type: 'SAVE_NOTIFICATIONS' }
+
   // ── Environment (shared across env-group tabs) ──
   | { type: 'UPDATE_ENV_DRAFT'; partial: Partial<EnvironmentDraft> }
 
@@ -240,9 +296,30 @@ export type ConfigDialogEvent =
 
   // ── Global ──
   | { type: 'SET_TOAST'; message: string | undefined }
-  | { type: 'RESET_FROM_DEVICE'; device: GrowspaceDevice };
+  | { type: 'RESET_FROM_DEVICE'; device: GrowspaceDevice }
+  | { type: 'SEED_NOTIFICATIONS_FROM_DEVICE'; device: GrowspaceDevice };
 
 // ─── Default draft ────────────────────────────────────────────────────────────
+
+function defaultNotificationsDraft(): NotificationsDraft {
+  return {
+    criticalCooldownMinutes: 60,
+    warningCooldownMinutes: 30,
+    recoveryCooldownMinutes: 15,
+    escalationDelayMinutes: 30,
+    minStressDurationSeconds: 300,
+    warningPersistenceMinutes: 60,
+    aiAutoAlerts: true,
+  };
+}
+
+function defaultTimedNotificationDraft(): TimedNotificationDraft {
+  return { message: '', triggerType: 'clone_start', day: 1, growspaceIds: [] };
+}
+
+function defaultNotificationsTabState(): NotificationsTabState {
+  return { draft: defaultNotificationsDraft(), timedNotifications: [], sub: { kind: 'idle' } };
+}
 
 function defaultEnvironmentDraft(): EnvironmentDraft {
   return {
@@ -264,7 +341,8 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
     substrateTemperatureSensors: [],
     phSensors: [],
     feedEcSensors: [],
-    substrateEcSensors: [],
+    bulkEcSensors: [],
+    poreEcSensors: [],
     runoffEcSensors: [],
     drainVolumeSensors: [],
     irrigationFlowSensors: [],
@@ -305,6 +383,7 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
 function defaultTabs(): ConfigTabStates {
   return {
     growspaces: { sub: { kind: 'idle' } },
+    notifications: defaultNotificationsTabState(),
     sensors: { sub: { kind: 'idle' } },
     climate: { sub: { kind: 'idle' } },
     humidity: { sub: { kind: 'idle' } },
@@ -313,6 +392,33 @@ function defaultTabs(): ConfigTabStates {
     vision: { sub: { kind: 'idle' } },
     heatmap: { sub: { kind: 'idle' } },
     subareas: { sub: { kind: 'idle' } },
+  };
+}
+
+/** Seed NotificationsTabState from a GrowspaceDevice. */
+function notificationsTabFromDevice(device: GrowspaceDevice): NotificationsTabState {
+  const ns = device.notificationSettings ?? {};
+  const defaults = defaultNotificationsDraft();
+  return {
+    draft: {
+      criticalCooldownMinutes: ns.criticalCooldownMinutes ?? defaults.criticalCooldownMinutes,
+      warningCooldownMinutes: ns.warningCooldownMinutes ?? defaults.warningCooldownMinutes,
+      recoveryCooldownMinutes: ns.recoveryCooldownMinutes ?? defaults.recoveryCooldownMinutes,
+      escalationDelayMinutes: ns.escalationDelayMinutes ?? defaults.escalationDelayMinutes,
+      minStressDurationSeconds: ns.minStressDurationSeconds ?? defaults.minStressDurationSeconds,
+      warningPersistenceMinutes: ns.warningPersistenceMinutes ?? defaults.warningPersistenceMinutes,
+      aiAutoAlerts: ns.aiAutoAlerts ?? defaults.aiAutoAlerts,
+    },
+    timedNotifications: device.timedNotifications
+      ? device.timedNotifications.map((n) => ({
+          id: n.id,
+          message: n.message,
+          triggerType: n.triggerType,
+          day: n.day,
+          growspaceIds: n.growspaceIds,
+        }))
+      : [],
+    sub: { kind: 'idle' },
   };
 }
 
@@ -371,7 +477,8 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     substrateTemperatureSensors: attrs.substrateTemperatureSensors ?? [],
     phSensors: attrs.phSensors ?? [],
     feedEcSensors: attrs.feedEcSensors ?? [],
-    substrateEcSensors: attrs.substrateEcSensors ?? [],
+    bulkEcSensors: attrs.bulkEcSensors ?? [],
+    poreEcSensors: attrs.poreEcSensors ?? [],
     runoffEcSensors: attrs.runoffEcSensors ?? [],
     drainVolumeSensors: attrs.drainVolumeSensors ?? [],
     irrigationFlowSensors: attrs.irrigationFlowSensors ?? [],
@@ -410,9 +517,13 @@ export function createInitialSM(device?: GrowspaceDevice): ConfigDialogSM {
   return sm;
 }
 
-/** Rebuild environmentDraft from device data (used on open and after RESET_FROM_DEVICE). */
+/** Rebuild environmentDraft and notifications tab from device data (used on open and after RESET_FROM_DEVICE). */
 function applyDeviceToSM(sm: ConfigDialogSM, device: GrowspaceDevice): ConfigDialogSM {
-  return { ...sm, environmentDraft: envDraftFromDevice(device) };
+  return {
+    ...sm,
+    environmentDraft: envDraftFromDevice(device),
+    tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(device) },
+  };
 }
 
 // ─── Dirty predicates ─────────────────────────────────────────────────────────
@@ -434,13 +545,46 @@ export function isGrowspacesDirty(sm: ConfigDialogSM, device: GrowspaceDevice): 
   return false;
 }
 
+/** True if the notifications tab has unsaved changes relative to the device. */
+export function isNotificationsDirty(sm: ConfigDialogSM, device: GrowspaceDevice): boolean {
+  const tab = sm.tabs.notifications;
+  const sub = tab.sub;
+
+  if (sub.kind === 'adding') {
+    return (
+      sub.draft.message.trim() !== '' ||
+      sub.draft.day !== 1 ||
+      sub.draft.growspaceIds.length > 0
+    );
+  }
+
+  if (sub.kind === 'editing') {
+    const original = tab.timedNotifications.find((n) => n.id === sub.id);
+    if (!original) return true;
+    return JSON.stringify(sub.draft) !== JSON.stringify({
+      message: original.message,
+      triggerType: original.triggerType,
+      day: original.day,
+      growspaceIds: original.growspaceIds,
+    });
+  }
+
+  const seeded = notificationsTabFromDevice(device);
+  if (JSON.stringify(tab.draft) !== JSON.stringify(seeded.draft)) return true;
+  if (JSON.stringify(tab.timedNotifications) !== JSON.stringify(seeded.timedNotifications)) return true;
+  return false;
+}
+
 /**
  * Returns true if the currently-active tab has unsaved changes.
- * Only the growspaces tab has dirty-guarded navigation.
+ * Applies to the growspaces and notifications tabs.
  */
 export function isActiveTabDirty(sm: ConfigDialogSM, device: GrowspaceDevice): boolean {
   if (sm.activeTab === 'growspaces') {
     return isGrowspacesDirty(sm, device);
+  }
+  if (sm.activeTab === 'notifications') {
+    return isNotificationsDirty(sm, device);
   }
   return false;
 }
@@ -476,6 +620,7 @@ export function discardAndSwitch(sm: ConfigDialogSM, device: GrowspaceDevice): C
     tabs: {
       ...sm.tabs,
       growspaces: { sub: { kind: 'idle' } },
+      notifications: notificationsTabFromDevice(device),
     },
   };
 }
@@ -576,6 +721,143 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
       return {
         ...sm,
         tabs: { ...sm.tabs, growspaces: { sub: { kind: 'idle' } } },
+      };
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+
+    case 'UPDATE_NOTIFICATIONS_DRAFT':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            draft: { ...sm.tabs.notifications.draft, ...event.partial },
+          },
+        },
+      };
+
+    case 'UPDATE_TIMED_DRAFT': {
+      const sub = sm.tabs.notifications.sub;
+      if (sub.kind !== 'adding' && sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            sub: { ...sub, draft: { ...sub.draft, ...event.partial } },
+          },
+        },
+      };
+    }
+
+    case 'START_ADD_TIMED_NOTIFICATION':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            sub: { kind: 'adding', draft: defaultTimedNotificationDraft() },
+          },
+        },
+      };
+
+    case 'START_EDIT_TIMED_NOTIFICATION':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            sub: { kind: 'editing', id: event.id, draft: { ...event.draft } },
+          },
+        },
+      };
+
+    case 'ADD_TIMED_NOTIFICATION': {
+      const sub = sm.tabs.notifications.sub;
+      if (sub.kind !== 'adding') return sm;
+      const newItem: TimedNotification = { id: event.id, ...sub.draft };
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            timedNotifications: [...sm.tabs.notifications.timedNotifications, newItem],
+            sub: { kind: 'idle' },
+          },
+        },
+      };
+    }
+
+    case 'EDIT_TIMED_NOTIFICATION': {
+      const sub = sm.tabs.notifications.sub;
+      if (sub.kind !== 'editing') return sm;
+      const updated = sm.tabs.notifications.timedNotifications.map((n) =>
+        n.id === sub.id ? { id: sub.id, ...sub.draft } : n
+      );
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            timedNotifications: updated,
+            sub: { kind: 'idle' },
+          },
+        },
+      };
+    }
+
+    case 'DELETE_TIMED_NOTIFICATION':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            sub: { kind: 'confirm-delete', id: event.id },
+          },
+        },
+      };
+
+    case 'CONFIRM_DELETE': {
+      const sub = sm.tabs.notifications.sub;
+      if (sub.kind !== 'confirm-delete') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: {
+            ...sm.tabs.notifications,
+            timedNotifications: sm.tabs.notifications.timedNotifications.filter(
+              (n) => n.id !== sub.id
+            ),
+            sub: { kind: 'idle' },
+          },
+        },
+      };
+    }
+
+    case 'CANCEL_TIMED_NOTIFICATION':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: { ...sm.tabs.notifications, sub: { kind: 'idle' } },
+        },
+      };
+
+    case 'SAVE_NOTIFICATIONS':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          notifications: { ...sm.tabs.notifications, sub: { kind: 'idle' } },
+        },
       };
 
     // ── Environment ───────────────────────────────────────────────────────────
@@ -712,6 +994,12 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
 
     case 'RESET_FROM_DEVICE':
       return applyDeviceToSM(sm, event.device);
+
+    case 'SEED_NOTIFICATIONS_FROM_DEVICE':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(event.device) },
+      };
 
     default:
       return sm;

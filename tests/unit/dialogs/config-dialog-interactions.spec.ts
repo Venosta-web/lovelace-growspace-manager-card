@@ -38,6 +38,7 @@ describe('ConfigDialog Interactions', () => {
 
         const tabs = [
             ConfigTab.GROWSPACES,
+            ConfigTab.NOTIFICATIONS,
             ConfigTab.SENSORS,
             ConfigTab.CLIMATE,
             ConfigTab.HUMIDITY,

@@ -122,7 +122,8 @@ export interface EnvironmentConfigData {
   substrateTemperatureSensors?: string[];
   phSensors?: string[];
   feedEcSensors?: string[];
-  substrateEcSensors?: string[];
+  bulkEcSensors?: string[];
+  poreEcSensors?: string[];
   runoffEcSensors?: string[];
   drainVolumeSensors?: string[];
   irrigationFlowSensors?: string[];
@@ -172,7 +173,8 @@ export interface EnvironmentConfigEventDetail {
   substrateTemperatureSensors?: string[];
   phSensors?: string[];
   feedEcSensors?: string[];
-  substrateEcSensors?: string[];
+  bulkEcSensors?: string[];
+  poreEcSensors?: string[];
   runoffEcSensors?: string[];
   drainVolumeSensors?: string[];
   irrigationFlowSensors?: string[];

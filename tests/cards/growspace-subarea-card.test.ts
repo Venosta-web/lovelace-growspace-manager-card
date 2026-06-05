@@ -275,7 +275,7 @@ describe('GrowspaceSubareaCard', () => {
         expect(chip.multiValues).toContain('23.0 °C');
     });
 
-    test('renders additional sensors (substrate temp, pH, feed EC, substrate EC)', async () => {
+    test('renders additional sensors (substrate temp, pH, feed EC, bulk EC, pore EC)', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -284,24 +284,27 @@ describe('GrowspaceSubareaCard', () => {
                 substrate_temperature_sensors: ['sensor.substrate_temp'],
                 ph_sensors: ['sensor.ph'],
                 feed_ec_sensors: ['sensor.feed_ec'],
-                substrate_ec_sensors: ['sensor.substrate_ec'],
+                bulk_ec_sensors: ['sensor.bulk_ec'],
+                pore_ec_sensors: ['sensor.pore_ec'],
             }
         }]);
         mockHass.states['sensor.substrate_temp'] = { state: '21.0', attributes: { unit_of_measurement: '°C' } };
         mockHass.states['sensor.ph'] = { state: '6.2', attributes: { unit_of_measurement: 'pH' } };
         mockHass.states['sensor.feed_ec'] = { state: '1.8', attributes: { unit_of_measurement: 'mS/cm' } };
-        mockHass.states['sensor.substrate_ec'] = { state: '2.1', attributes: { unit_of_measurement: 'mS/cm' } };
+        mockHass.states['sensor.bulk_ec'] = { state: '2.1', attributes: { unit_of_measurement: 'mS/cm' } };
+        mockHass.states['sensor.pore_ec'] = { state: '2.3', attributes: { unit_of_measurement: 'mS/cm' } };
         element.hass = mockHass;
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
         const secondaryUI = element.shadowRoot?.querySelector('growspace-header-secondary-ui') as any;
-        expect(secondaryUI?.chips?.length).toBe(4);
+        expect(secondaryUI?.chips?.length).toBe(5);
         const labels = secondaryUI?.chips.map((c: any) => c.label);
         expect(labels).toContain('Substrate Temp');
         expect(labels).toContain('pH');
         expect(labels).toContain('Feed EC');
-        expect(labels).toContain('Substrate EC');
+        expect(labels).toContain('Bulk EC');
+        expect(labels).toContain('Pore EC');
     });
 
     test('renders device chip state as n/n for multi-entity groups', async () => {

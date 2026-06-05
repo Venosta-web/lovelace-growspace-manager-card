@@ -980,7 +980,8 @@ export class MetricsUtils {
     const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
     const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
     const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
-    const subEcAgg = getAggregateState(undefined, ec.substrate_ec_sensors, '');
+    const bulkEcAgg = getAggregateState(undefined, ec.bulk_ec_sensors, '');
+    const poreEcAgg = getAggregateState(undefined, ec.pore_ec_sensors, '');
 
     const secondaryChips = [
       createChipData(
@@ -1001,12 +1002,20 @@ export class MetricsUtils {
         'Feed EC'
       ),
       createChipData(
-        'substrate_ec',
+        'bulk_ec',
         '',
-        subEcAgg.value,
-        subEcAgg.multiValues,
-        subEcAgg.entityIds,
-        'Substrate EC'
+        bulkEcAgg.value,
+        bulkEcAgg.multiValues,
+        bulkEcAgg.entityIds,
+        'Bulk EC'
+      ),
+      createChipData(
+        'pore_ec',
+        '',
+        poreEcAgg.value,
+        poreEcAgg.multiValues,
+        poreEcAgg.entityIds,
+        'Pore EC'
       ),
     ].filter((c): c is NonNullable<typeof c> => c !== null);
 

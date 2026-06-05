@@ -106,6 +106,26 @@ export const dialogStyles = [
       min-width: 0;
     }
 
+    .vwc-targets-group {
+      grid-column: span 2;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 8px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .vwc-targets-group-title {
+      grid-column: span 2;
+      margin: 0 0 4px 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0.9;
+      letter-spacing: 0.1px;
+    }
+
     @media (max-width: 450px) {
       .glass-dialog-container {
         width: 100vw;

@@ -170,7 +170,8 @@ export async function configureEnvironment(data: {
   substrateTemperatureSensors?: string[];
   phSensors?: string[];
   feedEcSensors?: string[];
-  substrateEcSensors?: string[];
+  bulkEcSensors?: string[];
+  poreEcSensors?: string[];
   runoffEcSensors?: string[];
   drainVolumeSensors?: string[];
   irrigationFlowSensors?: string[];
@@ -221,7 +222,8 @@ export async function configureEnvironment(data: {
   if (data.substrateTemperatureSensors?.length) payload.substrate_temperature_sensors = data.substrateTemperatureSensors;
   if (data.phSensors?.length) payload.ph_sensors = data.phSensors;
   if (data.feedEcSensors?.length) payload.feed_ec_sensors = data.feedEcSensors;
-  if (data.substrateEcSensors?.length) payload.substrate_ec_sensors = data.substrateEcSensors;
+  if (data.bulkEcSensors?.length) payload.bulk_ec_sensors = data.bulkEcSensors;
+  if (data.poreEcSensors?.length) payload.pore_ec_sensors = data.poreEcSensors;
   if (data.runoffEcSensors?.length) payload.runoff_ec_sensors = data.runoffEcSensors;
   if (data.drainVolumeSensors?.length) payload.drain_volume_sensors = data.drainVolumeSensors;
   if (data.irrigationFlowSensors?.length) payload.irrigation_flow_sensors = data.irrigationFlowSensors;
