@@ -260,6 +260,7 @@ export enum GridOverlayMode {
 
 export enum ConfigTab {
   GROWSPACES = 'growspaces',
+  NOTIFICATIONS = 'notifications',
   SENSORS = 'sensors',
   CLIMATE = 'climate',
   HUMIDITY = 'humidity',

@@ -95,6 +95,7 @@ var mdiArrowLeft = "M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.
 var mdiArrowUp = "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z";
 var mdiBarrel = "M20 13C20.55 13 21 12.55 21 12S20.55 11 20 11H19V5H20C20.55 5 21 4.55 21 4S20.55 3 20 3H4C3.45 3 3 3.45 3 4S3.45 5 4 5H5V11H4C3.45 11 3 11.45 3 12S3.45 13 4 13H5V19H4C3.45 19 3 19.45 3 20S3.45 21 4 21H20C20.55 21 21 20.55 21 20S20.55 19 20 19H19V13H20M12 16C10.34 16 9 14.68 9 13.05C9 11.75 9.5 11.38 12 8.5C14.47 11.36 15 11.74 15 13.05C15 14.68 13.66 16 12 16Z";
 var mdiBattery = "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
+var mdiBell = "M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21";
 var mdiBluetooth = "M14.88,16.29L13,18.17V14.41M13,5.83L14.88,7.71L13,9.58M17.71,7.71L12,2H11V9.58L6.41,5L5,6.41L10.59,12L5,17.58L6.41,19L11,14.41V22H12L17.71,16.29L13.41,12L17.71,7.71Z";
 var mdiBookOpenVariant = "M12 21.5C10.65 20.65 8.2 20 6.5 20C4.85 20 3.15 20.3 1.75 21.05C1.65 21.1 1.6 21.1 1.5 21.1C1.25 21.1 1 20.85 1 20.6V6C1.6 5.55 2.25 5.25 3 5C4.11 4.65 5.33 4.5 6.5 4.5C8.45 4.5 10.55 4.9 12 6C13.45 4.9 15.55 4.5 17.5 4.5C18.67 4.5 19.89 4.65 21 5C21.75 5.25 22.4 5.55 23 6V20.6C23 20.85 22.75 21.1 22.5 21.1C22.4 21.1 22.35 21.1 22.25 21.05C20.85 20.3 19.15 20 17.5 20C15.8 20 13.35 20.65 12 21.5M12 8V19.5C13.35 18.65 15.8 18 17.5 18C18.7 18 19.9 18.15 21 18.5V7C19.9 6.65 18.7 6.5 17.5 6.5C15.8 6.5 13.35 7.15 12 8M13 11.5C14.11 10.82 15.6 10.5 17.5 10.5C18.41 10.5 19.26 10.59 20 10.78V9.23C19.13 9.08 18.29 9 17.5 9C15.73 9 14.23 9.28 13 9.84V11.5M17.5 11.67C15.79 11.67 14.29 11.93 13 12.46V14.15C14.11 13.5 15.6 13.16 17.5 13.16C18.54 13.16 19.38 13.24 20 13.4V11.9C19.13 11.74 18.29 11.67 17.5 11.67M20 14.57C19.13 14.41 18.29 14.33 17.5 14.33C15.67 14.33 14.17 14.6 13 15.13V16.82C14.11 16.16 15.6 15.83 17.5 15.83C18.54 15.83 19.38 15.91 20 16.07V14.57Z";
 var mdiBottleTonicPlus = "M13 4H11L10 2H14L13 4M14 8V6H15V5H9V6H10V8C7.24 8 5 10.24 5 13V22H19V13C19 10.24 16.76 8 14 8M16 17H13V20H11V17H8V15H11V12H13V15H16V17Z";
@@ -453,6 +454,7 @@ var GridOverlayMode;
 var ConfigTab;
 (function (ConfigTab) {
     ConfigTab["GROWSPACES"] = "growspaces";
+    ConfigTab["NOTIFICATIONS"] = "notifications";
     ConfigTab["SENSORS"] = "sensors";
     ConfigTab["CLIMATE"] = "climate";
     ConfigTab["HUMIDITY"] = "humidity";
@@ -18399,6 +18401,11 @@ function transition$9(sm, event) {
             return { ...sm, toast: event.message };
         case 'RESET_FROM_DEVICE':
             return applyDeviceToSM$2(sm, event.device);
+        case 'SEED_NOTIFICATIONS_FROM_DEVICE':
+            return {
+                ...sm,
+                tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(event.device) },
+            };
         default:
             return sm;
     }
@@ -18747,6 +18754,10 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 if (!this._initialStateApplied) {
                     this._initialStateApplied = true;
                 }
+                const firstDevice = this.devices?.[0];
+                if (firstDevice) {
+                    this._t({ type: 'SEED_NOTIFICATIONS_FROM_DEVICE', device: firstDevice });
+                }
             }
             else {
                 this._initialStateApplied = false;
@@ -18894,6 +18905,25 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             bubbles: true,
             composed: true,
         }));
+    }
+    _submitNotifications() {
+        const draft = this._sm.tabs.notifications.draft;
+        this.dispatchEvent(new CustomEvent('save-notification-settings-submit', {
+            detail: {
+                notification_settings: {
+                    criticalCooldownMinutes: draft.criticalCooldownMinutes,
+                    warningCooldownMinutes: draft.warningCooldownMinutes,
+                    recoveryCooldownMinutes: draft.recoveryCooldownMinutes,
+                    escalationDelayMinutes: draft.escalationDelayMinutes,
+                    minStressDurationSeconds: draft.minStressDurationSeconds,
+                    warningPersistenceMinutes: draft.warningPersistenceMinutes,
+                },
+                ai_auto_alerts: draft.aiAutoAlerts,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        this._t({ type: 'SAVE_NOTIFICATIONS' });
     }
     _submitVisionCheckupConfig() {
         const d = this._sm.environmentDraft;
@@ -19285,6 +19315,58 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         }
     }
     // ── Section renderers ────────────────────────────────────────────────────
+    _renderNotificationsSection() {
+        const draft = this._sm.tabs.notifications.draft;
+        return x `
+      <div class="form-section">
+        <md3-number-input
+          data-notif="criticalCooldownMinutes"
+          label="Critical Cooldown (min)"
+          .value=${draft.criticalCooldownMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningCooldownMinutes"
+          label="Warning Cooldown (min)"
+          .value=${draft.warningCooldownMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="recoveryCooldownMinutes"
+          label="Recovery Cooldown (min)"
+          .value=${draft.recoveryCooldownMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { recoveryCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="escalationDelayMinutes"
+          label="Escalation Delay (min)"
+          .value=${draft.escalationDelayMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { escalationDelayMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="minStressDurationSeconds"
+          label="Min Stress Duration (sec)"
+          .value=${draft.minStressDurationSeconds}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { minStressDurationSeconds: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningPersistenceMinutes"
+          label="Warning Persistence (min)"
+          .value=${draft.warningPersistenceMinutes}
+          @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningPersistenceMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            data-notif="aiAutoAlerts"
+            .checked=${draft.aiAutoAlerts}
+            @change=${(e) => this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { aiAutoAlerts: e.target.checked } })}
+          />
+          <span>AI Auto-Alerts</span>
+        </label>
+      </div>
+    `;
+    }
     _renderGrowspacesSection() {
         const sub = this._sm.tabs.growspaces.sub;
         if (sub.kind === 'confirm-delete') {
@@ -20474,7 +20556,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         ></subarea-config-dialog>
       `;
         }
-        const showContextBar = this.currentTab !== ConfigTab.GROWSPACES;
+        const showContextBar = this.currentTab !== ConfigTab.GROWSPACES && this.currentTab !== ConfigTab.NOTIFICATIONS;
         const showRail = !this.allowedTabs || this.allowedTabs.length !== 1;
         return x `
       <ha-dialog
@@ -20517,6 +20599,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                   <div class="cfg-rail">
                     <div class="cfg-rail-caps">Setup</div>
                     ${this._navItem(ConfigTab.GROWSPACES, mdiViewDashboard, 'Growspaces')}
+                    ${this._navItem(ConfigTab.NOTIFICATIONS, mdiBell, 'Notifications')}
 
                     <div class="cfg-rail-caps">Environment</div>
                     ${this._navItem(ConfigTab.SENSORS, mdiThermometer, 'Sensors')}
@@ -20562,6 +20645,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
               <div class="cfg-scroll">
                 ${this.currentTab === ConfigTab.GROWSPACES
             ? this._renderGrowspacesSection()
+            : E}
+                ${this.currentTab === ConfigTab.NOTIFICATIONS
+            ? this._renderNotificationsSection()
             : E}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : E}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : E}
@@ -20634,6 +20720,13 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
+                  </button>
+                `
+            : E}
+            ${this.currentTab === ConfigTab.NOTIFICATIONS
+            ? x `
+                  <button class="md3-button primary" @click=${this._submitNotifications}>
+                    Save Notifications
                   </button>
                 `
             : E}
@@ -63769,7 +63862,8 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
         chips.push(_makeChip(MetricKey.OPTIMAL, isOptimal ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, { status: isOptimal ? 'optimal' : 'warning' }, activeEnvGraphs, linkedGraphGroups));
     }
     // Substrate / medium sensors (Monitoring tab)
-    const soilChip = _makeSensorReadingChip(MetricKey.SOIL_MOISTURE, mdiWaterPercent, envSnapshot?.soilMoisture ?? null, '%', { label: 'Moisture', tooltip: 'Volumetric water content of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
+    const soilMoistureLabel = irrigationStrategy?.enabled ? 'VWC' : 'Moisture';
+    const soilChip = _makeSensorReadingChip(MetricKey.SOIL_MOISTURE, mdiWaterPercent, envSnapshot?.soilMoisture ?? null, '%', { label: soilMoistureLabel, tooltip: 'Volumetric water content of the substrate.' }, activeEnvGraphs, linkedGraphGroups);
     if (soilChip)
         chips.push(soilChip);
     const subTempChip = _makeSensorReadingChip(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, envSnapshot?.substrateTemperature ?? null, '°C', { label: 'Sub Temp', tooltip: 'Temperature inside the substrate / growing medium.' }, activeEnvGraphs, linkedGraphGroups);

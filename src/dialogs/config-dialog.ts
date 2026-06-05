@@ -18,6 +18,7 @@ import {
   mdiWater,
   mdiCamera,
   mdiChevronDown,
+  mdiBell,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -955,6 +956,10 @@ export class ConfigDialog extends LitElement {
         if (!this._initialStateApplied) {
           this._initialStateApplied = true;
         }
+        const firstDevice = this.devices?.[0];
+        if (firstDevice) {
+          this._t({ type: 'SEED_NOTIFICATIONS_FROM_DEVICE', device: firstDevice });
+        }
       } else {
         this._initialStateApplied = false;
       }
@@ -1115,6 +1120,28 @@ export class ConfigDialog extends LitElement {
         composed: true,
       })
     );
+  }
+
+  private _submitNotifications() {
+    const draft = this._sm.tabs.notifications.draft;
+    this.dispatchEvent(
+      new CustomEvent('save-notification-settings-submit', {
+        detail: {
+          notification_settings: {
+            criticalCooldownMinutes: draft.criticalCooldownMinutes,
+            warningCooldownMinutes: draft.warningCooldownMinutes,
+            recoveryCooldownMinutes: draft.recoveryCooldownMinutes,
+            escalationDelayMinutes: draft.escalationDelayMinutes,
+            minStressDurationSeconds: draft.minStressDurationSeconds,
+            warningPersistenceMinutes: draft.warningPersistenceMinutes,
+          },
+          ai_auto_alerts: draft.aiAutoAlerts,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    this._t({ type: 'SAVE_NOTIFICATIONS' });
   }
 
   private _submitVisionCheckupConfig() {
@@ -1553,6 +1580,66 @@ export class ConfigDialog extends LitElement {
   }
 
   // ── Section renderers ────────────────────────────────────────────────────
+
+  private _renderNotificationsSection() {
+    const draft = this._sm.tabs.notifications.draft;
+    return html`
+      <div class="form-section">
+        <md3-number-input
+          data-notif="criticalCooldownMinutes"
+          label="Critical Cooldown (min)"
+          .value=${draft.criticalCooldownMinutes}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { criticalCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningCooldownMinutes"
+          label="Warning Cooldown (min)"
+          .value=${draft.warningCooldownMinutes}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="recoveryCooldownMinutes"
+          label="Recovery Cooldown (min)"
+          .value=${draft.recoveryCooldownMinutes}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { recoveryCooldownMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="escalationDelayMinutes"
+          label="Escalation Delay (min)"
+          .value=${draft.escalationDelayMinutes}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { escalationDelayMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="minStressDurationSeconds"
+          label="Min Stress Duration (sec)"
+          .value=${draft.minStressDurationSeconds}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { minStressDurationSeconds: Number(e.detail) } })}
+        ></md3-number-input>
+        <md3-number-input
+          data-notif="warningPersistenceMinutes"
+          label="Warning Persistence (min)"
+          .value=${draft.warningPersistenceMinutes}
+          @change=${(e: CustomEvent) =>
+            this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { warningPersistenceMinutes: Number(e.detail) } })}
+        ></md3-number-input>
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            data-notif="aiAutoAlerts"
+            .checked=${draft.aiAutoAlerts}
+            @change=${(e: Event) =>
+              this._t({ type: 'UPDATE_NOTIFICATIONS_DRAFT', partial: { aiAutoAlerts: (e.target as HTMLInputElement).checked } })}
+          />
+          <span>AI Auto-Alerts</span>
+        </label>
+      </div>
+    `;
+  }
 
   private _renderGrowspacesSection() {
     const sub = this._sm.tabs.growspaces.sub;
@@ -2986,7 +3073,8 @@ export class ConfigDialog extends LitElement {
       `;
     }
 
-    const showContextBar = this.currentTab !== ConfigTab.GROWSPACES;
+    const showContextBar =
+      this.currentTab !== ConfigTab.GROWSPACES && this.currentTab !== ConfigTab.NOTIFICATIONS;
     const showRail = !this.allowedTabs || this.allowedTabs.length !== 1;
 
     return html`
@@ -3030,6 +3118,7 @@ export class ConfigDialog extends LitElement {
                   <div class="cfg-rail">
                     <div class="cfg-rail-caps">Setup</div>
                     ${this._navItem(ConfigTab.GROWSPACES, mdiViewDashboard, 'Growspaces')}
+                    ${this._navItem(ConfigTab.NOTIFICATIONS, mdiBell, 'Notifications')}
 
                     <div class="cfg-rail-caps">Environment</div>
                     ${this._navItem(ConfigTab.SENSORS, mdiThermometer, 'Sensors')}
@@ -3077,6 +3166,9 @@ export class ConfigDialog extends LitElement {
               <div class="cfg-scroll">
                 ${this.currentTab === ConfigTab.GROWSPACES
                   ? this._renderGrowspacesSection()
+                  : nothing}
+                ${this.currentTab === ConfigTab.NOTIFICATIONS
+                  ? this._renderNotificationsSection()
                   : nothing}
                 ${this.currentTab === ConfigTab.SENSORS ? this._renderSensorsSection() : nothing}
                 ${this.currentTab === ConfigTab.CLIMATE ? this._renderClimateSection() : nothing}
@@ -3148,6 +3240,13 @@ export class ConfigDialog extends LitElement {
               ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
                     Save Configuration
+                  </button>
+                `
+              : nothing}
+            ${this.currentTab === ConfigTab.NOTIFICATIONS
+              ? html`
+                  <button class="md3-button primary" @click=${this._submitNotifications}>
+                    Save Notifications
                   </button>
                 `
               : nothing}

@@ -295,7 +295,8 @@ export type ConfigDialogEvent =
 
   // ── Global ──
   | { type: 'SET_TOAST'; message: string | undefined }
-  | { type: 'RESET_FROM_DEVICE'; device: GrowspaceDevice };
+  | { type: 'RESET_FROM_DEVICE'; device: GrowspaceDevice }
+  | { type: 'SEED_NOTIFICATIONS_FROM_DEVICE'; device: GrowspaceDevice };
 
 // ─── Default draft ────────────────────────────────────────────────────────────
 
@@ -990,6 +991,12 @@ export function transition(sm: ConfigDialogSM, event: ConfigDialogEvent): Config
 
     case 'RESET_FROM_DEVICE':
       return applyDeviceToSM(sm, event.device);
+
+    case 'SEED_NOTIFICATIONS_FROM_DEVICE':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, notifications: notificationsTabFromDevice(event.device) },
+      };
 
     default:
       return sm;
