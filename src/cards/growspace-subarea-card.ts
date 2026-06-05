@@ -91,6 +91,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     @state() private _parentGrowspaceName = '';
     @state() private _showConfigDialog = false;
     @state() private _historyCache: Record<string, any[]> = {};
+    private _configEnvDataSnapshot: Record<string, unknown> | null = null;
 
     static styles: CSSResultGroup = [
         variables,
@@ -550,6 +551,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                   class="config-button"
                   title="Configure subareas"
                   @click=${() => {
+                this._configEnvDataSnapshot = configEnvData;
                 this._showConfigDialog = true;
             }}
                 >
@@ -577,7 +579,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 .growspaceOptions=${growspaceOptions}
                 .initialTab=${ConfigTab.SUBAREAS}
                 .allowedTabs=${[ConfigTab.SUBAREAS]}
-                .environmentData=${configEnvData}
+                .environmentData=${this._configEnvDataSnapshot}
                 @close=${() => {
                         this._showConfigDialog = false;
                     }}
