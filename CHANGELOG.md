@@ -1,3 +1,10 @@
+# [1.1.0-next.22](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.21...v1.1.0-next.22) (2026-06-05)
+
+
+### Bug Fixes
+
+* **vision:** wire Save Configuration FAB to vision config submit and remove duplicate in-section button ([968511f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/968511f854b49ab54d2c291d1f99b54a49cf4b15))
+
 # [1.1.0-next.21](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.20...v1.1.0-next.21) (2026-06-05)
 
 
