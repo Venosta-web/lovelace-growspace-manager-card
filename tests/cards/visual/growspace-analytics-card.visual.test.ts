@@ -40,6 +40,8 @@ test('growspace-analytics-card visual snapshot', async () => {
     ]);
     element.store.history.$activeEnvGraphs.set(new Set(['temperature', 'humidity']));
     await element.updateComplete;
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await element.updateComplete;
 
     await expect(page.elementLocator(element)).toMatchScreenshot();
 });
