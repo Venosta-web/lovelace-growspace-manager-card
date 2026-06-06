@@ -527,6 +527,33 @@ describe('configureEnvironment', () => {
       })
     );
   });
+
+  it('includes vpd_optimal_overrides when provided', async () => {
+    const overrides = {
+      flower_mid: { day: { low: 0.5, high: 1.45 }, night: { low: 0.6, high: 1.0 } },
+    };
+    await configureEnvironment({
+      growspaceId: 'gs1',
+      temperatureSensors: ['sensor.temp'],
+      humiditySensors: ['sensor.hum'],
+      vpdOptimalOverrides: overrides,
+    });
+
+    expect(hassCallModule.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'configure_environment',
+      expect.objectContaining({
+        vpd_optimal_overrides: overrides,
+      })
+    );
+  });
+
+  it('omits vpd_optimal_overrides from payload when not provided', async () => {
+    await configureEnvironment({ growspaceId: 'gs1', temperatureSensors: ['sensor.temp'], humiditySensors: ['sensor.hum'] });
+
+    const payload = vi.mocked(hassCallModule.callService).mock.calls[0][2];
+    expect(payload).not.toHaveProperty('vpd_optimal_overrides');
+  });
 });
 
 // ---------------------------------------------------------------------------

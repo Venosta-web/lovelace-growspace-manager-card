@@ -767,6 +767,7 @@ export class GrowspaceDialogHost extends LitElement {
         powerSensors: detail.powerSensors,
         energySensors: detail.energySensors,
         circulationFanConfig: detail.circulationFanConfig,
+        vpdOptimalOverrides: detail.vpdOptimalOverrides,
       });
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {

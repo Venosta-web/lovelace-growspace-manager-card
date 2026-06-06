@@ -6556,6 +6556,8 @@ async function configureEnvironment$1(data) {
         payload.energy_sensors = data.energySensors;
     if (data.circulationFanConfig)
         payload.circulation_fan_config = data.circulationFanConfig;
+    if (data.vpdOptimalOverrides)
+        payload.vpd_optimal_overrides = data.vpdOptimalOverrides;
     await callService('growspace_manager', 'configure_environment', payload);
 }
 async function configureCirculationFan({ growspaceId, fanConfig, }) {
@@ -54383,6 +54385,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 powerSensors: detail.powerSensors,
                 energySensors: detail.energySensors,
                 circulationFanConfig: detail.circulationFanConfig,
+                vpdOptimalOverrides: detail.vpdOptimalOverrides,
             });
             this.store?.actions.ui.closeDialog();
         }
