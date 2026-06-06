@@ -28488,7 +28488,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             : x `
             ${this._renderScheduleSection('Irrigation Schedule', this.device?.irrigationConfig?.irrigationTimes || [], schedulesDraft.irrigationDuration, 'irrigation', color)}
           `}
-      ${this._renderScheduleSection('Drain Schedule', drainTimes, schedulesDraft.drainDuration, 'drain', '#FF9800')}
+      ${schedulesDraft.drainPumpEntity
+            ? this._renderScheduleSection('Drain Schedule', drainTimes, schedulesDraft.drainDuration, 'drain', '#FF9800')
+            : E}
       ${!isCropSteering
             ? x `
             <div class="info-banner nudge-card">
@@ -134084,7 +134086,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.1-next.17"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.2-next.1"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

@@ -1610,7 +1610,7 @@ describe('IrrigationDialog', () => {
             return {
                 ...JSON.parse(JSON.stringify(mockDevice)),
                 irrigationStrategy: steeringStrategy,
-                irrigationConfig: { irrigationTimes: [], drainTimes: [], irrigationPumpEntity: 'switch.pump' },
+                irrigationConfig: { irrigationTimes: [], drainTimes: [], irrigationPumpEntity: 'switch.pump', drainPumpEntity: 'switch.drain' },
                 ...overrides,
             };
         }

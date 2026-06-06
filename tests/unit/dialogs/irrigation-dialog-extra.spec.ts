@@ -74,6 +74,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
         } as any,
         irrigationConfig: {
             irrigationPumpEntity: 'switch.pump1',
+            drainPumpEntity: 'switch.drain1',
             irrigationTimes: [{ time: '08:00', duration: 30 }],
             drainTimes: [{ time: '09:00', duration: 45 }]
         } as any,
