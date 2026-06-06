@@ -2091,13 +2091,15 @@ export class IrrigationDialog extends LitElement {
           color
         )}
           `}
-      ${this._renderScheduleSection(
-          'Drain Schedule',
-          drainTimes,
-          schedulesDraft.drainDuration,
-          'drain',
-          '#FF9800'
-        )}
+      ${schedulesDraft.drainPumpEntity
+        ? this._renderScheduleSection(
+            'Drain Schedule',
+            drainTimes,
+            schedulesDraft.drainDuration,
+            'drain',
+            '#FF9800'
+          )
+        : nothing}
       ${!isCropSteering
         ? html`
             <div class="info-banner nudge-card">
