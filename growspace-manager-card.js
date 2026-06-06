@@ -548,6 +548,17 @@ const FAN_VPD_STAGE_DEFAULTS = {
     dry: { day: 0.95, night: 0.95 },
     cure: { day: 0.75, night: 0.75 },
 };
+const VPD_OPTIMAL_STAGE_DEFAULTS = {
+    seedling: { day: { low: 0.4, high: 0.8 }, night: { low: 0.4, high: 0.8 } },
+    clone: { day: { low: 0.3, high: 0.7 }, night: { low: 0.3, high: 0.7 } },
+    mother: { day: { low: 0.5, high: 0.9 }, night: { low: 0.4, high: 0.8 } },
+    veg: { day: { low: 0.5, high: 0.9 }, night: { low: 0.4, high: 0.8 } },
+    flower_early: { day: { low: 0.9, high: 1.4 }, night: { low: 0.8, high: 1.2 } },
+    flower_mid: { day: { low: 0.95, high: 1.45 }, night: { low: 0.85, high: 1.2 } },
+    flower_late: { day: { low: 1.0, high: 1.5 }, night: { low: 0.9, high: 1.2 } },
+    dry: { day: { low: 0.8, high: 1.1 }, night: { low: 0.8, high: 1.1 } },
+    cure: { day: { low: 0.6, high: 0.9 }, night: { low: 0.6, high: 0.9 } },
+};
 
 // --- Utils ---
 function createGrowspaceDevice(params) {
@@ -135866,5 +135877,5 @@ var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, FAN_VPD_STAGE_DEFAULTS, FAN_VPD_STAGE_KEYS, FAN_VPD_STAGE_LABELS, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, FAN_VPD_STAGE_DEFAULTS, FAN_VPD_STAGE_KEYS, FAN_VPD_STAGE_LABELS, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, VPD_OPTIMAL_STAGE_DEFAULTS, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map
