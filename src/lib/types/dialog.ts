@@ -130,6 +130,7 @@ export interface EnvironmentConfigData {
   powerSensors?: string[];
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
+  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
 }
 
 export interface VisionCheckupConfigEventDetail {
@@ -181,6 +182,7 @@ export interface EnvironmentConfigEventDetail {
   powerSensors?: string[];
   energySensors?: string[];
   circulationFanConfig?: CirculationFanConfig;
+  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
 }
 
 export interface ConfigDialogState {

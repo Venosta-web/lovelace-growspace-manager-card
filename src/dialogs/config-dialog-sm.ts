@@ -30,7 +30,8 @@ export type ConfigTabId =
   | 'tanks'
   | 'vision'
   | 'heatmap'
-  | 'subareas';
+  | 'subareas'
+  | 'vpd_targets';
 
 // ─── Environment Draft ────────────────────────────────────────────────────────
 
@@ -93,6 +94,9 @@ export interface EnvironmentDraft {
 
   // Fan controller
   circulationFanConfig: CirculationFanConfig;
+
+  // VPD optimal overrides
+  vpdOptimalOverrides: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
 }
 
 // ─── Growspaces tab ───────────────────────────────────────────────────────────
@@ -219,6 +223,7 @@ export interface ConfigTabStates {
   vision: EnvTabState;
   heatmap: HeatmapTabState;
   subareas: SubareasTabState;
+  vpd_targets: EnvTabState;
 }
 
 export interface ConfigDialogSM
@@ -377,6 +382,7 @@ function defaultEnvironmentDraft(): EnvironmentDraft {
       stage_vpd_enabled: false,
       stage_vpd_overrides: {},
     },
+    vpdOptimalOverrides: {},
   };
 }
 
@@ -392,6 +398,7 @@ function defaultTabs(): ConfigTabStates {
     vision: { sub: { kind: 'idle' } },
     heatmap: { sub: { kind: 'idle' } },
     subareas: { sub: { kind: 'idle' } },
+    vpd_targets: { sub: { kind: 'idle' } },
   };
 }
 
@@ -499,6 +506,7 @@ function envDraftFromDevice(device: GrowspaceDevice): EnvironmentDraft {
     visionMidHours: vc?.mid_check_hours ?? 6,
     visionLateOffset: vc?.late_check_offset_minutes ?? 60,
     circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
+    vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
   };
 }
 

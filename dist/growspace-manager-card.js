@@ -197,6 +197,7 @@ var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 1
 var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
 var mdiTrendingUp = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
 var mdiTrophy = "M18 2C17.1 2 16 3 16 4H8C8 3 6.9 2 6 2H2V11C2 12 3 13 4 13H6.2C6.6 15 7.9 16.7 11 17V19.08C8 19.54 8 22 8 22H16C16 22 16 19.54 13 19.08V17C16.1 16.7 17.4 15 17.8 13H20C21 13 22 12 22 11V2H18M6 11H4V4H6V11M20 11H18V4H20V11Z";
+var mdiTune = "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z";
 var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
 var mdiViewGrid = "M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3";
@@ -471,6 +472,7 @@ var ConfigTab;
     ConfigTab["VISION"] = "vision";
     ConfigTab["HEATMAP"] = "heatmap";
     ConfigTab["SUBAREAS"] = "subareas";
+    ConfigTab["VPD_TARGETS"] = "vpd_targets";
 })(ConfigTab || (ConfigTab = {}));
 const DEFAULT_METRIC_CONFIG = {
     color: '#fff',
@@ -5233,6 +5235,12 @@ const GrowspaceAPIResponseSchema = objectType({
         dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
             .optional()
             .default({}),
+        vpd_optimal_overrides: recordType(stringType(), objectType({
+            day: objectType({ low: numberType(), high: numberType() }),
+            night: objectType({ low: numberType(), high: numberType() }),
+        }))
+            .optional()
+            .default({}),
         electricity_cost_per_kwh: numberType().nullable().optional(),
         substrate_temperature_sensors: arrayType(stringType()).optional().default([]),
         camera_entities: arrayType(stringType()).optional().default([]),
@@ -5635,6 +5643,7 @@ class GrowspaceAdapter {
             runoffEcSensors: environment?.runoff_ec_sensors,
             drainVolumeSensors: environment?.drain_volume_sensors,
             irrigationFlowSensors: environment?.irrigation_flow_sensors,
+            vpdOptimalOverrides: environment?.vpd_optimal_overrides ?? {},
         };
         // 5. Stats from metrics sub-object
         const stats = {
@@ -17890,6 +17899,141 @@ StageVpdOverridesTable = __decorate([
     t$2('stage-vpd-overrides-table')
 ], StageVpdOverridesTable);
 
+let VpdOptimalOverridesTable = class VpdOptimalOverridesTable extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.overrides = {};
+    }
+    _getDisplayValue(key, period, slot) {
+        return this.overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
+    }
+    _handleChange(key, period, slot, raw) {
+        const parsed = parseFloat(raw);
+        const value = isNaN(parsed) ? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot] : parsed;
+        const existingPeriod = this.overrides[key]?.[period] ?? {
+            ...VPD_OPTIMAL_STAGE_DEFAULTS[key][period],
+        };
+        const existingStage = this.overrides[key] ?? { ...VPD_OPTIMAL_STAGE_DEFAULTS[key] };
+        const updated = {
+            ...this.overrides,
+            [key]: {
+                ...existingStage,
+                [period]: { ...existingPeriod, [slot]: value },
+            },
+        };
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
+    }
+    _handleReset() {
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="header-group-row">
+        <span></span>
+        <span class="group-label">Day (kPa)</span>
+        <span class="group-label">Night (kPa)</span>
+      </div>
+      <div class="header-sub-row">
+        <span>Stage</span>
+        <span>Low</span>
+        <span>High</span>
+        <span>Low</span>
+        <span>High</span>
+      </div>
+      ${FAN_VPD_STAGE_KEYS.map((key) => x `
+          <div class="stage-row">
+            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
+            ${['day', 'night'].map((period) => x `${['low', 'high'].map((slot) => x `
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="3.0"
+                      step="0.01"
+                      .value=${String(this._getDisplayValue(key, period, slot))}
+                      @change=${(e) => this._handleChange(key, period, slot, e.target.value)}
+                    />
+                  `)}`)}
+          </div>
+        `)}
+      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
+    `;
+    }
+};
+VpdOptimalOverridesTable.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .header-group-row {
+      display: grid;
+      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
+      gap: 8px;
+      padding: 0 4px 2px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+    }
+    .header-group-row .group-label {
+      grid-column: span 2;
+      text-align: center;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      padding-bottom: 2px;
+    }
+    .header-sub-row {
+      display: grid;
+      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
+      gap: 8px;
+      padding: 0 4px 4px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      margin-bottom: 4px;
+    }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
+      gap: 8px;
+      align-items: center;
+      padding: 4px;
+    }
+    .stage-label {
+      font-size: 0.875rem;
+      color: var(--primary-text-color);
+    }
+    input[type='number'] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      color: var(--primary-text-color);
+      font-size: 0.875rem;
+      padding: 4px 6px;
+      border-radius: 4px 4px 0 0;
+      outline: none;
+    }
+    input[type='number']:focus {
+      border-bottom: 2px solid var(--primary-color, #6200ee);
+    }
+    .reset-button {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      border-radius: 4px;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+    }
+    .reset-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], VpdOptimalOverridesTable.prototype, "overrides", void 0);
+VpdOptimalOverridesTable = __decorate([
+    t$2('vpd-optimal-overrides-table')
+], VpdOptimalOverridesTable);
+
 /**
  * Config Dialog State Machine
  *
@@ -17978,6 +18122,7 @@ function defaultEnvironmentDraft() {
             stage_vpd_enabled: false,
             stage_vpd_overrides: {},
         },
+        vpdOptimalOverrides: {},
     };
 }
 function defaultTabs$2() {
@@ -17992,6 +18137,7 @@ function defaultTabs$2() {
         vision: { sub: { kind: 'idle' } },
         heatmap: { sub: { kind: 'idle' } },
         subareas: { sub: { kind: 'idle' } },
+        vpd_targets: { sub: { kind: 'idle' } },
     };
 }
 /** Seed NotificationsTabState from a GrowspaceDevice. */
@@ -18097,6 +18243,7 @@ function envDraftFromDevice(device) {
         visionMidHours: vc?.mid_check_hours ?? 6,
         visionLateOffset: vc?.late_check_offset_minutes ?? 60,
         circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
+        vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
@@ -18870,6 +19017,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ...(environmentData.circulationFanConfig
                     ? { circulationFanConfig: environmentData.circulationFanConfig }
                     : {}),
+                vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
             }
             : {};
         this._sm = {
@@ -18951,6 +19099,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 powerSensors: d.powerSensors,
                 energySensors: d.energySensors,
                 circulationFanConfig: d.circulationFanConfig,
+                vpdOptimalOverrides: d.vpdOptimalOverrides,
             },
             bubbles: true,
             composed: true,
@@ -19379,6 +19528,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     powerSensors: [],
                     energySensors: [],
                     irrigationTanks: [],
+                    vpdOptimalOverrides: {},
                 },
             });
             this._dehumidifierControlEnabled = false;
@@ -20790,6 +20940,27 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       </div>
     `;
     }
+    _renderVpdTargetsSection() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiTune}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
+        </div>
+        <vpd-optimal-overrides-table
+          .overrides=${this._sm.environmentDraft.vpdOptimalOverrides}
+          @overrides-change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: e.detail } })}
+        ></vpd-optimal-overrides-table>
+      </div>
+    `;
+    }
     render() {
         if (!this.open)
             return x ``;
@@ -20886,6 +21057,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     ${this._navItem(ConfigTab.VISION, mdiCamera, 'Vision AI')}
                     ${this._navItem(ConfigTab.HEATMAP, mdiViewGrid, '3D Heatmap')}
                     ${this._navItem(ConfigTab.SUBAREAS, mdiViewDashboard, 'Subareas')}
+                    ${this._navItem(ConfigTab.VPD_TARGETS, mdiTune, 'VPD Targets')}
                   </div>
                 `
             : E}
@@ -20937,6 +21109,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : E}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : E}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : E}
+                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsSection() : E}
               </div>
             </div>
           </div>
@@ -20991,6 +21164,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ConfigTab.IRRIGATION,
             ConfigTab.TANKS,
             ConfigTab.HEATMAP,
+            ConfigTab.VPD_TARGETS,
         ].includes(this.currentTab)
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
@@ -129650,6 +129824,7 @@ function openConfigDialog(ctx, device) {
                 powerSensors: device?.environmentAttributes?.powerSensors || [],
                 energySensors: device?.environmentAttributes?.energySensors || [],
                 circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
+                vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
             },
         },
     });

@@ -141,6 +141,23 @@ describe('createInitialSM', () => {
     expect(sm.environmentDraft.visionMidHours).toBe(4);
     expect(sm.environmentDraft.visionLateOffset).toBe(45);
   });
+
+  it('seeds vpdOptimalOverrides from device environment attributes', () => {
+    const overrides = {
+      veg: { day: { low: 0.8, high: 1.2 }, night: { low: 0.6, high: 1.0 } },
+    };
+    const device = makeDevice({
+      environmentAttributes: { vpdOptimalOverrides: overrides } as any,
+    });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.vpdOptimalOverrides).toEqual(overrides);
+  });
+
+  it('defaults vpdOptimalOverrides to empty object when absent from device', () => {
+    const device = makeDevice({ environmentAttributes: {} });
+    const sm = createInitialSM(device);
+    expect(sm.environmentDraft.vpdOptimalOverrides).toEqual({});
+  });
 });
 
 // ─── Notifications tab seeding ────────────────────────────────────────────────
@@ -524,6 +541,18 @@ describe('UPDATE_ENV_DRAFT', () => {
       partial: { temperatureSensors: ['sensor.a', 'sensor.b'] },
     });
     expect(next.environmentDraft.temperatureSensors).toEqual(['sensor.a', 'sensor.b']);
+  });
+
+  it('updates vpdOptimalOverrides in the environment draft', () => {
+    const sm = createInitialSM();
+    const overrides = {
+      flower_early: { day: { low: 0.9, high: 1.3 }, night: { low: 0.7, high: 1.1 } },
+    };
+    const next = transition(sm, {
+      type: 'UPDATE_ENV_DRAFT',
+      partial: { vpdOptimalOverrides: overrides },
+    });
+    expect(next.environmentDraft.vpdOptimalOverrides).toEqual(overrides);
   });
 });
 

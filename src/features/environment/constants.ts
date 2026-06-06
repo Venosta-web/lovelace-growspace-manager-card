@@ -277,6 +277,7 @@ export enum ConfigTab {
   VISION = 'vision',
   HEATMAP = 'heatmap',
   SUBAREAS = 'subareas',
+  VPD_TARGETS = 'vpd_targets',
 }
 
 export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {

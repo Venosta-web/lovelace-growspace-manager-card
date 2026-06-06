@@ -95,6 +95,7 @@ describe('Growspace Zod Schemas', () => {
           light_sensors: [],
           humidifier_thresholds: {},
           dehumidifier_thresholds: {},
+          vpd_optimal_overrides: {},
           substrate_temperature_sensors: [],
           camera_entities: [],
           energy_sensors: [],
@@ -181,6 +182,22 @@ describe('Growspace Zod Schemas', () => {
           extra_metric_field: 'foo',
         },
       });
+    });
+
+    it('accepts vpd_optimal_overrides in the environment block and defaults to {} when absent', () => {
+      const withOverrides = GrowspaceAPIResponseSchema.parse({
+        environment: {
+          vpd_optimal_overrides: {
+            veg: { day: { low: 0.8, high: 1.2 }, night: { low: 0.6, high: 1.0 } },
+          },
+        },
+      });
+      expect(withOverrides.environment.vpd_optimal_overrides).toEqual({
+        veg: { day: { low: 0.8, high: 1.2 }, night: { low: 0.6, high: 1.0 } },
+      });
+
+      const withoutOverrides = GrowspaceAPIResponseSchema.parse({ environment: {} });
+      expect(withoutOverrides.environment.vpd_optimal_overrides).toEqual({});
     });
 
     describe('IrrigationScheduleItemSchema & IrrigationConfigSchema', () => {
