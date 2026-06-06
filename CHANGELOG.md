@@ -1,3 +1,10 @@
+# [1.1.0-next.25](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.24...v1.1.0-next.25) (2026-06-06)
+
+
+### Bug Fixes
+
+* conditionally render drain schedule only when drain pump entity is present ([38b8115](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/38b8115bfcdf319ede5dad32cabb76ad1d3788b1))
+
 # [1.1.0-next.24](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.23...v1.1.0-next.24) (2026-06-06)
 
 
