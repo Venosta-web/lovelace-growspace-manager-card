@@ -1,3 +1,19 @@
+# [1.1.0-next.24](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.23...v1.1.0-next.24) (2026-06-06)
+
+
+### Bug Fixes
+
+* persist vpdOptimalOverrides through save to backend ([23bb9f7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/23bb9f711d3466d92516128551fa5d0497bb1ede))
+* replace CSS Anchor Positioning with JS fallback in gs-help-tooltip ([#247](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/247)) ([b5b552e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b5b552e1b36e983f0a7b4695635bce525091a83b))
+* use orange-red mix for not-optimal (warning) chip color ([fd55d89](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/fd55d892f100f0caf2541fcf0d06c4c1d3d509db)), closes [#ffa726](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ffa726) [#ef5350](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/ef5350)
+
+
+### Features
+
+* add vpd-optimal-overrides-table component ([#243](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/243)) ([9d86636](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9d8663670f0356b45e4a2b867c8b59bb1f810357))
+* rename VWC Parameters to Targets P2 in crop steering tab ([e79586a](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/e79586a6f9f84a0177760a255c5916b3315dde96))
+* VPD Targets tab — full end-to-end wiring ([#244](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/244)) ([1af8b08](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1af8b083cbb96998b69b71d62ea18cba650cee63))
+
 # [1.1.0-next.23](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.22...v1.1.0-next.23) (2026-06-05)
 
 
