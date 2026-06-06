@@ -192,9 +192,18 @@ Automated irrigation mode driven by volumetric water content (VWC) targets rathe
 **Phase Windows** (P0 / P1 / P2 / P3)
 The four daily phases that structure a Crop Steering day, all derived from the growspace's `IrrigationStrategy` settings:
 - P0 — Activation: first shot(s) at lights-on, lasting `p0DurationMinutes`
-- P1 — Ramp-up: shots fire until substrate reaches `targetVwcPercent`
-- P2 — Maintenance: shots fire when VWC drops below `targetVwcPercent − maintenanceDrybackPercent`
+- P1 — Ramp-up: shots fire until substrate reaches the **Saturation Target** (`targetVwcPercent`)
+- P2 — Maintenance: shots fire when VWC drops below the **P2 trigger threshold** — either the **P2 Direct Trigger** (`soilTriggerPercent`) if set, or `targetVwcPercent − maintenanceDrybackPercent` (the **Maintenance Dryback**) otherwise
 - P3 — Dry-back: no irrigation; runs from `p2StopBeforeLightsOffMinutes` before lights-off until next lights-on
+
+**P2 Thresholds** (Steering tab)
+The three controls that govern when P2 fires, all grouped together in the Steering tab:
+- **Saturation Target P1 (%)** (`targetVwcPercent`) — the VWC ceiling P1 ramps toward; P2 begins the moment this is reached
+- **Maintenance Dryback (%)** (`maintenanceDrybackPercent`) — how far VWC may fall in P2 before a shot fires; the calculated P2 trigger is `Saturation Target − Maintenance Dryback`
+- **P2 Direct Trigger (%)** (`soilTriggerPercent`, optional) — if set, replaces the calculated trigger with a fixed threshold; useful when you prefer an absolute floor rather than a relative dryback
+
+**Safety Caps** (Config tab, visible only when Crop Steering is enabled)
+Hard limits applied on top of the steering logic: **Daily Volume Cap (L)** and **Max Cycles / Day**. Neither initiates watering — they only stop the steering logic from exceeding the configured bounds. Leave blank to disable.
 
 **Drain Schedule**
 Time-based drain events that run regardless of Irrigation Mode. Always editable in the Schedules tab.

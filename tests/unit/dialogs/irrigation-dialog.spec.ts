@@ -361,7 +361,7 @@ describe('IrrigationDialog', () => {
         it('should update target vwc', async () => {
             const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
             const targetVwcInput = Array.from(inputs || [])
-                .find(i => i.getAttribute('label') === 'Target VWC (%)') as any;
+                .find(i => i.getAttribute('label') === 'Saturation Target (%)') as any;
 
             expect(targetVwcInput).toBeTruthy();
             targetVwcInput.value = '55';
@@ -678,8 +678,8 @@ describe('IrrigationDialog', () => {
             await element.updateComplete;
 
             const strategyFields = [
-                { label: 'Target VWC (%)', key: 'targetVwcPercent', val: '60', expected: 60 },
-                { label: 'VWC Delta (%)', key: 'maintenanceDrybackPercent', val: '5', expected: 5 },
+                { label: 'Saturation Target (%)', key: 'targetVwcPercent', val: '60', expected: 60 },
+                { label: 'Maintenance Dryback (%)', key: 'maintenanceDrybackPercent', val: '5', expected: 5 },
                 { label: 'P0 Duration (min)', key: 'p0DurationMinutes', val: '30', expected: 30 },
                 { label: 'P2 Stop Buffer (min)', key: 'p2StopBeforeLightsOffMinutes', val: '60', expected: 60 },
                 { label: 'Shot Duration (sec)', key: 'shotDurationSeconds', val: '10', expected: 10 },
@@ -1845,29 +1845,42 @@ describe('IrrigationDialog', () => {
                 (configTab as HTMLElement)?.click();
                 await element.updateComplete;
 
-                // Cycle Parameters only render when crop steering is ON
+                // Safety Caps only render when crop steering is ON
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
             });
 
-            it('should update _soilTriggerPercent from the Soil Trigger input', async () => {
-                const soilInput = element.shadowRoot?.querySelector('input[min="0"][max="100"]') as HTMLInputElement;
+            it('should update _soilTriggerPercent from the P2 Direct Trigger input', async () => {
+                // P2 Direct Trigger is in the Steering tab
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
+                (steeringTab as HTMLElement)?.click();
+                await element.updateComplete;
+
+                const soilInput = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || [])
+                    .find(i => i.getAttribute('label') === 'P2 Direct Trigger (%)') as any;
                 expect(soilInput).toBeTruthy();
 
-                soilInput.value = '65';
-                soilInput.dispatchEvent(new Event('change'));
+                soilInput.dispatchEvent(new CustomEvent('change', { detail: '65' }));
                 await element.updateComplete;
 
                 expect((element as any)._sm.tabs.config.draft.soilTriggerPercent).toBe(65);
             });
 
             it('should set _soilTriggerPercent to null when input is cleared', async () => {
+                // Navigate to Steering tab first, then mutate state so the input is in the DOM
+                const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
+                const steeringTab = Array.from(tabs ?? []).find((t) => t.textContent?.includes('Crop Steering'));
+                (steeringTab as HTMLElement)?.click();
+                await element.updateComplete;
+
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_CONFIG_DRAFT', partial: { soilTriggerPercent: 50 } });
                 await element.updateComplete;
 
-                const soilInput = element.shadowRoot?.querySelector('input[min="0"][max="100"]') as HTMLInputElement;
-                soilInput.value = '';
-                soilInput.dispatchEvent(new Event('change'));
+                const soilInput = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || [])
+                    .find(i => i.getAttribute('label') === 'P2 Direct Trigger (%)') as any;
+                expect(soilInput).toBeTruthy();
+                soilInput.dispatchEvent(new CustomEvent('change', { detail: '' }));
                 await element.updateComplete;
 
                 expect((element as any)._sm.tabs.config.draft.soilTriggerPercent).toBeNull();
@@ -1984,18 +1997,18 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
             });
 
-            it('hides Cycle Parameters when crop steering is OFF', async () => {
+            it('hides Safety Caps when crop steering is OFF', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: false } });
                 await element.updateComplete;
 
-                expect(element.shadowRoot?.innerHTML).not.toContain('Cycle Parameters');
+                expect(element.shadowRoot?.innerHTML).not.toContain('Safety Caps');
             });
 
-            it('shows Cycle Parameters when crop steering is ON', async () => {
+            it('shows Safety Caps when crop steering is ON', async () => {
                 (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
                 await element.updateComplete;
 
-                expect(element.shadowRoot?.innerHTML).toContain('Cycle Parameters');
+                expect(element.shadowRoot?.innerHTML).toContain('Safety Caps');
             });
 
             it('shows Skip During Dark when crop steering is OFF', async () => {
@@ -2061,9 +2074,14 @@ describe('IrrigationDialog', () => {
                 await element.updateComplete;
             });
 
-            it('labels the VWC targets group "Targets P2"', async () => {
-                const title = element.shadowRoot?.querySelector('.vwc-targets-group-title');
-                expect(title?.textContent).toBe('Targets P2');
+            it('labels the first VWC targets group "P1 Thresholds"', async () => {
+                const titles = element.shadowRoot?.querySelectorAll('.vwc-targets-group-title');
+                expect(titles?.[0]?.textContent?.trim()).toBe('P1 Thresholds');
+            });
+
+            it('labels the second VWC targets group "P2 Thresholds"', async () => {
+                const titles = element.shadowRoot?.querySelectorAll('.vwc-targets-group-title');
+                expect(titles?.[1]?.textContent?.trim()).toBe('P2 Thresholds');
             });
         });
 
