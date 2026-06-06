@@ -11695,11 +11695,11 @@ const dialogStyles = [
       padding: 16px;
       margin: 8px 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 16px;
     }
     .vwc-targets-group-title {
-      grid-column: span 2;
+      grid-column: span 3;
       margin: 0 0 4px 0;
       font-size: 0.9rem;
       font-weight: 500;
@@ -12839,6 +12839,9 @@ Md3Switch = __decorate([
     t$2('md3-switch')
 ], Md3Switch);
 
+// CSS Anchor Positioning is scoped to the shadow tree, but the popover API
+// promotes the popover element to the document top layer (outside all shadow
+// roots), so `position-anchor` silently breaks. We use a JS fallback instead.
 let GsHelpTooltip = class GsHelpTooltip extends i$3 {
     constructor() {
         super(...arguments);
@@ -12846,6 +12849,41 @@ let GsHelpTooltip = class GsHelpTooltip extends i$3 {
         this.placement = 'top';
         this.label = 'Help';
         this._popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
+        this._positionPopover = (e) => {
+            const te = e;
+            const popover = this.shadowRoot.querySelector('.help-popover');
+            const btn = this.shadowRoot.querySelector('.help-trigger');
+            if (!popover || !btn)
+                return;
+            if (te.newState === 'open') {
+                const rect = btn.getBoundingClientRect();
+                switch (this.placement) {
+                    case 'bottom':
+                        popover.style.top = `${rect.bottom + 6}px`;
+                        popover.style.left = `${rect.left + rect.width / 2}px`;
+                        break;
+                    case 'left':
+                        popover.style.top = `${rect.top + rect.height / 2}px`;
+                        popover.style.left = `${rect.left - popover.offsetWidth - 6}px`;
+                        break;
+                    case 'right':
+                        popover.style.top = `${rect.top + rect.height / 2}px`;
+                        popover.style.left = `${rect.right + 6}px`;
+                        break;
+                    default: // top
+                        popover.style.top = `${rect.top - popover.offsetHeight - 6}px`;
+                        popover.style.left = `${rect.left + rect.width / 2}px`;
+                }
+            }
+            else {
+                popover.style.top = '';
+                popover.style.left = '';
+            }
+        };
+    }
+    firstUpdated() {
+        this.shadowRoot.querySelector('.help-popover')
+            ?.addEventListener('toggle', this._positionPopover);
     }
     render() {
         if (!this.content)
@@ -12853,7 +12891,6 @@ let GsHelpTooltip = class GsHelpTooltip extends i$3 {
         return x `
       <button
         class="help-trigger"
-        style="anchor-name: --${this._popoverId};"
         popovertarget="${this._popoverId}"
         aria-label="Help: ${this.label}"
         title="${this.label}"
@@ -12864,7 +12901,6 @@ let GsHelpTooltip = class GsHelpTooltip extends i$3 {
         id="${this._popoverId}"
         class="help-popover"
         popover="auto"
-        style="position-anchor: --${this._popoverId};"
       >
         <div class="help-popover-inner">${this.content}</div>
       </div>
@@ -12910,11 +12946,11 @@ GsHelpTooltip.styles = i$6 `
     .help-popover {
       position: fixed;
       inset: auto;
-      position-try-fallbacks: flip-block, flip-inline;
       margin: 0;
       border: none;
       padding: 0;
       background: transparent;
+      translate: -50% 0;
     }
 
     .help-popover[popover]:popover-open {
@@ -12946,29 +12982,6 @@ GsHelpTooltip.styles = i$6 `
       }
     }
 
-    :host([placement='top']) .help-popover {
-      bottom: anchor(top);
-      left: anchor(center);
-      translate: -50% -6px;
-    }
-
-    :host([placement='bottom']) .help-popover {
-      top: anchor(bottom);
-      left: anchor(center);
-      translate: -50% 6px;
-    }
-
-    :host([placement='left']) .help-popover {
-      right: anchor(left);
-      top: anchor(center);
-      translate: -6px -50%;
-    }
-
-    :host([placement='right']) .help-popover {
-      left: anchor(right);
-      top: anchor(center);
-      translate: 6px -50%;
-    }
   `;
 __decorate([
     n$5({ type: String })
@@ -28940,22 +28953,51 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             `
             : ''}
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
           <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title">Targets P2</div>
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P1 Thresholds
+              <gs-help-tooltip
+                content="Saturation Target: P1 ramps up until substrate VWC reaches this value, then switches to P2 maintenance."
+              ></gs-help-tooltip>
+            </div>
             <md3-number-input
-              label="Target VWC (%)"
+              label="Saturation Target (%)"
               .value=${this._sm.tabs.steering.draft.targetVwcPercent}
               @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
             ></md3-number-input>
+          </div>
+
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P2 Thresholds
+              <gs-help-tooltip
+                content="Maintenance Dryback: shots fire in P2 when VWC drops this many % below the saturation target. P2 Direct Trigger: optional — if set, bypasses the calculated threshold and fires directly when VWC drops below this value."
+              ></gs-help-tooltip>
+            </div>
             <md3-number-input
-              label="VWC Delta (%)"
+              label="Maintenance Dryback (%)"
               .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
               @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
             ></md3-number-input>
+            <md3-number-input
+              label="P2 Direct Trigger (%)"
+              placeholder="Off"
+              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
+            ? String(this._sm.tabs.config.draft.soilTriggerPercent)
+            : ''}
+              @change=${(e) => {
+            const v = e.detail;
+            this._sm = transition$4(this._sm, {
+                type: 'UPDATE_CONFIG_DRAFT',
+                partial: { soilTriggerPercent: v !== '' && v != null ? parseFloat(String(v)) : null },
+            });
+        }}
+            ></md3-number-input>
           </div>
+        </div>
 
-          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
+          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
 
           <div style="display:flex;align-items:center;gap:8px;">
             <md3-text-input
@@ -29140,33 +29182,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div
           style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
         >
-          <h3 style="margin:0;">Cycle Parameters</h3>
+          <h3 style="margin:0;">Safety Caps</h3>
           <gs-help-tooltip
-            message="Optional safety limits. Leave blank to disable."
+            content="Optional hard limits on top of the steering logic. Leave blank to disable."
           ></gs-help-tooltip>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-          <div class="md3-input-group">
-            <label class="md3-label">Soil Trigger (%)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
-            ? String(this._sm.tabs.config.draft.soilTriggerPercent)
-            : ''}
-              placeholder="Off"
-              @change=${(e) => {
-            const v = e.target.value;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { soilTriggerPercent: v ? parseFloat(v) : null },
-            });
-        }}
-            />
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="md3-input-group">
             <label class="md3-label">Daily Volume Cap (L)</label>
             <input
