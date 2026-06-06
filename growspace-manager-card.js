@@ -14611,9 +14611,9 @@ GrowspaceChip.styles = [
       }
 
       .stat-chip.status-warning {
-        color: #ffa726 !important;
-        border-color: rgba(255, 167, 38, 0.5) !important;
-        background: rgba(255, 167, 38, 0.1) !important;
+        color: rgb(247, 125, 59) !important;
+        border-color: rgba(247, 125, 59, 0.5) !important;
+        background: rgba(247, 125, 59, 0.1) !important;
       }
 
       .stat-chip.status-danger {
