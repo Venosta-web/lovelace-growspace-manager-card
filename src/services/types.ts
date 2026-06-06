@@ -419,6 +419,9 @@ export interface EnvironmentAttributes {
   runoffEcSensors?: string[];
   drainVolumeSensors?: string[];
   irrigationFlowSensors?: string[];
+
+  // VPD optimal overrides
+  vpdOptimalOverrides?: Record<string, { day: { low: number; high: number }; night: { low: number; high: number } }>;
 }
 
 export interface GrowspaceStats {

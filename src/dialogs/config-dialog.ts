@@ -20,6 +20,7 @@ import {
   mdiChevronDown,
   mdiBell,
   mdiLightningBolt,
+  mdiTune,
 } from '@mdi/js';
 import { dialogStyles } from '../styles/dialog.styles';
 import { HomeAssistant } from 'custom-card-helpers';
@@ -32,6 +33,8 @@ import './sensor-group-dialog';
 import './subarea-config-dialog';
 import '../features/environment/components/stage-vpd-overrides-table';
 import type { StageVpdOverrides } from '../features/environment/components/stage-vpd-overrides-table';
+import '../features/environment/components/vpd-optimal-overrides-table';
+import type { VpdOptimalOverrides } from '../features/environment/components/vpd-optimal-overrides-table';
 import {
   GrowspaceDevice,
   DehumidifierStage,
@@ -1034,6 +1037,7 @@ export class ConfigDialog extends LitElement {
           ...(environmentData.circulationFanConfig
             ? { circulationFanConfig: environmentData.circulationFanConfig }
             : {}),
+          vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
         }
       : {};
 
@@ -1124,6 +1128,7 @@ export class ConfigDialog extends LitElement {
           powerSensors: d.powerSensors,
           energySensors: d.energySensors,
           circulationFanConfig: d.circulationFanConfig,
+          vpdOptimalOverrides: d.vpdOptimalOverrides,
         } satisfies EnvironmentConfigEventDetail,
         bubbles: true,
         composed: true,
@@ -1609,6 +1614,7 @@ export class ConfigDialog extends LitElement {
           powerSensors: [],
           energySensors: [],
           irrigationTanks: [],
+          vpdOptimalOverrides: {},
         },
       });
       this._dehumidifierControlEnabled = false;
@@ -3291,6 +3297,29 @@ export class ConfigDialog extends LitElement {
     `;
   }
 
+  private _renderVpdTargetsSection() {
+    return html`
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiTune}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
+        </div>
+        <vpd-optimal-overrides-table
+          .overrides=${this._sm.environmentDraft.vpdOptimalOverrides as VpdOptimalOverrides}
+          @overrides-change=${(e: CustomEvent<VpdOptimalOverrides>) =>
+            this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: e.detail } })}
+        ></vpd-optimal-overrides-table>
+      </div>
+    `;
+  }
+
   render() {
     if (!this.open) return html``;
 
@@ -3392,6 +3421,7 @@ export class ConfigDialog extends LitElement {
                     ${this._navItem(ConfigTab.VISION, mdiCamera, 'Vision AI')}
                     ${this._navItem(ConfigTab.HEATMAP, mdiViewGrid, '3D Heatmap')}
                     ${this._navItem(ConfigTab.SUBAREAS, mdiViewDashboard, 'Subareas')}
+                    ${this._navItem(ConfigTab.VPD_TARGETS, mdiTune, 'VPD Targets')}
                   </div>
                 `
               : nothing}
@@ -3445,6 +3475,7 @@ export class ConfigDialog extends LitElement {
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : nothing}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : nothing}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : nothing}
+                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsSection() : nothing}
               </div>
             </div>
           </div>
@@ -3498,6 +3529,7 @@ export class ConfigDialog extends LitElement {
               ConfigTab.IRRIGATION,
               ConfigTab.TANKS,
               ConfigTab.HEATMAP,
+              ConfigTab.VPD_TARGETS,
             ].includes(this.currentTab)
               ? html`
                   <button class="md3-button primary" @click=${this._submitEnvironment}>

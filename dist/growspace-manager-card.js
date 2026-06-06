@@ -197,6 +197,7 @@ var mdiThermometer = "M15 13V5A3 3 0 0 0 9 5V13A5 5 0 1 0 15 13M12 4A1 1 0 0 1 1
 var mdiTrendingDown = "M16,18L18.29,15.71L13.41,10.83L9.41,14.83L2,7.41L3.41,6L9.41,12L13.41,8L19.71,14.29L22,12V18H16Z";
 var mdiTrendingUp = "M16,6L18.29,8.29L13.41,13.17L9.41,9.17L2,16.59L3.41,18L9.41,12L13.41,16L19.71,9.71L22,12V6H16Z";
 var mdiTrophy = "M18 2C17.1 2 16 3 16 4H8C8 3 6.9 2 6 2H2V11C2 12 3 13 4 13H6.2C6.6 15 7.9 16.7 11 17V19.08C8 19.54 8 22 8 22H16C16 22 16 19.54 13 19.08V17C16.1 16.7 17.4 15 17.8 13H20C21 13 22 12 22 11V2H18M6 11H4V4H6V11M20 11H18V4H20V11Z";
+var mdiTune = "M3,17V19H9V17H3M3,5V7H13V5H3M13,21V19H21V17H13V15H11V21H13M7,9V11H3V13H7V15H9V9H7M21,13V11H11V13H21M15,9H17V7H21V5H17V3H15V9Z";
 var mdiTuneVariant = "M8 13C6.14 13 4.59 14.28 4.14 16H2V18H4.14C4.59 19.72 6.14 21 8 21S11.41 19.72 11.86 18H22V16H11.86C11.41 14.28 9.86 13 8 13M8 19C6.9 19 6 18.1 6 17C6 15.9 6.9 15 8 15S10 15.9 10 17C10 18.1 9.1 19 8 19M19.86 6C19.41 4.28 17.86 3 16 3S12.59 4.28 12.14 6H2V8H12.14C12.59 9.72 14.14 11 16 11S19.41 9.72 19.86 8H22V6H19.86M16 9C14.9 9 14 8.1 14 7C14 5.9 14.9 5 16 5S18 5.9 18 7C18 8.1 17.1 9 16 9Z";
 var mdiViewDashboard = "M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z";
 var mdiViewGrid = "M3,11H11V3H3M3,21H11V13H3M13,21H21V13H13M13,3V11H21V3";
@@ -471,6 +472,7 @@ var ConfigTab;
     ConfigTab["VISION"] = "vision";
     ConfigTab["HEATMAP"] = "heatmap";
     ConfigTab["SUBAREAS"] = "subareas";
+    ConfigTab["VPD_TARGETS"] = "vpd_targets";
 })(ConfigTab || (ConfigTab = {}));
 const DEFAULT_METRIC_CONFIG = {
     color: '#fff',
@@ -547,6 +549,17 @@ const FAN_VPD_STAGE_DEFAULTS = {
     flower_late: { day: 1.25, night: 1.05 },
     dry: { day: 0.95, night: 0.95 },
     cure: { day: 0.75, night: 0.75 },
+};
+const VPD_OPTIMAL_STAGE_DEFAULTS = {
+    seedling: { day: { low: 0.4, high: 0.8 }, night: { low: 0.4, high: 0.8 } },
+    clone: { day: { low: 0.3, high: 0.7 }, night: { low: 0.3, high: 0.7 } },
+    mother: { day: { low: 0.5, high: 0.9 }, night: { low: 0.4, high: 0.8 } },
+    veg: { day: { low: 0.5, high: 0.9 }, night: { low: 0.4, high: 0.8 } },
+    flower_early: { day: { low: 0.9, high: 1.4 }, night: { low: 0.8, high: 1.2 } },
+    flower_mid: { day: { low: 0.95, high: 1.45 }, night: { low: 0.85, high: 1.2 } },
+    flower_late: { day: { low: 1.0, high: 1.5 }, night: { low: 0.9, high: 1.2 } },
+    dry: { day: { low: 0.8, high: 1.1 }, night: { low: 0.8, high: 1.1 } },
+    cure: { day: { low: 0.6, high: 0.9 }, night: { low: 0.6, high: 0.9 } },
 };
 
 // --- Utils ---
@@ -5222,6 +5235,12 @@ const GrowspaceAPIResponseSchema = objectType({
         dehumidifier_thresholds: recordType(stringType(), recordType(stringType(), objectType({ on: numberType(), off: numberType() })))
             .optional()
             .default({}),
+        vpd_optimal_overrides: recordType(stringType(), objectType({
+            day: objectType({ low: numberType(), high: numberType() }),
+            night: objectType({ low: numberType(), high: numberType() }),
+        }))
+            .optional()
+            .default({}),
         electricity_cost_per_kwh: numberType().nullable().optional(),
         substrate_temperature_sensors: arrayType(stringType()).optional().default([]),
         camera_entities: arrayType(stringType()).optional().default([]),
@@ -5624,6 +5643,7 @@ class GrowspaceAdapter {
             runoffEcSensors: environment?.runoff_ec_sensors,
             drainVolumeSensors: environment?.drain_volume_sensors,
             irrigationFlowSensors: environment?.irrigation_flow_sensors,
+            vpdOptimalOverrides: environment?.vpd_optimal_overrides ?? {},
         };
         // 5. Stats from metrics sub-object
         const stats = {
@@ -6536,6 +6556,8 @@ async function configureEnvironment$1(data) {
         payload.energy_sensors = data.energySensors;
     if (data.circulationFanConfig)
         payload.circulation_fan_config = data.circulationFanConfig;
+    if (data.vpdOptimalOverrides)
+        payload.vpd_optimal_overrides = data.vpdOptimalOverrides;
     await callService('growspace_manager', 'configure_environment', payload);
 }
 async function configureCirculationFan({ growspaceId, fanConfig, }) {
@@ -11673,11 +11695,11 @@ const dialogStyles = [
       padding: 16px;
       margin: 8px 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 16px;
     }
     .vwc-targets-group-title {
-      grid-column: span 2;
+      grid-column: span 3;
       margin: 0 0 4px 0;
       font-size: 0.9rem;
       font-weight: 500;
@@ -12817,6 +12839,9 @@ Md3Switch = __decorate([
     t$2('md3-switch')
 ], Md3Switch);
 
+// CSS Anchor Positioning is scoped to the shadow tree, but the popover API
+// promotes the popover element to the document top layer (outside all shadow
+// roots), so `position-anchor` silently breaks. We use a JS fallback instead.
 let GsHelpTooltip = class GsHelpTooltip extends i$3 {
     constructor() {
         super(...arguments);
@@ -12824,6 +12849,41 @@ let GsHelpTooltip = class GsHelpTooltip extends i$3 {
         this.placement = 'top';
         this.label = 'Help';
         this._popoverId = `gs-help-${Math.random().toString(36).slice(2)}`;
+        this._positionPopover = (e) => {
+            const te = e;
+            const popover = this.shadowRoot.querySelector('.help-popover');
+            const btn = this.shadowRoot.querySelector('.help-trigger');
+            if (!popover || !btn)
+                return;
+            if (te.newState === 'open') {
+                const rect = btn.getBoundingClientRect();
+                switch (this.placement) {
+                    case 'bottom':
+                        popover.style.top = `${rect.bottom + 6}px`;
+                        popover.style.left = `${rect.left + rect.width / 2}px`;
+                        break;
+                    case 'left':
+                        popover.style.top = `${rect.top + rect.height / 2}px`;
+                        popover.style.left = `${rect.left - popover.offsetWidth - 6}px`;
+                        break;
+                    case 'right':
+                        popover.style.top = `${rect.top + rect.height / 2}px`;
+                        popover.style.left = `${rect.right + 6}px`;
+                        break;
+                    default: // top
+                        popover.style.top = `${rect.top - popover.offsetHeight - 6}px`;
+                        popover.style.left = `${rect.left + rect.width / 2}px`;
+                }
+            }
+            else {
+                popover.style.top = '';
+                popover.style.left = '';
+            }
+        };
+    }
+    firstUpdated() {
+        this.shadowRoot.querySelector('.help-popover')
+            ?.addEventListener('toggle', this._positionPopover);
     }
     render() {
         if (!this.content)
@@ -12831,7 +12891,6 @@ let GsHelpTooltip = class GsHelpTooltip extends i$3 {
         return x `
       <button
         class="help-trigger"
-        style="anchor-name: --${this._popoverId};"
         popovertarget="${this._popoverId}"
         aria-label="Help: ${this.label}"
         title="${this.label}"
@@ -12842,7 +12901,6 @@ let GsHelpTooltip = class GsHelpTooltip extends i$3 {
         id="${this._popoverId}"
         class="help-popover"
         popover="auto"
-        style="position-anchor: --${this._popoverId};"
       >
         <div class="help-popover-inner">${this.content}</div>
       </div>
@@ -12888,11 +12946,11 @@ GsHelpTooltip.styles = i$6 `
     .help-popover {
       position: fixed;
       inset: auto;
-      position-try-fallbacks: flip-block, flip-inline;
       margin: 0;
       border: none;
       padding: 0;
       background: transparent;
+      translate: -50% 0;
     }
 
     .help-popover[popover]:popover-open {
@@ -12924,29 +12982,6 @@ GsHelpTooltip.styles = i$6 `
       }
     }
 
-    :host([placement='top']) .help-popover {
-      bottom: anchor(top);
-      left: anchor(center);
-      translate: -50% -6px;
-    }
-
-    :host([placement='bottom']) .help-popover {
-      top: anchor(bottom);
-      left: anchor(center);
-      translate: -50% 6px;
-    }
-
-    :host([placement='left']) .help-popover {
-      right: anchor(left);
-      top: anchor(center);
-      translate: -6px -50%;
-    }
-
-    :host([placement='right']) .help-popover {
-      left: anchor(right);
-      top: anchor(center);
-      translate: 6px -50%;
-    }
   `;
 __decorate([
     n$5({ type: String })
@@ -14611,9 +14646,9 @@ GrowspaceChip.styles = [
       }
 
       .stat-chip.status-warning {
-        color: #ffa726 !important;
-        border-color: rgba(255, 167, 38, 0.5) !important;
-        background: rgba(255, 167, 38, 0.1) !important;
+        color: rgb(247, 125, 59) !important;
+        border-color: rgba(247, 125, 59, 0.5) !important;
+        background: rgba(247, 125, 59, 0.1) !important;
       }
 
       .stat-chip.status-danger {
@@ -17879,6 +17914,141 @@ StageVpdOverridesTable = __decorate([
     t$2('stage-vpd-overrides-table')
 ], StageVpdOverridesTable);
 
+let VpdOptimalOverridesTable = class VpdOptimalOverridesTable extends i$3 {
+    constructor() {
+        super(...arguments);
+        this.overrides = {};
+    }
+    _getDisplayValue(key, period, slot) {
+        return this.overrides[key]?.[period]?.[slot] ?? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot];
+    }
+    _handleChange(key, period, slot, raw) {
+        const parsed = parseFloat(raw);
+        const value = isNaN(parsed) ? VPD_OPTIMAL_STAGE_DEFAULTS[key][period][slot] : parsed;
+        const existingPeriod = this.overrides[key]?.[period] ?? {
+            ...VPD_OPTIMAL_STAGE_DEFAULTS[key][period],
+        };
+        const existingStage = this.overrides[key] ?? { ...VPD_OPTIMAL_STAGE_DEFAULTS[key] };
+        const updated = {
+            ...this.overrides,
+            [key]: {
+                ...existingStage,
+                [period]: { ...existingPeriod, [slot]: value },
+            },
+        };
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: updated, bubbles: true, composed: true }));
+    }
+    _handleReset() {
+        this.dispatchEvent(new CustomEvent('overrides-change', { detail: {}, bubbles: true, composed: true }));
+    }
+    render() {
+        return x `
+      <div class="header-group-row">
+        <span></span>
+        <span class="group-label">Day (kPa)</span>
+        <span class="group-label">Night (kPa)</span>
+      </div>
+      <div class="header-sub-row">
+        <span>Stage</span>
+        <span>Low</span>
+        <span>High</span>
+        <span>Low</span>
+        <span>High</span>
+      </div>
+      ${FAN_VPD_STAGE_KEYS.map((key) => x `
+          <div class="stage-row">
+            <span class="stage-label">${FAN_VPD_STAGE_LABELS[key]}</span>
+            ${['day', 'night'].map((period) => x `${['low', 'high'].map((slot) => x `
+                    <input
+                      type="number"
+                      min="0.1"
+                      max="3.0"
+                      step="0.01"
+                      .value=${String(this._getDisplayValue(key, period, slot))}
+                      @change=${(e) => this._handleChange(key, period, slot, e.target.value)}
+                    />
+                  `)}`)}
+          </div>
+        `)}
+      <button class="reset-button" @click=${this._handleReset}>Reset all to defaults</button>
+    `;
+    }
+};
+VpdOptimalOverridesTable.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .header-group-row {
+      display: grid;
+      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
+      gap: 8px;
+      padding: 0 4px 2px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+    }
+    .header-group-row .group-label {
+      grid-column: span 2;
+      text-align: center;
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      padding-bottom: 2px;
+    }
+    .header-sub-row {
+      display: grid;
+      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
+      gap: 8px;
+      padding: 0 4px 4px;
+      font-size: 0.75rem;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+      margin-bottom: 4px;
+    }
+    .stage-row {
+      display: grid;
+      grid-template-columns: 1fr repeat(2, 90px) repeat(2, 90px);
+      gap: 8px;
+      align-items: center;
+      padding: 4px;
+    }
+    .stage-label {
+      font-size: 0.875rem;
+      color: var(--primary-text-color);
+    }
+    input[type='number'] {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.05);
+      border: none;
+      border-bottom: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      color: var(--primary-text-color);
+      font-size: 0.875rem;
+      padding: 4px 6px;
+      border-radius: 4px 4px 0 0;
+      outline: none;
+    }
+    input[type='number']:focus {
+      border-bottom: 2px solid var(--primary-color, #6200ee);
+    }
+    .reset-button {
+      margin-top: 12px;
+      background: transparent;
+      border: 1px solid var(--secondary-text-color, rgba(255, 255, 255, 0.4));
+      border-radius: 4px;
+      color: var(--primary-text-color);
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: 4px 12px;
+    }
+    .reset-button:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], VpdOptimalOverridesTable.prototype, "overrides", void 0);
+VpdOptimalOverridesTable = __decorate([
+    t$2('vpd-optimal-overrides-table')
+], VpdOptimalOverridesTable);
+
 /**
  * Config Dialog State Machine
  *
@@ -17967,6 +18137,7 @@ function defaultEnvironmentDraft() {
             stage_vpd_enabled: false,
             stage_vpd_overrides: {},
         },
+        vpdOptimalOverrides: {},
     };
 }
 function defaultTabs$2() {
@@ -17981,6 +18152,7 @@ function defaultTabs$2() {
         vision: { sub: { kind: 'idle' } },
         heatmap: { sub: { kind: 'idle' } },
         subareas: { sub: { kind: 'idle' } },
+        vpd_targets: { sub: { kind: 'idle' } },
     };
 }
 /** Seed NotificationsTabState from a GrowspaceDevice. */
@@ -18086,6 +18258,7 @@ function envDraftFromDevice(device) {
         visionMidHours: vc?.mid_check_hours ?? 6,
         visionLateOffset: vc?.late_check_offset_minutes ?? 60,
         circulationFanConfig: attrs.circulationFanConfig ?? defaultEnvironmentDraft().circulationFanConfig,
+        vpdOptimalOverrides: attrs.vpdOptimalOverrides ?? {},
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
@@ -18859,6 +19032,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ...(environmentData.circulationFanConfig
                     ? { circulationFanConfig: environmentData.circulationFanConfig }
                     : {}),
+                vpdOptimalOverrides: environmentData.vpdOptimalOverrides || {},
             }
             : {};
         this._sm = {
@@ -18940,6 +19114,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 powerSensors: d.powerSensors,
                 energySensors: d.energySensors,
                 circulationFanConfig: d.circulationFanConfig,
+                vpdOptimalOverrides: d.vpdOptimalOverrides,
             },
             bubbles: true,
             composed: true,
@@ -19368,6 +19543,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     powerSensors: [],
                     energySensors: [],
                     irrigationTanks: [],
+                    vpdOptimalOverrides: {},
                 },
             });
             this._dehumidifierControlEnabled = false;
@@ -20779,6 +20955,27 @@ let ConfigDialog = class ConfigDialog extends i$3 {
       </div>
     `;
     }
+    _renderVpdTargetsSection() {
+        return x `
+      <div class="detail-card">
+        <div
+          style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
+        >
+          <svg
+            style="width:20px;height:20px;fill:var(--primary-color,#4caf50);"
+            viewBox="0 0 24 24"
+          >
+            <path d="${mdiTune}"></path>
+          </svg>
+          <h3 style="margin:0;border:none;padding:0;">VPD Optimal Targets</h3>
+        </div>
+        <vpd-optimal-overrides-table
+          .overrides=${this._sm.environmentDraft.vpdOptimalOverrides}
+          @overrides-change=${(e) => this._t({ type: 'UPDATE_ENV_DRAFT', partial: { vpdOptimalOverrides: e.detail } })}
+        ></vpd-optimal-overrides-table>
+      </div>
+    `;
+    }
     render() {
         if (!this.open)
             return x ``;
@@ -20875,6 +21072,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                     ${this._navItem(ConfigTab.VISION, mdiCamera, 'Vision AI')}
                     ${this._navItem(ConfigTab.HEATMAP, mdiViewGrid, '3D Heatmap')}
                     ${this._navItem(ConfigTab.SUBAREAS, mdiViewDashboard, 'Subareas')}
+                    ${this._navItem(ConfigTab.VPD_TARGETS, mdiTune, 'VPD Targets')}
                   </div>
                 `
             : E}
@@ -20926,6 +21124,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
                 ${this.currentTab === ConfigTab.VISION ? this._renderVisionSection() : E}
                 ${this.currentTab === ConfigTab.HEATMAP ? this._renderHeatmapSection() : E}
                 ${this.currentTab === ConfigTab.SUBAREAS ? this._renderSubareasSection() : E}
+                ${this.currentTab === ConfigTab.VPD_TARGETS ? this._renderVpdTargetsSection() : E}
               </div>
             </div>
           </div>
@@ -20980,6 +21179,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             ConfigTab.IRRIGATION,
             ConfigTab.TANKS,
             ConfigTab.HEATMAP,
+            ConfigTab.VPD_TARGETS,
         ].includes(this.currentTab)
             ? x `
                   <button class="md3-button primary" @click=${this._submitEnvironment}>
@@ -28753,22 +28953,51 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             `
             : ''}
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
           <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title">VWC Parameters</div>
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P1 Thresholds
+              <gs-help-tooltip
+                content="Saturation Target: P1 ramps up until substrate VWC reaches this value, then switches to P2 maintenance."
+              ></gs-help-tooltip>
+            </div>
             <md3-number-input
-              label="Target VWC (%)"
+              label="Saturation Target (%)"
               .value=${this._sm.tabs.steering.draft.targetVwcPercent}
               @change=${(e) => this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
             ></md3-number-input>
+          </div>
+
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P2 Thresholds
+              <gs-help-tooltip
+                content="Maintenance Dryback: shots fire in P2 when VWC drops this many % below the saturation target. P2 Direct Trigger: optional — if set, bypasses the calculated threshold and fires directly when VWC drops below this value."
+              ></gs-help-tooltip>
+            </div>
             <md3-number-input
-              label="VWC Delta (%)"
+              label="Maintenance Dryback (%)"
               .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
               @change=${(e) => this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
             ></md3-number-input>
+            <md3-number-input
+              label="P2 Direct Trigger (%)"
+              placeholder="Off"
+              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
+            ? String(this._sm.tabs.config.draft.soilTriggerPercent)
+            : ''}
+              @change=${(e) => {
+            const v = e.detail;
+            this._sm = transition$4(this._sm, {
+                type: 'UPDATE_CONFIG_DRAFT',
+                partial: { soilTriggerPercent: v !== '' && v != null ? parseFloat(String(v)) : null },
+            });
+        }}
+            ></md3-number-input>
           </div>
+        </div>
 
-          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
+          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
 
           <div style="display:flex;align-items:center;gap:8px;">
             <md3-text-input
@@ -28953,33 +29182,12 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         <div
           style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
         >
-          <h3 style="margin:0;">Cycle Parameters</h3>
+          <h3 style="margin:0;">Safety Caps</h3>
           <gs-help-tooltip
-            message="Optional safety limits. Leave blank to disable."
+            content="Optional hard limits on top of the steering logic. Leave blank to disable."
           ></gs-help-tooltip>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-          <div class="md3-input-group">
-            <label class="md3-label">Soil Trigger (%)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
-            ? String(this._sm.tabs.config.draft.soilTriggerPercent)
-            : ''}
-              placeholder="Off"
-              @change=${(e) => {
-            const v = e.target.value;
-            this._sm = transition$4(this._sm, {
-                type: 'UPDATE_CONFIG_DRAFT',
-                partial: { soilTriggerPercent: v ? parseFloat(v) : null },
-            });
-        }}
-            />
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="md3-input-group">
             <label class="md3-label">Daily Volume Cap (L)</label>
             <input
@@ -54198,6 +54406,7 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                 powerSensors: detail.powerSensors,
                 energySensors: detail.energySensors,
                 circulationFanConfig: detail.circulationFanConfig,
+                vpdOptimalOverrides: detail.vpdOptimalOverrides,
             });
             this.store?.actions.ui.closeDialog();
         }
@@ -129639,6 +129848,7 @@ function openConfigDialog(ctx, device) {
                 powerSensors: device?.environmentAttributes?.powerSensors || [],
                 energySensors: device?.environmentAttributes?.energySensors || [],
                 circulationFanConfig: device?.environmentAttributes?.circulationFanConfig,
+                vpdOptimalOverrides: device?.environmentAttributes?.vpdOptimalOverrides || {},
             },
         },
     });
@@ -135866,5 +136076,5 @@ var growspaceCarouselCardEditor = /*#__PURE__*/Object.freeze({
     get GrowspaceCarouselCardEditor () { return GrowspaceCarouselCardEditor; }
 });
 
-export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, FAN_VPD_STAGE_DEFAULTS, FAN_VPD_STAGE_KEYS, FAN_VPD_STAGE_LABELS, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, ViewMode, createGrowspaceDevice };
+export { BINARY_OFF_STATES, BINARY_ON_STATES, ChartType, ConfigTab, DEFAULT_METRIC_CONFIG, DataService, DehumidifierStage, EntityState, FAN_VPD_STAGE_DEFAULTS, FAN_VPD_STAGE_KEYS, FAN_VPD_STAGE_LABELS, GridOverlayMode, GridOverlayMode as GridOverlayModeEnum, GrowspaceAiInsightCard, GrowspaceAnalyticsCard, GrowspaceCarouselCard, GrowspaceGridCard, GrowspaceLogbookCard, GrowspaceManagerCard, GrowspaceSubareaCard, GrowspaceTankCard, GrowspaceType, GrowspaceType as GrowspaceTypeEnum, HumidifierStage, METRIC_CONFIG, METRIC_ENTITY_KEYS, METRIC_SORT_ORDER, MetricKey, PlantSex, PlantStage, PlantUtils, SENSOR_CHART_DEFAULTS, STAGE_CONFIG, STATUS_COLORS, ScrollDirection, StatusLevel, TrainingTechnique, VPD_OPTIMAL_STAGE_DEFAULTS, ViewMode, createGrowspaceDevice };
 //# sourceMappingURL=growspace-manager-card.js.map

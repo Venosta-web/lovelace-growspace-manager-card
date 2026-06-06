@@ -277,6 +277,7 @@ export enum ConfigTab {
   VISION = 'vision',
   HEATMAP = 'heatmap',
   SUBAREAS = 'subareas',
+  VPD_TARGETS = 'vpd_targets',
 }
 
 export const DEFAULT_METRIC_CONFIG: MetricConfigItem = {
@@ -388,4 +389,19 @@ export const FAN_VPD_STAGE_DEFAULTS: Record<FanVpdStageKey, { day: number; night
   flower_late: { day: 1.25, night: 1.05 },
   dry: { day: 0.95, night: 0.95 },
   cure: { day: 0.75, night: 0.75 },
+};
+
+export const VPD_OPTIMAL_STAGE_DEFAULTS: Record<
+  FanVpdStageKey,
+  { day: { low: number; high: number }; night: { low: number; high: number } }
+> = {
+  seedling: { day: { low: 0.4, high: 0.8 }, night: { low: 0.4, high: 0.8 } },
+  clone: { day: { low: 0.3, high: 0.7 }, night: { low: 0.3, high: 0.7 } },
+  mother: { day: { low: 0.5, high: 0.9 }, night: { low: 0.4, high: 0.8 } },
+  veg: { day: { low: 0.5, high: 0.9 }, night: { low: 0.4, high: 0.8 } },
+  flower_early: { day: { low: 0.9, high: 1.4 }, night: { low: 0.8, high: 1.2 } },
+  flower_mid: { day: { low: 0.95, high: 1.45 }, night: { low: 0.85, high: 1.2 } },
+  flower_late: { day: { low: 1.0, high: 1.5 }, night: { low: 0.9, high: 1.2 } },
+  dry: { day: { low: 0.8, high: 1.1 }, night: { low: 0.8, high: 1.1 } },
+  cure: { day: { low: 0.6, high: 0.9 }, night: { low: 0.6, high: 0.9 } },
 };

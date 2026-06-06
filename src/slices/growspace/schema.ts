@@ -140,6 +140,16 @@ export const GrowspaceAPIResponseSchema = z
           .record(z.string(), z.record(z.string(), z.object({ on: z.number(), off: z.number() })))
           .optional()
           .default({}),
+        vpd_optimal_overrides: z
+          .record(
+            z.string(),
+            z.object({
+              day: z.object({ low: z.number(), high: z.number() }),
+              night: z.object({ low: z.number(), high: z.number() }),
+            })
+          )
+          .optional()
+          .default({}),
         electricity_cost_per_kwh: z.number().nullable().optional(),
         substrate_temperature_sensors: z.array(z.string()).optional().default([]),
         camera_entities: z.array(z.string()).optional().default([]),

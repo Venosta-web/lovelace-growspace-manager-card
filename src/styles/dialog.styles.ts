@@ -114,11 +114,11 @@ export const dialogStyles = [
       padding: 16px;
       margin: 8px 0;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 1fr 1fr;
       gap: 16px;
     }
     .vwc-targets-group-title {
-      grid-column: span 2;
+      grid-column: span 3;
       margin: 0 0 4px 0;
       font-size: 0.9rem;
       font-weight: 500;

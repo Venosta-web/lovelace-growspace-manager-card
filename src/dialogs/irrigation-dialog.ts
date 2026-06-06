@@ -2588,24 +2588,53 @@ export class IrrigationDialog extends LitElement {
             `
         : ''}
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="display:flex;flex-direction:column;gap:16px;">
           <div class="vwc-targets-group">
-            <div class="vwc-targets-group-title">VWC Parameters</div>
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P1 Thresholds
+              <gs-help-tooltip
+                content="Saturation Target: P1 ramps up until substrate VWC reaches this value, then switches to P2 maintenance."
+              ></gs-help-tooltip>
+            </div>
             <md3-number-input
-              label="Target VWC (%)"
+              label="Saturation Target (%)"
               .value=${this._sm.tabs.steering.draft.targetVwcPercent}
               @change=${(e: CustomEvent) =>
-          this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
-            ></md3-number-input>
-            <md3-number-input
-              label="VWC Delta (%)"
-              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
-              @change=${(e: CustomEvent) =>
-          this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+        this._updateStrategyField('targetVwcPercent', parseFloat(e.detail))}
             ></md3-number-input>
           </div>
 
-          <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Timing</h4>
+          <div class="vwc-targets-group">
+            <div class="vwc-targets-group-title" style="display:flex;align-items:center;gap:6px;">
+              P2 Thresholds
+              <gs-help-tooltip
+                content="Maintenance Dryback: shots fire in P2 when VWC drops this many % below the saturation target. P2 Direct Trigger: optional — if set, bypasses the calculated threshold and fires directly when VWC drops below this value."
+              ></gs-help-tooltip>
+            </div>
+            <md3-number-input
+              label="Maintenance Dryback (%)"
+              .value=${this._sm.tabs.steering.draft.maintenanceDrybackPercent}
+              @change=${(e: CustomEvent) =>
+        this._updateStrategyField('maintenanceDrybackPercent', parseFloat(e.detail))}
+            ></md3-number-input>
+            <md3-number-input
+              label="P2 Direct Trigger (%)"
+              placeholder="Off"
+              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
+        ? String(this._sm.tabs.config.draft.soilTriggerPercent)
+        : ''}
+              @change=${(e: CustomEvent) => {
+        const v = e.detail;
+        this._sm = transition(this._sm, {
+          type: 'UPDATE_CONFIG_DRAFT',
+          partial: { soilTriggerPercent: v !== '' && v != null ? parseFloat(String(v)) : null },
+        });
+      }}
+            ></md3-number-input>
+          </div>
+        </div>
+
+          <h4 style="margin:4px 0;margin-top:12px;">Timing</h4>
 
           <div style="display:flex;align-items:center;gap:8px;">
             <md3-text-input
@@ -2810,33 +2839,12 @@ export class IrrigationDialog extends LitElement {
         <div
           style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"
         >
-          <h3 style="margin:0;">Cycle Parameters</h3>
+          <h3 style="margin:0;">Safety Caps</h3>
           <gs-help-tooltip
-            message="Optional safety limits. Leave blank to disable."
+            content="Optional hard limits on top of the steering logic. Leave blank to disable."
           ></gs-help-tooltip>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
-          <div class="md3-input-group">
-            <label class="md3-label">Soil Trigger (%)</label>
-            <input
-              class="md3-input"
-              type="number"
-              min="0"
-              max="100"
-              step="1"
-              .value=${this._sm.tabs.config.draft.soilTriggerPercent != null
-        ? String(this._sm.tabs.config.draft.soilTriggerPercent)
-        : ''}
-              placeholder="Off"
-              @change=${(e: Event) => {
-        const v = (e.target as HTMLInputElement).value;
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_CONFIG_DRAFT',
-          partial: { soilTriggerPercent: v ? parseFloat(v) : null },
-        });
-      }}
-            />
-          </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="md3-input-group">
             <label class="md3-label">Daily Volume Cap (L)</label>
             <input
@@ -2845,16 +2853,16 @@ export class IrrigationDialog extends LitElement {
               min="0"
               step="0.1"
               .value=${this._sm.tabs.config.draft.dailyVolumeCapLiters != null
-        ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters)
-        : ''}
+          ? String(this._sm.tabs.config.draft.dailyVolumeCapLiters)
+          : ''}
               placeholder="Off"
               @change=${(e: Event) => {
-        const v = (e.target as HTMLInputElement).value;
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_CONFIG_DRAFT',
-          partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
-        });
-      }}
+          const v = (e.target as HTMLInputElement).value;
+          this._sm = transition(this._sm, {
+            type: 'UPDATE_CONFIG_DRAFT',
+            partial: { dailyVolumeCapLiters: v ? parseFloat(v) : null },
+          });
+        }}
             />
           </div>
           <div class="md3-input-group">
@@ -2865,16 +2873,16 @@ export class IrrigationDialog extends LitElement {
               min="0"
               step="1"
               .value=${this._sm.tabs.config.draft.maxCyclesPerDay != null
-        ? String(this._sm.tabs.config.draft.maxCyclesPerDay)
-        : ''}
+          ? String(this._sm.tabs.config.draft.maxCyclesPerDay)
+          : ''}
               placeholder="Off"
               @change=${(e: Event) => {
-        const v = (e.target as HTMLInputElement).value;
-        this._sm = transition(this._sm, {
-          type: 'UPDATE_CONFIG_DRAFT',
-          partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
-        });
-      }}
+          const v = (e.target as HTMLInputElement).value;
+          this._sm = transition(this._sm, {
+            type: 'UPDATE_CONFIG_DRAFT',
+            partial: { maxCyclesPerDay: v ? parseInt(v, 10) : null },
+          });
+        }}
             />
           </div>
         </div>
@@ -2892,11 +2900,11 @@ export class IrrigationDialog extends LitElement {
               <md3-switch
                 .checked=${this._sm.tabs.config.draft.skipDuringDark}
                 @change=${(e: CustomEvent) => {
-                  this._sm = transition(this._sm, {
-                    type: 'UPDATE_CONFIG_DRAFT',
-                    partial: { skipDuringDark: (e.target as any).checked },
-                  });
-                }}
+          this._sm = transition(this._sm, {
+            type: 'UPDATE_CONFIG_DRAFT',
+            partial: { skipDuringDark: (e.target as any).checked },
+          });
+        }}
               ></md3-switch>
             </div>
         ` : nothing}

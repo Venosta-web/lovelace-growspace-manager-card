@@ -131,6 +131,9 @@ The config dialog panel (inside the Climate tab, between the Climate Control pan
 **Fan VPD Stage**
 The nine stage keys used exclusively by the [[Stage VPD Overrides Table]] and the backend's `FAN_VPD_STAGE_DEFAULTS`: `seedling`, `clone`, `mother`, `veg`, `flower_early`, `flower_mid`, `flower_late`, `dry`, `cure`. Distinct from `PlantStage` (the 7-value plant lifecycle enum used on `PlantEntity.stage`): `PlantStage` has a single `flower` value, whereas Fan VPD Stage splits flower into three sub-stages. Do not use `PlantStage` for VPD override keys — the string values don't match.
 
+**VPD Optimal Overrides Table**
+A standalone component (`<vpd-optimal-overrides-table>`) for editing per-stage VPD optimal windows. Has four values per stage: `day.low`, `day.high`, `night.low`, `night.high`. Works with `VpdOptimalOverrides` (`Record<string, { day: { low, high }, night: { low, high } }>`). Unoverridden stages display values from `VPD_OPTIMAL_STAGE_DEFAULTS` (mirroring the backend's primary `VPD_OPTIMAL_THRESHOLDS` ranges keyed through `_OVERRIDE_STAGE_MAP`). Emits `overrides-change` on any edit or reset. Distinct from [[Stage VPD Overrides Table]], which holds a single `{day, night}` target per stage for the fan controller.
+
 **Stage VPD Overrides Table**
 A sub-component (`<stage-vpd-overrides-table>`) rendered inside the [[Fan Controller Panel]] only when `stage_vpd_enabled` is true. Displays one row per [[Fan VPD Stage]] (9 rows total), each with a Day and Night number input (min 0.1, max 3.0, step 0.01). Inputs are pre-populated from `stage_vpd_overrides` when an override exists, or from the local `FAN_VPD_STAGE_DEFAULTS` const otherwise. Every input change writes the full `{ day, night }` pair for that stage into the local overrides draft (sparse — only edited stages are present). Clearing an input snaps that slot back to the `FAN_VPD_STAGE_DEFAULTS` value for that stage while preserving the other slot's override. A "Reset all to defaults" button clears the entire overrides draft and re-renders from defaults; it does not persist until the user saves the dialog. Toggling Stage-Aware VPD off hides the table but preserves the draft — re-enabling it restores the edited state. Emits a single `overrides-change` custom event carrying the new sparse dict.
 
@@ -189,9 +192,18 @@ Automated irrigation mode driven by volumetric water content (VWC) targets rathe
 **Phase Windows** (P0 / P1 / P2 / P3)
 The four daily phases that structure a Crop Steering day, all derived from the growspace's `IrrigationStrategy` settings:
 - P0 — Activation: first shot(s) at lights-on, lasting `p0DurationMinutes`
-- P1 — Ramp-up: shots fire until substrate reaches `targetVwcPercent`
-- P2 — Maintenance: shots fire when VWC drops below `targetVwcPercent − maintenanceDrybackPercent`
+- P1 — Ramp-up: shots fire until substrate reaches the **Saturation Target** (`targetVwcPercent`)
+- P2 — Maintenance: shots fire when VWC drops below the **P2 trigger threshold** — either the **P2 Direct Trigger** (`soilTriggerPercent`) if set, or `targetVwcPercent − maintenanceDrybackPercent` (the **Maintenance Dryback**) otherwise
 - P3 — Dry-back: no irrigation; runs from `p2StopBeforeLightsOffMinutes` before lights-off until next lights-on
+
+**P2 Thresholds** (Steering tab)
+The three controls that govern when P2 fires, all grouped together in the Steering tab:
+- **Saturation Target P1 (%)** (`targetVwcPercent`) — the VWC ceiling P1 ramps toward; P2 begins the moment this is reached
+- **Maintenance Dryback (%)** (`maintenanceDrybackPercent`) — how far VWC may fall in P2 before a shot fires; the calculated P2 trigger is `Saturation Target − Maintenance Dryback`
+- **P2 Direct Trigger (%)** (`soilTriggerPercent`, optional) — if set, replaces the calculated trigger with a fixed threshold; useful when you prefer an absolute floor rather than a relative dryback
+
+**Safety Caps** (Config tab, visible only when Crop Steering is enabled)
+Hard limits applied on top of the steering logic: **Daily Volume Cap (L)** and **Max Cycles / Day**. Neither initiates watering — they only stop the steering logic from exceeding the configured bounds. Leave blank to disable.
 
 **Drain Schedule**
 Time-based drain events that run regardless of Irrigation Mode. Always editable in the Schedules tab.
