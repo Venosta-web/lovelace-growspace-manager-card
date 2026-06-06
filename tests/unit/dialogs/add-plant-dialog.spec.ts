@@ -760,4 +760,63 @@ describe('AddPlantDialog', () => {
       expect(sm(element).tabs.add.draft.vegStart).toBe('2023-01-10');
     });
   });
+
+  describe('deriveDefaultStage via setInitialState', () => {
+    it.each([
+      ['Mother Room', 'mother'],
+      ['Clone Tent', 'clone'],
+      ['Dry Room', 'dry'],
+      ['Cure Cabinet', 'cure'],
+      ['Flower Space', 'flower'],
+      ['Veg Room', 'veg'],
+      ['Generic Space', 'seedling'],
+    ])('growspaceName "%s" → stage "%s"', async (name: string, expected: string) => {
+      element.growspaceName = name;
+      element.setInitialState(0, 0);
+      expect(sm(element).tabs.add.draft.stage).toBe(expected);
+    });
+  });
+
+  describe('_confirm transplant guard', () => {
+    it('should not emit transplant-plant-submit when selected plant id is not in the plant list', async () => {
+      element.clonePlants = [
+        { entity_id: 'sensor.p1', attributes: { plant_id: 'p1', growspace_id: 'gs1' } } as any,
+      ];
+      element.targetGrowspaceId = 'gs_target';
+      (element as any)._sm = transition(sm(element), { type: 'TabSelected', tab: 'clone' });
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged',
+        tab: 'clone',
+        field: 'selectedPlantId',
+        value: 'nonexistent',
+      });
+      await element.updateComplete;
+
+      const submitSpy = vi.fn();
+      element.addEventListener('transplant-plant-submit', submitSpy);
+      (element as any)._confirm();
+
+      expect(submitSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Strain input else-branch', () => {
+    it('should not clear strain when typed value matches the already-selected strain', async () => {
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: 'Blue Dream',
+      });
+      (element as any)._sm = transition(sm(element), {
+        type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: 'Blue Dream',
+      });
+      await element.updateComplete;
+
+      const input = element.shadowRoot?.querySelector('.strain-typeahead md3-text-input') as HTMLElement;
+      // Dispatch with the exact same value as the current strain — else branch
+      input.dispatchEvent(new CustomEvent('change', { detail: 'Blue Dream' }));
+      await element.updateComplete;
+
+      expect(sm(element).tabs.add.draft.strain).toBe('Blue Dream');
+      expect(sm(element).tabs.add.draft.strainQuery).toBe('Blue Dream');
+    });
+  });
 });
