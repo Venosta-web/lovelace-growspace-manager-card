@@ -34,6 +34,9 @@ The large metric display at the top of the main card and subarea card. Shows an 
 **Chip** (also: Badge)
 A small metric indicator rendered below the hero section. Each chip maps to a `HeaderChip` (defined in `metrics-utils.ts`) and carries a `MetricKey`. Clicking a chip opens the Env Graph for that metric. Chips support drag-and-drop reordering.
 
+**Steering Phase Chip**
+A [[Chip]] that appears in place of the regular irrigation next-time chip when [[Crop Steering]] is active. Carries `MetricKey.STEERING_PHASE` (`'steering_phase'`) — distinct from `MetricKey.IRRIGATION` — so it can be hidden independently via `hidden_chips`. Displays the active phase label and next phase-transition time (e.g. `P3 · 07:30`). Built by `_steeringChipValue()` in the [[HeaderMetrics module]].
+
 **Context Chip**
 A tag attached to a composed message that provides contextual scope — growspace, time range, or sensor — so the [[Conversation Agent]] can ground its response. Displayed in the Composer bar of the [[Growmaster Dialog]] Chat panel; removable individually. Distinct from the environment metric Chip in the header.
 

@@ -457,7 +457,7 @@ export function computeHeaderMetrics(
         const isFlower = dominantRaw?.stage === 'flower';
         chips.push(
           _makeChip(
-            MetricKey.IRRIGATION,
+            MetricKey.STEERING_PHASE,
             mdiWater,
             _steeringChipValue(phase, irrigationStrategy!, isFlower),
             { label: 'Phase' },

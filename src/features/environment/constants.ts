@@ -52,6 +52,7 @@ export enum MetricKey {
   DRAIN_VOLUME = 'drain_volume',
   IRRIGATION_FLOW = 'irrigation_flow',
   POWER = 'power',
+  STEERING_PHASE = 'steering_phase',
 }
 
 export const METRIC_SORT_ORDER = [
@@ -82,6 +83,7 @@ export const METRIC_SORT_ORDER = [
   MetricKey.DRAIN_VOLUME,
   MetricKey.IRRIGATION_FLOW,
   MetricKey.POWER,
+  MetricKey.STEERING_PHASE,
 ];
 
 export enum ChartType {

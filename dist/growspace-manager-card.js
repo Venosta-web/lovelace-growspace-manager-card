@@ -258,6 +258,7 @@ var MetricKey;
     MetricKey["DRAIN_VOLUME"] = "drain_volume";
     MetricKey["IRRIGATION_FLOW"] = "irrigation_flow";
     MetricKey["POWER"] = "power";
+    MetricKey["STEERING_PHASE"] = "steering_phase";
 })(MetricKey || (MetricKey = {}));
 const METRIC_SORT_ORDER = [
     MetricKey.TEMPERATURE,
@@ -287,6 +288,7 @@ const METRIC_SORT_ORDER = [
     MetricKey.DRAIN_VOLUME,
     MetricKey.IRRIGATION_FLOW,
     MetricKey.POWER,
+    MetricKey.STEERING_PHASE,
 ];
 var ChartType;
 (function (ChartType) {
@@ -53444,8 +53446,26 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._showAllDates = !this._showAllDates;
     }
     _handleSave() {
+        const attrs = this._editedAttributesAtom.get();
+        const lifecycleDateFields = [
+            'seedling_start',
+            'mother_start',
+            'clone_start',
+            'veg_start',
+            'flower_start',
+            'dry_start',
+            'cure_start',
+        ];
+        const hasIncomplete = lifecycleDateFields.some((field) => {
+            const val = attrs[field];
+            return typeof val === 'string' && val.length > 0 && !/T\d{2}:\d{2}/.test(val);
+        });
+        if (hasIncomplete) {
+            this.store.ui.showToast('Set both date and time for lifecycle dates before saving.', 'error');
+            return;
+        }
         this.dispatchEvent(new CustomEvent('update-plant', {
-            detail: this._editedAttributesAtom.get(),
+            detail: attrs,
             bubbles: true,
             composed: true,
         }));
@@ -64292,7 +64312,7 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
             const phase = irrigationConfig.activeSteeringPhase;
             if (phase != null) {
                 const isFlower = dominantRaw?.stage === 'flower';
-                chips.push(_makeChip(MetricKey.IRRIGATION, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups));
+                chips.push(_makeChip(MetricKey.STEERING_PHASE, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups));
             }
             // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
             // than fall back to the stale manual schedule.
@@ -135269,6 +135289,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
                             { label: 'Water', value: 'water' },
                             { label: 'Optimal Conditions', value: 'optimal' },
                             { label: 'Crop Steering', value: 'crop_steering' },
+                            { label: 'Steering Phase', value: 'steering_phase' },
                         ],
                     },
                 },
@@ -135808,6 +135829,7 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
                             { label: 'Water', value: 'water' },
                             { label: 'Optimal Conditions', value: 'optimal' },
                             { label: 'Crop Steering', value: 'crop_steering' },
+                            { label: 'Steering Phase', value: 'steering_phase' },
                         ],
                     },
                 },

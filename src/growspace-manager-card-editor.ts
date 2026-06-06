@@ -76,6 +76,7 @@ export class GrowspaceManagerCardEditor extends LitElement implements LovelaceCa
               { label: 'Water', value: 'water' },
               { label: 'Optimal Conditions', value: 'optimal' },
               { label: 'Crop Steering', value: 'crop_steering' },
+              { label: 'Steering Phase', value: 'steering_phase' },
             ],
           },
         },
