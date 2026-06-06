@@ -1,3 +1,73 @@
+# [1.1.0-next.23](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.22...v1.1.0-next.23) (2026-06-05)
+
+
+### Bug Fixes
+
+* **vision:** map vision_checkup_config from backend response in adapter ([7ba0e4b](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7ba0e4bba133abeb14bcf2fd5ce30f636c09e49c))
+
+
+### Features
+
+* add Substrate EC section header in config dialog ([230f427](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/230f427f4bd708b21f7954e4601bf50aab591f69)), closes [#241](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/241)
+* group vwc p2 configuration options ([6edba51](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6edba5111836bbcef72c03f171e3df48b246a9ef))
+* implement notifications tab for AI auto-alerts configuration and update associated dialog logic ([5fab25d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5fab25d76c27d4ad3a4245404e3be5bb315c6afa))
+* **notifications:** add notifications tab state machine to config dialog SM ([eec1380](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/eec13800e5c827c183094a89b62b721c1a3362a9))
+* **notifications:** add Timed Notifications CRUD UI to config dialog ([7da2b8e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7da2b8ed25ee85e1eba1cee3efd679e60b2c6b42)), closes [#238](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/238)
+* **notifications:** render global settings panel with Save in config dialog ([86f41a9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/86f41a98acbbace64a665ee3ad7dcdf4baa9bebf)), closes [#237](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/237)
+* remove ai_auto_alerts from Growmaster Settings Panel ([9738b08](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9738b08de1788417913fdf37744317ff74e277b9)), closes [#239](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/239)
+* replace substrate_ec with bulk_ec / pore_ec split ([2b0c692](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/2b0c692e65aff3d3fcc4dbab0fe51f75ce246368))
+
+# [1.1.0-next.22](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.21...v1.1.0-next.22) (2026-06-05)
+
+
+### Bug Fixes
+
+* **vision:** wire Save Configuration FAB to vision config submit and remove duplicate in-section button ([968511f](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/968511f854b49ab54d2c291d1f99b54a49cf4b15))
+
+# [1.1.0-next.21](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.20...v1.1.0-next.21) (2026-06-05)
+
+
+### Bug Fixes
+
+* **humidity:** correct stage keys, show kPa units, and load defaults ([9975e22](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/9975e22471bd006828175b96bfbacbd4f9c4ffb5))
+* **humidity:** include humidifier/dehumidifier control flags in save payload ([adfe0c0](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/adfe0c0e7bf54bc5801891e4397f0c9334d307bd))
+
+# [1.1.0-next.20](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.19...v1.1.0-next.20) (2026-06-05)
+
+
+### Bug Fixes
+
+* **subareas:** keep config-dialog alive during card reload to prevent flash and SM reset ([4410f79](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/4410f794b36841c2cfcd13fe22cec78930c714d6))
+
+# [1.1.0-next.19](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.18...v1.1.0-next.19) (2026-06-05)
+
+
+### Bug Fixes
+
+* **subareas:** snapshot configEnvData at dialog-open time to prevent SM reset on hass updates ([222c3f4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/222c3f4f0f21e3b19c053cd939808ebe1760621b))
+
+# [1.1.0-next.18](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.17...v1.1.0-next.18) (2026-06-05)
+
+
+### Bug Fixes
+
+* expand to standard view when entering edit mode from header-only mode ([1dcff0e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1dcff0e4a2f293f88b32cd6b5f6ed0f20fea16fb))
+* **fan-controller:** snap cleared VPD override slot to default; extend deriveDefaultStage ([1b4918e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1b4918ed531a697a8fdd156ce4cb57768dfc9a16))
+* fetch history for calculated VPD sensors when no explicit VPD sensor is configured ([0bb28d2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/0bb28d2e1aabf7d7eb3c92790550873e44270819))
+* **stage-vpd:** clearing an input now removes the stage override instead of silently ignoring ([ca3e569](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ca3e5694b003ee81b178fd088ca80541965d14c9))
+
+
+### Features
+
+* add stage selector to New Plant wizard schedule step ([78cabc3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/78cabc324e0c3fe819a2c51d1adfbc416bbf3925))
+* add stage-aware VPD configuration toggle to fan settings ([ef122a4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ef122a4b68ba03e5434937047cf0e3e9c2a3076e))
+* **chips:** allow hiding chips by type via card editor ([8fa9795](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/8fa979592f8d049f17cfa5a81e51426ddaaadf21))
+* **environment:** add tank-water-chart + route MetricKey.WATER in analytics UI ([66978bf](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/66978bffe177666ee3f3ca2cf70a54f4a3961f86)), closes [#231](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/231)
+* **irrigation:** conditionally show Cycle Parameters and Skip During Dark based on crop steering mode ([1d68549](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1d68549ea6ea595040839c6179229eefb02bb96d))
+* **metrics:** wire tank-derived water chip end-to-end ([3293a74](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3293a74dec2ace9c6ac919661635325b304bd3b4))
+* stage VPD overrides table in fan controller config ([#228](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/228)) ([20c524e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/20c524e4e62ba7d3862ba3c8ae240cd2e8da3ae8))
+* sum multiple power/energy sensors instead of showing "Multiple" ([585c0d9](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/585c0d98c5a9a6ac99e30f18a06778ae17e9b004))
+
 # [1.1.0-next.17](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.16...v1.1.0-next.17) (2026-06-04)
 
 
