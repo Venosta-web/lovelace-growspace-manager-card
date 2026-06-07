@@ -1198,13 +1198,14 @@ export class IrrigationDialog extends LitElement {
             .catch(() => undefined);
         }
         if (!this._cropSteeringPoller && this.store?.actions?.irrigation && this.device?.deviceId) {
-          const growspaceId = this.device.deviceId;
           this._cropSteeringPoller = new PollingController(
             this,
-            () =>
-              this.store!.actions.irrigation
-                .fetchCropSteeringHistory(growspaceId)
-                .catch(() => undefined),
+            () => {
+              const deviceId = this.device?.deviceId;
+              return deviceId
+                ? this.store!.actions.irrigation.fetchCropSteeringHistory(deviceId).catch(() => undefined)
+                : Promise.resolve(undefined);
+            },
             { interval: 5 * 60 * 1000, autoStart: false }
           );
         }
@@ -1918,6 +1919,14 @@ export class IrrigationDialog extends LitElement {
     const p1End = phases.phases[0]?.end ?? lightsOnMin + 60;
     const p2End = phases.phases[1]?.end ?? lightsOffMin - 120;
 
+    // Compare in view-offset space (viewStart anchored at 0) so the photoperiod
+    // boundaries stay correctly ordered even when lights-off wraps past midnight.
+    const offsetOf = (m: number) => (m - viewStart + 1440) % 1440;
+    const lightsOnOffset = offsetOf(lightsOnMin);
+    const lightsOffOffset = offsetOf(lightsOffMin);
+    const p1EndOffset = offsetOf(p1End);
+    const p2EndOffset = offsetOf(p2End);
+
     const shotMins = shots.map((s) => {
       const [hh, mm] = s.time.split(':').map(Number);
       return hh * 60 + mm;
@@ -1928,14 +1937,12 @@ export class IrrigationDialog extends LitElement {
     let pore = seedPoreEc;
 
     for (let off = nowOffset; off <= 1440; off += step) {
-      const absMin = (viewStart + off) % 1440;
-
       let dry: number;
-      if (absMin < lightsOnMin || absMin >= lightsOffMin) {
+      if (off < lightsOnOffset || off >= lightsOffOffset) {
         dry = 0.3 / 60;
-      } else if (absMin < p1End) {
+      } else if (off < p1EndOffset) {
         dry = 0.8 / 60;
-      } else if (absMin < p2End) {
+      } else if (off < p2EndOffset) {
         dry = 2.6 / 60;
       } else {
         dry = 3.0 / 60;
@@ -1947,7 +1954,7 @@ export class IrrigationDialog extends LitElement {
       for (const shotMin of shotMins) {
         const shotOff = (shotMin - viewStart + 1440) % 1440;
         if (shotOff > nowOffset && shotOff >= off && shotOff < off + step) {
-          const isP1 = absMin < p1End;
+          const isP1 = off < p1EndOffset;
           vwc += isP1 ? 2.8 : 1.05;
           pore -= isP1 ? 0.3 : 0.18;
         }
