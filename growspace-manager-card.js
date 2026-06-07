@@ -5282,6 +5282,9 @@ const GrowspaceAPIResponseSchema = objectType({
             .optional(),
         last_cycle_timestamp: stringType().nullable().optional(),
         next_scheduled_cycle: stringType().nullable().optional(),
+        projected_shot_window: objectType({ start: stringType(), end: stringType() })
+            .nullable()
+            .optional(),
         cycles_today: numberType().optional().default(0),
         volume_dispensed_today: numberType().optional().default(0),
     })
@@ -5800,6 +5803,7 @@ class GrowspaceAdapter {
             // Irrigation cycle telemetry
             lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
             nextScheduledCycle: irrigation?.next_scheduled_cycle ?? null,
+            projectedShotWindow: irrigation?.projected_shot_window ?? null,
             cyclesToday: irrigation?.cycles_today ?? 0,
             volumeDispensedToday: irrigation?.volume_dispensed_today ?? 0,
         });
@@ -28025,6 +28029,32 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this.store.ui.showToast('Failed to remove drain time', 'error');
         }
     }
+    /** Format an ISO datetime as it appears in the dialog footer ("Jun 7, 09:45"). */
+    _formatFooterTimestamp(iso) {
+        return new Date(iso).toLocaleString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+    }
+    /**
+     * Render the footer's "Next" value. Manual mode shows a single scheduled
+     * point in time; Crop Steering has no fixed schedule, so it shows a
+     * projected range bounded by guardrails (cooldown + phase windows) instead —
+     * see ADR-0011 / [[Projected Shot Window]] in CONTEXT.md.
+     */
+    _renderFooterNext() {
+        if (this.device?.irrigationStrategy?.enabled) {
+            const window = this.device?.projectedShotWindow;
+            if (!window)
+                return '—';
+            return `${this._formatFooterTimestamp(window.start)}–${this._formatFooterTimestamp(window.end)}`;
+        }
+        const next = this.device?.nextScheduledCycle;
+        return next ? this._formatFooterTimestamp(next) : '—';
+    }
     _close() {
         this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
         this._sm = transition$4(this._sm, { type: 'SET_TOAST', message: undefined });
@@ -28267,18 +28297,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             : '—'}</span
               >
               <span class="sep">·</span>
-              <span
-                >Next
-                ${this.device?.nextScheduledCycle
-            ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            })
-            : '—'}</span
-              >
+              <span>Next ${this._renderFooterNext()}</span>
             </div>
             <div class="dlg-footer-actions">
               <button class="md3-button text" @click=${this._close}>Close</button>
