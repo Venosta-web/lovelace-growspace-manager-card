@@ -1594,6 +1594,75 @@ describe('IrrigationDialog', () => {
         });
     });
 
+    describe('Footer Next Display', () => {
+        function footerNextText(): string | null | undefined {
+            const spans = element.shadowRoot?.querySelectorAll('.dlg-footer-meta span');
+            const nextSpan = Array.from(spans ?? []).find((s) => s.textContent?.trim().startsWith('Next'));
+            return nextSpan?.textContent;
+        }
+
+        function fmt(iso: string): string {
+            return new Date(iso).toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+            });
+        }
+
+        it('renders the projected shot window as a range when crop steering is enabled', async () => {
+            const start = '2026-06-07T09:45:00+00:00';
+            const end = '2026-06-07T18:00:00+00:00';
+            element.device = JSON.parse(JSON.stringify({
+                ...mockDevice,
+                irrigationStrategy: { ...mockDevice.irrigationStrategy, enabled: true },
+                projectedShotWindow: { start, end },
+            }));
+            (element as any).store = makeMockStore(element.device);
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const text = footerNextText();
+            expect(text).toContain(fmt(start));
+            expect(text).toContain(fmt(end));
+            expect(text).toMatch(/–/);
+        });
+
+        it('renders — when crop steering is enabled but no projected window is available', async () => {
+            element.device = JSON.parse(JSON.stringify({
+                ...mockDevice,
+                irrigationStrategy: { ...mockDevice.irrigationStrategy, enabled: true },
+                projectedShotWindow: null,
+            }));
+            (element as any).store = makeMockStore(element.device);
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            expect(footerNextText()).toContain('—');
+        });
+
+        it('renders the scheduled point time in manual mode, ignoring projectedShotWindow', async () => {
+            const nextScheduledCycle = '2026-06-07T08:00:00+00:00';
+            element.device = JSON.parse(JSON.stringify({
+                ...mockDevice,
+                irrigationStrategy: { ...mockDevice.irrigationStrategy, enabled: false },
+                nextScheduledCycle,
+                projectedShotWindow: { start: '2026-06-07T09:45:00+00:00', end: '2026-06-07T18:00:00+00:00' },
+            }));
+            (element as any).store = makeMockStore(element.device);
+            element.open = true;
+            document.body.appendChild(element);
+            await element.updateComplete;
+
+            const text = footerNextText();
+            expect(text).toContain(fmt(nextScheduledCycle));
+            expect(text).not.toMatch(/–/);
+        });
+    });
+
     describe('Crop Steering Schedule Display', () => {
         const steeringStrategy = {
             enabled: true,

@@ -333,6 +333,7 @@ export interface GrowspaceAPIResponse {
     water_usage?: SerializedWaterUsage | null;
     last_cycle_timestamp?: string | null;
     next_scheduled_cycle?: string | null;
+    projected_shot_window?: { start: string; end: string } | null;
     cycles_today?: number;
     volume_dispensed_today?: number;
   };
@@ -526,6 +527,7 @@ export interface GrowspaceDevice {
   // Irrigation cycle telemetry (injected by backend view model)
   lastCycleTimestamp?: string | null;
   nextScheduledCycle?: string | null;
+  projectedShotWindow?: { start: string; end: string } | null;
   cyclesToday?: number;
   volumeDispensedToday?: number;
 }

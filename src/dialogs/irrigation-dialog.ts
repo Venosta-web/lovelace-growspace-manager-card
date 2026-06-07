@@ -1547,6 +1547,34 @@ export class IrrigationDialog extends LitElement {
     }
   }
 
+  /** Format an ISO datetime as it appears in the dialog footer ("Jun 7, 09:45"). */
+  private _formatFooterTimestamp(iso: string): string {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
+  }
+
+  /**
+   * Render the footer's "Next" value. Manual mode shows a single scheduled
+   * point in time; Crop Steering has no fixed schedule, so it shows a
+   * projected range bounded by guardrails (cooldown + phase windows) instead —
+   * see ADR-0011 / [[Projected Shot Window]] in CONTEXT.md.
+   */
+  private _renderFooterNext() {
+    if (this.device?.irrigationStrategy?.enabled) {
+      const window = this.device?.projectedShotWindow;
+      if (!window) return '—';
+      return `${this._formatFooterTimestamp(window.start)}–${this._formatFooterTimestamp(window.end)}`;
+    }
+
+    const next = this.device?.nextScheduledCycle;
+    return next ? this._formatFooterTimestamp(next) : '—';
+  }
+
   private _close() {
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
     this._sm = transition(this._sm, { type: 'SET_TOAST', message: undefined });
@@ -1842,18 +1870,7 @@ export class IrrigationDialog extends LitElement {
         : '—'}</span
               >
               <span class="sep">·</span>
-              <span
-                >Next
-                ${this.device?.nextScheduledCycle
-        ? new Date(this.device.nextScheduledCycle).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })
-        : '—'}</span
-              >
+              <span>Next ${this._renderFooterNext()}</span>
             </div>
             <div class="dlg-footer-actions">
               <button class="md3-button text" @click=${this._close}>Close</button>
