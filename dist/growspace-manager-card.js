@@ -28487,33 +28487,21 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const xAt = (offset) => padL + (offset / day) * iW;
         const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
         const nowX = xAt(nowOffset).toFixed(1);
+        // Skips buckets with no reading (sensor didn't report in that window) so the
+        // trace connects straight across gaps — a continuous line, as designed,
+        // rather than snapping into disconnected fragments at every missed bucket.
         const buildTracePts = (buckets, anchorMs) => {
             if (!buckets?.length)
                 return [];
-            return buckets.map((b) => {
+            const pts = [];
+            for (const b of buckets) {
                 if (b.value === null)
-                    return null;
-                return { offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value };
-            });
-        };
-        const buildSegments = (pts, yFn) => {
-            const segs = [];
-            let cur = [];
-            for (const pt of pts) {
-                if (pt === null) {
-                    if (cur.length > 0) {
-                        segs.push(cur.join(' '));
-                        cur = [];
-                    }
-                }
-                else {
-                    cur.push(`${cur.length === 0 ? 'M' : 'L'}${xAt(pt.offset).toFixed(1)},${yFn(pt.v).toFixed(1)}`);
-                }
+                    continue;
+                pts.push({ offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value });
             }
-            if (cur.length > 0)
-                segs.push(cur.join(' '));
-            return segs;
+            return pts;
         };
+        const buildPath = (pts, yFn) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
         // Fixed VWC axis around the configured targets so projections stay in-frame.
         const vwcAxisLo = Math.max(0, Math.min(target, p2Trigger) - 10);
         const vwcAxisHi = Math.max(target, p2Trigger) + 8;
@@ -28552,20 +28540,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             ecAxisHi = 5;
         }
         const yAtEc = (v) => padT + iH - Math.max(0, Math.min(1, (v - ecAxisLo) / (ecAxisHi - ecAxisLo))) * iH;
-        const vwcSegments = buildSegments(vwcPts, yAtVwc);
-        const poreEcSegments = poreEcPts ? buildSegments(poreEcPts, yAtEc) : [];
-        const bulkEcSegments = bulkEcPts ? buildSegments(bulkEcPts, yAtEc) : [];
+        const vwcPath = buildPath(vwcPts, yAtVwc);
+        const porePath = poreEcPts ? buildPath(poreEcPts, yAtEc) : '';
+        const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
         const targetY = yAtVwc(target);
         const p2TriggerY = yAtVwc(p2Trigger);
         // Synthetic projection picking up from the latest known reading (or the seed values).
-        const lastKnown = (pts) => {
-            for (let i = pts.length - 1; i >= 0; i--) {
-                const p = pts[i];
-                if (p)
-                    return p.v;
-            }
-            return null;
-        };
+        const lastKnown = (pts) => (pts.length ? pts[pts.length - 1].v : null);
         const seedVwc = lastKnown(vwcPts) ?? target;
         const seedPore = lastKnown(poreEcPts ?? []) ?? ecTargetMid ?? 3;
         const projection = this._generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPore, viewStart);
@@ -28712,7 +28693,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
               </defs>
 
               <!-- horizontal gridlines at VWC ticks -->
-              ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map((v) => x `
+              ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map((v) => b `
                   <line
                     x1="${xAt(0)}" x2="${xAt(day)}"
                     y1="${yAtVwc(v).toFixed(1)}" y2="${yAtVwc(v).toFixed(1)}"
@@ -28720,7 +28701,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                   />
                 `)}
               <!-- vertical hour gridlines -->
-              ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => x `
+              ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => b `
                   <line
                     x1="${xAt(h * 60)}" x2="${xAt(h * 60)}"
                     y1="${padT}" y2="${padT + iH}"
@@ -28741,7 +28722,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 stroke="var(--warning, #ffa726)" stroke-opacity="0.5" stroke-dasharray="2 3"
               />
               ${ecTargetMid !== null
-            ? x `
+            ? b `
                     <line
                       x1="${xAt(0)}" x2="${xAt(day)}"
                       y1="${yAtEc(ecTargetMid).toFixed(1)}" y2="${yAtEc(ecTargetMid).toFixed(1)}"
@@ -28751,26 +28732,32 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             : E}
 
               <!-- VWC history area -->
-              ${vwcSegments.length
-            ? x `
+              ${vwcPts.length
+            ? b `
                     <path
-                      d="${vwcSegments[0]} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
+                      d="${vwcPath} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
                       fill="url(#vwcModelArea-${growspaceId})"
                     />
                   `
             : E}
 
               <!-- history (solid) -->
-              ${bulkEcSegments.map((seg) => x `<path d="${seg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`)}
-              ${poreEcSegments.map((seg) => x `<path d="${seg}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`)}
-              ${vwcSegments.map((seg) => x `<path d="${seg}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`)}
+              ${bulkPath
+            ? b `<path d="${bulkPath}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+            : E}
+              ${porePath
+            ? b `<path d="${porePath}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+            : E}
+              ${vwcPath
+            ? b `<path d="${vwcPath}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
+            : E}
 
               <!-- projection (dashed, faded) -->
               ${bulkEcPts !== null
-            ? x `<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+            ? b `<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
             : E}
               ${poreEcPts !== null
-            ? x `<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+            ? b `<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
             : E}
               <path d="${projVwcSeg}" fill="none" stroke="${vwcColor}" stroke-width="1.7" stroke-dasharray="4 4" stroke-opacity="0.5" />
 
@@ -28783,10 +28770,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
               <!-- current-value dots -->
               ${bulkEcPts !== null
-            ? x `<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
+            ? b `<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
             : E}
               ${poreEcPts !== null
-            ? x `<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
+            ? b `<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
             : E}
               <circle cx="${nowX}" cy="${yAtVwc(cur.v).toFixed(1)}" r="3.4" fill="${vwcColor}" stroke="#141414" stroke-width="1.5" />
             </svg>
