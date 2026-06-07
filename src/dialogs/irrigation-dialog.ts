@@ -1737,7 +1737,15 @@ export class IrrigationDialog extends LitElement {
     const lightsOnMin = hh * 60 + (mm || 0);
     const lightsOffMin = lightsOnMin + lightHours * 60;
     const p1End = lightsOnMin + (s.p0DurationMinutes ?? 60);
-    const p3Start = Math.max(p1End, lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120));
+    const scheduledP3Start = Math.max(p1End, lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120));
+    const irrigationConfig = this.device?.irrigationConfig;
+    const phaseChangedAt = irrigationConfig?.phaseChangedAt;
+    let p3Start = scheduledP3Start;
+    if (irrigationConfig?.activeSteeringPhase === 'p3' && phaseChangedAt) {
+      const d = new Date(phaseChangedAt);
+      const actualStart = d.getHours() * 60 + d.getMinutes();
+      p3Start = Math.max(p1End, Math.min(actualStart, scheduledP3Start));
+    }
     return {
       lightsOnMin,
       lightsOffMin,

@@ -197,7 +197,13 @@ The four daily phases that structure a Crop Steering day, all derived from the g
 - P0 — Activation: first shot(s) at lights-on, lasting `p0DurationMinutes`
 - P1 — Ramp-up: shots fire until substrate reaches the **Saturation Target** (`targetVwcPercent`)
 - P2 — Maintenance: shots fire when VWC drops below the **P2 trigger threshold** — either the **P2 Direct Trigger** (`soilTriggerPercent`) if set, or `targetVwcPercent − maintenanceDrybackPercent` (the **Maintenance Dryback**) otherwise
-- P3 — Dry-back: no irrigation; runs from `p2StopBeforeLightsOffMinutes` before lights-off until next lights-on
+- P3 — Dry-back: no irrigation; nominally starts `p2StopBeforeLightsOffMinutes` before lights-off (**Scheduled P3 Boundary**), but may start earlier when **Auto-Advance P2→P3** fires (**Actual P3 Boundary**). The authoritative start time is `phase_changed_at` on `IrrigationConfig`; fall back to the scheduled boundary when absent.
+
+**Auto-Advance P2→P3** (`autoAdvanceP2ToP3` / `auto_advance_p2_to_p3`)
+An optional flag on `IrrigationStrategy`. When enabled, the backend transitions `active_steering_phase` from `"p2"` to `"p3"` as soon as it determines P2 irrigation should stop — which may be before the clock-based Scheduled P3 Boundary. The exact moment of transition is recorded in `IrrigationConfig.phase_changed_at`.
+
+**`phase_changed_at`** (`IrrigationConfig`)
+ISO-8601 timestamp recording the wall-clock time when `active_steering_phase` last changed to `"p3"`. `null` until the first P3 transition in the current day. The Schedules tab uses this as the **Actual P3 Boundary** when drawing the crop steering timeline, falling back to the Scheduled P3 Boundary when absent.
 
 **P2 Thresholds** (Steering tab)
 The three controls that govern when P2 fires, all grouped together in the Steering tab:

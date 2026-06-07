@@ -60,6 +60,7 @@ export interface IrrigationConfig {
   haltOnRunoffEcThreshold?: number | null;
   ecTargetRanges?: ECTargetRange[];
   activeSteeringPhase?: 'p1' | 'p2' | 'p3';
+  phaseChangedAt?: string;
 }
 
 export interface SerializedIrrigationStrategy {
