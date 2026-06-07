@@ -1021,13 +1021,13 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     `);
     await el.updateComplete;
 
-    const vwcSvg = el.shadowRoot!.querySelector('.cs-sensor-chart svg');
+    const vwcSvg = el.shadowRoot!.querySelector('.cs-model svg');
     expect(vwcSvg).not.toBeNull();
     const paths = vwcSvg!.querySelectorAll('path[stroke]');
     expect(paths.length).toBeGreaterThan(1);
   });
 
-  it('shows dashed guide lines with "Target X%" and "P2 trigger X%" labels', async () => {
+  it('shows "Target X%" and "P3 trigger X%" reference labels on the substrate model', async () => {
     const history = makeHistoryResponse();
     cropSteeringHistory$.set(new Map([['gs1', history as any]]));
 
@@ -1043,10 +1043,11 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     `);
     await el.updateComplete;
 
-    const vwcSvg = el.shadowRoot!.querySelector('.cs-sensor-chart svg');
-    const labels = Array.from(vwcSvg!.querySelectorAll('text')).map((t) => t.textContent ?? '');
+    const model = el.shadowRoot!.querySelector('.cs-model');
+    expect(model).not.toBeNull();
+    const labels = Array.from(model!.querySelectorAll('.cm-target')).map((t) => t.textContent ?? '');
     expect(labels.some((l) => l.includes('Target') && l.includes('%'))).toBe(true);
-    expect(labels.some((l) => l.includes('P2 trigger') && l.includes('%'))).toBe(true);
+    expect(labels.some((l) => l.includes('P3 trigger') && l.includes('%'))).toBe(true);
   });
 
   it('renders "not configured" notes for Pore EC and Bulk EC when both are absent from history', async () => {
@@ -1065,7 +1066,7 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     `);
     await el.updateComplete;
 
-    const legend = el.shadowRoot!.querySelector('.cs-sensor-legend');
+    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC not configured');
@@ -1245,14 +1246,14 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     await new Promise((r) => setTimeout(r, 0));
     await el.updateComplete;
 
-    const svg = el.shadowRoot!.querySelector('.cs-sensor-chart svg');
+    const svg = el.shadowRoot!.querySelector('.cs-model svg');
     const strokes = Array.from(svg?.querySelectorAll('path') ?? []).map((p) =>
       p.getAttribute('stroke')
     );
     expect(strokes).toContain('#ef5350');
     expect(strokes).toContain('#ff7043');
 
-    const legend = el.shadowRoot!.querySelector('.cs-sensor-legend');
+    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
     expect(normalize(legend?.textContent)).toContain('Pore EC · mS/cm');
     expect(normalize(legend?.textContent)).toContain('Bulk EC · mS/cm');
   });
@@ -1278,14 +1279,14 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     await new Promise((r) => setTimeout(r, 0));
     await el.updateComplete;
 
-    const svg = el.shadowRoot!.querySelector('.cs-sensor-chart svg');
+    const svg = el.shadowRoot!.querySelector('.cs-model svg');
     const strokes = Array.from(svg?.querySelectorAll('path') ?? []).map((p) =>
       p.getAttribute('stroke')
     );
     expect(strokes).not.toContain('#ef5350');
     expect(strokes).toContain('#ff7043');
 
-    const legend = el.shadowRoot!.querySelector('.cs-sensor-legend');
+    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC · mS/cm');
@@ -1311,14 +1312,14 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     await new Promise((r) => setTimeout(r, 0));
     await el.updateComplete;
 
-    const svg = el.shadowRoot!.querySelector('.cs-sensor-chart svg');
+    const svg = el.shadowRoot!.querySelector('.cs-model svg');
     const strokes = Array.from(svg?.querySelectorAll('path') ?? []).map((p) =>
       p.getAttribute('stroke')
     );
     expect(strokes).not.toContain('#ef5350');
     expect(strokes).not.toContain('#ff7043');
 
-    const legend = el.shadowRoot!.querySelector('.cs-sensor-legend');
+    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
     expect(text).toContain('Pore EC not configured');
     expect(text).toContain('Bulk EC not configured');
