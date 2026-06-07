@@ -1,13 +1,15 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
+import { cropSteeringHistory$ } from '../slices/irrigation';
 
 afterEach(() => {
   document.body.innerHTML = '';
+  cropSteeringHistory$.set(new Map());
 });
 import { createGrowspaceDevice } from '../services/types';
-import { IrrigationDialog } from './irrigation-dialog';
+import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
 
 // Stub any HA-specific custom elements that are not available in the test environment.
@@ -250,6 +252,40 @@ function makeSteeringDevice(overrides: Partial<Parameters<typeof createGrowspace
   });
 }
 
+describe('IrrigationDialog – Crop Steering Schedule: phase anchor', () => {
+  it('anchors phases on detectedLightsOnTime when set, not the configured lightsOnTime', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 30,
+        p2StopBeforeLightsOffMinutes: 60,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 30,
+        shotIntervalMinutes: 20,
+        autoLightTracking: true,
+        detectedLightsOnTime: '07:30:00',
+      },
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'schedules'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const schedule = el.shadowRoot!.querySelector('.crop-steering-schedule');
+    expect(schedule).not.toBeNull();
+    // P1 (Saturation) should start at the detected lights-on time (07:30), not the configured one (06:00).
+    const text = normalize(schedule!.textContent);
+    expect(text).toContain('07:30–08:00 · Reach FC');
+    expect(text).not.toContain('06:00–06:30 · Reach FC');
+  });
+});
+
 describe('IrrigationDialog – Steering tab: auto light tracking', () => {
   it('does not show auto-track toggle when device has no light sensors', async () => {
     const device = makeSteeringDevice();
@@ -391,6 +427,9 @@ function makeEcRampStore(fetchFn = vi.fn().mockResolvedValue(undefined)) {
         fetchECRampCurves: fetchFn,
         saveECRampCurve: vi.fn().mockResolvedValue(undefined),
         removeECRampCurve: vi.fn().mockResolvedValue(undefined),
+      },
+      irrigation: {
+        fetchCropSteeringHistory: vi.fn().mockResolvedValue(undefined),
       },
     },
     data: {
@@ -587,6 +626,175 @@ function makeTankDevice() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// Crop Steering History: lazy fetch + polling lifecycle
+// ---------------------------------------------------------------------------
+
+function makeCropHistoryStore(fetchFn = vi.fn().mockResolvedValue(undefined)) {
+  return {
+    context: {
+      dataService: {},
+      ui: { showToast: vi.fn() },
+      data: {},
+      undoRedoManager: {},
+      optimisticManager: {},
+      grid: {},
+      closeDialog: vi.fn(),
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    },
+    actions: {
+      library: {
+        fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
+        saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+        removeECRampCurve: vi.fn().mockResolvedValue(undefined),
+      },
+      irrigation: {
+        fetchCropSteeringHistory: fetchFn,
+      },
+    },
+    data: {
+      $cropSteeringHistory: atom<Map<string, unknown>>(new Map()),
+    },
+    ui: { showToast: vi.fn() },
+  };
+}
+
+function makeCropHistoryDevice() {
+  return makeSteeringDevice({
+    irrigationStrategy: {
+      enabled: true,
+      lightsOnTime: '06:00:00',
+      p0DurationMinutes: 30,
+      p2StopBeforeLightsOffMinutes: 60,
+      targetVwcPercent: 65,
+      maintenanceDrybackPercent: 3,
+      shotDurationSeconds: 30,
+      shotIntervalMinutes: 20,
+    },
+  });
+}
+
+describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
+  it('does not fetch crop steering history before the Schedules tab is first activated', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(undefined);
+    const store = makeCropHistoryStore(fetchFn);
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'config'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it('fetches crop steering history on first Schedules-tab activation', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(undefined);
+    const store = makeCropHistoryStore(fetchFn);
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'config'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect(fetchFn).not.toHaveBeenCalled();
+
+    const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
+    schedulesNav.click();
+    await el.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchFn).toHaveBeenCalledOnce();
+    expect(fetchFn).toHaveBeenCalledWith('gs1');
+  });
+
+  it('starts the PollingController when the Schedules tab activates', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(undefined);
+    const store = makeCropHistoryStore(fetchFn);
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'config'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
+    schedulesNav.click();
+    await el.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect((el as any)._cropSteeringPoller?.running).toBe(true);
+  });
+
+  it('stops the PollingController when navigating away from the Schedules tab', async () => {
+    const store = makeCropHistoryStore();
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    expect((el as any)._cropSteeringPoller?.running).toBe(true);
+
+    const configNav = el.shadowRoot!.querySelector('[data-tab="config"]') as HTMLElement;
+    configNav.click();
+    await el.updateComplete;
+
+    expect((el as any)._cropSteeringPoller?.running).toBe(false);
+  });
+
+  it('does not fetch again on subsequent Schedules-tab re-activations', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(undefined);
+    const store = makeCropHistoryStore(fetchFn);
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${store as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+    expect(fetchFn).toHaveBeenCalledOnce();
+
+    // Navigate away then back
+    const configNav = el.shadowRoot!.querySelector('[data-tab="config"]') as HTMLElement;
+    configNav.click();
+    await el.updateComplete;
+
+    const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
+    schedulesNav.click();
+    await el.updateComplete;
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchFn).toHaveBeenCalledOnce();
+  });
+});
+
 describe('IrrigationDialog – Tanks tab inline edit', () => {
   it('renders a pencil button for each tank row', async () => {
     const device = makeTankDevice();
@@ -719,5 +927,148 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
 
     // Form dismissed
     expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Crop Steering Schedule: real VWC trace rendering
+// ---------------------------------------------------------------------------
+
+const LIGHTS_ON_UTC = '2024-06-01T06:00:00+00:00';
+
+function makeSoilBuckets(count: number, baseValue = 42.0, nullAt?: number) {
+  const anchor = new Date('2024-06-01T04:00:00+00:00').getTime();
+  return Array.from({ length: count }, (_, i) => ({
+    timestamp: new Date(anchor + i * 5 * 60 * 1000).toISOString(),
+    value: i === nullAt ? null : baseValue + i * 0.1,
+  }));
+}
+
+function makeHistoryResponse(overrides: { soil_moisture?: Array<{ timestamp: string; value: number | null }> } = {}) {
+  return {
+    growspace_id: 'gs1',
+    lights_on: LIGHTS_ON_UTC,
+    soil_moisture: overrides.soil_moisture ?? makeSoilBuckets(10),
+  };
+}
+
+function makeVwcRenderStore() {
+  return {
+    context: {
+      dataService: {},
+      ui: { showToast: vi.fn() },
+      data: {},
+      undoRedoManager: {},
+      optimisticManager: {},
+      grid: {},
+      closeDialog: vi.fn(),
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    },
+    actions: {
+      library: {
+        fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
+        saveECRampCurve: vi.fn().mockResolvedValue(undefined),
+        removeECRampCurve: vi.fn().mockResolvedValue(undefined),
+      },
+      irrigation: {
+        fetchCropSteeringHistory: vi.fn().mockResolvedValue(undefined),
+      },
+    },
+    ui: { showToast: vi.fn() },
+  };
+}
+
+describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
+  beforeEach(() => {
+    cropSteeringHistory$.set(new Map());
+  });
+
+  it('renders "Substrate VWC" (not "modeled") as the trace label', async () => {
+    const history = makeHistoryResponse();
+    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
+
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${makeVwcRenderStore() as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const schedule = el.shadowRoot!.querySelector('.crop-steering-schedule');
+    expect(normalize(schedule!.textContent)).toContain('Substrate VWC');
+    expect(normalize(schedule!.textContent)).not.toContain('modeled');
+  });
+
+  it('renders multiple <path> elements when soil_moisture has a null-gap', async () => {
+    const soil_moisture = makeSoilBuckets(12, 42.0, 5);
+    const history = makeHistoryResponse({ soil_moisture });
+    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
+
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${makeVwcRenderStore() as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const vwcSvg = el.shadowRoot!.querySelector('.cs-vwc svg');
+    expect(vwcSvg).not.toBeNull();
+    const paths = vwcSvg!.querySelectorAll('path[stroke]');
+    expect(paths.length).toBeGreaterThan(1);
+  });
+
+  it('shows dashed guide lines with "Target X%" and "P2 trigger X%" labels', async () => {
+    const history = makeHistoryResponse();
+    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
+
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${makeVwcRenderStore() as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const vwcSvg = el.shadowRoot!.querySelector('.cs-vwc svg');
+    const labels = Array.from(vwcSvg!.querySelectorAll('text')).map((t) => t.textContent ?? '');
+    expect(labels.some((l) => l.includes('Target') && l.includes('%'))).toBe(true);
+    expect(labels.some((l) => l.includes('P2 trigger') && l.includes('%'))).toBe(true);
+  });
+
+  it('renders "Pore EC — coming soon" and "Bulk EC — coming soon" legend entries', async () => {
+    const history = makeHistoryResponse();
+    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
+
+    const device = makeCropHistoryDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${makeVwcRenderStore() as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const schedule = el.shadowRoot!.querySelector('.crop-steering-schedule');
+    const text = normalize(schedule!.textContent);
+    expect(text).toContain('Pore EC');
+    expect(text).toContain('coming soon');
+    expect(text).toContain('Bulk EC');
   });
 });

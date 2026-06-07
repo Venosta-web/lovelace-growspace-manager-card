@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
+import { PollingController } from '../features/shared/controllers/polling.controller';
 import { hassContext, storeContext } from '../context';
 import {
   mdiWater,
@@ -21,7 +22,7 @@ import {
   mdiBullseyeArrow,
   mdiTrendingUp,
 } from '@mdi/js';
-import type { ECRampCurve, ECRampPoint } from '../schemas/api-schema';
+import type { ECRampCurve, ECRampPoint, CropSteeringHistory } from '../schemas/api-schema';
 import {
   IrrigationTime,
   IrrigationStrategy,
@@ -42,6 +43,8 @@ import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { ecRampCurves$ } from '../slices/nutrient';
+import { cropSteeringHistory$ } from '../slices/irrigation';
+import { METRIC_CONFIG, MetricKey } from '../features/environment/constants';
 import {
   addIrrigationTime,
   removeIrrigationTime,
@@ -113,6 +116,11 @@ export class IrrigationDialog extends LitElement {
   @state() private _ecRampError: string | null = null;
   private _ecRampFetched = false;
   private _ecRampCurvesController?: StoreController<Record<string, ECRampCurve> | null>;
+
+  // ─── Crop Steering History (Schedules tab) ────────────────────────────
+  private _cropSteeringHistoryFetched = false;
+  private _cropSteeringPoller?: PollingController;
+  private _cropSteeringHistoryController?: StoreController<Map<string, CropSteeringHistory>>;
 
   private _dataService?: DataService;
 
@@ -1079,6 +1087,7 @@ export class IrrigationDialog extends LitElement {
       this._initializeState();
       this._fetchStageAnalytics();
       this._ecRampFetched = false;
+      this._cropSteeringHistoryFetched = false;
       if (this.initialTab) {
         this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
       }
@@ -1106,6 +1115,33 @@ export class IrrigationDialog extends LitElement {
           }
           this.store.actions.library.fetchECRampCurves().catch(() => undefined);
         }
+      }
+
+      // Crop Steering History: lazy fetch + polling when Schedules tab is active.
+      if (nextTab === 'schedules' && prevTab !== 'schedules') {
+        if (!this._cropSteeringHistoryFetched && this.store?.actions?.irrigation && this.device?.deviceId) {
+          this._cropSteeringHistoryFetched = true;
+          if (!this._cropSteeringHistoryController) {
+            this._cropSteeringHistoryController = new StoreController(this, cropSteeringHistory$);
+          }
+          this.store.actions.irrigation
+            .fetchCropSteeringHistory(this.device.deviceId)
+            .catch(() => undefined);
+        }
+        if (!this._cropSteeringPoller && this.store?.actions?.irrigation && this.device?.deviceId) {
+          const growspaceId = this.device.deviceId;
+          this._cropSteeringPoller = new PollingController(
+            this,
+            () =>
+              this.store!.actions.irrigation
+                .fetchCropSteeringHistory(growspaceId)
+                .catch(() => undefined),
+            { interval: 5 * 60 * 1000, autoStart: false }
+          );
+        }
+        this._cropSteeringPoller?.start();
+      } else if (prevTab === 'schedules' && nextTab !== 'schedules') {
+        this._cropSteeringPoller?.stop();
       }
     }
   }
@@ -1731,9 +1767,10 @@ export class IrrigationDialog extends LitElement {
   private _computePhases() {
     const s = this._sm.tabs.steering.draft;
     if (!s.lightsOnTime) return null;
+    const anchorLightsOnTime = s.detectedLightsOnTime ?? s.lightsOnTime;
     const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
     const lightHours = isFlower ? 12 : 18;
-    const [hh, mm] = s.lightsOnTime.split(':').map(Number);
+    const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
     const lightsOnMin = hh * 60 + (mm || 0);
     const lightsOffMin = lightsOnMin + lightHours * 60;
     const p1End = lightsOnMin + (s.p0DurationMinutes ?? 60);
@@ -1810,41 +1847,15 @@ export class IrrigationDialog extends LitElement {
     const viewStart = (lightsOnMin - 120 + 1440) % 1440;
     const pctAt = (m: number) => ((((m % 1440) - viewStart + 1440) % 1440) / day) * 100;
 
-    // VWC sparkline — computed in view-offset space to avoid midnight wrap artifacts
     const steeringDraft = this._sm.tabs.steering.draft;
     const target = steeringDraft.targetVwcPercent ?? 45;
     const dryback = steeringDraft.maintenanceDrybackPercent ?? 3;
-    const fc = target + 7;
-    const base = fc - dryback - 5;
-    const lightsOnOffset = 120;
-    const lightsOffOffset = lightsOnOffset + lightHours * 60;
-    const p1EndOffset = lightsOnOffset + (steeringDraft.p0DurationMinutes ?? 60);
-    const p3StartOffset = Math.max(
-      p1EndOffset,
-      lightsOffOffset - (steeringDraft.p2StopBeforeLightsOffMinutes ?? 120)
-    );
+    const p2Trigger = target - dryback;
 
-    const vwcPts: Array<{ offset: number; v: number }> = [];
-    for (let offset = 0; offset <= day; offset += 8) {
-      let v: number;
-      if (offset < lightsOnOffset) {
-        v = base + Math.sin(offset / 300) * 0.8;
-      } else if (offset < p1EndOffset) {
-        const pct = (offset - lightsOnOffset) / Math.max(1, p1EndOffset - lightsOnOffset);
-        v = base + pct * (fc - base);
-      } else if (offset < p3StartOffset) {
-        const pct = (offset - p1EndOffset) / Math.max(1, p3StartOffset - p1EndOffset);
-        v =
-          fc - pct * (dryback * 0.25) + Math.sin((offset - p1EndOffset) * 0.25) * (dryback * 0.35);
-      } else if (offset < lightsOffOffset) {
-        const pct = (offset - p3StartOffset) / Math.max(1, lightsOffOffset - p3StartOffset);
-        v = fc - dryback * 0.25 - pct * (dryback * 0.9);
-      } else {
-        const pct = (offset - lightsOffOffset) / Math.max(1, day - lightsOffOffset);
-        v = fc - dryback - pct * 3;
-      }
-      vwcPts.push({ offset, v: Math.max(0, Math.min(100, v)) });
-    }
+    // Real VWC trace from fetched history
+    const growspaceId = this.device?.deviceId ?? '';
+    const history = this._cropSteeringHistoryController?.value?.get(growspaceId);
+    const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
 
     const svgW = 1000;
     const svgH = 52;
@@ -1854,18 +1865,64 @@ export class IrrigationDialog extends LitElement {
     const padB = 10;
     const iW = svgW - padL - padR;
     const iH = svgH - padT - padB;
-    const vMin = target - 10;
-    const vMax = target + 14;
     const xAt = (offset: number) => padL + (offset / day) * iW;
-    const yAt = (v: number) =>
-      padT + iH - Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin))) * iH;
-    const fcY = yAt(fc);
-    const linePath = vwcPts
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAt(p.v).toFixed(1)}`)
-      .join(' ');
-    const areaPath = `${linePath} L${xAt(day).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z`;
+
+    // Compute y-axis range from actual non-null bucket values
     const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
     const nowX = xAt(nowOffset).toFixed(1);
+
+    // Map history buckets to view-offset space using anchor-relative milliseconds
+    type VwcPt = { offset: number; v: number };
+    const realPts: Array<VwcPt | null> = [];
+    if (history?.soil_moisture?.length) {
+      const lightsOnMs = Date.parse(history.lights_on);
+      const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
+      for (const bucket of history.soil_moisture) {
+        if (bucket.value === null) {
+          realPts.push(null);
+        } else {
+          const offsetMs = Date.parse(bucket.timestamp) - anchorMs;
+          const offsetMin = offsetMs / 60000;
+          realPts.push({ offset: offsetMin, v: bucket.value });
+        }
+      }
+    }
+
+    const nonNullValues = realPts.filter((p): p is VwcPt => p !== null).map((p) => p.v);
+    let vMin: number;
+    let vMax: number;
+    if (nonNullValues.length > 0) {
+      const dataMin = Math.min(...nonNullValues);
+      const dataMax = Math.max(...nonNullValues);
+      const range = Math.max(2, dataMax - dataMin);
+      const pad = range * 0.1;
+      vMin = Math.max(0, dataMin - pad);
+      vMax = dataMax + pad;
+    } else {
+      vMin = target - 10;
+      vMax = target + 10;
+    }
+    const yAt = (v: number) =>
+      padT + iH - Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin))) * iH;
+
+    // Split real trace at null gaps into separate path segments
+    const vwcSegments: string[] = [];
+    let current: string[] = [];
+    for (const pt of realPts) {
+      if (pt === null) {
+        if (current.length > 0) {
+          vwcSegments.push(current.join(' '));
+          current = [];
+        }
+      } else {
+        const cmd = current.length === 0 ? 'M' : 'L';
+        current.push(`${cmd}${xAt(pt.offset).toFixed(1)},${yAt(pt.v).toFixed(1)}`);
+      }
+    }
+    if (current.length > 0) vwcSegments.push(current.join(' '));
+
+    const targetY = yAt(target);
+    const p2TriggerY = yAt(p2Trigger);
 
     return html`
       <div class="detail-card crop-steering-schedule">
@@ -1977,46 +2034,64 @@ export class IrrigationDialog extends LitElement {
             <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
           </div>
 
-          <!-- VWC sparkline -->
+          <!-- VWC trace (real sensor data) -->
           <div class="cs-vwc">
-            <span class="cs-vwc-label">Substrate VWC · modeled</span>
+            <span class="cs-vwc-label">Substrate VWC</span>
             <svg
               viewBox="0 0 ${svgW} ${svgH}"
               preserveAspectRatio="none"
               style="width:100%;height:100%;display:block;"
             >
-              <defs>
-                <linearGradient id="vwcGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="rgba(76,175,80,0.3)" />
-                  <stop offset="100%" stop-color="rgba(76,175,80,0)" />
-                </linearGradient>
-              </defs>
+              <!-- Saturation Target guide line -->
               <line
                 x1="${xAt(0)}"
                 x2="${xAt(day)}"
-                y1="${fcY}"
-                y2="${fcY}"
+                y1="${targetY}"
+                y2="${targetY}"
                 stroke="rgba(255,255,255,0.18)"
                 stroke-dasharray="3 3"
               />
               <text
                 x="${(xAt(day) - 4).toFixed(0)}"
-                y="${(fcY - 3).toFixed(0)}"
+                y="${(targetY - 3).toFixed(0)}"
                 text-anchor="end"
                 font-size="8"
                 fill="rgba(255,255,255,0.4)"
               >
-                FC ${fc.toFixed(0)}%
+                Target ${target.toFixed(0)}%
               </text>
-              <path d="${areaPath}" fill="url(#vwcGrad)" />
-              <path
-                d="${linePath}"
-                fill="none"
-                stroke="#4CAF50"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <!-- P2 trigger guide line -->
+              <line
+                x1="${xAt(0)}"
+                x2="${xAt(day)}"
+                y1="${p2TriggerY}"
+                y2="${p2TriggerY}"
+                stroke="rgba(255,152,0,0.3)"
+                stroke-dasharray="3 3"
               />
+              <text
+                x="${(xAt(day) - 4).toFixed(0)}"
+                y="${(p2TriggerY - 3).toFixed(0)}"
+                text-anchor="end"
+                font-size="8"
+                fill="rgba(255,152,0,0.5)"
+              >
+                P2 trigger ${p2Trigger.toFixed(0)}%
+              </text>
+              <!-- Real VWC trace segments (split at null gaps) -->
+              ${vwcSegments.map(
+                (seg) => html`
+                  <path
+                    d="${seg}"
+                    fill="none"
+                    stroke="${vwcColor}"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `
+              )}
+              <!-- Now line -->
               <line
                 x1="${nowX}"
                 x2="${nowX}"
@@ -2047,6 +2122,14 @@ export class IrrigationDialog extends LitElement {
               ></span>
               ${this._fmtMin(lightsOnMin)}–${this._fmtMin(lightsOffMin)} · ${lightHours}h
               photoperiod
+            </span>
+            <span class="cs-leg-chip" style="opacity:0.45;">
+              <span class="cs-leg-dot" style="background:#e91e63;"></span>
+              Pore EC — coming soon
+            </span>
+            <span class="cs-leg-chip" style="opacity:0.45;">
+              <span class="cs-leg-dot" style="background:#9c27b0;"></span>
+              Bulk EC — coming soon
             </span>
           </div>
 

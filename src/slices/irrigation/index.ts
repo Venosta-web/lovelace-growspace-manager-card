@@ -26,6 +26,7 @@
  *   logDrainReading()            — fire-and-forget
  *   configureDrainMonitoring()   — fire-and-forget
  *   runIrrigationCycle()         — fire-and-forget
+ *   fetchCropSteeringHistory()   — fetches sensor-driven VWC/EC history for one growspace
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  * Tank data absorption: this slice is the authoritative source for tank levels,
@@ -35,8 +36,12 @@
 import { atom } from 'nanostores';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
 import { mutate } from '../../services/mutate';
-import { callService } from '../../services/hass-call';
+import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows } from './schema';
+import {
+  CropSteeringHistorySchema,
+  type CropSteeringHistory,
+} from '../../schemas/api-schema';
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -45,6 +50,7 @@ import type { IrrigationMode, PhaseWindows } from './schema';
 export const irrigationConfigs$ = atom<Map<string, IrrigationConfig>>(new Map());
 export const irrigationStrategies$ = atom<Map<string, IrrigationStrategy>>(new Map());
 export const tankLevels$ = atom<Map<string, IrrigationTank[]>>(new Map());
+export const cropSteeringHistory$ = atom<Map<string, CropSteeringHistory>>(new Map());
 
 // ---------------------------------------------------------------------------
 // Bootstrap writes (called by SyncService when fresh data arrives)
@@ -492,4 +498,15 @@ export async function runIrrigationCycle(growspaceId: string, duration?: number)
   if (duration !== undefined) payload.duration = duration;
 
   await callService('growspace_manager', 'run_irrigation_cycle', payload);
+}
+
+export async function fetchCropSteeringHistory(growspaceId: string): Promise<void> {
+  const result = await hassCall(
+    'growspace_manager/get_crop_steering_history',
+    { growspace_id: growspaceId },
+    CropSteeringHistorySchema
+  );
+  const updated = new Map(cropSteeringHistory$.get());
+  updated.set(growspaceId, result);
+  cropSteeringHistory$.set(updated);
 }

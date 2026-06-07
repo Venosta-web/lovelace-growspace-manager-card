@@ -20,6 +20,7 @@ import {
   irrigationConfigs$,
   irrigationStrategies$,
   tankLevels$,
+  cropSteeringHistory$,
   setIrrigationConfig,
   setIrrigationStrategy,
   setTankLevels,
@@ -35,7 +36,9 @@ import {
   logDrainReading,
   configureDrainMonitoring,
   runIrrigationCycle,
+  fetchCropSteeringHistory,
 } from './index';
+import { CropSteeringHistorySchema } from '../../schemas/api-schema';
 import {
   IrrigationModeSchema,
   SetIrrigationStrategyPayloadSchema,
@@ -53,6 +56,7 @@ import {
 
 vi.mock('../../services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
+  hassCall: vi.fn().mockResolvedValue({}),
   setHass: vi.fn(),
 }));
 
@@ -86,6 +90,7 @@ beforeEach(() => {
   irrigationConfigs$.set(new Map());
   irrigationStrategies$.set(new Map());
   tankLevels$.set(new Map());
+  cropSteeringHistory$.set(new Map());
   vi.clearAllMocks();
   vi.mocked(hassCall.callService).mockResolvedValue(undefined);
 });
@@ -941,5 +946,85 @@ describe('Zod Schema Validations', () => {
       };
       expect(PhaseWindowsSchema.parse(windows)).toEqual(windows);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CropSteeringHistorySchema
+// ---------------------------------------------------------------------------
+
+const minimalHistory = {
+  growspace_id: 'gs1',
+  lights_on: '2024-06-01T06:00:00+00:00',
+  soil_moisture: [
+    { timestamp: '2024-06-01T04:00:00+00:00', value: 42.5 },
+    { timestamp: '2024-06-01T04:05:00+00:00', value: null },
+  ],
+};
+
+describe('CropSteeringHistorySchema', () => {
+  it('parses a minimal response (no pore_ec / bulk_ec)', () => {
+    const result = CropSteeringHistorySchema.parse(minimalHistory);
+    expect(result.growspace_id).toBe('gs1');
+    expect(result.lights_on).toBe('2024-06-01T06:00:00+00:00');
+    expect(result.soil_moisture).toHaveLength(2);
+    expect(result.soil_moisture[0]).toEqual({ timestamp: '2024-06-01T04:00:00+00:00', value: 42.5 });
+    expect(result.soil_moisture[1]).toEqual({ timestamp: '2024-06-01T04:05:00+00:00', value: null });
+    expect(result.pore_ec).toBeUndefined();
+    expect(result.bulk_ec).toBeUndefined();
+  });
+
+  it('parses a response with optional pore_ec and bulk_ec arrays', () => {
+    const full = {
+      ...minimalHistory,
+      pore_ec: [{ timestamp: '2024-06-01T04:00:00+00:00', value: 3.1 }],
+      bulk_ec: [{ timestamp: '2024-06-01T04:00:00+00:00', value: 2.8 }],
+    };
+    const result = CropSteeringHistorySchema.parse(full);
+    expect(result.pore_ec).toHaveLength(1);
+    expect(result.bulk_ec).toHaveLength(1);
+  });
+
+  it('rejects when soil_moisture is missing', () => {
+    const { soil_moisture: _sm, ...bad } = minimalHistory;
+    expect(() => CropSteeringHistorySchema.parse(bad)).toThrow();
+  });
+
+  it('rejects when lights_on is missing', () => {
+    const { lights_on: _lo, ...bad } = minimalHistory;
+    expect(() => CropSteeringHistorySchema.parse(bad)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchCropSteeringHistory
+// ---------------------------------------------------------------------------
+
+describe('fetchCropSteeringHistory', () => {
+  it('calls hassCall with get_crop_steering_history and the growspace_id', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(minimalHistory);
+
+    await fetchCropSteeringHistory('gs1');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/get_crop_steering_history',
+      { growspace_id: 'gs1' },
+      expect.anything()
+    );
+  });
+
+  it('updates cropSteeringHistory$ keyed by growspace_id on success', async () => {
+    vi.mocked(hassCall.hassCall).mockResolvedValueOnce(minimalHistory);
+
+    await fetchCropSteeringHistory('gs1');
+
+    expect(cropSteeringHistory$.get().get('gs1')).toMatchObject({ growspace_id: 'gs1' });
+  });
+
+  it('re-throws on failure and leaves existing atom entry unchanged', async () => {
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('ws error'));
+
+    await expect(fetchCropSteeringHistory('gs1')).rejects.toThrow('ws error');
+    expect(cropSteeringHistory$.get().get('gs1')).toBeUndefined();
   });
 });

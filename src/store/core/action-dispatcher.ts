@@ -12,6 +12,7 @@ import * as geneticsActions from '../plant/genetics-actions';
 import * as ipmActions from '../plant/ipm-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
+import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
 import {
   PlantEntity,
   StrainEntry,
@@ -396,5 +397,10 @@ export class ActionDispatcher {
     savePreset: (preset: Parameters<typeof libraryActions.saveIPMPreset>[1]) =>
       libraryActions.saveIPMPreset(this.ctx, preset),
     removePreset: (presetId: string) => libraryActions.removeIPMPreset(this.ctx, presetId),
+  };
+
+  public readonly irrigation = {
+    fetchCropSteeringHistory: (growspaceId: string) =>
+      sliceFetchCropSteeringHistory(growspaceId),
   };
 }

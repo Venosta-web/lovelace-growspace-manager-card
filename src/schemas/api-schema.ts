@@ -183,6 +183,26 @@ export function validateGrowspaceCollection(
   };
 }
 
+// ---------------------------------------------------------------------------
+// Crop Steering History
+// ---------------------------------------------------------------------------
+
+const CropSteeringBucketSchema = z.object({
+  timestamp: z.string(),
+  value: z.number().nullable(),
+});
+
+export const CropSteeringHistorySchema = z.object({
+  growspace_id: z.string(),
+  lights_on: z.string(),
+  soil_moisture: z.array(CropSteeringBucketSchema),
+  pore_ec: z.array(CropSteeringBucketSchema).optional(),
+  bulk_ec: z.array(CropSteeringBucketSchema).optional(),
+});
+
+export type CropSteeringHistory = z.infer<typeof CropSteeringHistorySchema>;
+export type CropSteeringBucket = z.infer<typeof CropSteeringBucketSchema>;
+
 /**
  * Validates strain library response.
  */
