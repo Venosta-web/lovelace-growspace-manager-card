@@ -1,4 +1,4 @@
-import { LitElement, html, css, PropertyValues, nothing } from 'lit';
+import { LitElement, html, svg, css, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
@@ -2024,30 +2024,24 @@ export class IrrigationDialog extends LitElement {
 
     type TracePt = { offset: number; v: number };
 
+    // Skips buckets with no reading (sensor didn't report in that window) so the
+    // trace connects straight across gaps — a continuous line, as designed,
+    // rather than snapping into disconnected fragments at every missed bucket.
     const buildTracePts = (
       buckets: Array<{ timestamp: string; value: number | null }> | undefined,
       anchorMs: number,
-    ): Array<TracePt | null> => {
+    ): TracePt[] => {
       if (!buckets?.length) return [];
-      return buckets.map((b) => {
-        if (b.value === null) return null;
-        return { offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value };
-      });
+      const pts: TracePt[] = [];
+      for (const b of buckets) {
+        if (b.value === null) continue;
+        pts.push({ offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value });
+      }
+      return pts;
     };
 
-    const buildSegments = (pts: Array<TracePt | null>, yFn: (v: number) => number): string[] => {
-      const segs: string[] = [];
-      let cur: string[] = [];
-      for (const pt of pts) {
-        if (pt === null) {
-          if (cur.length > 0) { segs.push(cur.join(' ')); cur = []; }
-        } else {
-          cur.push(`${cur.length === 0 ? 'M' : 'L'}${xAt(pt.offset).toFixed(1)},${yFn(pt.v).toFixed(1)}`);
-        }
-      }
-      if (cur.length > 0) segs.push(cur.join(' '));
-      return segs;
-    };
+    const buildPath = (pts: TracePt[], yFn: (v: number) => number): string =>
+      pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
 
     // Fixed VWC axis around the configured targets so projections stay in-frame.
     const vwcAxisLo = Math.max(0, Math.min(target, p2Trigger) - 10);
@@ -2091,21 +2085,15 @@ export class IrrigationDialog extends LitElement {
     const yAtEc = (v: number) =>
       padT + iH - Math.max(0, Math.min(1, (v - ecAxisLo) / (ecAxisHi - ecAxisLo))) * iH;
 
-    const vwcSegments = buildSegments(vwcPts, yAtVwc);
-    const poreEcSegments = poreEcPts ? buildSegments(poreEcPts, yAtEc) : [];
-    const bulkEcSegments = bulkEcPts ? buildSegments(bulkEcPts, yAtEc) : [];
+    const vwcPath = buildPath(vwcPts, yAtVwc);
+    const porePath = poreEcPts ? buildPath(poreEcPts, yAtEc) : '';
+    const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
 
     const targetY = yAtVwc(target);
     const p2TriggerY = yAtVwc(p2Trigger);
 
     // Synthetic projection picking up from the latest known reading (or the seed values).
-    const lastKnown = <T extends { v: number }>(pts: Array<T | null>): number | null => {
-      for (let i = pts.length - 1; i >= 0; i--) {
-        const p = pts[i];
-        if (p) return p.v;
-      }
-      return null;
-    };
+    const lastKnown = (pts: TracePt[]): number | null => (pts.length ? pts[pts.length - 1].v : null);
     const seedVwc = lastKnown(vwcPts) ?? target;
     const seedPore = lastKnown(poreEcPts ?? []) ?? ecTargetMid ?? 3;
     const projection = this._generateSubstrateProjection(
@@ -2268,7 +2256,7 @@ export class IrrigationDialog extends LitElement {
 
               <!-- horizontal gridlines at VWC ticks -->
               ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map(
-                (v) => html`
+                (v) => svg`
                   <line
                     x1="${xAt(0)}" x2="${xAt(day)}"
                     y1="${yAtVwc(v).toFixed(1)}" y2="${yAtVwc(v).toFixed(1)}"
@@ -2278,7 +2266,7 @@ export class IrrigationDialog extends LitElement {
               )}
               <!-- vertical hour gridlines -->
               ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map(
-                (h) => html`
+                (h) => svg`
                   <line
                     x1="${xAt(h * 60)}" x2="${xAt(h * 60)}"
                     y1="${padT}" y2="${padT + iH}"
@@ -2300,7 +2288,7 @@ export class IrrigationDialog extends LitElement {
                 stroke="var(--warning, #ffa726)" stroke-opacity="0.5" stroke-dasharray="2 3"
               />
               ${ecTargetMid !== null
-                ? html`
+                ? svg`
                     <line
                       x1="${xAt(0)}" x2="${xAt(day)}"
                       y1="${yAtEc(ecTargetMid).toFixed(1)}" y2="${yAtEc(ecTargetMid).toFixed(1)}"
@@ -2310,32 +2298,32 @@ export class IrrigationDialog extends LitElement {
                 : nothing}
 
               <!-- VWC history area -->
-              ${vwcSegments.length
-                ? html`
+              ${vwcPts.length
+                ? svg`
                     <path
-                      d="${vwcSegments[0]} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
+                      d="${vwcPath} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
                       fill="url(#vwcModelArea-${growspaceId})"
                     />
                   `
                 : nothing}
 
               <!-- history (solid) -->
-              ${bulkEcSegments.map(
-                (seg) => html`<path d="${seg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
-              )}
-              ${poreEcSegments.map(
-                (seg) => html`<path d="${seg}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
-              )}
-              ${vwcSegments.map(
-                (seg) => html`<path d="${seg}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
-              )}
+              ${bulkPath
+                ? svg`<path d="${bulkPath}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+                : nothing}
+              ${porePath
+                ? svg`<path d="${porePath}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+                : nothing}
+              ${vwcPath
+                ? svg`<path d="${vwcPath}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
+                : nothing}
 
               <!-- projection (dashed, faded) -->
               ${bulkEcPts !== null
-                ? html`<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+                ? svg`<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
                 : nothing}
               ${poreEcPts !== null
-                ? html`<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+                ? svg`<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
                 : nothing}
               <path d="${projVwcSeg}" fill="none" stroke="${vwcColor}" stroke-width="1.7" stroke-dasharray="4 4" stroke-opacity="0.5" />
 
@@ -2348,10 +2336,10 @@ export class IrrigationDialog extends LitElement {
 
               <!-- current-value dots -->
               ${bulkEcPts !== null
-                ? html`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
+                ? svg`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
                 : nothing}
               ${poreEcPts !== null
-                ? html`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
+                ? svg`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
                 : nothing}
               <circle cx="${nowX}" cy="${yAtVwc(cur.v).toFixed(1)}" r="3.4" fill="${vwcColor}" stroke="#141414" stroke-width="1.5" />
             </svg>
