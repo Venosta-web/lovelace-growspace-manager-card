@@ -34,6 +34,9 @@ The large metric display at the top of the main card and subarea card. Shows an 
 **Chip** (also: Badge)
 A small metric indicator rendered below the hero section. Each chip maps to a `HeaderChip` (defined in `metrics-utils.ts`) and carries a `MetricKey`. Clicking a chip opens the Env Graph for that metric. Chips support drag-and-drop reordering.
 
+**Steering Phase Chip**
+A [[Chip]] that appears in place of the regular irrigation next-time chip when [[Crop Steering]] is active. Carries `MetricKey.STEERING_PHASE` (`'steering_phase'`) — distinct from `MetricKey.IRRIGATION` — so it can be hidden independently via `hidden_chips`. Displays the active phase label and next phase-transition time (e.g. `P3 · 07:30`). Built by `_steeringChipValue()` in the [[HeaderMetrics module]].
+
 **Context Chip**
 A tag attached to a composed message that provides contextual scope — growspace, time range, or sensor — so the [[Conversation Agent]] can ground its response. Displayed in the Composer bar of the [[Growmaster Dialog]] Chat panel; removable individually. Distinct from the environment metric Chip in the header.
 
@@ -194,7 +197,19 @@ The four daily phases that structure a Crop Steering day, all derived from the g
 - P0 — Activation: first shot(s) at lights-on, lasting `p0DurationMinutes`
 - P1 — Ramp-up: shots fire until substrate reaches the **Saturation Target** (`targetVwcPercent`)
 - P2 — Maintenance: shots fire when VWC drops below the **P2 trigger threshold** — either the **P2 Direct Trigger** (`soilTriggerPercent`) if set, or `targetVwcPercent − maintenanceDrybackPercent` (the **Maintenance Dryback**) otherwise
-- P3 — Dry-back: no irrigation; runs from `p2StopBeforeLightsOffMinutes` before lights-off until next lights-on
+- P3 — Dry-back: no irrigation; nominally starts `p2StopBeforeLightsOffMinutes` before lights-off (**Scheduled P3 Boundary**), but may start earlier when **Auto-Advance P2→P3** fires (**Actual P3 Boundary**). The authoritative start time is `phase_changed_at` on `IrrigationConfig`; fall back to the scheduled boundary when absent.
+
+**Crop Steering Day Chart**
+The real-sensor-history visualization inside the **Crop Steering Schedule** panel of the Schedules tab (Irrigation Dialog). Plots actual measured **Substrate VWC**, **Pore EC**, and **Bulk EC** as line traces — colored per the canonical `METRIC_CONFIGS` palette (`#03a9f4` / `#ef5350` / `#ff7043` respectively) — across a single photoperiod-anchored day — sharing the same `lightsOnMin − 120` axis anchor as the **Phase Strip** above it, so traces, phase bands, shot markers, and the now-line all line up on one timeline. Each line uses an independently auto-scaled axis (VWC % vs EC mS/cm have incomparable ranges). The live **Readout** (`.cm-readout`, top-right of the chart) shows the current value of each configured trace next to a color dot — this is the chart's color-to-trace legend; the [[Crop Steering Legend]] below the chart does not duplicate it. Pore EC and Bulk EC traces (and their `.cm-readout` entries) are omitted when the growspace has no sensors of that category — Soil Moisture (VWC) is always present because it's mandatory to enable [[Crop Steering (VWC)]] at all. Multi-sensor categories plot the aggregated average, not per-sensor breakouts. Faint dashed guide lines mark the **Saturation Target** (`targetVwcPercent`) and the calculated P2 trigger threshold so the user can read actual-vs-intended at a glance. Replaced the earlier **Modeled VWC Sparkline** (a synthetic sine-wave projection with no connection to real sensor readings) outright — real data is strictly more informative once sensors exist, and a fabricated trace next to real ones would mislead. Sourced via the dedicated `growspace_manager/get_crop_steering_history` WebSocket command (see ADR-0010 — mirrors the `get_tank_water_history` pattern of bucketing on the backend rather than reusing the rolling-window `history-store`, since this view needs a fixed calendar-day axis anchored to lights-on rather than a rolling 1h/6h/24h/7d range). Returns 5-minute buckets; the dialog polls it every 5 minutes while the Schedules tab is active so the trace's tail extends as the day progresses.
+
+**Crop Steering Legend** (`.cs-legend` / `.cs-leg-chip`)
+The chip row beneath the [[Crop Steering Day Chart]]. Distinct purpose from the chart's `.cm-readout`: the readout already supplies the color-to-trace mapping for whatever is configured, so the legend's only job is to flag what's *missing*. A `.cs-leg-chip` therefore renders **only** for a metric that has no configured sensors — muted (`opacity: 0.4`), with copy like "Pore EC not configured — add it in Environment Settings". A configured metric (including Substrate VWC, which is always configured) gets no legend chip at all. The Phase Window legend chips (phase color + label + shot count) are a separate row and unaffected by this rule.
+
+**Auto-Advance P2→P3** (`autoAdvanceP2ToP3` / `auto_advance_p2_to_p3`)
+An optional flag on `IrrigationStrategy`. When enabled, the backend transitions `active_steering_phase` from `"p2"` to `"p3"` as soon as it determines P2 irrigation should stop — which may be before the clock-based Scheduled P3 Boundary. The exact moment of transition is recorded in `IrrigationConfig.phase_changed_at`.
+
+**`phase_changed_at`** (`IrrigationConfig`)
+ISO-8601 timestamp recording the wall-clock time when `active_steering_phase` last changed to `"p3"`. `null` until the first P3 transition in the current day. The Schedules tab uses this as the **Actual P3 Boundary** when drawing the crop steering timeline, falling back to the Scheduled P3 Boundary when absent.
 
 **P2 Thresholds** (Steering tab)
 The three controls that govern when P2 fires, all grouped together in the Steering tab:

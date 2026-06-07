@@ -804,7 +804,7 @@ describe('Cycle 11 — crop steering phase chip', () => {
 
     const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
 
-    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P1 · 75%');
@@ -822,7 +822,7 @@ describe('Cycle 11 — crop steering phase chip', () => {
 
     const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
 
-    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P2 · 22:00');
@@ -849,7 +849,7 @@ describe('Cycle 11 — crop steering phase chip', () => {
       strategy
     );
 
-    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P2 · 16:00');
@@ -861,13 +861,13 @@ describe('Cycle 11 — crop steering phase chip', () => {
 
     const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
 
-    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION);
+    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P3 · 07:30');
   });
 
-  it('omits the IRRIGATION chip when crop steering is enabled but activeSteeringPhase is not set', () => {
+  it('omits the STEERING_PHASE chip when crop steering is enabled but activeSteeringPhase is not set', () => {
     const config = makeIrrigationConfig({
       irrigationTimes: [{ time: '08:00' }],
       activeSteeringPhase: undefined,
@@ -876,7 +876,7 @@ describe('Cycle 11 — crop steering phase chip', () => {
 
     const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
 
-    expect(chips.find((c) => c.key === MetricKey.IRRIGATION)).toBeUndefined();
+    expect(chips.find((c) => c.key === MetricKey.STEERING_PHASE)).toBeUndefined();
   });
 
   it('falls back to manual schedule chip when strategy.enabled is false', () => {

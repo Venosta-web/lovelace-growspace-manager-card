@@ -258,6 +258,7 @@ var MetricKey;
     MetricKey["DRAIN_VOLUME"] = "drain_volume";
     MetricKey["IRRIGATION_FLOW"] = "irrigation_flow";
     MetricKey["POWER"] = "power";
+    MetricKey["STEERING_PHASE"] = "steering_phase";
 })(MetricKey || (MetricKey = {}));
 const METRIC_SORT_ORDER = [
     MetricKey.TEMPERATURE,
@@ -287,6 +288,7 @@ const METRIC_SORT_ORDER = [
     MetricKey.DRAIN_VOLUME,
     MetricKey.IRRIGATION_FLOW,
     MetricKey.POWER,
+    MetricKey.STEERING_PHASE,
 ];
 var ChartType;
 (function (ChartType) {
@@ -5506,6 +5508,20 @@ const HistoryPointSchema = objectType({
 })
     .passthrough();
 const HistoryStatsResponseSchema = recordType(stringType(), arrayType(HistoryPointSchema));
+// ---------------------------------------------------------------------------
+// Crop Steering History
+// ---------------------------------------------------------------------------
+const CropSteeringBucketSchema = objectType({
+    timestamp: stringType(),
+    value: numberType().nullable(),
+});
+const CropSteeringHistorySchema = objectType({
+    growspace_id: stringType(),
+    lights_on: stringType(),
+    soil_moisture: arrayType(CropSteeringBucketSchema),
+    pore_ec: arrayType(CropSteeringBucketSchema).optional(),
+    bulk_ec: arrayType(CropSteeringBucketSchema).optional(),
+});
 
 class GrowspaceAdapter {
     static transformGrowspace(overview, wsData = null) {
@@ -5697,6 +5713,7 @@ class GrowspaceAdapter {
             autoAdvanceP2ToP3: irrigationConfigRaw.auto_advance_p2_to_p3,
             haltOnRunoffEcThreshold: irrigationConfigRaw.halt_on_runoff_ec_threshold,
             activeSteeringPhase: irrigationConfigRaw.active_steering_phase,
+            phaseChangedAt: irrigationConfigRaw.phase_changed_at,
             ecTargetRanges: (irrigationConfigRaw.ec_target_ranges ?? []).map((r) => ({
                 stage: r.stage,
                 minEc: r.feed_ec_min,
@@ -26603,6 +26620,75 @@ HarvestScoringDialog = __decorate([
 ], HarvestScoringDialog);
 
 /**
+ * Polling Controller - Manages periodic execution with automatic cleanup
+ *
+ * Implements Lit's ReactiveController interface for automatic lifecycle management
+ */
+/**
+ * Reactive controller for polling operations
+ */
+class PollingController {
+    constructor(host, callback, options) {
+        this.host = host;
+        this.callback = callback;
+        this.options = options;
+        this.isRunning = false;
+        this.host.addController(this);
+    }
+    hostConnected() {
+        if (this.options.autoStart !== false) {
+            this.start();
+        }
+    }
+    hostDisconnected() {
+        this.stop();
+    }
+    /**
+     * Start polling
+     */
+    start() {
+        if (this.isRunning) {
+            return;
+        }
+        this.isRunning = true;
+        // Call immediately if requested
+        if (this.options.immediate) {
+            this.callback();
+        }
+        // Start interval
+        this.intervalId = window.setInterval(() => {
+            this.callback();
+        }, this.options.interval);
+    }
+    /**
+     * Stop polling
+     */
+    stop() {
+        if (!this.isRunning) {
+            return;
+        }
+        this.isRunning = false;
+        if (this.intervalId !== undefined) {
+            window.clearInterval(this.intervalId);
+            this.intervalId = undefined;
+        }
+    }
+    /**
+     * Restart polling with current options
+     */
+    restart() {
+        this.stop();
+        this.start();
+    }
+    /**
+     * Check if currently polling
+     */
+    get running() {
+        return this.isRunning;
+    }
+}
+
+/**
  * Irrigation Dialog State Machine
  *
  * Pure module — no Lit, no DOM. All interaction state for IrrigationDialog lives here.
@@ -27287,6 +27373,72 @@ function discardAndSwitch(sm, device) {
     };
 }
 
+/**
+ * Irrigation slice — atoms and mutators for Irrigation domain data.
+ *
+ * Public API (atoms):
+ *   irrigationConfigs$    — read: Map<growspaceId, IrrigationConfig>
+ *   irrigationStrategies$ — read: Map<growspaceId, IrrigationStrategy>
+ *   tankLevels$           — read: Map<growspaceId, IrrigationTank[]>
+ *
+ * Public API (bootstrap writes — called by SyncService):
+ *   setIrrigationConfig()   — replace the IrrigationConfig for a growspace
+ *   setIrrigationStrategy() — replace the IrrigationStrategy for a growspace
+ *   setTankLevels()         — replace the IrrigationTank list for a growspace
+ *
+ * Public API (pure computation):
+ *   computeIrrigationMode()  — derive 'manual' | 'crop_steering' from strategy
+ *   computePhaseWindows()    — derive P0–P3 phase windows from strategy
+ *
+ * Public API (mutators):
+ *   toggleIrrigationMode()       — optimistic: flip strategy.enabled
+ *   addIrrigationTime()          — optimistic: append + sort irrigation schedule
+ *   removeIrrigationTime()       — optimistic: remove from irrigation schedule
+ *   addDrainTime()               — optimistic: append + sort drain schedule
+ *   removeDrainTime()            — optimistic: remove from drain schedule
+ *   updateIrrigationStrategy()   — optimistic: merge strategy fields
+ *   saveIrrigationSettings()     — optimistic: merge config settings
+ *   logDrainReading()            — fire-and-forget
+ *   configureDrainMonitoring()   — fire-and-forget
+ *   runIrrigationCycle()         — fire-and-forget
+ *   fetchCropSteeringHistory()   — fetches sensor-driven VWC/EC history for one growspace
+ *
+ * Action type, payload shapes, and zod schemas are private to this module.
+ * Tank data absorption: this slice is the authoritative source for tank levels,
+ * superseding direct reads from store/growspace or services/api/TankAPI.
+ */
+// ---------------------------------------------------------------------------
+// Atoms (public read)
+// ---------------------------------------------------------------------------
+const irrigationConfigs$ = atom(new Map());
+const irrigationStrategies$ = atom(new Map());
+const tankLevels$ = atom(new Map());
+const cropSteeringHistory$ = atom(new Map());
+// ---------------------------------------------------------------------------
+// Bootstrap writes (called by SyncService when fresh data arrives)
+// ---------------------------------------------------------------------------
+function setIrrigationConfig(growspaceId, config) {
+    const updated = new Map(irrigationConfigs$.get());
+    updated.set(growspaceId, config);
+    irrigationConfigs$.set(updated);
+}
+function setIrrigationStrategy(growspaceId, strategy) {
+    const updated = new Map(irrigationStrategies$.get());
+    updated.set(growspaceId, strategy);
+    irrigationStrategies$.set(updated);
+}
+function setTankLevels(growspaceId, tanks) {
+    const updated = new Map(tankLevels$.get());
+    updated.set(growspaceId, tanks);
+    tankLevels$.set(updated);
+}
+async function fetchCropSteeringHistory(growspaceId) {
+    const result = await hassCall('growspace_manager/get_crop_steering_history', { growspace_id: growspaceId }, CropSteeringHistorySchema);
+    const updated = new Map(cropSteeringHistory$.get());
+    updated.set(growspaceId, result);
+    cropSteeringHistory$.set(updated);
+}
+
 function getIrrigationConfig(_ctx, growspaceId) {
     const device = devices$.get().find((d) => d.deviceId === growspaceId);
     return device ? { ...device.irrigationConfig } : { irrigationTimes: [], drainTimes: [] };
@@ -27441,6 +27593,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._ecRampEditingCurve = null;
         this._ecRampError = null;
         this._ecRampFetched = false;
+        // ─── Crop Steering History (Schedules tab) ────────────────────────────
+        this._cropSteeringHistoryFetched = false;
     }
     // ─── Visibility ───────────────────────────────────────────────────────────
     get _visibleTabs() {
@@ -27534,6 +27688,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             this._initializeState();
             this._fetchStageAnalytics();
             this._ecRampFetched = false;
+            this._cropSteeringHistoryFetched = false;
             if (this.initialTab) {
                 this._sm = transition$4(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
             }
@@ -27561,6 +27716,28 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                     this.store.actions.library.fetchECRampCurves().catch(() => undefined);
                 }
             }
+            // Crop Steering History: lazy fetch + polling when Schedules tab is active.
+            if (nextTab === 'schedules' && prevTab !== 'schedules') {
+                if (!this._cropSteeringHistoryFetched && this.store?.actions?.irrigation && this.device?.deviceId) {
+                    this._cropSteeringHistoryFetched = true;
+                    if (!this._cropSteeringHistoryController) {
+                        this._cropSteeringHistoryController = new libExports.StoreController(this, cropSteeringHistory$);
+                    }
+                    this.store.actions.irrigation
+                        .fetchCropSteeringHistory(this.device.deviceId)
+                        .catch(() => undefined);
+                }
+                if (!this._cropSteeringPoller && this.store?.actions?.irrigation && this.device?.deviceId) {
+                    const growspaceId = this.device.deviceId;
+                    this._cropSteeringPoller = new PollingController(this, () => this.store.actions.irrigation
+                        .fetchCropSteeringHistory(growspaceId)
+                        .catch(() => undefined), { interval: 5 * 60 * 1000, autoStart: false });
+                }
+                this._cropSteeringPoller?.start();
+            }
+            else if (prevTab === 'schedules' && nextTab !== 'schedules') {
+                this._cropSteeringPoller?.stop();
+            }
         }
     }
     updated(changedProps) {
@@ -27583,6 +27760,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     // ─── Save actions ─────────────────────────────────────────────────────────
     /** Single footer save — flushes all dirty state across tabs. */
     async _saveAll() {
+        const soilTrigger = this._sm.tabs.config.draft.soilTriggerPercent;
+        const targetVwc = this._sm.tabs.steering.draft.targetVwcPercent;
+        if (soilTrigger != null && targetVwc != null && soilTrigger > targetVwc) {
+            this._showErrorToast(`P2 Direct Trigger (${soilTrigger}%) must not exceed Saturation Target (${targetVwc}%). ` +
+                `A trigger above the target causes irrigation to fire continuously in P2.`);
+            return;
+        }
         await this._saveSettings();
         await this._saveStrategy();
         await this._saveDrainConfig();
@@ -28152,13 +28336,22 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const s = this._sm.tabs.steering.draft;
         if (!s.lightsOnTime)
             return null;
+        const anchorLightsOnTime = s.detectedLightsOnTime ?? s.lightsOnTime;
         const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
         const lightHours = isFlower ? 12 : 18;
-        const [hh, mm] = s.lightsOnTime.split(':').map(Number);
+        const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
         const lightsOnMin = hh * 60 + (mm || 0);
         const lightsOffMin = lightsOnMin + lightHours * 60;
         const p1End = lightsOnMin + (s.p0DurationMinutes ?? 60);
-        const p3Start = Math.max(p1End, lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120));
+        const scheduledP3Start = Math.max(p1End, lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120));
+        const irrigationConfig = this.device?.irrigationConfig;
+        const phaseChangedAt = irrigationConfig?.phaseChangedAt;
+        let p3Start = scheduledP3Start;
+        if (irrigationConfig?.activeSteeringPhase === 'p3' && phaseChangedAt) {
+            const d = new Date(phaseChangedAt);
+            const actualStart = d.getHours() * 60 + d.getMinutes();
+            p3Start = Math.max(p1End, Math.min(actualStart, scheduledP3Start));
+        }
         return {
             lightsOnMin,
             lightsOffMin,
@@ -28218,60 +28411,81 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         // Axis anchored 2 hours before lights-on so the active cycle is always visible
         const viewStart = (lightsOnMin - 120 + 1440) % 1440;
         const pctAt = (m) => ((((m % 1440) - viewStart + 1440) % 1440) / day) * 100;
-        // VWC sparkline — computed in view-offset space to avoid midnight wrap artifacts
         const steeringDraft = this._sm.tabs.steering.draft;
         const target = steeringDraft.targetVwcPercent ?? 45;
         const dryback = steeringDraft.maintenanceDrybackPercent ?? 3;
-        const fc = target + 7;
-        const base = fc - dryback - 5;
-        const lightsOnOffset = 120;
-        const lightsOffOffset = lightsOnOffset + lightHours * 60;
-        const p1EndOffset = lightsOnOffset + (steeringDraft.p0DurationMinutes ?? 60);
-        const p3StartOffset = Math.max(p1EndOffset, lightsOffOffset - (steeringDraft.p2StopBeforeLightsOffMinutes ?? 120));
-        const vwcPts = [];
-        for (let offset = 0; offset <= day; offset += 8) {
-            let v;
-            if (offset < lightsOnOffset) {
-                v = base + Math.sin(offset / 300) * 0.8;
-            }
-            else if (offset < p1EndOffset) {
-                const pct = (offset - lightsOnOffset) / Math.max(1, p1EndOffset - lightsOnOffset);
-                v = base + pct * (fc - base);
-            }
-            else if (offset < p3StartOffset) {
-                const pct = (offset - p1EndOffset) / Math.max(1, p3StartOffset - p1EndOffset);
-                v =
-                    fc - pct * (dryback * 0.25) + Math.sin((offset - p1EndOffset) * 0.25) * (dryback * 0.35);
-            }
-            else if (offset < lightsOffOffset) {
-                const pct = (offset - p3StartOffset) / Math.max(1, lightsOffOffset - p3StartOffset);
-                v = fc - dryback * 0.25 - pct * (dryback * 0.9);
-            }
-            else {
-                const pct = (offset - lightsOffOffset) / Math.max(1, day - lightsOffOffset);
-                v = fc - dryback - pct * 3;
-            }
-            vwcPts.push({ offset, v: Math.max(0, Math.min(100, v)) });
-        }
+        const p2Trigger = target - dryback;
+        // Real VWC trace from fetched history
+        const growspaceId = this.device?.deviceId ?? '';
+        const history = this._cropSteeringHistoryController?.value?.get(growspaceId);
+        const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
         const svgW = 1000;
-        const svgH = 52;
+        const svgH = 108;
         const padL = 6;
         const padR = 6;
         const padT = 8;
         const padB = 10;
         const iW = svgW - padL - padR;
         const iH = svgH - padT - padB;
-        const vMin = target - 10;
-        const vMax = target + 14;
         const xAt = (offset) => padL + (offset / day) * iW;
-        const yAt = (v) => padT + iH - Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin))) * iH;
-        const fcY = yAt(fc);
-        const linePath = vwcPts
-            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAt(p.v).toFixed(1)}`)
-            .join(' ');
-        const areaPath = `${linePath} L${xAt(day).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z`;
         const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
         const nowX = xAt(nowOffset).toFixed(1);
+        const buildTracePts = (buckets, anchorMs) => {
+            if (!buckets?.length)
+                return [];
+            return buckets.map((b) => {
+                if (b.value === null)
+                    return null;
+                return { offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value };
+            });
+        };
+        const buildSegments = (pts, yFn) => {
+            const segs = [];
+            let cur = [];
+            for (const pt of pts) {
+                if (pt === null) {
+                    if (cur.length > 0) {
+                        segs.push(cur.join(' '));
+                        cur = [];
+                    }
+                }
+                else {
+                    cur.push(`${cur.length === 0 ? 'M' : 'L'}${xAt(pt.offset).toFixed(1)},${yFn(pt.v).toFixed(1)}`);
+                }
+            }
+            if (cur.length > 0)
+                segs.push(cur.join(' '));
+            return segs;
+        };
+        const makeYAt = (pts, fallbackMid) => {
+            const vals = pts.filter((p) => p !== null).map((p) => p.v);
+            let lo, hi;
+            if (vals.length > 0) {
+                const dataMin = Math.min(...vals);
+                const dataMax = Math.max(...vals);
+                const pad = Math.max(2, dataMax - dataMin) * 0.1;
+                lo = Math.max(0, dataMin - pad);
+                hi = dataMax + pad;
+            }
+            else {
+                lo = fallbackMid - 10;
+                hi = fallbackMid + 10;
+            }
+            return (v) => padT + iH - Math.max(0, Math.min(1, (v - lo) / (hi - lo))) * iH;
+        };
+        const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
+        const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
+        const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
+        const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
+        const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
+        const yAtVwc = makeYAt(vwcPts, target);
+        const yAtPoreEc = poreEcPts ? makeYAt(poreEcPts, 2) : null;
+        const yAtBulkEc = bulkEcPts ? makeYAt(bulkEcPts, 2) : null;
+        const vwcSegments = buildSegments(vwcPts, yAtVwc);
+        const poreEcSegments = poreEcPts && yAtPoreEc ? buildSegments(poreEcPts, yAtPoreEc) : [];
+        const bulkEcSegments = bulkEcPts && yAtBulkEc ? buildSegments(bulkEcPts, yAtBulkEc) : [];
+        const targetY = yAtVwc(target);
+        const p2TriggerY = yAtVwc(p2Trigger);
         return x `
       <div class="detail-card crop-steering-schedule">
         <!-- Header -->
@@ -28376,46 +28590,83 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
           </div>
 
-          <!-- VWC sparkline -->
-          <div class="cs-vwc">
-            <span class="cs-vwc-label">Substrate VWC · modeled</span>
+          <!-- Sensor traces: VWC + Pore EC + Bulk EC -->
+          <div class="cs-sensor-chart">
             <svg
               viewBox="0 0 ${svgW} ${svgH}"
               preserveAspectRatio="none"
               style="width:100%;height:100%;display:block;"
             >
-              <defs>
-                <linearGradient id="vwcGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="rgba(76,175,80,0.3)" />
-                  <stop offset="100%" stop-color="rgba(76,175,80,0)" />
-                </linearGradient>
-              </defs>
+              <!-- Saturation Target guide line (VWC scale) -->
               <line
                 x1="${xAt(0)}"
                 x2="${xAt(day)}"
-                y1="${fcY}"
-                y2="${fcY}"
+                y1="${targetY}"
+                y2="${targetY}"
                 stroke="rgba(255,255,255,0.18)"
                 stroke-dasharray="3 3"
               />
               <text
                 x="${(xAt(day) - 4).toFixed(0)}"
-                y="${(fcY - 3).toFixed(0)}"
+                y="${(targetY - 3).toFixed(0)}"
                 text-anchor="end"
                 font-size="8"
                 fill="rgba(255,255,255,0.4)"
               >
-                FC ${fc.toFixed(0)}%
+                Target ${target.toFixed(0)}%
               </text>
-              <path d="${areaPath}" fill="url(#vwcGrad)" />
-              <path
-                d="${linePath}"
-                fill="none"
-                stroke="#4CAF50"
-                stroke-width="1.4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+              <!-- P2 trigger guide line (VWC scale) -->
+              <line
+                x1="${xAt(0)}"
+                x2="${xAt(day)}"
+                y1="${p2TriggerY}"
+                y2="${p2TriggerY}"
+                stroke="rgba(255,152,0,0.3)"
+                stroke-dasharray="3 3"
               />
+              <text
+                x="${(xAt(day) - 4).toFixed(0)}"
+                y="${(p2TriggerY - 3).toFixed(0)}"
+                text-anchor="end"
+                font-size="8"
+                fill="rgba(255,152,0,0.5)"
+              >
+                P2 trigger ${p2Trigger.toFixed(0)}%
+              </text>
+              <!-- VWC trace -->
+              ${vwcSegments.map((seg) => x `
+                  <path
+                    d="${seg}"
+                    fill="none"
+                    stroke="${vwcColor}"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `)}
+              <!-- Pore EC trace -->
+              ${poreEcSegments.map((seg) => x `
+                  <path
+                    d="${seg}"
+                    fill="none"
+                    stroke="${METRIC_CONFIG[MetricKey.PORE_EC].color}"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `)}
+              <!-- Bulk EC trace -->
+              ${bulkEcSegments.map((seg) => x `
+                  <path
+                    d="${seg}"
+                    fill="none"
+                    stroke="${METRIC_CONFIG[MetricKey.BULK_EC].color}"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `)}
+              <!-- Now line -->
               <line
                 x1="${nowX}"
                 x2="${nowX}"
@@ -28425,6 +28676,43 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 stroke-dasharray="2 2"
               />
             </svg>
+          </div>
+          <!-- Sensor trace legend -->
+          <div class="cs-sensor-legend">
+            <span class="cs-leg-chip">
+              <span class="cs-leg-dot" style="background:${vwcColor};"></span>
+              Substrate VWC · %
+            </span>
+            ${poreEcPts !== null
+            ? x `
+                  <span class="cs-leg-chip">
+                    <span
+                      class="cs-leg-dot"
+                      style="background:${METRIC_CONFIG[MetricKey.PORE_EC].color};"
+                    ></span>
+                    Pore EC · mS/cm
+                  </span>
+                `
+            : x `
+                  <span class="cs-leg-chip" style="opacity:0.4;">
+                    Pore EC not configured — add it in Environment Settings
+                  </span>
+                `}
+            ${bulkEcPts !== null
+            ? x `
+                  <span class="cs-leg-chip">
+                    <span
+                      class="cs-leg-dot"
+                      style="background:${METRIC_CONFIG[MetricKey.BULK_EC].color};"
+                    ></span>
+                    Bulk EC · mS/cm
+                  </span>
+                `
+            : x `
+                  <span class="cs-leg-chip" style="opacity:0.4;">
+                    Bulk EC not configured — add it in Environment Settings
+                  </span>
+                `}
           </div>
 
           <!-- Phase legend -->
@@ -31495,25 +31783,21 @@ IrrigationDialog.styles = [
         border-radius: 50%;
         background: #ff9800;
       }
-      .cs-vwc {
+      .cs-sensor-chart {
         position: relative;
-        height: 64px;
+        height: 108px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 10px;
         background: rgba(0, 0, 0, 0.2);
         padding: 4px 8px;
         overflow: hidden;
       }
-      .cs-vwc-label {
-        position: absolute;
-        top: 4px;
-        left: 10px;
-        font-size: 9.5px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: rgba(255, 255, 255, 0.35);
-        pointer-events: none;
+      .cs-sensor-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+        padding: 0 2px;
       }
       .cs-legend {
         display: flex;
@@ -53444,8 +53728,26 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
         this._showAllDates = !this._showAllDates;
     }
     _handleSave() {
+        const attrs = this._editedAttributesAtom.get();
+        const lifecycleDateFields = [
+            'seedling_start',
+            'mother_start',
+            'clone_start',
+            'veg_start',
+            'flower_start',
+            'dry_start',
+            'cure_start',
+        ];
+        const hasIncomplete = lifecycleDateFields.some((field) => {
+            const val = attrs[field];
+            return typeof val === 'string' && val.length > 0 && !/T\d{2}:\d{2}/.test(val);
+        });
+        if (hasIncomplete) {
+            this.store.ui.showToast('Set both date and time for lifecycle dates before saving.', 'error');
+            return;
+        }
         this.dispatchEvent(new CustomEvent('update-plant', {
-            detail: this._editedAttributesAtom.get(),
+            detail: attrs,
             bubbles: true,
             composed: true,
         }));
@@ -64292,7 +64594,7 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
             const phase = irrigationConfig.activeSteeringPhase;
             if (phase != null) {
                 const isFlower = dominantRaw?.stage === 'flower';
-                chips.push(_makeChip(MetricKey.IRRIGATION, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups));
+                chips.push(_makeChip(MetricKey.STEERING_PHASE, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups));
             }
             // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
             // than fall back to the stale manual schedule.
@@ -64611,64 +64913,6 @@ function setEnvSnapshot(growspaceId, device, hassStates) {
     const updated = new Map(envSnapshots$.get());
     updated.set(growspaceId, snapshot);
     envSnapshots$.set(updated);
-}
-
-/**
- * Irrigation slice — atoms and mutators for Irrigation domain data.
- *
- * Public API (atoms):
- *   irrigationConfigs$    — read: Map<growspaceId, IrrigationConfig>
- *   irrigationStrategies$ — read: Map<growspaceId, IrrigationStrategy>
- *   tankLevels$           — read: Map<growspaceId, IrrigationTank[]>
- *
- * Public API (bootstrap writes — called by SyncService):
- *   setIrrigationConfig()   — replace the IrrigationConfig for a growspace
- *   setIrrigationStrategy() — replace the IrrigationStrategy for a growspace
- *   setTankLevels()         — replace the IrrigationTank list for a growspace
- *
- * Public API (pure computation):
- *   computeIrrigationMode()  — derive 'manual' | 'crop_steering' from strategy
- *   computePhaseWindows()    — derive P0–P3 phase windows from strategy
- *
- * Public API (mutators):
- *   toggleIrrigationMode()       — optimistic: flip strategy.enabled
- *   addIrrigationTime()          — optimistic: append + sort irrigation schedule
- *   removeIrrigationTime()       — optimistic: remove from irrigation schedule
- *   addDrainTime()               — optimistic: append + sort drain schedule
- *   removeDrainTime()            — optimistic: remove from drain schedule
- *   updateIrrigationStrategy()   — optimistic: merge strategy fields
- *   saveIrrigationSettings()     — optimistic: merge config settings
- *   logDrainReading()            — fire-and-forget
- *   configureDrainMonitoring()   — fire-and-forget
- *   runIrrigationCycle()         — fire-and-forget
- *
- * Action type, payload shapes, and zod schemas are private to this module.
- * Tank data absorption: this slice is the authoritative source for tank levels,
- * superseding direct reads from store/growspace or services/api/TankAPI.
- */
-// ---------------------------------------------------------------------------
-// Atoms (public read)
-// ---------------------------------------------------------------------------
-const irrigationConfigs$ = atom(new Map());
-const irrigationStrategies$ = atom(new Map());
-const tankLevels$ = atom(new Map());
-// ---------------------------------------------------------------------------
-// Bootstrap writes (called by SyncService when fresh data arrives)
-// ---------------------------------------------------------------------------
-function setIrrigationConfig(growspaceId, config) {
-    const updated = new Map(irrigationConfigs$.get());
-    updated.set(growspaceId, config);
-    irrigationConfigs$.set(updated);
-}
-function setIrrigationStrategy(growspaceId, strategy) {
-    const updated = new Map(irrigationStrategies$.get());
-    updated.set(growspaceId, strategy);
-    irrigationStrategies$.set(updated);
-}
-function setTankLevels(growspaceId, tanks) {
-    const updated = new Map(tankLevels$.get());
-    updated.set(growspaceId, tanks);
-    tankLevels$.set(updated);
 }
 
 function toDateString(value) {
@@ -130707,6 +130951,9 @@ class ActionDispatcher {
             savePreset: (preset) => saveIPMPreset(this.ctx, preset),
             removePreset: (presetId) => removeIPMPreset(this.ctx, presetId),
         };
+        this.irrigation = {
+            fetchCropSteeringHistory: (growspaceId) => fetchCropSteeringHistory(growspaceId),
+        };
     }
     get ctx() {
         return this.store.context;
@@ -135269,6 +135516,7 @@ let GrowspaceManagerCardEditor = class GrowspaceManagerCardEditor extends i$3 {
                             { label: 'Water', value: 'water' },
                             { label: 'Optimal Conditions', value: 'optimal' },
                             { label: 'Crop Steering', value: 'crop_steering' },
+                            { label: 'Steering Phase', value: 'steering_phase' },
                         ],
                     },
                 },
@@ -135808,6 +136056,7 @@ let GrowspaceSubareaCardEditor = class GrowspaceSubareaCardEditor extends i$3 {
                             { label: 'Water', value: 'water' },
                             { label: 'Optimal Conditions', value: 'optimal' },
                             { label: 'Crop Steering', value: 'crop_steering' },
+                            { label: 'Steering Phase', value: 'steering_phase' },
                         ],
                     },
                 },

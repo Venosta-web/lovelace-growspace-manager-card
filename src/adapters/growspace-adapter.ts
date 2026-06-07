@@ -219,6 +219,7 @@ export class GrowspaceAdapter {
       autoAdvanceP2ToP3: (irrigationConfigRaw as any).auto_advance_p2_to_p3,
       haltOnRunoffEcThreshold: (irrigationConfigRaw as any).halt_on_runoff_ec_threshold,
       activeSteeringPhase: (irrigationConfigRaw as any).active_steering_phase,
+      phaseChangedAt: (irrigationConfigRaw as any).phase_changed_at,
       ecTargetRanges: ((irrigationConfigRaw as any).ec_target_ranges ?? []).map(
         (r: { stage: string; feed_ec_min: number; feed_ec_max: number }) => ({
           stage: r.stage as ECTargetStage,
