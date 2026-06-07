@@ -1,5 +1,6 @@
 import { LitElement, html, svg, css, PropertyValues, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
+import { styleMap } from 'lit/directives/style-map.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { consume } from '@lit/context';
 import { StoreController } from '@nanostores/lit';
@@ -121,6 +122,14 @@ export class IrrigationDialog extends LitElement {
   private _cropSteeringHistoryFetched = false;
   private _cropSteeringPoller?: PollingController;
   private _cropSteeringHistoryController?: StoreController<Map<string, CropSteeringHistory>>;
+
+  @state() private _csModelTooltip: {
+    xPct: number;
+    time: string;
+    projected: boolean;
+    items: Array<{ title: string; value: string; color: string }>;
+  } | null = null;
+  private _csModelRafId: number | null = null;
 
   private _dataService?: DataService;
 
@@ -886,6 +895,45 @@ export class IrrigationDialog extends LitElement {
         border-radius: 10px;
         background: rgba(0, 0, 0, 0.2);
         overflow: hidden;
+        cursor: crosshair;
+      }
+      .cs-model-cursor {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.25);
+        pointer-events: none;
+        z-index: 5;
+      }
+      .cs-model-tooltip {
+        position: absolute;
+        top: 24px;
+        z-index: 6;
+        background: rgba(20, 20, 20, 0.9);
+        backdrop-filter: blur(6px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        padding: 6px 8px;
+        pointer-events: none;
+        font-size: 10.5px;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      }
+      .cs-model-tooltip-time {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: rgba(255, 255, 255, 0.7);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 3px;
+      }
+      .cs-model-tooltip-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 2px;
+        font-family: monospace;
       }
       .cs-model svg {
         position: absolute;
@@ -1561,6 +1609,124 @@ export class IrrigationDialog extends LitElement {
     return now.getHours() * 60 + now.getMinutes();
   }
 
+  private _onCsModelMouseLeave = () => {
+    if (this._csModelRafId) cancelAnimationFrame(this._csModelRafId);
+    this._csModelRafId = null;
+    this._csModelTooltip = null;
+  };
+
+  private _onCsModelMouseMove(
+    e: MouseEvent,
+    ctx: {
+      vwcPts: Array<{ offset: number; v: number }>;
+      poreEcPts: Array<{ offset: number; v: number }> | null;
+      bulkEcPts: Array<{ offset: number; v: number }> | null;
+      projection: Array<{ offset: number; vwc: number; pore: number; bulk: number }>;
+      nowOffset: number;
+      day: number;
+      anchorMs: number;
+    },
+  ) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = e.clientX;
+    if (this._csModelRafId) cancelAnimationFrame(this._csModelRafId);
+    this._csModelRafId = requestAnimationFrame(() => {
+      this._handleCsModelHover(clientX, rect, ctx);
+      this._csModelRafId = null;
+    });
+  }
+
+  private _handleCsModelHover(
+    clientX: number,
+    rect: DOMRect,
+    ctx: {
+      vwcPts: Array<{ offset: number; v: number }>;
+      poreEcPts: Array<{ offset: number; v: number }> | null;
+      bulkEcPts: Array<{ offset: number; v: number }> | null;
+      projection: Array<{ offset: number; vwc: number; pore: number; bulk: number }>;
+      nowOffset: number;
+      day: number;
+      anchorMs: number;
+    },
+  ) {
+    const relX = rect.width > 0
+      ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+      : 0.5;
+    const offsetMinutes = ((relX * 1000 - 6) / 988) * ctx.day;
+    const xPct = relX * 100;
+    const projected = offsetMinutes > ctx.nowOffset;
+
+    const ts = new Date(ctx.anchorMs + offsetMinutes * 60000);
+    const time = ts.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+    const closestPt = <T extends { offset: number }>(pts: T[], off: number): T | null => {
+      if (!pts.length) return null;
+      let lo = 0;
+      let hi = pts.length - 1;
+      while (lo < hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        if (pts[mid].offset < off) lo = mid + 1;
+        else hi = mid;
+      }
+      if (lo > 0 && Math.abs(pts[lo - 1].offset - off) < Math.abs(pts[lo].offset - off)) lo--;
+      return pts[lo];
+    };
+
+    const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
+    const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
+    const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
+
+    const items: Array<{ title: string; value: string; color: string }> = [];
+
+    if (projected) {
+      const pt = closestPt(ctx.projection, offsetMinutes);
+      items.push({ title: 'VWC', value: pt ? `${pt.vwc.toFixed(1)}%` : '—', color: vwcColor });
+      if (ctx.poreEcPts !== null)
+        items.push({ title: 'Pore EC', value: pt ? `${pt.pore.toFixed(2)} mS/cm` : '—', color: poreEcColor });
+      if (ctx.bulkEcPts !== null)
+        items.push({ title: 'Bulk EC', value: pt ? `${pt.bulk.toFixed(2)} mS/cm` : '—', color: bulkEcColor });
+    } else {
+      const vwcPt = closestPt(ctx.vwcPts, offsetMinutes);
+      items.push({ title: 'VWC', value: vwcPt ? `${vwcPt.v.toFixed(1)}%` : '—', color: vwcColor });
+      if (ctx.poreEcPts !== null) {
+        const porePt = closestPt(ctx.poreEcPts, offsetMinutes);
+        items.push({ title: 'Pore EC', value: porePt ? `${porePt.v.toFixed(2)} mS/cm` : '—', color: poreEcColor });
+      }
+      if (ctx.bulkEcPts !== null) {
+        const bulkPt = closestPt(ctx.bulkEcPts, offsetMinutes);
+        items.push({ title: 'Bulk EC', value: bulkPt ? `${bulkPt.v.toFixed(2)} mS/cm` : '—', color: bulkEcColor });
+      }
+    }
+
+    this._csModelTooltip = { xPct, time, projected, items };
+  }
+
+  private _renderCsModelTooltip() {
+    if (!this._csModelTooltip) return nothing;
+    const { xPct, time, projected, items } = this._csModelTooltip;
+    const flip = xPct > 60;
+    return html`
+      <div class="cs-model-cursor" style=${styleMap({ left: `${xPct}%` })}></div>
+      <div
+        class="cs-model-tooltip"
+        style=${styleMap({
+          left: `${xPct}%`,
+          transform: flip ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
+        })}
+      >
+        <div class="cs-model-tooltip-time">${time}${projected ? ' · Projected' : ''}</div>
+        ${items.map(
+          (item) => html`
+            <div class="cs-model-tooltip-row">
+              <span style="color:${item.color};">${item.title}:</span>
+              <span>${item.value}</span>
+            </div>
+          `,
+        )}
+      </div>
+    `;
+  }
+
   private _getEntities(domains: string[]) {
     if (!this.hass?.states) return [];
     return Object.values(this.hass.states)
@@ -2230,7 +2396,21 @@ export class IrrigationDialog extends LitElement {
           </div>
 
           <!-- Substrate model: live history (solid) + synthetic projection (dashed/faded) -->
-          <div class="cs-model">
+          <div
+            class="cs-model"
+            @mousemove=${(e: MouseEvent) =>
+              this._onCsModelMouseMove(e, {
+                vwcPts,
+                poreEcPts,
+                bulkEcPts,
+                projection,
+                nowOffset,
+                day,
+                anchorMs,
+              })}
+            @mouseleave=${this._onCsModelMouseLeave}
+          >
+            ${this._renderCsModelTooltip()}
             <span class="cm-title">Substrate model · live + projected</span>
             <div class="cm-readout">
               <span><i style="background:${vwcColor};"></i>VWC <b>${cur.v.toFixed(1)}%</b></span>

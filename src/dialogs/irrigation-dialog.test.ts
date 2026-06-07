@@ -1074,6 +1074,61 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Crop Steering Day Chart – scrub tooltip
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – Crop Steering Day Chart: scrub tooltip', () => {
+  function setupHistory(overrides: { pore_ec?: Array<{ timestamp: string; value: number | null }>; bulk_ec?: Array<{ timestamp: string; value: number | null }> } = {}) {
+    const history = {
+      growspace_id: 'gs1',
+      lights_on: LIGHTS_ON_ISO,
+      soil_moisture: [mkBucket(0, 55), mkBucket(5, 57), mkBucket(10, 56)],
+      ...overrides,
+    };
+    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
+  }
+
+  async function mountDialog() {
+    setupHistory();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${makeEcChartDevice()}
+        .store=${makeEcChartStore() as any}
+        .initialTab=${'schedules'}
+        growspaceName="Tent 1"
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    return el;
+  }
+
+  async function hoverAt(el: IrrigationDialog, clientX: number): Promise<void> {
+    const model = el.shadowRoot!.querySelector('.cs-model') as HTMLElement;
+    const rect = model.getBoundingClientRect();
+    model.dispatchEvent(
+      new MouseEvent('mousemove', {
+        clientX,
+        clientY: rect.top + rect.height / 2,
+        bubbles: true,
+      })
+    );
+    await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    await el.updateComplete;
+  }
+
+  it('shows a tooltip when the mouse moves over the chart', async () => {
+    const el = await mountDialog();
+    const model = el.shadowRoot!.querySelector('.cs-model') as HTMLElement;
+    const rect = model.getBoundingClientRect();
+
+    await hoverAt(el, rect.left + rect.width / 2);
+
+    expect(el.shadowRoot!.querySelector('.cs-model-tooltip')).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // _saveAll validation: P2 Direct Trigger vs Saturation Target
 // ---------------------------------------------------------------------------
 
