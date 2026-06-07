@@ -1,3 +1,18 @@
+# [1.1.0-next.26](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.25...v1.1.0-next.26) (2026-06-07)
+
+
+### Bug Fixes
+
+* address crop steering review feedback (midnight wrap, stale poller closure) ([bef7051](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bef70514199a5eb8d90e91f10f59f7c11b5fe057))
+
+
+### Features
+
+* add crop steering phase chips and update irrigation dialog logic ([b88126c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/b88126cd3ca60b266dba800b460d5530995c3b5a))
+* add Pore EC / Bulk EC traces and legend to Crop Steering Day Chart ([87533d1](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/87533d1c2975f577df186a73c9e97a67ca3cb987)), closes [#253](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/253)
+* make steering phase chip independently hidable ([a6fef7e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a6fef7e9d502070d7a79c571689d204faf26c5ed))
+* replace modeled VWC sparkline with real Crop Steering Day Chart (slice 1) ([bfd679e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bfd679ea0cca8ebeee19b179dd2c13a934ce1e5b)), closes [#03a9f4](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/03a9f4)
+
 # [1.1.0-next.25](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.24...v1.1.0-next.25) (2026-06-06)
 
 
