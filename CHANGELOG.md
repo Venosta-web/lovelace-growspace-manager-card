@@ -1,3 +1,10 @@
+# [1.1.0-next.27](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.26...v1.1.0-next.27) (2026-06-07)
+
+
+### Features
+
+* add substrate model projection and improve axis scaling in crop steering chart ([1ec5713](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1ec57133b6ca96498999f8e284ad4ae76665bdb6))
+
 # [1.1.0-next.26](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.25...v1.1.0-next.26) (2026-06-07)
 
 
