@@ -317,6 +317,7 @@ export class GrowspaceAdapter {
       // Irrigation cycle telemetry
       lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
       nextScheduledCycle: irrigation?.next_scheduled_cycle ?? null,
+      projectedShotWindow: irrigation?.projected_shot_window ?? null,
       cyclesToday: irrigation?.cycles_today ?? 0,
       volumeDispensedToday: irrigation?.volume_dispensed_today ?? 0,
     });

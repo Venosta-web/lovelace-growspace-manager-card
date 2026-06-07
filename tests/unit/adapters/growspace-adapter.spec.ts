@@ -552,4 +552,32 @@ describe('GrowspaceAdapter', () => {
       expect(result?.waterUsage?.litersToday).toBeUndefined();
     });
   });
+
+  describe('projectedShotWindow mapping', () => {
+    it('passes through the projected shot window range from the backend payload', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+          projected_shot_window: { start: '2026-06-07T09:45:00+00:00', end: '2026-06-07T18:00:00+00:00' },
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.projectedShotWindow).toEqual({
+        start: '2026-06-07T09:45:00+00:00',
+        end: '2026-06-07T18:00:00+00:00',
+      });
+    });
+
+    it('defaults projectedShotWindow to null when absent from the payload', () => {
+      const ws = makeWsData({
+        irrigation: {
+          irrigation_config: { irrigation_times: [], drain_times: [] },
+          irrigation_strategy: null,
+        } as any,
+      });
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+      expect(result?.projectedShotWindow).toBeNull();
+    });
+  });
 });

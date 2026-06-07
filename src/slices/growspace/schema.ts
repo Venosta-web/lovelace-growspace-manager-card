@@ -198,6 +198,10 @@ export const GrowspaceAPIResponseSchema = z
           .optional(),
         last_cycle_timestamp: z.string().nullable().optional(),
         next_scheduled_cycle: z.string().nullable().optional(),
+        projected_shot_window: z
+          .object({ start: z.string(), end: z.string() })
+          .nullable()
+          .optional(),
         cycles_today: z.number().optional().default(0),
         volume_dispensed_today: z.number().optional().default(0),
       })
