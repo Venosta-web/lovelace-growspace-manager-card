@@ -879,25 +879,21 @@ export class IrrigationDialog extends LitElement {
         border-radius: 50%;
         background: #ff9800;
       }
-      .cs-vwc {
+      .cs-sensor-chart {
         position: relative;
-        height: 64px;
+        height: 108px;
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 10px;
         background: rgba(0, 0, 0, 0.2);
         padding: 4px 8px;
         overflow: hidden;
       }
-      .cs-vwc-label {
-        position: absolute;
-        top: 4px;
-        left: 10px;
-        font-size: 9.5px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: rgba(255, 255, 255, 0.35);
-        pointer-events: none;
+      .cs-sensor-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+        padding: 0 2px;
       }
       .cs-legend {
         display: flex;
@@ -1169,6 +1165,16 @@ export class IrrigationDialog extends LitElement {
 
   /** Single footer save — flushes all dirty state across tabs. */
   private async _saveAll() {
+    const soilTrigger = this._sm.tabs.config.draft.soilTriggerPercent;
+    const targetVwc = this._sm.tabs.steering.draft.targetVwcPercent;
+    if (soilTrigger != null && targetVwc != null && soilTrigger > targetVwc) {
+      this._showErrorToast(
+        `P2 Direct Trigger (${soilTrigger}%) must not exceed Saturation Target (${targetVwc}%). ` +
+        `A trigger above the target causes irrigation to fire continuously in P2.`
+      );
+      return;
+    }
+
     await this._saveSettings();
     await this._saveStrategy();
     await this._saveDrainConfig();
@@ -1858,7 +1864,7 @@ export class IrrigationDialog extends LitElement {
     const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
 
     const svgW = 1000;
-    const svgH = 52;
+    const svgH = 108;
     const padL = 6;
     const padR = 6;
     const padT = 8;
@@ -1867,62 +1873,69 @@ export class IrrigationDialog extends LitElement {
     const iH = svgH - padT - padB;
     const xAt = (offset: number) => padL + (offset / day) * iW;
 
-    // Compute y-axis range from actual non-null bucket values
     const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
     const nowX = xAt(nowOffset).toFixed(1);
 
-    // Map history buckets to view-offset space using anchor-relative milliseconds
-    type VwcPt = { offset: number; v: number };
-    const realPts: Array<VwcPt | null> = [];
-    if (history?.soil_moisture?.length) {
-      const lightsOnMs = Date.parse(history.lights_on);
-      const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
-      for (const bucket of history.soil_moisture) {
-        if (bucket.value === null) {
-          realPts.push(null);
+    type TracePt = { offset: number; v: number };
+
+    const buildTracePts = (
+      buckets: Array<{ timestamp: string; value: number | null }> | undefined,
+      anchorMs: number,
+    ): Array<TracePt | null> => {
+      if (!buckets?.length) return [];
+      return buckets.map((b) => {
+        if (b.value === null) return null;
+        return { offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value };
+      });
+    };
+
+    const buildSegments = (pts: Array<TracePt | null>, yFn: (v: number) => number): string[] => {
+      const segs: string[] = [];
+      let cur: string[] = [];
+      for (const pt of pts) {
+        if (pt === null) {
+          if (cur.length > 0) { segs.push(cur.join(' ')); cur = []; }
         } else {
-          const offsetMs = Date.parse(bucket.timestamp) - anchorMs;
-          const offsetMin = offsetMs / 60000;
-          realPts.push({ offset: offsetMin, v: bucket.value });
+          cur.push(`${cur.length === 0 ? 'M' : 'L'}${xAt(pt.offset).toFixed(1)},${yFn(pt.v).toFixed(1)}`);
         }
       }
-    }
+      if (cur.length > 0) segs.push(cur.join(' '));
+      return segs;
+    };
 
-    const nonNullValues = realPts.filter((p): p is VwcPt => p !== null).map((p) => p.v);
-    let vMin: number;
-    let vMax: number;
-    if (nonNullValues.length > 0) {
-      const dataMin = Math.min(...nonNullValues);
-      const dataMax = Math.max(...nonNullValues);
-      const range = Math.max(2, dataMax - dataMin);
-      const pad = range * 0.1;
-      vMin = Math.max(0, dataMin - pad);
-      vMax = dataMax + pad;
-    } else {
-      vMin = target - 10;
-      vMax = target + 10;
-    }
-    const yAt = (v: number) =>
-      padT + iH - Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin))) * iH;
-
-    // Split real trace at null gaps into separate path segments
-    const vwcSegments: string[] = [];
-    let current: string[] = [];
-    for (const pt of realPts) {
-      if (pt === null) {
-        if (current.length > 0) {
-          vwcSegments.push(current.join(' '));
-          current = [];
-        }
+    const makeYAt = (pts: Array<TracePt | null>, fallbackMid: number): (v: number) => number => {
+      const vals = pts.filter((p): p is TracePt => p !== null).map((p) => p.v);
+      let lo: number, hi: number;
+      if (vals.length > 0) {
+        const dataMin = Math.min(...vals);
+        const dataMax = Math.max(...vals);
+        const pad = Math.max(2, dataMax - dataMin) * 0.1;
+        lo = Math.max(0, dataMin - pad);
+        hi = dataMax + pad;
       } else {
-        const cmd = current.length === 0 ? 'M' : 'L';
-        current.push(`${cmd}${xAt(pt.offset).toFixed(1)},${yAt(pt.v).toFixed(1)}`);
+        lo = fallbackMid - 10;
+        hi = fallbackMid + 10;
       }
-    }
-    if (current.length > 0) vwcSegments.push(current.join(' '));
+      return (v: number) => padT + iH - Math.max(0, Math.min(1, (v - lo) / (hi - lo))) * iH;
+    };
 
-    const targetY = yAt(target);
-    const p2TriggerY = yAt(p2Trigger);
+    const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
+    const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
+
+    const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
+    const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
+    const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
+
+    const yAtVwc = makeYAt(vwcPts, target);
+    const yAtPoreEc = poreEcPts ? makeYAt(poreEcPts, 2) : null;
+    const yAtBulkEc = bulkEcPts ? makeYAt(bulkEcPts, 2) : null;
+
+    const vwcSegments = buildSegments(vwcPts, yAtVwc);
+    const poreEcSegments = poreEcPts && yAtPoreEc ? buildSegments(poreEcPts, yAtPoreEc) : [];
+    const bulkEcSegments = bulkEcPts && yAtBulkEc ? buildSegments(bulkEcPts, yAtBulkEc) : [];
+
+    const targetY = yAtVwc(target);
+    const p2TriggerY = yAtVwc(p2Trigger);
 
     return html`
       <div class="detail-card crop-steering-schedule">
@@ -2034,15 +2047,14 @@ export class IrrigationDialog extends LitElement {
             <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
           </div>
 
-          <!-- VWC trace (real sensor data) -->
-          <div class="cs-vwc">
-            <span class="cs-vwc-label">Substrate VWC</span>
+          <!-- Sensor traces: VWC + Pore EC + Bulk EC -->
+          <div class="cs-sensor-chart">
             <svg
               viewBox="0 0 ${svgW} ${svgH}"
               preserveAspectRatio="none"
               style="width:100%;height:100%;display:block;"
             >
-              <!-- Saturation Target guide line -->
+              <!-- Saturation Target guide line (VWC scale) -->
               <line
                 x1="${xAt(0)}"
                 x2="${xAt(day)}"
@@ -2060,7 +2072,7 @@ export class IrrigationDialog extends LitElement {
               >
                 Target ${target.toFixed(0)}%
               </text>
-              <!-- P2 trigger guide line -->
+              <!-- P2 trigger guide line (VWC scale) -->
               <line
                 x1="${xAt(0)}"
                 x2="${xAt(day)}"
@@ -2078,13 +2090,39 @@ export class IrrigationDialog extends LitElement {
               >
                 P2 trigger ${p2Trigger.toFixed(0)}%
               </text>
-              <!-- Real VWC trace segments (split at null gaps) -->
+              <!-- VWC trace -->
               ${vwcSegments.map(
                 (seg) => html`
                   <path
                     d="${seg}"
                     fill="none"
                     stroke="${vwcColor}"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `
+              )}
+              <!-- Pore EC trace -->
+              ${poreEcSegments.map(
+                (seg) => html`
+                  <path
+                    d="${seg}"
+                    fill="none"
+                    stroke="${METRIC_CONFIG[MetricKey.PORE_EC].color}"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                `
+              )}
+              <!-- Bulk EC trace -->
+              ${bulkEcSegments.map(
+                (seg) => html`
+                  <path
+                    d="${seg}"
+                    fill="none"
+                    stroke="${METRIC_CONFIG[MetricKey.BULK_EC].color}"
                     stroke-width="1.4"
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -2101,6 +2139,43 @@ export class IrrigationDialog extends LitElement {
                 stroke-dasharray="2 2"
               />
             </svg>
+          </div>
+          <!-- Sensor trace legend -->
+          <div class="cs-sensor-legend">
+            <span class="cs-leg-chip">
+              <span class="cs-leg-dot" style="background:${vwcColor};"></span>
+              Substrate VWC · %
+            </span>
+            ${poreEcPts !== null
+              ? html`
+                  <span class="cs-leg-chip">
+                    <span
+                      class="cs-leg-dot"
+                      style="background:${METRIC_CONFIG[MetricKey.PORE_EC].color};"
+                    ></span>
+                    Pore EC · mS/cm
+                  </span>
+                `
+              : html`
+                  <span class="cs-leg-chip" style="opacity:0.4;">
+                    Pore EC not configured — add it in Environment Settings
+                  </span>
+                `}
+            ${bulkEcPts !== null
+              ? html`
+                  <span class="cs-leg-chip">
+                    <span
+                      class="cs-leg-dot"
+                      style="background:${METRIC_CONFIG[MetricKey.BULK_EC].color};"
+                    ></span>
+                    Bulk EC · mS/cm
+                  </span>
+                `
+              : html`
+                  <span class="cs-leg-chip" style="opacity:0.4;">
+                    Bulk EC not configured — add it in Environment Settings
+                  </span>
+                `}
           </div>
 
           <!-- Phase legend -->
@@ -2122,14 +2197,6 @@ export class IrrigationDialog extends LitElement {
               ></span>
               ${this._fmtMin(lightsOnMin)}–${this._fmtMin(lightsOffMin)} · ${lightHours}h
               photoperiod
-            </span>
-            <span class="cs-leg-chip" style="opacity:0.45;">
-              <span class="cs-leg-dot" style="background:#e91e63;"></span>
-              Pore EC — coming soon
-            </span>
-            <span class="cs-leg-chip" style="opacity:0.45;">
-              <span class="cs-leg-dot" style="background:#9c27b0;"></span>
-              Bulk EC — coming soon
             </span>
           </div>
 
