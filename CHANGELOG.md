@@ -1,3 +1,10 @@
+# [1.1.0-next.29](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.28...v1.1.0-next.29) (2026-06-07)
+
+
+### Features
+
+* add projected shot window support to irrigation telemetry and footer UI ([8340080](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/83400806f80311e3a1b61d51add7ba4c7b1e05ee))
+
 # [1.1.0-next.28](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.27...v1.1.0-next.28) (2026-06-07)
 
 
