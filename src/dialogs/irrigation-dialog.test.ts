@@ -983,7 +983,7 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     cropSteeringHistory$.set(new Map());
   });
 
-  it('renders "Substrate VWC" (not "modeled") as the trace label', async () => {
+  it('renders the substrate model title with "live + projected" framing and a live VWC readout', async () => {
     const history = makeHistoryResponse();
     cropSteeringHistory$.set(new Map([['gs1', history as any]]));
 
@@ -1000,8 +1000,10 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     await el.updateComplete;
 
     const schedule = el.shadowRoot!.querySelector('.crop-steering-schedule');
-    expect(normalize(schedule!.textContent)).toContain('Substrate VWC');
-    expect(normalize(schedule!.textContent)).not.toContain('modeled');
+    expect(normalize(schedule!.textContent)).toContain('Substrate model · live + projected');
+
+    const readout = el.shadowRoot!.querySelector('.cm-readout');
+    expect(normalize(readout?.textContent)).toMatch(/VWC\s*[\d.]+%/);
   });
 
   it('renders multiple <path> elements when soil_moisture has a null-gap', async () => {
@@ -1308,9 +1310,9 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     expect(strokes).toContain('#ef5350');
     expect(strokes).toContain('#ff7043');
 
-    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
-    expect(normalize(legend?.textContent)).toContain('Pore EC · mS/cm');
-    expect(normalize(legend?.textContent)).toContain('Bulk EC · mS/cm');
+    const readout = el.shadowRoot!.querySelector('.cm-readout');
+    expect(normalize(readout?.textContent)).toContain('Pore');
+    expect(normalize(readout?.textContent)).toContain('Bulk');
   });
 
   it('omits Pore EC path and shows "not configured" note when pore_ec is absent', async () => {
@@ -1342,9 +1344,12 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     expect(strokes).toContain('#ff7043');
 
     const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
-    const text = normalize(legend?.textContent);
-    expect(text).toContain('Pore EC not configured');
-    expect(text).toContain('Bulk EC · mS/cm');
+    expect(normalize(legend?.textContent)).toContain('Pore EC not configured');
+
+    const readout = el.shadowRoot!.querySelector('.cm-readout');
+    const readoutText = normalize(readout?.textContent);
+    expect(readoutText).not.toContain('Pore');
+    expect(readoutText).toContain('Bulk');
   });
 
   it('omits both EC paths and shows two "not configured" notes when both EC series are absent', async () => {
