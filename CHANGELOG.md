@@ -1,3 +1,10 @@
+# [1.1.0-next.28](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.27...v1.1.0-next.28) (2026-06-07)
+
+
+### Features
+
+* add interactive tooltip and cursor to substrate model chart in irrigation dialog ([1b3e75d](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/1b3e75d50b95dda62f3204185c15f2508ce1a287))
+
 # [1.1.0-next.27](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.26...v1.1.0-next.27) (2026-06-07)
 
 
