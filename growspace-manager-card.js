@@ -27881,8 +27881,8 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         const svgH = 200;
         const padL = 6;
         const padR = 6;
-        const padT = 20;
-        const padB = 16;
+        const padT = 28;
+        const padB = 20;
         const iW = svgW - padL - padR;
         const iH = svgH - padT - padB;
         const xAt = (offset) => padL + (offset / day) * iW;
@@ -27900,12 +27900,19 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
             return pts;
         };
         const buildPath = (pts, yFn) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
-        const vwcAxisLo = Math.max(0, Math.min(target, p2Trigger) - 10);
-        const vwcAxisHi = Math.max(target, p2Trigger) + 8;
-        const yAtVwc = (v) => padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
         const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
         const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
         const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
+        const vwcAxisPad = 5;
+        let vwcAxisLo = Math.min(target, p2Trigger);
+        let vwcAxisHi = Math.max(target, p2Trigger);
+        for (const p of vwcPts) {
+            vwcAxisLo = Math.min(vwcAxisLo, p.v);
+            vwcAxisHi = Math.max(vwcAxisHi, p.v);
+        }
+        vwcAxisLo = Math.max(0, vwcAxisLo - vwcAxisPad);
+        vwcAxisHi = vwcAxisHi + vwcAxisPad;
+        const yAtVwc = (v) => padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
         const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
         const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
         const ecTargetRange = (this.device?.irrigationConfig?.ecTargetRanges ?? []).find((r) => r.stage === this.device?.biologicalMetrics?.granularStage);

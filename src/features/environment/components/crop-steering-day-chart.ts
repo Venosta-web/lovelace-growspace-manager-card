@@ -311,19 +311,19 @@ export class CropSteeringDayChart extends LitElement {
       <div
         class="cs-model-tooltip"
         style=${styleMap({
-          left: `${xPct}%`,
-          transform: flip ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
-        })}
+      left: `${xPct}%`,
+      transform: flip ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
+    })}
       >
         <div class="cs-model-tooltip-time">${time}${projected ? ' · Projected' : ''}</div>
         ${items.map(
-          (item) => html`
+      (item) => html`
             <div class="cs-model-tooltip-row">
               <span style="color:${item.color};">${item.title}:</span>
               <span>${item.value}</span>
             </div>
           `,
-        )}
+    )}
       </div>
     `;
   }
@@ -361,8 +361,8 @@ export class CropSteeringDayChart extends LitElement {
     const svgH = 200;
     const padL = 6;
     const padR = 6;
-    const padT = 20;
-    const padB = 16;
+    const padT = 28;
+    const padB = 20;
     const iW = svgW - padL - padR;
     const iH = svgH - padT - padB;
     const xAt = (offset: number) => padL + (offset / day) * iW;
@@ -386,15 +386,23 @@ export class CropSteeringDayChart extends LitElement {
     const buildPath = (pts: TracePt[], yFn: (v: number) => number): string =>
       pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
 
-    const vwcAxisLo = Math.max(0, Math.min(target, p2Trigger) - 10);
-    const vwcAxisHi = Math.max(target, p2Trigger) + 8;
-    const yAtVwc = (v: number) =>
-      padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
-
     const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
     const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
 
     const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
+
+    const vwcAxisPad = 5;
+    let vwcAxisLo = Math.min(target, p2Trigger);
+    let vwcAxisHi = Math.max(target, p2Trigger);
+    for (const p of vwcPts) {
+      vwcAxisLo = Math.min(vwcAxisLo, p.v);
+      vwcAxisHi = Math.max(vwcAxisHi, p.v);
+    }
+    vwcAxisLo = Math.max(0, vwcAxisLo - vwcAxisPad);
+    vwcAxisHi = vwcAxisHi + vwcAxisPad;
+    const yAtVwc = (v: number) =>
+      padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
+
     const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
     const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
 
@@ -464,15 +472,15 @@ export class CropSteeringDayChart extends LitElement {
       <div
         class="cs-model"
         @mousemove=${(e: MouseEvent) =>
-          this._onCsModelMouseMove(e, {
-            vwcPts,
-            poreEcPts,
-            bulkEcPts,
-            projection,
-            nowOffset,
-            day,
-            anchorMs,
-          })}
+        this._onCsModelMouseMove(e, {
+          vwcPts,
+          poreEcPts,
+          bulkEcPts,
+          projection,
+          nowOffset,
+          day,
+          anchorMs,
+        })}
         @mouseleave=${this._onCsModelMouseLeave}
       >
         ${this._renderCsModelTooltip()}
@@ -480,11 +488,11 @@ export class CropSteeringDayChart extends LitElement {
         <div class="cm-readout">
           <span><i style="background:${vwcColor};"></i>VWC <b>${cur.v.toFixed(1)}%</b></span>
           ${poreEcPts !== null
-            ? html`<span><i style="background:${poreEcColor};"></i>Pore <b>${curPore.toFixed(1)}</b></span>`
-            : nothing}
+        ? html`<span><i style="background:${poreEcColor};"></i>Pore <b>${curPore.toFixed(1)}</b></span>`
+        : nothing}
           ${bulkEcPts !== null
-            ? html`<span><i style="background:${bulkEcColor};"></i>Bulk <b>${curBulk.toFixed(1)}</b></span>`
-            : nothing}
+        ? html`<span><i style="background:${bulkEcColor};"></i>Bulk <b>${curBulk.toFixed(1)}</b></span>`
+        : nothing}
         </div>
 
         <svg
@@ -501,24 +509,24 @@ export class CropSteeringDayChart extends LitElement {
 
           <!-- horizontal gridlines at VWC ticks -->
           ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map(
-            (v) => svg`
+          (v) => svg`
               <line
                 x1="${xAt(0)}" x2="${xAt(day)}"
                 y1="${yAtVwc(v).toFixed(1)}" y2="${yAtVwc(v).toFixed(1)}"
                 stroke="rgba(255,255,255,0.05)"
               />
             `
-          )}
+        )}
           <!-- vertical hour gridlines -->
           ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map(
-            (h) => svg`
+          (h) => svg`
               <line
                 x1="${xAt(h * 60)}" x2="${xAt(h * 60)}"
                 y1="${padT}" y2="${padT + iH}"
                 stroke="rgba(255,255,255,0.05)"
               />
             `
-          )}
+        )}
 
           <!-- Saturation Target guide line (VWC scale) -->
           <line
@@ -533,43 +541,43 @@ export class CropSteeringDayChart extends LitElement {
             stroke="var(--warning, #ffa726)" stroke-opacity="0.5" stroke-dasharray="2 3"
           />
           ${ecTargetMid !== null
-            ? svg`
+        ? svg`
                 <line
                   x1="${xAt(0)}" x2="${xAt(day)}"
                   y1="${yAtEc(ecTargetMid).toFixed(1)}" y2="${yAtEc(ecTargetMid).toFixed(1)}"
                   stroke="${poreEcColor}" stroke-opacity="0.5" stroke-dasharray="6 4"
                 />
               `
-            : nothing}
+        : nothing}
 
           <!-- VWC history area -->
           ${vwcPts.length
-            ? svg`
+        ? svg`
                 <path
                   d="${vwcPath} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
                   fill="url(#vwcModelArea-${growspaceId})"
                 />
               `
-            : nothing}
+        : nothing}
 
           <!-- history (solid) -->
           ${bulkPath
-            ? svg`<path d="${bulkPath}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
-            : nothing}
+        ? svg`<path d="${bulkPath}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+        : nothing}
           ${porePath
-            ? svg`<path d="${porePath}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
-            : nothing}
+        ? svg`<path d="${porePath}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+        : nothing}
           ${vwcPath
-            ? svg`<path d="${vwcPath}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
-            : nothing}
+        ? svg`<path d="${vwcPath}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
+        : nothing}
 
           <!-- projection (dashed, faded) -->
           ${bulkEcPts !== null
-            ? svg`<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
-            : nothing}
+        ? svg`<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+        : nothing}
           ${poreEcPts !== null
-            ? svg`<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
-            : nothing}
+        ? svg`<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+        : nothing}
           <path d="${projVwcSeg}" fill="none" stroke="${vwcColor}" stroke-width="1.7" stroke-dasharray="4 4" stroke-opacity="0.5" />
 
           <!-- now divider -->
@@ -581,11 +589,11 @@ export class CropSteeringDayChart extends LitElement {
 
           <!-- current-value dots -->
           ${bulkEcPts !== null
-            ? svg`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
-            : nothing}
+        ? svg`<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
+        : nothing}
           ${poreEcPts !== null
-            ? svg`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
-            : nothing}
+        ? svg`<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
+        : nothing}
           <circle cx="${nowX}" cy="${yAtVwc(cur.v).toFixed(1)}" r="3.4" fill="${vwcColor}" stroke="#141414" stroke-width="1.5" />
         </svg>
 
@@ -595,8 +603,8 @@ export class CropSteeringDayChart extends LitElement {
         <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};">Target ${target.toFixed(0)}%</span>
         <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);">P3 trigger ${p2Trigger.toFixed(0)}%</span>
         ${ecTargetMid !== null
-          ? html`<span class="cm-target left" style="top:${yAtEc(ecTargetMid).toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
-          : nothing}
+        ? html`<span class="cm-target left" style="top:${yAtEc(ecTargetMid).toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
+        : nothing}
       </div>
     `;
   }
