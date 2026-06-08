@@ -1,3 +1,17 @@
+# [1.1.0-next.30](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.29...v1.1.0-next.30) (2026-06-08)
+
+
+### Bug Fixes
+
+* adjust chart padding and dynamic VWC axis scaling for crop steering day chart ([5130f1c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/5130f1c1e501b6860e7c393115a6d0c835a260bf))
+
+
+### Features
+
+* add pump-based conditional UI rendering and improved metric color logic ([ac00ca4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/ac00ca486216bd26249e76dd2a82c920e37c701e))
+* conditionally render hero chips and apply filtering to header metrics ([00b7ec2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/00b7ec2a60a414155a465111db83e46da4ce0e9f))
+* implement CropSteeringDayChart and migrate Steering Phase metric to header hero ([a7ee4d8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/a7ee4d89316e26be5afbe86e4e6fd08bad5aeb96))
+
 # [1.1.0-next.29](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.28...v1.1.0-next.29) (2026-06-07)
 
 
