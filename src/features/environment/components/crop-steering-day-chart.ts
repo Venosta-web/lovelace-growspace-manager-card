@@ -609,7 +609,7 @@ export class CropSteeringDayChart extends LitElement {
 
     const durationMs = this._getDurationMillis(this.range);
     const day = this.rollingWindow ? durationMs / 60000 : 1440;
-    const viewStart = this.rollingWindow ? 0 : (lightsOnMin - 120 + 1440) % 1440;
+    const viewStart = (lightsOnMin - 120 + 1440) % 1440;
     const pctAt = (m: number) => ((((m % 1440) - viewStart + 1440) % 1440) / 1440) * 100;
 
     const target = strategy.targetVwcPercent ?? 45;
