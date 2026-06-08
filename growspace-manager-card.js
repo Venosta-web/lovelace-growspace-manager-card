@@ -10529,9 +10529,8 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
             this._cachedChartRect = container.getBoundingClientRect();
         }
         const rect = this._cachedChartRect;
-        const contentWidth = rect.width - 90;
         const mouseX = e.clientX - rect.left;
-        const relX = Math.max(0, Math.min(1, (mouseX - 50) / contentWidth));
+        const relX = rect.width > 0 ? Math.max(0, Math.min(1, mouseX / rect.width)) : 0.5;
         const hoverTime = startTime.getTime() + relX * durationMillis;
         const items = seriesList.map((s) => {
             let closest = s.points[0];
@@ -10759,22 +10758,20 @@ let GrowspaceEnvChart = class GrowspaceEnvChart extends i$3 {
     `;
     }
     _renderXAxisHTML(range) {
-        const labelStyle = 'position: absolute; bottom: 8px; font-size: 10px; color: var(--secondary-text-color, #666); line-height: 1; pointer-events: none;';
-        return x `<div style="${labelStyle} left: 50px;">-${range}</div>
-      <div style="${labelStyle} right: 40px;">Now</div>`;
+        return x `<span class="gs-axis-cap left">-${range}</span>
+      <span class="gs-axis-cap right">Now</span>`;
     }
     _renderYAxisHTML(min, max, unit) {
-        const labelStyle = 'position: absolute; left: 4px; width: 40px; text-align: right; font-size: 10px; color: var(--secondary-text-color, #aaa); line-height: 1; pointer-events: none;';
         if (unit === 'state' || (max === 1 && min === 0)) {
-            return x `<div style="${labelStyle} top: 20px;">ON</div>
-        <div style="${labelStyle} bottom: 30px;">OFF</div>`;
+            return x `<span class="gs-axis-target" style="top: 8px;">ON</span>
+        <span class="gs-axis-target" style="bottom: 8px;">OFF</span>`;
         }
         return x `
-      <div style="${labelStyle} top: 20px;">${max.toFixed(0)}${unit}</div>
-      <div style="${labelStyle} top: 50%; transform: translateY(-5px);">
+      <span class="gs-axis-target" style="top: 8px;">${max.toFixed(0)}${unit}</span>
+      <span class="gs-axis-target" style="top: 50%; transform: translateY(-50%);">
         ${((max + min) / 2).toFixed(1)}
-      </div>
-      <div style="${labelStyle} bottom: 30px;">${min.toFixed(0)}${unit}</div>
+      </span>
+      <span class="gs-axis-target" style="bottom: 8px;">${min.toFixed(0)}${unit}</span>
     `;
     }
     _getDurationMillis(range) {
@@ -10814,7 +10811,6 @@ GrowspaceEnvChart.styles = i$6 `
       height: 180px;
       background: var(--secondary-background-color, #0d0d0d);
       border-radius: 8px;
-      padding: 20px 40px 30px 50px;
       cursor: crosshair;
       overflow: hidden;
     }
@@ -10830,6 +10826,41 @@ GrowspaceEnvChart.styles = i$6 `
       height: 100%;
       overflow: visible;
       display: block;
+    }
+
+    .gs-axis-cap {
+      position: absolute;
+      bottom: 7px;
+      z-index: 2;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--secondary-text-color, #aaa);
+      opacity: 0.4;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+      line-height: 1;
+      pointer-events: none;
+    }
+    .gs-axis-cap.left {
+      left: 7px;
+    }
+    .gs-axis-cap.right {
+      right: 7px;
+    }
+    .gs-axis-target {
+      position: absolute;
+      left: 8px;
+      z-index: 2;
+      font-size: 10px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      color: var(--secondary-text-color, #aaa);
+      opacity: 0.5;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+      line-height: 1;
+      pointer-events: none;
     }
 
     svg path {
