@@ -28007,7 +28007,7 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
         const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
         const svgW = 1000;
-        const svgH = 200;
+        const svgH = 224;
         const padL = 6;
         const padR = 6;
         const padT = 28;
@@ -28092,6 +28092,9 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
         const targetY = yAtVwc(target);
         const p2TriggerY = yAtVwc(p2Trigger);
+        // Keep the label clear of the bottom-left axis-cap row ("VWC %") when the EC target sits
+        // near the axis floor (e.g. 0.1) and would otherwise land in that corner.
+        const ecTargetY = ecTargetMid !== null ? Math.min(yAtEc(ecTargetMid), svgH - 30) : 0;
         const lastKnown = (pts) => (pts.length ? pts[pts.length - 1].v : null);
         const seedVwc = lastKnown(vwcPts) ?? target;
         const seedPore = lastKnown(poreEcPts ?? []) ?? ecTargetMid ?? 3;
@@ -28365,7 +28368,7 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};">Target ${target.toFixed(0)}%</span>
         <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);">P3 trigger ${p2Trigger.toFixed(0)}%</span>
         ${ecTargetMid !== null
-            ? x `<span class="cm-target left" style="top:${yAtEc(ecTargetMid).toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
+            ? x `<span class="cm-target left" style="top:${ecTargetY.toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
             : E}
       </div>
     `;
@@ -28377,7 +28380,7 @@ CropSteeringDayChart.styles = i$6 `
     }
     .cs-model {
       position: relative;
-      height: 200px;
+      height: 224px;
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 10px;
       background: rgba(0, 0, 0, 0.2);
