@@ -455,16 +455,22 @@ export function computeHeaderMetrics(
       const phase = irrigationConfig.activeSteeringPhase;
       if (phase != null) {
         const isFlower = dominantRaw?.stage === 'flower';
-        chips.push(
-          _makeChip(
-            MetricKey.STEERING_PHASE,
-            mdiWater,
-            _steeringChipValue(phase, irrigationStrategy!, isFlower),
-            { label: 'Phase' },
-            activeEnvGraphs,
-            linkedGraphGroups
-          )
+        const steeringChip = _makeChip(
+          MetricKey.STEERING_PHASE,
+          mdiWater,
+          _steeringChipValue(phase, irrigationStrategy!, isFlower),
+          { label: 'Phase' },
+          activeEnvGraphs,
+          linkedGraphGroups
         );
+        // Promoted to the hero deck when a hero exists (main/subarea) — its click opens
+        // the Substrate Model chart instead of the standard Env Graph (Custom Graph Routing).
+        // The analytics view has no hero, so it keeps the chip in the secondary strip.
+        if (viewContext !== 'analytics') {
+          hero.push(steeringChip);
+        } else {
+          chips.push(steeringChip);
+        }
       }
       // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
       // than fall back to the stale manual schedule.

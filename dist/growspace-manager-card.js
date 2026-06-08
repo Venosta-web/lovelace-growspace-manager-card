@@ -26700,6 +26700,148 @@ class PollingController {
     }
 }
 
+/** Formats a minute-of-day (0-1439) as `HH:MM`, wrapping past midnight. */
+function fmtMinuteOfDay(minutes) {
+    const h = Math.floor((minutes / 60) % 24);
+    const m = minutes % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+/** Generates the day's irrigation shot cycle (P1 ramp-up through the P2→P3 cutoff). */
+function computeCropSteeringCycle(strategy, isFlower) {
+    if (!strategy.lightsOnTime || !strategy.shotIntervalMinutes || !strategy.shotDurationSeconds) {
+        return [];
+    }
+    const lightHours = isFlower ? 12 : 18;
+    const [hh, mm] = strategy.lightsOnTime.split(':').map(Number);
+    const lightsOnMin = hh * 60 + (mm || 0);
+    const lightsOffMin = lightsOnMin + lightHours * 60;
+    const firstShotMin = lightsOnMin + (strategy.p0DurationMinutes ?? 0);
+    const cutoffMin = lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 0);
+    const shots = [];
+    for (let t = firstShotMin; t < cutoffMin; t += strategy.shotIntervalMinutes) {
+        const h = Math.floor(t / 60) % 24;
+        const m = t % 60;
+        shots.push({
+            time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`,
+            duration: strategy.shotDurationSeconds,
+        });
+    }
+    return shots;
+}
+/**
+ * Derives the day's P1/P2/P3 phase windows. P3's start prefers the backend's
+ * recorded `phaseChangedAt` (Actual P3 Boundary) over the scheduled boundary,
+ * when the growspace is currently in P3 — see [[Phase Windows]].
+ */
+function computePhases(strategy, isFlower, irrigationConfig) {
+    const anchorLightsOnTime = strategy.detectedLightsOnTime ?? strategy.lightsOnTime;
+    if (!anchorLightsOnTime)
+        return null;
+    const lightHours = isFlower ? 12 : 18;
+    const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
+    const lightsOnMin = hh * 60 + (mm || 0);
+    const lightsOffMin = lightsOnMin + lightHours * 60;
+    const p1End = lightsOnMin + (strategy.p0DurationMinutes ?? 60);
+    const scheduledP3Start = Math.max(p1End, lightsOffMin - (strategy.p2StopBeforeLightsOffMinutes ?? 120));
+    let p3Start = scheduledP3Start;
+    if (irrigationConfig?.activeSteeringPhase === 'p3' && irrigationConfig.phaseChangedAt) {
+        const d = new Date(irrigationConfig.phaseChangedAt);
+        const actualStart = d.getHours() * 60 + d.getMinutes();
+        p3Start = Math.max(p1End, Math.min(actualStart, scheduledP3Start));
+    }
+    return {
+        lightsOnMin,
+        lightsOffMin,
+        lightHours,
+        phases: [
+            {
+                id: 'p1',
+                label: 'P1',
+                name: 'Saturation',
+                start: lightsOnMin,
+                end: p1End,
+                color: '#4CAF50',
+                target: 'Reach FC',
+            },
+            {
+                id: 'p2',
+                label: 'P2',
+                name: 'Maintenance',
+                start: p1End,
+                end: p3Start,
+                color: '#2196F3',
+                target: 'Runoff target',
+            },
+            {
+                id: 'p3',
+                label: 'P3',
+                name: 'Dryback',
+                start: p3Start,
+                end: lightsOffMin,
+                color: '#FF9800',
+                target: `−${strategy.maintenanceDrybackPercent ?? 3}% VWC`,
+            },
+        ],
+    };
+}
+/**
+ * Synthesizes the dashed "projected" tail of the Substrate Model trace from `nowOffset`
+ * to end-of-day, modelling dryback rate per phase and shot-driven VWC/EC recovery.
+ */
+function generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, targetVwcPercent) {
+    const { lightsOnMin, lightsOffMin } = phases;
+    const target = targetVwcPercent ?? 45;
+    const vwcLo = Math.max(0, target - 18);
+    const vwcHi = target + 8;
+    const step = 3;
+    const p1End = phases.phases[0]?.end ?? lightsOnMin + 60;
+    const p2End = phases.phases[1]?.end ?? lightsOffMin - 120;
+    // Compare in view-offset space (viewStart anchored at 0) so the photoperiod
+    // boundaries stay correctly ordered even when lights-off wraps past midnight.
+    const offsetOf = (m) => (m - viewStart + 1440) % 1440;
+    const lightsOnOffset = offsetOf(lightsOnMin);
+    const lightsOffOffset = offsetOf(lightsOffMin);
+    const p1EndOffset = offsetOf(p1End);
+    const p2EndOffset = offsetOf(p2End);
+    const shotMins = shots.map((s) => {
+        const [hh, mm] = s.time.split(':').map(Number);
+        return hh * 60 + mm;
+    });
+    const pts = [];
+    let vwc = seedVwc;
+    let pore = seedPoreEc;
+    for (let off = nowOffset; off <= 1440; off += step) {
+        let dry;
+        if (off < lightsOnOffset || off >= lightsOffOffset) {
+            dry = 0.3 / 60;
+        }
+        else if (off < p1EndOffset) {
+            dry = 0.8 / 60;
+        }
+        else if (off < p2EndOffset) {
+            dry = 2.6 / 60;
+        }
+        else {
+            dry = 3.0 / 60;
+        }
+        vwc -= dry * step;
+        pore += dry * step * 0.18;
+        for (const shotMin of shotMins) {
+            const shotOff = (shotMin - viewStart + 1440) % 1440;
+            if (shotOff > nowOffset && shotOff >= off && shotOff < off + step) {
+                const isP1 = off < p1EndOffset;
+                vwc += isP1 ? 2.8 : 1.05;
+                pore -= isP1 ? 0.3 : 0.18;
+            }
+        }
+        vwc = Math.max(vwcLo, Math.min(vwcHi, vwc));
+        pore = Math.max(1.5, Math.min(5.5, pore));
+        const bulk = Math.max(0.8, pore * (vwc / 100) * 1.32);
+        pts.push({ offset: off, vwc, pore, bulk });
+    }
+    return pts;
+}
+
 /**
  * Irrigation Dialog State Machine
  *
@@ -27585,6 +27727,522 @@ async function runIrrigationCycle(ctx, params) {
     }
 }
 
+/**
+ * Renders the "Substrate model · live + projected" chart — Substrate VWC, Pore EC,
+ * and Bulk EC traced across a single photoperiod-anchored day. Shared between the
+ * Irrigation Dialog's Crop Steering Schedule panel and the promoted Steering Phase
+ * Chip's inline graph slot (Custom Graph Routing).
+ */
+let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
+    constructor() {
+        super(...arguments);
+        this._csModelTooltip = null;
+        this._csModelRafId = null;
+        this._onCsModelMouseLeave = () => {
+            if (this._csModelRafId)
+                cancelAnimationFrame(this._csModelRafId);
+            this._csModelRafId = null;
+            this._csModelTooltip = null;
+        };
+    }
+    connectedCallback() {
+        super.connectedCallback();
+        if (!this._historyController) {
+            this._historyController = new libExports.StoreController(this, cropSteeringHistory$);
+        }
+        this._fetch();
+        if (!this._poller) {
+            this._poller = new PollingController(this, () => this._fetch(), { interval: 5 * 60 * 1000, immediate: false });
+        }
+    }
+    updated(changed) {
+        if (changed.has('device')) {
+            this._fetch();
+        }
+    }
+    async _fetch() {
+        if (!this.device?.deviceId)
+            return;
+        await fetchCropSteeringHistory(this.device.deviceId).catch(() => undefined);
+    }
+    _getNowMinutes() {
+        const now = new Date();
+        return now.getHours() * 60 + now.getMinutes();
+    }
+    _onCsModelMouseMove(e, ctx) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clientX = e.clientX;
+        if (this._csModelRafId)
+            cancelAnimationFrame(this._csModelRafId);
+        this._csModelRafId = requestAnimationFrame(() => {
+            this._handleCsModelHover(clientX, rect, ctx);
+            this._csModelRafId = null;
+        });
+    }
+    _handleCsModelHover(clientX, rect, ctx) {
+        const relX = rect.width > 0
+            ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+            : 0.5;
+        const offsetMinutes = ((relX * 1000 - 6) / 988) * ctx.day;
+        const xPct = relX * 100;
+        const projected = offsetMinutes > ctx.nowOffset;
+        const ts = new Date(ctx.anchorMs + offsetMinutes * 60000);
+        const time = ts.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+        const closestPt = (pts, off) => {
+            if (!pts.length)
+                return null;
+            let lo = 0;
+            let hi = pts.length - 1;
+            while (lo < hi) {
+                const mid = Math.floor((lo + hi) / 2);
+                if (pts[mid].offset < off)
+                    lo = mid + 1;
+                else
+                    hi = mid;
+            }
+            if (lo > 0 && Math.abs(pts[lo - 1].offset - off) < Math.abs(pts[lo].offset - off))
+                lo--;
+            return pts[lo];
+        };
+        const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
+        const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
+        const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
+        const items = [];
+        if (projected) {
+            const pt = closestPt(ctx.projection, offsetMinutes);
+            items.push({ title: 'VWC', value: pt ? `${pt.vwc.toFixed(1)}%` : '—', color: vwcColor });
+            if (ctx.poreEcPts !== null)
+                items.push({ title: 'Pore EC', value: pt ? `${pt.pore.toFixed(2)} mS/cm` : '—', color: poreEcColor });
+            if (ctx.bulkEcPts !== null)
+                items.push({ title: 'Bulk EC', value: pt ? `${pt.bulk.toFixed(2)} mS/cm` : '—', color: bulkEcColor });
+        }
+        else {
+            const vwcPt = closestPt(ctx.vwcPts, offsetMinutes);
+            items.push({ title: 'VWC', value: vwcPt ? `${vwcPt.v.toFixed(1)}%` : '—', color: vwcColor });
+            if (ctx.poreEcPts !== null) {
+                const porePt = closestPt(ctx.poreEcPts, offsetMinutes);
+                items.push({ title: 'Pore EC', value: porePt ? `${porePt.v.toFixed(2)} mS/cm` : '—', color: poreEcColor });
+            }
+            if (ctx.bulkEcPts !== null) {
+                const bulkPt = closestPt(ctx.bulkEcPts, offsetMinutes);
+                items.push({ title: 'Bulk EC', value: bulkPt ? `${bulkPt.v.toFixed(2)} mS/cm` : '—', color: bulkEcColor });
+            }
+        }
+        this._csModelTooltip = { xPct, time, projected, items };
+    }
+    _renderCsModelTooltip() {
+        if (!this._csModelTooltip)
+            return E;
+        const { xPct, time, projected, items } = this._csModelTooltip;
+        const flip = xPct > 60;
+        return x `
+      <div class="cs-model-cursor" style=${o$1({ left: `${xPct}%` })}></div>
+      <div
+        class="cs-model-tooltip"
+        style=${o$1({
+            left: `${xPct}%`,
+            transform: flip ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
+        })}
+      >
+        <div class="cs-model-tooltip-time">${time}${projected ? ' · Projected' : ''}</div>
+        ${items.map((item) => x `
+            <div class="cs-model-tooltip-row">
+              <span style="color:${item.color};">${item.title}:</span>
+              <span>${item.value}</span>
+            </div>
+          `)}
+      </div>
+    `;
+    }
+    render() {
+        const strategy = this.device?.irrigationStrategy;
+        if (!strategy?.enabled) {
+            return x `<div class="placeholder">No strategy configured.</div>`;
+        }
+        const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
+        const shots = computeCropSteeringCycle(strategy, isFlower);
+        const phases = computePhases(strategy, isFlower, this.device?.irrigationConfig);
+        if (!phases) {
+            return x `<div class="placeholder">No strategy configured — set Lights On Time in the Steering tab.</div>`;
+        }
+        const { lightsOnMin } = phases;
+        const nowMinutes = this._getNowMinutes();
+        const day = 1440;
+        const viewStart = (lightsOnMin - 120 + 1440) % 1440;
+        const target = strategy.targetVwcPercent ?? 45;
+        const dryback = strategy.maintenanceDrybackPercent ?? 3;
+        const p2Trigger = target - dryback;
+        const growspaceId = this.device?.deviceId ?? '';
+        const history = this._historyController?.value?.get(growspaceId);
+        const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
+        const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
+        const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
+        const svgW = 1000;
+        const svgH = 200;
+        const padL = 6;
+        const padR = 6;
+        const padT = 20;
+        const padB = 16;
+        const iW = svgW - padL - padR;
+        const iH = svgH - padT - padB;
+        const xAt = (offset) => padL + (offset / day) * iW;
+        const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
+        const nowX = xAt(nowOffset).toFixed(1);
+        const buildTracePts = (buckets, anchorMs) => {
+            if (!buckets?.length)
+                return [];
+            const pts = [];
+            for (const b of buckets) {
+                if (b.value === null)
+                    continue;
+                pts.push({ offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value });
+            }
+            return pts;
+        };
+        const buildPath = (pts, yFn) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
+        const vwcAxisLo = Math.max(0, Math.min(target, p2Trigger) - 10);
+        const vwcAxisHi = Math.max(target, p2Trigger) + 8;
+        const yAtVwc = (v) => padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
+        const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
+        const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
+        const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
+        const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
+        const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
+        const ecTargetRange = (this.device?.irrigationConfig?.ecTargetRanges ?? []).find((r) => r.stage === this.device?.biologicalMetrics?.granularStage);
+        const ecTargetMid = ecTargetRange ? (ecTargetRange.minEc + ecTargetRange.maxEc) / 2 : null;
+        const ecValsForAxis = [];
+        for (const pts of [poreEcPts, bulkEcPts]) {
+            if (!pts)
+                continue;
+            for (const p of pts)
+                if (p)
+                    ecValsForAxis.push(p.v);
+        }
+        let ecAxisLo;
+        let ecAxisHi;
+        if (ecTargetMid !== null) {
+            ecAxisLo = Math.max(0, ecTargetMid - 2);
+            ecAxisHi = ecTargetMid + 2;
+        }
+        else if (ecValsForAxis.length > 0) {
+            const dataMin = Math.min(...ecValsForAxis);
+            const dataMax = Math.max(...ecValsForAxis);
+            const pad = Math.max(0.3, (dataMax - dataMin) * 0.15);
+            ecAxisLo = Math.max(0, dataMin - pad);
+            ecAxisHi = dataMax + pad;
+        }
+        else {
+            ecAxisLo = 1;
+            ecAxisHi = 5;
+        }
+        const yAtEc = (v) => padT + iH - Math.max(0, Math.min(1, (v - ecAxisLo) / (ecAxisHi - ecAxisLo))) * iH;
+        const vwcPath = buildPath(vwcPts, yAtVwc);
+        const porePath = poreEcPts ? buildPath(poreEcPts, yAtEc) : '';
+        const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
+        const targetY = yAtVwc(target);
+        const p2TriggerY = yAtVwc(p2Trigger);
+        const lastKnown = (pts) => (pts.length ? pts[pts.length - 1].v : null);
+        const seedVwc = lastKnown(vwcPts) ?? target;
+        const seedPore = lastKnown(poreEcPts ?? []) ?? ecTargetMid ?? 3;
+        const projection = generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPore, viewStart, target);
+        const projVwcSeg = projection
+            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtVwc(p.vwc).toFixed(1)}`)
+            .join(' ');
+        const projPoreSeg = projection
+            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtEc(p.pore).toFixed(1)}`)
+            .join(' ');
+        const projBulkSeg = projection
+            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtEc(p.bulk).toFixed(1)}`)
+            .join(' ');
+        const lastHistory = vwcPts.length ? vwcPts[vwcPts.length - 1] : null;
+        const cur = lastHistory ?? { v: seedVwc };
+        const curPore = lastKnown(poreEcPts ?? []) ?? seedPore;
+        const curBulk = lastKnown(bulkEcPts ?? []) ?? Math.max(0.8, curPore * (cur.v / 100) * 1.32);
+        return x `
+      <div
+        class="cs-model"
+        @mousemove=${(e) => this._onCsModelMouseMove(e, {
+            vwcPts,
+            poreEcPts,
+            bulkEcPts,
+            projection,
+            nowOffset,
+            day,
+            anchorMs,
+        })}
+        @mouseleave=${this._onCsModelMouseLeave}
+      >
+        ${this._renderCsModelTooltip()}
+        <span class="cm-title">Substrate model · live + projected</span>
+        <div class="cm-readout">
+          <span><i style="background:${vwcColor};"></i>VWC <b>${cur.v.toFixed(1)}%</b></span>
+          ${poreEcPts !== null
+            ? x `<span><i style="background:${poreEcColor};"></i>Pore <b>${curPore.toFixed(1)}</b></span>`
+            : E}
+          ${bulkEcPts !== null
+            ? x `<span><i style="background:${bulkEcColor};"></i>Bulk <b>${curBulk.toFixed(1)}</b></span>`
+            : E}
+        </div>
+
+        <svg
+          viewBox="0 0 ${svgW} ${svgH}"
+          preserveAspectRatio="none"
+          style="width:100%;height:100%;display:block;"
+        >
+          <defs>
+            <linearGradient id="vwcModelArea-${growspaceId}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${vwcColor}33" />
+              <stop offset="100%" stop-color="${vwcColor}00" />
+            </linearGradient>
+          </defs>
+
+          <!-- horizontal gridlines at VWC ticks -->
+          ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map((v) => b `
+              <line
+                x1="${xAt(0)}" x2="${xAt(day)}"
+                y1="${yAtVwc(v).toFixed(1)}" y2="${yAtVwc(v).toFixed(1)}"
+                stroke="rgba(255,255,255,0.05)"
+              />
+            `)}
+          <!-- vertical hour gridlines -->
+          ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => b `
+              <line
+                x1="${xAt(h * 60)}" x2="${xAt(h * 60)}"
+                y1="${padT}" y2="${padT + iH}"
+                stroke="rgba(255,255,255,0.05)"
+              />
+            `)}
+
+          <!-- Saturation Target guide line (VWC scale) -->
+          <line
+            x1="${xAt(0)}" x2="${xAt(day)}"
+            y1="${targetY.toFixed(1)}" y2="${targetY.toFixed(1)}"
+            stroke="${vwcColor}" stroke-opacity="0.6" stroke-dasharray="6 4"
+          />
+          <!-- P3 dryback trigger guide line (VWC scale) -->
+          <line
+            x1="${xAt(0)}" x2="${xAt(day)}"
+            y1="${p2TriggerY.toFixed(1)}" y2="${p2TriggerY.toFixed(1)}"
+            stroke="var(--warning, #ffa726)" stroke-opacity="0.5" stroke-dasharray="2 3"
+          />
+          ${ecTargetMid !== null
+            ? b `
+                <line
+                  x1="${xAt(0)}" x2="${xAt(day)}"
+                  y1="${yAtEc(ecTargetMid).toFixed(1)}" y2="${yAtEc(ecTargetMid).toFixed(1)}"
+                  stroke="${poreEcColor}" stroke-opacity="0.5" stroke-dasharray="6 4"
+                />
+              `
+            : E}
+
+          <!-- VWC history area -->
+          ${vwcPts.length
+            ? b `
+                <path
+                  d="${vwcPath} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
+                  fill="url(#vwcModelArea-${growspaceId})"
+                />
+              `
+            : E}
+
+          <!-- history (solid) -->
+          ${bulkPath
+            ? b `<path d="${bulkPath}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+            : E}
+          ${porePath
+            ? b `<path d="${porePath}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
+            : E}
+          ${vwcPath
+            ? b `<path d="${vwcPath}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
+            : E}
+
+          <!-- projection (dashed, faded) -->
+          ${bulkEcPts !== null
+            ? b `<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+            : E}
+          ${poreEcPts !== null
+            ? b `<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
+            : E}
+          <path d="${projVwcSeg}" fill="none" stroke="${vwcColor}" stroke-width="1.7" stroke-dasharray="4 4" stroke-opacity="0.5" />
+
+          <!-- now divider -->
+          <line
+            x1="${nowX}" x2="${nowX}"
+            y1="${(padT - 6).toFixed(1)}" y2="${(padT + iH).toFixed(1)}"
+            stroke="var(--warning, #ffa726)" stroke-dasharray="3 3"
+          />
+
+          <!-- current-value dots -->
+          ${bulkEcPts !== null
+            ? b `<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
+            : E}
+          ${poreEcPts !== null
+            ? b `<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
+            : E}
+          <circle cx="${nowX}" cy="${yAtVwc(cur.v).toFixed(1)}" r="3.4" fill="${vwcColor}" stroke="#141414" stroke-width="1.5" />
+        </svg>
+
+        <span class="cm-axis-cap left">VWC %</span>
+        <span class="cm-axis-cap right">mS/cm</span>
+
+        <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};">Target ${target.toFixed(0)}%</span>
+        <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);">P3 trigger ${p2Trigger.toFixed(0)}%</span>
+        ${ecTargetMid !== null
+            ? x `<span class="cm-target left" style="top:${yAtEc(ecTargetMid).toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
+            : E}
+      </div>
+    `;
+    }
+};
+CropSteeringDayChart.styles = i$6 `
+    :host {
+      display: block;
+    }
+    .cs-model {
+      position: relative;
+      height: 200px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .cs-model-cursor {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.25);
+      pointer-events: none;
+      z-index: 5;
+    }
+    .cs-model-tooltip {
+      position: absolute;
+      top: 24px;
+      z-index: 6;
+      background: rgba(20, 20, 20, 0.9);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 6px 8px;
+      pointer-events: none;
+      font-size: 10.5px;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+    .cs-model-tooltip-time {
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: rgba(255, 255, 255, 0.7);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 3px;
+    }
+    .cs-model-tooltip-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 2px;
+      font-family: monospace;
+    }
+    .cs-model svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .cm-title {
+      position: absolute;
+      top: 6px;
+      left: 10px;
+      z-index: 2;
+      font-size: 9.5px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.4);
+    }
+    .cm-readout {
+      position: absolute;
+      top: 5px;
+      right: 10px;
+      z-index: 2;
+      display: flex;
+      gap: 12px;
+      font-size: 10.5px;
+      color: rgba(255, 255, 255, 0.6);
+      font-variant-numeric: tabular-nums;
+    }
+    .cm-readout span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .cm-readout i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      display: inline-block;
+    }
+    .cm-readout b {
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
+    }
+    .cm-axis-cap {
+      position: absolute;
+      bottom: 3px;
+      z-index: 2;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+    }
+    .cm-axis-cap.left {
+      left: 7px;
+    }
+    .cm-axis-cap.right {
+      right: 7px;
+    }
+    .cm-target {
+      position: absolute;
+      right: 8px;
+      z-index: 2;
+      transform: translateY(-50%);
+      font-size: 9.5px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      opacity: 0.95;
+      text-shadow:
+        0 1px 4px rgba(0, 0, 0, 0.95),
+        0 0 4px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+    }
+    .cm-target.left {
+      left: 8px;
+      right: auto;
+    }
+    .placeholder {
+      padding: 32px;
+      text-align: center;
+      color: var(--secondary-text-color, #666);
+      font-size: 13px;
+    }
+  `;
+__decorate([
+    n$5({ attribute: false })
+], CropSteeringDayChart.prototype, "device", void 0);
+__decorate([
+    r$3()
+], CropSteeringDayChart.prototype, "_csModelTooltip", void 0);
+CropSteeringDayChart = __decorate([
+    t$2('crop-steering-day-chart')
+], CropSteeringDayChart);
+
 // MDI check icon path for time chips
 const MDI_CHECK = 'M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z';
 const MDI_INFO = 'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z';
@@ -27607,14 +28265,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._ecRampFetched = false;
         // ─── Crop Steering History (Schedules tab) ────────────────────────────
         this._cropSteeringHistoryFetched = false;
-        this._csModelTooltip = null;
-        this._csModelRafId = null;
-        this._onCsModelMouseLeave = () => {
-            if (this._csModelRafId)
-                cancelAnimationFrame(this._csModelRafId);
-            this._csModelRafId = null;
-            this._csModelTooltip = null;
-        };
     }
     // ─── Visibility ───────────────────────────────────────────────────────────
     get _hasPump() {
@@ -28125,91 +28775,6 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const now = new Date();
         return now.getHours() * 60 + now.getMinutes();
     }
-    _onCsModelMouseMove(e, ctx) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        const clientX = e.clientX;
-        if (this._csModelRafId)
-            cancelAnimationFrame(this._csModelRafId);
-        this._csModelRafId = requestAnimationFrame(() => {
-            this._handleCsModelHover(clientX, rect, ctx);
-            this._csModelRafId = null;
-        });
-    }
-    _handleCsModelHover(clientX, rect, ctx) {
-        const relX = rect.width > 0
-            ? Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-            : 0.5;
-        const offsetMinutes = ((relX * 1000 - 6) / 988) * ctx.day;
-        const xPct = relX * 100;
-        const projected = offsetMinutes > ctx.nowOffset;
-        const ts = new Date(ctx.anchorMs + offsetMinutes * 60000);
-        const time = ts.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-        const closestPt = (pts, off) => {
-            if (!pts.length)
-                return null;
-            let lo = 0;
-            let hi = pts.length - 1;
-            while (lo < hi) {
-                const mid = Math.floor((lo + hi) / 2);
-                if (pts[mid].offset < off)
-                    lo = mid + 1;
-                else
-                    hi = mid;
-            }
-            if (lo > 0 && Math.abs(pts[lo - 1].offset - off) < Math.abs(pts[lo].offset - off))
-                lo--;
-            return pts[lo];
-        };
-        const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
-        const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
-        const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
-        const items = [];
-        if (projected) {
-            const pt = closestPt(ctx.projection, offsetMinutes);
-            items.push({ title: 'VWC', value: pt ? `${pt.vwc.toFixed(1)}%` : '—', color: vwcColor });
-            if (ctx.poreEcPts !== null)
-                items.push({ title: 'Pore EC', value: pt ? `${pt.pore.toFixed(2)} mS/cm` : '—', color: poreEcColor });
-            if (ctx.bulkEcPts !== null)
-                items.push({ title: 'Bulk EC', value: pt ? `${pt.bulk.toFixed(2)} mS/cm` : '—', color: bulkEcColor });
-        }
-        else {
-            const vwcPt = closestPt(ctx.vwcPts, offsetMinutes);
-            items.push({ title: 'VWC', value: vwcPt ? `${vwcPt.v.toFixed(1)}%` : '—', color: vwcColor });
-            if (ctx.poreEcPts !== null) {
-                const porePt = closestPt(ctx.poreEcPts, offsetMinutes);
-                items.push({ title: 'Pore EC', value: porePt ? `${porePt.v.toFixed(2)} mS/cm` : '—', color: poreEcColor });
-            }
-            if (ctx.bulkEcPts !== null) {
-                const bulkPt = closestPt(ctx.bulkEcPts, offsetMinutes);
-                items.push({ title: 'Bulk EC', value: bulkPt ? `${bulkPt.v.toFixed(2)} mS/cm` : '—', color: bulkEcColor });
-            }
-        }
-        this._csModelTooltip = { xPct, time, projected, items };
-    }
-    _renderCsModelTooltip() {
-        if (!this._csModelTooltip)
-            return E;
-        const { xPct, time, projected, items } = this._csModelTooltip;
-        const flip = xPct > 60;
-        return x `
-      <div class="cs-model-cursor" style=${o$1({ left: `${xPct}%` })}></div>
-      <div
-        class="cs-model-tooltip"
-        style=${o$1({
-            left: `${xPct}%`,
-            transform: flip ? 'translateX(-100%) translateX(-8px)' : 'translateX(8px)',
-        })}
-      >
-        <div class="cs-model-tooltip-time">${time}${projected ? ' · Projected' : ''}</div>
-        ${items.map((item) => x `
-            <div class="cs-model-tooltip-row">
-              <span style="color:${item.color};">${item.title}:</span>
-              <span>${item.value}</span>
-            </div>
-          `)}
-      </div>
-    `;
-    }
     _getEntities(domains) {
         if (!this.hass?.states)
             return [];
@@ -28439,139 +29004,19 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     // ─── Schedules tab ────────────────────────────────────────────────────────
     _computeCropSteeringCycle() {
-        const s = this._sm.tabs.steering.draft;
-        if (!s.lightsOnTime || !s.shotIntervalMinutes || !s.shotDurationSeconds)
-            return [];
         const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-        const lightHours = isFlower ? 12 : 18;
-        const [hh, mm] = s.lightsOnTime.split(':').map(Number);
-        const lightsOnMin = hh * 60 + (mm || 0);
-        const lightsOffMin = lightsOnMin + lightHours * 60;
-        const firstShotMin = lightsOnMin + (s.p0DurationMinutes ?? 0);
-        const cutoffMin = lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 0);
-        const shots = [];
-        for (let t = firstShotMin; t < cutoffMin; t += s.shotIntervalMinutes) {
-            const h = Math.floor(t / 60) % 24;
-            const m = t % 60;
-            shots.push({
-                time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`,
-                duration: s.shotDurationSeconds,
-            });
-        }
-        return shots;
+        return computeCropSteeringCycle(this._sm.tabs.steering.draft, isFlower);
     }
     _fmtMin(minutes) {
-        const h = Math.floor((minutes / 60) % 24);
-        const m = minutes % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        return fmtMinuteOfDay(minutes);
     }
     _computePhases() {
-        const s = this._sm.tabs.steering.draft;
-        if (!s.lightsOnTime)
-            return null;
-        const anchorLightsOnTime = s.detectedLightsOnTime ?? s.lightsOnTime;
         const isFlower = (this.device?.biologicalMetrics?.flowerWeek ?? 0) > 0;
-        const lightHours = isFlower ? 12 : 18;
-        const [hh, mm] = anchorLightsOnTime.split(':').map(Number);
-        const lightsOnMin = hh * 60 + (mm || 0);
-        const lightsOffMin = lightsOnMin + lightHours * 60;
-        const p1End = lightsOnMin + (s.p0DurationMinutes ?? 60);
-        const scheduledP3Start = Math.max(p1End, lightsOffMin - (s.p2StopBeforeLightsOffMinutes ?? 120));
-        const irrigationConfig = this.device?.irrigationConfig;
-        const phaseChangedAt = irrigationConfig?.phaseChangedAt;
-        let p3Start = scheduledP3Start;
-        if (irrigationConfig?.activeSteeringPhase === 'p3' && phaseChangedAt) {
-            const d = new Date(phaseChangedAt);
-            const actualStart = d.getHours() * 60 + d.getMinutes();
-            p3Start = Math.max(p1End, Math.min(actualStart, scheduledP3Start));
-        }
-        return {
-            lightsOnMin,
-            lightsOffMin,
-            lightHours,
-            phases: [
-                {
-                    id: 'p1',
-                    label: 'P1',
-                    name: 'Saturation',
-                    start: lightsOnMin,
-                    end: p1End,
-                    color: '#4CAF50',
-                    target: 'Reach FC',
-                },
-                {
-                    id: 'p2',
-                    label: 'P2',
-                    name: 'Maintenance',
-                    start: p1End,
-                    end: p3Start,
-                    color: '#2196F3',
-                    target: 'Runoff target',
-                },
-                {
-                    id: 'p3',
-                    label: 'P3',
-                    name: 'Dryback',
-                    start: p3Start,
-                    end: lightsOffMin,
-                    color: '#FF9800',
-                    target: `−${s.maintenanceDrybackPercent ?? 3}% VWC`,
-                },
-            ],
-        };
+        return computePhases(this._sm.tabs.steering.draft, isFlower, this.device?.irrigationConfig);
     }
     _generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart) {
-        const { lightsOnMin, lightsOffMin } = phases;
         const target = this._sm.tabs.steering.draft.targetVwcPercent ?? 45;
-        const vwcLo = Math.max(0, target - 18);
-        const vwcHi = target + 8;
-        const step = 3;
-        const p1End = phases.phases[0]?.end ?? lightsOnMin + 60;
-        const p2End = phases.phases[1]?.end ?? lightsOffMin - 120;
-        // Compare in view-offset space (viewStart anchored at 0) so the photoperiod
-        // boundaries stay correctly ordered even when lights-off wraps past midnight.
-        const offsetOf = (m) => (m - viewStart + 1440) % 1440;
-        const lightsOnOffset = offsetOf(lightsOnMin);
-        const lightsOffOffset = offsetOf(lightsOffMin);
-        const p1EndOffset = offsetOf(p1End);
-        const p2EndOffset = offsetOf(p2End);
-        const shotMins = shots.map((s) => {
-            const [hh, mm] = s.time.split(':').map(Number);
-            return hh * 60 + mm;
-        });
-        const pts = [];
-        let vwc = seedVwc;
-        let pore = seedPoreEc;
-        for (let off = nowOffset; off <= 1440; off += step) {
-            let dry;
-            if (off < lightsOnOffset || off >= lightsOffOffset) {
-                dry = 0.3 / 60;
-            }
-            else if (off < p1EndOffset) {
-                dry = 0.8 / 60;
-            }
-            else if (off < p2EndOffset) {
-                dry = 2.6 / 60;
-            }
-            else {
-                dry = 3.0 / 60;
-            }
-            vwc -= dry * step;
-            pore += dry * step * 0.18;
-            for (const shotMin of shotMins) {
-                const shotOff = (shotMin - viewStart + 1440) % 1440;
-                if (shotOff > nowOffset && shotOff >= off && shotOff < off + step) {
-                    const isP1 = off < p1EndOffset;
-                    vwc += isP1 ? 2.8 : 1.05;
-                    pore -= isP1 ? 0.3 : 0.18;
-                }
-            }
-            vwc = Math.max(vwcLo, Math.min(vwcHi, vwc));
-            pore = Math.max(1.5, Math.min(5.5, pore));
-            const bulk = Math.max(0.8, pore * (vwc / 100) * 1.32);
-            pts.push({ offset: off, vwc, pore, bulk });
-        }
-        return pts;
+        return generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, target);
     }
     _renderCropSteeringSchedule(color) {
         const shots = this._computeCropSteeringCycle();
@@ -28597,103 +29042,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         // Axis anchored 2 hours before lights-on so the active cycle is always visible
         const viewStart = (lightsOnMin - 120 + 1440) % 1440;
         const pctAt = (m) => ((((m % 1440) - viewStart + 1440) % 1440) / day) * 100;
-        const steeringDraft = this._sm.tabs.steering.draft;
-        const target = steeringDraft.targetVwcPercent ?? 45;
-        const dryback = steeringDraft.maintenanceDrybackPercent ?? 3;
-        const p2Trigger = target - dryback;
-        // Real VWC trace from fetched history
+        // The legend below flags missing sensors based on what the fetched history
+        // reports — the chart component does its own fetching, but the dialog keeps a
+        // read-only view of the same shared atom for this presence check.
         const growspaceId = this.device?.deviceId ?? '';
         const history = this._cropSteeringHistoryController?.value?.get(growspaceId);
-        const vwcColor = METRIC_CONFIG[MetricKey.SOIL_MOISTURE].color;
-        const poreEcColor = METRIC_CONFIG[MetricKey.PORE_EC].color;
-        const bulkEcColor = METRIC_CONFIG[MetricKey.BULK_EC].color;
-        const svgW = 1000;
-        const svgH = 200;
-        const padL = 6;
-        const padR = 6;
-        const padT = 20;
-        const padB = 16;
-        const iW = svgW - padL - padR;
-        const iH = svgH - padT - padB;
-        const xAt = (offset) => padL + (offset / day) * iW;
-        const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
-        const nowX = xAt(nowOffset).toFixed(1);
-        // Skips buckets with no reading (sensor didn't report in that window) so the
-        // trace connects straight across gaps — a continuous line, as designed,
-        // rather than snapping into disconnected fragments at every missed bucket.
-        const buildTracePts = (buckets, anchorMs) => {
-            if (!buckets?.length)
-                return [];
-            const pts = [];
-            for (const b of buckets) {
-                if (b.value === null)
-                    continue;
-                pts.push({ offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value });
-            }
-            return pts;
-        };
-        const buildPath = (pts, yFn) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
-        // Fixed VWC axis around the configured targets so projections stay in-frame.
-        const vwcAxisLo = Math.max(0, Math.min(target, p2Trigger) - 10);
-        const vwcAxisHi = Math.max(target, p2Trigger) + 8;
-        const yAtVwc = (v) => padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
-        const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
-        const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
-        const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
-        const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
-        const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
-        // EC axis: derive from pore EC target (active stage) when available, else from history range.
-        const ecTargetRange = (this._sm.tabs.ec_targets.draft ?? []).find((r) => r.stage === this.device?.biologicalMetrics?.granularStage);
-        const ecTargetMid = ecTargetRange ? (ecTargetRange.minEc + ecTargetRange.maxEc) / 2 : null;
-        const ecValsForAxis = [];
-        for (const pts of [poreEcPts, bulkEcPts]) {
-            if (!pts)
-                continue;
-            for (const p of pts)
-                if (p)
-                    ecValsForAxis.push(p.v);
-        }
-        let ecAxisLo;
-        let ecAxisHi;
-        if (ecTargetMid !== null) {
-            ecAxisLo = Math.max(0, ecTargetMid - 2);
-            ecAxisHi = ecTargetMid + 2;
-        }
-        else if (ecValsForAxis.length > 0) {
-            const dataMin = Math.min(...ecValsForAxis);
-            const dataMax = Math.max(...ecValsForAxis);
-            const pad = Math.max(0.3, (dataMax - dataMin) * 0.15);
-            ecAxisLo = Math.max(0, dataMin - pad);
-            ecAxisHi = dataMax + pad;
-        }
-        else {
-            ecAxisLo = 1;
-            ecAxisHi = 5;
-        }
-        const yAtEc = (v) => padT + iH - Math.max(0, Math.min(1, (v - ecAxisLo) / (ecAxisHi - ecAxisLo))) * iH;
-        const vwcPath = buildPath(vwcPts, yAtVwc);
-        const porePath = poreEcPts ? buildPath(poreEcPts, yAtEc) : '';
-        const bulkPath = bulkEcPts ? buildPath(bulkEcPts, yAtEc) : '';
-        const targetY = yAtVwc(target);
-        const p2TriggerY = yAtVwc(p2Trigger);
-        // Synthetic projection picking up from the latest known reading (or the seed values).
-        const lastKnown = (pts) => (pts.length ? pts[pts.length - 1].v : null);
-        const seedVwc = lastKnown(vwcPts) ?? target;
-        const seedPore = lastKnown(poreEcPts ?? []) ?? ecTargetMid ?? 3;
-        const projection = this._generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPore, viewStart);
-        const projVwcSeg = projection
-            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtVwc(p.vwc).toFixed(1)}`)
-            .join(' ');
-        const projPoreSeg = projection
-            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtEc(p.pore).toFixed(1)}`)
-            .join(' ');
-        const projBulkSeg = projection
-            .map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yAtEc(p.bulk).toFixed(1)}`)
-            .join(' ');
-        const lastHistory = vwcPts.length ? vwcPts[vwcPts.length - 1] : null;
-        const cur = lastHistory ?? { v: seedVwc };
-        const curPore = lastKnown(poreEcPts ?? []) ?? seedPore;
-        const curBulk = lastKnown(bulkEcPts ?? []) ?? Math.max(0.8, curPore * (cur.v / 100) * 1.32);
+        const hasPoreEc = history?.pore_ec !== undefined;
+        const hasBulkEc = history?.bulk_ec !== undefined;
         return x `
       <div class="detail-card crop-steering-schedule">
         <!-- Header -->
@@ -28799,150 +29154,19 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           </div>
 
           <!-- Substrate model: live history (solid) + synthetic projection (dashed/faded) -->
-          <div
-            class="cs-model"
-            @mousemove=${(e) => this._onCsModelMouseMove(e, {
-            vwcPts,
-            poreEcPts,
-            bulkEcPts,
-            projection,
-            nowOffset,
-            day,
-            anchorMs,
-        })}
-            @mouseleave=${this._onCsModelMouseLeave}
-          >
-            ${this._renderCsModelTooltip()}
-            <span class="cm-title">Substrate model · live + projected</span>
-            <div class="cm-readout">
-              <span><i style="background:${vwcColor};"></i>VWC <b>${cur.v.toFixed(1)}%</b></span>
-              ${poreEcPts !== null
-            ? x `<span><i style="background:${poreEcColor};"></i>Pore <b>${curPore.toFixed(1)}</b></span>`
-            : E}
-              ${bulkEcPts !== null
-            ? x `<span><i style="background:${bulkEcColor};"></i>Bulk <b>${curBulk.toFixed(1)}</b></span>`
-            : E}
-            </div>
-
-            <svg
-              viewBox="0 0 ${svgW} ${svgH}"
-              preserveAspectRatio="none"
-              style="width:100%;height:100%;display:block;"
-            >
-              <defs>
-                <linearGradient id="vwcModelArea-${growspaceId}" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="${vwcColor}33" />
-                  <stop offset="100%" stop-color="${vwcColor}00" />
-                </linearGradient>
-              </defs>
-
-              <!-- horizontal gridlines at VWC ticks -->
-              ${[vwcAxisLo, (vwcAxisLo + vwcAxisHi) / 2, vwcAxisHi].map((v) => b `
-                  <line
-                    x1="${xAt(0)}" x2="${xAt(day)}"
-                    y1="${yAtVwc(v).toFixed(1)}" y2="${yAtVwc(v).toFixed(1)}"
-                    stroke="rgba(255,255,255,0.05)"
-                  />
-                `)}
-              <!-- vertical hour gridlines -->
-              ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => b `
-                  <line
-                    x1="${xAt(h * 60)}" x2="${xAt(h * 60)}"
-                    y1="${padT}" y2="${padT + iH}"
-                    stroke="rgba(255,255,255,0.05)"
-                  />
-                `)}
-
-              <!-- Saturation Target guide line (VWC scale) -->
-              <line
-                x1="${xAt(0)}" x2="${xAt(day)}"
-                y1="${targetY.toFixed(1)}" y2="${targetY.toFixed(1)}"
-                stroke="${vwcColor}" stroke-opacity="0.6" stroke-dasharray="6 4"
-              />
-              <!-- P3 dryback trigger guide line (VWC scale) -->
-              <line
-                x1="${xAt(0)}" x2="${xAt(day)}"
-                y1="${p2TriggerY.toFixed(1)}" y2="${p2TriggerY.toFixed(1)}"
-                stroke="var(--warning, #ffa726)" stroke-opacity="0.5" stroke-dasharray="2 3"
-              />
-              ${ecTargetMid !== null
-            ? b `
-                    <line
-                      x1="${xAt(0)}" x2="${xAt(day)}"
-                      y1="${yAtEc(ecTargetMid).toFixed(1)}" y2="${yAtEc(ecTargetMid).toFixed(1)}"
-                      stroke="${poreEcColor}" stroke-opacity="0.5" stroke-dasharray="6 4"
-                    />
-                  `
-            : E}
-
-              <!-- VWC history area -->
-              ${vwcPts.length
-            ? b `
-                    <path
-                      d="${vwcPath} L${xAt(nowOffset).toFixed(1)},${(padT + iH).toFixed(1)} L${xAt(0).toFixed(1)},${(padT + iH).toFixed(1)} Z"
-                      fill="url(#vwcModelArea-${growspaceId})"
-                    />
-                  `
-            : E}
-
-              <!-- history (solid) -->
-              ${bulkPath
-            ? b `<path d="${bulkPath}" fill="none" stroke="${bulkEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
-            : E}
-              ${porePath
-            ? b `<path d="${porePath}" fill="none" stroke="${poreEcColor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />`
-            : E}
-              ${vwcPath
-            ? b `<path d="${vwcPath}" fill="none" stroke="${vwcColor}" stroke-width="2.1" stroke-linejoin="round" stroke-linecap="round" />`
-            : E}
-
-              <!-- projection (dashed, faded) -->
-              ${bulkEcPts !== null
-            ? b `<path d="${projBulkSeg}" fill="none" stroke="${bulkEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
-            : E}
-              ${poreEcPts !== null
-            ? b `<path d="${projPoreSeg}" fill="none" stroke="${poreEcColor}" stroke-width="1.4" stroke-dasharray="4 4" stroke-opacity="0.4" />`
-            : E}
-              <path d="${projVwcSeg}" fill="none" stroke="${vwcColor}" stroke-width="1.7" stroke-dasharray="4 4" stroke-opacity="0.5" />
-
-              <!-- now divider -->
-              <line
-                x1="${nowX}" x2="${nowX}"
-                y1="${(padT - 6).toFixed(1)}" y2="${(padT + iH).toFixed(1)}"
-                stroke="var(--warning, #ffa726)" stroke-dasharray="3 3"
-              />
-
-              <!-- current-value dots -->
-              ${bulkEcPts !== null
-            ? b `<circle cx="${nowX}" cy="${yAtEc(curBulk).toFixed(1)}" r="3" fill="${bulkEcColor}" stroke="#141414" stroke-width="1.5" />`
-            : E}
-              ${poreEcPts !== null
-            ? b `<circle cx="${nowX}" cy="${yAtEc(curPore).toFixed(1)}" r="3" fill="${poreEcColor}" stroke="#141414" stroke-width="1.5" />`
-            : E}
-              <circle cx="${nowX}" cy="${yAtVwc(cur.v).toFixed(1)}" r="3.4" fill="${vwcColor}" stroke="#141414" stroke-width="1.5" />
-            </svg>
-
-            <span class="cm-axis-cap left">VWC %</span>
-            <span class="cm-axis-cap right">mS/cm</span>
-
-            <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};">Target ${target.toFixed(0)}%</span>
-            <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);">P3 trigger ${p2Trigger.toFixed(0)}%</span>
-            ${ecTargetMid !== null
-            ? x `<span class="cm-target left" style="top:${yAtEc(ecTargetMid).toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
-            : E}
-          </div>
+          <crop-steering-day-chart .device=${this.device}></crop-steering-day-chart>
 
           <!-- Legend: flags missing sensors only — the readout above already
                supplies the color-to-trace mapping for configured metrics -->
           <div class="cs-legend">
-            ${poreEcPts === null
+            ${!hasPoreEc
             ? x `
                   <span class="cs-leg-chip" style="opacity:0.4;">
                     Pore EC not configured — add it in Environment Settings
                   </span>
                 `
             : ''}
-            ${bulkEcPts === null
+            ${!hasBulkEc
             ? x `
                   <span class="cs-leg-chip" style="opacity:0.4;">
                     Bulk EC not configured — add it in Environment Settings
@@ -32019,134 +32243,6 @@ IrrigationDialog.styles = [
         border-radius: 50%;
         background: #ff9800;
       }
-      .cs-model {
-        position: relative;
-        height: 200px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-        cursor: crosshair;
-      }
-      .cs-model-cursor {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: rgba(255, 255, 255, 0.25);
-        pointer-events: none;
-        z-index: 5;
-      }
-      .cs-model-tooltip {
-        position: absolute;
-        top: 24px;
-        z-index: 6;
-        background: rgba(20, 20, 20, 0.9);
-        backdrop-filter: blur(6px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 6px;
-        padding: 6px 8px;
-        pointer-events: none;
-        font-size: 10.5px;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-      }
-      .cs-model-tooltip-time {
-        font-weight: 600;
-        margin-bottom: 4px;
-        color: rgba(255, 255, 255, 0.7);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        padding-bottom: 3px;
-      }
-      .cs-model-tooltip-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        margin-top: 2px;
-        font-family: monospace;
-      }
-      .cs-model svg {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-      .cm-title {
-        position: absolute;
-        top: 6px;
-        left: 10px;
-        z-index: 2;
-        font-size: 9.5px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: rgba(255, 255, 255, 0.4);
-      }
-      .cm-readout {
-        position: absolute;
-        top: 5px;
-        right: 10px;
-        z-index: 2;
-        display: flex;
-        gap: 12px;
-        font-size: 10.5px;
-        color: rgba(255, 255, 255, 0.6);
-        font-variant-numeric: tabular-nums;
-      }
-      .cm-readout span {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-      }
-      .cm-readout i {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        flex: 0 0 auto;
-        display: inline-block;
-      }
-      .cm-readout b {
-        color: rgba(255, 255, 255, 0.9);
-        font-weight: 600;
-      }
-      .cm-axis-cap {
-        position: absolute;
-        bottom: 3px;
-        z-index: 2;
-        font-size: 9px;
-        font-weight: 500;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.3);
-      }
-      .cm-axis-cap.left {
-        left: 7px;
-      }
-      .cm-axis-cap.right {
-        right: 7px;
-      }
-      .cm-target {
-        position: absolute;
-        right: 8px;
-        z-index: 2;
-        transform: translateY(-50%);
-        font-size: 9.5px;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        letter-spacing: 0.02em;
-        white-space: nowrap;
-        opacity: 0.95;
-        text-shadow:
-          0 1px 4px rgba(0, 0, 0, 0.95),
-          0 0 4px rgba(0, 0, 0, 0.8);
-        pointer-events: none;
-      }
-      .cm-target.left {
-        left: 8px;
-        right: auto;
-      }
       .cs-legend {
         display: flex;
         flex-wrap: wrap;
@@ -32269,9 +32365,6 @@ __decorate([
 __decorate([
     r$3()
 ], IrrigationDialog.prototype, "_ecRampError", void 0);
-__decorate([
-    r$3()
-], IrrigationDialog.prototype, "_csModelTooltip", void 0);
 IrrigationDialog = __decorate([
     t$2('irrigation-dialog')
 ], IrrigationDialog);
@@ -64945,7 +65038,13 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
             const phase = irrigationConfig.activeSteeringPhase;
             if (phase != null) {
                 const isFlower = dominantRaw?.stage === 'flower';
-                chips.push(_makeChip(MetricKey.STEERING_PHASE, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups));
+                const steeringChip = _makeChip(MetricKey.STEERING_PHASE, mdiWater, _steeringChipValue(phase, irrigationStrategy, isFlower), { label: 'Phase' }, activeEnvGraphs, linkedGraphGroups);
+                // Promoted to the hero deck when a hero exists (main/subarea) — its click opens
+                // the Substrate Model chart instead of the standard Env Graph (Custom Graph Routing).
+                // The analytics view has no hero, so it keeps the chip in the secondary strip.
+                {
+                    hero.push(steeringChip);
+                }
             }
             // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
             // than fall back to the stale manual schedule.
@@ -68922,6 +69021,9 @@ let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
           .range=${this.range}
         ></tank-water-chart>
       `;
+        }
+        if (item.metrics[0] === MetricKey.STEERING_PHASE) {
+            return x `<crop-steering-day-chart .device=${this.device}></crop-steering-day-chart>`;
         }
         return x `
       <growspace-env-chart

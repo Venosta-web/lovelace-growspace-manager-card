@@ -1076,7 +1076,12 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     cropSteeringHistory$.set(new Map());
   });
 
-  it('renders the substrate model title with "live + projected" framing and a live VWC readout', async () => {
+  // The substrate model itself (title, readout, target labels, traces, scrub
+  // tooltip) is now owned by <crop-steering-day-chart> — see
+  // crop-steering-day-chart.test.ts. The dialog only renders the host element
+  // and the legend ("not configured" notes), exercised below.
+
+  it('renders the <crop-steering-day-chart> with the active device', async () => {
     const history = makeHistoryResponse();
     cropSteeringHistory$.set(new Map([['gs1', history as any]]));
 
@@ -1092,57 +1097,9 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
     `);
     await el.updateComplete;
 
-    const schedule = el.shadowRoot!.querySelector('.crop-steering-schedule');
-    expect(normalize(schedule!.textContent)).toContain('Substrate model · live + projected');
-
-    const readout = el.shadowRoot!.querySelector('.cm-readout');
-    expect(normalize(readout?.textContent)).toMatch(/VWC\s*[\d.]+%/);
-  });
-
-  it('renders multiple <path> elements when soil_moisture has a null-gap', async () => {
-    const soil_moisture = makeSoilBuckets(12, 42.0, 5);
-    const history = makeHistoryResponse({ soil_moisture });
-    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
-
-    const device = makeCropHistoryDevice();
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .store=${makeVwcRenderStore() as any}
-        .initialTab=${'schedules'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    const vwcSvg = el.shadowRoot!.querySelector('.cs-model svg');
-    expect(vwcSvg).not.toBeNull();
-    const paths = vwcSvg!.querySelectorAll('path[stroke]');
-    expect(paths.length).toBeGreaterThan(1);
-  });
-
-  it('shows "Target X%" and "P3 trigger X%" reference labels on the substrate model', async () => {
-    const history = makeHistoryResponse();
-    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
-
-    const device = makeCropHistoryDevice();
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .store=${makeVwcRenderStore() as any}
-        .initialTab=${'schedules'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    const model = el.shadowRoot!.querySelector('.cs-model');
-    expect(model).not.toBeNull();
-    const labels = Array.from(model!.querySelectorAll('.cm-target')).map((t) => t.textContent ?? '');
-    expect(labels.some((l) => l.includes('Target') && l.includes('%'))).toBe(true);
-    expect(labels.some((l) => l.includes('P3 trigger') && l.includes('%'))).toBe(true);
+    const chart = el.shadowRoot!.querySelector('crop-steering-day-chart') as any;
+    expect(chart).not.toBeNull();
+    expect(chart.device?.deviceId).toBe(device.deviceId);
   });
 
   it('renders "not configured" notes for Pore EC and Bulk EC when both are absent from history', async () => {
@@ -1168,60 +1125,6 @@ describe('IrrigationDialog – Crop Steering Schedule: real VWC trace', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Crop Steering Day Chart – scrub tooltip
-// ---------------------------------------------------------------------------
-
-describe('IrrigationDialog – Crop Steering Day Chart: scrub tooltip', () => {
-  function setupHistory(overrides: { pore_ec?: Array<{ timestamp: string; value: number | null }>; bulk_ec?: Array<{ timestamp: string; value: number | null }> } = {}) {
-    const history = {
-      growspace_id: 'gs1',
-      lights_on: LIGHTS_ON_ISO,
-      soil_moisture: [mkBucket(0, 55), mkBucket(5, 57), mkBucket(10, 56)],
-      ...overrides,
-    };
-    cropSteeringHistory$.set(new Map([['gs1', history as any]]));
-  }
-
-  async function mountDialog() {
-    setupHistory();
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${makeEcChartDevice()}
-        .store=${makeEcChartStore() as any}
-        .initialTab=${'schedules'}
-        growspaceName="Tent 1"
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-    return el;
-  }
-
-  async function hoverAt(el: IrrigationDialog, clientX: number): Promise<void> {
-    const model = el.shadowRoot!.querySelector('.cs-model') as HTMLElement;
-    const rect = model.getBoundingClientRect();
-    model.dispatchEvent(
-      new MouseEvent('mousemove', {
-        clientX,
-        clientY: rect.top + rect.height / 2,
-        bubbles: true,
-      })
-    );
-    await new Promise<void>((r) => requestAnimationFrame(() => r()));
-    await el.updateComplete;
-  }
-
-  it('shows a tooltip when the mouse moves over the chart', async () => {
-    const el = await mountDialog();
-    const model = el.shadowRoot!.querySelector('.cs-model') as HTMLElement;
-    const rect = model.getBoundingClientRect();
-
-    await hoverAt(el, rect.left + rect.width / 2);
-
-    expect(el.shadowRoot!.querySelector('.cs-model-tooltip')).not.toBeNull();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // _saveAll validation: P2 Direct Trigger vs Saturation Target
@@ -1373,8 +1276,12 @@ function mkBucket(minutesAfterLightsOn: number, v: number | null) {
   };
 }
 
-describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
-  it('renders Pore EC and Bulk EC paths when both series are present', async () => {
+// Per-series EC trace rendering (paths, readout) now lives in
+// <crop-steering-day-chart> — see crop-steering-day-chart.test.ts. The dialog's
+// concern is the legend's "not configured" notes, derived from the same shared
+// history atom, exercised below.
+describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presence', () => {
+  it('shows no "not configured" notes when both EC series are present', async () => {
     cropSteeringHistory$.set(new Map([['gs1', {
       growspace_id: 'gs1',
       lights_on: LIGHTS_ON_ISO,
@@ -1396,19 +1303,13 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     await new Promise((r) => setTimeout(r, 0));
     await el.updateComplete;
 
-    const svg = el.shadowRoot!.querySelector('.cs-model svg');
-    const strokes = Array.from(svg?.querySelectorAll('path') ?? []).map((p) =>
-      p.getAttribute('stroke')
-    );
-    expect(strokes).toContain('#ef5350');
-    expect(strokes).toContain('#ff7043');
-
-    const readout = el.shadowRoot!.querySelector('.cm-readout');
-    expect(normalize(readout?.textContent)).toContain('Pore');
-    expect(normalize(readout?.textContent)).toContain('Bulk');
+    const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
+    const text = normalize(legend?.textContent);
+    expect(text).not.toContain('Pore EC not configured');
+    expect(text).not.toContain('Bulk EC not configured');
   });
 
-  it('omits Pore EC path and shows "not configured" note when pore_ec is absent', async () => {
+  it('shows a "Pore EC not configured" note when pore_ec is absent', async () => {
     cropSteeringHistory$.set(new Map([['gs1', {
       growspace_id: 'gs1',
       lights_on: LIGHTS_ON_ISO,
@@ -1429,23 +1330,13 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     await new Promise((r) => setTimeout(r, 0));
     await el.updateComplete;
 
-    const svg = el.shadowRoot!.querySelector('.cs-model svg');
-    const strokes = Array.from(svg?.querySelectorAll('path') ?? []).map((p) =>
-      p.getAttribute('stroke')
-    );
-    expect(strokes).not.toContain('#ef5350');
-    expect(strokes).toContain('#ff7043');
-
     const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
-    expect(normalize(legend?.textContent)).toContain('Pore EC not configured');
-
-    const readout = el.shadowRoot!.querySelector('.cm-readout');
-    const readoutText = normalize(readout?.textContent);
-    expect(readoutText).not.toContain('Pore');
-    expect(readoutText).toContain('Bulk');
+    const text = normalize(legend?.textContent);
+    expect(text).toContain('Pore EC not configured');
+    expect(text).not.toContain('Bulk EC not configured');
   });
 
-  it('omits both EC paths and shows two "not configured" notes when both EC series are absent', async () => {
+  it('shows both "not configured" notes when both EC series are absent', async () => {
     cropSteeringHistory$.set(new Map([['gs1', {
       growspace_id: 'gs1',
       lights_on: LIGHTS_ON_ISO,
@@ -1464,13 +1355,6 @@ describe('IrrigationDialog – Crop Steering Day Chart EC traces', () => {
     await el.updateComplete;
     await new Promise((r) => setTimeout(r, 0));
     await el.updateComplete;
-
-    const svg = el.shadowRoot!.querySelector('.cs-model svg');
-    const strokes = Array.from(svg?.querySelectorAll('path') ?? []).map((p) =>
-      p.getAttribute('stroke')
-    );
-    expect(strokes).not.toContain('#ef5350');
-    expect(strokes).not.toContain('#ff7043');
 
     const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
     const text = normalize(legend?.textContent);
