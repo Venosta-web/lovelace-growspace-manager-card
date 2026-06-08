@@ -16359,8 +16359,16 @@ let GrowspaceLogbook = class GrowspaceLogbook extends i$3 {
             return 'var(--warning-color, #ff9800)';
         return 'var(--accent-color, #4caf50)';
     }
+    _isPositiveDirectionMetric(sensorType) {
+        const t = sensorType?.toLowerCase() ?? '';
+        return (t === 'optimal' ||
+            t.includes('water') ||
+            t.includes('irrigation') ||
+            t.includes('drain') ||
+            t.includes('nutrient'));
+    }
     _getSeverityColor(severity, sensorType) {
-        if (sensorType?.toLowerCase() === 'optimal') {
+        if (this._isPositiveDirectionMetric(sensorType)) {
             if (severity >= 0.9)
                 return 'var(--success-color, #4CAF50)';
             if (severity >= 0.75)
@@ -27609,13 +27617,16 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         };
     }
     // ─── Visibility ───────────────────────────────────────────────────────────
+    get _hasPump() {
+        return !!(this.device?.irrigationConfig?.irrigationPumpEntity ||
+            this.device?.irrigationConfig?.drainPumpEntity);
+    }
     get _visibleTabs() {
         const tabs = [];
         const env = this.device?.environmentAttributes;
         const hasSoilMoisture = !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
         const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
-        const hasPump = !!(this.device?.irrigationConfig?.irrigationPumpEntity ||
-            this.device?.irrigationConfig?.drainPumpEntity);
+        const hasPump = this._hasPump;
         if (hasPump)
             tabs.push('schedules');
         if ((hasSoilMoisture || hasStrategy) && hasPump) {
@@ -27655,7 +27666,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!visible.includes('schedules')) {
             hints.push({
                 icon: '🚰',
-                text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules.',
+                text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules, manual run controls, and behaviour settings.',
             });
         }
         if (!visible.includes('steering')) {
@@ -28283,31 +28294,39 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <!-- Persistent footer -->
           <div class="dlg-footer">
-            <div class="dlg-footer-meta">
-              <span
-                >Last cycle
-                ${this.device?.lastCycleTimestamp
-            ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-            })
-            : '—'}</span
-              >
-              <span class="sep">·</span>
-              <span>Next ${this._renderFooterNext()}</span>
-            </div>
+            ${this._hasPump
+            ? x `
+                  <div class="dlg-footer-meta">
+                    <span
+                      >Last cycle
+                      ${this.device?.lastCycleTimestamp
+                ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                })
+                : '—'}</span
+                    >
+                    <span class="sep">·</span>
+                    <span>Next ${this._renderFooterNext()}</span>
+                  </div>
+                `
+            : E}
             <div class="dlg-footer-actions">
               <button class="md3-button text" @click=${this._close}>Close</button>
-              <button
-                class="md3-button tonal"
-                ?disabled=${this._sm.status.kind === 'run-now-saving'}
-                @click=${this._handleRunNow}
-              >
-                ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : 'Run Now'}
-              </button>
+              ${this._hasPump
+            ? x `
+                    <button
+                      class="md3-button tonal"
+                      ?disabled=${this._sm.status.kind === 'run-now-saving'}
+                      @click=${this._handleRunNow}
+                    >
+                      ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : 'Run Now'}
+                    </button>
+                  `
+            : E}
               <button
                 class="md3-button primary btn-save-all"
                 style="background: ${dialogColor};"
@@ -29737,6 +29756,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
       </div>
       ` : E}
 
+      ${this._hasPump ? x `
       <div class="detail-card">
         <h3 style="margin:0 0 14px;">Behaviour</h3>
         ${!this._sm.tabs.steering.draft.enabled ? x `
@@ -29810,6 +29830,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
           </span>
         </div>
       </div>
+      ` : E}
     `;
     }
     // ─── Tanks tab ────────────────────────────────────────────────────────────
