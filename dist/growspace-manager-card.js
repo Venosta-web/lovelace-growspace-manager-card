@@ -11282,6 +11282,7 @@ const sharedStyles = i$6 `
     background: var(--card-background-color, rgba(20, 20, 20, 0.85));
     backdrop-filter: blur(16px);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.08));
   }
 
   /* --- Cards --- */
@@ -27736,6 +27737,9 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
     constructor() {
         super(...arguments);
         this.hideShotTrack = false;
+        this.rollingWindow = false;
+        this.range = '24h';
+        this.sensorHistory = {};
         this._csModelTooltip = null;
         this._csModelRafId = null;
         this._onCsModelMouseLeave = () => {
@@ -27768,6 +27772,97 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
     _getNowMinutes() {
         const now = new Date();
         return now.getHours() * 60 + now.getMinutes();
+    }
+    _getDurationMillis(range) {
+        if (range === '1h')
+            return 3600000;
+        if (range === '6h')
+            return 21600000;
+        if (range === '7d')
+            return 604800000;
+        return 86400000;
+    }
+    /**
+     * Buckets every sensor backing `key` (including composite `key:entity_id` series, per
+     * METRIC_ENTITY_KEYS) into fixed intervals across `[startMs, endMs]` and averages them
+     * per bucket — produces a single `TracePt[]` per category so rolling mode keeps the
+     * dialog's one-line-per-metric look instead of growspace-env-chart's per-sensor breakout.
+     */
+    _buildRollingTracePts(key, startMs, endMs) {
+        const sources = Object.keys(this.sensorHistory).filter((k) => k === key || k.startsWith(`${key}:`));
+        if (!sources.length)
+            return [];
+        const bucketCount = 120;
+        const bucketMs = (endMs - startMs) / bucketCount;
+        if (bucketMs <= 0)
+            return [];
+        const sums = new Array(bucketCount).fill(0);
+        const counts = new Array(bucketCount).fill(0);
+        for (const source of sources) {
+            for (const h of this.sensorHistory[source] ?? []) {
+                const t = Date.parse(h.last_changed);
+                if (Number.isNaN(t) || t < startMs || t > endMs)
+                    continue;
+                const val = ChartUtils.normalizeSensorValue(h, key);
+                if (val === undefined)
+                    continue;
+                let idx = Math.floor((t - startMs) / bucketMs);
+                if (idx >= bucketCount)
+                    idx = bucketCount - 1;
+                sums[idx] += val;
+                counts[idx] += 1;
+            }
+        }
+        const pts = [];
+        for (let i = 0; i < bucketCount; i++) {
+            if (counts[i] === 0)
+                continue;
+            const bucketCenterMs = startMs + (i + 0.5) * bucketMs;
+            pts.push({ offset: (bucketCenterMs - startMs) / 60000, v: sums[i] / counts[i] });
+        }
+        return pts;
+    }
+    /**
+     * Re-anchors the Phase Strip to the rolling now-24h→now axis, covering up to two
+     * photoperiod cycles. The cycle containing "now" gets live phase adjustment
+     * (activeSteeringPhase/phaseChangedAt); the other cycle uses the scheduled template
+     * (irrigationConfig=null) so live adjustment of the current cycle doesn't leak backward.
+     */
+    _buildRollingPhaseSegments(strategy, isFlower, irrigationConfig, lightsOnMin, lightsOffMin, viewStart, windowStart, windowEnd, nowMs) {
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const now = new Date(nowMs);
+        const todayMidnightMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const todayCycleStartMs = todayMidnightMs + viewStart * 60000;
+        const raw = [];
+        for (const dayOffset of [-1, 0, 1]) {
+            const cycleStartMs = todayCycleStartMs + dayOffset * DAY_MS;
+            const cycleEndMs = cycleStartMs + DAY_MS;
+            if (cycleEndMs <= windowStart || cycleStartMs >= windowEnd)
+                continue;
+            const containsNow = nowMs >= cycleStartMs && nowMs < cycleEndMs;
+            const cyclePhases = computePhases(strategy, isFlower, containsNow ? irrigationConfig : null);
+            if (!cyclePhases)
+                continue;
+            const atMin = (m) => cycleStartMs + ((m - viewStart + 1440) % 1440) * 60000;
+            raw.push({ startMs: cycleStartMs, endMs: atMin(lightsOnMin), dark: true });
+            for (const p of cyclePhases.phases) {
+                raw.push({ startMs: atMin(p.start), endMs: atMin(p.end), dark: false, phase: p });
+            }
+            raw.push({ startMs: atMin(lightsOffMin), endMs: cycleEndMs, dark: true });
+        }
+        const windowMs = windowEnd - windowStart;
+        return raw
+            .map((s) => {
+            const clampedStart = Math.max(s.startMs, windowStart);
+            const clampedEnd = Math.min(s.endMs, windowEnd);
+            return {
+                leftPct: ((clampedStart - windowStart) / windowMs) * 100,
+                widthPct: ((clampedEnd - clampedStart) / windowMs) * 100,
+                dark: s.dark,
+                phase: s.phase,
+            };
+        })
+            .filter((s) => s.widthPct > 0);
     }
     _onCsModelMouseMove(e, ctx) {
         const rect = e.currentTarget.getBoundingClientRect();
@@ -27867,9 +27962,11 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         }
         const { lightsOnMin, lightsOffMin } = phases;
         const nowMinutes = this._getNowMinutes();
-        const day = 1440;
-        const viewStart = (lightsOnMin - 120 + 1440) % 1440;
-        const pctAt = (m) => ((((m % 1440) - viewStart + 1440) % 1440) / day) * 100;
+        const nowMs = Date.now();
+        const durationMs = this._getDurationMillis(this.range);
+        const day = this.rollingWindow ? durationMs / 60000 : 1440;
+        const viewStart = this.rollingWindow ? 0 : (lightsOnMin - 120 + 1440) % 1440;
+        const pctAt = (m) => ((((m % 1440) - viewStart + 1440) % 1440) / 1440) * 100;
         const target = strategy.targetVwcPercent ?? 45;
         const dryback = strategy.maintenanceDrybackPercent ?? 3;
         const p2Trigger = target - dryback;
@@ -27887,7 +27984,7 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         const iW = svgW - padL - padR;
         const iH = svgH - padT - padB;
         const xAt = (offset) => padL + (offset / day) * iW;
-        const nowOffset = (nowMinutes - viewStart + 1440) % 1440;
+        const nowOffset = this.rollingWindow ? day : (nowMinutes - viewStart + 1440) % 1440;
         const nowX = xAt(nowOffset).toFixed(1);
         const buildTracePts = (buckets, anchorMs) => {
             if (!buckets?.length)
@@ -27902,8 +27999,10 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         };
         const buildPath = (pts, yFn) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${xAt(p.offset).toFixed(1)},${yFn(p.v).toFixed(1)}`).join(' ');
         const lightsOnMs = history ? Date.parse(history.lights_on) : 0;
-        const anchorMs = lightsOnMs - 2 * 60 * 60 * 1000;
-        const vwcPts = buildTracePts(history?.soil_moisture, anchorMs);
+        const anchorMs = this.rollingWindow ? nowMs - durationMs : lightsOnMs - 2 * 60 * 60 * 1000;
+        const vwcPts = this.rollingWindow
+            ? this._buildRollingTracePts(MetricKey.SOIL_MOISTURE, anchorMs, nowMs)
+            : buildTracePts(history?.soil_moisture, anchorMs);
         const vwcAxisPad = 5;
         let vwcAxisLo = Math.min(target, p2Trigger);
         let vwcAxisHi = Math.max(target, p2Trigger);
@@ -27914,8 +28013,21 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         vwcAxisLo = Math.max(0, vwcAxisLo - vwcAxisPad);
         vwcAxisHi = vwcAxisHi + vwcAxisPad;
         const yAtVwc = (v) => padT + iH - Math.max(0, Math.min(1, (v - vwcAxisLo) / (vwcAxisHi - vwcAxisLo))) * iH;
-        const poreEcPts = history?.pore_ec !== undefined ? buildTracePts(history.pore_ec, anchorMs) : null;
-        const bulkEcPts = history?.bulk_ec !== undefined ? buildTracePts(history.bulk_ec, anchorMs) : null;
+        const hasRollingSensor = (key) => Object.keys(this.sensorHistory).some((k) => k === key || k.startsWith(`${key}:`));
+        const poreEcPts = this.rollingWindow
+            ? hasRollingSensor(MetricKey.PORE_EC)
+                ? this._buildRollingTracePts(MetricKey.PORE_EC, anchorMs, nowMs)
+                : null
+            : history?.pore_ec !== undefined
+                ? buildTracePts(history.pore_ec, anchorMs)
+                : null;
+        const bulkEcPts = this.rollingWindow
+            ? hasRollingSensor(MetricKey.BULK_EC)
+                ? this._buildRollingTracePts(MetricKey.BULK_EC, anchorMs, nowMs)
+                : null
+            : history?.bulk_ec !== undefined
+                ? buildTracePts(history.bulk_ec, anchorMs)
+                : null;
         const ecTargetRange = (this.device?.irrigationConfig?.ecTargetRanges ?? []).find((r) => r.stage === this.device?.biologicalMetrics?.granularStage);
         const ecTargetMid = ecTargetRange ? (ecTargetRange.minEc + ecTargetRange.maxEc) / 2 : null;
         const ecValsForAxis = [];
@@ -27966,36 +28078,66 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
         const cur = lastHistory ?? { v: seedVwc };
         const curPore = lastKnown(poreEcPts ?? []) ?? seedPore;
         const curBulk = lastKnown(bulkEcPts ?? []) ?? Math.max(0.8, curPore * (cur.v / 100) * 1.32);
+        const showPhaseStrip = !this.rollingWindow || this.range === '24h';
+        const rollingPhaseSegments = this.rollingWindow && this.range === '24h'
+            ? this._buildRollingPhaseSegments(strategy, isFlower, this.device?.irrigationConfig, lightsOnMin, lightsOffMin, viewStart, anchorMs, nowMs, nowMs)
+            : [];
         return x `
-      <div class="cs-phase-strip">
-        <div class="cs-phase-block dark" style="left:0%;width:${pctAt(lightsOnMin)}%;">
-          <div class="cs-phase-num">Dark</div>
-          <div class="cs-phase-meta">
-            ${fmtMinuteOfDay(viewStart)}–${fmtMinuteOfDay(lightsOnMin)} · no irrigation
-          </div>
-        </div>
-        ${phases.phases.map((p) => x `
-            <div
-              class="cs-phase-block"
-              style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-            100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
-            >
-              <div class="cs-phase-num" style="color:${p.color};">
-                ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
-              </div>
-              <div class="cs-phase-meta">
-                ${fmtMinuteOfDay(p.start)}–${fmtMinuteOfDay(p.end)} · ${p.target}
-              </div>
+      ${showPhaseStrip
+            ? x `
+            <div class="cs-phase-strip">
+              ${this.rollingWindow
+                ? rollingPhaseSegments.map((s) => s.dark
+                    ? x `
+                          <div class="cs-phase-block dark" style="left:${s.leftPct}%;width:${s.widthPct}%;">
+                            <div class="cs-phase-num">Dark</div>
+                          </div>
+                        `
+                    : x `
+                          <div
+                            class="cs-phase-block"
+                            style="left:${s.leftPct}%;width:${s.widthPct}%;background:${s.phase.color}22;border-left:1px solid ${s.phase.color}88;"
+                          >
+                            <div class="cs-phase-num" style="color:${s.phase.color};">
+                              ${s.phase.label} <span class="cs-phase-nm">· ${s.phase.name}</span>
+                            </div>
+                            <div class="cs-phase-meta">
+                              ${fmtMinuteOfDay(s.phase.start)}–${fmtMinuteOfDay(s.phase.end)} · ${s.phase.target}
+                            </div>
+                          </div>
+                        `)
+                : x `
+                    <div class="cs-phase-block dark" style="left:0%;width:${pctAt(lightsOnMin)}%;">
+                      <div class="cs-phase-num">Dark</div>
+                      <div class="cs-phase-meta">
+                        ${fmtMinuteOfDay(viewStart)}–${fmtMinuteOfDay(lightsOnMin)} · no irrigation
+                      </div>
+                    </div>
+                    ${phases.phases.map((p) => x `
+                        <div
+                          class="cs-phase-block"
+                          style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
+                    100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
+                        >
+                          <div class="cs-phase-num" style="color:${p.color};">
+                            ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
+                          </div>
+                          <div class="cs-phase-meta">
+                            ${fmtMinuteOfDay(p.start)}–${fmtMinuteOfDay(p.end)} · ${p.target}
+                          </div>
+                        </div>
+                      `)}
+                    <div
+                      class="cs-phase-block dark"
+                      style="left:${pctAt(lightsOffMin)}%;width:${100 - pctAt(lightsOffMin)}%;"
+                    >
+                      <div class="cs-phase-num">Dark</div>
+                      <div class="cs-phase-meta">${fmtMinuteOfDay(lightsOffMin)}–${fmtMinuteOfDay(viewStart)}</div>
+                    </div>
+                  `}
             </div>
-          `)}
-        <div
-          class="cs-phase-block dark"
-          style="left:${pctAt(lightsOffMin)}%;width:${100 - pctAt(lightsOffMin)}%;"
-        >
-          <div class="cs-phase-num">Dark</div>
-          <div class="cs-phase-meta">${fmtMinuteOfDay(lightsOffMin)}–${fmtMinuteOfDay(viewStart)}</div>
-        </div>
-      </div>
+          `
+            : E}
 
       ${!this.hideShotTrack
             ? x `
@@ -28044,7 +28186,9 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
                 `;
             })}
 
-              <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
+              ${!this.rollingWindow
+                ? x `<div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>`
+                : E}
             </div>
           `
             : E}
@@ -28094,10 +28238,12 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
                 stroke="rgba(255,255,255,0.05)"
               />
             `)}
-          <!-- vertical hour gridlines -->
-          ${[0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => b `
+          <!-- vertical gridlines -->
+          ${(this.rollingWindow
+            ? [0, 0.25, 0.5, 0.75, 1].map((f) => f * day)
+            : [0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => h * 60)).map((offset) => b `
               <line
-                x1="${xAt(h * 60)}" x2="${xAt(h * 60)}"
+                x1="${xAt(offset)}" x2="${xAt(offset)}"
                 y1="${padT}" y2="${padT + iH}"
                 stroke="rgba(255,255,255,0.05)"
               />
@@ -28156,11 +28302,15 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
           <path d="${projVwcSeg}" fill="none" stroke="${vwcColor}" stroke-width="1.7" stroke-dasharray="4 4" stroke-opacity="0.5" />
 
           <!-- now divider -->
-          <line
-            x1="${nowX}" x2="${nowX}"
-            y1="${(padT - 6).toFixed(1)}" y2="${(padT + iH).toFixed(1)}"
-            stroke="var(--warning, #ffa726)" stroke-dasharray="3 3"
-          />
+          ${!this.rollingWindow
+            ? b `
+                <line
+                  x1="${nowX}" x2="${nowX}"
+                  y1="${(padT - 6).toFixed(1)}" y2="${(padT + iH).toFixed(1)}"
+                  stroke="var(--warning, #ffa726)" stroke-dasharray="3 3"
+                />
+              `
+            : E}
 
           <!-- current-value dots -->
           ${bulkEcPts !== null
@@ -28172,6 +28322,12 @@ let CropSteeringDayChart = class CropSteeringDayChart extends i$3 {
           <circle cx="${nowX}" cy="${yAtVwc(cur.v).toFixed(1)}" r="3.4" fill="${vwcColor}" stroke="#141414" stroke-width="1.5" />
         </svg>
 
+        ${this.rollingWindow
+            ? x `
+              <span class="cm-axis-cap left" style="bottom:16px;">-${this.range}</span>
+              <span class="cm-axis-cap right" style="bottom:16px;">Now</span>
+            `
+            : E}
         <span class="cm-axis-cap left">VWC %</span>
         <span class="cm-axis-cap right">mS/cm</span>
 
@@ -28477,6 +28633,15 @@ __decorate([
 __decorate([
     n$5({ type: Boolean })
 ], CropSteeringDayChart.prototype, "hideShotTrack", void 0);
+__decorate([
+    n$5({ type: Boolean })
+], CropSteeringDayChart.prototype, "rollingWindow", void 0);
+__decorate([
+    n$5({ type: String })
+], CropSteeringDayChart.prototype, "range", void 0);
+__decorate([
+    n$5({ attribute: false })
+], CropSteeringDayChart.prototype, "sensorHistory", void 0);
 __decorate([
     r$3()
 ], CropSteeringDayChart.prototype, "_csModelTooltip", void 0);
@@ -69058,6 +69223,9 @@ let GrowspaceAnalyticsUI = class GrowspaceAnalyticsUI extends i$3 {
             return x `<crop-steering-day-chart
         .device=${this.device}
         .hideShotTrack=${true}
+        .range=${this.range}
+        .sensorHistory=${this.sensorHistory}
+        .rollingWindow=${true}
       ></crop-steering-day-chart>`;
         }
         return x `
