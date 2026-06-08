@@ -120,7 +120,10 @@ export class GrowspaceAnalyticsUI extends LitElement {
       `;
     }
     if (item.metrics[0] === MetricKey.STEERING_PHASE) {
-      return html`<crop-steering-day-chart .device=${this.device}></crop-steering-day-chart>`;
+      return html`<crop-steering-day-chart
+        .device=${this.device}
+        .hideShotTrack=${true}
+      ></crop-steering-day-chart>`;
     }
     return html`
       <growspace-env-chart

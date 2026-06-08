@@ -138,6 +138,32 @@ describe('CropSteeringDayChart – rendering', () => {
     expect(labels.some((l) => l.includes('P3 trigger') && l.includes('%'))).toBe(true);
   });
 
+  it('renders a phase strip above the chart, anchored on detectedLightsOnTime when set', async () => {
+    const el = createElement();
+    el.device = makeDevice({
+      irrigationStrategy: {
+        enabled: true,
+        lightsOnTime: '06:00:00',
+        p0DurationMinutes: 30,
+        p2StopBeforeLightsOffMinutes: 60,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 30,
+        shotIntervalMinutes: 20,
+        autoLightTracking: true,
+        detectedLightsOnTime: '07:30:00',
+      },
+    });
+    await el.updateComplete;
+
+    const strip = el.shadowRoot!.querySelector('.cs-phase-strip');
+    expect(strip).not.toBeNull();
+    // P1 (Saturation) should start at the detected lights-on time (07:30), not the configured one (06:00).
+    const text = strip!.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(text).toContain('07:30–08:00 · Reach FC');
+    expect(text).not.toContain('06:00–06:30 · Reach FC');
+  });
+
   it('shows a tooltip when the mouse moves over the chart', async () => {
     const el = createElement();
     el.device = makeDevice();

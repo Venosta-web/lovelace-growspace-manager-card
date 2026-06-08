@@ -345,40 +345,6 @@ function makeSteeringDevice(overrides: Partial<Parameters<typeof createGrowspace
   });
 }
 
-describe('IrrigationDialog – Crop Steering Schedule: phase anchor', () => {
-  it('anchors phases on detectedLightsOnTime when set, not the configured lightsOnTime', async () => {
-    const device = makeSteeringDevice({
-      irrigationStrategy: {
-        enabled: true,
-        lightsOnTime: '06:00:00',
-        p0DurationMinutes: 30,
-        p2StopBeforeLightsOffMinutes: 60,
-        targetVwcPercent: 65,
-        maintenanceDrybackPercent: 3,
-        shotDurationSeconds: 30,
-        shotIntervalMinutes: 20,
-        autoLightTracking: true,
-        detectedLightsOnTime: '07:30:00',
-      },
-    });
-    const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog
-        .open=${true}
-        .device=${device}
-        .initialTab=${'schedules'}
-      ></irrigation-dialog>
-    `);
-    await el.updateComplete;
-
-    const schedule = el.shadowRoot!.querySelector('.crop-steering-schedule');
-    expect(schedule).not.toBeNull();
-    // P1 (Saturation) should start at the detected lights-on time (07:30), not the configured one (06:00).
-    const text = normalize(schedule!.textContent);
-    expect(text).toContain('07:30–08:00 · Reach FC');
-    expect(text).not.toContain('06:00–06:30 · Reach FC');
-  });
-});
-
 describe('IrrigationDialog – Steering tab: auto light tracking', () => {
   it('does not show auto-track toggle when device has no light sensors', async () => {
     const device = makeSteeringDevice();

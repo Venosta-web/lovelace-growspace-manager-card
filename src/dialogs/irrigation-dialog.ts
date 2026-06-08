@@ -761,133 +761,6 @@ export class IrrigationDialog extends LitElement {
         flex-direction: column;
         gap: 10px;
       }
-      .cs-phase-strip {
-        position: relative;
-        height: 52px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-      }
-      .cs-phase-block {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        padding: 7px 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        justify-content: center;
-        overflow: hidden;
-      }
-      .cs-phase-block.dark {
-        background: rgba(0, 0, 0, 0.35);
-        border-left: 1px solid rgba(255, 255, 255, 0.06);
-      }
-      .cs-phase-num {
-        font-size: 9.5px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-      .cs-phase-nm {
-        font-size: 11px;
-        font-weight: 500;
-        text-transform: none;
-        letter-spacing: 0;
-        color: rgba(255, 255, 255, 0.85);
-      }
-      .cs-phase-meta {
-        font-size: 10px;
-        color: rgba(255, 255, 255, 0.4);
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .cs-track {
-        position: relative;
-        height: 108px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        background: rgba(0, 0, 0, 0.2);
-        overflow: hidden;
-      }
-      .cs-track .grid-v {
-        top: 8px;
-        bottom: 22px;
-      }
-      .cs-photoperiod {
-        position: absolute;
-        top: 0;
-        height: 8px;
-        background: linear-gradient(to bottom, rgba(255, 235, 59, 0.22), rgba(255, 235, 59, 0.04));
-        border-bottom: 1px solid rgba(255, 235, 59, 0.4);
-      }
-      .cs-phase-bg {
-        position: absolute;
-        top: 8px;
-        bottom: 22px;
-        overflow: hidden;
-      }
-      .cs-phase-bg-lbl {
-        position: absolute;
-        top: 5px;
-        left: 7px;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        opacity: 0.7;
-        pointer-events: none;
-      }
-      .cs-event {
-        position: absolute;
-        top: 22px;
-        height: 56px;
-        border-radius: 3px;
-        opacity: 0.9;
-        cursor: default;
-        transition: transform 0.15s;
-      }
-      .cs-event:hover {
-        transform: translateY(-2px);
-      }
-      .cs-event.completed {
-        opacity: 0.35;
-      }
-      .cs-event.completed::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: repeating-linear-gradient(
-          45deg,
-          transparent 0 3px,
-          rgba(0, 0, 0, 0.18) 3px 5px
-        );
-        border-radius: inherit;
-      }
-      .cs-now-line {
-        position: absolute;
-        top: 12px;
-        bottom: 22px;
-        width: 1px;
-        background: #ff9800;
-        box-shadow: 0 0 8px rgba(255, 152, 0, 0.5);
-        pointer-events: none;
-        z-index: 8;
-      }
-      .cs-now-line::before {
-        content: '';
-        position: absolute;
-        left: -3px;
-        top: -3px;
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #ff9800;
-      }
       .cs-legend {
         display: flex;
         flex-wrap: wrap;
@@ -1792,11 +1665,9 @@ export class IrrigationDialog extends LitElement {
     return generateSubstrateProjection(nowOffset, shots, phases, seedVwc, seedPoreEc, viewStart, target);
   }
 
-  private _renderCropSteeringSchedule(color: string) {
+  private _renderCropSteeringSchedule() {
     const shots = this._computeCropSteeringCycle();
     const phases = this._computePhases();
-    const nowMinutes = this._getNowMinutes();
-    const day = 1440;
 
     if (!phases) {
       return html`
@@ -1815,10 +1686,6 @@ export class IrrigationDialog extends LitElement {
 
     const { lightsOnMin, lightsOffMin, lightHours } = phases;
     const p2ShotCount = shots.length;
-
-    // Axis anchored 2 hours before lights-on so the active cycle is always visible
-    const viewStart = (lightsOnMin - 120 + 1440) % 1440;
-    const pctAt = (m: number) => ((((m % 1440) - viewStart + 1440) % 1440) / day) * 100;
 
     // The legend below flags missing sensors based on what the fetched history
     // reports — the chart component does its own fetching, but the dialog keeps a
@@ -1851,94 +1718,7 @@ export class IrrigationDialog extends LitElement {
         </div>
 
         <div class="cs-timeline">
-          <!-- Phase strip -->
-          <div class="cs-phase-strip">
-            <div class="cs-phase-block dark" style="left:0%;width:${pctAt(lightsOnMin)}%;">
-              <div class="cs-phase-num">Dark</div>
-              <div class="cs-phase-meta">
-                ${this._fmtMin(viewStart)}–${this._fmtMin(lightsOnMin)} · no irrigation
-              </div>
-            </div>
-            ${phases.phases.map(
-      (p) => html`
-                <div
-                  class="cs-phase-block"
-                  style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-        100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
-                >
-                  <div class="cs-phase-num" style="color:${p.color};">
-                    ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
-                  </div>
-                  <div class="cs-phase-meta">
-                    ${this._fmtMin(p.start)}–${this._fmtMin(p.end)} · ${p.target}
-                  </div>
-                </div>
-              `
-    )}
-            <div
-              class="cs-phase-block dark"
-              style="left:${pctAt(lightsOffMin)}%;width:${100 - pctAt(lightsOffMin)}%;"
-            >
-              <div class="cs-phase-num">Dark</div>
-              <div class="cs-phase-meta">
-                ${this._fmtMin(lightsOffMin)}–${this._fmtMin(viewStart)}
-              </div>
-            </div>
-          </div>
-
-          <!-- Main track: phase bands + shots + now line -->
-          <div class="cs-track">
-            <div
-              class="cs-photoperiod"
-              style="left:${pctAt(lightsOnMin)}%;width:${((lightsOffMin - lightsOnMin) / day) *
-      100}%;"
-            ></div>
-
-            ${phases.phases.map(
-        (p) => html`
-                <div
-                  class="cs-phase-bg"
-                  style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-          100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
-                >
-                  <span class="cs-phase-bg-lbl" style="color:${p.color}cc;">${p.label}</span>
-                </div>
-              `
-      )}
-            ${Array.from({ length: 24 }, (_, h) => h).map(
-        (h) => html`
-                <div
-                  class="grid-v ${h % 6 === 0 ? 'major' : ''}"
-                  style="left:${pctAt(h * 60)}%;"
-                ></div>
-                ${h % 3 === 0
-            ? html`
-                      <span class="x-label" style="left:${pctAt(h * 60)}%;"
-                        >${h.toString().padStart(2, '0')}:00</span
-                      >
-                    `
-            : nothing}
-              `
-      )}
-            ${shots.map((shot) => {
-        const [shh, smm] = shot.time.split(':').map(Number);
-        const startMin = shh * 60 + smm;
-        const leftPct = pctAt(startMin);
-        const widthPct = (shot.duration / 86400) * 100;
-        const isPast = startMin < nowMinutes;
-        return html`
-                <div
-                  class="cs-event ${isPast ? 'completed' : ''}"
-                  style="left:${leftPct}%;width:max(${widthPct}%,4px);background:${color};box-shadow:0 0 0 1px ${color}99,0 2px 4px ${color}55;"
-                  title="${shot.time.substring(0, 5)} · ${shot.duration}s"
-                ></div>
-              `;
-      })}
-
-            <div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>
-          </div>
-
-          <!-- Substrate model: live history (solid) + synthetic projection (dashed/faded) -->
+          <!-- Phase strip + shot track + substrate model: all owned by the shared chart -->
           <crop-steering-day-chart .device=${this.device}></crop-steering-day-chart>
 
           <!-- Legend: flags missing sensors only — the readout above already
@@ -2018,7 +1798,7 @@ export class IrrigationDialog extends LitElement {
                 >
               </div>
             </div>
-            ${this._renderCropSteeringSchedule(color)}
+            ${this._renderCropSteeringSchedule()}
           `
         : html`
             ${this._renderScheduleSection(
