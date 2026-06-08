@@ -40,7 +40,7 @@ export function computeCropSteeringCycle(
   >,
   isFlower: boolean
 ): CropSteeringShot[] {
-  if (!strategy.lightsOnTime || !strategy.shotIntervalMinutes || !strategy.shotDurationSeconds) {
+  if (!strategy.lightsOnTime || !strategy.shotIntervalMinutes || strategy.shotIntervalMinutes <= 0 || !strategy.shotDurationSeconds) {
     return [];
   }
 
