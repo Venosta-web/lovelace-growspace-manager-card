@@ -528,7 +528,7 @@ export class CropSteeringDayChart extends LitElement {
       if (!buckets?.length) return [];
       const pts: TracePt[] = [];
       for (const b of buckets) {
-        if (b.value === null) continue;
+        if (b.value == null || isNaN(b.value)) continue;
         pts.push({ offset: (Date.parse(b.timestamp) - anchorMs) / 60000, v: b.value });
       }
       return pts;
