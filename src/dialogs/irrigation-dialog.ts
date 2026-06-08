@@ -1099,6 +1099,13 @@ export class IrrigationDialog extends LitElement {
 
   // ─── Visibility ───────────────────────────────────────────────────────────
 
+  private get _hasPump(): boolean {
+    return !!(
+      this.device?.irrigationConfig?.irrigationPumpEntity ||
+      this.device?.irrigationConfig?.drainPumpEntity
+    );
+  }
+
   private get _visibleTabs(): TabId[] {
     const tabs: TabId[] = [];
     const env = this.device?.environmentAttributes;
@@ -1106,10 +1113,7 @@ export class IrrigationDialog extends LitElement {
     const hasSoilMoisture =
       !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
     const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
-    const hasPump = !!(
-      this.device?.irrigationConfig?.irrigationPumpEntity ||
-      this.device?.irrigationConfig?.drainPumpEntity
-    );
+    const hasPump = this._hasPump;
 
     if (hasPump) tabs.push('schedules');
 
@@ -1156,7 +1160,7 @@ export class IrrigationDialog extends LitElement {
     if (!visible.includes('schedules')) {
       hints.push({
         icon: '🚰',
-        text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules.',
+        text: 'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules, manual run controls, and behaviour settings.',
       });
     }
     if (!visible.includes('steering')) {
@@ -1856,31 +1860,39 @@ export class IrrigationDialog extends LitElement {
 
           <!-- Persistent footer -->
           <div class="dlg-footer">
-            <div class="dlg-footer-meta">
-              <span
-                >Last cycle
-                ${this.device?.lastCycleTimestamp
-        ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        })
-        : '—'}</span
-              >
-              <span class="sep">·</span>
-              <span>Next ${this._renderFooterNext()}</span>
-            </div>
+            ${this._hasPump
+        ? html`
+                  <div class="dlg-footer-meta">
+                    <span
+                      >Last cycle
+                      ${this.device?.lastCycleTimestamp
+            ? new Date(this.device.lastCycleTimestamp).toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })
+            : '—'}</span
+                    >
+                    <span class="sep">·</span>
+                    <span>Next ${this._renderFooterNext()}</span>
+                  </div>
+                `
+        : nothing}
             <div class="dlg-footer-actions">
               <button class="md3-button text" @click=${this._close}>Close</button>
-              <button
-                class="md3-button tonal"
-                ?disabled=${this._sm.status.kind === 'run-now-saving'}
-                @click=${this._handleRunNow}
-              >
-                ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : 'Run Now'}
-              </button>
+              ${this._hasPump
+        ? html`
+                    <button
+                      class="md3-button tonal"
+                      ?disabled=${this._sm.status.kind === 'run-now-saving'}
+                      @click=${this._handleRunNow}
+                    >
+                      ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : 'Run Now'}
+                    </button>
+                  `
+        : nothing}
               <button
                 class="md3-button primary btn-save-all"
                 style="background: ${dialogColor};"
@@ -3439,6 +3451,7 @@ export class IrrigationDialog extends LitElement {
       </div>
       ` : nothing}
 
+      ${this._hasPump ? html`
       <div class="detail-card">
         <h3 style="margin:0 0 14px;">Behaviour</h3>
         ${!this._sm.tabs.steering.draft.enabled ? html`
@@ -3514,6 +3527,7 @@ export class IrrigationDialog extends LitElement {
           </span>
         </div>
       </div>
+      ` : nothing}
     `;
   }
 

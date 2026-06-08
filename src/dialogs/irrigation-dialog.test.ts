@@ -24,6 +24,20 @@ function makeDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[
   return createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1', ...overrides });
 }
 
+// Footer cycle status, Run Now, Behaviour, and Manual Override are only shown
+// once an irrigation or drain pump is configured.
+function withPump(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]> = {}) {
+  return makeDevice({
+    ...overrides,
+    irrigationConfig: {
+      irrigationTimes: [],
+      drainTimes: [],
+      irrigationPumpEntity: 'switch.pump',
+      ...overrides.irrigationConfig,
+    },
+  });
+}
+
 function makeMockStore(runCycleFn = vi.fn().mockResolvedValue(undefined)) {
   return {
     context: {
@@ -50,7 +64,7 @@ function normalize(s: string | null | undefined): string {
 
 describe('IrrigationDialog – footer meta timestamps', () => {
   it('shows a formatted last-cycle time when lastCycleTimestamp is set', async () => {
-    const device = makeDevice({ lastCycleTimestamp: '2026-05-23T14:30:00.000Z' });
+    const device = withPump({ lastCycleTimestamp: '2026-05-23T14:30:00.000Z' });
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
     `);
@@ -63,7 +77,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
   });
 
   it('shows "—" for last-cycle when lastCycleTimestamp is null', async () => {
-    const device = makeDevice({ lastCycleTimestamp: null });
+    const device = withPump({ lastCycleTimestamp: null });
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
     `);
@@ -74,7 +88,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
   });
 
   it('shows a formatted next-cycle time when nextScheduledCycle is set', async () => {
-    const device = makeDevice({ nextScheduledCycle: '2026-05-24T06:00:00.000Z' });
+    const device = withPump({ nextScheduledCycle: '2026-05-24T06:00:00.000Z' });
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
     `);
@@ -86,7 +100,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
   });
 
   it('shows "—" for next-cycle when nextScheduledCycle is null', async () => {
-    const device = makeDevice({ nextScheduledCycle: null });
+    const device = withPump({ nextScheduledCycle: null });
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
     `);
@@ -94,6 +108,16 @@ describe('IrrigationDialog – footer meta timestamps', () => {
 
     const meta = el.shadowRoot!.querySelector('.dlg-footer-meta');
     expect(normalize(meta?.textContent)).toContain('Next —');
+  });
+
+  it('hides the footer meta block when no irrigation or drain pump is configured', async () => {
+    const device = makeDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} growspaceName="Tent 1"></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.dlg-footer-meta')).toBeNull();
   });
 });
 
@@ -104,7 +128,7 @@ describe('IrrigationDialog – footer meta timestamps', () => {
 describe('IrrigationDialog – Run Now button', () => {
   it('clicking Run Now dispatches runIrrigationCycle for the current growspace', async () => {
     const mockRunCycle = vi.fn().mockResolvedValue(undefined);
-    const device = makeDevice();
+    const device = withPump();
     const store = makeMockStore(mockRunCycle);
 
     const el = await fixture<IrrigationDialog>(html`
@@ -127,7 +151,7 @@ describe('IrrigationDialog – Run Now button', () => {
   });
 
   it('shows "Starting…" and disables the button while the request is in flight', async () => {
-    const device = makeDevice();
+    const device = withPump();
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
     `);
@@ -141,6 +165,75 @@ describe('IrrigationDialog – Run Now button', () => {
 
     expect(btn).toBeTruthy();
     expect(btn!.disabled).toBe(true);
+  });
+
+  it('hides the footer Run Now button when no irrigation or drain pump is configured', async () => {
+    const device = makeDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const btn = Array.from(el.shadowRoot!.querySelectorAll('button.md3-button')).find(
+      (b) => b.textContent?.trim() === 'Run Now'
+    );
+
+    expect(btn).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Config tab: Behaviour / Manual Override panels (gated on pump configuration)
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – Config tab: pump-gated panels', () => {
+  function configHeadings(el: IrrigationDialog) {
+    return Array.from(el.shadowRoot!.querySelectorAll('.detail-card h3')).map((h) =>
+      normalize(h.textContent)
+    );
+  }
+
+  it('shows the Behaviour and Manual Override panels when a pump is configured', async () => {
+    const device = withPump();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'config'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const headings = configHeadings(el);
+    expect(headings).toContain('Behaviour');
+    expect(headings).toContain('Manual Override');
+  });
+
+  it('hides the Behaviour and Manual Override panels when no pump is configured', async () => {
+    const device = makeDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const headings = configHeadings(el);
+    expect(headings).not.toContain('Behaviour');
+    expect(headings).not.toContain('Manual Override');
+  });
+
+  it('shows a setup hint covering Schedules, manual run controls, and behaviour settings when no pump is configured', async () => {
+    const device = makeDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const hints = Array.from(el.shadowRoot!.querySelectorAll('.setup-hint')).map((h) =>
+      normalize(h.textContent)
+    );
+    expect(
+      hints.some((h) =>
+        h.includes(
+          'Configure an irrigation or drain pump in Irrigation Settings to enable Schedules, manual run controls, and behaviour settings.'
+        )
+      )
+    ).toBe(true);
   });
 });
 
