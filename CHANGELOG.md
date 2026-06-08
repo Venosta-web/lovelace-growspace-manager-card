@@ -1,3 +1,15 @@
+# [1.1.0-next.31](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.30...v1.1.0-next.31) (2026-06-08)
+
+
+### Bug Fixes
+
+* update tests broken by hero-chip shadow DOM and conditional rendering changes ([dc7b964](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/dc7b96484aad0e182b01cbdaa8db87ce56e39f7c))
+
+
+### Features
+
+* implement rolling window mode for crop steering day chart in analytics UI ([34a9bb3](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/34a9bb3885d48055ccd214309ee0d422bf68675e))
+
 # [1.1.0-next.30](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.29...v1.1.0-next.30) (2026-06-08)
 
 
