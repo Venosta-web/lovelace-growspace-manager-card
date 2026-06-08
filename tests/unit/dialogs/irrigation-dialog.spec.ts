@@ -1740,7 +1740,13 @@ describe('IrrigationDialog', () => {
 
             const csSection = element.shadowRoot?.querySelector('.crop-steering-schedule');
             expect(csSection).toBeTruthy();
-            const events = csSection?.querySelectorAll('.cs-event');
+            const chart = csSection?.querySelector('crop-steering-day-chart') as
+                | (HTMLElement & { updateComplete: Promise<unknown> })
+                | null
+                | undefined;
+            expect(chart).toBeTruthy();
+            await chart?.updateComplete;
+            const events = chart?.shadowRoot?.querySelectorAll('.cs-event');
             expect(events?.length).toBeGreaterThan(0);
             expect(events?.length).toBeLessThanOrEqual(12);
         });
