@@ -1003,7 +1003,7 @@ export class GrowspaceEnvChart extends LitElement {
 
     .gs-axis-cap {
       position: absolute;
-      bottom: 7px;
+      bottom: 19px;
       z-index: 2;
       font-size: 10px;
       font-weight: 500;
