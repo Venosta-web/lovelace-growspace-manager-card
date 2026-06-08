@@ -1,3 +1,9 @@
+import { afterEach, vi } from 'vitest';
+
+afterEach(() => {
+    vi.useRealTimers();
+});
+
 // tests/setup.ts for browser mode
 // Mocks for JSDOM are likely unnecessary or harmful in real browsers.
 // We only keep mocks that are absolutely required for logic isolation.

@@ -539,8 +539,8 @@ describe('GrowspaceEnvChart', () => {
         // Create points with specific timing to test binary search
         const history = {
             'temp': [
-                { state: '10', last_changed: new Date(now - 10000).toISOString() },
-                { state: '20', last_changed: new Date(now - 5000).toISOString() },
+                { state: '10', last_changed: new Date(now - 3600000 * 2).toISOString() },
+                { state: '20', last_changed: new Date(now - 3600000).toISOString() },
                 { state: '30', last_changed: new Date(now).toISOString() }
             ] as any
         };
@@ -700,8 +700,8 @@ describe('GrowspaceEnvChart', () => {
 
             // Query for the specific label text
             const container = element.shadowRoot?.querySelector('.gs-env-chart-container');
-            const labels = Array.from(container?.querySelectorAll('div') || []);
-            const rangeLabel = labels.find(div => div.textContent?.includes(r === '24h' ? '-24h' : `-${r}`));
+            const labels = Array.from(container?.querySelectorAll('span, div') || []);
+            const rangeLabel = labels.find(el => el.textContent?.includes(r === '24h' ? '-24h' : `-${r}`));
 
             expect(rangeLabel).toBeTruthy();
         }
@@ -1230,14 +1230,11 @@ describe('GrowspaceEnvChart', () => {
         // Hover at middle
         (element as any).startTime = new Date(0);
         (element as any).durationMillis = 2000;
-        // hoverTime = 0 + (50+50)/width * duration?
-        // target time 1000.
-        // logic: relX = (mouseX - 50) / contentWidth.
-        // contentWidth = width - 90 = 10.
-        // If mouseX = 50 + 5 = 55. relX = 0.5. time = 1000.
+        // logic: relX = mouseX / rect.width (edge-to-edge plot).
+        // If mouseX = 50, relX = 0.5, time = 1000.
         await element.updateComplete;
 
-        const e = { clientX: 55 } as any;
+        const e = { clientX: 50 } as any;
         const series = (element as any)._renderSeries;
         (element as any)._handleGraphHover(e, series, new Date(0), 2000);
 

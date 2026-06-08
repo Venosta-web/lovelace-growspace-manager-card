@@ -1,0 +1,10 @@
+# Migrate Env Graph to overlay axis labels for time-axis alignment with Crop Steering Day Chart
+
+`<growspace-env-chart>` and `<crop-steering-day-chart>` render interchangeably in the same inline graph slot via [[Custom Graph Routing]] — switching the active metric swaps one component for the other in place. They previously used incompatible axis conventions: the Env Graph reserved a fixed gutter (`padding: 20px 40px 30px 50px` on `.gs-env-chart-container`, plus the card's own `16px`) for its Y-axis value labels and X-axis range labels, so its plotted time range ran from ~66px to `width - 56px`. The Crop Steering Day Chart's `.cs-model` plots edge-to-edge (`inset: 0`, `viewBox` with `preserveAspectRatio="none"`) and floats its labels (`.cm-axis-cap`, `.cm-target`) directly on top of the plot. The mismatch meant a vertical line traced from one chart to the other landed on different timestamps, and switching metrics in the shared slot caused the plot to visibly jump.
+
+We chose to **migrate the Env Graph to the Crop Steering Day Chart's edge-to-edge overlay convention** rather than the reverse (padding out the Crop Steering chart to match the Env Graph's gutter), and to apply the change to the shared `<growspace-env-chart>` component globally rather than introducing a per-surface variant. The overlay style was already established as the newer pattern; converging on it avoids a second layout convention to keep in sync, and guarantees the two charts align in every slot they can occupy together — not just the ones we happened to test. The Env Graph's Y-axis max/mid/min value labels move from a dedicated label column to semi-transparent overlays on the plot, trading occasional visual overlap with chart lines near the edges for pixel-aligned time axes and slot-swap continuity.
+
+## Consequences
+
+- `growspace-env-chart` pixelmatch screenshot tests need re-baselining wherever it appears (header, subarea cards, analytics card, etc.) — the change is global, not scoped to the analytics slot.
+- See `CONTEXT.md` for [[Env Graph]], [[Crop Steering Day Chart]], and [[Custom Graph Routing]].

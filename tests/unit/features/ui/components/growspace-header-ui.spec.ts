@@ -181,9 +181,11 @@ describe('growspace-header-ui', () => {
     const dragHandler = vi.fn();
     const dropHandler = vi.fn();
     const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
+    const heroChips = [{ id: 'vpd', label: 'VPD', value: '1.2' }] as any;
     const el = await fixture<GrowspaceHeaderUI>(html`
       <growspace-header-ui
         .device=${device}
+        .heroChips=${heroChips}
         @toggle-graph=${toggleHandler}
         @chip-drag-start=${dragHandler}
         @chip-drop=${dropHandler}
@@ -361,11 +363,13 @@ describe('growspace-header-ui', () => {
     const dropHandler = vi.fn();
 
     const device = { deviceId: 'gs1', name: 'Tent 1' } as any;
+    const heroChips = [{ id: 'temperature', label: 'Temp', value: '24' }] as any;
     const secondaryChips = [{ id: 'vpd', label: 'VPD', value: '1.2' }] as any;
 
     const el = await fixture<GrowspaceHeaderUI>(html`
       <growspace-header-ui
         .device=${device}
+        .heroChips=${heroChips}
         .secondaryChips=${secondaryChips}
         @toggle-graph=${toggleHandler}
         @chip-drag-start=${dragHandler}

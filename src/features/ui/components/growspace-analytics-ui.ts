@@ -123,6 +123,9 @@ export class GrowspaceAnalyticsUI extends LitElement {
       return html`<crop-steering-day-chart
         .device=${this.device}
         .hideShotTrack=${true}
+        .range=${this.range}
+        .sensorHistory=${this.sensorHistory}
+        .rollingWindow=${true}
       ></crop-steering-day-chart>`;
     }
     return html`

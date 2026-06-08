@@ -4,6 +4,8 @@ import type { CropSteeringDayChart } from './crop-steering-day-chart';
 import { cropSteeringHistory$ } from '../../../slices/irrigation';
 import { createGrowspaceDevice, type GrowspaceDevice } from '../../../services/types';
 import { hassCall } from '../../../services/hass-call';
+import { MetricKey } from '../constants';
+import type { HistorySensorState, SensorHistories } from '../types';
 
 vi.mock('../../../services/hass-call', async (importOriginal) => ({
   ...(await importOriginal<object>()),
@@ -37,6 +39,28 @@ function makeDevice(overrides: Partial<GrowspaceDevice> = {}): GrowspaceDevice {
     },
     ...overrides,
   });
+}
+
+function mkHistoryState(minutesAgo: number, value: number, now: Date): HistorySensorState {
+  const ts = new Date(now.getTime() - minutesAgo * 60000).toISOString();
+  return {
+    entity_id: 'sensor.fixture',
+    state: String(value),
+    attributes: {},
+    last_changed: ts,
+    last_updated: ts,
+  };
+}
+
+function makeSensorHistory(now: Date): SensorHistories {
+  return {
+    [MetricKey.SOIL_MOISTURE]: [
+      mkHistoryState(120, 60, now),
+      mkHistoryState(60, 62, now),
+      mkHistoryState(5, 64, now),
+    ],
+    [MetricKey.PORE_EC]: [mkHistoryState(90, 3.1, now), mkHistoryState(10, 3.4, now)],
+  };
 }
 
 function createElement(): CropSteeringDayChart {
@@ -183,5 +207,61 @@ describe('CropSteeringDayChart – rendering', () => {
     await el.updateComplete;
 
     expect(el.shadowRoot!.querySelector('.cs-model-tooltip')).not.toBeNull();
+  });
+});
+
+describe('CropSteeringDayChart – rolling window mode', () => {
+  const now = new Date();
+
+  it('shows the phase strip for the 24h range', async () => {
+    const el = createElement();
+    el.device = makeDevice();
+    el.rollingWindow = true;
+    el.range = '24h';
+    el.sensorHistory = makeSensorHistory(now);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.cs-phase-strip')).not.toBeNull();
+  });
+
+  it.each(['1h', '6h', '7d'] as const)('hides the phase strip for the %s range', async (range) => {
+    const el = createElement();
+    el.device = makeDevice();
+    el.rollingWindow = true;
+    el.range = range;
+    el.sensorHistory = makeSensorHistory(now);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('.cs-phase-strip')).toBeNull();
+  });
+
+  it('drops the now-line and renders -<range>/Now axis labels instead', async () => {
+    const el = createElement();
+    el.device = makeDevice();
+    el.rollingWindow = true;
+    el.range = '6h';
+    el.sensorHistory = makeSensorHistory(now);
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cs-model') !== null);
+
+    expect(el.shadowRoot!.querySelector('.cs-now-line')).toBeNull();
+    const text = el.shadowRoot!.textContent?.replace(/\s+/g, ' ') ?? '';
+    expect(text).toContain('-6h');
+    expect(text).toContain('Now');
+  });
+
+  it('sources its trace data from sensorHistory rather than cropSteeringHistory', async () => {
+    cropSteeringHistory$.set(new Map());
+    const el = createElement();
+    el.device = makeDevice();
+    el.rollingWindow = true;
+    el.range = '24h';
+    el.sensorHistory = makeSensorHistory(now);
+    await el.updateComplete;
+    await vi.waitFor(() => el.shadowRoot!.querySelector('.cm-readout') !== null);
+
+    const readout = el.shadowRoot!.querySelector('.cm-readout');
+    expect(readout?.textContent?.replace(/\s+/g, ' ')).toMatch(/VWC\s*64\.0%/);
+    expect(readout?.textContent?.replace(/\s+/g, ' ')).toMatch(/Pore\s*3\.4/);
   });
 });
