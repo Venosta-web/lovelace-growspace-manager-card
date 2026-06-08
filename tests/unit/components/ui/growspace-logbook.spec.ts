@@ -680,6 +680,23 @@ describe('GrowspaceLogbook', () => {
             expect((element as any)._getSeverityColor(0, 'optimal')).toContain('error');
         });
 
+        it('should return correct colors for positive-direction sensor types (irrigation/water/drain/nutrient)', () => {
+            // Positive-direction: High severity = Good outcome (Success), like 'optimal'
+
+            // >= 0.9 -> success
+            expect((element as any)._getSeverityColor(0.95, 'irrigation')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'watering')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'water')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'drain')).toContain('success');
+            expect((element as any)._getSeverityColor(0.9, 'nutrient')).toContain('success');
+
+            // >= 0.75 -> warning
+            expect((element as any)._getSeverityColor(0.8, 'irrigation')).toContain('warning');
+
+            // < 0.75 -> error
+            expect((element as any)._getSeverityColor(0.5, 'irrigation')).toContain('error');
+        });
+
         it('should return correct colors for default sensor types', () => {
             // Default: High severity = Bad (Error)
 

@@ -303,6 +303,14 @@ A persistent record created by the backend [[Alert Monitor]] when a Bayesian bin
 
 Current mapping: `stress → danger`, `mold → warning`.
 
+## Logbook Event
+
+A wire-format record (`LogbookEntrySchema`, a.k.a. `GrowspaceEvent` in legacy code) shown in the [[Growspace Logbook Card]]. Fields: `growspace_id`, `category`, `sensor_type`, `start_time`/`end_time`/`duration_sec`, `severity`, `reasons`, `timestamp`, plus optional `notes`/`images`/`tags`/`plant_id`/`metadata`/`event_id`.
+
+**Logbook Event `severity` is unrelated to Triage Alert `Severity`** (above) — different field, different shape, different meaning. It's a raw number in `[0, 1]` whose meaning depends on the event's `sensor_type`:
+- For most sensor types it's a magnitude-of-concern: higher means worse (colored success → warning → error as it falls).
+- For **positive-direction metrics** — `sensor_type` values matching `optimal`, `watering`/`water`/`irrigation`, `drain`, or `nutrient` — higher means better (e.g. irrigation severity of 0.95 means "reached 95% of saturation target", a good outcome). These are colored on an inverted scale: `>= 0.9` → success, `>= 0.75` → warning, else → error.
+
 ## Conversation Thread
 
 A persistent record of a multi-turn dialogue in Chat mode. Fields: `thread_id` (UUID), `growspace_id`, `messages` (array of `ConversationMessage`), `pinned` (boolean, default false), `updated_at` (Unix ms — set on create and each `sendMessage`). Stored in the `conversationThreads$` atom (keyed by `thread_id`) and persisted to the backend via `growspace_manager/save_conversation_threads`. The active thread per growspace is tracked separately in `activeThreadId$` (keyed by `growspace_id`). Threads are hydrated from the backend each time the [[Growmaster Dialog]] opens.
