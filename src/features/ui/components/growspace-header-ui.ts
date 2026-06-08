@@ -243,21 +243,26 @@ export class GrowspaceHeaderUI extends LitElement {
         </div>
 
         <!-- HERO GRID (Vital Stats) -->
-        <growspace-header-hero-ui
-          .hass=${this.hass}
-          .chips=${this.heroChips}
-          .device=${this.device}
-          .isMobile=${this._resizeController.isMobile}
-          .mobileLink=${this._mobileLink}
-          .historyCache=${this.historyCache}
-          .timeRange=${this.timeRange}
-          @toggle-graph=${(e: CustomEvent) => {
-            e.stopPropagation();
-            this._toggleEnvGraph(e.detail.metric);
-          }}
-          @chip-drag-start=${(e: CustomEvent) => this._handleChipDragStart(null, e.detail.metric)}
-          @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
-        ></growspace-header-hero-ui>
+        ${this.heroChips.length > 0
+          ? html`
+              <growspace-header-hero-ui
+                .hass=${this.hass}
+                .chips=${this.heroChips}
+                .device=${this.device}
+                .isMobile=${this._resizeController.isMobile}
+                .mobileLink=${this._mobileLink}
+                .historyCache=${this.historyCache}
+                .timeRange=${this.timeRange}
+                @toggle-graph=${(e: CustomEvent) => {
+                  e.stopPropagation();
+                  this._toggleEnvGraph(e.detail.metric);
+                }}
+                @chip-drag-start=${(e: CustomEvent) =>
+                  this._handleChipDragStart(null, e.detail.metric)}
+                @chip-drop=${(e: CustomEvent) => this._handleChipDrop(null, e.detail.targetMetric)}
+              ></growspace-header-hero-ui>
+            `
+          : nothing}
 
         ${this._resizeController.isMobile && this.secondaryChips.length > 0
           ? html`

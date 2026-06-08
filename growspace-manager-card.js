@@ -67031,21 +67031,25 @@ let GrowspaceHeaderUI = class GrowspaceHeaderUI extends i$3 {
         </div>
 
         <!-- HERO GRID (Vital Stats) -->
-        <growspace-header-hero-ui
-          .hass=${this.hass}
-          .chips=${this.heroChips}
-          .device=${this.device}
-          .isMobile=${this._resizeController.isMobile}
-          .mobileLink=${this._mobileLink}
-          .historyCache=${this.historyCache}
-          .timeRange=${this.timeRange}
-          @toggle-graph=${(e) => {
-            e.stopPropagation();
-            this._toggleEnvGraph(e.detail.metric);
-        }}
-          @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
-          @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
-        ></growspace-header-hero-ui>
+        ${this.heroChips.length > 0
+            ? x `
+              <growspace-header-hero-ui
+                .hass=${this.hass}
+                .chips=${this.heroChips}
+                .device=${this.device}
+                .isMobile=${this._resizeController.isMobile}
+                .mobileLink=${this._mobileLink}
+                .historyCache=${this.historyCache}
+                .timeRange=${this.timeRange}
+                @toggle-graph=${(e) => {
+                e.stopPropagation();
+                this._toggleEnvGraph(e.detail.metric);
+            }}
+                @chip-drag-start=${(e) => this._handleChipDragStart(null, e.detail.metric)}
+                @chip-drop=${(e) => this._handleChipDrop(null, e.detail.targetMetric)}
+              ></growspace-header-hero-ui>
+            `
+            : E}
 
         ${this._resizeController.isMobile && this.secondaryChips.length > 0
             ? x `
@@ -67200,7 +67204,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         const { deviceChips } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);
         const hidden = this.config?.hidden_chips;
         return {
-            heroChips,
+            heroChips: filterChips(heroChips, hidden),
             secondaryChips: filterChips(secondaryChips, hidden),
             deviceChips: filterChips(deviceChips, hidden),
             dominant,

@@ -134,7 +134,7 @@ export class GrowspaceHeaderContainer extends LitElement {
 
     const hidden = this.config?.hidden_chips;
     return {
-      heroChips,
+      heroChips: filterChips(heroChips, hidden),
       secondaryChips: filterChips(secondaryChips, hidden),
       deviceChips: filterChips(deviceChips, hidden),
       dominant,

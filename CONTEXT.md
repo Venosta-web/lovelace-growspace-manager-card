@@ -29,7 +29,7 @@ Cycles automatically through multiple selected growspaces.
 ## UI Structure
 
 **Hero Card**
-The large metric display at the top of the main card and subarea card. Shows an aggregated sensor value (e.g. temperature, VPD). Clicking a hero card opens the Env Graph for that metric. Implemented in `growspace-header-hero-ui.ts`.
+The large metric display at the top of the main card and subarea card. Shows an aggregated sensor value (e.g. temperature, VPD). Clicking a hero card opens the Env Graph for that metric. Implemented in `growspace-header-hero-ui.ts`. Each hero item is itself a [[Chip]] (carries a `MetricKey`), so it can be hidden via `hidden_chips` the same way a regular chip can — there is no separate hero-specific visibility setting. When every hero metric is hidden, the hero deck collapses entirely rather than rendering empty.
 
 **Chip** (also: Badge)
 A small metric indicator rendered below the hero section. Each chip maps to a `HeaderChip` (defined in `metrics-utils.ts`) and carries a `MetricKey`. Clicking a chip opens the Env Graph for that metric. Chips support drag-and-drop reordering.
