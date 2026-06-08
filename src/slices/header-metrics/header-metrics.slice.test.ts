@@ -802,12 +802,22 @@ describe('Cycle 11 — crop steering phase chip', () => {
     });
     const strategy = makeIrrigationStrategy({ enabled: true, targetVwcPercent: 75 });
 
-    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+    const { hero, chips } = computeHeaderMetrics(
+      null,
+      [],
+      config,
+      [],
+      'main',
+      new Set(),
+      [],
+      strategy
+    );
 
-    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
+    const chip = hero.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P1 · 75%');
+    expect(chips.find((c) => c.key === MetricKey.STEERING_PHASE)).toBeUndefined();
   });
 
   it('shows P2 chip with P3-start time (non-flower / 18h photoperiod) when phase is p2', () => {
@@ -820,9 +830,9 @@ describe('Cycle 11 — crop steering phase chip', () => {
       p2StopBeforeLightsOffMinutes: 120,
     });
 
-    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+    const { hero } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
 
-    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
+    const chip = hero.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P2 · 22:00');
@@ -838,7 +848,7 @@ describe('Cycle 11 — crop steering phase chip', () => {
     });
     const flowerPlant = makePlantEntity({ stage: 'flower' });
 
-    const { chips } = computeHeaderMetrics(
+    const { hero } = computeHeaderMetrics(
       null,
       [flowerPlant],
       config,
@@ -849,7 +859,7 @@ describe('Cycle 11 — crop steering phase chip', () => {
       strategy
     );
 
-    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
+    const chip = hero.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P2 · 16:00');
@@ -859,9 +869,9 @@ describe('Cycle 11 — crop steering phase chip', () => {
     const config = makeIrrigationConfig({ activeSteeringPhase: 'p3' });
     const strategy = makeIrrigationStrategy({ enabled: true, lightsOnTime: '07:30' });
 
-    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+    const { hero } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
 
-    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
+    const chip = hero.find((c) => c.key === MetricKey.STEERING_PHASE);
     expect(chip).toBeDefined();
     expect(chip!.label).toBe('Phase');
     expect(chip!.value).toBe('P3 · 07:30');
@@ -874,9 +884,40 @@ describe('Cycle 11 — crop steering phase chip', () => {
     });
     const strategy = makeIrrigationStrategy({ enabled: true });
 
-    const { chips } = computeHeaderMetrics(null, [], config, [], 'main', new Set(), [], strategy);
+    const { hero, chips } = computeHeaderMetrics(
+      null,
+      [],
+      config,
+      [],
+      'main',
+      new Set(),
+      [],
+      strategy
+    );
 
+    expect(hero.find((c) => c.key === MetricKey.STEERING_PHASE)).toBeUndefined();
     expect(chips.find((c) => c.key === MetricKey.STEERING_PHASE)).toBeUndefined();
+  });
+
+  it('keeps the STEERING_PHASE chip in the secondary strip for the analytics view (no hero exists there)', () => {
+    const config = makeIrrigationConfig({ activeSteeringPhase: 'p1' });
+    const strategy = makeIrrigationStrategy({ enabled: true, targetVwcPercent: 75 });
+
+    const { hero, chips } = computeHeaderMetrics(
+      null,
+      [],
+      config,
+      [],
+      'analytics',
+      new Set(),
+      [],
+      strategy
+    );
+
+    expect(hero.find((c) => c.key === MetricKey.STEERING_PHASE)).toBeUndefined();
+    const chip = chips.find((c) => c.key === MetricKey.STEERING_PHASE);
+    expect(chip).toBeDefined();
+    expect(chip!.value).toBe('P1 · 75%');
   });
 
   it('falls back to manual schedule chip when strategy.enabled is false', () => {

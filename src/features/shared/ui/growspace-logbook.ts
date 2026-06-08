@@ -210,8 +210,19 @@ export class GrowspaceLogbook extends LitElement {
     return 'var(--accent-color, #4caf50)';
   }
 
+  private _isPositiveDirectionMetric(sensorType?: string): boolean {
+    const t = sensorType?.toLowerCase() ?? '';
+    return (
+      t === 'optimal' ||
+      t.includes('water') ||
+      t.includes('irrigation') ||
+      t.includes('drain') ||
+      t.includes('nutrient')
+    );
+  }
+
   private _getSeverityColor(severity: number, sensorType?: string): string {
-    if (sensorType?.toLowerCase() === 'optimal') {
+    if (this._isPositiveDirectionMetric(sensorType)) {
       if (severity >= 0.9) return 'var(--success-color, #4CAF50)';
       if (severity >= 0.75) return 'var(--warning-color)';
       return 'var(--error-color)';

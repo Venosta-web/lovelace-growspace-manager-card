@@ -13,7 +13,7 @@ We decided "Next" in Crop Steering mode should show a **range** (e.g. "Next 14:1
 ## Bound logic
 
 Both ends of the range are anchored per the *current* phase, not a single uniform rule:
-- **Earliest**: `now + shotIntervalMinutes` in P0/P1/P2 (or tomorrow's window start, whichever is later, near day's end); tomorrow's P0/P1 start when currently in P3
+- **Earliest**: in P0/P1/P2, the cooldown end (`lastShotTime + shotIntervalMinutes`) when a cooldown is still active, otherwise `now` — mirroring the same `_last_shot_time` check that gates the actual shot in `_handle_watering`, so the projection reflects when a shot can really fire rather than always assuming a fresh full-interval wait (or tomorrow's window start, whichever is later, near day's end); tomorrow's P0/P1 start when currently in P3
 - **Latest**: P0 end while in P0; the shared P2-stop time while in P1 or P2 (P1 has no time-based ceiling of its own — VWC-threshold-driven — so it inherits P2's hard cutoff); tomorrow's P2-stop while in P3
 
 When the current phase is P3 (Dry-back — no shots fire), the whole window rolls forward to anchor on tomorrow's P0/P1/P2 windows rather than collapsing to "now".

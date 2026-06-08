@@ -8,6 +8,7 @@ import { sharedStyles } from '../../../styles/shared.styles';
 import '../../../growspace-env-chart';
 import { MetricKey } from '../../environment/constants';
 import '../../environment/components/tank-water-chart';
+import '../../environment/components/crop-steering-day-chart';
 
 export type AnalyticsItem = {
   type: 'group' | 'single';
@@ -117,6 +118,12 @@ export class GrowspaceAnalyticsUI extends LitElement {
           .range=${this.range}
         ></tank-water-chart>
       `;
+    }
+    if (item.metrics[0] === MetricKey.STEERING_PHASE) {
+      return html`<crop-steering-day-chart
+        .device=${this.device}
+        .hideShotTrack=${true}
+      ></crop-steering-day-chart>`;
     }
     return html`
       <growspace-env-chart

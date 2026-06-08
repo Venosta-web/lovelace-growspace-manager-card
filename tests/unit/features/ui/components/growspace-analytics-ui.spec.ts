@@ -12,6 +12,10 @@ if (!customElements.get('tank-water-chart')) {
   customElements.define('tank-water-chart', class extends HTMLElement {});
 }
 
+if (!customElements.get('crop-steering-day-chart')) {
+  customElements.define('crop-steering-day-chart', class extends HTMLElement {});
+}
+
 describe('growspace-analytics-ui', () => {
   it('renders nothing when items list is empty', async () => {
     const el = await fixture<GrowspaceAnalyticsUI>(html`
@@ -116,6 +120,16 @@ describe('growspace-analytics-ui – _renderItem routing', () => {
       </growspace-analytics-ui>
     `);
     expect(el.shadowRoot!.querySelector('tank-water-chart')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
+  });
+
+  it('renders crop-steering-day-chart for MetricKey.STEERING_PHASE', async () => {
+    const item: AnalyticsItem = { type: 'single', metrics: [MetricKey.STEERING_PHASE] };
+    const el = await fixture<GrowspaceAnalyticsUI>(html`
+      <growspace-analytics-ui .items=${[item]} .isLoading=${false} .range=${'24h'}>
+      </growspace-analytics-ui>
+    `);
+    expect(el.shadowRoot!.querySelector('crop-steering-day-chart')).not.toBeNull();
     expect(el.shadowRoot!.querySelector('growspace-env-chart')).toBeNull();
   });
 
