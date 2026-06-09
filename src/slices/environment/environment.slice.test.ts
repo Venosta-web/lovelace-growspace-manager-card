@@ -250,6 +250,43 @@ describe('computeEnvSnapshot — vpdStatus', () => {
 
     expect(snapshot.vpdStatus).toBeNull();
   });
+
+  it('reads vpdStatus from attributes.metrics (real backend structure)', () => {
+    const device = makeDevice({ overviewEntityId: 'sensor.gs1_overview' });
+    const hassStates: HassStates = {
+      'sensor.gs1_overview': makeHassEntity('sensor.gs1_overview', 'on', {
+        metrics: { vpd_status: 'warning' },
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.vpdStatus).toBe('warning');
+  });
+
+  it('derives vpdStatus from metrics thresholds when vpd_status is unknown', () => {
+    const device = makeDevice({ overviewEntityId: 'sensor.gs1_overview' });
+    const hassStates: HassStates = {
+      'binary_sensor.gs1_optimal_conditions': makeHassEntity(
+        'binary_sensor.gs1_optimal_conditions',
+        'on',
+        { vpd: 1.1 }
+      ),
+      'sensor.gs1_overview': makeHassEntity('sensor.gs1_overview', 'on', {
+        metrics: {
+          vpd_status: 'unknown',
+          vpd_target_min: 0.8,
+          vpd_target_max: 1.4,
+          vpd_danger_min: 0.4,
+          vpd_danger_max: 1.8,
+        },
+      }),
+    };
+
+    const snapshot = computeEnvSnapshot(device, hassStates);
+
+    expect(snapshot.vpdStatus).toBe('optimal');
+  });
 });
 
 // ---------------------------------------------------------------------------

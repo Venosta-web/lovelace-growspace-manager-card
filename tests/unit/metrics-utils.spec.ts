@@ -205,6 +205,53 @@ describe('MetricsUtils', () => {
                 const vpdChip = res.mainChips.find(c => c.key === MetricKey.VPD);
                 expect(vpdChip?.status).toBe(StatusLevel.OPTIMAL);
             });
+
+            it('uses day thresholds when lights are on', () => {
+                // overviewEntityId 'sensor.overview' → slug 'overview' → envEntity 'binary_sensor.overview_optimal_conditions'
+                mockHass.states = {
+                    'sensor.vpd': { state: '1.1' },
+                    'sensor.overview': {
+                        attributes: {
+                            day_vpd_target_min: 1.0, day_vpd_target_max: 1.4,
+                            day_vpd_danger_min: 0.6, day_vpd_danger_max: 1.8,
+                            night_vpd_target_min: 0.5, night_vpd_target_max: 0.9,
+                            night_vpd_danger_min: 0.3, night_vpd_danger_max: 1.2,
+                            vpd_status: 'unknown',
+                        },
+                    },
+                    'binary_sensor.overview_optimal_conditions': { state: 'on', attributes: { is_lights_on: true } },
+                };
+                mockDevice.environmentAttributes = { vpdSensor: 'sensor.vpd' };
+                mockDevice.overviewEntityId = 'sensor.overview';
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const vpdChip = res.mainChips.find(c => c.key === MetricKey.VPD);
+                // 1.1 is within day target 1.0–1.4 → OPTIMAL
+                expect(vpdChip?.status).toBe(StatusLevel.OPTIMAL);
+            });
+
+            it('uses night thresholds when lights are off', () => {
+                mockHass.states = {
+                    'sensor.vpd': { state: '1.1' },
+                    'sensor.overview': {
+                        attributes: {
+                            day_vpd_target_min: 1.0, day_vpd_target_max: 1.4,
+                            day_vpd_danger_min: 0.6, day_vpd_danger_max: 1.8,
+                            night_vpd_target_min: 0.5, night_vpd_target_max: 0.9,
+                            night_vpd_danger_min: 0.3, night_vpd_danger_max: 1.2,
+                            vpd_status: 'unknown',
+                        },
+                    },
+                    'binary_sensor.overview_optimal_conditions': { state: 'on', attributes: { is_lights_on: false } },
+                };
+                mockDevice.environmentAttributes = { vpdSensor: 'sensor.vpd' };
+                mockDevice.overviewEntityId = 'sensor.overview';
+
+                const res = MetricsUtils.computeHeaderMetrics(mockHass, mockDevice, new Set(), []);
+                const vpdChip = res.mainChips.find(c => c.key === MetricKey.VPD);
+                // 1.1 exceeds night target max of 0.9 → WARNING
+                expect(vpdChip?.status).toBe(StatusLevel.WARNING);
+            });
         });
 
         describe('Irrigation & Drain', () => {
