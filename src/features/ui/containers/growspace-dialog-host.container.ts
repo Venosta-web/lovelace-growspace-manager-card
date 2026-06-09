@@ -5,6 +5,7 @@ import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
+import { updateBreeder, deleteBreeder } from '../../../slices/strain';
 import { withToast } from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
@@ -632,7 +633,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleUpdateBreeder(detail: { oldName: string; newName: string; logo: string }) {
     try {
-      await this.store?.actions.breeder.update(detail.oldName, detail.newName, detail.logo);
+      await withToast(
+        async () => {
+          await updateBreeder(detail.oldName, detail.newName, detail.logo);
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Breeder updated successfully!',
+          errorPrefix: 'Failed to update breeder',
+          rethrow: true,
+        }
+      );
       await this.store?.actions.library.fetchStrains(true);
     } catch (err) {
       console.error('[DialogHost] Update breeder failed:', err);
@@ -648,7 +659,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleDeleteBreeder(detail: { name: string }) {
     try {
-      await this.store?.actions.breeder.delete(detail.name);
+      await withToast(
+        async () => {
+          await deleteBreeder(detail.name);
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Breeder deleted successfully!',
+          errorPrefix: 'Failed to delete breeder',
+          rethrow: true,
+        }
+      );
       await this.store?.actions.library.fetchStrains(true);
     } catch (err) {
       console.error('[DialogHost] Delete breeder failed:', err);

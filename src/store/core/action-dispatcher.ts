@@ -5,7 +5,6 @@ import * as libraryActions from '../plant/library-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
 import * as growspaceActions from '../growspace/growspace-actions';
-import * as breederActions from '../plant/breeder-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as ipmActions from '../plant/ipm-actions';
 import * as dryingActions from '../plant/drying-actions';
@@ -336,12 +335,6 @@ export class ActionDispatcher {
       nutrients?: Record<string, number>,
       presetId?: string
     ) => environmentActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
-  };
-
-  public readonly breeder = {
-    update: (oldName: string, newName: string, logo?: string) =>
-      breederActions.updateBreeder(this.ctx, oldName, newName, logo),
-    delete: (name: string) => breederActions.deleteBreeder(this.ctx, name),
   };
 
   public readonly genetics = {

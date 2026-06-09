@@ -808,22 +808,6 @@ describe('environment delegation', () => {
   });
 });
 
-// ─── breeder delegation ───────────────────────────────────────────────────────
-
-describe('breeder delegation', () => {
-  it('update calls dataService.updateBreeder', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.breeder.update('OldName', 'NewName');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).updateBreeder).toHaveBeenCalledWith('OldName', 'NewName', undefined);
-  });
-
-  it('delete calls dataService.deleteBreeder', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.breeder.delete('SomeBreeder');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).deleteBreeder).toHaveBeenCalledWith('SomeBreeder');
-  });
-});
-
 // ─── genetics delegation ──────────────────────────────────────────────────────
 
 describe('genetics delegation', () => {

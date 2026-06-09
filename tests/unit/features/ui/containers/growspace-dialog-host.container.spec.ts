@@ -750,7 +750,12 @@ describe('GrowspaceDialogHostContainer', () => {
         }));
 
         await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.breeder.update).toHaveBeenCalledWith('Old', 'New', '');
+        // Handler now calls the Strain slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/update_breeder',
+            expect.objectContaining({ original_name: 'Old', new_name: 'New', logo: '' }),
+            expect.anything()
+        );
     });
 
     it('should handle @save-breeder on strain-library-dialog (shows info toast)', async () => {
@@ -774,7 +779,12 @@ describe('GrowspaceDialogHostContainer', () => {
         dialog?.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name: 'OldBreeder' } }));
 
         await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.breeder.delete).toHaveBeenCalledWith('OldBreeder');
+        // Handler now calls the Strain slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/delete_breeder',
+            expect.objectContaining({ breeder_name: 'OldBreeder' }),
+            expect.anything()
+        );
     });
 
     it('should handle @import-library on strain-library-dialog', async () => {
@@ -1609,33 +1619,35 @@ describe('GrowspaceDialogHostContainer', () => {
             });
             mockStore.actions.ui.showToast.mockClear();
 
-            // Test L625: _handleUpdateBreeder failure (Action handles toast)
-            mockStore.actions.breeder.update.mockImplementation(async () => {
-                mockStore.actions.ui.showToast('Failed to update breeder', 'error');
-                throw new Error('Update Failed');
-            });
+            // _handleUpdateBreeder failure — Strain slice (via hassCall) rejects;
+            // withToast surfaces it through the real UI slice notification atom.
+            (hassCall as any).mockRejectedValueOnce(new Error('Update Failed'));
             element.shadowRoot?.querySelector('strain-library-dialog')?.dispatchEvent(new CustomEvent('update-breeder', {
                 detail: { oldName: 'B1', newName: 'B2' },
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.breeder.update).toHaveBeenCalled();
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Failed to update breeder', 'error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to update breeder'),
+                        type: 'error',
+                    })
+                );
             });
-            mockStore.actions.ui.showToast.mockClear();
 
-            // Test L648: _handleDeleteBreeder failure (Action handles toast)
-            mockStore.actions.breeder.delete.mockImplementation(async () => {
-                mockStore.actions.ui.showToast('Failed to delete breeder', 'error');
-                throw new Error('Delete Failed');
-            });
+            // _handleDeleteBreeder failure — same path.
+            (hassCall as any).mockRejectedValueOnce(new Error('Delete Failed'));
             element.shadowRoot?.querySelector('strain-library-dialog')?.dispatchEvent(new CustomEvent('delete-breeder', {
                 detail: { name: 'B1' },
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.breeder.delete).toHaveBeenCalled();
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Failed to delete breeder', 'error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to delete breeder'),
+                        type: 'error',
+                    })
+                );
             });
             mockStore.actions.ui.showToast.mockClear();
 
