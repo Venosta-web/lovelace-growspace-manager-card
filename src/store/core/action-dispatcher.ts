@@ -6,7 +6,6 @@ import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
 import * as growspaceActions from '../growspace/growspace-actions';
 import * as geneticsActions from '../plant/genetics-actions';
-import * as ipmActions from '../plant/ipm-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
 import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
@@ -357,14 +356,6 @@ export class ActionDispatcher {
       strainName: string,
       parents: Array<{ name: string; source: 'library' | 'manual' }>
     ) => geneticsActions.updateStrainLineageTree(this.ctx, strainName, parents),
-  };
-
-  public readonly ipm = {
-    apply: (detail: Parameters<typeof ipmActions.applyIPM>[1]) =>
-      ipmActions.applyIPM(this.ctx, detail),
-    savePreset: (preset: Parameters<typeof libraryActions.saveIPMPreset>[1]) =>
-      libraryActions.saveIPMPreset(this.ctx, preset),
-    removePreset: (presetId: string) => libraryActions.removeIPMPreset(this.ctx, presetId),
   };
 
   public readonly irrigation = {

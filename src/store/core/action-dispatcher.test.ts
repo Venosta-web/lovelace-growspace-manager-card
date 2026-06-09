@@ -881,24 +881,3 @@ describe('genetics delegation', () => {
   });
 });
 
-// ─── ipm delegation ───────────────────────────────────────────────────────────
-
-describe('ipm delegation', () => {
-  it('apply calls dataService.applyIPM', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ipm.apply({ growspaceId: 'gs-1' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).applyIPM).toHaveBeenCalled();
-  });
-
-  it('savePreset calls dataService.saveIPMPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ipm.savePreset({ name: 'Spider Mites Protocol' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).saveIPMPreset).toHaveBeenCalled();
-  });
-
-  it('removePreset calls dataService.removeIPMPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ipm.removePreset('preset-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeIPMPreset).toHaveBeenCalledWith('preset-1');
-  });
-});

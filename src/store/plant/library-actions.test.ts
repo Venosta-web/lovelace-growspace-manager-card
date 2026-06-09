@@ -18,8 +18,6 @@ import {
   fetchIPMPresets,
   fetchNutrientInventory,
   fetchECRampCurves,
-  saveIPMPreset,
-  removeIPMPreset,
 } from './library-actions';
 
 import {
@@ -41,8 +39,6 @@ function makeCtx(dsOverrides: Record<string, unknown> = {}) {
       fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
       fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
       fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
-      saveIPMPreset: vi.fn().mockResolvedValue(undefined),
-      removeIPMPreset: vi.fn().mockResolvedValue(undefined),
       ...dsOverrides,
     },
     data: {},
@@ -285,120 +281,6 @@ describe('fetchECRampCurves', () => {
   });
 });
 
-
-// ---------------------------------------------------------------------------
-// removeIPMPreset
-// ---------------------------------------------------------------------------
-
-describe('removeIPMPreset', () => {
-  it('calls dataService.removeIPMPreset and shows success toast', async () => {
-    const ctx = makeCtx();
-    vi.mocked(ipmPresets$).get.mockReturnValue(null);
-
-    await removeIPMPreset(ctx, 'ipm-1');
-
-    expect(ctx.dataService.removeIPMPreset).toHaveBeenCalledWith('ipm-1');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith('Removed IPM preset', 'success');
-  });
-
-  it('shows error toast and rethrows on failure', async () => {
-    const ctx = makeCtx({
-      removeIPMPreset: vi.fn().mockRejectedValue(new Error('ipm remove failed')),
-    });
-
-    await expect(removeIPMPreset(ctx, 'ipm-1')).rejects.toThrow('ipm remove failed');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('ipm remove failed'),
-      'error'
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// saveIPMPreset (existing coverage kept)
-// ---------------------------------------------------------------------------
-
-const validPreset = {
-  name: 'Weekly Neem',
-  type: 'foliar' as const,
-  items: [{ name: 'Neem Oil', dose_amount: 5, dose_unit: 'ml/L', phi_days: 3 }],
-};
-
-describe('saveIPMPreset', () => {
-  it('calls dataService.saveIPMPreset with the preset data', async () => {
-    const ctx = makeCtx();
-    vi.mocked(ipmPresets$).get.mockReturnValue(null);
-
-    await saveIPMPreset(ctx, validPreset);
-
-    expect(ctx.dataService.saveIPMPreset).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Weekly Neem' })
-    );
-  });
-
-  it('refreshes IPM presets after saving', async () => {
-    const ctx = makeCtx();
-    vi.mocked(ipmPresets$).get.mockReturnValue(null);
-
-    await saveIPMPreset(ctx, validPreset);
-
-    expect(ctx.dataService.fetchIPMPresets).toHaveBeenCalled();
-  });
-
-  it('shows success toast after saving', async () => {
-    const ctx = makeCtx();
-    vi.mocked(ipmPresets$).get.mockReturnValue(null);
-
-    await saveIPMPreset(ctx, validPreset);
-
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Weekly Neem'),
-      'success'
-    );
-  });
-
-  it('shows error toast and rethrows when save fails', async () => {
-    const ctx = makeCtx({
-      saveIPMPreset: vi.fn().mockRejectedValue(new Error('network error')),
-    });
-
-    await expect(saveIPMPreset(ctx, validPreset)).rejects.toThrow('network error');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('network error'),
-      'error'
-    );
-  });
-
-  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
-    const ctx = makeCtx({
-      saveIPMPreset: vi.fn().mockRejectedValue('plain string error'),
-    });
-
-    await expect(saveIPMPreset(ctx, validPreset)).rejects.toBe('plain string error');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Unknown error'),
-      'error'
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Non-Error throw branches for removeIPMPreset
-// ---------------------------------------------------------------------------
-
-describe('removeIPMPreset — non-Error throw', () => {
-  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
-    const ctx = makeCtx({
-      removeIPMPreset: vi.fn().mockRejectedValue({ code: 500 }),
-    });
-
-    await expect(removeIPMPreset(ctx, 'ipm-1')).rejects.toEqual({ code: 500 });
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Unknown error'),
-      'error'
-    );
-  });
-});
 
 describe('fetchECRampCurves — stale cache', () => {
   it('bypasses stale cache and fetches from server', async () => {

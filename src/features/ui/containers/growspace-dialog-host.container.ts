@@ -28,6 +28,13 @@ import type {
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
 import type { NutrientPresetsResponse } from '../../../slices/nutrient';
+import {
+  applyIPM,
+  saveIPMPreset,
+  removeIPMPreset,
+  fetchIPMPresets,
+  fetchNutrientInventory,
+} from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
 import '../../../dialogs/add-plant-dialog';
@@ -1047,7 +1054,25 @@ export class GrowspaceDialogHost extends LitElement {
         @apply-ipm=${(e: CustomEvent) => this._handleApplyIPM(e, growspaceId, plantIds)}
         @save-preset=${async (e: CustomEvent) => {
         try {
-          await this.store?.actions.ipm.savePreset(e.detail);
+          const preset = e.detail;
+          await withToast(
+            async () => {
+              await saveIPMPreset({
+                preset_id: preset.preset_id ?? preset.id,
+                name: preset.name,
+                type: preset.type,
+                items: preset.items,
+                stage: preset.stage,
+                min_days_in_stage: preset.min_days_in_stage,
+              });
+              await fetchIPMPresets();
+            },
+            {
+              success: `Saved IPM preset: ${preset.name}`,
+              errorPrefix: 'Failed to save IPM preset',
+              rethrow: true,
+            }
+          );
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] IPM preset save failed:', e);
@@ -1055,7 +1080,13 @@ export class GrowspaceDialogHost extends LitElement {
       }}
         @delete-preset=${async (e: CustomEvent) => {
         try {
-          await this.store?.actions.ipm.removePreset(e.detail.presetId);
+          await withToast(
+            async () => {
+              await removeIPMPreset(e.detail.presetId);
+              await fetchIPMPresets();
+            },
+            { success: 'Removed IPM preset', errorPrefix: 'Failed to remove IPM preset', rethrow: true }
+          );
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] IPM preset delete failed:', e);
@@ -1071,17 +1102,23 @@ export class GrowspaceDialogHost extends LitElement {
     plantIds: string[]
   ): Promise<void> {
     try {
-      await this.store?.actions.ipm.apply({
-        preset_id: e.detail.presetId,
-        growspace_id: growspaceId,
-        plant_ids: plantIds,
-        notes: e.detail.notes,
-      });
+      await withToast(
+        async () => {
+          await applyIPM({
+            preset_id: e.detail.presetId,
+            growspace_id: growspaceId,
+            plant_ids: plantIds,
+            notes: e.detail.notes,
+          });
+          // IPM products often deduct from stock, so refresh inventory.
+          await fetchNutrientInventory();
+        },
+        { success: 'IPM treatment applied', errorPrefix: 'IPM failed', rethrow: true }
+      );
       this.store?.ui.closeDialog();
-      this.store?.actions.ui.showToast('IPM treatment applied', 'success');
       await this._handleDataChanged();
     } catch (err: any) {
-      this.store?.actions.ui.showToast(`IPM failed: ${err.message || err}`, 'error');
+      console.error('[DialogHost] Apply IPM failed:', err);
     }
   }
 
