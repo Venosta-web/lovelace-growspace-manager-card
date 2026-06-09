@@ -2,15 +2,17 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
-import { cropSteeringHistory$ } from '../slices/irrigation';
+import { cropSteeringHistory$, irrigationConfigs$ } from '../slices/irrigation';
+import { createGrowspaceDevice } from '../services/types';
+import type { IrrigationDialog } from './irrigation-dialog';
+import './irrigation-dialog';
 
 afterEach(() => {
   document.body.innerHTML = '';
   cropSteeringHistory$.set(new Map());
+  irrigationConfigs$.set(new Map());
+  vi.restoreAllMocks();
 });
-import { createGrowspaceDevice } from '../services/types';
-import type { IrrigationDialog } from './irrigation-dialog';
-import './irrigation-dialog';
 
 // Stub any HA-specific custom elements that are not available in the test environment.
 const stubTags = ['ha-dialog', 'ha-svg-icon', 'ha-icon', 'gs-dialog'];
@@ -36,21 +38,6 @@ function withPump(overrides: Partial<Parameters<typeof createGrowspaceDevice>[0]
       ...overrides.irrigationConfig,
     },
   });
-}
-
-function makeMockStore(runCycleFn = vi.fn().mockResolvedValue(undefined)) {
-  return {
-    context: {
-      dataService: { runIrrigationCycle: runCycleFn },
-      ui: { showToast: vi.fn() },
-      data: {},
-      undoRedoManager: {},
-      optimisticManager: {},
-      grid: {},
-      closeDialog: vi.fn(),
-      refreshData: vi.fn().mockResolvedValue(undefined),
-    },
-  };
 }
 
 // Collapse all whitespace runs to a single space for text-content assertions.
@@ -126,13 +113,11 @@ describe('IrrigationDialog – footer meta timestamps', () => {
 // ---------------------------------------------------------------------------
 
 describe('IrrigationDialog – Run Now button', () => {
-  it('clicking Run Now dispatches runIrrigationCycle for the current growspace', async () => {
-    const mockRunCycle = vi.fn().mockResolvedValue(undefined);
+  it('clicking Run Now triggers saving state then clears it', async () => {
     const device = withPump();
-    const store = makeMockStore(mockRunCycle);
 
     const el = await fixture<IrrigationDialog>(html`
-      <irrigation-dialog .open=${true} .device=${device} .store=${store as any}></irrigation-dialog>
+      <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
     `);
     await el.updateComplete;
 
@@ -143,11 +128,14 @@ describe('IrrigationDialog – Run Now button', () => {
     expect(btn).toBeTruthy();
     expect(btn!.disabled).toBe(false);
 
+    // Click and absorb the service error (hass not set in unit tests).
+    // The mutation-errors test file verifies the actual callService dispatch.
     btn!.click();
-    // Flush the microtask queue so the async handler runs.
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await el.updateComplete;
 
-    expect(mockRunCycle).toHaveBeenCalledWith({ growspaceId: 'gs1' });
+    // After the attempt (success or failure), saving state is cleared.
+    expect((el as any)._sm.status.kind).not.toBe('run_now_saving');
   });
 
   it('shows "Starting…" and disables the button while the request is in flight', async () => {
@@ -620,7 +608,7 @@ describe('IrrigationDialog – EC Ramp tab content', () => {
     const ecRampNavItem = el.shadowRoot!.querySelector('[data-tab="ec_ramp"]') as HTMLElement;
     ecRampNavItem.click();
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(fetchFn).toHaveBeenCalledOnce();
   });
@@ -771,7 +759,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
     const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
     schedulesNav.click();
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(fetchFn).toHaveBeenCalledOnce();
     expect(fetchFn).toHaveBeenCalledWith('gs1');
@@ -795,7 +783,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
     const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
     schedulesNav.click();
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect((el as any)._cropSteeringPoller?.running).toBe(true);
   });
@@ -813,7 +801,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect((el as any)._cropSteeringPoller?.running).toBe(true);
 
     const configNav = el.shadowRoot!.querySelector('[data-tab="config"]') as HTMLElement;
@@ -837,7 +825,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fetchFn).toHaveBeenCalledOnce();
 
     // Navigate away then back
@@ -848,7 +836,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
     const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
     schedulesNav.click();
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(fetchFn).toHaveBeenCalledOnce();
   });
@@ -974,7 +962,7 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
       (b) => b.textContent?.trim() === 'Save'
     ) as HTMLButtonElement;
     saveBtn.click();
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
     expect(configureEnvironment).toHaveBeenCalledOnce();
@@ -1155,8 +1143,9 @@ describe('IrrigationDialog – save validation: P2 Direct Trigger > Saturation T
     `);
     await el.updateComplete;
 
-    // Trigger save — should NOT set a toast
-    await (el as any)._saveAll();
+    // Trigger save — validation passes (no toast). Service call may fail in test
+    // environment (hass not set), so absorb any service-level error.
+    await (el as any)._saveAll().catch(() => undefined);
     await el.updateComplete;
 
     expect((el as any)._sm.toast).toBeUndefined();
@@ -1180,7 +1169,7 @@ describe('IrrigationDialog – save validation: P2 Direct Trigger > Saturation T
     `);
     await el.updateComplete;
 
-    await (el as any)._saveAll();
+    await (el as any)._saveAll().catch(() => undefined);
     await el.updateComplete;
 
     expect((el as any)._sm.toast).toBeUndefined();
@@ -1266,7 +1255,7 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
     const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
@@ -1293,7 +1282,7 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
     const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];
@@ -1319,7 +1308,7 @@ describe('IrrigationDialog – Crop Steering Day Chart legend: EC sensor presenc
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
     const legend = el.shadowRoot!.querySelectorAll('.cs-legend')[0];

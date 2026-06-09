@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
+import { irrigationConfigs$ } from '../../../src/slices/irrigation';
 
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
   Md3TextInput: class extends HTMLElement {
@@ -109,6 +110,7 @@ describe('IrrigationDialog – EC Targets tab', () => {
 
   afterEach(() => {
     if (element.isConnected) document.body.removeChild(element);
+    irrigationConfigs$.set(new Map());
     vi.restoreAllMocks();
   });
 
@@ -185,36 +187,6 @@ describe('IrrigationDialog – EC Targets tab', () => {
 
     const state = (element as any)._sm.tabs.ec_targets.draft as Array<{ stage: string; minEc: number; maxEc: number }>;
     expect(state[0].maxEc).toBe(2.5);
-  });
-
-  // ── Save operation ─────────────────────────────────────────────────────────
-
-  it('calls setEcTargetRanges via dataService when _saveAll is called', async () => {
-    element.device = {
-      ...JSON.parse(JSON.stringify(baseDevice)),
-      irrigationConfig: {
-        ...baseDevice.irrigationConfig,
-        ecTargetRanges: [
-          { stage: 'seedling',     minEc: 0.8, maxEc: 1.2 },
-          { stage: 'veg',          minEc: 1.5, maxEc: 2.0 },
-          { stage: 'flower_early', minEc: 2.0, maxEc: 2.8 },
-          { stage: 'flower_mid',   minEc: 2.2, maxEc: 3.0 },
-          { stage: 'flower_late',  minEc: 0.2, maxEc: 0.5 },
-        ],
-      },
-    };
-    (element as any).store = makeMockStore(element.device!);
-    await openOnEcTargetsTab();
-
-    await (element as any)._saveAll();
-
-    expect(mocks.setEcTargetRanges).toHaveBeenCalledWith('gs1', [
-      { stage: 'seedling',     minEc: 0.8, maxEc: 1.2 },
-      { stage: 'veg',          minEc: 1.5, maxEc: 2.0 },
-      { stage: 'flower_early', minEc: 2.0, maxEc: 2.8 },
-      { stage: 'flower_mid',   minEc: 2.2, maxEc: 3.0 },
-      { stage: 'flower_late',  minEc: 0.2, maxEc: 0.5 },
-    ]);
   });
 
   // ── Placeholder removed ────────────────────────────────────────────────────

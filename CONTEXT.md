@@ -176,6 +176,9 @@ Owns the [[Store-Driven Interaction]] state machine for Plant Grid Cells as a di
 
 ## Irrigation
 
+**Irrigation config ownership (migration in progress)**
+The [[Irrigation slice]] (`irrigationConfigs$`) is the intended owner of a growspace's `IrrigationConfig` read-model, mirroring how it already owns tank levels. `irrigationConfigs$` is bootstrap-fed from `sync-service` and its mutators are the canonical write path. `GrowspaceDevice.irrigationConfig` is the *legacy* read-model being retired — it is not a fresh field. The two are kept consistent on optimistic writes by a [[Cross-slice mutation]]: the irrigation mutators patch `irrigationConfigs$` and also call the Grid slice's `patchDeviceIrrigationConfig` setter, so the ~14 remaining `device.irrigationConfig` readers (header chip, crop-steering model, 3D equipment renderer) stay correct until they migrate to `irrigationConfigs$`. Once all readers move, drop the bridge and remove `irrigationConfig` from `GrowspaceDevice`. This completes ADR-0001 for the irrigation domain (supersedes the old `store/growspace/irrigation-actions.ts` → `OptimisticManager` → `DataService` path).
+
 **Custom Graph Routing**
 The general rule, of which [[Tank Water Chart]] and [[Crop Steering Day Chart]] are the two known instances: certain `MetricKey`s always render a dedicated chart component in place of the generic [[Env Graph]] when their chip/hero item is clicked, rather than the standard sensor-history view. The routing check lives at the render site (e.g. `_renderItem` keyed on `item.metrics[0]`, or the hero's click handler keyed on the chip's `MetricKey`) and swaps in the dedicated component instead of `<growspace-env-chart>`. New cases should follow this same shape: a standalone chart component + a `MetricKey`-keyed routing check, not a one-off conditional buried in the generic Env Graph.
 

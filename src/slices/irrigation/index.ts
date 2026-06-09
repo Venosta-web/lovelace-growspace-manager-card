@@ -38,6 +38,7 @@ import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../..
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows } from './schema';
+import { patchDeviceIrrigationConfig } from '../grid';
 import {
   CropSteeringHistorySchema,
   type CropSteeringHistory,
@@ -229,8 +230,14 @@ export async function addIrrigationTime(
   await mutate(
     {
       type: 'addIrrigationTime',
-      optimistic: () => _patchConfig(growspaceId, { irrigationTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { irrigationTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'add_irrigation_time', {
           growspace_id: growspaceId,
@@ -256,8 +263,14 @@ export async function removeIrrigationTime(growspaceId: string, time: string): P
   await mutate(
     {
       type: 'removeIrrigationTime',
-      optimistic: () => _patchConfig(growspaceId, { irrigationTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { irrigationTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+        patchDeviceIrrigationConfig(growspaceId, { irrigationTimes: prev.irrigationTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'remove_irrigation_time', {
           growspace_id: growspaceId,
@@ -286,8 +299,14 @@ export async function addDrainTime(
   await mutate(
     {
       type: 'addDrainTime',
-      optimistic: () => _patchConfig(growspaceId, { drainTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { drainTimes: prev.drainTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { drainTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { drainTimes: prev.drainTimes });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'add_drain_time', {
           growspace_id: growspaceId,
@@ -313,8 +332,14 @@ export async function removeDrainTime(growspaceId: string, time: string): Promis
   await mutate(
     {
       type: 'removeDrainTime',
-      optimistic: () => _patchConfig(growspaceId, { drainTimes: next }),
-      inverse: () => _patchConfig(growspaceId, { drainTimes: prev.drainTimes }),
+      optimistic: () => {
+        _patchConfig(growspaceId, { drainTimes: next });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: next });
+      },
+      inverse: () => {
+        _patchConfig(growspaceId, { drainTimes: prev.drainTimes });
+        patchDeviceIrrigationConfig(growspaceId, { drainTimes: prev.drainTimes });
+      },
       apply: () =>
         callService('growspace_manager', 'remove_drain_time', {
           growspace_id: growspaceId,
@@ -438,11 +463,15 @@ export async function saveIrrigationSettings(
   await mutate(
     {
       type: 'saveIrrigationSettings',
-      optimistic: () => _patchConfig(growspaceId, patch),
+      optimistic: () => {
+        _patchConfig(growspaceId, patch);
+        patchDeviceIrrigationConfig(growspaceId, patch);
+      },
       inverse: () => {
         const restored = new Map(irrigationConfigs$.get());
         restored.set(growspaceId, prev);
         irrigationConfigs$.set(restored);
+        patchDeviceIrrigationConfig(growspaceId, prev);
       },
       apply: () => callService('growspace_manager', 'set_irrigation_settings', payload),
     },

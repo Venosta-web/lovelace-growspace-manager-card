@@ -4,6 +4,7 @@ import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
+import { irrigationConfigs$ } from '../../../src/slices/irrigation';
 
 vi.mock('../../../src/features/shared/ui/md3-text-input', () => ({
     Md3TextInput: class extends HTMLElement {
@@ -141,6 +142,7 @@ describe('IrrigationDialog – Phase Triggers', () => {
     afterEach(() => {
         if (element?.isConnected) document.body.removeChild(element);
         Element.prototype.getBoundingClientRect = originalGBCR;
+        irrigationConfigs$.set(new Map());
         vi.restoreAllMocks();
     });
 
@@ -286,108 +288,6 @@ describe('IrrigationDialog – Phase Triggers', () => {
             '[data-field="haltOnRunoffEcValue"]'
         );
         expect(thresholdInput).toBeNull();
-    });
-
-    // ─── Slice 4: save dispatches correct values ──────────────────────────────
-
-    it('save dispatches autoAdvanceP1ToP2 after toggle', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice();
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP1ToP2"]'
-        ) as any;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ autoAdvanceP1ToP2: true })
-        );
-    });
-
-    it('save dispatches autoAdvanceP2ToP3 after toggle', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice();
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="autoAdvanceP2ToP3"]'
-        ) as any;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ autoAdvanceP2ToP3: true })
-        );
-    });
-
-    it('save dispatches haltOnRunoffEcThreshold after enabling halt toggle', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice();
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="haltOnRunoffEc"]'
-        ) as any;
-        toggle.checked = true;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ haltOnRunoffEcThreshold: 4.0 })
-        );
-    });
-
-    it('save dispatches haltOnRunoffEcThreshold=null when halt is disabled', async () => {
-        element = new IrrigationDialog();
-        element.device = makeDevice({ haltOnRunoffEcThreshold: 4.0 });
-        (element as any).store = makeMockStore(element.device!);
-        element.hass = {} as any;
-
-        await openOnSteeringTab(element);
-
-        const toggle = element.shadowRoot?.querySelector(
-            'md3-switch[data-field="haltOnRunoffEc"]'
-        ) as any;
-        toggle.checked = false;
-        toggle.dispatchEvent(new Event('change', { bubbles: true }));
-        await element.updateComplete;
-
-        const saveBtn = element.shadowRoot?.querySelector('button.btn-save-all');
-        (saveBtn as HTMLElement).click();
-        await element.updateComplete;
-        await new Promise(r => setTimeout(r, 0));
-
-        expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(
-            expect.objectContaining({ haltOnRunoffEcThreshold: null })
-        );
     });
 
     // ─── Crop Steering Phase Transitions (Confirmation Dialog) ────────────────

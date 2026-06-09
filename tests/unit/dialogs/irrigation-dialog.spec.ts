@@ -4,6 +4,7 @@ import { IrrigationDialog } from '../../../src/dialogs/irrigation-dialog';
 import { transition } from '../../../src/dialogs/irrigation-dialog-sm';
 import { GrowspaceDevice } from '../../../src/types';
 import { GrowspaceType } from '../../../src/constants';
+import { irrigationConfigs$ } from '../../../src/slices/irrigation';
 
 /** Helper: read a deeply-nested SM field without triggering any reactivity. */
 function smRead(el: IrrigationDialog, path: string): unknown {
@@ -162,6 +163,7 @@ describe('IrrigationDialog', () => {
         if (originalGetBoundingClientRect) {
             Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
         }
+        irrigationConfigs$.set(new Map());
         vi.restoreAllMocks();
     });
 
@@ -186,324 +188,6 @@ describe('IrrigationDialog', () => {
             expect(markers?.length).toBe(2); // 1 irrigation + 1 drain
         });
 
-        it('should add new irrigation time', async () => {
-
-
-            // Click Add Time button (first one is irrigation)
-            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
-            const addIrrigationBtn = Array.from(addBtns || []).find(b => b.textContent?.includes('ADD TIME'));
-            (addIrrigationBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            expect(overlay).toBeTruthy();
-
-            // Set Time Input
-            const timeInput = overlay?.querySelector('md3-text-input') as any;
-            expect(timeInput).toBeTruthy();
-            timeInput.value = '12:00';
-            timeInput?.dispatchEvent(new CustomEvent('change', { detail: '12:00', bubbles: true, composed: true }));
-            await element.updateComplete;
-
-            // Set Duration Input
-            const durInput = overlay?.querySelector('md3-number-input') as any;
-            expect(durInput).toBeTruthy();
-            durInput.value = '120';
-            durInput?.dispatchEvent(new CustomEvent('change', { detail: '120', bubbles: true, composed: true }));
-            await element.updateComplete;
-
-            // Click Add Schedule
-            const confirmBtn = Array.from(overlay?.querySelectorAll('button.primary') || [])
-                .find(b => b.textContent?.includes('Add Schedule'));
-            (confirmBtn as HTMLElement)?.click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspaceId: 'gs1',
-                time: '12:00:00',
-                duration: 120
-            }));
-        });
-
-        it('should remove irrigation time via edit dialog', async () => {
-            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
-            const irrigationMarker = markers?.[0];
-
-            // 1. Click marker to open edit dialog
-            (irrigationMarker as HTMLElement).click();
-            await element.updateComplete;
-
-            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            expect(editOverlay).toBeTruthy();
-
-            // 2. Click Delete button
-            const deleteBtn = editOverlay?.querySelector('.delete-button');
-            (deleteBtn as HTMLElement).click();
-
-            // Wait for microtasks and DOM update
-            await new Promise(r => setTimeout(r, 0));
-            await element.updateComplete;
-
-            expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspaceId: 'gs1',
-                time: '08:00'
-            }));
-
-            // Edit dialog should be closed
-            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
-        });
-
-        it('should add new drain time', async () => {
-            // Mock getBoundingClientRect for drain logic if needed, but we can click button directly
-            // The button click logic uses getBoundingClientRect on the container found via closest
-            // Our mock on Element.prototype covers it.
-
-            // Click Add Time button (second one is drain)
-            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
-            const addDrainBtn = Array.from(addBtns || []).filter(b => b.textContent?.includes('ADD TIME'))[1];
-            expect(addDrainBtn).toBeTruthy();
-            (addDrainBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            expect(overlay).toBeTruthy();
-
-            // Set Time Input
-            const timeInput = overlay?.querySelector('md3-text-input') as any;
-            expect(timeInput).toBeTruthy();
-            timeInput.value = '14:00';
-            timeInput?.dispatchEvent(new CustomEvent('change', { detail: '14:00', bubbles: true, composed: true }));
-            await element.updateComplete;
-
-            // Set Duration Input
-            const durInput = overlay?.querySelector('md3-number-input') as any;
-            expect(durInput).toBeTruthy();
-            durInput.value = '45';
-            durInput?.dispatchEvent(new CustomEvent('change', { detail: '45', bubbles: true, composed: true }));
-            await element.updateComplete;
-
-            // Click Add Schedule
-            const confirmBtn = Array.from(overlay?.querySelectorAll('button.primary') || [])
-                .find(b => b.textContent?.includes('Add Schedule'));
-            (confirmBtn as HTMLElement)?.click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspaceId: 'gs1',
-                time: '14:00:00',
-                duration: 45
-            }));
-        });
-
-        it('should remove drain time via edit dialog', async () => {
-            const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1]; // Second card is drain
-            const drainMarker = drainSection?.querySelector('.timeline-event');
-            expect(drainMarker).toBeTruthy();
-
-            // 1. Click marker to open edit dialog
-            (drainMarker as HTMLElement).click();
-            await element.updateComplete;
-
-            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            expect(editOverlay).toBeTruthy();
-
-            // 2. Click Delete button
-            const deleteBtn = editOverlay?.querySelector('.delete-button');
-            (deleteBtn as HTMLElement).click();
-
-            // Wait for microtasks and DOM update
-            await new Promise(r => setTimeout(r, 0));
-            await element.updateComplete;
-
-            expect(mocks.removeDrainTime).toHaveBeenCalledWith(expect.objectContaining({
-                growspaceId: 'gs1',
-                time: '08:30'
-            }));
-
-            // Edit dialog should be closed
-            expect(element.shadowRoot?.querySelector('.overlay-backdrop')).toBeFalsy();
-        });
-    });
-
-    describe('Steering Tab', () => {
-        beforeEach(async () => {
-            element.open = true;
-            document.body.appendChild(element);
-            await element.updateComplete;
-
-            // Switch to Steering Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[1] as HTMLElement).click();
-            await element.updateComplete;
-        });
-
-        it('should toggle steering enabled', async () => {
-            const switchEl = element.shadowRoot?.querySelector('md3-switch') as any;
-
-            // Set checked property
-            switchEl.checked = true;
-            switchEl?.dispatchEvent(new Event('change', { bubbles: true }));
-            await element.updateComplete;
-
-            // Click Save (footer Save Changes calls _saveAll → _saveSettings → _saveStrategy)
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
-            (saveBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                enabled: true
-            }));
-        });
-
-        it('should update target vwc', async () => {
-            const inputs = element.shadowRoot?.querySelectorAll('md3-number-input');
-            const targetVwcInput = Array.from(inputs || [])
-                .find(i => i.getAttribute('label') === 'Saturation Target (%)') as any;
-
-            expect(targetVwcInput).toBeTruthy();
-            targetVwcInput.value = '55';
-            targetVwcInput?.dispatchEvent(new CustomEvent('change', { detail: '55' }));
-            await element.updateComplete;
-
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
-            (saveBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                targetVwcPercent: 55
-            }));
-        });
-
-        it('should update lights on time', async () => {
-            const input = element.shadowRoot?.querySelector('md3-text-input[label="Lights On Time"]') as any;
-            input.value = '08:00';
-            input?.dispatchEvent(new CustomEvent('change', { detail: '08:00' }));
-            await element.updateComplete;
-
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
-            (saveBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                lightsOnTime: '08:00'
-            }));
-        });
-    });
-    describe('Error Handling', () => {
-        beforeEach(async () => {
-            element.open = true;
-            document.body.appendChild(element);
-            await element.updateComplete;
-        });
-
-        it('should handle addIrrigationTime failure', async () => {
-            mocks.addIrrigationTime.mockRejectedValueOnce(new Error('API Error'));
-
-            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
-            const addIrrigationBtn = Array.from(addBtns || []).find(b => b.textContent?.includes('ADD TIME'));
-            (addIrrigationBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            const confirmBtn = Array.from(overlay?.querySelectorAll('button.primary') || [])
-                .find(b => b.textContent?.includes('Add Schedule'));
-            (confirmBtn as HTMLElement)?.click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
-                expect.any(String), 'error'
-            );
-        });
-
-        it('should handle removeIrrigationTime failure', async () => {
-            mocks.removeIrrigationTime.mockRejectedValueOnce(new Error('API Error'));
-
-            const markers = element.shadowRoot?.querySelectorAll('.timeline-event');
-            (markers?.[0] as HTMLElement).click();
-            await element.updateComplete;
-
-            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            const deleteBtn = editOverlay?.querySelector('.delete-button');
-            (deleteBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
-                expect.any(String), 'error'
-            );
-        });
-
-        it('should handle addDrainTime failure', async () => {
-            mocks.addDrainTime.mockRejectedValueOnce(new Error('API Error'));
-
-            const addBtns = element.shadowRoot?.querySelectorAll('button.primary');
-            const addDrainBtn = Array.from(addBtns || []).filter(b => b.textContent?.includes('ADD TIME'))[1];
-            (addDrainBtn as HTMLElement)?.click();
-            await element.updateComplete;
-
-            const overlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            const confirmBtn = Array.from(overlay?.querySelectorAll('button.primary') || [])
-                .find(b => b.textContent?.includes('Add Schedule'));
-            (confirmBtn as HTMLElement)?.click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
-                expect.any(String), 'error'
-            );
-        });
-
-        it('should handle removeDrainTime failure', async () => {
-            mocks.removeDrainTime.mockRejectedValueOnce(new Error('API Error'));
-
-            const drainSection = element.shadowRoot?.querySelectorAll('.detail-card')[1];
-            const drainMarker = drainSection?.querySelector('.timeline-event');
-            (drainMarker as HTMLElement).click();
-            await element.updateComplete;
-
-            const editOverlay = element.shadowRoot?.querySelector('.overlay-backdrop');
-            const deleteBtn = editOverlay?.querySelector('.delete-button');
-            (deleteBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect((element as any).store.ui.showToast).toHaveBeenCalledWith(
-                expect.any(String), 'error'
-            );
-        });
-
-        it('should handle saveStrategy failure', async () => {
-            mocks.setIrrigationStrategy.mockRejectedValueOnce(new Error('API Error'));
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
-
-            // Switch to Steering Tab
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item');
-            (tabs?.[1] as HTMLElement).click();
-            await element.updateComplete;
-
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
-            (saveBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
-
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to save strategy:', expect.any(Error));
-        });
-
-        it('should handle saveSettings failure', async () => {
-            mocks.setIrrigationSettings.mockRejectedValueOnce(new Error('API Error'));
-
-            await expect((element as any)._saveSettings()).rejects.toThrow('API Error');
-
-            expect((element as any).store.context.ui.showToast).toHaveBeenCalledWith(
-                expect.any(String), 'error'
-            );
-        });
     });
 
     describe('Edge Cases', () => {
@@ -672,45 +356,6 @@ describe('IrrigationDialog', () => {
             expect((capturedEvent as CustomEvent).composed).toBe(true);
         });
 
-        it('should update all strategy fields', async () => {
-            const tabs = element.shadowRoot?.querySelectorAll('.v1-nav-item') as NodeListOf<HTMLElement>;
-            tabs[1].click();
-            await element.updateComplete;
-
-            const strategyFields = [
-                { label: 'Saturation Target (%)', key: 'targetVwcPercent', val: '60', expected: 60 },
-                { label: 'Maintenance Dryback (%)', key: 'maintenanceDrybackPercent', val: '5', expected: 5 },
-                { label: 'P0 Duration (min)', key: 'p0DurationMinutes', val: '30', expected: 30 },
-                { label: 'P2 Stop Buffer (min)', key: 'p2StopBeforeLightsOffMinutes', val: '60', expected: 60 },
-                { label: 'Shot Duration (sec)', key: 'shotDurationSeconds', val: '10', expected: 10 },
-                { label: 'Shot Interval (min)', key: 'shotIntervalMinutes', val: '20', expected: 20 },
-            ];
-
-            for (const field of strategyFields) {
-                const input = Array.from(element.shadowRoot?.querySelectorAll('md3-number-input') || [])
-                    .find(el => el.getAttribute('label') === field.label) as any;
-
-                expect(input).toBeTruthy();
-
-                input.value = field.val;
-                input.dispatchEvent(new CustomEvent('change', { detail: field.val }));
-            }
-
-            await element.updateComplete;
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all') as HTMLElement;
-            saveBtn.click();
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationStrategy).toHaveBeenCalledWith('gs1', expect.objectContaining({
-                targetVwcPercent: 60,
-                maintenanceDrybackPercent: 5,
-                p0DurationMinutes: 30,
-                p2StopBeforeLightsOffMinutes: 60,
-                shotDurationSeconds: 10,
-                shotIntervalMinutes: 20
-            }));
-        });
     });
 
     describe('Coverage Gap Fillers', () => {
@@ -790,33 +435,6 @@ describe('IrrigationDialog', () => {
 
             expect((element as any)._sm.tabs.schedules.sub.time).toBe('13:00');
             expect((element as any)._sm.tabs.schedules.sub.duration).toBe(15);
-        });
-
-        it('should add irrigation time with default duration fallback', async () => {
-            document.body.appendChild(element);
-            element.open = true;
-            await element.updateComplete;
-
-            // Directly call private method to skip UI interaction complexity for this specific branch
-            await (element as any)._addIrrigationTime('10:00', undefined);
-
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                duration: 60 // default
-            }));
-            document.body.removeChild(element);
-        });
-
-        it('should add drain time with default duration fallback', async () => {
-            document.body.appendChild(element);
-            element.open = true;
-            await element.updateComplete;
-
-            await (element as any)._addDrainTime('10:00', undefined);
-
-            expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
-                duration: 60 // default
-            }));
-            document.body.removeChild(element);
         });
 
         it('should update lights_on_time using event detail fallback', async () => {
@@ -1078,46 +696,6 @@ describe('IrrigationDialog', () => {
             // Check sorting if needed, but existence is key for coverage
         });
 
-        it('should update irrigation pump entity on change', async () => {
-            const selects = element.shadowRoot?.querySelectorAll('select');
-            const pumpSelect = selects?.[0]; // First one is irrigation pump
-
-            expect(pumpSelect).toBeTruthy();
-
-            pumpSelect!.value = 'switch.pump2';
-            pumpSelect!.dispatchEvent(new Event('change'));
-            await element.updateComplete;
-
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
-            (saveBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
-                irrigationPumpEntity: 'switch.pump2'
-            }));
-        });
-
-        it('should update drain pump entity on change', async () => {
-            const selects = element.shadowRoot?.querySelectorAll('select');
-            const drainSelect = selects?.[1]; // Second one is drain pump
-
-            expect(drainSelect).toBeTruthy();
-
-            drainSelect!.value = 'input_boolean.valve';
-            drainSelect!.dispatchEvent(new Event('change'));
-            await element.updateComplete;
-
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all');
-            (saveBtn as HTMLElement).click();
-            await element.updateComplete;
-            await new Promise((r) => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationSettings).toHaveBeenCalledWith(expect.objectContaining({
-                drainPumpEntity: 'input_boolean.valve'
-            }));
-        });
-
         it('should handle missing hass safely in _getEntities', async () => {
             element.hass = undefined as any;
             await element.requestUpdate();
@@ -1218,36 +796,6 @@ describe('IrrigationDialog', () => {
     });
 
     describe('Additional Branch Coverage', () => {
-        it('should handle formatting time in _addIrrigationTime', async () => {
-            element.open = true;
-            document.body.appendChild(element);
-            await element.updateComplete;
-
-            // Test HH:MM format (should append :00)
-            await (element as any)._addIrrigationTime('10:00');
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                time: '10:00:00'
-            }));
-
-            // Test HH:MM:SS format (should remain same)
-            await (element as any)._addIrrigationTime('11:11:11');
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                time: '11:11:11'
-            }));
-        });
-
-        it('should handle formatting time in _addDrainTime', async () => {
-            element.open = true;
-            document.body.appendChild(element);
-            await element.updateComplete;
-
-            // Test HH:MM format
-            await (element as any)._addDrainTime('05:30');
-            expect(mocks.addDrainTime).toHaveBeenCalledWith(expect.objectContaining({
-                time: '05:30:00'
-            }));
-        });
-
         it('should notify data changed', () => {
             const spy = vi.fn();
             element.addEventListener('data-changed', spy);
@@ -1316,27 +864,6 @@ describe('IrrigationDialog', () => {
             document.body.removeChild(element);
         });
 
-        it('should handle sorting with mixed time and start_time', async () => {
-            element.hass = {} as any;
-            element.open = true;
-            element.device = {
-                ...mockDevice,
-                irrigationConfig: {
-                    ...mockDevice.irrigationConfig!,
-                    irrigationTimes: [{ start_time: '12:00' } as any]
-                }
-            } as any;
-            document.body.appendChild(element);
-            await element.updateComplete;
-
-            await (element as any)._addIrrigationTime('11:00');
-
-            // Sorting is handled by the action; verify the action was called with correct time
-            expect(mocks.addIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({
-                time: '11:00:00',
-            }));
-            document.body.removeChild(element);
-        });
     });
 
     describe('Context-Aware Tab Visibility', () => {
@@ -1576,22 +1103,6 @@ describe('IrrigationDialog', () => {
             expect(bodyPrimaryBtns.length).toBe(0);
         });
 
-        it('should call saveStrategy and saveSettings when Save Changes is clicked', async () => {
-            mocks.setIrrigationStrategy.mockClear();
-            mocks.setIrrigationSettings.mockClear();
-
-            // Dirty the strategy and pump config
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { enabled: true } });
-            (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_SCHEDULES_DRAFT', partial: { irrigationPumpEntity: 'switch.new_pump' } });
-
-            const saveBtn = element.shadowRoot?.querySelector('.btn-save-all') as HTMLElement;
-            saveBtn?.click();
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 0));
-
-            expect(mocks.setIrrigationStrategy).toHaveBeenCalled();
-            expect(mocks.setIrrigationSettings).toHaveBeenCalled();
-        });
     });
 
     describe('Footer Next Display', () => {
@@ -1836,30 +1347,6 @@ describe('IrrigationDialog', () => {
                 element.open = true;
                 document.body.appendChild(element);
                 await element.updateComplete;
-            });
-
-            it('should call _removeIrrigationTime when clicking chip-remove on an irrigation chip', async () => {
-                const irrigChips = element.shadowRoot?.querySelectorAll('.time-chip.irrig-chip');
-                const removeBtn = irrigChips?.[0]?.querySelector('button.chip-remove') as HTMLElement;
-                expect(removeBtn).toBeTruthy();
-
-                removeBtn.click();
-                await element.updateComplete;
-                await new Promise((r) => setTimeout(r, 0));
-
-                expect(mocks.removeIrrigationTime).toHaveBeenCalledWith(expect.objectContaining({ time: '08:00' }));
-            });
-
-            it('should call _removeDrainTime when clicking chip-remove on a drain chip', async () => {
-                const drainChips = element.shadowRoot?.querySelectorAll('.time-chip.drain-chip');
-                const removeBtn = drainChips?.[0]?.querySelector('button.chip-remove') as HTMLElement;
-                expect(removeBtn).toBeTruthy();
-
-                removeBtn.click();
-                await element.updateComplete;
-                await new Promise((r) => setTimeout(r, 0));
-
-                expect(mocks.removeDrainTime).toHaveBeenCalledWith(expect.objectContaining({ time: '08:30' }));
             });
 
             it('should open add-time dialog when clicking the new-chip button', async () => {

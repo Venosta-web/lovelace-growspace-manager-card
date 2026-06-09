@@ -30,7 +30,6 @@ import {
   DrainECReading,
   TankWaterEvent,
 } from '../types';
-import type { ECTargetRange } from '../services/types';
 import {
   fmtMinuteOfDay,
   computeCropSteeringCycle,
@@ -46,21 +45,22 @@ import {
   requestTabSwitch,
   discardAndSwitch,
   type DialogSM,
-  type TabId as SMTabId,
 } from './irrigation-dialog-sm';
 import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { ecRampCurves$ } from '../slices/nutrient';
-import { cropSteeringHistory$ } from '../slices/irrigation';
 import {
+  cropSteeringHistory$,
+  irrigationConfigs$,
   addIrrigationTime,
   removeIrrigationTime,
   addDrainTime,
   removeDrainTime,
-  setIrrigationSettings,
+  saveIrrigationSettings,
   runIrrigationCycle,
-} from '../store/growspace/irrigation-actions';
+} from '../slices/irrigation';
+import type { IrrigationConfig } from '../services/types';
 import '../features/shared/ui';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
@@ -125,6 +125,9 @@ export class IrrigationDialog extends LitElement {
   @state() private _ecRampError: string | null = null;
   private _ecRampFetched = false;
   private _ecRampCurvesController?: StoreController<Record<string, ECRampCurve> | null>;
+
+  // ─── Irrigation Configs (live, non-draft reads) ───────────────────────
+  private _irrigationConfigsController = new StoreController(this, irrigationConfigs$);
 
   // ─── Crop Steering History (Schedules tab) ────────────────────────────
   private _cropSteeringHistoryFetched = false;
@@ -845,10 +848,8 @@ export class IrrigationDialog extends LitElement {
   // ─── Visibility ───────────────────────────────────────────────────────────
 
   private get _hasPump(): boolean {
-    return !!(
-      this.device?.irrigationConfig?.irrigationPumpEntity ||
-      this.device?.irrigationConfig?.drainPumpEntity
-    );
+    const cfg = this._liveConfig ?? this.device?.irrigationConfig;
+    return !!(cfg?.irrigationPumpEntity || cfg?.drainPumpEntity);
   }
 
   private get _visibleTabs(): TabId[] {
@@ -892,7 +893,7 @@ export class IrrigationDialog extends LitElement {
       (env?.runoffEcSensors?.length ?? 0) > 0 ||
       (env?.bulkEcSensors?.length ?? 0) > 0 ||
       (env?.poreEcSensors?.length ?? 0) > 0;
-    const hasSchedules = (this.device?.irrigationConfig?.irrigationTimes?.length ?? 0) > 0;
+    const hasSchedules = ((this._liveConfig ?? this.device?.irrigationConfig)?.irrigationTimes?.length ?? 0) > 0;
     if (hasPump && hasSchedules && hasEcSensorsForRamp) tabs.push('ec_ramp');
 
     return tabs;
@@ -909,10 +910,7 @@ export class IrrigationDialog extends LitElement {
       });
     }
     if (!visible.includes('steering')) {
-      const hasPump = !!(
-        this.device?.irrigationConfig?.irrigationPumpEntity ||
-        this.device?.irrigationConfig?.drainPumpEntity
-      );
+      const hasPump = this._hasPump;
       if (!hasPump) {
         hints.push({
           icon: '🚰',
@@ -947,6 +945,11 @@ export class IrrigationDialog extends LitElement {
   }
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────
+
+  private get _liveConfig(): IrrigationConfig | undefined {
+    const id = this.device?.deviceId;
+    return id ? this._irrigationConfigsController.value?.get(id) : undefined;
+  }
 
   protected willUpdate(changedProps: PropertyValues): void {
     if (changedProps.has('open') && this.open) {
@@ -1058,11 +1061,10 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _saveSettings() {
-    if (!this.device?.deviceId || !this.store) return;
+    if (!this.device?.deviceId) return;
     const s = this._sm.tabs.schedules.draft;
     const cfg = this._sm.tabs.config.draft;
-    await setIrrigationSettings(this.store.context, {
-      growspaceId: this.device.deviceId,
+    await saveIrrigationSettings(this.device.deviceId, {
       irrigationPumpEntity: s.irrigationPumpEntity,
       drainPumpEntity: s.drainPumpEntity,
       irrigationDuration: s.irrigationDuration,
@@ -1090,10 +1092,10 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _handleRunNow() {
-    if (!this.device?.deviceId || !this.store) return;
+    if (!this.device?.deviceId) return;
     this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
     try {
-      await runIrrigationCycle(this.store.context, { growspaceId: this.device.deviceId });
+      await runIrrigationCycle(this.device.deviceId);
     } finally {
       this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
     }
@@ -1121,7 +1123,7 @@ export class IrrigationDialog extends LitElement {
         maxEcDelta: d.maxEcDelta,
         targetRunoffPercent: d.targetRunoffPercent,
       });
-    } catch (e) {
+    } catch (_e) {
       this._showErrorToast('Failed to save drain config');
     } finally {
       this._sm = transition(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
@@ -1131,42 +1133,42 @@ export class IrrigationDialog extends LitElement {
   // ─── Schedule mutations ───────────────────────────────────────────────────
 
   private async _addIrrigationTime(time: string, duration?: number) {
-    if (!this.device?.deviceId || !this.store) return;
+    if (!this.device?.deviceId) return;
     const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await addIrrigationTime(this.store.context, {
-      growspaceId: this.device.deviceId,
-      time: formattedTime,
-      duration: duration || this._sm.tabs.schedules.draft.irrigationDuration,
-    });
+    await addIrrigationTime(
+      this.device.deviceId,
+      formattedTime,
+      duration || this._sm.tabs.schedules.draft.irrigationDuration
+    );
   }
 
   private async _removeIrrigationTime(time: string) {
-    if (!this.device?.deviceId || !this.store) return;
-    await removeIrrigationTime(this.store.context, { growspaceId: this.device.deviceId, time });
+    if (!this.device?.deviceId) return;
+    await removeIrrigationTime(this.device.deviceId, time);
   }
 
   private async _addDrainTime(time: string, duration?: number) {
-    if (!this.device?.deviceId || !this.store) return;
+    if (!this.device?.deviceId) return;
     const formattedTime = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
     try {
-      await addDrainTime(this.store.context, {
-        growspaceId: this.device.deviceId,
-        time: formattedTime,
-        duration: duration || this._sm.tabs.schedules.draft.drainDuration,
-      });
-    } catch (e) {
-      this.store.ui.showToast('Failed to add drain time', 'error');
+      await addDrainTime(
+        this.device.deviceId,
+        formattedTime,
+        duration || this._sm.tabs.schedules.draft.drainDuration
+      );
+    } catch (_e) {
+      this._showErrorToast('Failed to add drain time');
     }
   }
 
   private async _removeDrainTime(time: string) {
-    if (!this.device?.deviceId || !this.store) return;
+    if (!this.device?.deviceId) return;
     try {
-      await removeDrainTime(this.store.context, { growspaceId: this.device.deviceId, time });
-    } catch (e) {
-      this.store.ui.showToast('Failed to remove drain time', 'error');
+      await removeDrainTime(this.device.deviceId, time);
+    } catch (_e) {
+      this._showErrorToast('Failed to remove drain time');
     }
   }
 
@@ -1220,79 +1222,59 @@ export class IrrigationDialog extends LitElement {
 
   private async _saveEditedIrrigationTime() {
     const sub = this._sm.tabs.schedules.sub;
-    if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store) return;
+    if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId) return;
     const { originalTime, time, duration } = sub;
     const formatted = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
     if (originalTime !== formatted) {
-      const existing = this.device.irrigationConfig?.irrigationTimes || [];
+      const existing = (this._liveConfig ?? this.device.irrigationConfig)?.irrigationTimes || [];
       if (existing.some((t) => t.time === formatted)) {
-        this.store.ui.showToast(`Irrigation time ${time} already exists`, 'error');
+        this._showErrorToast(`Irrigation time ${time} already exists`);
         return;
       }
     }
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await removeIrrigationTime(this.store.context, {
-      growspaceId: this.device.deviceId,
-      time: originalTime,
-    });
-    await addIrrigationTime(this.store.context, {
-      growspaceId: this.device.deviceId,
-      time: formatted,
-      duration,
-    });
+    await removeIrrigationTime(this.device.deviceId, originalTime);
+    await addIrrigationTime(this.device.deviceId, formatted, duration);
   }
 
   private async _saveEditedDrainTime() {
     const sub = this._sm.tabs.schedules.sub;
-    if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store) return;
+    if (sub.kind !== 'editing-drain' || !this.device?.deviceId) return;
     const { originalTime, time, duration } = sub;
     const formatted = time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time;
     if (originalTime !== formatted) {
-      const existing = this.device.irrigationConfig?.drainTimes || [];
+      const existing = (this._liveConfig ?? this.device.irrigationConfig)?.drainTimes || [];
       if (existing.some((t) => t.time === formatted)) {
-        this.store.ui.showToast(`Drain time ${time} already exists`, 'error');
+        this._showErrorToast(`Drain time ${time} already exists`);
         return;
       }
     }
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await removeDrainTime(this.store.context, {
-      growspaceId: this.device.deviceId,
-      time: originalTime,
-    });
-    await addDrainTime(this.store.context, {
-      growspaceId: this.device.deviceId,
-      time: formatted,
-      duration,
-    });
+    await removeDrainTime(this.device.deviceId, originalTime);
+    await addDrainTime(this.device.deviceId, formatted, duration);
   }
 
   private async _deleteIrrigationTimeFromEdit() {
     const sub = this._sm.tabs.schedules.sub;
-    if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId || !this.store) return;
+    if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId) return;
     const { originalTime } = sub;
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
     try {
-      await removeIrrigationTime(this.store.context, {
-        growspaceId: this.device.deviceId,
-        time: originalTime,
-      });
-    } catch (e) {
-      this.store.ui.showToast('Failed to remove irrigation time', 'error');
+      await removeIrrigationTime(this.device.deviceId, originalTime);
+    } catch (_e) {
+      this._showErrorToast('Failed to remove irrigation time');
     }
   }
 
   private async _deleteDrainTimeFromEdit() {
     const sub = this._sm.tabs.schedules.sub;
-    if (sub.kind !== 'editing-drain' || !this.device?.deviceId || !this.store) return;
+    if (sub.kind !== 'editing-drain' || !this.device?.deviceId) return;
     const { originalTime } = sub;
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
     try {
-      await removeDrainTime(this.store.context, {
-        growspaceId: this.device.deviceId,
-        time: originalTime,
-      });
-    } catch (e) {
-      this.store.ui.showToast('Failed to remove drain time', 'error');
+      await removeDrainTime(this.device.deviceId, originalTime);
+    } catch (_e) {
+      this._showErrorToast('Failed to remove drain time');
     }
   }
 
@@ -1372,7 +1354,7 @@ export class IrrigationDialog extends LitElement {
         feedVolumeMl: d.logFeedVolume || undefined,
         drainVolumeMl: d.logDrainVolume || undefined,
       });
-    } catch (e) {
+    } catch (_e) {
       this._showErrorToast('Failed to log drain reading');
     } finally {
       this._sm = transition(this._sm, { type: 'SET_DRAIN_LOGGING', logging: false });
@@ -1985,8 +1967,9 @@ export class IrrigationDialog extends LitElement {
                   class="chip-remove"
                   @click=${(e: Event) => {
             e.stopPropagation();
-            if (type === 'irrigation') this._removeIrrigationTime(timeStr).catch(() => { });
-            else this._removeDrainTime(timeStr).catch(() => { });
+            if (type === 'irrigation')
+              this._removeIrrigationTime(timeStr).catch(() => this._showErrorToast('Failed to remove irrigation time'));
+            else this._removeDrainTime(timeStr).catch(() => {});
           }}
                   title="Remove"
                 >
@@ -2069,10 +2052,10 @@ export class IrrigationDialog extends LitElement {
                       @click=${() => {
             if (type === 'irrigation')
               this._addIrrigationTime(addingTime.time, addingTime.duration).catch(
-                () => { }
+                () => this._showErrorToast('Failed to add irrigation time')
               );
             else
-              this._addDrainTime(addingTime.time, addingTime.duration).catch(() => { });
+              this._addDrainTime(addingTime.time, addingTime.duration).catch(() => {});
           }}
                       style="background:${color};"
                     >

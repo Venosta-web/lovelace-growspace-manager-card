@@ -15,7 +15,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
+import { createGrowspaceDevice } from '../../services/types';
 import * as hassCall from '../../services/hass-call';
+import { devices$, setDevices } from '../grid';
 import {
   irrigationConfigs$,
   irrigationStrategies$,
@@ -91,6 +93,7 @@ beforeEach(() => {
   irrigationStrategies$.set(new Map());
   tankLevels$.set(new Map());
   cropSteeringHistory$.set(new Map());
+  devices$.set([]);
   vi.clearAllMocks();
   vi.mocked(hassCall.callService).mockResolvedValue(undefined);
 });
@@ -378,6 +381,29 @@ describe('addIrrigationTime', () => {
     const config = irrigationConfigs$.get().get('new_gs');
     expect(config?.irrigationTimes).toEqual([{ time: '09:00', duration: 45 }]);
   });
+
+  it('cross-slice bridge: also patches devices$.irrigationConfig optimistically', async () => {
+    setDevices([createGrowspaceDevice({ deviceId: 'gs1', name: 'G1' })]);
+    setIrrigationConfig('gs1', makeConfig());
+
+    await addIrrigationTime('gs1', '08:00', 60);
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).toContainEqual(
+      expect.objectContaining({ time: '08:00' })
+    );
+  });
+
+  it('cross-slice bridge: reverts devices$.irrigationConfig on rollback', async () => {
+    setDevices([createGrowspaceDevice({ deviceId: 'gs1', name: 'G1' })]);
+    setIrrigationConfig('gs1', makeConfig());
+    vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(addIrrigationTime('gs1', '08:00', 60)).rejects.toThrow();
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).toHaveLength(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -423,6 +449,30 @@ describe('removeIrrigationTime', () => {
     const times = irrigationConfigs$.get().get('gs1')?.irrigationTimes ?? [];
     expect(times).toContainEqual(expect.objectContaining({ time: '08:00' }));
   });
+
+  it('cross-slice bridge: also removes from devices$.irrigationConfig optimistically', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: {
+          irrigationTimes: [
+            { time: '08:00', duration: 60 },
+            { time: '14:00', duration: 60 },
+          ],
+          drainTimes: [],
+        },
+      }),
+    ]);
+
+    await removeIrrigationTime('gs1', '08:00');
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationTimes).not.toContainEqual(
+      expect.objectContaining({ time: '08:00' })
+    );
+    expect(device?.irrigationConfig.irrigationTimes).toHaveLength(1);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -459,6 +509,18 @@ describe('addDrainTime', () => {
     await expect(addDrainTime('gs1', '18:00', 30)).rejects.toThrow();
 
     expect(irrigationConfigs$.get().get('gs1')?.drainTimes).toHaveLength(0);
+  });
+
+  it('cross-slice bridge: also patches devices$.irrigationConfig.drainTimes optimistically', async () => {
+    setDevices([createGrowspaceDevice({ deviceId: 'gs1', name: 'G1' })]);
+    setIrrigationConfig('gs1', makeConfig());
+
+    await addDrainTime('gs1', '18:00', 30);
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.drainTimes).toContainEqual(
+      expect.objectContaining({ time: '18:00' })
+    );
   });
 });
 
@@ -500,6 +562,21 @@ describe('removeDrainTime', () => {
     expect(irrigationConfigs$.get().get('gs1')?.drainTimes).toContainEqual(
       expect.objectContaining({ time: '18:00' })
     );
+  });
+
+  it('cross-slice bridge: also removes from devices$.irrigationConfig.drainTimes', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: { irrigationTimes: [], drainTimes: [{ time: '18:00', duration: 30 }] },
+      }),
+    ]);
+
+    await removeDrainTime('gs1', '18:00');
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.drainTimes).toHaveLength(0);
   });
 });
 
@@ -705,6 +782,27 @@ describe('saveIrrigationSettings', () => {
     ).rejects.toThrow();
 
     expect(irrigationConfigs$.get().get('gs1')?.irrigationPumpEntity).toBe('switch.old');
+  });
+
+  it('cross-slice bridge: also patches devices$.irrigationConfig pump entity optimistically', async () => {
+    setDevices([
+      createGrowspaceDevice({
+        deviceId: 'gs1',
+        name: 'G1',
+        irrigationConfig: { irrigationTimes: [], drainTimes: [], irrigationPumpEntity: 'switch.old' },
+      }),
+    ]);
+    setIrrigationConfig('gs1', makeConfig({ irrigationPumpEntity: 'switch.old' }));
+
+    await saveIrrigationSettings('gs1', {
+      irrigationPumpEntity: 'switch.new',
+      drainPumpEntity: 'switch.drain',
+      irrigationDuration: 60,
+      drainDuration: 30,
+    });
+
+    const device = devices$.get().find((d) => d.deviceId === 'gs1');
+    expect(device?.irrigationConfig.irrigationPumpEntity).toBe('switch.new');
   });
 });
 
