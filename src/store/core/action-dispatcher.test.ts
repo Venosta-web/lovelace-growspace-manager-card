@@ -735,22 +735,6 @@ describe('library delegation', () => {
   });
 });
 
-// ─── nutrient delegation ──────────────────────────────────────────────────────
-
-describe('nutrient delegation', () => {
-  it('savePreset calls dataService.saveNutrientPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.nutrient.savePreset({ id: 'n1' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).saveNutrientPreset).toHaveBeenCalled();
-  });
-
-  it('removePreset calls dataService.removeNutrientPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.nutrient.removePreset('n1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeNutrientPreset).toHaveBeenCalledWith('n1');
-  });
-});
-
 // ─── ai delegation ────────────────────────────────────────────────────────────
 
 describe('ai delegation', () => {

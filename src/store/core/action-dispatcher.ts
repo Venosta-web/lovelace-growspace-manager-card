@@ -299,12 +299,6 @@ export class ActionDispatcher {
     },
   };
 
-  public readonly nutrient = {
-    savePreset: (preset: Parameters<typeof libraryActions.saveNutrientPreset>[1]) =>
-      libraryActions.saveNutrientPreset(this.ctx, preset),
-    removePreset: (id: string) => libraryActions.removeNutrientPreset(this.ctx, id),
-  };
-
   public readonly ai = {
     /** Analyze all growspaces at once */
     analyzeAll: () => aiActions.analyzeGrowspace(this.ctx, '', true),

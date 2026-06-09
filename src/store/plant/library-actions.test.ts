@@ -18,9 +18,7 @@ import {
   fetchIPMPresets,
   fetchNutrientInventory,
   fetchECRampCurves,
-  saveNutrientPreset,
   saveIPMPreset,
-  removeNutrientPreset,
   removeIPMPreset,
 } from './library-actions';
 
@@ -44,8 +42,6 @@ function makeCtx(dsOverrides: Record<string, unknown> = {}) {
       fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
       fetchECRampCurves: vi.fn().mockResolvedValue(undefined),
       saveIPMPreset: vi.fn().mockResolvedValue(undefined),
-      saveNutrientPreset: vi.fn().mockResolvedValue(undefined),
-      removeNutrientPreset: vi.fn().mockResolvedValue(undefined),
       removeIPMPreset: vi.fn().mockResolvedValue(undefined),
       ...dsOverrides,
     },
@@ -289,66 +285,6 @@ describe('fetchECRampCurves', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// saveNutrientPreset
-// ---------------------------------------------------------------------------
-
-describe('saveNutrientPreset', () => {
-  const preset = { name: 'Veg Mix', nutrients: [{ nutrient_id: 'n', dose_ml_l: 2 }] };
-
-  it('calls dataService.saveNutrientPreset and shows success toast', async () => {
-    const ctx = makeCtx();
-    vi.mocked(nutrientPresets$).get.mockReturnValue(null);
-
-    await saveNutrientPreset(ctx, preset);
-
-    expect(ctx.dataService.saveNutrientPreset).toHaveBeenCalledWith(preset);
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Veg Mix'),
-      'success'
-    );
-  });
-
-  it('shows error toast and rethrows on failure', async () => {
-    const ctx = makeCtx({
-      saveNutrientPreset: vi.fn().mockRejectedValue(new Error('save failed')),
-    });
-
-    await expect(saveNutrientPreset(ctx, preset)).rejects.toThrow('save failed');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('save failed'),
-      'error'
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// removeNutrientPreset
-// ---------------------------------------------------------------------------
-
-describe('removeNutrientPreset', () => {
-  it('calls dataService.removeNutrientPreset and shows success toast', async () => {
-    const ctx = makeCtx();
-    vi.mocked(nutrientPresets$).get.mockReturnValue(null);
-
-    await removeNutrientPreset(ctx, 'preset-1');
-
-    expect(ctx.dataService.removeNutrientPreset).toHaveBeenCalledWith('preset-1');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith('Removed nutrient preset', 'success');
-  });
-
-  it('shows error toast and rethrows on failure', async () => {
-    const ctx = makeCtx({
-      removeNutrientPreset: vi.fn().mockRejectedValue(new Error('remove failed')),
-    });
-
-    await expect(removeNutrientPreset(ctx, 'preset-1')).rejects.toThrow('remove failed');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('remove failed'),
-      'error'
-    );
-  });
-});
 
 // ---------------------------------------------------------------------------
 // removeIPMPreset
@@ -447,37 +383,8 @@ describe('saveIPMPreset', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Non-Error throw branches for saveNutrientPreset, removeNutrientPreset, removeIPMPreset
+// Non-Error throw branches for removeIPMPreset
 // ---------------------------------------------------------------------------
-
-describe('saveNutrientPreset — non-Error throw', () => {
-  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
-    const ctx = makeCtx({
-      saveNutrientPreset: vi.fn().mockRejectedValue('oops'),
-    });
-    const preset = { name: 'X', nutrients: [] };
-
-    await expect(saveNutrientPreset(ctx, preset)).rejects.toBe('oops');
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Unknown error'),
-      'error'
-    );
-  });
-});
-
-describe('removeNutrientPreset — non-Error throw', () => {
-  it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
-    const ctx = makeCtx({
-      removeNutrientPreset: vi.fn().mockRejectedValue(42),
-    });
-
-    await expect(removeNutrientPreset(ctx, 'p1')).rejects.toBe(42);
-    expect(ctx.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('Unknown error'),
-      'error'
-    );
-  });
-});
 
 describe('removeIPMPreset — non-Error throw', () => {
   it('shows "Unknown error" in toast when a non-Error is thrown', async () => {
