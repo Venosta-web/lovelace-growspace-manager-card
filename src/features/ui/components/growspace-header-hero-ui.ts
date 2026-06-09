@@ -325,53 +325,51 @@ export class GrowspaceHeaderHeroUI extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        border-color: rgba(38, 198, 218, 0.5);
-        background: linear-gradient(
-          135deg,
-          rgba(38, 198, 218, 0.1) 0%,
-          rgba(38, 198, 218, 0.03) 50%,
-          var(--glass-bg, rgba(255, 255, 255, 0.05)) 100%
-        );
+        border-color: rgba(38, 198, 218, 0.16);
+        background:
+          linear-gradient(180deg, rgba(38, 198, 218, 0.045) 0%, rgba(38, 198, 218, 0.012) 100%),
+          var(--card-background-color, #1f1f21);
         box-shadow:
-          0 4px 24px -1px rgba(0, 0, 0, 0.2),
-          0 0 0 4px rgba(38, 198, 218, 0.06);
+          0 1px 2px rgba(0, 0, 0, 0.3),
+          0 1px 3px 1px rgba(0, 0, 0, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.025);
       }
 
       .phase-hero-card:hover {
-        border-color: rgba(38, 198, 218, 0.75);
+        border-color: rgba(38, 198, 218, 0.28);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          0 0 0 4px rgba(38, 198, 218, 0.1);
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
       }
 
       .phase-hero-card.active {
-        background: linear-gradient(
-          135deg,
-          rgba(38, 198, 218, 0.18) 0%,
-          rgba(38, 198, 218, 0.06) 55%,
-          var(--glass-bg, rgba(255, 255, 255, 0.05)) 100%
-        );
-        border-color: rgba(38, 198, 218, 0.8);
+        background:
+          linear-gradient(180deg, rgba(38, 198, 218, 0.07) 0%, rgba(38, 198, 218, 0.02) 100%),
+          var(--card-background-color, #1f1f21);
+        border-color: rgba(38, 198, 218, 0.30);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          0 0 0 4px rgba(38, 198, 218, 0.15);
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
       }
 
       .phase-hero-card .hero-header {
-        color: #26c6da;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
       }
 
-      .phase-hero-card .hero-icon,
+      .phase-hero-card .hero-icon {
+        color: rgba(38, 198, 218, 0.85) !important;
+        fill: rgba(38, 198, 218, 0.85) !important;
+      }
+
       .phase-hero-card .hero-label {
-        color: #26c6da !important;
-        fill: #26c6da !important;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.55)) !important;
       }
 
       .phase-vwc-readout {
         margin-left: auto;
         font-size: 0.75rem;
         font-weight: 600;
-        color: #26c6da;
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.55));
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
         flex-shrink: 0;
