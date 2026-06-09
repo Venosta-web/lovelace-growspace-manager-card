@@ -67147,6 +67147,16 @@ GrowspaceHeaderHeroUI.styles = [
         fill: var(--primary-text-color, #fff) !important;
       }
 
+      /* Phase card keeps its own colours when active */
+      .phase-hero-card.active .hero-icon {
+        color: rgba(38, 198, 218, 0.85) !important;
+        fill: rgba(38, 198, 218, 0.85) !important;
+      }
+
+      .phase-hero-card.active .hero-label {
+        color: var(--secondary-text-color, rgba(255, 255, 255, 0.55)) !important;
+      }
+
       .hero-sparkline {
         position: absolute;
         top: 50%;
@@ -67271,28 +67281,32 @@ GrowspaceHeaderHeroUI.styles = [
         border-color: rgba(38, 198, 218, 0.16);
         background:
           linear-gradient(180deg, rgba(38, 198, 218, 0.045) 0%, rgba(38, 198, 218, 0.012) 100%),
-          var(--card-background-color, #1f1f21);
+          var(--glass-bg, rgba(255, 255, 255, 0.05));
+        backdrop-filter: var(--glass-blur);
         box-shadow:
-          0 1px 2px rgba(0, 0, 0, 0.3),
-          0 1px 3px 1px rgba(0, 0, 0, 0.15),
-          inset 0 1px 0 rgba(255, 255, 255, 0.025);
+          0 4px 24px -1px rgba(0, 0, 0, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.02) inset;
       }
 
       .phase-hero-card:hover {
+        background:
+          linear-gradient(180deg, rgba(38, 198, 218, 0.055) 0%, rgba(38, 198, 218, 0.018) 100%),
+          var(--secondary-background-color, rgba(255, 255, 255, 0.08));
         border-color: rgba(38, 198, 218, 0.28);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+          0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        transform: translateY(-2px);
       }
 
       .phase-hero-card.active {
         background:
-          linear-gradient(180deg, rgba(38, 198, 218, 0.07) 0%, rgba(38, 198, 218, 0.02) 100%),
-          var(--card-background-color, #1f1f21);
+          linear-gradient(180deg, rgba(38, 198, 218, 0.08) 0%, rgba(38, 198, 218, 0.025) 100%),
+          var(--glass-bg, rgba(255, 255, 255, 0.05));
         border-color: rgba(38, 198, 218, 0.30);
         box-shadow:
           0 8px 32px -4px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+          0 0 0 1px rgba(38, 198, 218, 0.35) inset;
       }
 
       .phase-hero-card .hero-header {
