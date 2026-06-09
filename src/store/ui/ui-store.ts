@@ -1,97 +1,45 @@
-import { atom, computed, WritableAtom, ReadableAtom } from 'nanostores';
+import { WritableAtom, ReadableAtom } from 'nanostores';
 import { GrowspaceViewMode, GridOverlayMode } from '../../types';
-import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import { ActiveDialogState } from '../../ui-state';
-import { cancel } from '../../slices/grid-interaction';
-import { notification$ } from '../../slices/ui';
+import * as ui from '../../slices/ui';
 
+/**
+ * Thin compatibility shim over the `slices/ui` source of truth.
+ *
+ * Every atom field below points at the *same* atom instance owned by
+ * `slices/ui` — there is no second atom and no second computed anywhere. The
+ * class exists only so legacy action-context consumers (`ctx.ui`) keep working;
+ * all state and behaviour live in the slice. Mutators delegate to the slice's
+ * mutator functions so there is a single definition of each operation.
+ *
+ * New code should import from `slices/ui` directly rather than reaching through
+ * this class.
+ */
 export class GrowspaceUIStore {
-  // Definition of atoms
-  public readonly $viewMode: WritableAtom<GrowspaceViewMode>;
-  public readonly $isLoading: WritableAtom<boolean>;
-  public readonly $activeDialog: WritableAtom<ActiveDialogState>;
-  public readonly $isEditMode: WritableAtom<boolean>;
-  public readonly $selectedPlants: WritableAtom<Set<string>>;
-  public readonly $focusedPlantIndex: WritableAtom<number>;
-  public readonly $menuOpen: WritableAtom<boolean>;
+  // Atoms — re-exported instances from slices/ui (single source of truth).
+  public readonly $viewMode: WritableAtom<GrowspaceViewMode> = ui.viewMode$;
+  public readonly $isLoading: WritableAtom<boolean> = ui.isLoading$;
+  public readonly $activeDialog: WritableAtom<ActiveDialogState> = ui.activeDialog$;
+  public readonly $isEditMode: WritableAtom<boolean> = ui.isEditMode$;
+  public readonly $selectedPlants: WritableAtom<Set<string>> = ui.selectedPlants$;
+  public readonly $focusedPlantIndex: WritableAtom<number> = ui.focusedPlantIndex$;
+  public readonly $menuOpen: WritableAtom<boolean> = ui.menuOpen$;
   public readonly $notification: WritableAtom<{
     message: string;
     type: 'info' | 'error' | 'success';
     action?: { label: string; callback: () => void };
-  } | null>;
+  } | null> = ui.notification$;
 
-  public readonly $error: WritableAtom<string | null>;
-  public readonly $defaultApplied: WritableAtom<boolean>;
-  public readonly $gridOverlayMode: WritableAtom<GridOverlayMode>;
-  public readonly $language: WritableAtom<string>;
-  public readonly $pendingDeepLinkPlantId: WritableAtom<string | null>;
-  public readonly $flowerFlipDismissed: WritableAtom<Record<string, string>>;
+  public readonly $error: WritableAtom<string | null> = ui.error$;
+  public readonly $defaultApplied: WritableAtom<boolean> = ui.defaultApplied$;
+  public readonly $gridOverlayMode: WritableAtom<GridOverlayMode> = ui.gridOverlayMode$;
+  public readonly $language: WritableAtom<string> = ui.language$;
+  public readonly $pendingDeepLinkPlantId: WritableAtom<string | null> = ui.pendingDeepLinkPlantId$;
+  public readonly $flowerFlipDismissed: WritableAtom<Record<string, string>> =
+    ui.flowerFlipDismissed$;
 
-  // Computed stores
-  public readonly $isCompactView: ReadableAtom<boolean>;
-
-  constructor() {
-    this.$viewMode = atom<GrowspaceViewMode>(ViewMode.STANDARD);
-    this.$isLoading = atom<boolean>(true);
-    this.$activeDialog = atom<ActiveDialogState>({ type: 'NONE' });
-    this.$isEditMode = atom<boolean>(false);
-    this.$selectedPlants = atom<Set<string>>(new Set());
-    this.$focusedPlantIndex = atom<number>(-1);
-    this.$menuOpen = atom<boolean>(false);
-    this.$notification = notification$;
-    this.$error = atom<string | null>(null);
-    this.$defaultApplied = atom<boolean>(false);
-    this.$gridOverlayMode = atom<GridOverlayMode>(GridOverlayModeEnum.NONE);
-    this.$language = atom<string>('en');
-    this.$pendingDeepLinkPlantId = atom<string | null>(null);
-
-    let initialDismissed: Record<string, string> = {};
-    try {
-      const raw = localStorage.getItem('growspace.flowerFlipDismissed');
-      if (raw) initialDismissed = JSON.parse(raw);
-    } catch {
-      // ignore
-    }
-    this.$flowerFlipDismissed = atom<Record<string, string>>(initialDismissed);
-
-    this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
-
-    this.$cardViewState = computed(
-      [
-        this.$viewMode,
-        this.$isLoading,
-        this.$isEditMode,
-        this.$isCompactView,
-        this.$activeDialog,
-        this.$notification,
-        this.$focusedPlantIndex,
-        this.$selectedPlants,
-        this.$gridOverlayMode,
-      ],
-      (
-        viewMode,
-        isLoading,
-        isEditMode,
-        isCompact,
-        activeDialog,
-        notification,
-        focusedPlantIndex,
-        selectedPlants,
-        overlayMode
-      ) => ({
-        viewMode,
-        isLoading,
-        isEditMode,
-        isCompact,
-        activeDialog,
-        notification,
-        focusedPlantIndex,
-        selectedPlants,
-        overlayMode,
-      })
-    );
-  }
-
+  // Computed — re-exported instances from slices/ui (no recomputation here).
+  public readonly $isCompactView: ReadableAtom<boolean> = ui.isCompactView$;
   public readonly $cardViewState: ReadableAtom<{
     viewMode: GrowspaceViewMode;
     isLoading: boolean;
@@ -106,67 +54,55 @@ export class GrowspaceUIStore {
     focusedPlantIndex: number;
     selectedPlants: Set<string>;
     overlayMode: GridOverlayMode;
-  }>;
+  }> = ui.cardViewState$;
 
-  // Actions
+  // Actions — delegate to slice mutators (single definition of each operation).
   public setViewMode(mode: GrowspaceViewMode) {
-    this.$viewMode.set(mode);
+    ui.setViewMode(mode);
   }
 
   public setGridOverlayMode(mode: GridOverlayMode) {
-    this.$gridOverlayMode.set(mode);
+    ui.setGridOverlayMode(mode);
   }
 
   public setIsLoading(loading: boolean) {
-    this.$isLoading.set(loading);
+    ui.setIsLoading(loading);
   }
 
   public setActiveDialog(dialog: ActiveDialogState) {
-    this.$activeDialog.set(dialog);
+    ui.openDialog(dialog);
   }
 
   public closeDialog() {
-    this.$activeDialog.set({ type: 'NONE' });
+    ui.closeDialog();
   }
 
   public setEditMode(isEdit: boolean) {
-    this.$isEditMode.set(isEdit);
-    if (!isEdit) {
-      this.$selectedPlants.set(new Set());
-      cancel();
-    }
+    ui.setEditMode(isEdit);
   }
 
   public togglePlantSelection(plantId: string) {
-    const current = new Set(this.$selectedPlants.get());
-    if (current.has(plantId)) {
-      current.delete(plantId);
-    } else {
-      current.add(plantId);
-    }
-    this.$selectedPlants.set(current);
+    ui.togglePlantSelection(plantId);
   }
 
   public selectAllPlants(plantIds: string[]) {
-    this.$selectedPlants.set(new Set(plantIds));
+    ui.selectAllPlants(plantIds);
   }
 
   public clearPlantSelection() {
-    this.$selectedPlants.set(new Set());
+    ui.clearPlantSelection();
   }
 
   public deselectPlants(plantIds: string[]) {
-    const current = new Set(this.$selectedPlants.get());
-    plantIds.forEach((id) => current.delete(id));
-    this.$selectedPlants.set(current);
+    ui.deselectPlants(plantIds);
   }
 
   public setFocusedPlantIndex(index: number) {
-    this.$focusedPlantIndex.set(index);
+    ui.setFocusedPlantIndex(index);
   }
 
   public setMenuOpen(isOpen: boolean) {
-    this.$menuOpen.set(isOpen);
+    ui.setMenuOpen(isOpen);
   }
 
   public showToast(
@@ -174,36 +110,30 @@ export class GrowspaceUIStore {
     type: 'info' | 'error' | 'success' = 'info',
     action?: { label: string; callback: () => void }
   ) {
-    this.$notification.set({ message, type, action });
+    ui.showToast(message, type, action);
   }
 
   public clearToast() {
-    this.$notification.set(null);
+    ui.clearToast();
   }
 
   public setDefaultApplied(applied: boolean) {
-    this.$defaultApplied.set(applied);
+    ui.setDefaultApplied(applied);
   }
 
   public setError(error: string | null) {
-    this.$error.set(error);
+    ui.setError(error);
   }
 
   public setLanguage(lang: string) {
-    this.$language.set(lang);
+    ui.setLanguage(lang);
   }
 
   public setPendingDeepLink(plantId: string | null) {
-    this.$pendingDeepLinkPlantId.set(plantId);
+    ui.setPendingDeepLink(plantId);
   }
 
   public dismissFlowerFlip(growspaceId: string, flowerStart: string) {
-    const updated = { ...this.$flowerFlipDismissed.get(), [growspaceId]: flowerStart };
-    this.$flowerFlipDismissed.set(updated);
-    try {
-      localStorage.setItem('growspace.flowerFlipDismissed', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    ui.dismissFlowerFlip(growspaceId, flowerStart);
   }
 }

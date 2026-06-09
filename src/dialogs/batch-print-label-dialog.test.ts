@@ -6,6 +6,7 @@ import { openBatchPrintLabelsDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchPrintLabelDialog } from './batch-print-label-dialog';
 import './batch-print-label-dialog';
+import { __resetUiSliceForTests } from '../slices/ui';
 
 // ---------------------------------------------------------------------------
 // openBatchPrintLabelsDialog action
@@ -16,6 +17,7 @@ describe('openBatchPrintLabelsDialog', () => {
   let ctx: { ui: GrowspaceUIStore };
 
   beforeEach(() => {
+    __resetUiSliceForTests();
     ui = new GrowspaceUIStore();
     ctx = { ui } as any;
   });
@@ -64,6 +66,7 @@ describe('GrowspaceStore.openBatchPrintLabelsDialog', () => {
   let store: GrowspaceStore;
 
   beforeEach(() => {
+    __resetUiSliceForTests();
     store = new GrowspaceStore(new GrowspaceSharedStore());
   });
 

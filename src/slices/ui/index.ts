@@ -260,3 +260,31 @@ export function dismissFlowerFlip(growspaceId: string, flowerStart: string): voi
     // Ignore — localStorage unavailable.
   }
 }
+
+// ---------------------------------------------------------------------------
+// Test support
+// ---------------------------------------------------------------------------
+
+/**
+ * Reset every UI atom to its initial value.
+ *
+ * The slice atoms are module-level singletons, so tests that construct multiple
+ * stores (or run in sequence) must reset shared state between cases. Production
+ * code never needs this — there is only ever one card instance.
+ */
+export function __resetUiSliceForTests(): void {
+  viewMode$.set(ViewMode.STANDARD);
+  isLoading$.set(true);
+  activeDialog$.set({ type: 'NONE' });
+  isEditMode$.set(false);
+  selectedPlants$.set(new Set());
+  focusedPlantIndex$.set(-1);
+  menuOpen$.set(false);
+  notification$.set(null);
+  error$.set(null);
+  defaultApplied$.set(false);
+  gridOverlayMode$.set(GridOverlayModeEnum.NONE);
+  language$.set('en');
+  pendingDeepLinkPlantId$.set(null);
+  flowerFlipDismissed$.set({});
+}
