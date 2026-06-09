@@ -1,3 +1,11 @@
+# [1.1.0-next.32](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.31...v1.1.0-next.32) (2026-06-09)
+
+
+### Features
+
+* add irrigation and growth stage properties to growspace header container and component ([3d2fc60](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3d2fc60b552622bc8f84986a2d19542e9a4479e9))
+* extend phase bar to show repeating daily segments at 7d range ([3de2a72](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3de2a72c7af64044475e5e6a8b2f07df47247d20))
+
 # [1.1.0-next.31](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.30...v1.1.0-next.31) (2026-06-08)
 
 
