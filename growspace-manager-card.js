@@ -67010,7 +67010,7 @@ let GrowspaceHeaderHeroUI = class GrowspaceHeaderHeroUI extends i$3 {
                 : ''}
 
         <div class="hero-header">
-          <ha-svg-icon class="hero-icon" .path=${chip.icon}></ha-svg-icon>
+          <ha-svg-icon class="hero-icon" .path=${chip.icon} style="color: ${sparklineColor}"></ha-svg-icon>
           <span class="hero-label">${chip.label || chip.key}</span>
           ${chip.status
             ? x `<span class="hero-status-badge status-${chip.status}">${chip.status}</span>`
@@ -67274,7 +67274,7 @@ GrowspaceHeaderHeroUI.styles = [
       /* ── Phase hero card ─────────────────────────── */
 
       .phase-hero-card {
-        min-height: 210px;
+        min-height: 110px;
         display: flex;
         flex-direction: column;
         gap: 4px;
