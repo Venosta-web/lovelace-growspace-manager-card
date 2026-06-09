@@ -2,7 +2,6 @@ import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
 import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
-import * as snapshotActions from '../plant/snapshot-actions';
 import * as reportActions from '../plant/report-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
@@ -23,7 +22,6 @@ import {
 import { ActionContext } from './action-context';
 import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../../slices/grid';
 import { ViewMode } from '../../constants';
-import type { VisionCheckupConfig } from '../../slices/camera';
 import type { GrowspaceHistoryStore } from '../history/history-store';
 
 interface IGrowspaceStore {
@@ -307,16 +305,6 @@ export class ActionDispatcher {
     savePreset: (preset: Parameters<typeof libraryActions.saveNutrientPreset>[1]) =>
       libraryActions.saveNutrientPreset(this.ctx, preset),
     removePreset: (id: string) => libraryActions.removeNutrientPreset(this.ctx, id),
-  };
-
-  public readonly snapshots = {
-    list: (growspaceId: string) => snapshotActions.getSnapshots(this.ctx, growspaceId),
-    capture: (growspaceId: string) => snapshotActions.captureSnapshot(this.ctx, growspaceId),
-    visionHistory: (growspaceId: string) => snapshotActions.getVisionHistory(this.ctx, growspaceId),
-    triggerCheckup: (growspaceId: string) =>
-      snapshotActions.triggerVisionCheckup(this.ctx, growspaceId),
-    updateCheckupConfig: (growspaceId: string, config: VisionCheckupConfig) =>
-      snapshotActions.updateVisionCheckupConfig(this.ctx, growspaceId, config),
   };
 
   public readonly report = {

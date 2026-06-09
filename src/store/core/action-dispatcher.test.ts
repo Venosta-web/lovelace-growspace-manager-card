@@ -751,40 +751,6 @@ describe('nutrient delegation', () => {
   });
 });
 
-// ─── snapshots delegation ─────────────────────────────────────────────────────
-
-describe('snapshots delegation', () => {
-  it('list calls dataService.getSnapshots', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.list('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).getSnapshots).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('capture calls dataService.captureSnapshot', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.capture('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).captureSnapshot).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('visionHistory calls dataService.getVisionHistory', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.visionHistory('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).getVisionHistory).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('triggerCheckup calls dataService.triggerVisionCheckup', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.triggerCheckup('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).triggerVisionCheckup).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('updateCheckupConfig calls dataService.updateVisionCheckupConfig', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.updateCheckupConfig('gs-1', { enabled: true } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).updateVisionCheckupConfig).toHaveBeenCalledWith('gs-1', expect.objectContaining({ enabled: true }));
-  });
-});
-
 // ─── report delegation ────────────────────────────────────────────────────────
 
 describe('report delegation', () => {

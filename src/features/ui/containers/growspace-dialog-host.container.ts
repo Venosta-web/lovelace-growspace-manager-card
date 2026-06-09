@@ -4,6 +4,8 @@ import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
+import { updateVisionCheckupConfig } from '../../../slices/camera';
+import { withToast } from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -777,9 +779,12 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleVisionCheckupConfig(detail: VisionCheckupConfigEventDetail) {
     try {
-      await this.store?.actions.snapshots.updateCheckupConfig(
-        detail.growspaceId,
-        detail.visionCheckupConfig
+      await withToast(
+        async () => {
+          await updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+          await this.store?.refreshData();
+        },
+        { success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true }
       );
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {

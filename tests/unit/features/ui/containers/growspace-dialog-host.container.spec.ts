@@ -3,6 +3,8 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
 import { waterPlant as sliceWaterPlant } from '../../../../../src/slices/plant';
+import { hassCall } from '../../../../../src/services/hass-call';
+import { notification$ } from '../../../../../src/slices/ui';
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';
@@ -818,8 +820,13 @@ describe('GrowspaceDialogHostContainer', () => {
             detail: { growspaceId: 'g1', visionCheckupConfig: { enabled: true } }
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.snapshots.updateCheckupConfig).toHaveBeenCalledWith('g1', { enabled: true });
+        await new Promise(resolve => setTimeout(resolve, 10));
+        // Handler now calls the Camera slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/update_vision_checkup_config',
+            expect.objectContaining({ growspace_id: 'g1', enabled: true }),
+            expect.anything()
+        );
     });
 
     it('should handle @add-growspace-submit on config-dialog', async () => {
@@ -893,30 +900,24 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle _handleVisionCheckupConfig failure', async () => {
-        const error = new Error('Vision save failed');
-        mockStore.actions.snapshots.updateCheckupConfig.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Vision save failed', 'error');
-            throw error;
-        });
+        (hassCall as any).mockRejectedValueOnce(new Error('Vision save failed'));
 
-        try {
-            await (element as any)._handleVisionCheckupConfig({
-                detail: {
-                    growspaceId: 'g1',
-                    visionCheckupConfig: {
-                        enabled: true,
-                        early_check_offset_minutes: 0,
-                        mid_check_hours: 0,
-                        late_check_offset_minutes: 0
-                    }
-                }
-            } as any);
-        } catch (e) {
-            // Expected
-        }
+        await (element as any)._handleVisionCheckupConfig({
+            growspaceId: 'g1',
+            visionCheckupConfig: {
+                enabled: true,
+                early_check_offset_minutes: 0,
+                mid_check_hours: 0,
+                late_check_offset_minutes: 0
+            }
+        } as any);
 
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Vision save failed'), 'error'
+        // withToast surfaces the failure through the real UI slice notification atom.
+        expect(notification$.get()).toEqual(
+            expect.objectContaining({
+                message: expect.stringContaining('Vision save failed'),
+                type: 'error',
+            })
         );
     });
 

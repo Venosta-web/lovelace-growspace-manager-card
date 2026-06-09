@@ -48,6 +48,7 @@ import type { GrowspaceViewMode, GridOverlayMode } from '../../types';
 import { ViewMode, GridOverlayMode as GridOverlayModeEnum } from '../../constants';
 import type { ActiveDialogState } from '../../store/ui/dialog-types';
 import { cancel } from '../grid-interaction';
+import { WSError } from '../../services/base-api';
 
 // ---------------------------------------------------------------------------
 // Atoms (public)
@@ -224,6 +225,48 @@ export function showToast(
 /** Dismiss the current toast notification. */
 export function clearToast(): void {
   notification$.set(null);
+}
+
+const WS_ERROR_MESSAGES: Record<string, string> = {
+  coordinator_not_ready: 'Integration not loaded — try reloading the page',
+  entity_not_found: 'Item not found — it may have been removed',
+  validation_failed: 'Invalid input',
+  internal_error: 'Internal error',
+};
+
+function toUserMessage(e: unknown): string {
+  if (e instanceof WSError) return WS_ERROR_MESSAGES[e.code] ?? e.message;
+  if (e instanceof Error) return e.message;
+  return 'Unknown error';
+}
+
+/**
+ * Run an async operation and surface its outcome as a toast.
+ *
+ * The ctx-free successor to the old `withAction(ctx, …)` helper: call sites
+ * wrap a slice mutator directly, keeping slices pure of UI concerns. On
+ * success shows `opts.success` (when provided); on failure maps the error to
+ * a user message, logs it, and shows `${errorPrefix}: ${message}`.
+ *
+ * Returns the operation's result, or `undefined` when it threw. Pass
+ * `rethrow: true` to re-throw after toasting (e.g. when the caller must abort
+ * a follow-up step).
+ */
+export async function withToast<T>(
+  fn: () => Promise<T>,
+  opts: { success?: string; errorPrefix: string; rethrow?: boolean }
+): Promise<T | undefined> {
+  try {
+    const result = await fn();
+    if (opts.success) showToast(opts.success, 'success');
+    return result;
+  } catch (e: unknown) {
+    const message = toUserMessage(e);
+    console.error(opts.errorPrefix, e);
+    showToast(`${opts.errorPrefix}: ${message}`, 'error');
+    if (opts.rethrow) throw e;
+    return undefined;
+  }
 }
 
 /** Mark whether the card config default has been applied. */
