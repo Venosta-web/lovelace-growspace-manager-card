@@ -751,22 +751,6 @@ describe('nutrient delegation', () => {
   });
 });
 
-// ─── report delegation ────────────────────────────────────────────────────────
-
-describe('report delegation', () => {
-  it('fetch calls dataService.fetchGrowReport', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.report.fetch('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).fetchGrowReport).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('export calls dataService.exportGrowReport', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.report.export('gs-1', 'pdf');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).exportGrowReport).toHaveBeenCalledWith('gs-1', 'pdf');
-  });
-});
-
 // ─── ai delegation ────────────────────────────────────────────────────────────
 
 describe('ai delegation', () => {

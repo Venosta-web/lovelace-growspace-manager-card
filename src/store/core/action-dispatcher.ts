@@ -2,7 +2,6 @@ import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
 import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
-import * as reportActions from '../plant/report-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
 import * as growspaceActions from '../growspace/growspace-actions';
@@ -305,12 +304,6 @@ export class ActionDispatcher {
     savePreset: (preset: Parameters<typeof libraryActions.saveNutrientPreset>[1]) =>
       libraryActions.saveNutrientPreset(this.ctx, preset),
     removePreset: (id: string) => libraryActions.removeNutrientPreset(this.ctx, id),
-  };
-
-  public readonly report = {
-    fetch: (growspaceId: string) => reportActions.fetchGrowReport(this.ctx, growspaceId),
-    export: (growspaceId: string, format: string) =>
-      reportActions.exportGrowReport(this.ctx, growspaceId, format),
   };
 
   public readonly ai = {
