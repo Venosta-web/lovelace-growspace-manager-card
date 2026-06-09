@@ -4,6 +4,7 @@ import { HomeAssistant } from 'custom-card-helpers';
 
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../../../types';
 import { HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
+import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ResizeController } from '../../../controllers/resize-controller';
 import { headerStyles } from '../../../styles/header.styles';
@@ -27,6 +28,9 @@ export class GrowspaceHeaderUI extends LitElement {
   @property({ type: Boolean }) compact = false;
   @property({ attribute: false }) historyCache: Record<string, unknown[]> = {};
   @property() timeRange = '24h';
+  @property({ attribute: false }) irrigationStrategy: IrrigationStrategy | null = null;
+  @property({ attribute: false }) irrigationConfig: IrrigationConfig | null = null;
+  @property({ type: Boolean }) isFlower = false;
   @property() viewMode = '';
   @property({ type: Boolean }) isEditMode = false;
   @property({ attribute: false }) selectedPlants = new Set<string>();
@@ -253,6 +257,9 @@ export class GrowspaceHeaderUI extends LitElement {
                 .mobileLink=${this._mobileLink}
                 .historyCache=${this.historyCache}
                 .timeRange=${this.timeRange}
+                .irrigationStrategy=${this.irrigationStrategy}
+                .irrigationConfig=${this.irrigationConfig}
+                .isFlower=${this.isFlower}
                 @toggle-graph=${(e: CustomEvent) => {
                   e.stopPropagation();
                   this._toggleEnvGraph(e.detail.metric);

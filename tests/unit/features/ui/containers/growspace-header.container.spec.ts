@@ -252,6 +252,9 @@ describe('GrowspaceHeaderContainer', () => {
             secondaryChips: [],
             deviceChips: [],
             dominant: undefined,
+            irrigationStrategy: null,
+            irrigationConfig: null,
+            isFlower: false,
         });
     });
 
