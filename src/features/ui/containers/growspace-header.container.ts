@@ -15,6 +15,7 @@ import { envSnapshots$ } from '../../../slices/environment';
 import { plants$ } from '../../../slices/plant';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
+import { PlantUtils } from '../../../utils/plant-utils';
 import { ViewMode } from '../../../constants';
 import { DateTime } from 'luxon';
 
@@ -94,7 +95,15 @@ export class GrowspaceHeaderContainer extends LitElement {
 
   private get _metrics() {
     if (!this.device || !this.hass) {
-      return { heroChips: [], secondaryChips: [], deviceChips: [], dominant: undefined };
+      return {
+        heroChips: [],
+        secondaryChips: [],
+        deviceChips: [],
+        dominant: undefined,
+        irrigationStrategy: null,
+        irrigationConfig: null,
+        isFlower: false,
+      };
     }
 
     const state = this._headerController?.value;
@@ -107,6 +116,8 @@ export class GrowspaceHeaderContainer extends LitElement {
     const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
     const irrigationStrategy = irrigationStrategies$.get().get(growspaceId) ?? null;
     const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
+
+    const isFlower = PlantUtils.getDominantStage(growspacePlants)?.stage === 'flower';
 
     const {
       hero: heroChips,
@@ -138,6 +149,9 @@ export class GrowspaceHeaderContainer extends LitElement {
       secondaryChips: filterChips(secondaryChips, hidden),
       deviceChips: filterChips(deviceChips, hidden),
       dominant,
+      irrigationStrategy,
+      irrigationConfig,
+      isFlower,
     };
   }
 
@@ -297,7 +311,15 @@ export class GrowspaceHeaderContainer extends LitElement {
   render() {
     if (!this.device || !this.hass) return nothing;
 
-    const { heroChips, secondaryChips, deviceChips, dominant } = this._metrics;
+    const {
+      heroChips,
+      secondaryChips,
+      deviceChips,
+      dominant,
+      irrigationStrategy,
+      irrigationConfig,
+      isFlower,
+    } = this._metrics;
 
     return html`
       <growspace-header-ui
@@ -319,6 +341,9 @@ export class GrowspaceHeaderContainer extends LitElement {
         .selectedPlants=${this._actionsController?.value?.selectedPlants || new Set()}
         .problemPlants=${this._problemPlants}
         .flowerFlipInfo=${this._flowerFlipInfo}
+        .irrigationStrategy=${irrigationStrategy}
+        .irrigationConfig=${irrigationConfig}
+        .isFlower=${isFlower}
         @device-changed=${this._handleDeviceChange}
         @toggle-graph=${this._handleToggleGraph}
         @chip-drag-start=${this._handleChipDragStart}
