@@ -32,8 +32,6 @@ function makeContext(plants: PlantEntity[] = []): ActionContext {
     ui,
     grid: { $selectedDevice } as unknown as ActionContext['grid'],
     dataService: {} as ActionContext['dataService'],
-    undoRedoManager: {} as ActionContext['undoRedoManager'],
-    optimisticManager: {} as ActionContext['optimisticManager'],
     closeDialog: () => {},
     refreshData: async () => {},
   } satisfies ActionContext;

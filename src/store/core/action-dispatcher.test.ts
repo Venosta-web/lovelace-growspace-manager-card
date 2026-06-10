@@ -50,8 +50,6 @@ function makeStore() {
     data,
     ui,
     grid,
-    undoRedoManager: { pushAction: vi.fn() } as never,
-    optimisticManager: {} as never,
     closeDialog,
     refreshData,
   };
@@ -59,11 +57,7 @@ function makeStore() {
   const store = {
     context,
     history,
-    undo: vi.fn().mockResolvedValue(undefined),
-    redo: vi.fn().mockResolvedValue(undefined),
     refreshData,
-    canUndo: false,
-    canRedo: false,
   };
 
   return { store, dispatcher: new ActionDispatcher(store as never), ui, data, grid, history, dataService };
@@ -294,30 +288,6 @@ describe('library.import', () => {
 // exercise the thin wiring via observable side-effects instead.
 
 describe('delegation smoke tests', () => {
-  it('history.undo delegates to store.undo', async () => {
-    const { dispatcher, store } = makeStore();
-    await dispatcher.history.undo();
-    expect(store.undo).toHaveBeenCalled();
-  });
-
-  it('history.redo delegates to store.redo', async () => {
-    const { dispatcher, store } = makeStore();
-    await dispatcher.history.redo();
-    expect(store.redo).toHaveBeenCalled();
-  });
-
-  it('history.canUndo reflects store.canUndo', () => {
-    const { store, dispatcher } = makeStore();
-    store.canUndo = true;
-    expect(dispatcher.history.canUndo()).toBe(true);
-  });
-
-  it('history.canRedo reflects store.canRedo', () => {
-    const { store, dispatcher } = makeStore();
-    store.canRedo = true;
-    expect(dispatcher.history.canRedo()).toBe(true);
-  });
-
   it('ui.refreshData delegates to store.refreshData', () => {
     const { dispatcher, store } = makeStore();
     dispatcher.ui.refreshData();

@@ -24,8 +24,6 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
     grid: {
       $selectedDevice,
     } as unknown as ActionContext['grid'],
-    undoRedoManager: {} as ActionContext['undoRedoManager'],
-    optimisticManager: {} as ActionContext['optimisticManager'],
     closeDialog: vi.fn(),
     refreshData: vi.fn().mockResolvedValue(undefined),
     ...overrides,

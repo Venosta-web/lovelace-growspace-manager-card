@@ -24,15 +24,11 @@ import type { GrowspaceHistoryStore } from '../history/history-store';
 interface IGrowspaceStore {
   context: ActionContext;
   history: GrowspaceHistoryStore;
-  undo(): Promise<void>;
-  redo(): Promise<void>;
   refreshData(): void;
-  canUndo: boolean;
-  canRedo: boolean;
 }
 
 export class ActionDispatcher {
-  constructor(private store: IGrowspaceStore) {}
+  constructor(private store: IGrowspaceStore) { }
 
   private get ctx(): ActionContext {
     return this.store.context;
@@ -164,13 +160,6 @@ export class ActionDispatcher {
     add: (data: Partial<StrainEntry>) => strainActions.addStrain(this.ctx, data),
     update: (data: Partial<StrainEntry>) => strainActions.updateStrain(this.ctx, data),
     remove: (key: string) => strainActions.removeStrain(this.ctx, key),
-  };
-
-  public readonly history = {
-    undo: () => this.store.undo(),
-    redo: () => this.store.redo(),
-    canUndo: () => this.store.canUndo,
-    canRedo: () => this.store.canRedo,
   };
 
   public readonly ui = {

@@ -120,41 +120,6 @@ describe('GrowspaceStore – initialize and destroy', () => {
   });
 });
 
-describe('GrowspaceStore – undo/redo delegation', () => {
-  let store: GrowspaceStore;
-
-  beforeEach(() => {
-    ({ store } = makeStore());
-  });
-
-  it('pushUndoAction delegates to undoRedoManager', () => {
-    const spy = vi.spyOn(store.undoRedoManager, 'pushAction');
-    const action = { undo: vi.fn(), redo: vi.fn(), description: 'test' };
-    store.pushUndoAction(action as any);
-    expect(spy).toHaveBeenCalledWith(action);
-  });
-
-  it('canUndo reflects undoRedoManager state', () => {
-    expect(store.canUndo).toBe(store.undoRedoManager.canUndo);
-  });
-
-  it('canRedo reflects undoRedoManager state', () => {
-    expect(store.canRedo).toBe(store.undoRedoManager.canRedo);
-  });
-
-  it('undo delegates to undoRedoManager', async () => {
-    const spy = vi.spyOn(store.undoRedoManager, 'undo').mockResolvedValue(undefined);
-    await store.undo();
-    expect(spy).toHaveBeenCalledOnce();
-  });
-
-  it('redo delegates to undoRedoManager', async () => {
-    const spy = vi.spyOn(store.undoRedoManager, 'redo').mockResolvedValue(undefined);
-    await store.redo();
-    expect(spy).toHaveBeenCalledOnce();
-  });
-});
-
 describe('GrowspaceStore – updateHass', () => {
   let store: GrowspaceStore;
   let shared: GrowspaceSharedStore;
@@ -400,10 +365,10 @@ describe('GrowspaceStore – context getter', () => {
     expect(ctx).toHaveProperty('dataService');
     expect(ctx).toHaveProperty('ui');
     expect(ctx).toHaveProperty('grid');
-    expect(ctx).toHaveProperty('undoRedoManager');
-    expect(ctx).toHaveProperty('optimisticManager');
     expect(ctx).toHaveProperty('closeDialog');
     expect(ctx).toHaveProperty('refreshData');
+    expect(ctx).not.toHaveProperty('undoRedoManager');
+    expect(ctx).not.toHaveProperty('optimisticManager');
   });
 
   it('closeDialog in context calls ui.closeDialog', () => {

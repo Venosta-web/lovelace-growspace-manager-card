@@ -64,8 +64,6 @@ function makeCtx(overrides: Partial<ActionContext> = {}): ActionContext {
     ui,
     grid: { $selectedDevice } as unknown as ActionContext['grid'],
     dataService: {} as ActionContext['dataService'],
-    undoRedoManager: {} as ActionContext['undoRedoManager'],
-    optimisticManager: {} as ActionContext['optimisticManager'],
     closeDialog: vi.fn(),
     refreshData: vi.fn(),
     ...overrides,

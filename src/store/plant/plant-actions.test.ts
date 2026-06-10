@@ -65,13 +65,6 @@ function makeContext() {
     } as unknown as ActionContext['ui'],
     refreshData: vi.fn().mockResolvedValue(undefined),
     closeDialog: vi.fn(),
-    // Retained only to satisfy the ActionContext shape until the managers are
-    // removed; production plant-actions no longer touch them (they use mutate()).
-    undoRedoManager: { pushAction: vi.fn() } as any,
-    optimisticManager: {
-      applyOptimisticUpdate: vi.fn().mockResolvedValue('action-id'),
-      confirmUpdate: vi.fn(),
-    } as any,
     grid: {
       $selectedDevice: { get: vi.fn().mockReturnValue('device-1') },
     } as unknown as ActionContext['grid'],

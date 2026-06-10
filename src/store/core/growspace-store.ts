@@ -27,8 +27,6 @@ import { strainLibrary$ } from '../../slices/strain';
 
 // Services
 import { SyncService } from '../../services/sync-service';
-import { UndoRedoManager, UndoableAction } from '../../services/undo-redo-manager';
-import { OptimisticManager } from '../system/optimistic-manager';
 
 // New infrastructure (Phase 1)
 import { EventBus, DATA_STALE_EVENT } from '../../features/shared/events';
@@ -47,8 +45,6 @@ export class GrowspaceStore {
 
   // Services
   public readonly syncService: SyncService;
-  public readonly undoRedoManager: UndoRedoManager;
-  public readonly optimisticManager: OptimisticManager;
 
   // New infrastructure (Phase 1)
   public readonly eventBus: EventBus;
@@ -120,8 +116,6 @@ export class GrowspaceStore {
       dataService: this.dataService,
       ui: this.ui,
       grid: this.grid,
-      undoRedoManager: this.undoRedoManager,
-      optimisticManager: this.optimisticManager,
       closeDialog: () => this.ui.closeDialog(),
       refreshData: (force?: boolean) => this.refreshData(force),
     };
@@ -218,10 +212,6 @@ export class GrowspaceStore {
 
     // Initialize services
     this.syncService = new SyncService(this.dataService, this.ui, this.grid);
-    this.undoRedoManager = new UndoRedoManager((msg, type, action) =>
-      this.ui.showToast(msg, type, action)
-    );
-    this.optimisticManager = new OptimisticManager(this.undoRedoManager);
 
     // Initialize new infrastructure (Phase 1)
     this.eventBus = new EventBus();
@@ -244,27 +234,6 @@ export class GrowspaceStore {
     this.eventBus.clear();
   }
 
-  // === Undo/Redo Methods ===
-
-  public pushUndoAction(action: UndoableAction): void {
-    this.undoRedoManager.pushAction(action);
-  }
-
-  public get canUndo(): boolean {
-    return this.undoRedoManager.canUndo;
-  }
-
-  public get canRedo(): boolean {
-    return this.undoRedoManager.canRedo;
-  }
-
-  public async undo(): Promise<void> {
-    await this.undoRedoManager.undo();
-  }
-
-  public async redo(): Promise<void> {
-    await this.undoRedoManager.redo();
-  }
 
   updateHass(hass: HomeAssistant) {
     this.hass = hass;
