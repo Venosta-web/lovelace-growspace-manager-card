@@ -300,12 +300,14 @@ describe('IrrigationDialog', () => {
             element.device = undefined;
             const consoleSpy = vi.spyOn(console, 'error');
 
-            await (element as any)._saveSettings();
+            // ADR-0015: _saveSettings / _saveAll are synchronous dispatchers; with no
+            // device they return early without dispatching, so no effect runs.
+            (element as any)._saveSettings();
             await (element as any)._addIrrigationTime('12:00');
             await (element as any)._removeIrrigationTime('12:00');
             await (element as any)._addDrainTime('12:00');
             await (element as any)._removeDrainTime('12:00');
-            await (element as any)._saveStrategy();
+            (element as any)._saveAll();
 
             // Should simply return without error/call
             expect(mocks.setIrrigationSettings).not.toHaveBeenCalled();

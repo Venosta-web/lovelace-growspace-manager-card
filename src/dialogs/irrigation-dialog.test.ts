@@ -144,7 +144,13 @@ describe('IrrigationDialog – Run Now button', () => {
       <irrigation-dialog .open=${true} .device=${device}></irrigation-dialog>
     `);
 
-    (el as any)._sm = transition((el as any)._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
+    // ADR-0015: run-now in-flight is now the `applying { action: 'run-now' }`
+    // status owned by the MutationRunController.
+    (el as any)._sm = transition((el as any)._sm, {
+      type: 'SaveRequested',
+      action: 'run-now',
+      params: null,
+    });
     await el.updateComplete;
 
     const btn = Array.from(el.shadowRoot!.querySelectorAll('button.md3-button')).find((b) =>
@@ -1137,14 +1143,16 @@ describe('IrrigationDialog – save validation: P2 Direct Trigger > Saturation T
     `);
     await el.updateComplete;
 
-    // Trigger save — the P2 validation passes. The service call may fail in the test
-    // environment (hass not set), so absorb any service-level error.
-    await (el as any)._saveAll().catch(() => undefined);
+    // ADR-0015: _saveAll is a synchronous dispatcher; the P2 validation runs in
+    // the handler, then the MutationRunController runs the effect post-render.
+    // Let the controller cycle complete. The save itself may fail without hass,
+    // surfacing a separate save-failure toast — assert the *validation* toast is
+    // specifically absent rather than no toast at all.
+    (el as any)._saveAll();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
-    // The P2 guard must not block the save. The save itself may fail without hass
-    // in the test env, which now surfaces a separate save-failure toast — so assert
-    // the *validation* toast specifically is absent rather than no toast at all.
     expect((el as any)._sm.toast ?? '').not.toContain('P2 Direct Trigger');
   });
 
@@ -1166,7 +1174,9 @@ describe('IrrigationDialog – save validation: P2 Direct Trigger > Saturation T
     `);
     await el.updateComplete;
 
-    await (el as any)._saveAll().catch(() => undefined);
+    (el as any)._saveAll();
+    await el.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
     // The P2 guard must not block the save. The save itself may fail without hass
