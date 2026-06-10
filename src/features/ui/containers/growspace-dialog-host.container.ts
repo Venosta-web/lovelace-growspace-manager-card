@@ -5,7 +5,20 @@ import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
-import { updateBreeder, deleteBreeder } from '../../../slices/strain';
+import {
+  updateBreeder,
+  deleteBreeder,
+  updateStrainMeta,
+  removeStrain as sliceRemoveStrain,
+  fetchStrainLibrary,
+  normalizeStrainFormData,
+} from '../../../slices/strain';
+import { importStrainLineageTree } from '../../../slices/genetics';
+import {
+  addGrowspace as sliceAddGrowspace,
+  updateGrowspace as sliceUpdateGrowspace,
+  removeGrowspace as sliceRemoveGrowspace,
+} from '../../../slices/growspace';
 import {
   withToast,
   openDialog,
@@ -618,14 +631,14 @@ export class GrowspaceDialogHost extends LitElement {
         @save-strain=${async (e: CustomEvent) => {
         if (!this.store) return;
         try {
-          await this.store.actions.strain.update(e.detail);
+          await this._handleUpdateStrain(e.detail);
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] Save strain failed:', e);
         }
       }}
-        @delete-strain=${(e: CustomEvent) => {
-        this.store?.actions.strain.remove(e.detail.key);
+        @delete-strain=${async (e: CustomEvent) => {
+        await this._handleRemoveStrain(e.detail.key);
         this._handleDataChanged();
       }}
         @update-breeder=${(e: CustomEvent) => this._handleUpdateBreeder(e.detail)}
@@ -656,6 +669,34 @@ export class GrowspaceDialogHost extends LitElement {
     } catch (e: any) {
       showToast(`Import failed: ${e.message || e}`, 'error');
     }
+  }
+
+  private async _handleUpdateStrain(strainData: Partial<StrainEntry>): Promise<void> {
+    if (!strainData.strain) return;
+    await withToast(
+      async () => {
+        await updateStrainMeta(normalizeStrainFormData(strainData));
+        const tree = (strainData as { parents?: { parents?: unknown[] } }).parents;
+        if (tree?.parents?.length) {
+          await importStrainLineageTree(
+            strainData.strain!,
+            tree as unknown as Record<string, unknown>
+          );
+        }
+        await fetchStrainLibrary();
+      },
+      { success: 'Strain updated successfully!', errorPrefix: 'Failed to update strain' }
+    );
+  }
+
+  private async _handleRemoveStrain(key: string): Promise<void> {
+    await withToast(
+      async () => {
+        await sliceRemoveStrain(key);
+        await fetchStrainLibrary();
+      },
+      { errorPrefix: 'Failed to remove strain' }
+    );
   }
 
   private async _handleUpdateBreeder(detail: { oldName: string; newName: string; logo: string }) {
@@ -721,27 +762,33 @@ export class GrowspaceDialogHost extends LitElement {
         @close=${() => this._closeDialogIfActive('CONFIG')}
         @add-growspace-submit=${async (e: CustomEvent) => {
         if (!this.store) return;
-        try {
-          await this.store.actions.growspace.add(e.detail);
-          this.store.ui.closeDialog();
-          await this._handleDataChanged();
-        } catch (e) {
-          console.error(e);
+        if (!e.detail?.name) {
+          showToast('Name is required', 'error');
+          return;
         }
+        await withToast(
+          async () => {
+            await sliceAddGrowspace(e.detail);
+            closeDialog();
+            await this._handleDataChanged();
+          },
+          { success: 'Growspace added successfully!', errorPrefix: 'Failed to add growspace' }
+        );
       }}
         @edit-growspace-submit=${async (e: CustomEvent) => {
         if (!this.store) return;
-        try {
-          await this.store.actions.growspace.update({
-            growspaceId: e.detail.growspaceId,
-            name: e.detail.name,
-            rows: e.detail.rows,
-            plantsPerRow: e.detail.plantsPerRow,
-          });
-          await this._handleDataChanged();
-        } catch (e) {
-          console.error(e);
-        }
+        await withToast(
+          async () => {
+            await sliceUpdateGrowspace({
+              growspaceId: e.detail.growspaceId,
+              name: e.detail.name,
+              rows: e.detail.rows,
+              plantsPerRow: e.detail.plantsPerRow,
+            });
+            await this._handleDataChanged();
+          },
+          { success: 'Growspace updated successfully!', errorPrefix: 'Failed to update growspace' }
+        );
       }}
         @delete-growspace-submit=${(e: CustomEvent) => this._handleRemoveGrowspace(e.detail)}
         @remove-environment-submit=${(e: CustomEvent) => this._handleRemoveEnvironment(e.detail)}
@@ -753,12 +800,13 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   private async _handleRemoveGrowspace(detail: { growspace_id: string }) {
-    try {
-      await this.store?.actions.growspace.remove(detail.growspace_id);
-      await this._handleDataChanged();
-    } catch (e) {
-      console.error(e);
-    }
+    await withToast(
+      async () => {
+        await sliceRemoveGrowspace(detail.growspace_id);
+        await this._handleDataChanged();
+      },
+      { success: 'Growspace removed', errorPrefix: 'Failed to remove growspace' }
+    );
   }
 
   private async _handleRemoveEnvironment(detail: { growspace_id: string }) {

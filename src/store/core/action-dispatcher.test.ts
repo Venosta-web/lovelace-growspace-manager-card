@@ -5,6 +5,13 @@ import { ViewMode } from '../../constants';
 import { optimisticDeletedPlantIds$ } from '../../slices/grid';
 import { activeDialog$, __resetUiSliceForTests } from '../../slices/ui';
 
+// library.import loops the Strain slice's addStrain. Stub it so the import
+// success path resolves without a live hass (callService) connection.
+vi.mock('../../slices/strain', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../slices/strain')>();
+  return { ...actual, addStrain: vi.fn().mockResolvedValue(undefined) };
+});
+
 function makeStore() {
   const dataService = new Proxy(
     {},
@@ -399,60 +406,6 @@ describe('plant delegation smoke tests', () => {
     const { dispatcher, dataService } = makeStore();
     await dispatcher.plant.setVisualTag('p1', 'red');
     expect((dataService as Record<string, ReturnType<typeof vi.fn>>).setVisualTag).toHaveBeenCalled();
-  });
-});
-
-// ─── growspace delegation ─────────────────────────────────────────────────────
-
-describe('growspace delegation', () => {
-  it('add calls dataService.addGrowspace', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.growspace.add({ name: 'Veg Room', rows: 4, plantsPerRow: 4, notificationService: 'notify' });
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).addGrowspace).toHaveBeenCalled();
-  });
-
-  it('update calls dataService.updateGrowspace', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.growspace.update({ growspaceId: 'gs-1', name: 'Flower Room', rows: 6, plantsPerRow: 4 });
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).updateGrowspace).toHaveBeenCalled();
-  });
-
-  it('remove calls dataService.removeGrowspace', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.growspace.remove('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeGrowspace).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('removeEnvironment calls dataService.removeEnvironment directly', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.growspace.removeEnvironment('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeEnvironment).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('resetWaterTracking calls dataService.resetWaterTracking directly', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.growspace.resetWaterTracking('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).resetWaterTracking).toHaveBeenCalledWith('gs-1');
-  });
-});
-
-// ─── strain delegation ────────────────────────────────────────────────────────
-
-describe('strain delegation', () => {
-  it('add calls strainActions and covers line', async () => {
-    const { dispatcher } = makeStore();
-    // callService throws without HASS (caught internally) — we just verify no unhandled rejection
-    await expect(dispatcher.strain.add({ strain: 'Test Strain' })).resolves.not.toThrow();
-  });
-
-  it('update covers the delegation line', async () => {
-    const { dispatcher } = makeStore();
-    await expect(dispatcher.strain.update({ strain: 'Test Strain' })).resolves.not.toThrow();
-  });
-
-  it('remove covers the delegation line', async () => {
-    const { dispatcher } = makeStore();
-    await expect(dispatcher.strain.remove('Test Strain|default')).resolves.not.toThrow();
   });
 });
 

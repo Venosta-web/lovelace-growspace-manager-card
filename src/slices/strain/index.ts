@@ -92,6 +92,39 @@ function _parseLibrary(rawStrains: z.output<typeof StrainLibrarySchema>): Strain
  *   - data: URL        → send `image_base64`, omit `image`
  *   - path/remote URL  → send `image_path`, omit `image`
  */
+/**
+ * Normalize raw strain-editor form data into the whitelisted shape the
+ * add/update mutators expect: coerces the free-text flowering-day inputs to
+ * numbers and drops non-payload fields (e.g. `key`, `parents`) that callers
+ * carry on the draft. Lineage trees are persisted separately via the genetics
+ * slice, not through this payload.
+ */
+export function normalizeStrainFormData(
+  strainData: Partial<StrainEntry>
+): Partial<StrainEntry> & { image_crop_meta?: CropMeta; images?: StrainGalleryImage[] } {
+  return {
+    strain: strainData.strain,
+    phenotype: strainData.phenotype,
+    breeder: strainData.breeder,
+    type: strainData.type,
+    flowering_days_min: strainData.flowering_days_min
+      ? Number(strainData.flowering_days_min)
+      : undefined,
+    flowering_days_max: strainData.flowering_days_max
+      ? Number(strainData.flowering_days_max)
+      : undefined,
+    lineage: strainData.lineage,
+    sex: strainData.sex,
+    description: strainData.description,
+    image: strainData.image,
+    image_crop_meta: strainData.image_crop_meta,
+    images: strainData.images,
+    sativa_percentage: strainData.sativa_percentage,
+    indica_percentage: strainData.indica_percentage,
+    breeder_logo: strainData.breeder_logo,
+  };
+}
+
 function _buildStrainPayload(
   data: Partial<StrainEntry> & {
     image_crop_meta?: CropMeta;

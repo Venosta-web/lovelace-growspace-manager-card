@@ -19,6 +19,13 @@ import { GrowspaceDevice, StrainEntry, SeedBatch, PollinationEvent } from '../ty
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { dialogStyles } from '../styles/dialog.styles';
 import { buildStrainTreeNodes } from '../utils/strain-tree-utils';
+import {
+  updateStrainMeta,
+  fetchStrainLibrary,
+  normalizeStrainFormData,
+} from '../slices/strain';
+import { importStrainLineageTree } from '../slices/genetics';
+import { withToast } from '../slices/ui';
 import '../features/shared/ui/md3-number-input';
 import '../features/shared/ui/gs-help-tooltip';
 import '../features/shared/ui/lineage-tree';
@@ -1221,7 +1228,25 @@ export class StrainLibraryDialog extends LitElement {
                       .source=${this.source}
                       .returnPayload=${this.returnPayload}
                       .onSave=${async (strain: import('../types').StrainEntry) => {
-                        await this.store?.actions.strain.update(strain);
+                        if (strain.strain) {
+                          await withToast(
+                            async () => {
+                              await updateStrainMeta(normalizeStrainFormData(strain));
+                              const tree = (strain as { parents?: { parents?: unknown[] } }).parents;
+                              if (tree?.parents?.length) {
+                                await importStrainLineageTree(
+                                  strain.strain!,
+                                  tree as unknown as Record<string, unknown>
+                                );
+                              }
+                              await fetchStrainLibrary();
+                            },
+                            {
+                              success: 'Strain updated successfully!',
+                              errorPrefix: 'Failed to update strain',
+                            }
+                          );
+                        }
                         this._view = 'browse';
                         this._editingStrain = undefined;
                         this.dispatchEvent(new CustomEvent('data-changed'));

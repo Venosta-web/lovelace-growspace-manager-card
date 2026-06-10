@@ -1,17 +1,15 @@
 import * as plantActions from '../plant/plant-actions';
-import * as strainActions from '../plant/strain-actions';
+import { addStrain as sliceAddStrain, normalizeStrainFormData } from '../../slices/strain';
 import { openCropSteeringDialog } from '../../slices/ui';
 import * as libraryActions from '../plant/library-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
-import * as growspaceActions from '../growspace/growspace-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
 import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
 import {
   PlantEntity,
-  StrainEntry,
   PlantOverviewDialogState,
   AddPlantsDialogState,
   AddPlantDialogState,
@@ -129,40 +127,7 @@ export class ActionDispatcher {
     },
   };
 
-  public readonly growspace = {
-    add: (detail: {
-      name: string;
-      rows: number;
-      plantsPerRow: number;
-      notificationService: string;
-    }) =>
-      growspaceActions.addGrowspace(
-        this.ctx,
-        detail.name,
-        detail.rows,
-        detail.plantsPerRow,
-        detail.notificationService
-      ),
-    update: (detail: { growspaceId: string; name: string; rows: number; plantsPerRow: number }) =>
-      growspaceActions.updateGrowspace(
-        this.ctx,
-        detail.growspaceId,
-        detail.name,
-        detail.rows,
-        detail.plantsPerRow
-      ),
-    remove: (id: string) => growspaceActions.removeGrowspace(this.ctx, id),
-    removeEnvironment: (id: string) => this.ctx.dataService.removeEnvironment(id),
-    resetWaterTracking: (id: string) => this.ctx.dataService.resetWaterTracking(id),
-  };
-
-  public readonly strain = {
-    add: (data: Partial<StrainEntry>) => strainActions.addStrain(this.ctx, data),
-    update: (data: Partial<StrainEntry>) => strainActions.updateStrain(this.ctx, data),
-    remove: (key: string) => strainActions.removeStrain(this.ctx, key),
-  };
-
-  // The dialog/selection orchestration that used to live here moved into
+// The dialog/selection orchestration that used to live here moved into
   // `slices/ui` (ADR-0001). What remains delegates to OTHER domains still on the
   // legacy stack — keyboard (system) and plant deletion — plus the env-graph
   // toggle which is bound to the per-card history store. These follow in the
@@ -208,7 +173,8 @@ export class ActionDispatcher {
         const strains = JSON.parse(content);
         if (!Array.isArray(strains)) throw new Error('Invalid format');
         for (const strain of strains) {
-          await strainActions.addStrain(this.ctx, strain);
+          if (!strain?.strain) continue;
+          await sliceAddStrain(normalizeStrainFormData(strain));
         }
         this.ctx.ui.showToast('Library imported successfully', 'success');
         await libraryActions.fetchStrainLibrary(this.ctx, true);
