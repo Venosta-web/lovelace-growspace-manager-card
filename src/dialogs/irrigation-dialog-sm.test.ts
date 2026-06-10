@@ -17,6 +17,7 @@ import {
   isDrainEcDirty,
   isEcTargetsDirty,
   isActiveTabDirty,
+  actionErrorMessage,
   type DialogSM,
   type TabId,
 } from './irrigation-dialog-sm';
@@ -1358,5 +1359,65 @@ describe('default transition case', () => {
     const sm = createInitialSM();
     const next = transition(sm, { type: 'UNKNOWN_EVENT' } as any);
     expect(next).toBe(sm);
+  });
+});
+
+describe('mutation-run events (ADR-0015)', () => {
+  it('SaveRequested moves status to applying and clears inline schedule sub-state', () => {
+    let sm = createInitialSM();
+    sm = transition(sm, {
+      type: 'BEGIN_EDIT_IRRIGATION',
+      originalTime: '06:00:00',
+      originalDuration: 30,
+      time: '06:00',
+      duration: 30,
+    });
+    expect(sm.tabs.schedules.sub.kind).toBe('editing-irrigation');
+
+    const next = transition(sm, {
+      type: 'SaveRequested',
+      action: 'edit-irrigation-time',
+      params: { originalTime: '06:00:00', time: '07:00:00', duration: 30 },
+    });
+
+    expect(next.status.kind).toBe('applying');
+    expect(next.status.kind === 'applying' ? next.status.action : '').toBe('edit-irrigation-time');
+    expect(next.status.kind === 'applying' ? next.status.params : null).toEqual({
+      originalTime: '06:00:00',
+      time: '07:00:00',
+      duration: 30,
+    });
+    // Inline sub-state is cleared — the effect reads params, not sub.
+    expect(next.tabs.schedules.sub.kind).toBe('idle');
+  });
+
+  it('SaveResolved returns to idle without a success toast', () => {
+    const sm: DialogSM = {
+      ...createInitialSM(),
+      status: { kind: 'applying', action: 'save-all', params: null },
+    };
+    const next = transition(sm, { type: 'SaveResolved' });
+    expect(next.status.kind).toBe('idle');
+    expect(next.toast).toBeUndefined();
+  });
+
+  it('SaveFailed returns to idle and surfaces the per-action error toast', () => {
+    const sm: DialogSM = {
+      ...createInitialSM(),
+      status: { kind: 'applying', action: 'run-now', params: null },
+    };
+    const next = transition(sm, {
+      type: 'SaveFailed',
+      action: 'run-now',
+      error: new Error('boom'),
+    });
+    expect(next.status.kind).toBe('idle');
+    expect(next.toast).toBe('Failed to run irrigation cycle');
+  });
+
+  it('actionErrorMessage maps known actions and falls back for unknown ones', () => {
+    expect(actionErrorMessage('save-settings')).toBe('Failed to save irrigation settings');
+    expect(actionErrorMessage('edit-drain-time')).toBe('Failed to save drain time');
+    expect(actionErrorMessage('nonexistent')).toBe('Operation failed');
   });
 });

@@ -152,6 +152,7 @@ export interface TabStates {
 export type DialogStatus =
   | { kind: 'idle' }
   | { kind: 'confirm-discard'; pendingTab: TabId }
+  | { kind: 'applying'; action: string; params: unknown }
   | { kind: 'run-now-saving' };
 
 export interface DialogSM {
@@ -218,6 +219,19 @@ export type DialogEvent =
 
   // ── EC Targets ──
   | { type: 'UPDATE_EC_TARGETS_DRAFT'; ranges: ECTargetRange[] }
+
+  // ── Mutation run (MutationRunController seam — ADR-0015) ──
+  /**
+   * A synchronous handler asks to run a mutation. Moves status to
+   * `applying { action, params }`; the MutationRunController runs the matching
+   * effect post-render. Params travel in the status — never read sub-state in
+   * the effect, it may be cleared by the time the effect runs.
+   */
+  | { type: 'SaveRequested'; action: string; params: unknown }
+  /** Effect succeeded — return to idle. No success toast (mutate() already toasts). */
+  | { type: 'SaveResolved' }
+  /** Effect rejected — return to idle and surface a transient error toast. */
+  | { type: 'SaveFailed'; action: string; error: unknown }
 
   // ── Global ──
   | { type: 'SET_TOAST'; message: string | undefined }
@@ -578,6 +592,25 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
   }
 }
 
+// ─── Mutation error messages ──────────────────────────────────────────────────
+
+/**
+ * Per-action error toast copy for `SaveFailed`. Keeps the user-facing failure
+ * message in the pure SM (action -> message) so the controller stays
+ * dialog-agnostic and effects carry no UI strings.
+ */
+const ACTION_ERROR_MESSAGES: Record<string, string> = {
+  'save-all': 'Failed to save irrigation settings',
+  'save-settings': 'Failed to save irrigation settings',
+  'run-now': 'Failed to run irrigation cycle',
+  'edit-irrigation-time': 'Failed to save irrigation time',
+  'edit-drain-time': 'Failed to save drain time',
+};
+
+export function actionErrorMessage(action: string): string {
+  return ACTION_ERROR_MESSAGES[action] ?? 'Operation failed';
+}
+
 // ─── Transition function ────────────────────────────────────────────────────────
 
 /** Pure state machine transition. Returns a new SM without mutating the input. */
@@ -903,6 +936,33 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             draft: event.ranges,
           },
         },
+      };
+
+    // ── Mutation run (ADR-0015) ───────────────────────────────────────────────
+
+    case 'SaveRequested':
+      // Clear any inline schedule-editing sub-state up front: inline-edit
+      // handlers used to CANCEL_INLINE before awaiting. The params the effect
+      // needs travel in `status.params`, not in this (now-cleared) sub-state.
+      return {
+        ...sm,
+        status: { kind: 'applying', action: event.action, params: event.params },
+        tabs: {
+          ...sm.tabs,
+          schedules: { ...sm.tabs.schedules, sub: { kind: 'idle' } },
+        },
+      };
+
+    case 'SaveResolved':
+      // No success toast — the irrigation mutators go through mutate(), whose
+      // listener already shows a success+Undo toast (see growspace-manager-card).
+      return { ...sm, status: { kind: 'idle' } };
+
+    case 'SaveFailed':
+      return {
+        ...sm,
+        status: { kind: 'idle' },
+        toast: actionErrorMessage(event.action),
       };
 
     // ── Global ───────────────────────────────────────────────────────────────
