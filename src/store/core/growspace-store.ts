@@ -15,7 +15,6 @@ import { ActionContext } from './action-context';
 
 // Action Modules
 import * as plantSlice from '../../slices/plant';
-import * as aiActions from '../system/ai-actions';
 
 // Nutrient Slice atoms
 import {
@@ -308,33 +307,4 @@ export class GrowspaceStore {
     }
   }
 
-  // Strain recommendation — has non-trivial loading-state management within the dialog
-  async getStrainRecommendation(userQuery: string) {
-    this._updateStrainRecommendationDialog({ isLoading: true });
-    try {
-      const res = await aiActions.getStrainRecommendation(this.context, userQuery);
-      this._updateStrainRecommendationDialog({
-        isLoading: false,
-        response: typeof res === 'string' ? res : JSON.stringify(res),
-      });
-      return res;
-    } catch (e: unknown) {
-      const error = e instanceof Error ? e.message : 'Unknown error';
-      console.error('Error getting strain recommendation:', e);
-      this._updateStrainRecommendationDialog({ isLoading: false, response: 'Error: ' + error });
-      throw e;
-    }
-  }
-
-  private _updateStrainRecommendationDialog(
-    payload: Partial<{ isLoading: boolean; response: string }>
-  ) {
-    const currentDialog = this.ui.$activeDialog.get();
-    if (currentDialog.type === 'STRAIN_RECOMMENDATION') {
-      this.ui.setActiveDialog({
-        ...currentDialog,
-        payload: { ...currentDialog.payload, ...payload },
-      });
-    }
-  }
 }

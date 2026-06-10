@@ -5,6 +5,9 @@
  *   aiInsight$            — last AI response text (null if none loaded yet)
  *   isAiLoading$          — whether an AI request is in-flight
  *   aiError$              — error message from the last failed request (null = none)
+ *   strainRecommendation$ — last strain-recommendation result text (null if none)
+ *   isStrainRecLoading$   — whether a strain-recommendation request is in-flight
+ *   strainRecError$       — error from the last strain-recommendation request (null = none)
  *   conversationThreads$  — conversation threads keyed by thread ID
  *   activeThreadId$       — ID of the currently active thread (null = none)
  *   aiAlerts$             — triage alerts fetched from the backend
@@ -14,6 +17,7 @@
  * Public API (mutators):
  *   askGrowAdvice(growspaceId, userQuery) — ask AI for advice on a specific growspace
  *   analyzeAllGrowspaces()               — request AI analysis of all growspaces
+ *   getStrainRecommendation(userQuery)   — ask AI for a strain recommendation
  *   dismissInsight()                     — clear the current insight and any error
  *   clearAiError()                       — clear only the error without touching the insight
  *   startConversation(growspaceId, text, imageEntityId?) — start a new AI conversation thread
@@ -52,6 +56,11 @@ import {
 export const aiInsight$ = atom<string | null>(null);
 export const isAiLoading$ = atom<boolean>(false);
 export const aiError$ = atom<string | null>(null);
+// Per-surface result atoms for the strain-recommendation dialog, kept separate
+// from the Grow Master trio above so the two surfaces never collide.
+export const strainRecommendation$ = atom<string | null>(null);
+export const isStrainRecLoading$ = atom<boolean>(false);
+export const strainRecError$ = atom<string | null>(null);
 export const aiEnabled$ = atom<boolean | null>(null);
 export const briefingError$ = atom<string | null>(null);
 export const conversationThreads$ = atom<Map<string, ConversationThread>>(new Map());
@@ -145,6 +154,39 @@ export async function analyzeAllGrowspaces(): Promise<void> {
     throw err;
   } finally {
     isAiLoading$.set(false);
+  }
+}
+
+/**
+ * Ask the AI for a strain recommendation based on free-text user preferences.
+ *
+ * Writes to the dedicated strain-recommendation atoms so it never collides with
+ * the Grow Master advice trio. Sets isStrainRecLoading$ for the duration.
+ * On success: stores the response text in strainRecommendation$.
+ * On failure: stores the error message in strainRecError$ and re-throws.
+ */
+export async function getStrainRecommendation(userQuery: string): Promise<void> {
+  isStrainRecLoading$.set(true);
+  strainRecError$.set(null);
+  try {
+    const raw = await callServiceReturning(
+      'growspace_manager',
+      'strain_recommendation',
+      { user_query: userQuery },
+      GrowAdviceResponseSchema
+    );
+    strainRecommendation$.set(_extractText(raw));
+  } catch (err) {
+    if (err instanceof WSError && err.code === 'rate_limited') {
+      showToast('AI rate limit reached — please wait a moment before trying again', 'error');
+      return;
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    strainRecError$.set('Error: ' + message);
+    strainRecommendation$.set('Error: ' + message);
+    throw err;
+  } finally {
+    isStrainRecLoading$.set(false);
   }
 }
 

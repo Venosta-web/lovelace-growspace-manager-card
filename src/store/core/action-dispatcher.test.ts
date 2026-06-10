@@ -452,27 +452,6 @@ describe('library delegation', () => {
 
 // ─── ai delegation ────────────────────────────────────────────────────────────
 
-describe('ai delegation', () => {
-  it('analyzeAll calls dataService.analyzeAllGrowspaces', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ai.analyzeAll();
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).analyzeAllGrowspaces).toHaveBeenCalled();
-  });
-
-  it('askAdvice calls dataService.askGrowAdvice when device is selected', async () => {
-    const { dispatcher, grid, dataService } = makeStore();
-    grid.$selectedDevice.set('gs-1');
-    await dispatcher.ai.askAdvice('what nutrients?');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).askGrowAdvice).toHaveBeenCalledWith('gs-1', 'what nutrients?');
-  });
-
-  it('strainRecommendation calls dataService.getStrainRecommendation', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ai.strainRecommendation('best sativa');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).getStrainRecommendation).toHaveBeenCalledWith('best sativa');
-  });
-});
-
 // ─── environment delegation ───────────────────────────────────────────────────
 
 describe('environment delegation', () => {

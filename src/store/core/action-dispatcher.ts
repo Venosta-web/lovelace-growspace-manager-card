@@ -2,7 +2,6 @@ import * as plantActions from '../plant/plant-actions';
 import { addStrain as sliceAddStrain, normalizeStrainFormData } from '../../slices/strain';
 import { openCropSteeringDialog } from '../../slices/ui';
 import * as libraryActions from '../plant/library-actions';
-import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as dryingActions from '../plant/drying-actions';
@@ -184,15 +183,6 @@ export class ActionDispatcher {
         this.ctx.ui.showToast('Import failed: ' + error, 'error');
       }
     },
-  };
-
-  public readonly ai = {
-    /** Analyze all growspaces at once */
-    analyzeAll: () => aiActions.analyzeGrowspace(this.ctx, '', true),
-    /** Ask for advice about the currently selected device */
-    askAdvice: (query: string) => aiActions.analyzeGrowspace(this.ctx, query, false),
-    /** Get a strain recommendation */
-    strainRecommendation: (query: string) => aiActions.getStrainRecommendation(this.ctx, query),
   };
 
   public readonly environment = {

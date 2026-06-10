@@ -1,12 +1,23 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { StrainRecommendationDialog } from '../../../src/dialogs/strain-recommendation-dialog';
 import '../../../src/dialogs/strain-recommendation-dialog';
-import { html, render } from 'lit';
+import {
+    strainRecommendation$,
+    isStrainRecLoading$,
+    getStrainRecommendation,
+} from '../../../src/slices/ai-insight';
+
+vi.mock('../../../src/slices/ai-insight', async (importOriginal) => {
+    const mod = await importOriginal<typeof import('../../../src/slices/ai-insight')>();
+    return { ...mod, getStrainRecommendation: vi.fn().mockResolvedValue(undefined) };
+});
 
 describe('StrainRecommendationDialog', () => {
     let element: StrainRecommendationDialog;
 
     beforeEach(async () => {
+        strainRecommendation$.set(null);
+        isStrainRecLoading$.set(false);
         element = document.createElement('strain-recommendation-dialog') as StrainRecommendationDialog;
         document.body.appendChild(element);
         await element.updateComplete;
@@ -39,7 +50,10 @@ describe('StrainRecommendationDialog', () => {
     describe('Rendering States', () => {
         it('should show loading spinner', async () => {
             element.open = true;
-            element.isLoading = true;
+            await element.updateComplete;
+            // Set the atom after `open` is true so the open-transition reset
+            // (in updated()) does not clear it.
+            isStrainRecLoading$.set(true);
             await element.updateComplete;
 
             expect(element.shadowRoot?.querySelector('.gm-loading')).toBeTruthy();
@@ -48,8 +62,9 @@ describe('StrainRecommendationDialog', () => {
 
         it('should show response when not loading', async () => {
             element.open = true;
-            element.isLoading = false;
-            element.response = 'Try Blue Dream.';
+            await element.updateComplete;
+            isStrainRecLoading$.set(false);
+            strainRecommendation$.set('Try Blue Dream.');
             await element.updateComplete;
 
             const responseBox = element.shadowRoot?.querySelector('.gm-response-box');
@@ -105,13 +120,10 @@ describe('StrainRecommendationDialog', () => {
             expect(listener).toHaveBeenCalled();
         });
 
-        it('should dispatch get-recommendation event', async () => {
+        it('should call the strain-recommendation slice mutator with the query', async () => {
             element.open = true;
             element.userQuery = 'Sleepy';
             await element.updateComplete;
-
-            const listener = vi.fn();
-            element.addEventListener('get-recommendation', listener);
 
             // Find "Get Recommendation" button - primary button
             const buttons = Array.from(element.shadowRoot?.querySelectorAll('button') || []);
@@ -120,9 +132,7 @@ describe('StrainRecommendationDialog', () => {
 
             (actionBtn as HTMLElement).click();
 
-            expect(listener).toHaveBeenCalledWith(expect.objectContaining({
-                detail: { query: 'Sleepy' }
-            }));
+            expect(getStrainRecommendation).toHaveBeenCalledWith('Sleepy');
         });
     });
 });

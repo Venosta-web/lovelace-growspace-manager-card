@@ -3,6 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
+import { askGrowAdvice, analyzeAllGrowspaces } from '../../../slices/ai-insight';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import {
@@ -934,11 +935,28 @@ export class GrowspaceDialogHost extends LitElement {
         .isLoading=${dialogState.isLoading}
         .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('GROW_MASTER')}
-        @analyze-growspace=${(e: CustomEvent) => this.store?.actions.ai.askAdvice(e.detail.query)}
-        @analyze-all-growspaces=${(e: CustomEvent) => this.store?.actions.ai.analyzeAll()}
+        @analyze-growspace=${(e: CustomEvent) => this._handleAskAdvice(e.detail.query)}
+        @analyze-all-growspaces=${() => this._handleAnalyzeAll()}
         @data-changed=${() => this._handleDataChanged()}
       ></grow-master-dialog>
     `;
+  }
+
+  // The Grow Master selected device is a per-card atom, so the device id is
+  // read here and threaded into the module-level slice mutator.
+  private async _handleAskAdvice(query: string): Promise<void> {
+    const selectedDevice = this.store?.grid.$selectedDevice.get();
+    if (!selectedDevice) {
+      showToast('No device selected', 'error');
+      return;
+    }
+    await withToast(() => askGrowAdvice(selectedDevice, query), {
+      errorPrefix: 'Failed to get advice',
+    });
+  }
+
+  private async _handleAnalyzeAll(): Promise<void> {
+    await withToast(() => analyzeAllGrowspaces(), { errorPrefix: 'Failed to analyze growspaces' });
   }
 
   private _renderStrainRecommendationDialog(
@@ -946,15 +964,10 @@ export class GrowspaceDialogHost extends LitElement {
     _selectedDeviceData?: GrowspaceDevice
   ): TemplateResult {
     if (active.type !== 'STRAIN_RECOMMENDATION') return html``;
-    const dialogState = active.payload;
     return html`
       <strain-recommendation-dialog
         .open=${true}
-        .isLoading=${dialogState.isLoading}
-        .response=${dialogState.response}
         @close=${() => this._closeDialogIfActive('STRAIN_RECOMMENDATION')}
-        @get-recommendation=${(e: CustomEvent) =>
-        this.store?.actions.ai.strainRecommendation(e.detail.query)}
         @data-changed=${() => this._handleDataChanged()}
       >
       </strain-recommendation-dialog>

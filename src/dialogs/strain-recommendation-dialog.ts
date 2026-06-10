@@ -2,7 +2,13 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 import { mdiBrain, mdiClose, mdiLoading } from '@mdi/js';
+import { StoreController } from '@nanostores/lit';
 import { dialogStyles } from '../styles/dialog.styles';
+import {
+  strainRecommendation$,
+  isStrainRecLoading$,
+  getStrainRecommendation,
+} from '../slices/ai-insight';
 
 import { consume } from '@lit/context';
 import { hassContext } from '../context';
@@ -13,9 +19,18 @@ export class StrainRecommendationDialog extends LitElement {
   public hass!: HomeAssistant;
 
   @property({ type: Boolean }) public open = false;
-  @property({ type: Boolean }) public isLoading = false;
-  @property({ attribute: false }) public response: string | null = null;
   @property({ type: String }) public userQuery: string = '';
+
+  private _response = new StoreController(this, strainRecommendation$);
+  private _isLoading = new StoreController(this, isStrainRecLoading$);
+
+  private get isLoading(): boolean {
+    return this._isLoading.value;
+  }
+
+  private get response(): string | null {
+    return this._response.value;
+  }
 
   static styles = [
     dialogStyles,
@@ -78,14 +93,22 @@ export class StrainRecommendationDialog extends LitElement {
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
   }
 
-  private _handleGetRecommendation() {
-    this.dispatchEvent(
-      new CustomEvent('get-recommendation', {
-        detail: { query: this.userQuery },
-        bubbles: true,
-        composed: true,
-      })
-    );
+  updated(changed: Map<string, unknown>) {
+    // Clear any stale result/loading state from a previous session when the
+    // dialog is (re)opened so the user starts from a blank slate.
+    if (changed.has('open') && this.open) {
+      strainRecommendation$.set(null);
+      isStrainRecLoading$.set(false);
+    }
+  }
+
+  private async _handleGetRecommendation() {
+    try {
+      await getStrainRecommendation(this.userQuery);
+    } catch {
+      // The slice stores the error in strainRecommendation$/strainRecError$ and
+      // toasts on rate_limited; nothing more to do at the call site.
+    }
   }
 
   render() {

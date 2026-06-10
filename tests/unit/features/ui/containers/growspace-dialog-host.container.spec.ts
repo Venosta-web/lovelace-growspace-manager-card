@@ -14,6 +14,10 @@ import {
     updateGrowspace as sliceUpdateGrowspace,
     removeGrowspace as sliceRemoveGrowspace,
 } from '../../../../../src/slices/growspace';
+import {
+    askGrowAdvice as sliceAskGrowAdvice,
+    analyzeAllGrowspaces as sliceAnalyzeAllGrowspaces,
+} from '../../../../../src/slices/ai-insight';
 import * as uiSlice from '../../../../../src/slices/ui';
 
 // The host now calls slices/ui orchestration mutators directly; mock those the
@@ -61,6 +65,15 @@ vi.mock('../../../../../src/slices/plant', () => ({
     logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
     movePlantToGrowspace: vi.fn(),
 }));
+
+vi.mock('../../../../../src/slices/ai-insight', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../../../src/slices/ai-insight')>();
+    return {
+        ...actual,
+        askGrowAdvice: vi.fn().mockResolvedValue(undefined),
+        analyzeAllGrowspaces: vi.fn().mockResolvedValue(undefined),
+    };
+});
 
 vi.mock('../../../../../src/slices/genetics', () => ({
     seedBatches$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
@@ -231,11 +244,6 @@ describe('GrowspaceDialogHostContainer', () => {
                     getRecommendation: vi.fn().mockResolvedValue(true),
                     remove: vi.fn().mockResolvedValue(true),
                 },
-                ai: {
-                    askAdvice: vi.fn().mockResolvedValue(true),
-                    analyzeAll: vi.fn().mockResolvedValue(true),
-                    strainRecommendation: vi.fn().mockResolvedValue(true),
-                },
                 ipm: {
                     log: vi.fn().mockResolvedValue(true),
                     apply: vi.fn().mockResolvedValue(true),
@@ -284,8 +292,6 @@ describe('GrowspaceDialogHostContainer', () => {
             // Legacy aliases and internal setup
             confirmAddPlant: null as any,
             confirmAddPlants: null as any,
-            analyzeGrowspace: null as any,
-            getStrainRecommendation: null as any,
             showToast: null as any,
             refreshData: null as any,
         };
@@ -303,8 +309,6 @@ describe('GrowspaceDialogHostContainer', () => {
         // Map legacy methods to new locations
         mockStore.confirmAddPlant = (...args: any[]) => mockStore.actions.plant.add(...args);
         mockStore.confirmAddPlants = (...args: any[]) => mockStore.actions.plant.addBatch(...args);
-        mockStore.analyzeGrowspace = (q: string, all: boolean) => all ? mockStore.actions.ai.analyzeAll() : mockStore.actions.ai.askAdvice(q);
-        mockStore.getStrainRecommendation = (...args: any[]) => mockStore.actions.ai.strainRecommendation(...args);
         mockStore.showToast = mockStore.actions.ui.showToast;
         mockStore.refreshData = mockStore.actions.ui.refreshData;
         
@@ -2011,24 +2015,26 @@ describe('GrowspaceDialogHostContainer', () => {
 
 
         it('should handle @analyze-growspace on GROW_MASTER dialog', async () => {
+            mockStore.grid.$selectedDevice.set('gs-1');
             await openDialog('GROW_MASTER', {});
             const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
             dialog?.dispatchEvent(new CustomEvent('analyze-growspace', { detail: { query: 'How is the plant?' } }));
-            expect(mockStore.actions.ai.askAdvice).toHaveBeenCalledWith('How is the plant?');
+            await Promise.resolve();
+            expect(sliceAskGrowAdvice).toHaveBeenCalledWith('gs-1', 'How is the plant?');
         });
 
         it('should handle @analyze-all-growspaces on GROW_MASTER dialog', async () => {
             await openDialog('GROW_MASTER', {});
             const dialog = element.shadowRoot?.querySelector('grow-master-dialog');
             dialog?.dispatchEvent(new CustomEvent('analyze-all-growspaces', { detail: {} }));
-            expect(mockStore.actions.ai.analyzeAll).toHaveBeenCalled();
+            await Promise.resolve();
+            expect(sliceAnalyzeAllGrowspaces).toHaveBeenCalled();
         });
 
-        it('should handle @get-recommendation on STRAIN_RECOMMENDATION dialog', async () => {
+        it('should render the STRAIN_RECOMMENDATION dialog (mutation owned by the dialog)', async () => {
             await openDialog('STRAIN_RECOMMENDATION', {});
             const dialog = element.shadowRoot?.querySelector('strain-recommendation-dialog');
-            dialog?.dispatchEvent(new CustomEvent('get-recommendation', { detail: { query: 'best strain for cold' } }));
-            expect(mockStore.actions.ai.strainRecommendation).toHaveBeenCalledWith('best strain for cold');
+            expect(dialog).toBeTruthy();
         });
 
         it('should handle @close on PLANT_OVERVIEW dialog', async () => {
