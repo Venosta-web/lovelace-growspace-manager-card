@@ -28,6 +28,10 @@ import { HomeAssistant } from 'custom-card-helpers';
 import { StrainEntry, StrainGalleryImage, CropMeta } from '../types';
 import type { LineageNode } from '../features/plants/types';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import {
+  getStrainLineageTree as sliceGetStrainLineageTree,
+  updateStrainLineageTree as sliceUpdateStrainLineageTree,
+} from '../slices/genetics';
 import { PlantUtils } from '../utils/plant-utils';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/lineage-tree';
@@ -215,7 +219,7 @@ export class StrainEditorView extends LitElement {
   private async _loadStrainLineageTree(strainName: string) {
     if (!this.store) return;
     try {
-      this._lineageTree = await this.store.actions.genetics.getStrainLineageTree(strainName);
+      this._lineageTree = await sliceGetStrainLineageTree(strainName);
     } catch {
       this._lineageTree = null;
     }
@@ -856,10 +860,7 @@ export class StrainEditorView extends LitElement {
                     @lineage-change=${async (e: CustomEvent) => {
                       const { parents } = e.detail;
                       if (!s.strain || !this.store) return;
-                      const result = await this.store.actions.genetics.updateStrainLineageTree(
-                        s.strain,
-                        parents
-                      );
+                      const result = await sliceUpdateStrainLineageTree(s.strain, parents);
                       this._handleEditorChange('lineage', result.lineage);
                       await this._loadStrainLineageTree(s.strain);
                     }}

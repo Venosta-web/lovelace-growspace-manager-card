@@ -6,6 +6,13 @@ import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import type { LineageNode } from '../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import {
+  unlinkSeedBatch as sliceUnlinkSeedBatch,
+  setPlantSex as sliceSetPlantSex,
+  getLineageTree as sliceGetLineageTree,
+  fetchGeneticsData,
+} from '../../../slices/genetics';
+import { withToast } from '../../../slices/ui';
 import '../../shared/ui/lineage-tree';
 
 @customElement('plant-genetics-tab')
@@ -70,7 +77,17 @@ export class PlantGeneticsTab extends LitElement {
                     style="font-size: 12px; color: var(--secondary-text-color);"
                     @click=${async () => {
                       const plantId = attrs.plant_id as string;
-                      await this.store?.actions.genetics.unlinkSeedBatch(plantId);
+                      await withToast(
+                        async () => {
+                          await sliceUnlinkSeedBatch(plantId);
+                          await fetchGeneticsData();
+                        },
+                        {
+                          success: 'Seed batch unlinked',
+                          errorPrefix: 'Failed to unlink seed batch',
+                          rethrow: true,
+                        }
+                      );
                     }}
                   >
                     Unlink
@@ -129,9 +146,16 @@ export class PlantGeneticsTab extends LitElement {
                     if (sex === opt.value) return;
                     this._sexSaving = true;
                     try {
-                      await this.store?.actions.genetics.setPlantSex(
-                        attrs.plant_id as string,
-                        opt.value
+                      await withToast(
+                        async () => {
+                          await sliceSetPlantSex(attrs.plant_id as string, opt.value);
+                          await fetchGeneticsData();
+                        },
+                        {
+                          success: 'Plant sex updated',
+                          errorPrefix: 'Failed to set plant sex',
+                          rethrow: true,
+                        }
                       );
                     } finally {
                       this._sexSaving = false;
@@ -183,7 +207,7 @@ export class PlantGeneticsTab extends LitElement {
     this._lineageLoading = true;
     this._lineageTree = null;
     try {
-      const tree = await this.store.actions.genetics.getLineageTree(plantId);
+      const tree = await sliceGetLineageTree(plantId);
       this._lineageTree = tree;
     } catch {
       this._lineageTree = null;

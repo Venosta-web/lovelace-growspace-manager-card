@@ -7,7 +7,18 @@ import {
   waterGrowspace as sliceWaterGrowspace,
 } from '../../../slices/plant';
 import { askGrowAdvice, analyzeAllGrowspaces } from '../../../slices/ai-insight';
-import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
+import {
+  seedBatches$,
+  pollinationEvents$,
+  fetchGeneticsData,
+  addSeedBatch as sliceAddSeedBatch,
+  updateSeedBatch as sliceUpdateSeedBatch,
+  logPollinationEvent as sliceLogPollinationEvent,
+  updatePollinationEvent as sliceUpdatePollinationEvent,
+  deletePollinationEvent as sliceDeletePollinationEvent,
+  removeSeedBatch as sliceRemoveSeedBatch,
+  harvestSeeds as sliceHarvestSeeds,
+} from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
 import {
   updateBreeder,
@@ -268,10 +279,8 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   private async _refreshGeneticsData(): Promise<void> {
-    const { store } = this;
-    if (!store) return;
     try {
-      await store.actions.genetics.fetchData();
+      await fetchGeneticsData();
     } catch (e) {
       console.error('Failed to refresh genetics data', e);
     }
@@ -590,24 +599,78 @@ export class GrowspaceDialogHost extends LitElement {
         .initialSubView=${(active.payload as StrainLibraryDialogState).initialSubView}
         .prefilledReceiverId=${(active.payload as StrainLibraryDialogState).prefilledReceiverId}
         .onSeedDataChanged=${() => this._refreshGeneticsData()}
-        .onAddSeedBatch=${(data: Parameters<typeof this.store.actions.genetics.addSeedBatch>[0]) =>
-        this.store?.actions.genetics.addSeedBatch(data)}
-        .onUpdateSeedBatch=${(
-          data: Parameters<typeof this.store.actions.genetics.updateSeedBatch>[0]
-        ) => this.store?.actions.genetics.updateSeedBatch(data)}
-        .onLogPollination=${(
-          data: Parameters<typeof this.store.actions.genetics.logPollination>[0]
-        ) => this.store?.actions.genetics.logPollination(data)}
-        .onHarvestSeeds=${(data: Parameters<typeof this.store.actions.genetics.harvestSeeds>[0]) =>
-        this.store?.actions.genetics.harvestSeeds(data)}
-        .onUpdatePollination=${(
-          data: Parameters<typeof this.store.actions.genetics.updatePollination>[0]
-        ) => this.store?.actions.genetics.updatePollination(data)}
+        .onAddSeedBatch=${(data: Parameters<typeof sliceAddSeedBatch>[0]) =>
+        withToast(
+          async () => {
+            await sliceAddSeedBatch(data);
+            await fetchGeneticsData();
+          },
+          { success: 'Seed batch added', errorPrefix: 'Failed to add seed batch', rethrow: true }
+        )}
+        .onUpdateSeedBatch=${(data: Parameters<typeof sliceUpdateSeedBatch>[0]) =>
+        withToast(
+          async () => {
+            await sliceUpdateSeedBatch(data);
+            await fetchGeneticsData();
+          },
+          {
+            success: 'Seed batch updated',
+            errorPrefix: 'Failed to update seed batch',
+            rethrow: true,
+          }
+        )}
+        .onLogPollination=${(data: Parameters<typeof sliceLogPollinationEvent>[0]) =>
+        withToast(
+          async () => {
+            await sliceLogPollinationEvent(data);
+            await fetchGeneticsData();
+          },
+          {
+            success: 'Pollination event logged',
+            errorPrefix: 'Failed to log pollination',
+            rethrow: true,
+          }
+        )}
+        .onHarvestSeeds=${(data: Parameters<typeof sliceHarvestSeeds>[0]) =>
+        withToast(
+          async () => {
+            await sliceHarvestSeeds(data);
+            await fetchGeneticsData();
+          },
+          { success: 'Seeds harvested', errorPrefix: 'Failed to harvest seeds', rethrow: true }
+        )}
+        .onUpdatePollination=${(data: Parameters<typeof sliceUpdatePollinationEvent>[0]) =>
+        withToast(
+          async () => {
+            await sliceUpdatePollinationEvent(data);
+            await fetchGeneticsData();
+          },
+          {
+            success: 'Pollination event updated',
+            errorPrefix: 'Failed to update pollination',
+            rethrow: true,
+          }
+        )}
         .onDeletePollination=${(event_id: string) =>
-        this.store?.actions.genetics.deletePollination(event_id)}
+        withToast(
+          async () => {
+            await sliceDeletePollinationEvent(event_id);
+            await fetchGeneticsData();
+          },
+          {
+            success: 'Pollination event deleted',
+            errorPrefix: 'Failed to delete pollination',
+            rethrow: true,
+          }
+        )}
         .onDeleteSeedBatch=${async (batch_id: string) => {
-        await this.store?.actions.genetics.deleteSeedBatch(batch_id);
-        this._refreshGeneticsData();
+        await withToast(
+          async () => {
+            await sliceRemoveSeedBatch(batch_id);
+            await fetchGeneticsData();
+          },
+          { success: 'Seed batch deleted', errorPrefix: 'Failed to delete seed batch', rethrow: true }
+        );
       }}
         .onSowSeeds=${async (data: {
         growspace_id: string;

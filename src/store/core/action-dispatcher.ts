@@ -2,7 +2,6 @@ import * as plantActions from '../plant/plant-actions';
 import { addStrain as sliceAddStrain, normalizeStrainFormData } from '../../slices/strain';
 import { openCropSteeringDialog } from '../../slices/ui';
 import * as libraryActions from '../plant/library-actions';
-import * as geneticsActions from '../plant/genetics-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
 import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
@@ -182,34 +181,6 @@ export class ActionDispatcher {
         this.ctx.ui.showToast('Import failed: ' + error, 'error');
       }
     },
-  };
-
-  public readonly genetics = {
-    addSeedBatch: (data: Parameters<typeof geneticsActions.addSeedBatch>[1]) =>
-      geneticsActions.addSeedBatch(this.ctx, data),
-    updateSeedBatch: (data: Parameters<typeof geneticsActions.updateSeedBatch>[1]) =>
-      geneticsActions.updateSeedBatch(this.ctx, data),
-    logPollination: (data: Parameters<typeof geneticsActions.logPollination>[1]) =>
-      geneticsActions.logPollination(this.ctx, data),
-    updatePollination: (data: Parameters<typeof geneticsActions.updatePollination>[1]) =>
-      geneticsActions.updatePollination(this.ctx, data),
-    deletePollination: (eventId: string) => geneticsActions.deletePollination(this.ctx, eventId),
-    fetchData: () => geneticsActions.fetchGeneticsData(this.ctx),
-    harvestSeeds: (data: Parameters<typeof geneticsActions.harvestSeeds>[1]) =>
-      geneticsActions.harvestSeeds(this.ctx, data),
-    deleteSeedBatch: (batchId: string) => geneticsActions.deleteSeedBatch(this.ctx, batchId),
-    sowSeed: (batchId: string, plantId: string) =>
-      geneticsActions.sowSeed(this.ctx, batchId, plantId),
-    setPlantSex: (plantId: string, sex: string) =>
-      geneticsActions.setPlantSex(this.ctx, plantId, sex),
-    unlinkSeedBatch: (plantId: string) => geneticsActions.unlinkSeedBatch(this.ctx, plantId),
-    getLineageTree: (plantId: string) => geneticsActions.getLineageTree(this.ctx, plantId),
-    getStrainLineageTree: (strainName: string) =>
-      geneticsActions.getStrainLineageTree(this.ctx, strainName),
-    updateStrainLineageTree: (
-      strainName: string,
-      parents: Array<{ name: string; source: 'library' | 'manual' }>
-    ) => geneticsActions.updateStrainLineageTree(this.ctx, strainName, parents),
   };
 
   public readonly irrigation = {

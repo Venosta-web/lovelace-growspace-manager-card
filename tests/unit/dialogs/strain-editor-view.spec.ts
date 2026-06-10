@@ -4,6 +4,15 @@ import { StrainEditorView } from '../../../src/dialogs/strain-editor-view';
 import { createInitialSM, transition } from '../../../src/dialogs/strain-editor-view-sm';
 import { StrainEntry } from '../../../src/types';
 import { PlantUtils } from '../../../src/utils/plant-utils';
+import {
+  getStrainLineageTree as sliceGetStrainLineageTree,
+  updateStrainLineageTree as sliceUpdateStrainLineageTree,
+} from '../../../src/slices/genetics';
+
+vi.mock('../../../src/slices/genetics', () => ({
+  getStrainLineageTree: vi.fn().mockResolvedValue(null),
+  updateStrainLineageTree: vi.fn().mockResolvedValue({ lineage: '' }),
+}));
 
 // Convenience helpers to access/mutate the SM in tests
 function getSM(el: StrainEditorView) { return (el as any)._sm; }
@@ -49,6 +58,8 @@ describe('StrainEditorView', () => {
     ];
 
     beforeEach(async () => {
+        vi.mocked(sliceGetStrainLineageTree).mockReset().mockResolvedValue(null);
+        vi.mocked(sliceUpdateStrainLineageTree).mockReset().mockResolvedValue({ lineage: '' });
         editorEl = new StrainEditorView();
         editorEl.strains = [...mockStrains];
         document.body.appendChild(editorEl);
@@ -904,32 +915,20 @@ describe('StrainEditorView', () => {
 
         it('handles loading strain lineage tree successfully', async () => {
             const mockTree = { parents: [{ name: 'Parent 1' }] };
-            const getTreeSpy = vi.fn().mockResolvedValue(mockTree);
-            editorEl.store = {
-                actions: {
-                    genetics: {
-                        getStrainLineageTree: getTreeSpy
-                    }
-                }
-            } as any;
+            vi.mocked(sliceGetStrainLineageTree).mockResolvedValue(mockTree as any);
+            editorEl.store = {} as any;
 
             await (editorEl as any)._loadStrainLineageTree('Blue Dream');
-            expect(getTreeSpy).toHaveBeenCalledWith('Blue Dream');
+            expect(sliceGetStrainLineageTree).toHaveBeenCalledWith('Blue Dream');
             expect((editorEl as any)._lineageTree).toEqual(mockTree);
         });
 
         it('handles loading strain lineage tree failure', async () => {
-            const getTreeSpy = vi.fn().mockRejectedValue(new Error('API error'));
-            editorEl.store = {
-                actions: {
-                    genetics: {
-                        getStrainLineageTree: getTreeSpy
-                    }
-                }
-            } as any;
+            vi.mocked(sliceGetStrainLineageTree).mockRejectedValue(new Error('API error'));
+            editorEl.store = {} as any;
 
             await (editorEl as any)._loadStrainLineageTree('Blue Dream');
-            expect(getTreeSpy).toHaveBeenCalledWith('Blue Dream');
+            expect(sliceGetStrainLineageTree).toHaveBeenCalledWith('Blue Dream');
             expect((editorEl as any)._lineageTree).toBeNull();
         });
 
@@ -942,8 +941,8 @@ describe('StrainEditorView', () => {
 
         it('handles lineage-change event from lineage-tree-editor', async () => {
             const mockTree = { parents: [{ name: 'Parent 1' }] };
-            const getTreeSpy = vi.fn().mockResolvedValue(mockTree);
-            const updateTreeSpy = vi.fn().mockResolvedValue({ lineage: { parents: [] } });
+            vi.mocked(sliceGetStrainLineageTree).mockResolvedValue(mockTree as any);
+            vi.mocked(sliceUpdateStrainLineageTree).mockResolvedValue({ lineage: '' } as any);
 
             editorEl.strains = [
                 { key: 's1', strain: 'Blue Dream', phenotype: 'Original', breeder: 'HSO', type: 'Hybrid' }
@@ -951,14 +950,7 @@ describe('StrainEditorView', () => {
             editorEl.editingStrain = editorEl.strains[0];
             await editorEl.updateComplete;
 
-            editorEl.store = {
-                actions: {
-                    genetics: {
-                        getStrainLineageTree: getTreeSpy,
-                        updateStrainLineageTree: updateTreeSpy,
-                    }
-                }
-            } as any;
+            editorEl.store = {} as any;
 
             setSubState(editorEl, { kind: 'lineage-editing' });
             (editorEl as any)._lineageTree = mockTree;
@@ -973,8 +965,8 @@ describe('StrainEditorView', () => {
 
             await new Promise(resolve => setTimeout(resolve, 0));
 
-            expect(updateTreeSpy).toHaveBeenCalledWith('Blue Dream', ['Parent 1']);
-            expect(getTreeSpy).toHaveBeenCalledWith('Blue Dream');
+            expect(sliceUpdateStrainLineageTree).toHaveBeenCalledWith('Blue Dream', ['Parent 1']);
+            expect(sliceGetStrainLineageTree).toHaveBeenCalledWith('Blue Dream');
         });
 
         it('triggers import-library event in _handleImportFile when a file is selected', async () => {
@@ -1031,14 +1023,8 @@ describe('StrainEditorView', () => {
 
         it('toggles lineage edit mode and loads strain tree', async () => {
             const mockTree = { parents: [{ name: 'Parent 1' }] };
-            const getTreeSpy = vi.fn().mockResolvedValue(mockTree);
-            editorEl.store = {
-                actions: {
-                    genetics: {
-                        getStrainLineageTree: getTreeSpy
-                    }
-                }
-            } as any;
+            vi.mocked(sliceGetStrainLineageTree).mockResolvedValue(mockTree as any);
+            editorEl.store = {} as any;
             editorEl.editingStrain = mockStrains[0];
             await editorEl.updateComplete;
 
@@ -1050,7 +1036,7 @@ describe('StrainEditorView', () => {
             await (editTreeBtn as HTMLElement).click();
             await editorEl.updateComplete;
             expect(getSubKind(editorEl)).toBe('lineage-editing');
-            expect(getTreeSpy).toHaveBeenCalledWith('Blue Dream');
+            expect(sliceGetStrainLineageTree).toHaveBeenCalledWith('Blue Dream');
 
             // Toggle View mode ON (Edit tree OFF)
             const viewBtn = Array.from(editorEl.shadowRoot?.querySelectorAll('.sd-btn-text') || [])

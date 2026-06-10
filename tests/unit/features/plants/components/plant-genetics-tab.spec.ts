@@ -2,6 +2,23 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { PlantGeneticsTab } from '../../../../../src/features/plants/components/plant-genetics-tab';
 import type { PlantEntity } from '../../../../../src/types';
+import {
+  getLineageTree as sliceGetLineageTree,
+  unlinkSeedBatch as sliceUnlinkSeedBatch,
+  setPlantSex as sliceSetPlantSex,
+  fetchGeneticsData as sliceFetchGeneticsData,
+} from '../../../../../src/slices/genetics';
+
+vi.mock('../../../../../src/slices/genetics', () => ({
+  getLineageTree: vi.fn().mockResolvedValue({ id: 'root', name: 'Root' }),
+  unlinkSeedBatch: vi.fn().mockResolvedValue(undefined),
+  setPlantSex: vi.fn().mockResolvedValue(undefined),
+  fetchGeneticsData: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../../../src/slices/ui', () => ({
+  withToast: vi.fn(async (fn: () => Promise<unknown>) => fn()),
+}));
 
 if (!customElements.get('plant-genetics-tab')) {
   customElements.define('plant-genetics-tab', PlantGeneticsTab);
@@ -12,15 +29,14 @@ describe('plant-genetics-tab', () => {
   let mockPlant: PlantEntity;
 
   beforeEach(() => {
-    mockStore = {
-      actions: {
-        genetics: {
-          getLineageTree: vi.fn().mockResolvedValue({ id: 'root', name: 'Root' }),
-          unlinkSeedBatch: vi.fn().mockResolvedValue(undefined),
-          setPlantSex: vi.fn().mockResolvedValue(undefined),
-        },
-      },
-    };
+    vi.mocked(sliceGetLineageTree).mockReset().mockResolvedValue({ id: 'root', name: 'Root' } as any);
+    vi.mocked(sliceUnlinkSeedBatch).mockReset().mockResolvedValue(undefined);
+    vi.mocked(sliceSetPlantSex).mockReset().mockResolvedValue(undefined);
+    vi.mocked(sliceFetchGeneticsData).mockReset().mockResolvedValue(undefined);
+
+    // Genetics now routes through slice mutators; the store is only consulted
+    // as a truthy guard inside _loadLineageTree.
+    mockStore = {};
 
     mockPlant = {
       entity_id: 'plant.test',
@@ -127,12 +143,12 @@ describe('plant-genetics-tab', () => {
 
   it('loads lineage tree on init', async () => {
     const el = await setup();
-    expect(mockStore.actions.genetics.getLineageTree).toHaveBeenCalledWith('p123');
+    expect(sliceGetLineageTree).toHaveBeenCalledWith('p123');
     expect((el as any)._lineageTree).to.deep.equal({ id: 'root', name: 'Root' });
   });
 
   it('handles lineage tree loading failure', async () => {
-    mockStore.actions.genetics.getLineageTree.mockRejectedValue(new Error('Failed'));
+    vi.mocked(sliceGetLineageTree).mockRejectedValue(new Error('Failed'));
     const el = await setup();
     
     expect((el as any)._lineageTree).to.be.null;
@@ -143,21 +159,21 @@ describe('plant-genetics-tab', () => {
     const el = await fixture<PlantGeneticsTab>(html`<plant-genetics-tab></plant-genetics-tab>`);
     // No store, no plant
     await (el as any)._loadLineageTree();
-    expect(mockStore.actions.genetics.getLineageTree).not.toHaveBeenCalled();
+    expect(sliceGetLineageTree).not.toHaveBeenCalled();
     
     el.plant = { attributes: { plant_id: 'p123' } } as any;
     await (el as any)._loadLineageTree();
-    expect(mockStore.actions.genetics.getLineageTree).not.toHaveBeenCalled();
+    expect(sliceGetLineageTree).not.toHaveBeenCalled();
   });
 
   it('reloads lineage tree when plant changes', async () => {
     const el = await setup();
-    mockStore.actions.genetics.getLineageTree.mockClear();
+    vi.mocked(sliceGetLineageTree).mockClear();
 
     el.plant = { ...mockPlant, attributes: { ...mockPlant.attributes, plant_id: 'p456' } } as any;
     await el.updateComplete;
 
-    expect(mockStore.actions.genetics.getLineageTree).toHaveBeenCalledWith('p456');
+    expect(sliceGetLineageTree).toHaveBeenCalledWith('p456');
   });
 
   it('calls unlinkSeedBatch when Unlink button is clicked', async () => {
@@ -169,14 +185,14 @@ describe('plant-genetics-tab', () => {
     unlinkBtn.click();
     await el.updateComplete;
 
-    expect(mockStore.actions.genetics.unlinkSeedBatch).toHaveBeenCalledWith('p123');
+    expect(sliceUnlinkSeedBatch).toHaveBeenCalledWith('p123');
   });
 
   it('calls setPlantSex and resets _sexSaving when a different sex chip is clicked', async () => {
     const el = await setup(); // current sex is 'female'
 
     let resolveSetSex!: () => void;
-    mockStore.actions.genetics.setPlantSex.mockReturnValue(
+    vi.mocked(sliceSetPlantSex).mockReturnValue(
       new Promise<void>(res => { resolveSetSex = res; })
     );
 
@@ -187,9 +203,11 @@ describe('plant-genetics-tab', () => {
     await el.updateComplete;
 
     expect((el as any)._sexSaving).to.be.true;
-    expect(mockStore.actions.genetics.setPlantSex).toHaveBeenCalledWith('p123', 'male');
+    expect(sliceSetPlantSex).toHaveBeenCalledWith('p123', 'male');
 
     resolveSetSex();
+    // Flush the withToast → setPlantSex → fetchGeneticsData chain and the finally.
+    await new Promise(resolve => setTimeout(resolve, 0));
     await el.updateComplete;
 
     expect((el as any)._sexSaving).to.be.false;
@@ -204,6 +222,6 @@ describe('plant-genetics-tab', () => {
     femaleBtn.click();
     await el.updateComplete;
 
-    expect(mockStore.actions.genetics.setPlantSex).not.toHaveBeenCalled();
+    expect(sliceSetPlantSex).not.toHaveBeenCalled();
   });
 });

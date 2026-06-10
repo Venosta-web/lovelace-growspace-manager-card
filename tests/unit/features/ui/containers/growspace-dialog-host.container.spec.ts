@@ -23,6 +23,16 @@ import {
     askGrowAdvice as sliceAskGrowAdvice,
     analyzeAllGrowspaces as sliceAnalyzeAllGrowspaces,
 } from '../../../../../src/slices/ai-insight';
+import {
+    fetchGeneticsData as sliceFetchGeneticsData,
+    addSeedBatch as sliceAddSeedBatch,
+    updateSeedBatch as sliceUpdateSeedBatch,
+    logPollinationEvent as sliceLogPollinationEvent,
+    updatePollinationEvent as sliceUpdatePollinationEvent,
+    deletePollinationEvent as sliceDeletePollinationEvent,
+    removeSeedBatch as sliceRemoveSeedBatch,
+    harvestSeeds as sliceHarvestSeeds,
+} from '../../../../../src/slices/genetics';
 import * as uiSlice from '../../../../../src/slices/ui';
 
 // The host now calls slices/ui orchestration mutators directly; mock those the
@@ -313,6 +323,17 @@ describe('GrowspaceDialogHostContainer', () => {
         mockStore.ui.openTrainingDialog = uiSlice.openTrainingDialog as any;
         mockStore.ui.exportStrainLibrary = uiSlice.exportStrainLibrary as any;
         mockStore.ui.openStrainRecommendationDialog = uiSlice.openStrainRecommendationDialog as any;
+        // The host calls the genetics slice directly now; point the legacy
+        // store-action genetics mocks at the (mocked) slice functions so the
+        // existing assertions track the real calls the host makes.
+        mockStore.actions.genetics.fetchData = sliceFetchGeneticsData as any;
+        mockStore.actions.genetics.addSeedBatch = sliceAddSeedBatch as any;
+        mockStore.actions.genetics.updateSeedBatch = sliceUpdateSeedBatch as any;
+        mockStore.actions.genetics.logPollination = sliceLogPollinationEvent as any;
+        mockStore.actions.genetics.updatePollination = sliceUpdatePollinationEvent as any;
+        mockStore.actions.genetics.deletePollination = sliceDeletePollinationEvent as any;
+        mockStore.actions.genetics.deleteSeedBatch = sliceRemoveSeedBatch as any;
+        mockStore.actions.genetics.harvestSeeds = sliceHarvestSeeds as any;
         // Map legacy methods to new locations
         mockStore.confirmAddPlant = (...args: any[]) => mockStore.actions.plant.add(...args);
         mockStore.confirmAddPlants = (...args: any[]) => mockStore.actions.plant.addBatch(...args);
@@ -942,7 +963,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
     it('should handle _refreshGeneticsData failure gracefully', async () => {
         const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        mockStore.actions.genetics.fetchData.mockRejectedValue(new Error('Network'));
+        vi.mocked(sliceFetchGeneticsData).mockRejectedValueOnce(new Error('Network'));
 
         mockStore.ui.$activeDialog.set({ type: 'STRAIN_LIBRARY', payload: {} });
         await element.updateComplete;
@@ -2490,7 +2511,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle onDeleteSeedBatch and onSowSeeds callbacks on STRAIN_LIBRARY dialog (Lines 554-570)', async () => {
             // Mock the required store functions that are not already mocked
-            mockStore.actions.genetics.deleteSeedBatch = vi.fn().mockResolvedValue(true);
+            vi.mocked(sliceRemoveSeedBatch).mockResolvedValue(undefined);
             mockStore.dataService.addPlants = vi.fn().mockResolvedValue(true);
 
             await openDialog('STRAIN_LIBRARY', {});
@@ -2499,8 +2520,8 @@ describe('GrowspaceDialogHostContainer', () => {
 
             // Trigger onDeleteSeedBatch
             await dialog.onDeleteSeedBatch('batch123');
-            expect(mockStore.actions.genetics.deleteSeedBatch).toHaveBeenCalledWith('batch123');
-            expect(mockStore.actions.genetics.fetchData).toHaveBeenCalled();
+            expect(sliceRemoveSeedBatch).toHaveBeenCalledWith('batch123');
+            expect(sliceFetchGeneticsData).toHaveBeenCalled();
 
             // Trigger onSowSeeds
             const sowData = {
