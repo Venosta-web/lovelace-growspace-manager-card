@@ -8,6 +8,7 @@
  *
  * Public API (mutators):
  *   waterPlant()          — water a plant (pilot mutator)
+ *   waterGrowspace()      — water an entire growspace
  *   addPlant()            — add a single plant to a growspace
  *   addPlants()           — batch-add plants to a growspace
  *   updatePlant()         — update attributes on a plant (optimistic)
@@ -33,7 +34,7 @@ import type { PlantEntity } from '../../features/plants/types';
 import type { LabelFieldVisibility } from '../../lib/types/dialog';
 import { z } from 'zod';
 import { mutate } from '../../services/mutate';
-import { hassCall } from '../../services/hass-call';
+import { hassCall, callService } from '../../services/hass-call';
 
 const wsVoid = (cmd: string, params: Record<string, unknown>): Promise<void> =>
   hassCall(cmd, params, z.unknown()).then(() => undefined);
@@ -131,6 +132,43 @@ export async function waterPlant(
       apply: () => wsVoid('growspace_manager/water_plant', payload),
     },
     _growspaceIdFor(plantId)
+  );
+}
+
+/**
+ * Water an entire growspace.
+ *
+ * Optimistic: none (backend is authoritative for watering state).
+ * Apply: calls growspace_manager.water_growspace.
+ * Inverse: no-op.
+ */
+export async function waterGrowspace(
+  growspaceId: string,
+  amountMl: number,
+  nutrients?: Record<string, number>,
+  presetId?: string
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    growspace_id: growspaceId,
+    amount: amountMl,
+  };
+  if (nutrients && Object.keys(nutrients).length > 0) {
+    payload.nutrients = nutrients;
+  }
+  if (presetId) {
+    payload.preset_id = presetId;
+  }
+
+  await mutate(
+    {
+      type: 'waterGrowspace',
+      optimistic: () => {},
+      inverse: () => {},
+      // water_growspace is a SERVICE in the integration (no WS command handler,
+      // unlike water_plant), so it must go through callService, not hassCall.
+      apply: () => callService('growspace_manager', 'water_growspace', payload),
+    },
+    growspaceId
   );
 }
 

@@ -2,7 +2,10 @@ import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
-import { waterPlant as sliceWaterPlant } from '../../../../../src/slices/plant';
+import {
+    waterPlant as sliceWaterPlant,
+    waterGrowspace as sliceWaterGrowspace,
+} from '../../../../../src/slices/plant';
 import { hassCall, callService } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
 import {
@@ -13,6 +16,8 @@ import {
     addGrowspace as sliceAddGrowspace,
     updateGrowspace as sliceUpdateGrowspace,
     removeGrowspace as sliceRemoveGrowspace,
+    configureEnvironment as sliceConfigureEnvironment,
+    removeEnvironment as sliceRemoveEnvironment,
 } from '../../../../../src/slices/growspace';
 import {
     askGrowAdvice as sliceAskGrowAdvice,
@@ -56,6 +61,7 @@ vi.mock('../../../../../src/features/genetics/state/genetics.actions', () => ({
 
 vi.mock('../../../../../src/slices/plant', () => ({
     waterPlant: vi.fn().mockResolvedValue(undefined),
+    waterGrowspace: vi.fn().mockResolvedValue(undefined),
     plants$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
     selectedPlant$: { get: vi.fn().mockReturnValue(null), set: vi.fn(), subscribe: vi.fn().mockReturnValue(() => {}) },
     setPlants: vi.fn(),
@@ -102,6 +108,7 @@ vi.mock('../../../../../src/slices/growspace', async (importOriginal) => {
         addGrowspace: vi.fn().mockResolvedValue(undefined),
         updateGrowspace: vi.fn().mockResolvedValue(undefined),
         removeGrowspace: vi.fn().mockResolvedValue(undefined),
+        configureEnvironment: vi.fn().mockResolvedValue(undefined),
         removeEnvironment: vi.fn().mockResolvedValue(undefined),
     };
 });
@@ -468,7 +475,7 @@ describe('GrowspaceDialogHostContainer', () => {
             }
         }));
 
-        expect(mockStore.actions.environment.configure).toHaveBeenCalledWith(expect.objectContaining({
+        expect(sliceConfigureEnvironment).toHaveBeenCalledWith(expect.objectContaining({
             vpdSettings: { target: 1.2 },
             co2Settings: { target: 800 }
         }));
@@ -575,7 +582,7 @@ describe('GrowspaceDialogHostContainer', () => {
         }));
 
         await vi.waitFor(() => {
-            expect(mockStore.actions.environment.waterGrowspace).toHaveBeenCalledWith('gs1', 500, {}, 'preset1');
+            expect(sliceWaterGrowspace).toHaveBeenCalledWith('gs1', 500, {}, 'preset1');
         });
     });
 
@@ -865,11 +872,7 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle environment config submit failure', async () => {
-        const error = new Error('Network error');
-        mockStore.actions.environment.configure.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Network error', 'error');
-            throw error;
-        });
+        vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Network error'));
 
         mockStore.ui.$activeDialog.set({ type: 'ENVIRONMENT_CONFIG', payload: { deviceId: 'g1' } });
         await element.updateComplete;
@@ -878,10 +881,11 @@ describe('GrowspaceDialogHostContainer', () => {
         const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
         dialog?.dispatchEvent(new CustomEvent('save-config', { detail: { growspaceId: 'g1' } }));
 
-        await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Network error'), 'error'
-        );
+        await vi.waitFor(() => {
+            expect(notification$.get()).toEqual(
+                expect.objectContaining({ message: expect.stringContaining('Network error'), type: 'error' })
+            );
+        });
     });
 
     it('should handle @vision-checkup-config-submit on config-dialog', async () => {
@@ -952,24 +956,17 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle _handleEnvironmentConfig failure', async () => {
-        const error = new Error('Config failed');
-        mockStore.actions.environment.configure.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Config failed', 'error');
-            throw error;
-        });
+        vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Config failed'));
 
-        try {
-            await (element as any)._handleEnvironmentConfig({
-                selectedGrowspaceId: 'g1',
-                temperatureSensors: ['t1'],
-                humiditySensors: ['h1']
-            } as any);
-        } catch (_e) {
-            // Error is expected to be rethrown by action but handled by action's toast
-        }
+        await (element as any)._handleEnvironmentConfig({
+            selectedGrowspaceId: 'g1',
+            temperatureSensors: ['t1'],
+            humiditySensors: ['h1']
+        } as any);
 
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Config failed'), 'error'
+        // withToast surfaces the failure through the real UI slice notification atom.
+        expect(notification$.get()).toEqual(
+            expect.objectContaining({ message: expect.stringContaining('Config failed'), type: 'error' })
         );
     });
 
@@ -1981,7 +1978,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { growspace_id: 'g1' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.environment.remove).toHaveBeenCalledWith('g1');
+                expect(vi.mocked(sliceRemoveEnvironment)).toHaveBeenCalledWith('g1');
             });
         });
 
@@ -1996,7 +1993,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.environment.configure).toHaveBeenCalled();
+                expect(vi.mocked(sliceConfigureEnvironment)).toHaveBeenCalled();
             });
         });
 
@@ -2227,7 +2224,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { volume: 100, presetId: null }
             }));
             await new Promise(r => setTimeout(r, 50));
-            expect(mockStore.actions.environment.waterGrowspace).not.toHaveBeenCalled();
+            expect(sliceWaterGrowspace).not.toHaveBeenCalled();
         });
 
         it('should handle @take-clone-submit failure with toast', async () => {
@@ -2284,7 +2281,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle @remove-environment-submit failure on CONFIG dialog', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.environment.remove.mockRejectedValue(new Error('Remove env failed'));
+            vi.mocked(sliceRemoveEnvironment).mockRejectedValue(new Error('Remove env failed'));
             await openDialog('CONFIG', {});
             const dialog = element.shadowRoot?.querySelector('config-dialog');
             dialog?.dispatchEvent(new CustomEvent('remove-environment-submit', {
@@ -2612,7 +2609,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
         it('should handle @save-config failure on ENVIRONMENT_CONFIG dialog', async () => {
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.environment.configure.mockRejectedValueOnce(new Error('Config failed'));
+            vi.mocked(sliceConfigureEnvironment).mockRejectedValueOnce(new Error('Config failed'));
             await openDialog('ENVIRONMENT_CONFIG', { deviceId: 'g1' });
             const dialog = element.shadowRoot?.querySelector('growspace-environment-config-dialog');
             expect(dialog).toBeTruthy();
@@ -2857,7 +2854,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 });
                 // @ts-ignore
                 await element._handleWateringSubmit(event, { mode: 'growspace', growspace_id: 'g1' });
-                expect(mockStore.actions.environment.waterGrowspace).toHaveBeenCalledWith(
+                expect(sliceWaterGrowspace).toHaveBeenCalledWith(
                     'g1',
                     500,
                     {},
@@ -2871,7 +2868,7 @@ describe('GrowspaceDialogHostContainer', () => {
                 });
                 // @ts-ignore
                 await element._handleWateringSubmit(event, { mode: 'plant', plantIds: undefined, plant_id: undefined });
-                expect(mockStore.actions.environment.waterGrowspace).not.toHaveBeenCalled();
+                expect(sliceWaterGrowspace).not.toHaveBeenCalled();
             });
         });
     });

@@ -18,9 +18,15 @@ vi.mock('../../../src/services/hass-call', () => ({
   callService: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { plants$, selectedPlant$, setPlants, waterPlant } from '../../../src/slices/plant';
+import {
+  plants$,
+  selectedPlant$,
+  setPlants,
+  waterPlant,
+  waterGrowspace,
+} from '../../../src/slices/plant';
 import { mutate } from '../../../src/services/mutate';
-import { hassCall } from '../../../src/services/hass-call';
+import { hassCall, callService } from '../../../src/services/hass-call';
 import type { PlantEntity } from '../../../src/features/plants/types';
 
 function makePlant(id: string): PlantEntity {
@@ -83,6 +89,38 @@ describe('Plant slice', () => {
         'growspace_manager/water_plant',
         expect.objectContaining({ nutrients: { nitrogen: 5 } }),
         expect.anything(),
+      );
+    });
+  });
+
+  describe('waterGrowspace mutator', () => {
+    it('calls mutate with type waterGrowspace scoped to the growspace id', async () => {
+      await waterGrowspace('gs-1', 2000);
+      expect(mutate).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'waterGrowspace' }),
+        'gs-1',
+      );
+    });
+
+    // water_growspace is a SERVICE (no WS command handler in the integration),
+    // so the mutator must go through callService, not hassCall.
+    it('apply calls callService with correct payload', async () => {
+      await waterGrowspace('gs-1', 1500);
+
+      expect(callService).toHaveBeenCalledWith(
+        'growspace_manager',
+        'water_growspace',
+        expect.objectContaining({ growspace_id: 'gs-1', amount: 1500 }),
+      );
+    });
+
+    it('passes optional nutrients and preset to callService', async () => {
+      await waterGrowspace('gs-2', 100, { nitrogen: 5 }, 'preset-1');
+
+      expect(callService).toHaveBeenCalledWith(
+        'growspace_manager',
+        'water_growspace',
+        expect.objectContaining({ nutrients: { nitrogen: 5 }, preset_id: 'preset-1' }),
       );
     });
   });

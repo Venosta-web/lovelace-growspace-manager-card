@@ -2,7 +2,10 @@ import { LitElement, html, TemplateResult, PropertyValues, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
-import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
+import {
+  waterPlant as sliceWaterPlant,
+  waterGrowspace as sliceWaterGrowspace,
+} from '../../../slices/plant';
 import { askGrowAdvice, analyzeAllGrowspaces } from '../../../slices/ai-insight';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
 import { updateVisionCheckupConfig } from '../../../slices/camera';
@@ -19,6 +22,8 @@ import {
   addGrowspace as sliceAddGrowspace,
   updateGrowspace as sliceUpdateGrowspace,
   removeGrowspace as sliceRemoveGrowspace,
+  configureEnvironment as sliceConfigureEnvironment,
+  removeEnvironment as sliceRemoveEnvironment,
 } from '../../../slices/growspace';
 import {
   withToast,
@@ -811,12 +816,16 @@ export class GrowspaceDialogHost extends LitElement {
   }
 
   private async _handleRemoveEnvironment(detail: { growspace_id: string }) {
-    try {
-      await this.store?.actions.environment.remove(detail.growspace_id);
-      await this._handleDataChanged();
-    } catch (e) {
-      console.error(e);
-    }
+    await withToast(
+      async () => {
+        await sliceRemoveEnvironment(detail.growspace_id);
+        await this._handleDataChanged();
+      },
+      {
+        success: 'Environment configuration removed',
+        errorPrefix: 'Failed to remove environment',
+      }
+    );
   }
 
   private async _handleEnvironmentConfig(detail: any) {
@@ -832,8 +841,10 @@ export class GrowspaceDialogHost extends LitElement {
     }
 
     try {
-      await this.store?.actions.environment.configure({
-        growspaceId: detail.selectedGrowspaceId,
+      await withToast(
+        async () => {
+          await sliceConfigureEnvironment({
+            growspaceId: detail.selectedGrowspaceId,
         temperatureSensors,
         humiditySensors,
         vpdSensors: detail.vpdSensors,
@@ -865,9 +876,17 @@ export class GrowspaceDialogHost extends LitElement {
         irrigationFlowSensors: detail.irrigationFlowSensors,
         powerSensors: detail.powerSensors,
         energySensors: detail.energySensors,
-        circulationFanConfig: detail.circulationFanConfig,
-        vpdOptimalOverrides: detail.vpdOptimalOverrides,
-      });
+            circulationFanConfig: detail.circulationFanConfig,
+            vpdOptimalOverrides: detail.vpdOptimalOverrides,
+          });
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Environment configured successfully!',
+          errorPrefix: 'Failed to configure environment',
+          rethrow: true,
+        }
+      );
       closeDialog();
     } catch (e: unknown) {
       console.error('[DialogHost] configureEnvironment failed:', e);
@@ -1067,13 +1086,11 @@ export class GrowspaceDialogHost extends LitElement {
       } else {
         const growspaceId = payload?.growspace_id || fallbackGrowspaceId;
         if (growspaceId) {
-          await this.store?.actions.environment.waterGrowspace(
-            growspaceId,
-            volume,
-            nutrientRecord,
-            presetId
-          );
+          await sliceWaterGrowspace(growspaceId, volume, nutrientRecord, presetId);
         }
+      }
+      if (Object.keys(nutrientRecord).length > 0) {
+        await fetchNutrientInventory();
       }
       this.store?.ui.closeDialog();
       showToast('Watering recorded', 'success');
@@ -1382,7 +1399,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleEnvironmentConfigSubmit(e: CustomEvent) {
     try {
-      await this.store?.actions.environment.configure(e.detail);
+      await withToast(
+        async () => {
+          await sliceConfigureEnvironment(e.detail);
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Environment configured successfully!',
+          errorPrefix: 'Failed to configure environment',
+          rethrow: true,
+        }
+      );
       closeDialog();
     } catch (err: any) {
       console.error('[DialogHost] configureEnvironment failed:', err);

@@ -5,7 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { waterPlant as mockWaterPlant } from '../../../slices/plant';
+import {
+  waterPlant as mockWaterPlant,
+  waterGrowspace as mockWaterGrowspace,
+} from '../../../slices/plant';
+import { configureEnvironment as mockConfigureEnvironment } from '../../../slices/growspace';
 import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
 import { notification$, activeDialog$, __resetUiSliceForTests } from '../../../slices/ui';
 import './growspace-dialog-host.container';
@@ -14,6 +18,7 @@ import type { GrowspaceDialogHost } from './growspace-dialog-host.container';
 // Mock slices/plant so no real API calls are made
 vi.mock('../../../slices/plant', () => ({
   waterPlant: vi.fn(),
+  waterGrowspace: vi.fn(),
   plants$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
   addPlant: vi.fn(), addPlants: vi.fn(), updatePlant: vi.fn(), deletePlant: vi.fn(),
   harvestPlant: vi.fn(), takeClone: vi.fn(), moveClone: vi.fn(), swapPlants: vi.fn(),
@@ -30,6 +35,17 @@ vi.mock('../../../slices/genetics', () => ({
   deletePollinationEvent: vi.fn(), harvestSeeds: vi.fn(), sowSeed: vi.fn(),
   setPlantSex: vi.fn(), unlinkSeedBatch: vi.fn(), getLineageTree: vi.fn(),
   getStrainLineageTree: vi.fn(), updateStrainLineageTree: vi.fn(), importStrainLineageTree: vi.fn(),
+}));
+
+// Mock slices/growspace write mutators so config/environment handlers don't hit
+// the backend. Spread the real module so atoms/readers stay intact.
+vi.mock('../../../slices/growspace', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../slices/growspace')>()),
+  addGrowspace: vi.fn().mockResolvedValue(undefined),
+  updateGrowspace: vi.fn().mockResolvedValue(undefined),
+  removeGrowspace: vi.fn().mockResolvedValue(undefined),
+  configureEnvironment: vi.fn().mockResolvedValue(undefined),
+  removeEnvironment: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Mock slices/nutrient so the IPM handler's slice calls don't hit the backend.
@@ -61,9 +77,6 @@ function makeMockStore() {
         setActiveDialog: vi.fn(),
         closeDialog: vi.fn(),
         refreshData: vi.fn(),
-      },
-      environment: {
-        waterGrowspace: vi.fn().mockResolvedValue(undefined),
       },
     },
     $dialogHostState: { subscribe: vi.fn(() => () => {}), get: vi.fn() },
@@ -102,6 +115,7 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
     el = createElement();
     store = (el as any).store;
     vi.mocked(mockWaterPlant).mockResolvedValue(undefined);
+    vi.mocked(mockWaterGrowspace).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -145,6 +159,7 @@ describe('GrowspaceDialogHost – _handleWateringSubmit', () => {
 
     await (el as any)._handleWateringSubmit(event, payload, 'gs-1');
 
+    expect(mockWaterGrowspace).toHaveBeenCalledWith('gs-1', 2.0, expect.anything(), '');
     expect(notification$.get()).toEqual(
       expect.objectContaining({ message: 'Watering recorded', type: 'success' })
     );
@@ -505,10 +520,6 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
       ui: { $activeDialog: { get: vi.fn().mockReturnValue({ type: 'NONE' }) } },
       actions: {
         ui: { showToast: vi.fn(), closeDialog: vi.fn() },
-        environment: {
-          configure: vi.fn().mockResolvedValue(undefined),
-          configureFanController: vi.fn().mockResolvedValue(undefined),
-        },
       },
       $dialogHostState: { subscribe: vi.fn(() => () => {}), get: vi.fn() },
       refreshData: vi.fn(),
@@ -526,10 +537,10 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     (el as any).store = store;
   });
 
-  it('calls environment.configure with the mapped payload', async () => {
+  it('calls the Growspace slice configureEnvironment with the mapped payload', async () => {
     await (el as any)._handleEnvironmentConfig(minimalValidDetail);
 
-    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
       expect.objectContaining({ growspaceId: 'gs-1' })
     );
   });
@@ -540,19 +551,17 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
       circulationFanConfig: fanConfig,
     });
 
-    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
       expect.objectContaining({ circulationFanConfig: fanConfig })
     );
-    expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
   });
 
   it('does not pass circulationFanConfig to configure when absent', async () => {
     await (el as any)._handleEnvironmentConfig(minimalValidDetail);
 
-    expect(store.actions.environment.configure).toHaveBeenCalledWith(
+    expect(mockConfigureEnvironment).toHaveBeenCalledWith(
       expect.not.objectContaining({ circulationFanConfig: expect.anything() })
     );
-    expect(store.actions.environment.configureFanController).not.toHaveBeenCalled();
   });
 
   it('shows a toast and returns early when mandatory sensors are missing', async () => {
@@ -565,6 +574,6 @@ describe('GrowspaceDialogHost – _handleEnvironmentConfig', () => {
     expect(notification$.get()).toEqual(
       expect.objectContaining({ message: expect.stringContaining('mandatory'), type: 'error' })
     );
-    expect(store.actions.environment.configure).not.toHaveBeenCalled();
+    expect(mockConfigureEnvironment).not.toHaveBeenCalled();
   });
 });

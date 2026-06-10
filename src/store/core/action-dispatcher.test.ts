@@ -450,42 +450,6 @@ describe('library delegation', () => {
   });
 });
 
-// ─── ai delegation ────────────────────────────────────────────────────────────
-
-// ─── environment delegation ───────────────────────────────────────────────────
-
-describe('environment delegation', () => {
-  it('configure calls dataService.configureEnvironment', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.environment.configure({ growspaceId: 'gs-1' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).configureEnvironment).toHaveBeenCalled();
-  });
-
-  it('remove calls dataService.removeEnvironment', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.environment.remove('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeEnvironment).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('resetWaterTracking calls dataService.resetWaterTracking', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.environment.resetWaterTracking('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).resetWaterTracking).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('waterPlant calls dataService.waterPlant', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.environment.waterPlant('p1', 500);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).waterPlant).toHaveBeenCalledWith('p1', 500, undefined, undefined);
-  });
-
-  it('waterGrowspace calls dataService.waterGrowspace', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.environment.waterGrowspace('gs-1', 2000);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).waterGrowspace).toHaveBeenCalledWith('gs-1', 2000, undefined, undefined);
-  });
-});
-
 // ─── genetics delegation ──────────────────────────────────────────────────────
 
 describe('genetics delegation', () => {

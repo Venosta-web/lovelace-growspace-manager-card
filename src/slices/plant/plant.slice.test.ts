@@ -36,6 +36,7 @@ import {
 
 vi.mock('../../services/hass-call', () => ({
   hassCall: vi.fn().mockResolvedValue(undefined),
+  callService: vi.fn().mockResolvedValue(undefined),
   setHass: vi.fn(),
 }));
 
