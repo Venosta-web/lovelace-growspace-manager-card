@@ -331,6 +331,19 @@ describe('IrrigationDialog - Extra Coverage', () => {
             expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
+        it('save/run handlers surface mutator failure as a toast, not an unhandled rejection', async () => {
+            // The irrigation slice's callService has no hass in this unit context, so the
+            // underlying mutators reject. These handlers are invoked fire-and-forget from
+            // @click bindings / _confirmPhaseChange(), so a propagated rejection becomes an
+            // unhandled error (false-positive risk) and, in production, a failed save with no
+            // user feedback. They must catch + toast instead.
+            await expect((element as any)._saveSettings()).resolves.toBeUndefined();
+            expect((element as any)._sm.toast).toBe('Failed to save irrigation settings');
+
+            await expect((element as any)._handleRunNow()).resolves.toBeUndefined();
+            expect((element as any)._sm.toast).toBe('Failed to run irrigation cycle');
+        });
+
         it('should delete irrigation time via edit dialog', async () => {
             // Open edit dialog
             const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');

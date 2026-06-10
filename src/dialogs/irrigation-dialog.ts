@@ -1064,22 +1064,27 @@ export class IrrigationDialog extends LitElement {
     if (!this.device?.deviceId) return;
     const s = this._sm.tabs.schedules.draft;
     const cfg = this._sm.tabs.config.draft;
-    await saveIrrigationSettings(this.device.deviceId, {
-      irrigationPumpEntity: s.irrigationPumpEntity,
-      drainPumpEntity: s.drainPumpEntity,
-      irrigationDuration: s.irrigationDuration,
-      drainDuration: s.drainDuration,
-      soilTriggerPercent: cfg.soilTriggerPercent,
-      dailyVolumeCapLiters: cfg.dailyVolumeCapLiters,
-      maxCyclesPerDay: cfg.maxCyclesPerDay,
-      skipDuringDark: cfg.skipDuringDark,
-      pauseOnLowTank: cfg.pauseOnLowTank,
-      logToLogbook: cfg.logToLogbook,
-      autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
-      autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
-      haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
-      activeSteeringPhase: this._sm.tabs.steering.phase,
-    });
+    try {
+      await saveIrrigationSettings(this.device.deviceId, {
+        irrigationPumpEntity: s.irrigationPumpEntity,
+        drainPumpEntity: s.drainPumpEntity,
+        irrigationDuration: s.irrigationDuration,
+        drainDuration: s.drainDuration,
+        soilTriggerPercent: cfg.soilTriggerPercent,
+        dailyVolumeCapLiters: cfg.dailyVolumeCapLiters,
+        maxCyclesPerDay: cfg.maxCyclesPerDay,
+        skipDuringDark: cfg.skipDuringDark,
+        pauseOnLowTank: cfg.pauseOnLowTank,
+        logToLogbook: cfg.logToLogbook,
+        autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
+        autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
+        haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
+        activeSteeringPhase: this._sm.tabs.steering.phase,
+      });
+    } catch (e) {
+      console.error('Failed to save irrigation settings:', e);
+      this._showErrorToast('Failed to save irrigation settings');
+    }
   }
 
   private async _fetchStageAnalytics() {
@@ -1096,6 +1101,9 @@ export class IrrigationDialog extends LitElement {
     this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
     try {
       await runIrrigationCycle(this.device.deviceId);
+    } catch (e) {
+      console.error('Failed to run irrigation cycle:', e);
+      this._showErrorToast('Failed to run irrigation cycle');
     } finally {
       this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
     }
@@ -1233,8 +1241,13 @@ export class IrrigationDialog extends LitElement {
       }
     }
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await removeIrrigationTime(this.device.deviceId, originalTime);
-    await addIrrigationTime(this.device.deviceId, formatted, duration);
+    try {
+      await removeIrrigationTime(this.device.deviceId, originalTime);
+      await addIrrigationTime(this.device.deviceId, formatted, duration);
+    } catch (e) {
+      console.error('Failed to save edited irrigation time:', e);
+      this._showErrorToast('Failed to save irrigation time');
+    }
   }
 
   private async _saveEditedDrainTime() {
@@ -1250,8 +1263,13 @@ export class IrrigationDialog extends LitElement {
       }
     }
     this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await removeDrainTime(this.device.deviceId, originalTime);
-    await addDrainTime(this.device.deviceId, formatted, duration);
+    try {
+      await removeDrainTime(this.device.deviceId, originalTime);
+      await addDrainTime(this.device.deviceId, formatted, duration);
+    } catch (e) {
+      console.error('Failed to save edited drain time:', e);
+      this._showErrorToast('Failed to save drain time');
+    }
   }
 
   private async _deleteIrrigationTimeFromEdit() {

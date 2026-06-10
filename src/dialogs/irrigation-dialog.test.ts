@@ -1137,12 +1137,15 @@ describe('IrrigationDialog – save validation: P2 Direct Trigger > Saturation T
     `);
     await el.updateComplete;
 
-    // Trigger save — validation passes (no toast). Service call may fail in test
+    // Trigger save — the P2 validation passes. The service call may fail in the test
     // environment (hass not set), so absorb any service-level error.
     await (el as any)._saveAll().catch(() => undefined);
     await el.updateComplete;
 
-    expect((el as any)._sm.toast).toBeUndefined();
+    // The P2 guard must not block the save. The save itself may fail without hass
+    // in the test env, which now surfaces a separate save-failure toast — so assert
+    // the *validation* toast specifically is absent rather than no toast at all.
+    expect((el as any)._sm.toast ?? '').not.toContain('P2 Direct Trigger');
   });
 
   it('allows save when soilTriggerPercent is null (not set)', async () => {
@@ -1166,7 +1169,10 @@ describe('IrrigationDialog – save validation: P2 Direct Trigger > Saturation T
     await (el as any)._saveAll().catch(() => undefined);
     await el.updateComplete;
 
-    expect((el as any)._sm.toast).toBeUndefined();
+    // The P2 guard must not block the save. The save itself may fail without hass
+    // in the test env, which now surfaces a separate save-failure toast — so assert
+    // the *validation* toast specifically is absent rather than no toast at all.
+    expect((el as any)._sm.toast ?? '').not.toContain('P2 Direct Trigger');
   });
 });
 
