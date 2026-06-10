@@ -8,6 +8,7 @@ import type { BatchCloneDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { activeDevices$ } from '../slices/grid';
+import { showToast } from '../slices/ui';
 
 @customElement('batch-clone-dialog')
 export class BatchCloneDialog extends LitElement {
@@ -129,9 +130,9 @@ export class BatchCloneDialog extends LitElement {
 
     const totalClones = plantIds.length * this._numClones;
     if (errors.length === 0) {
-      this.store.actions.ui.toast(`Created ${totalClones} clone(s) successfully`, 'success');
+      showToast(`Created ${totalClones} clone(s) successfully`, 'success');
     } else {
-      this.store.actions.ui.toast(`Completed with ${errors.length} error(s)`, 'error');
+      showToast(`Completed with ${errors.length} error(s)`, 'error');
     }
 
     this._close();

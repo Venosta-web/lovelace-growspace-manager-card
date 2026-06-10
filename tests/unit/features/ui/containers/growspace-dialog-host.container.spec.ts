@@ -5,6 +5,22 @@ import { atom } from 'nanostores';
 import { waterPlant as sliceWaterPlant } from '../../../../../src/slices/plant';
 import { hassCall, callService } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
+import * as uiSlice from '../../../../../src/slices/ui';
+
+// The host now calls slices/ui orchestration mutators directly; mock those the
+// store-action assertions used to target, preserving the rest of the slice.
+vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../../../src/slices/ui')>();
+    return {
+        ...actual,
+        openDialog: vi.fn(),
+        closeDialog: vi.fn(),
+        showToast: vi.fn(),
+        openTrainingDialog: vi.fn(),
+        exportStrainLibrary: vi.fn(),
+        openStrainRecommendationDialog: vi.fn(),
+    };
+});
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';
@@ -90,6 +106,7 @@ describe('GrowspaceDialogHostContainer', () => {
 
     beforeEach(async () => {
         vi.useRealTimers();
+        vi.clearAllMocks();
         mockHass = {
             states: {},
             callService: vi.fn().mockResolvedValue(true)
@@ -245,6 +262,14 @@ describe('GrowspaceDialogHostContainer', () => {
         
         // Unify UI actions
         mockStore.actions.ui = mockStore.ui;
+        // The host calls slices/ui directly now; point the store-action mocks at
+        // the (mocked) slice functions so existing assertions track real calls.
+        mockStore.ui.setActiveDialog = uiSlice.openDialog as any;
+        mockStore.ui.closeDialog = uiSlice.closeDialog as any;
+        mockStore.ui.showToast = uiSlice.showToast as any;
+        mockStore.ui.openTrainingDialog = uiSlice.openTrainingDialog as any;
+        mockStore.ui.exportStrainLibrary = uiSlice.exportStrainLibrary as any;
+        mockStore.ui.openStrainRecommendationDialog = uiSlice.openStrainRecommendationDialog as any;
         // Map legacy methods to new locations
         mockStore.confirmAddPlant = (...args: any[]) => mockStore.actions.plant.add(...args);
         mockStore.confirmAddPlants = (...args: any[]) => mockStore.actions.plant.addBatch(...args);

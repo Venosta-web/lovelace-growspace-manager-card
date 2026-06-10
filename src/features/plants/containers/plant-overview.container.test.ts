@@ -10,6 +10,7 @@ import { PlantOverviewContainer } from './plant-overview.container';
 import './plant-overview.container';
 import type { PlantEntity } from '../../../types';
 import { strainLibrary$ } from '../../../slices/strain';
+import { activeDialog$ } from '../../../slices/ui';
 
 vi.mock('../../../slices/logbook', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../slices/logbook')>();
@@ -379,9 +380,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       b.textContent?.includes('Harvest')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.actions.ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'HARVEST_SCORING' })
-    );
+    expect(activeDialog$.get()).toEqual(expect.objectContaining({ type: 'HARVEST_SCORING' }));
   });
 
   // ── Footer: flowering stage Harvest button ────────────────────────────────

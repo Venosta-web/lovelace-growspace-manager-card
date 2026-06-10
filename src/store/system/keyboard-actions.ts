@@ -5,7 +5,7 @@
 
 import { PlantEntity } from '../../types';
 import { ActionContext } from '../core/action-context';
-import * as uiActions from '../ui/ui-actions';
+import { exitEditMode } from '../../slices/ui';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
 import { devices$, optimisticDeletedPlantIds$ } from '../../slices/grid';
@@ -33,7 +33,7 @@ function getVisiblePlants(ctx: ActionContext): PlantEntity[] {
 export function handleKeyboardNavigation(ctx: ActionContext, key: string): void {
   // Escape exits edit mode
   if (ctx.ui.$isEditMode.get() && key === 'Escape') {
-    uiActions.exitEditMode(ctx);
+    exitEditMode();
     return;
   }
 

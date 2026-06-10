@@ -1,6 +1,6 @@
 import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
-import * as uiActions from '../ui/ui-actions';
+import { openCropSteeringDialog } from '../../slices/ui';
 import * as libraryActions from '../plant/library-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
@@ -162,79 +162,12 @@ export class ActionDispatcher {
     remove: (key: string) => strainActions.removeStrain(this.ctx, key),
   };
 
+  // The dialog/selection orchestration that used to live here moved into
+  // `slices/ui` (ADR-0001). What remains delegates to OTHER domains still on the
+  // legacy stack — keyboard (system) and plant deletion — plus the env-graph
+  // toggle which is bound to the per-card history store. These follow in the
+  // keyboard/plant migration steps.
   public readonly ui = {
-    /** Toggle plant selection state */
-    togglePlantSelection: (plantOrId: string | PlantEntity) =>
-      uiActions.togglePlantSelection(this.ctx, plantOrId),
-
-    /** Open add plant dialog at specific position */
-    openAddPlantDialog: (row?: number, col?: number) =>
-      uiActions.openAddPlantDialog(this.ctx, row, col),
-
-    /** Open plant overview dialog */
-    openPlantOverviewDialog: (plant: import('../../types').PlantEntity, selectedIds?: string[]) =>
-      uiActions.openPlantOverviewDialog(this.ctx, plant, selectedIds),
-
-    /** Select all plants in current growspace */
-    selectAllPlants: () => uiActions.selectAllPlants(this.ctx),
-
-    /** Open strain recommendation dialog */
-    openStrainRecommendationDialog: () => uiActions.openStrainRecommendationDialog(this.ctx),
-
-    /** Export strain library as JSON */
-    exportStrainLibrary: () => uiActions.exportStrainLibrary(this.ctx),
-
-    setIsCompactView: (value: boolean) => uiActions.setIsCompactView(this.ctx, value),
-
-    toggleHeaderExpansion: () => uiActions.toggleHeaderExpansion(this.ctx),
-
-    showToast: (message: string, type: 'success' | 'error' | 'info' = 'info') =>
-      uiActions.showToast(this.ctx, message, type),
-
-    /** Refresh all data */
-    refreshData: () => this.store.refreshData(),
-
-    /** Set the active dialog */
-    setActiveDialog: (dialog: import('../../ui-state').ActiveDialogState) =>
-      uiActions.setActiveDialog(this.ctx, dialog),
-
-    /** Close the current dialog */
-    closeDialog: () => uiActions.closeDialog(this.ctx),
-    toast: (message: string, type: 'success' | 'error' | 'info' = 'info') =>
-      uiActions.showToast(this.ctx, message, type),
-
-    openNutrientPresetsDialog: () => uiActions.openNutrientPresetsDialog(this.ctx),
-    openIPMDialog: (context?: { growspaceId?: string; plantIds?: string[] }) =>
-      uiActions.openIPMDialog(this.ctx, context),
-    openLogbookDialog: () => uiActions.openLogbookDialog(this.ctx),
-    openConfigDialog: (device?: import('../../types').GrowspaceDevice) =>
-      uiActions.openConfigDialog(this.ctx, device),
-    openStrainLibraryDialog: () => uiActions.openStrainLibraryDialog(this.ctx),
-    openIrrigationDialog: (options?: { growspaceId?: string; initialTab?: string; scrollToField?: string }) =>
-      uiActions.openIrrigationDialog(this.ctx, options),
-    openGrowMasterDialog: (growspaceId: string) =>
-      uiActions.openGrowMasterDialog(this.ctx, growspaceId),
-    openWateringDialog: (options: {
-      plantIds?: string[];
-      growspaceId?: string;
-      mode?: 'plant' | 'growspace';
-    }) => uiActions.openWateringDialog(this.ctx, options),
-    openTrainingDialog: (plantIds: string[], growspaceId?: string) =>
-      uiActions.openTrainingDialog(this.ctx, plantIds, growspaceId),
-    openNutrientsDialog: () => uiActions.openNutrientsDialog(this.ctx),
-    openSnapshotsDialog: (growspaceId?: string) =>
-      uiActions.openSnapshotsDialog(this.ctx, growspaceId),
-    openCropSteeringDialog: (growspaceId?: string) =>
-      uiActions.openCropSteeringDialog(this.ctx, growspaceId),
-    openBatchWateringDialog: (growspaceId?: string) =>
-      uiActions.openBatchWateringDialog(this.ctx, growspaceId),
-    openBatchTrainingDialog: (growspaceId?: string) =>
-      uiActions.openBatchTrainingDialog(this.ctx, growspaceId),
-    openBatchCloneDialog: () => uiActions.openBatchCloneDialog(this.ctx),
-    openBatchPrintLabelsDialog: () => uiActions.openBatchPrintLabelsDialog(this.ctx),
-    clearPlantSelection: () => uiActions.clearPlantSelection(this.ctx),
-    exitEditMode: () => uiActions.exitEditMode(this.ctx),
-    handleDeepLink: (plantId: string) => uiActions.handleDeepLink(this.ctx, plantId),
     handleKeyboardNavigation: (key: string) =>
       keyboardActions.handleKeyboardNavigation(this.ctx, key),
     deleteSelectedPlants: async () => {
@@ -245,7 +178,7 @@ export class ActionDispatcher {
     toggleEnvGraph: (metric: string) => {
       if (metric === 'crop_steering') {
         const gsId = this.ctx.grid.$selectedDevice.get();
-        if (gsId) uiActions.openCropSteeringDialog(this.ctx, gsId);
+        if (gsId) openCropSteeringDialog(gsId);
         return;
       }
       if (!this.store.history) return;

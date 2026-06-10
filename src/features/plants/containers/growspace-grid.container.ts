@@ -27,6 +27,11 @@ import type {
 } from '../components/growspace-grid-ui';
 import { GrowspaceGridUI } from '../components/growspace-grid-ui';
 import { gridInteraction$, select } from '../../../slices/grid-interaction';
+import {
+  togglePlantSelection,
+  openPlantOverviewDialog,
+  openAddPlantDialog,
+} from '../../../slices/ui';
 import '../components/growspace-grid-ui';
 import '../containers/plant-card.container';
 
@@ -138,14 +143,11 @@ export class GrowspaceGridContainer extends LitElement {
     if (!plant) return;
     if (this.store.ui.$isEditMode.get() && this.store.ui.$selectedPlants.get().size > 0) {
       if (plantId && !this.store.ui.$selectedPlants.get().has(plantId)) {
-        this.store.actions.ui.togglePlantSelection(plantId);
+        togglePlantSelection(plantId);
       }
-      this.store.actions.ui.openPlantOverviewDialog(
-        plant,
-        Array.from(this.store.ui.$selectedPlants.get())
-      );
+      openPlantOverviewDialog(plant, Array.from(this.store.ui.$selectedPlants.get()));
     } else {
-      this.store.actions.ui.openPlantOverviewDialog(plant);
+      openPlantOverviewDialog(plant);
     }
   }
 
@@ -155,7 +157,7 @@ export class GrowspaceGridContainer extends LitElement {
   private _handleEmptySlotClick(e: CustomEvent<{ row: number; col: number }>) {
     const { row, col } = e.detail;
     // Convert from 1-based (display) to 0-based (API)
-    this.store.actions.ui.openAddPlantDialog(row - 1, col - 1);
+    openAddPlantDialog(null, row - 1, col - 1);
   }
 
   /**

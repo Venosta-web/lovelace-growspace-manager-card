@@ -7,6 +7,7 @@ import { GrowspaceDevice, PlantEntity, StrainEntry } from '../../../types';
 import { PlantUtils } from '../../../utils/plant-utils';
 import { strainLibraryContext, storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
+import { openPlantOverviewDialog, openAddPlantDialog } from '../../../slices/ui';
 import { SceneManager } from '../../../utils/three/scene-manager';
 import { InteractionManager } from '../../../utils/three/interaction-manager';
 import { DataService } from '../../../services/data-service';
@@ -621,10 +622,10 @@ export class Heatmap3D extends LitElement {
     if (event === 'click' && data.plant) {
       if (data.plant.entity_id) {
         // Existing plant
-        this.store?.actions.ui.openPlantOverviewDialog(data.plant);
+        openPlantOverviewDialog(data.plant);
       } else if (data.plant.row !== undefined && data.plant.col !== undefined) {
         // Empty slot
-        this.store?.actions.ui.openAddPlantDialog(data.plant.row, data.plant.col);
+        openAddPlantDialog(null, data.plant.row, data.plant.col);
       }
     }
   }

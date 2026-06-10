@@ -6,6 +6,19 @@ import { aGrowspace, aHass } from '../fixtures';
 import { renderCard } from '../harness';
 import { setDevices } from '../../src/slices/grid';
 import { gridInteraction$ } from '../../src/slices/grid-interaction';
+import * as uiSlice from '../../src/slices/ui';
+
+vi.mock('../../src/slices/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/slices/ui')>();
+  return {
+    ...actual,
+    selectAllPlantsInDevice: vi.fn(),
+    clearPlantSelection: vi.fn(),
+    openBatchWateringDialog: vi.fn(),
+    openIPMDialog: vi.fn(),
+    openBatchTrainingDialog: vi.fn(),
+  };
+});
 
 vi.mock('../../src/features/ui/containers/growspace-dialog-host.container', () => ({}));
 vi.mock('../../src/features/ui/containers/growspace-toast.container', () => ({}));
@@ -99,11 +112,11 @@ describe('GrowspaceGridCard', () => {
     const cardContainer = element.shadowRoot?.querySelector('.unified-growspace-card');
 
     const handlers = [
-      { event: 'select-all', spy: vi.spyOn(element.store.actions.ui, 'selectAllPlants') },
-      { event: 'clear-selection', spy: vi.spyOn(element.store.actions.ui, 'clearPlantSelection') },
-      { event: 'water-selected', spy: vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog') },
-      { event: 'training-selected', spy: vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog') },
-      { event: 'ipm-selected', spy: vi.spyOn(element.store.actions.ui, 'openIPMDialog') },
+      { event: 'select-all', spy: vi.mocked(uiSlice.selectAllPlantsInDevice).mockClear() },
+      { event: 'clear-selection', spy: vi.mocked(uiSlice.clearPlantSelection).mockClear() },
+      { event: 'water-selected', spy: vi.mocked(uiSlice.openBatchWateringDialog).mockClear() },
+      { event: 'training-selected', spy: vi.mocked(uiSlice.openBatchTrainingDialog).mockClear() },
+      { event: 'ipm-selected', spy: vi.mocked(uiSlice.openIPMDialog).mockClear() },
       { event: 'delete-selected', spy: vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants') },
     ];
 
@@ -216,21 +229,11 @@ describe('GrowspaceGridCard', () => {
     const keyboardSpy = vi
       .spyOn(element.store.actions.ui, 'handleKeyboardNavigation')
       .mockImplementation(() => {});
-    const selectAllSpy = vi
-      .spyOn(element.store.actions.ui, 'selectAllPlants')
-      .mockImplementation(() => {});
-    const clearSpy = vi
-      .spyOn(element.store.actions.ui, 'clearPlantSelection')
-      .mockImplementation(() => {});
-    const waterSpy = vi
-      .spyOn(element.store.actions.ui, 'openBatchWateringDialog')
-      .mockImplementation(() => {});
-    const ipmSpy = vi
-      .spyOn(element.store.actions.ui, 'openIPMDialog')
-      .mockImplementation(() => {});
-    const trainingSpy = vi
-      .spyOn(element.store.actions.ui, 'openBatchTrainingDialog')
-      .mockImplementation(() => {});
+    const selectAllSpy = vi.mocked(uiSlice.selectAllPlantsInDevice).mockClear();
+    const clearSpy = vi.mocked(uiSlice.clearPlantSelection).mockClear();
+    const waterSpy = vi.mocked(uiSlice.openBatchWateringDialog).mockClear();
+    const ipmSpy = vi.mocked(uiSlice.openIPMDialog).mockClear();
+    const trainingSpy = vi.mocked(uiSlice.openBatchTrainingDialog).mockClear();
     const deleteSpy = vi
       .spyOn(element.store.actions.ui, 'deleteSelectedPlants')
       .mockResolvedValue(undefined as any);

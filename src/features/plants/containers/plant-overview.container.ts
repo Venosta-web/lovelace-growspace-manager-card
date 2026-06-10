@@ -36,6 +36,7 @@ import {
 } from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
 import { strainLibrary$ } from '../../../slices/strain';
+import { openDialog } from '../../../slices/ui';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -1041,7 +1042,7 @@ export class PlantOverviewContainer extends LitElement {
   private _handleHarvest(): void {
     const stage = (this.plant.state || this.plant.attributes?.stage || '').toLowerCase();
     if (stage === PlantStage.FLOWER || stage === 'flowering') {
-      this.store.actions.ui.setActiveDialog({
+      openDialog({
         type: 'HARVEST_SCORING',
         payload: { plant: this.plant },
       });

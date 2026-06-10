@@ -2,12 +2,11 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceSharedStore } from '../store/core/growspace-shared-store';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import { openBatchCloneDialog } from '../store/ui/ui-actions';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchCloneDialog } from './batch-clone-dialog';
 import './batch-clone-dialog';
 import { setDevices } from '../slices/grid';
-import { __resetUiSliceForTests } from '../slices/ui';
+import { __resetUiSliceForTests, openBatchCloneDialog, notification$ } from '../slices/ui';
 
 // ---------------------------------------------------------------------------
 // openBatchCloneDialog action
@@ -26,7 +25,7 @@ describe('openBatchCloneDialog', () => {
   it('opens BATCH_CLONE dialog with selected plant IDs', () => {
     ui.$selectedPlants.set(new Set(['plant-1', 'plant-2', 'plant-3']));
 
-    openBatchCloneDialog(ctx as any);
+    openBatchCloneDialog();
 
     const active = ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_CLONE');
@@ -41,7 +40,7 @@ describe('openBatchCloneDialog', () => {
   it('does nothing when no plants are selected', () => {
     ui.$selectedPlants.set(new Set());
 
-    openBatchCloneDialog(ctx as any);
+    openBatchCloneDialog();
 
     expect(ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -49,7 +48,7 @@ describe('openBatchCloneDialog', () => {
   it('opens dialog with a single selected plant', () => {
     ui.$selectedPlants.set(new Set(['solo-plant']));
 
-    openBatchCloneDialog(ctx as any);
+    openBatchCloneDialog();
 
     const active = ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_CLONE');
@@ -74,7 +73,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   it('opens BATCH_CLONE dialog via store method', () => {
     store.ui.$selectedPlants.set(new Set(['p1', 'p2']));
 
-    store.actions.ui.openBatchCloneDialog();
+    openBatchCloneDialog();
 
     const active = store.ui.$activeDialog.get();
     expect(active.type).toBe('BATCH_CLONE');
@@ -85,7 +84,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   });
 
   it('does not open dialog when no plants are selected', () => {
-    store.actions.ui.openBatchCloneDialog();
+    openBatchCloneDialog();
 
     expect(store.ui.$activeDialog.get().type).toBe('NONE');
   });
@@ -94,7 +93,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
     const ids = ['alpha', 'beta', 'gamma', 'delta'];
     store.ui.$selectedPlants.set(new Set(ids));
 
-    store.actions.ui.openBatchCloneDialog();
+    openBatchCloneDialog();
 
     const active = store.ui.$activeDialog.get();
     if (active.type === 'BATCH_CLONE') {
@@ -108,7 +107,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   it('reflects dialogHostState after opening', () => {
     store.ui.$selectedPlants.set(new Set(['p1']));
 
-    store.actions.ui.openBatchCloneDialog();
+    openBatchCloneDialog();
 
     expect(store.$dialogHostState.get().activeDialog.type).toBe('BATCH_CLONE');
   });
@@ -204,6 +203,7 @@ describe('BatchCloneDialog – _close', () => {
 });
 
 describe('BatchCloneDialog – _submit', () => {
+  beforeEach(() => __resetUiSliceForTests());
   afterEach(() => {
     vi.restoreAllMocks();
     setDevices([]);
@@ -287,9 +287,8 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      'Created 4 clone(s) successfully',
-      'success'
+    expect(notification$.get()).toEqual(
+      expect.objectContaining({ message: 'Created 4 clone(s) successfully', type: 'success' })
     );
   });
 
@@ -306,9 +305,8 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      expect.stringContaining('1 error'),
-      'error'
+    expect(notification$.get()).toEqual(
+      expect.objectContaining({ message: expect.stringContaining('1 error'), type: 'error' })
     );
   });
 
@@ -321,9 +319,8 @@ describe('BatchCloneDialog – _submit', () => {
     await (el as any)._submit();
 
     expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
-    expect(mockStore.actions.ui.toast).toHaveBeenCalledWith(
-      expect.stringContaining('1 error'),
-      'error'
+    expect(notification$.get()).toEqual(
+      expect.objectContaining({ message: expect.stringContaining('1 error'), type: 'error' })
     );
   });
 

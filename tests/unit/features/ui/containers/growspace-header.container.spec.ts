@@ -7,6 +7,7 @@ import { MetricsUtils } from '../../../../../src/utils/metrics-utils';
 import { envSnapshots$ } from '../../../../../src/slices/environment';
 import { plants$ } from '../../../../../src/slices/plant';
 import { irrigationConfigs$, tankLevels$ } from '../../../../../src/slices/irrigation';
+import * as uiSlice from '../../../../../src/slices/ui';
 import '../../../../../src/features/ui/containers/growspace-header.container';
 import type { GrowspaceHeaderContainer } from '../../../../../src/features/ui/containers/growspace-header.container';
 
@@ -37,10 +38,12 @@ vi.mock('../../../../../src/utils/metrics-utils', () => ({
     },
 }));
 
-const mockDevice = { deviceId: 'grow1', name: 'Test Growspace', plants: [] };
-
-const buildMockStore = () => {
-    const ui_actions = {
+// The header calls slices/ui mutators directly; mock only the dialog openers,
+// preserving the rest of the slice (atoms, withToast, etc.).
+vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../../../src/slices/ui')>();
+    return {
+        ...actual,
         openAddPlantDialog: vi.fn(),
         openConfigDialog: vi.fn(),
         openStrainLibraryDialog: vi.fn(),
@@ -52,23 +55,20 @@ const buildMockStore = () => {
         openIPMDialog: vi.fn(),
         openTrainingDialog: vi.fn(),
         openNutrientsDialog: vi.fn(),
-        toggleEnvGraph: vi.fn(),
-        showToast: vi.fn(),
     };
+});
+
+const mockDevice = { deviceId: 'grow1', name: 'Test Growspace', plants: [] };
+
+const buildMockStore = () => {
     return {
-        // Keep top-level references so old assertions still work
-        get openAddPlantDialog() { return ui_actions.openAddPlantDialog; },
-        get openConfigDialog() { return ui_actions.openConfigDialog; },
-        get openStrainLibraryDialog() { return ui_actions.openStrainLibraryDialog; },
-        get openIrrigationDialog() { return ui_actions.openIrrigationDialog; },
-        get openGrowMasterDialog() { return ui_actions.openGrowMasterDialog; },
-        get openLogbookDialog() { return ui_actions.openLogbookDialog; },
-        get openSnapshotsDialog() { return ui_actions.openSnapshotsDialog; },
-        get openWateringDialog() { return ui_actions.openWateringDialog; },
-        get openIPMDialog() { return ui_actions.openIPMDialog; },
-        get openNutrientsDialog() { return ui_actions.openNutrientsDialog; },
-        get toggleEnvGraph() { return ui_actions.toggleEnvGraph; },
-        actions: { ui: ui_actions },
+        // toggleEnvGraph still lives on the dispatcher ui group.
+        toggleEnvGraph: vi.fn(),
+        actions: {
+            ui: { toggleEnvGraph: vi.fn() },
+            library: { fetchStrains: vi.fn(), fetchIPMPresets: vi.fn() },
+        },
+        grid: { $selectedDevice: { get: vi.fn().mockReturnValue('grow1') } },
         handleDeviceChange: vi.fn(),
         history: {
             $historyCache: atom({}),
@@ -95,6 +95,7 @@ describe('GrowspaceHeaderContainer', () => {
     let mockStore: ReturnType<typeof buildMockStore>;
 
     beforeEach(async () => {
+        vi.clearAllMocks();
         mockStore = buildMockStore();
 
         // Reset slice atoms to empty state before each test
@@ -290,24 +291,24 @@ describe('GrowspaceHeaderContainer', () => {
 
     it('_handleToggleGraph with string detail calls store.actions.ui.toggleEnvGraph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: 'temperature' }));
-        expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('temperature');
+        expect(mockStore.actions.ui.toggleEnvGraph).toHaveBeenCalledWith('temperature');
     });
 
     it('_handleToggleGraph with object detail calls store.actions.ui.toggleEnvGraph with metric', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: 'humidity' } }));
-        expect(mockStore.toggleEnvGraph).toHaveBeenCalledWith('humidity');
+        expect(mockStore.actions.ui.toggleEnvGraph).toHaveBeenCalledWith('humidity');
     });
 
     it('_handleToggleGraph with empty metric does not call toggleEnvGraph', () => {
         (element as any)._handleToggleGraph(new CustomEvent('toggle-graph', { detail: { metric: '' } }));
-        expect(mockStore.toggleEnvGraph).not.toHaveBeenCalled();
+        expect(mockStore.actions.ui.toggleEnvGraph).not.toHaveBeenCalled();
     });
 
     // --- _handleOpenNutrients ---
 
     it('_handleOpenNutrients calls store.openNutrientsDialog', () => {
         (element as any)._handleOpenNutrients();
-        expect(mockStore.openNutrientsDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openNutrientsDialog).toHaveBeenCalledOnce();
     });
 
     // --- _handleUnlinkGraphs ---
@@ -334,14 +335,14 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'add_plant' } })
         );
-        expect(mockStore.openAddPlantDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openAddPlantDialog).toHaveBeenCalledOnce();
     });
 
     it('config action calls store.openConfigDialog when device is set', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'config' } })
         );
-        expect(mockStore.openConfigDialog).toHaveBeenCalledWith(mockDevice);
+        expect(uiSlice.openConfigDialog).toHaveBeenCalledWith(mockDevice);
     });
 
     it('config action does not call openConfigDialog when device is absent', () => {
@@ -349,21 +350,21 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'config' } })
         );
-        expect(mockStore.openConfigDialog).not.toHaveBeenCalled();
+        expect(uiSlice.openConfigDialog).not.toHaveBeenCalled();
     });
 
     it('strains action calls store.openStrainLibraryDialog', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'strains' } })
         );
-        expect(mockStore.openStrainLibraryDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openStrainLibraryDialog).toHaveBeenCalledOnce();
     });
 
     it('irrigation action calls store.openIrrigationDialog when device has deviceId', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'irrigation' } })
         );
-        expect(mockStore.openIrrigationDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openIrrigationDialog).toHaveBeenCalledOnce();
     });
 
     it('irrigation action does not call openIrrigationDialog when device has no deviceId', () => {
@@ -371,28 +372,28 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'irrigation' } })
         );
-        expect(mockStore.openIrrigationDialog).not.toHaveBeenCalled();
+        expect(uiSlice.openIrrigationDialog).not.toHaveBeenCalled();
     });
 
     it('ai action calls store.openGrowMasterDialog with deviceId', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'ai' } })
         );
-        expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('grow1');
+        expect(uiSlice.openGrowMasterDialog).toHaveBeenCalledWith('grow1');
     });
 
     it('logbook action calls store.openLogbookDialog', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'logbook' } })
         );
-        expect(mockStore.openLogbookDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openLogbookDialog).toHaveBeenCalledOnce();
     });
 
     it('snapshots action calls store.openSnapshotsDialog with deviceId', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'snapshots' } })
         );
-        expect(mockStore.openSnapshotsDialog).toHaveBeenCalledWith('grow1');
+        expect(uiSlice.openSnapshotsDialog).toHaveBeenCalledWith('grow1');
     });
 
     it('water action with no selected plants calls openWateringDialog in growspace mode', () => {
@@ -400,7 +401,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'water' } })
         );
-        expect(mockStore.openWateringDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openWateringDialog).toHaveBeenCalledWith(
             expect.objectContaining({ mode: 'growspace', growspaceId: 'grow1' })
         );
     });
@@ -410,7 +411,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'water' } })
         );
-        expect(mockStore.openWateringDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openWateringDialog).toHaveBeenCalledWith(
             expect.objectContaining({
                 mode: 'plant',
                 plantIds: expect.arrayContaining(['p1', 'p2']),
@@ -423,7 +424,8 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'ipm' } })
         );
-        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openIPMDialog).toHaveBeenCalledWith(
+            'grow1',
             expect.objectContaining({ growspaceId: 'grow1', plantIds: undefined })
         );
     });
@@ -433,7 +435,8 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'ipm' } })
         );
-        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openIPMDialog).toHaveBeenCalledWith(
+            'grow1',
             expect.objectContaining({ plantIds: ['p3'] })
         );
     });
@@ -443,7 +446,7 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'training' } })
         );
-        expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith(
+        expect(uiSlice.openTrainingDialog).toHaveBeenCalledWith(
             expect.arrayContaining(['p1', 'p2']),
             'grow1'
         );
@@ -454,14 +457,14 @@ describe('GrowspaceHeaderContainer', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'training' } })
         );
-        expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], 'grow1');
+        expect(uiSlice.openTrainingDialog).toHaveBeenCalledWith([], 'grow1');
     });
 
     it('nutrients action calls store.openNutrientsDialog', () => {
         (element as any)._handleActionTriggered(
             new CustomEvent('action-triggered', { detail: { action: 'nutrients' } })
         );
-        expect(mockStore.openNutrientsDialog).toHaveBeenCalledOnce();
+        expect(uiSlice.openNutrientsDialog).toHaveBeenCalledOnce();
     });
 
     it('edit action toggles edit mode', () => {
@@ -508,25 +511,25 @@ describe('GrowspaceHeaderContainer', () => {
     it('ai action with no deviceId falls back to empty string', () => {
         element.device = {} as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ai' } }));
-        expect(mockStore.openGrowMasterDialog).toHaveBeenCalledWith('');
+        expect(uiSlice.openGrowMasterDialog).toHaveBeenCalledWith('');
     });
 
     it('training action with no device passes undefined', () => {
         element.device = undefined as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'training' } }));
-        expect(mockStore.actions.ui.openTrainingDialog).toHaveBeenCalledWith([], undefined);
+        expect(uiSlice.openTrainingDialog).toHaveBeenCalledWith([], undefined);
     });
 
     it('snapshots action with no device passes undefined', () => {
         element.device = undefined as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'snapshots' } }));
-        expect(mockStore.openSnapshotsDialog).toHaveBeenCalledWith(undefined);
+        expect(uiSlice.openSnapshotsDialog).toHaveBeenCalledWith(undefined);
     });
 
     it('water action with no deviceId passes undefined', () => {
         element.device = {} as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'water' } }));
-        expect(mockStore.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
+        expect(uiSlice.openWateringDialog).toHaveBeenCalledWith(expect.objectContaining({
             growspaceId: undefined
         }));
     });
@@ -534,9 +537,10 @@ describe('GrowspaceHeaderContainer', () => {
     it('ipm action with no deviceId falls back to empty string', () => {
         element.device = {} as any;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'ipm' } }));
-        expect(mockStore.openIPMDialog).toHaveBeenCalledWith(expect.objectContaining({
-            growspaceId: ''
-        }));
+        expect(uiSlice.openIPMDialog).toHaveBeenCalledWith(
+            'grow1',
+            expect.objectContaining({ growspaceId: '' })
+        );
     });
 
     it('unknown action logs a warning and does not throw', () => {
@@ -549,7 +553,7 @@ describe('GrowspaceHeaderContainer', () => {
     it('action does nothing when store is not set', () => {
         (element as any).store = undefined;
         (element as any)._handleActionTriggered(new CustomEvent('action-triggered', { detail: { action: 'add_plant' } }));
-        expect(mockStore.openAddPlantDialog).not.toHaveBeenCalled();
+        expect(uiSlice.openAddPlantDialog).not.toHaveBeenCalled();
     });
 
     describe('Getters Null Safety', () => {

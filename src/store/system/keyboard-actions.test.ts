@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { atom } from 'nanostores';
-import * as uiActions from '../ui/ui-actions';
 import * as plantActions from '../plant/plant-actions';
 import { select } from '../../slices/grid-interaction';
 import type { ActionContext } from '../core/action-context';
@@ -8,8 +7,6 @@ import { setDevices, devices$, optimisticDeletedPlantIds$ } from '../../slices/g
 import { GrowspaceUIStore } from '../ui/ui-store';
 import type { PlantEntity } from '../../types';
 import { handleKeyboardNavigation } from './keyboard-actions';
-
-vi.mock('../ui/ui-actions', () => ({ exitEditMode: vi.fn() }));
 vi.mock('../plant/plant-actions', () => ({ handleDeletePlant: vi.fn() }));
 vi.mock('../../slices/grid-interaction', () => ({ select: vi.fn(), cancel: vi.fn() }));
 
@@ -47,22 +44,27 @@ afterEach(() => {
 });
 
 describe('handleKeyboardNavigation — Escape', () => {
-  it('calls exitEditMode when in edit mode', () => {
+  it('exits edit mode and clears selection when in edit mode', () => {
     const ctx = makeContext();
     ctx.ui.$isEditMode.set(true);
+    ctx.ui.$selectedPlants.set(new Set(['p1']));
 
     handleKeyboardNavigation(ctx, 'Escape');
 
-    expect(uiActions.exitEditMode).toHaveBeenCalledWith(ctx);
+    // exitEditMode() (slices/ui) flips edit mode off and clears the selection.
+    expect(ctx.ui.$isEditMode.get()).toBe(false);
+    expect(ctx.ui.$selectedPlants.get().size).toBe(0);
   });
 
-  it('does not call exitEditMode when not in edit mode', () => {
+  it('does not exit edit mode when not in edit mode', () => {
     const ctx = makeContext([makePlant('p1')]);
     ctx.ui.$isEditMode.set(false);
+    ctx.ui.$selectedPlants.set(new Set(['p1']));
 
     handleKeyboardNavigation(ctx, 'Escape');
 
-    expect(uiActions.exitEditMode).not.toHaveBeenCalled();
+    // Not in edit mode → Escape is a no-op, selection preserved.
+    expect(ctx.ui.$selectedPlants.get().size).toBe(1);
   });
 });
 

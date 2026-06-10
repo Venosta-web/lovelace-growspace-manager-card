@@ -7,6 +7,7 @@ import { ViewMode } from '../../src/features/environment/constants';
 import { atom, computed } from 'nanostores';
 import { setMutateListener, undo, canUndo } from '../../src/services/mutate';
 import { selectedDeviceId$ } from '../../src/slices/grid';
+import * as uiSliceMocks from '../../src/slices/ui';
 
 vi.mock('../../src/services/mutate', () => ({
     setMutateListener: vi.fn(),
@@ -18,6 +19,9 @@ vi.mock('../../src/services/mutate', () => ({
 vi.mock('../../src/slices/grid', () => ({
     selectedDeviceId$: { get: vi.fn() },
     optimisticDeletedPlantIds$: { get: vi.fn(() => new Set()), set: vi.fn(), subscribe: vi.fn(() => () => {}) },
+    // Needed so the real slices/ui (loaded via importOriginal) resolves its grid imports.
+    devices$: { get: vi.fn(() => []), subscribe: vi.fn(() => () => {}) },
+    plantToDeviceMap$: { get: vi.fn(() => new Map()), subscribe: vi.fn(() => () => {}) },
     addOptimisticDeletedPlantId: vi.fn(),
     removeOptimisticDeletedPlantId: vi.fn(),
 }));
@@ -29,6 +33,23 @@ vi.mock('../../src/slices/grid-interaction', () => ({
     cancel: vi.fn(),
     gridInteraction$: { get: vi.fn(() => ({ status: 'idle' })), set: vi.fn(), listen: vi.fn(() => () => {}) },
 }));
+
+// The card now calls slices/ui orchestration mutators directly; mock only those.
+vi.mock('../../src/slices/ui', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../src/slices/ui')>();
+    return {
+        ...actual,
+        handleDeepLink: vi.fn(),
+        selectAllPlantsInDevice: vi.fn(),
+        clearPlantSelection: vi.fn(),
+        openBatchWateringDialog: vi.fn(),
+        openIPMDialog: vi.fn(),
+        toggleHeaderExpansion: vi.fn(),
+        openBatchTrainingDialog: vi.fn(),
+        openBatchPrintLabelsDialog: vi.fn(),
+        openBatchCloneDialog: vi.fn(),
+    };
+});
 
 // Mock dependencies
 // Mock dependencies
@@ -111,6 +132,7 @@ vi.mock('../../src/store/core/growspace-store', () => ({
             $gridLayout: atomMocks.$gridLayout,
             $growspaceOptions: atomMocks.$growspaceOptions,
             $gridViewState: atomMocks.$gridViewState,
+            $selectedDevice: atomMocks.$selectedDevice,
         };
         history = {
             $historyCache: {},
@@ -308,12 +330,11 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should process pending deep link when hass updates', () => {
-            const handleDeepLinkSpy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
             atomMocks.$pendingDeepLinkPlantId.set('plant123');
 
             (element as any).updated(new Map([['hass', 'oldValues']]));
 
-            expect(handleDeepLinkSpy).toHaveBeenCalledWith('plant123');
+            expect(uiSliceMocks.handleDeepLink).toHaveBeenCalledWith('plant123');
         });
 
         it('should expose public getters', () => {
@@ -345,11 +366,10 @@ describe('GrowspaceManagerCard', () => {
     describe('Deep Linking', () => {
         it('should handle deep link on firstUpdated', () => {
             window.history.pushState({}, '', '?plantId=p1');
-            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
-
+            
             (element as any).firstUpdated();
 
-            expect(spy).toHaveBeenCalledWith('p1');
+            expect(uiSliceMocks.handleDeepLink).toHaveBeenCalledWith('p1');
             expect(window.history.replaceState).toHaveBeenCalled();
             expect((window as any).GROWSPACE_DEEP_LINK_TRACKED).toBe('p1');
         });
@@ -357,20 +377,18 @@ describe('GrowspaceManagerCard', () => {
         it('should ignore if global tracker already matched', () => {
             window.history.pushState({}, '', '?plantId=p1');
             (window as any).GROWSPACE_DEEP_LINK_TRACKED = 'p1';
-            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
-            expect(spy).not.toHaveBeenCalled();
+            expect(uiSliceMocks.handleDeepLink).not.toHaveBeenCalled();
         });
 
         it('should do nothing if no plantId param', () => {
             window.history.pushState({}, '', '/');
-            const spy = vi.spyOn(element.store.actions.ui, 'handleDeepLink');
 
             (element as any).firstUpdated();
 
-            expect(spy).not.toHaveBeenCalled();
+            expect(uiSliceMocks.handleDeepLink).not.toHaveBeenCalled();
         });
     });
 
@@ -469,9 +487,8 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle select all', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'selectAllPlants');
             (element as any)._handleSelectAll();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSliceMocks.selectAllPlantsInDevice).toHaveBeenCalled();
         });
 
         it('should handle delete selected', () => {
@@ -570,14 +587,12 @@ describe('GrowspaceManagerCard', () => {
 
         it('should handle private event handlers', () => {
             // Clear selection
-            const clearSpy = vi.spyOn(element.store.actions.ui, 'clearPlantSelection');
-            (element as any)._handleClearSelection();
-            expect(clearSpy).toHaveBeenCalled();
+                        (element as any)._handleClearSelection();
+            expect(uiSliceMocks.clearPlantSelection).toHaveBeenCalled();
 
             // Water selected
-            const waterSpy = vi.spyOn(element.store.actions.ui, 'openBatchWateringDialog');
-            (element as any)._handleWaterSelected();
-            expect(waterSpy).toHaveBeenCalled();
+                        (element as any)._handleWaterSelected();
+            expect(uiSliceMocks.openBatchWateringDialog).toHaveBeenCalled();
 
             // Exit edit mode
             const editSpy = vi.spyOn(element.store.ui, 'setEditMode');
@@ -585,21 +600,18 @@ describe('GrowspaceManagerCard', () => {
             expect(editSpy).toHaveBeenCalledWith(false);
 
             // IPM selected
-            const ipmSpy = vi.spyOn(element.store.actions.ui, 'openIPMDialog');
-            (element as any)._handleIPMSelected();
-            expect(ipmSpy).toHaveBeenCalled();
+                        (element as any)._handleIPMSelected();
+            expect(uiSliceMocks.openIPMDialog).toHaveBeenCalled();
 
             // Toggle expansion (if available)
             if (typeof (element as any)._handleToggleExpansion === 'function') {
-                const toggleSpy = vi.spyOn(element.store.actions.ui, 'toggleHeaderExpansion');
-                (element as any)._handleToggleExpansion();
-                expect(toggleSpy).toHaveBeenCalled();
+                                (element as any)._handleToggleExpansion();
+                expect(uiSliceMocks.toggleHeaderExpansion).toHaveBeenCalled();
             }
 
             // Training selected
-            const trainingSpy = vi.spyOn(element.store.actions.ui, 'openBatchTrainingDialog');
-            (element as any)._handleTrainingSelected();
-            expect(trainingSpy).toHaveBeenCalled();
+                        (element as any)._handleTrainingSelected();
+            expect(uiSliceMocks.openBatchTrainingDialog).toHaveBeenCalled();
 
             // Batch Add
             const dialogSpy = vi.spyOn(element.store.ui, 'setActiveDialog');
@@ -608,15 +620,13 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle print labels selected', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'openBatchPrintLabelsDialog');
             (element as any)._handlePrintLabelsSelected();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSliceMocks.openBatchPrintLabelsDialog).toHaveBeenCalled();
         });
 
         it('should handle clone selected', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'openBatchCloneDialog');
             (element as any)._handleCloneSelected();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSliceMocks.openBatchCloneDialog).toHaveBeenCalled();
         });
     });
 

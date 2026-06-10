@@ -5,6 +5,16 @@ import * as THREE from 'three';
 import '../../../src/features/environment/components/heatmap-3d';
 import { Heatmap3D } from '../../../src/features/environment/components/heatmap-3d';
 import { GrowspaceType } from '../../../src/constants';
+import * as uiSlice from '../../../src/slices/ui';
+
+vi.mock('../../../src/slices/ui', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/ui')>();
+    return {
+        ...actual,
+        openPlantOverviewDialog: vi.fn(),
+        openAddPlantDialog: vi.fn(),
+    };
+});
 
 // --- Mocks ---
 
@@ -952,18 +962,15 @@ describe('Heatmap3D Logic', () => {
 
     describe('Interactions', () => {
         it('should handle plant or empty slot click via handleInteraction', () => {
-            const openPlantOverviewDialog = vi.fn();
-            const openAddPlantDialog = vi.fn();
-            const storeSpy = {
-                actions: { ui: { openPlantOverviewDialog, openAddPlantDialog } },
-            };
-            (element as any).store = storeSpy;
+            vi.mocked(uiSlice.openPlantOverviewDialog).mockClear();
+            vi.mocked(uiSlice.openAddPlantDialog).mockClear();
+            (element as any).store = {};
             const mockPlant = { entity_id: 'sensor.plant1', id: 'p1' };
             (element as any).handleInteraction('click', { plant: mockPlant });
-            expect(openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+            expect(uiSlice.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
             const mockEmpty = { row: 3, col: 4 };
             (element as any).handleInteraction('click', { plant: mockEmpty });
-            expect(openAddPlantDialog).toHaveBeenCalledWith(3, 4);
+            expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith(null, 3, 4);
         });
 
         it('should handle drag and dragend via handleInteraction', () => {

@@ -10,6 +10,17 @@ import {
   gridInteraction$,
   cancel,
 } from '../../../../../src/slices/grid-interaction';
+import * as uiSlice from '../../../../../src/slices/ui';
+
+vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../../src/slices/ui')>();
+  return {
+    ...actual,
+    openPlantOverviewDialog: vi.fn(),
+    openAddPlantDialog: vi.fn(),
+    togglePlantSelection: vi.fn(),
+  };
+});
 
 describe('GrowspaceGridContainer', () => {
   let element: GrowspaceGridContainer;
@@ -92,7 +103,7 @@ describe('GrowspaceGridContainer', () => {
     }));
 
     await element.updateComplete;
-    expect(mockStore.actions.ui.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
+    expect(uiSlice.openPlantOverviewDialog).toHaveBeenCalledWith(mockPlant);
   });
 
   it('delegates empty slot click to store action (0-based indexing)', async () => {
@@ -102,8 +113,8 @@ describe('GrowspaceGridContainer', () => {
       detail: { row: 2, col: 2 }
     }));
 
-    // Action expects 0-based
-    expect(mockStore.actions.ui.openAddPlantDialog).toHaveBeenCalledWith(1, 1);
+    // Slice expects (selectedDeviceId, 0-based row, 0-based col)
+    expect(uiSlice.openAddPlantDialog).toHaveBeenCalledWith(null, 1, 1);
   });
 
   it('delegates grid-drop to plant action', async () => {
@@ -294,7 +305,7 @@ describe('GrowspaceGridContainer', () => {
     }));
 
     expect(gridInteraction$.get().status).toBe('idle');
-    expect(mockStore.actions.ui.openPlantOverviewDialog).not.toHaveBeenCalled();
+    expect(uiSlice.openPlantOverviewDialog).not.toHaveBeenCalled();
   });
 
   it('handles grid-drop when transplantData is invalid JSON', async () => {

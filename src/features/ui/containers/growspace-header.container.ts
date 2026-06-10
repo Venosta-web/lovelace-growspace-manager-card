@@ -16,6 +16,19 @@ import { plants$ } from '../../../slices/plant';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
 import { PlantUtils } from '../../../utils/plant-utils';
+import {
+  openNutrientsDialog,
+  openAddPlantDialog,
+  openConfigDialog,
+  openStrainLibraryDialog,
+  openIrrigationDialog,
+  openGrowMasterDialog,
+  openLogbookDialog,
+  openSnapshotsDialog,
+  openWateringDialog,
+  openIPMDialog,
+  openTrainingDialog,
+} from '../../../slices/ui';
 import { ViewMode } from '../../../constants';
 import { DateTime } from 'luxon';
 
@@ -204,7 +217,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   }
 
   private _handleOpenNutrients() {
-    this.store?.actions.ui.openNutrientsDialog();
+    openNutrientsDialog();
   }
 
   private _handleActionTriggered(e: CustomEvent<{ action: string }>) {
@@ -214,31 +227,32 @@ export class GrowspaceHeaderContainer extends LitElement {
 
     switch (action) {
       case 'add_plant':
-        this.store.actions.ui.openAddPlantDialog();
+        this.store.actions.library.fetchStrains(true);
+        openAddPlantDialog(this.store.grid.$selectedDevice.get());
         break;
       case 'config': {
-        if (this.device) this.store.actions.ui.openConfigDialog(this.device);
+        if (this.device) openConfigDialog(this.device);
         break;
       }
       case 'strains':
-        this.store.actions.ui.openStrainLibraryDialog();
+        openStrainLibraryDialog();
         break;
       case 'irrigation':
         if (this.device?.deviceId)
-          this.store.actions.ui.openIrrigationDialog({ growspaceId: this.device.deviceId });
+          openIrrigationDialog({ growspaceId: this.device.deviceId });
         break;
       case 'ai':
-        this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
+        openGrowMasterDialog(this.device?.deviceId || '');
         break;
       case 'logbook':
-        this.store.actions.ui.openLogbookDialog();
+        openLogbookDialog(this.store.grid.$selectedDevice.get());
         break;
       case 'snapshots':
-        this.store.actions.ui.openSnapshotsDialog(this.device?.deviceId || undefined);
+        openSnapshotsDialog(this.device?.deviceId || undefined);
         break;
       case 'water': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.actions.ui.openWateringDialog({
+        openWateringDialog({
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
           growspaceId: this.device?.deviceId || undefined,
           mode: selectedPlants.size > 0 ? 'plant' : 'growspace',
@@ -247,7 +261,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'ipm': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.actions.ui.openIPMDialog({
+        this.store.actions.library.fetchIPMPresets();
+        openIPMDialog(this.store.grid.$selectedDevice.get(), {
           growspaceId: this.device?.deviceId || '',
           plantIds: selectedPlants.size > 0 ? Array.from(selectedPlants) : undefined,
         });
@@ -255,14 +270,14 @@ export class GrowspaceHeaderContainer extends LitElement {
       }
       case 'training': {
         const selectedPlants = this.store.ui.$selectedPlants.get();
-        this.store.actions.ui.openTrainingDialog(
+        openTrainingDialog(
           selectedPlants.size > 0 ? Array.from(selectedPlants) : [],
           this.device?.deviceId || undefined
         );
         break;
       }
       case 'nutrients':
-        this.store.actions.ui.openNutrientsDialog();
+        openNutrientsDialog();
         break;
       case 'edit': {
         const newEditMode = !this.store.ui.$isEditMode.get();
@@ -303,7 +318,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _handleFlowerFlipClick(e: CustomEvent) {
     const { growspaceId, flowerStart } = e.detail;
     this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
-    this.store?.actions.ui.openIrrigationDialog({
+    openIrrigationDialog({
       growspaceId,
       initialTab: 'steering',
       scrollToField: 'lightsOnTime',

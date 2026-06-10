@@ -8,6 +8,17 @@ import { setHass } from './services/hass-call';
 import { fetchAiStatus } from './slices/ai-insight';
 import { setMutateListener, undo, canUndo } from './services/mutate';
 import { selectedDeviceId$ } from './slices/grid';
+import {
+  handleDeepLink,
+  selectAllPlantsInDevice,
+  clearPlantSelection,
+  openBatchWateringDialog,
+  openIPMDialog,
+  toggleHeaderExpansion,
+  openBatchTrainingDialog,
+  openBatchPrintLabelsDialog,
+  openBatchCloneDialog,
+} from './slices/ui';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
 import type { StrainEntry } from './features/plants/types';
@@ -103,7 +114,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       url.searchParams.delete('plantId');
       window.history.replaceState({}, '', url.toString());
 
-      this.store.actions.ui.handleDeepLink(plantId);
+      handleDeepLink(plantId);
     }
   }
 
@@ -163,7 +174,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       // Re-check for pending deep link when hass (and thus devices) updates
       const pendingId = this.store.ui.$pendingDeepLinkPlantId.get();
       if (pendingId) {
-        this.store.actions.ui.handleDeepLink(pendingId);
+        handleDeepLink(pendingId);
       }
     }
 
@@ -254,15 +265,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleSelectAll() {
-    this.store.actions.ui.selectAllPlants();
+    selectAllPlantsInDevice(this.store.grid.$selectedDevice.get());
   }
 
   private _handleClearSelection() {
-    this.store.actions.ui.clearPlantSelection();
+    clearPlantSelection();
   }
 
   private _handleWaterSelected() {
-    this.store.actions.ui.openBatchWateringDialog();
+    openBatchWateringDialog();
   }
 
   private _handleExitEditMode() {
@@ -270,15 +281,15 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleIPMSelected() {
-    this.store.actions.ui.openIPMDialog();
+    openIPMDialog(this.store.grid.$selectedDevice.get());
   }
 
   private _handleToggleExpansion() {
-    this.store.actions.ui.toggleHeaderExpansion();
+    toggleHeaderExpansion();
   }
 
   private _handleTrainingSelected() {
-    this.store.actions.ui.openBatchTrainingDialog();
+    openBatchTrainingDialog();
   }
 
   private _handleBatchAddPlants() {
@@ -286,11 +297,11 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handlePrintLabelsSelected() {
-    this.store.actions.ui.openBatchPrintLabelsDialog();
+    openBatchPrintLabelsDialog();
   }
 
   private _handleCloneSelected() {
-    this.store.actions.ui.openBatchCloneDialog();
+    openBatchCloneDialog();
   }
 
   private _handleDeleteSelected = () => {
