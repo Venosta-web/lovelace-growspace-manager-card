@@ -13,6 +13,7 @@ import { PlantUtils } from '../../utils/plant-utils';
 import { ActionContext } from '../core/action-context';
 import { withAction } from '../core/action-utils';
 import * as libraryActions from './library-actions';
+import { mutate } from '../../services/mutate';
 import {
   devices$,
   setDevices,
@@ -125,23 +126,33 @@ export async function handleDeletePlant(ctx: ActionContext, plantId: string | st
   const success = await _deletePlantsApi(ctx, ids);
 
   if (success) {
-    ctx.undoRedoManager.pushAction({
-      type: ids.length > 1 ? 'batch-delete' : 'delete',
-      description:
-        ids.length > 1
-          ? `Deleted ${ids.length} plants`
-          : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
-      reverse: async () => {
-        for (const p of plantsToRestore) {
-          // plantsToRestore contains required fields from the original plant - assert to API type
-          await ctx.dataService.addPlant(p as Parameters<typeof ctx.dataService.addPlant>[0]);
-        }
-        await ctx.refreshData();
+    // The optimistic delete + backend call + failure rollback happen in
+    // _deletePlantsApi above (its rollback differs from undo: it merely clears
+    // the optimistic marker since the backend never committed). Once the delete
+    // has committed, register undo via mutate with a no-op apply so the undo's
+    // inverse re-adds the plants through the backend.
+    const growspaceId = plantsToRestore[0]?.growspace_id ?? '';
+    await mutate(
+      {
+        type: ids.length > 1 ? 'batch-delete' : 'delete',
+        label:
+          ids.length > 1
+            ? `Deleted ${ids.length} plants`
+            : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
+        optimistic: () => {},
+        apply: () => Promise.resolve(),
+        inverse: () => {
+          (async () => {
+            for (const p of plantsToRestore) {
+              // plantsToRestore contains required fields from the original plant.
+              await ctx.dataService.addPlant(p as Parameters<typeof ctx.dataService.addPlant>[0]);
+            }
+            await ctx.refreshData();
+          })().catch((err) => console.error('[Undo delete failed]', err));
+        },
       },
-      redo: async () => {
-        await handleDeletePlant(ctx, ids);
-      },
-    });
+      growspaceId
+    );
 
     // UI Updates
     // Note: deselectPlants logic needs to be checked. UI store has toggle but not explicit deselect multiple?
@@ -239,16 +250,22 @@ export async function movePlantToGrowspace(
       await new Promise((resolve) => setTimeout(resolve, 500));
       await ctx.refreshData();
       ctx.closeDialog();
-      ctx.undoRedoManager.pushAction({
-        type: 'move',
-        description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
-        reverse: async () => {
-          await movePlantToGrowspace(ctx, plant, originalGrowspace);
+      // The move already committed inside withAction; register undo via mutate
+      // with a no-op apply. Undo's inverse moves the plant back to its origin.
+      await mutate(
+        {
+          type: 'move',
+          label: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
+          optimistic: () => {},
+          apply: () => Promise.resolve(),
+          inverse: () => {
+            movePlantToGrowspace(ctx, plant, originalGrowspace).catch((err) =>
+              console.error('[Undo move failed]', err)
+            );
+          },
         },
-        redo: async () => {
-          await movePlantToGrowspace(ctx, plant, targetGrowspace);
-        },
-      });
+        targetGrowspace
+      );
       return true as const;
     },
     { errorPrefix: 'Failed to move plant' }
@@ -393,49 +410,39 @@ export async function handlePlantDrop(
 
   try {
     if (targetPlant && growspaceId) {
-      // Use OptimisticManager
-      const actionId = await ctx.optimisticManager.applyOptimisticUpdate(
-        'swap',
+      // Swap: optimistic local grid swap → backend swapPlants → undo reverts the
+      // local grid. The inverse doubles as the failure rollback.
+      await mutate(
         {
-          sourceId,
-          targetId: targetId!,
-          growspaceId,
-          originalRow,
-          originalCol,
-          targetRow,
-          targetCol,
+          type: 'swap',
+          label: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
+          optimistic: () => performOptimisticGridUpdate(false),
+          apply: () => ctx.dataService.swapPlants(sourceId, targetId!),
+          inverse: () => performOptimisticGridUpdate(true),
         },
-        () => performOptimisticGridUpdate(false), // Apply
-        () => performOptimisticGridUpdate(true) // Revert
+        growspaceId
       );
-
-      // Perform actual API call
-      await ctx.dataService.swapPlants(sourceId, targetId!);
-
-      // Confirm update and add to history
-      ctx.optimisticManager.confirmUpdate(actionId, {
-        description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
-        redo: async () => {
-          await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-        },
-      });
 
       return true;
     } else {
-      // Non-swap move (to empty) - keep existing logic for now or refactor later
-      await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
-
-      ctx.undoRedoManager.pushAction({
-        type: 'move',
-        description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-        reverse: async () => {
-          await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
-          await ctx.refreshData();
+      // Non-swap move (to empty): backend position update, undo moves it back.
+      await mutate(
+        {
+          type: 'move',
+          label: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+          optimistic: () => {},
+          apply: async () => {
+            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
+          },
+          inverse: () => {
+            (async () => {
+              await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+              await ctx.refreshData();
+            })().catch((err) => console.error('[Undo move failed]', err));
+          },
         },
-        redo: async () => {
-          await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-        },
-      });
+        growspaceId
+      );
 
       await ctx.refreshData();
       return true;
@@ -583,17 +590,23 @@ export async function confirmAddPlants(
       );
 
       if (addedIds.length > 0) {
-        ctx.undoRedoManager.pushAction({
-          type: 'batch-delete',
-          description: `Added ${addedIds.length} plants`,
-          reverse: async () => {
-            await _deletePlantsApi(ctx, addedIds);
-            await ctx.refreshData();
+        // Plants already added inside withAction; register undo via mutate with
+        // a no-op apply. Undo's inverse deletes the freshly-added plants.
+        await mutate(
+          {
+            type: 'batch-delete',
+            label: `Added ${addedIds.length} plants`,
+            optimistic: () => {},
+            apply: () => Promise.resolve(),
+            inverse: () => {
+              (async () => {
+                await _deletePlantsApi(ctx, addedIds);
+                await ctx.refreshData();
+              })().catch((err) => console.error('[Undo add failed]', err));
+            },
           },
-          redo: async () => {
-            await confirmAddPlants(ctx, detail);
-          },
-        });
+          selectedDevice
+        );
       }
 
       ctx.closeDialog();

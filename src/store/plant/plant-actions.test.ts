@@ -16,10 +16,28 @@ import {
 } from './plant-actions';
 import type { ActionContext } from '../core/action-context';
 import { setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
+import { mutate } from '../../services/mutate';
+import type { Action } from '../../services/mutate';
 
 vi.mock('./library-actions', () => ({
   fetchStrainLibrary: vi.fn().mockResolvedValue(undefined),
 }));
+
+// Mock the mutate primitive so tests can inspect the recorded action
+// (type/label/optimistic/inverse/apply) without exercising the real undo stack.
+// The mock still runs optimistic() then apply() so call sites that perform their
+// backend work inside apply (e.g. the swap path) behave as in production.
+vi.mock('../../services/mutate', () => ({
+  mutate: vi.fn(async (action: Action) => {
+    action.optimistic();
+    await action.apply();
+  }),
+}));
+
+/** Read the action object recorded by the nth mutate() call. */
+function mutateAction(n = 0): Action {
+  return (mutate as unknown as ReturnType<typeof vi.fn>).mock.calls[n][0] as Action;
+}
 
 function makeDataService() {
   return new Proxy({} as any, {
@@ -47,6 +65,8 @@ function makeContext() {
     } as unknown as ActionContext['ui'],
     refreshData: vi.fn().mockResolvedValue(undefined),
     closeDialog: vi.fn(),
+    // Retained only to satisfy the ActionContext shape until the managers are
+    // removed; production plant-actions no longer touch them (they use mutate()).
     undoRedoManager: { pushAction: vi.fn() } as any,
     optimisticManager: {
       applyOptimisticUpdate: vi.fn().mockResolvedValue('action-id'),
@@ -77,6 +97,7 @@ function makePlant(overrides: any = {}): any {
 afterEach(() => {
   setDevices([]);
   optimisticDeletedPlantIds$.set(new Set());
+  (mutate as unknown as ReturnType<typeof vi.fn>).mockClear();
 });
 
 // ─── updatePlant ─────────────────────────────────────────────────────────────
@@ -169,8 +190,9 @@ describe('handleDeletePlant', () => {
 
     expect(optimisticDeletedPlantIds$.get().has('plant-1')).toBe(true);
     expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('plant-1');
-    expect((ctx.undoRedoManager as any).pushAction).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'delete' })
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'delete' }),
+      expect.any(String)
     );
   });
 
@@ -180,8 +202,9 @@ describe('handleDeletePlant', () => {
     await handleDeletePlant(ctx, ['plant-1', 'plant-2']);
 
     expect((ctx.dataService as any).removePlant).toHaveBeenCalledTimes(2);
-    expect((ctx.undoRedoManager as any).pushAction).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'batch-delete' })
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'batch-delete' }),
+      expect.any(String)
     );
   });
 
@@ -196,7 +219,7 @@ describe('handleDeletePlant', () => {
       expect.stringContaining('del-fail'),
       'error'
     );
-    expect((ctx.undoRedoManager as any).pushAction).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
   });
 
   it('closes dialog when active dialog is PLANT_OVERVIEW', async () => {
@@ -229,11 +252,10 @@ describe('handleDeletePlant', () => {
 
     await handleDeletePlant(ctx, 'plant-1');
 
-    const pushCall = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(pushCall.description).toBe('Deleted OG Kush');
+    expect(mutateAction().label).toBe('Deleted OG Kush');
   });
 
-  it('reverse callback re-adds the plant via addPlant and refreshes', async () => {
+  it('inverse callback re-adds the plant via addPlant and refreshes', async () => {
     setDevices([
       {
         deviceId: 'device-1',
@@ -254,43 +276,14 @@ describe('handleDeletePlant', () => {
 
     await handleDeletePlant(ctx, 'plant-1');
 
-    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    await reverse();
+    mutateAction().inverse();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect((ctx.dataService as any).addPlant).toHaveBeenCalledWith(
       expect.objectContaining({ strain: 'OG Kush', row: 1, col: 0 })
     );
     expect(ctx.refreshData).toHaveBeenCalled();
-  });
-
-  it('redo callback re-deletes the plant via handleDeletePlant', async () => {
-    setDevices([
-      {
-        deviceId: 'device-1',
-        plants: [
-          {
-            entity_id: 'sensor.og_kush',
-            attributes: {
-              plant_id: 'plant-1',
-              strain: 'OG Kush',
-              growspace_id: 'device-1',
-              row: 1,
-              col: 0,
-            },
-          },
-        ],
-      } as any,
-    ]);
-
-    await handleDeletePlant(ctx, 'plant-1');
-
-    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
-    (ctx.dataService as any).removePlant.mockClear();
-    setDevices([]);
-    await redo();
-
-    expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('plant-1');
   });
 });
 
@@ -372,8 +365,9 @@ describe('movePlantToGrowspace', () => {
     expect(result).toBe(true);
     expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'dst');
     expect(ctx.closeDialog).toHaveBeenCalled();
-    expect((ctx.undoRedoManager as any).pushAction).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'move' })
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'move' }),
+      'dst'
     );
   });
 
@@ -401,33 +395,16 @@ describe('movePlantToGrowspace', () => {
     );
   });
 
-  it('reverse callback moves plant back to original growspace', async () => {
+  it('inverse callback moves plant back to original growspace', async () => {
     const plant = makePlant({ attributes: { plant_id: 'p1', stage: 'veg', growspace_id: 'src' } });
     const promise = movePlantToGrowspace(ctx, plant, 'dst');
     await vi.runAllTimersAsync();
     await promise;
 
-    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    const reversePromise = reverse();
+    mutateAction().inverse();
     await vi.runAllTimersAsync();
-    await reversePromise;
 
     expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'src');
-  });
-
-  it('redo callback moves plant to the target growspace again', async () => {
-    const plant = makePlant({ attributes: { plant_id: 'p1', stage: 'veg', growspace_id: 'src' } });
-    const promise = movePlantToGrowspace(ctx, plant, 'dst');
-    await vi.runAllTimersAsync();
-    await promise;
-
-    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
-    const redoPromise = redo();
-    await vi.runAllTimersAsync();
-    await redoPromise;
-
-    expect((ctx.dataService as any).harvestPlant).toHaveBeenCalledWith('p1', 'dst');
   });
 });
 
@@ -530,17 +507,14 @@ describe('handlePlantDrop', () => {
     const result = await handlePlantDrop(ctx, 1, 1, target, source);
 
     expect(result).toBe(true);
-    expect((ctx.optimisticManager as any).applyOptimisticUpdate).toHaveBeenCalledWith(
-      'swap',
-      expect.objectContaining({ sourceId: 'p1', targetId: 'p2' }),
-      expect.any(Function),
-      expect.any(Function)
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'swap',
+        label: expect.stringContaining('Swapped'),
+      }),
+      'gs'
     );
     expect((ctx.dataService as any).swapPlants).toHaveBeenCalledWith('p1', 'p2');
-    expect((ctx.optimisticManager as any).confirmUpdate).toHaveBeenCalledWith(
-      'action-id',
-      expect.objectContaining({ description: expect.stringContaining('Swapped') })
-    );
   });
 
   it('moves to empty cell and registers undo when no target plant', async () => {
@@ -552,12 +526,13 @@ describe('handlePlantDrop', () => {
     expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
       expect.objectContaining({ plant_id: 'p1', row: 2, col: 3 })
     );
-    expect((ctx.undoRedoManager as any).pushAction).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'move' })
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'move' }),
+      'gs'
     );
   });
 
-  it('invokes optimistic apply and revert callbacks, updating the grid atom', async () => {
+  it('swap inverse callback reverts the optimistic grid update', async () => {
     const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
     const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
 
@@ -572,54 +547,26 @@ describe('handlePlantDrop', () => {
       } as any,
     ]);
 
-    let capturedApply!: () => void;
-    let capturedRevert!: () => void;
-    (ctx.optimisticManager.applyOptimisticUpdate as ReturnType<typeof vi.fn>).mockImplementation(
-      async (_type: string, _data: any, apply: () => void, revert: () => void) => {
-        capturedApply = apply;
-        capturedRevert = revert;
-        return 'action-id';
-      }
-    );
-
     await handlePlantDrop(ctx, 1, 1, target, source);
 
-    capturedApply();
-    capturedRevert();
+    const action = mutateAction();
+    // optimistic() already ran inside the mock; revert via inverse() and back.
+    action.inverse();
+    action.optimistic();
 
-    expect(capturedApply).toBeDefined();
-    expect(capturedRevert).toBeDefined();
+    expect(action.optimistic).toBeDefined();
+    expect(action.inverse).toBeDefined();
   });
 
-  it('swap path: redo callback in confirmUpdate re-runs the drop', async () => {
-    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
-    const target = makePlant({ attributes: { plant_id: 'p2', growspace_id: 'gs', row: 1, col: 1 } });
-
-    setDevices([{ deviceId: 'gs', plants: [], grid: {} } as any]);
-
-    let capturedRedo!: () => Promise<void>;
-    (ctx.optimisticManager.confirmUpdate as ReturnType<typeof vi.fn>).mockImplementation(
-      (_id: string, opts: { redo: () => Promise<void> }) => {
-        capturedRedo = opts.redo;
-      }
-    );
-
-    await handlePlantDrop(ctx, 1, 1, target, source);
-
-    (ctx.dataService as any).swapPlants.mockClear();
-    await capturedRedo();
-
-    expect((ctx.dataService as any).swapPlants).toHaveBeenCalledWith('p1', 'p2');
-  });
-
-  it('non-swap reverse callback moves plant back to original position', async () => {
+  it('non-swap inverse callback moves plant back to original position', async () => {
     const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
 
     await handlePlantDrop(ctx, 2, 3, null, source);
 
-    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
     (ctx.dataService as any).updatePlant.mockClear();
-    await reverse();
+    mutateAction().inverse();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
       expect.objectContaining({ plant_id: 'p1', row: 0, col: 0 })
@@ -637,21 +584,6 @@ describe('handlePlantDrop', () => {
 
     expect(result).toBe(false);
     expect(ctx.refreshData).toHaveBeenCalled();
-  });
-
-  it('non-swap redo callback re-runs the drop to the target position', async () => {
-    const source = makePlant({ attributes: { plant_id: 'p1', growspace_id: 'gs', row: 0, col: 0 } });
-
-    await handlePlantDrop(ctx, 2, 3, null, source);
-
-    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
-    (ctx.dataService as any).updatePlant.mockClear();
-    await redo();
-
-    expect((ctx.dataService as any).updatePlant).toHaveBeenCalledWith(
-      expect.objectContaining({ plant_id: 'p1', row: 2, col: 3 })
-    );
   });
 
 });
@@ -803,12 +735,13 @@ describe('confirmAddPlants', () => {
 
     await confirmAddPlants(ctx, { strain: 'Gelato', amount: 1 } as any);
 
-    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'batch-delete', description: 'Added 1 plants' })
+    expect(mutate).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'batch-delete', label: 'Added 1 plants' }),
+      'device-1'
     );
   });
 
-  it('reverse callback deletes the newly added plants and refreshes', async () => {
+  it('inverse callback deletes the newly added plants and refreshes', async () => {
     setDevices([{ deviceId: 'device-1', plants: [] } as any]);
 
     ctx.refreshData = vi.fn().mockImplementation(async () => {
@@ -822,36 +755,13 @@ describe('confirmAddPlants', () => {
 
     await confirmAddPlants(ctx, { strain: 'Gelato', amount: 1 } as any);
 
-    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    await reverse();
+    (ctx.dataService as any).removePlant.mockClear();
+    mutateAction().inverse();
+    await Promise.resolve();
+    await Promise.resolve();
 
     expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant-1');
     expect(ctx.refreshData).toHaveBeenCalled();
-  });
-
-  it('redo callback re-adds the plants via confirmAddPlants', async () => {
-    setDevices([{ deviceId: 'device-1', plants: [] } as any]);
-
-    ctx.refreshData = vi.fn().mockImplementation(async () => {
-      setDevices([
-        {
-          deviceId: 'device-1',
-          plants: [{ entity_id: 'sensor.new', attributes: { plant_id: 'new-plant-1' } }],
-        } as any,
-      ]);
-    });
-
-    const detail = { strain: 'Gelato', amount: 1 } as any;
-    await confirmAddPlants(ctx, detail);
-
-    const { redo } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mockClear();
-    (ctx.dataService as any).addPlants.mockClear();
-    await redo();
-
-    expect((ctx.dataService as any).addPlants).toHaveBeenCalledWith(
-      expect.objectContaining({ strain: 'Gelato', amount: 1 })
-    );
   });
 });
 
@@ -878,12 +788,12 @@ describe('confirmAddPlants — beforeIds forEach branches', () => {
 
     await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
 
-    const { type } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    expect(type).toBe('batch-delete');
+    expect(mutateAction().type).toBe('batch-delete');
     // Only new-plant should be in the undo action, not old-plant
-    const { reverse } = (ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>).mock.calls[0][0];
     (ctx.dataService as any).removePlant.mockResolvedValue(undefined);
-    await reverse();
+    mutateAction().inverse();
+    await Promise.resolve();
+    await Promise.resolve();
     expect((ctx.dataService as any).removePlant).toHaveBeenCalledWith('new-plant');
     expect((ctx.dataService as any).removePlant).not.toHaveBeenCalledWith('old-plant');
   });
@@ -907,7 +817,7 @@ describe('confirmAddPlants — beforeIds forEach branches', () => {
     await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
 
     // 'real-new' should be detected as new; anon plant (no id) is ignored
-    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+    expect(mutate).toHaveBeenCalled();
   });
 
   it('is a no-op when afterDevices device has no plants array', async () => {
@@ -920,7 +830,7 @@ describe('confirmAddPlants — beforeIds forEach branches', () => {
     await confirmAddPlants(ctx, { strain: 'OG', amount: 1 } as any);
 
     // No new plants detected → no undo action registered
-    expect((ctx.undoRedoManager.pushAction as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
   });
 });
 
