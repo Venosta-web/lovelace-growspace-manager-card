@@ -152,9 +152,9 @@ Detection runs in `computeDeviceSnapshot` (chip) and `env-chart.ts` series build
 ## Architecture
 
 **Slice**
-A vertical module keyed to a domain concept (Plant, Grid, Irrigation, Environment, Logbook, Strain, Camera, Subarea, AIInsight, GridInteraction, UI, Growspace, Genetics, Nutrient). A slice owns its nanostore atoms, its [[Mutator]]s, its zod schemas, and its hassCall sites. Cards import atoms (read) and mutators (write) from slices; they never reach into the HA `hass` object directly. Slices replace the older `store/{actions,atoms,dispatcher}` + `services/api/*API` split.
+A vertical module keyed to a domain concept (Plant, Grid, Irrigation, Environment, Logbook, Strain, Camera, Subarea, AIInsight, GridInteraction, UI, Growspace, Genetics, Nutrient, History). A slice owns its nanostore atoms, its [[Mutator]]s, its zod schemas, and its hassCall sites. Cards import atoms (read) and mutators (write) from slices; they never reach into the HA `hass` object directly. Slices replace the older `store/{actions,atoms,dispatcher}` + `services/api/*API` split.
 
-Small domains (≤3 mutators, no atoms of their own) are absorbed into a semantically related slice rather than given a standalone one. UI dialog placement does not determine domain ownership. Specifically: vision checkup operations live in the Camera slice; grow report operations live in the Growspace slice; history transport tests live in the existing `history-store` (see [[hassCall seam]]). See ADR-0005.
+Small domains (≤3 mutators, no atoms of their own) are absorbed into a semantically related slice rather than given a standalone one. UI dialog placement does not determine domain ownership. Specifically: vision checkup operations live in the Camera slice; grow report operations live in the Growspace slice. See ADR-0005 — *except* its no-History-slice clause, overturned by [[ADR-0016]]: History has reactive read-models with multiple subscribers, so it is a [[History slice]], not transport-only.
 
 **Mutator**
 An exported async function on a slice that wraps a single call to [[mutate]]. Example: `waterPlant(id, ml)` in the Plant slice. The mutator is the public write API of the slice; the [[Action]] it builds is private.
@@ -173,6 +173,12 @@ A mutator that affects more than one slice's atoms (e.g. transplant touches Plan
 
 **GridInteraction slice**
 Owns the [[Store-Driven Interaction]] state machine for Plant Grid Cells as a discriminated-union atom: `idle | selected | confirming-water | transplanting`. Peer to Plant and Grid slices, not a subset of either. Cards subscribe to it for selection highlighting and confirmation UI.
+
+**History slice**
+Owns sensor history read-models — `$combinedHistory`, `$headerHistoryState`, `$analyticsViewState` over a module-level `historyCache$` — plus the transport (`fetchHistory`, `fetchBatchHistory`, `fetchHistoryStats`) on the [[hassCall seam]]. Replaces the 706-LOC per-card `GrowspaceHistoryStore` class and the `history-api` + `DataService` path. Because the read-models depend on the selected device and standalone cards (analytics, subarea) can show a different device than the main card, per-card derivation uses a `makePerCardHistorySlice()` factory over shared module-level source atoms — mirroring [[ADR-0006]]'s grid-slice resolution. Unlike the [[library cache]], History keeps its localStorage layer: it is **stale-while-revalidate** (paint cached graph immediately, then always fetch fresh), which never suppresses a fetch. Has reactive atoms with multiple subscribers, so unlike ADR-0005's premise it earns a standalone slice — see [[ADR-0016]].
+
+**library cache**
+The localStorage TTL layer (`fetchStrainLibrary` 24h, nutrient presets / IPM 30m, inventory 5m) in the legacy `library-actions.ts`. Being **removed**, not migrated: it *suppresses* fetches and can serve data stale for hours, contradicting ADR-0005's "atoms are the cache." Nutrient presets / IPM / inventory become lazy (fetch on dialog open, atom-cached in-session); the strain library stays an eager boot fetch (the grid needs it) but drops persistence — the fetch is cheap. Contrast [[History slice]], whose stale-while-revalidate localStorage is kept because it never suppresses fresh data.
 
 ## Irrigation
 
