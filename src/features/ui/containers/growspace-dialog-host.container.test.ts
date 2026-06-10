@@ -403,6 +403,68 @@ describe('GrowspaceDialogHost – _initControllers idempotency', () => {
 });
 
 // ---------------------------------------------------------------------------
+// render() — multi-instance portal guard
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – render() multi-instance portal guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders nothing when the active dialog targets a growspace not owned by this portal', async () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'IRRIGATION', payload: { growspaceId: 'other-growspace' } },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+
+    (el as any)._initControllers();
+    const result = (el as any).render();
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render(result, container);
+
+    expect(container.querySelector('error-boundary')).toBeNull();
+  });
+
+  it('renders the dialog when the active dialog targets a growspace owned by this portal', async () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'IRRIGATION', payload: { growspaceId: 'gs-1' } },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+
+    (el as any)._initControllers();
+    const result = (el as any).render();
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render(result, container);
+
+    expect(container.querySelector('irrigation-dialog')).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // _handleEnvironmentConfig
 // ---------------------------------------------------------------------------
 

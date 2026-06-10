@@ -138,7 +138,6 @@ export class GrowspaceDialogHost extends LitElement {
       nutrientInventory,
     } = this._dialogHostController.value;
 
-    console.log('[DialogHost] Rendering with active type:', active.type);
     if (active.type === 'NONE') return html``;
     const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
 
@@ -150,6 +149,20 @@ export class GrowspaceDialogHost extends LitElement {
 
     // Resolve context-specific device data (from payload or global selection)
     const payloadGrowspaceId = (active.payload as { growspaceId?: string })?.growspaceId;
+
+    // activeDialog$ is a global singleton shared by every growspace-manager-card
+    // instance, each of which mounts its own dialog-host portal. The irrigation
+    // dialog is opened with an explicit growspaceId, so only the portal whose
+    // `devices` list owns that growspace should render it — otherwise every other
+    // portal renders a duplicate dialog stacked on top with no matching device.
+    if (
+      active.type === 'IRRIGATION' &&
+      payloadGrowspaceId &&
+      !devices.some((d) => d.deviceId === payloadGrowspaceId)
+    ) {
+      return html``;
+    }
+
     const effectiveDeviceData =
       (payloadGrowspaceId ? devices.find((d) => d.deviceId === payloadGrowspaceId) : null) ||
       selectedDeviceData;

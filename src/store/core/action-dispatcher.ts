@@ -221,7 +221,7 @@ export class ActionDispatcher {
     openConfigDialog: (device?: import('../../types').GrowspaceDevice) =>
       uiActions.openConfigDialog(this.ctx, device),
     openStrainLibraryDialog: () => uiActions.openStrainLibraryDialog(this.ctx),
-    openIrrigationDialog: (options?: { initialTab?: string; scrollToField?: string }) =>
+    openIrrigationDialog: (options?: { growspaceId?: string; initialTab?: string; scrollToField?: string }) =>
       uiActions.openIrrigationDialog(this.ctx, options),
     openGrowMasterDialog: (growspaceId: string) =>
       uiActions.openGrowMasterDialog(this.ctx, growspaceId),
