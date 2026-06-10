@@ -9,6 +9,9 @@ export interface DialogStateMachine<
 > {
   activeTab: TTabId;
   tabs: TTabStates;
-  status: { kind: 'idle' } | { kind: 'confirm-discard'; pendingTab: TTabId };
+  status:
+    | { kind: 'idle' }
+    | { kind: 'confirm-discard'; pendingTab: TTabId }
+    | { kind: 'applying'; action: string; params: unknown };
   toast: string | undefined;
 }
