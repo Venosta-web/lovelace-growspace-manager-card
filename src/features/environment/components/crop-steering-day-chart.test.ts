@@ -159,7 +159,7 @@ describe('CropSteeringDayChart – rendering', () => {
       (t) => t.textContent ?? '',
     );
     expect(labels.some((l) => l.includes('Target') && l.includes('%'))).toBe(true);
-    expect(labels.some((l) => l.includes('P3 trigger') && l.includes('%'))).toBe(true);
+    expect(labels.some((l) => l.includes('P2 trigger') && l.includes('%'))).toBe(true);
   });
 
   it('renders a phase strip above the chart, anchored on detectedLightsOnTime when set', async () => {

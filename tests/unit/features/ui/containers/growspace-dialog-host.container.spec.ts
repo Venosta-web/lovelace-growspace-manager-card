@@ -1407,6 +1407,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should render all remaining dialog types to maximize coverage', async () => {
+             mockStore.$devices.set([{ deviceId: 'g1', name: 'G1' }]);
              const dialogTypes = [
                 { type: 'CONFIG', selector: 'config-dialog' },
                 { type: 'STRAIN_RECOMMENDATION', selector: 'strain-recommendation-dialog' },

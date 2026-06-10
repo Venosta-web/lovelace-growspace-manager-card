@@ -5322,7 +5322,7 @@ const GrowspaceAPIResponseSchema = objectType({
 })
     .passthrough();
 const GrowspaceAPICollectionSchema = recordType(stringType(), GrowspaceAPIResponseSchema);
-objectType({
+const GrowReportSchema = objectType({
     summary: objectType({
         plant_count: numberType(),
         strains: arrayType(stringType()),
@@ -6457,6 +6457,15 @@ async function undo(growspaceId) {
     entry.inverse();
 }
 
+async function exportGrowReport(growspaceId, format = 'json') {
+    await callService('growspace_manager', 'export_grow_report', {
+        growspace_id: growspaceId,
+        format,
+    });
+}
+async function fetchGrowReport(growspaceId) {
+    return hassCall('growspace_manager/get_grow_report', { growspace_id: growspaceId }, GrowReportSchema);
+}
 async function removeEnvironment$1(growspaceId) {
     await callService('growspace_manager', 'remove_environment', { growspace_id: growspaceId });
 }
@@ -7045,14 +7054,18 @@ const VisionCheckupResultSchema = objectType({
 // ---------------------------------------------------------------------------
 // get_vision_history response
 // ---------------------------------------------------------------------------
-objectType({
+const GetVisionHistoryResponseSchema = objectType({
     history: arrayType(VisionCheckupResultSchema),
     total: numberType().int(),
 });
 // ---------------------------------------------------------------------------
+// trigger_vision_checkup response
+// ---------------------------------------------------------------------------
+const TriggerVisionCheckupResponseSchema = VisionCheckupResultSchema;
+// ---------------------------------------------------------------------------
 // update_vision_checkup_config response
 // ---------------------------------------------------------------------------
-objectType({
+const UpdateVisionCheckupConfigResponseSchema = objectType({
     success: booleanType(),
 });
 
@@ -7079,6 +7092,7 @@ objectType({
 // Atoms (public)
 // ---------------------------------------------------------------------------
 const snapshots$ = atom([]);
+const visionHistory$ = atom([]);
 // ---------------------------------------------------------------------------
 // Mutators (public)
 // ---------------------------------------------------------------------------
@@ -7092,7 +7106,7 @@ const snapshots$ = atom([]);
  * @param limit       - Maximum results to return (default 50)
  * @param offset      - Pagination offset (default 0)
  */
-async function getSnapshots$1(growspaceId, limit = 50, offset = 0) {
+async function getSnapshots(growspaceId, limit = 50, offset = 0) {
     const response = await hassCall('growspace_manager/get_snapshots', { growspace_id: growspaceId, limit, offset }, GetSnapshotsResponseSchema);
     snapshots$.set(response.snapshots);
     return response;
@@ -7105,8 +7119,44 @@ async function getSnapshots$1(growspaceId, limit = 50, offset = 0) {
  *
  * @param growspaceId - The growspace whose cameras to trigger
  */
-async function captureSnapshot$1(growspaceId) {
+async function captureSnapshot(growspaceId) {
     return hassCall('growspace_manager/capture_snapshot', { growspace_id: growspaceId }, CaptureSnapshotResponseSchema);
+}
+/**
+ * Fetch vision checkup history for a growspace.
+ *
+ * Updates visionHistory$ with the returned list on success.
+ * Re-throws on backend errors without mutating visionHistory$.
+ *
+ * @param growspaceId - The growspace to query
+ * @param limit       - Maximum results to return (default 10)
+ */
+async function getVisionHistory(growspaceId, limit = 10) {
+    const response = await hassCall('growspace_manager/get_vision_history', { growspace_id: growspaceId, limit }, GetVisionHistoryResponseSchema);
+    visionHistory$.set(response.history);
+    return response;
+}
+/**
+ * Trigger a vision checkup for a growspace.
+ *
+ * No optimistic state — checkup is a backend-authoritative operation.
+ * Re-throws on backend errors.
+ *
+ * @param growspaceId - The growspace whose cameras to analyse
+ */
+async function triggerVisionCheckup(growspaceId) {
+    return callServiceReturning('growspace_manager', 'trigger_vision_checkup', { growspace_id: growspaceId }, TriggerVisionCheckupResponseSchema);
+}
+/**
+ * Update the vision checkup configuration for a growspace.
+ *
+ * Re-throws on backend errors.
+ *
+ * @param growspaceId - The growspace to configure
+ * @param config      - The new vision checkup configuration
+ */
+async function updateVisionCheckupConfig(growspaceId, config) {
+    return hassCall('growspace_manager/update_vision_checkup_config', { growspace_id: growspaceId, ...config }, UpdateVisionCheckupConfigResponseSchema);
 }
 
 // ---------------------------------------------------------------------------
@@ -7138,22 +7188,22 @@ async function fetchECRampCurves$1() {
 // ---------------------------------------------------------------------------
 // Write mutators — nutrient presets
 // ---------------------------------------------------------------------------
-async function saveNutrientPreset$1(data) {
+async function saveNutrientPreset(data) {
     await callService('growspace_manager', 'save_nutrient_preset', data);
 }
-async function removeNutrientPreset$1(presetId) {
+async function removeNutrientPreset(presetId) {
     await callService('growspace_manager', 'remove_nutrient_preset', { preset_id: presetId });
 }
 // ---------------------------------------------------------------------------
 // Write mutators — IPM presets
 // ---------------------------------------------------------------------------
-async function saveIPMPreset$1(data) {
+async function saveIPMPreset(data) {
     await callService('growspace_manager', 'save_ipm_preset', data);
 }
-async function removeIPMPreset$1(presetId) {
+async function removeIPMPreset(presetId) {
     await callService('growspace_manager', 'remove_ipm_preset', { preset_id: presetId });
 }
-async function applyIPM$1(data) {
+async function applyIPM(data) {
     await callService('growspace_manager', 'apply_ipm', data);
 }
 // ---------------------------------------------------------------------------
@@ -7415,7 +7465,7 @@ async function clearStrainLibrary() {
 /**
  * Rename or update a breeder entry.
  */
-async function updateBreeder$1(oldName, newName, logo) {
+async function updateBreeder(oldName, newName, logo) {
     await hassCall('growspace_manager/update_breeder', {
         original_name: oldName,
         new_name: newName,
@@ -7425,7 +7475,7 @@ async function updateBreeder$1(oldName, newName, logo) {
 /**
  * Delete a breeder and disassociate it from strains.
  */
-async function deleteBreeder$1(name) {
+async function deleteBreeder(name) {
     await hassCall('growspace_manager/delete_breeder', { breeder_name: name }, unknownType());
 }
 
@@ -8198,19 +8248,19 @@ class DataService {
         this.exportStrainLibrary = () => exportStrainLibrary$1();
         this.importStrainLibrary = (file, replace) => importStrainLibrary(file, replace);
         this.clearStrainLibrary = () => clearStrainLibrary();
-        this.updateBreeder = (oldName, newName, logo) => updateBreeder$1(oldName, newName, logo);
-        this.deleteBreeder = (name) => deleteBreeder$1(name);
+        this.updateBreeder = (oldName, newName, logo) => updateBreeder(oldName, newName, logo);
+        this.deleteBreeder = (name) => deleteBreeder(name);
         // ── Nutrient (delegated to slices/nutrient) ──────────────────────────────
         this.fetchNutrientPresets = () => fetchNutrientPresets$1();
         this.fetchNutrientInventory = () => fetchNutrientInventory$1();
         this.updateNutrientStock = (nutrientId, name, currentMl, initialMl) => updateNutrientStock$1(nutrientId, name, currentMl, initialMl);
         this.removeNutrientStock = (nutrientId) => removeNutrientStock$1(nutrientId);
         this.fetchIPMPresets = () => fetchIPMPresets$1();
-        this.saveIPMPreset = (data) => saveIPMPreset$1(data);
-        this.removeIPMPreset = (presetId) => removeIPMPreset$1(presetId);
-        this.saveNutrientPreset = (data) => saveNutrientPreset$1(data);
-        this.removeNutrientPreset = (presetId) => removeNutrientPreset$1(presetId);
-        this.applyIPM = (data) => applyIPM$1(data);
+        this.saveIPMPreset = (data) => saveIPMPreset(data);
+        this.removeIPMPreset = (presetId) => removeIPMPreset(presetId);
+        this.saveNutrientPreset = (data) => saveNutrientPreset(data);
+        this.removeNutrientPreset = (presetId) => removeNutrientPreset(presetId);
+        this.applyIPM = (data) => applyIPM(data);
         this.fetchECRampCurves = () => fetchECRampCurves$1();
         this.saveECRampCurve = (data) => saveECRampCurve$1(data);
         this.removeECRampCurve = (curveId) => removeECRampCurve$1(curveId);
@@ -8282,8 +8332,8 @@ class DataService {
         this.analyzeAllGrowspaces = () => this._aiAPI.analyzeAllGrowspaces();
         this.getStrainRecommendation = (userQuery) => this._aiAPI.getStrainRecommendation(userQuery);
         // ── Camera ───────────────────────────────────────────────────────────────
-        this.captureSnapshot = (growspaceId) => captureSnapshot$1(growspaceId);
-        this.getSnapshots = (growspaceId, limit, offset) => getSnapshots$1(growspaceId, limit, offset);
+        this.captureSnapshot = (growspaceId) => captureSnapshot(growspaceId);
+        this.getSnapshots = (growspaceId, limit, offset) => getSnapshots(growspaceId, limit, offset);
         // ── Vision ───────────────────────────────────────────────────────────────
         this.getVisionHistory = (growspaceId, limit) => this._visionAPI.getVisionHistory(growspaceId, limit);
         this.triggerVisionCheckup = (growspaceId) => this._visionAPI.triggerVisionCheckup(growspaceId);
@@ -8620,10 +8670,47 @@ function completeTransplant() {
 // Atoms (public)
 // ---------------------------------------------------------------------------
 const viewMode$ = atom(ViewMode.STANDARD);
+const isLoading$ = atom(true);
+const activeDialog$ = atom({ type: 'NONE' });
+const isEditMode$ = atom(false);
+const selectedPlants$ = atom(new Set());
+const focusedPlantIndex$ = atom(-1);
+const menuOpen$ = atom(false);
 const notification$ = atom(null);
-atom(GridOverlayMode.NONE);
+const error$ = atom(null);
+const defaultApplied$ = atom(false);
+const gridOverlayMode$ = atom(GridOverlayMode.NONE);
+const language$ = atom('en');
+const pendingDeepLinkPlantId$ = atom(null);
 /** Map of growspace ID → flower-flip start date that the user has dismissed. */
-atom(_loadFlowerFlipDismissed());
+const flowerFlipDismissed$ = atom(_loadFlowerFlipDismissed());
+// ---------------------------------------------------------------------------
+// Computed atoms (public)
+// ---------------------------------------------------------------------------
+/** True when the active view mode is COMPACT. */
+const isCompactView$ = computed(viewMode$, (mode) => mode === ViewMode.COMPACT);
+/** All card-relevant state in one subscription (mirrors GrowspaceUIStore.$cardViewState). */
+const cardViewState$ = computed([
+    viewMode$,
+    isLoading$,
+    isEditMode$,
+    isCompactView$,
+    activeDialog$,
+    notification$,
+    focusedPlantIndex$,
+    selectedPlants$,
+    gridOverlayMode$,
+], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex, selectedPlants, overlayMode) => ({
+    viewMode,
+    isLoading,
+    isEditMode,
+    isCompact,
+    activeDialog,
+    notification,
+    focusedPlantIndex,
+    selectedPlants,
+    overlayMode,
+}));
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
@@ -8645,9 +8732,147 @@ function _loadFlowerFlipDismissed() {
 function setViewMode(mode) {
     viewMode$.set(mode);
 }
+/** Switch the active grid overlay (e.g. vpd, ec, none). */
+function setGridOverlayMode(mode) {
+    gridOverlayMode$.set(mode);
+}
+/** Toggle the loading state. */
+function setIsLoading(loading) {
+    isLoading$.set(loading);
+}
+/** Open a dialog. Pass `{ type: 'NONE' }` to close without animation. */
+function openDialog(dialog) {
+    activeDialog$.set(dialog);
+}
+/** Close the currently open dialog. */
+function closeDialog$1() {
+    activeDialog$.set({ type: 'NONE' });
+}
+/**
+ * Enter or exit edit mode.
+ *
+ * Exiting clears `selectedPlants$` and exits transplant mode so the UI
+ * always returns to a clean state when the user leaves edit mode.
+ */
+function setEditMode(isEdit) {
+    isEditMode$.set(isEdit);
+    if (!isEdit) {
+        selectedPlants$.set(new Set());
+        cancel();
+    }
+}
+/** Add a plant to the selection, or remove it if already selected. */
+function togglePlantSelection$1(plantId) {
+    const current = new Set(selectedPlants$.get());
+    if (current.has(plantId)) {
+        current.delete(plantId);
+    }
+    else {
+        current.add(plantId);
+    }
+    selectedPlants$.set(current);
+}
+/** Replace the entire selection with the provided plant IDs. */
+function selectAllPlants$1(plantIds) {
+    selectedPlants$.set(new Set(plantIds));
+}
+/** Clear the plant selection. */
+function clearPlantSelection$1() {
+    selectedPlants$.set(new Set());
+}
+/** Remove specific plant IDs from the selection. */
+function deselectPlants(plantIds) {
+    const current = new Set(selectedPlants$.get());
+    plantIds.forEach((id) => current.delete(id));
+    selectedPlants$.set(current);
+}
+/** Set the keyboard-focused plant index (-1 = none). */
+function setFocusedPlantIndex(index) {
+    focusedPlantIndex$.set(index);
+}
+/** Open or close the card menu. */
+function setMenuOpen(isOpen) {
+    menuOpen$.set(isOpen);
+}
 /** Display a toast notification. Defaults to type 'info'. */
 function showToast$1(message, type = 'info', action) {
-    notification$.set({ message, type, ...({}) });
+    notification$.set({ message, type, ...(action ? { action } : {}) });
+}
+/** Dismiss the current toast notification. */
+function clearToast() {
+    notification$.set(null);
+}
+const WS_ERROR_MESSAGES$1 = {
+    coordinator_not_ready: 'Integration not loaded — try reloading the page',
+    entity_not_found: 'Item not found — it may have been removed',
+    validation_failed: 'Invalid input',
+    internal_error: 'Internal error',
+};
+function toUserMessage$1(e) {
+    if (e instanceof WSError)
+        return WS_ERROR_MESSAGES$1[e.code] ?? e.message;
+    if (e instanceof Error)
+        return e.message;
+    return 'Unknown error';
+}
+/**
+ * Run an async operation and surface its outcome as a toast.
+ *
+ * The ctx-free successor to the old `withAction(ctx, …)` helper: call sites
+ * wrap a slice mutator directly, keeping slices pure of UI concerns. On
+ * success shows `opts.success` (when provided); on failure maps the error to
+ * a user message, logs it, and shows `${errorPrefix}: ${message}`.
+ *
+ * Returns the operation's result, or `undefined` when it threw. Pass
+ * `rethrow: true` to re-throw after toasting (e.g. when the caller must abort
+ * a follow-up step).
+ */
+async function withToast(fn, opts) {
+    try {
+        const result = await fn();
+        if (opts.success)
+            showToast$1(opts.success, 'success');
+        return result;
+    }
+    catch (e) {
+        const message = toUserMessage$1(e);
+        console.error(opts.errorPrefix, e);
+        showToast$1(`${opts.errorPrefix}: ${message}`, 'error');
+        if (opts.rethrow)
+            throw e;
+        return undefined;
+    }
+}
+/** Mark whether the card config default has been applied. */
+function setDefaultApplied(applied) {
+    defaultApplied$.set(applied);
+}
+/** Set or clear the global error string. */
+function setError(err) {
+    error$.set(err);
+}
+/** Update the UI language. */
+function setLanguage(lang) {
+    language$.set(lang);
+}
+/** Set or clear the plant ID awaiting deep-link navigation. */
+function setPendingDeepLink(plantId) {
+    pendingDeepLinkPlantId$.set(plantId);
+}
+/**
+ * Record that the user dismissed a flower-flip notification for a growspace.
+ *
+ * Persists to localStorage so the dismissal survives page reloads.
+ */
+function dismissFlowerFlip(growspaceId, flowerStart) {
+    const updated = { ...flowerFlipDismissed$.get(), [growspaceId]: flowerStart };
+    flowerFlipDismissed$.set(updated);
+    try {
+        localStorage.setItem('growspace.flowerFlipDismissed', JSON.stringify(updated));
+    }
+    catch {
+        // Ignore — localStorage unavailable.
+    }
 }
 
 /**
@@ -28965,22 +29190,28 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             return;
         const s = this._sm.tabs.schedules.draft;
         const cfg = this._sm.tabs.config.draft;
-        await saveIrrigationSettings(this.device.deviceId, {
-            irrigationPumpEntity: s.irrigationPumpEntity,
-            drainPumpEntity: s.drainPumpEntity,
-            irrigationDuration: s.irrigationDuration,
-            drainDuration: s.drainDuration,
-            soilTriggerPercent: cfg.soilTriggerPercent,
-            dailyVolumeCapLiters: cfg.dailyVolumeCapLiters,
-            maxCyclesPerDay: cfg.maxCyclesPerDay,
-            skipDuringDark: cfg.skipDuringDark,
-            pauseOnLowTank: cfg.pauseOnLowTank,
-            logToLogbook: cfg.logToLogbook,
-            autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
-            autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
-            haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
-            activeSteeringPhase: this._sm.tabs.steering.phase,
-        });
+        try {
+            await saveIrrigationSettings(this.device.deviceId, {
+                irrigationPumpEntity: s.irrigationPumpEntity,
+                drainPumpEntity: s.drainPumpEntity,
+                irrigationDuration: s.irrigationDuration,
+                drainDuration: s.drainDuration,
+                soilTriggerPercent: cfg.soilTriggerPercent,
+                dailyVolumeCapLiters: cfg.dailyVolumeCapLiters,
+                maxCyclesPerDay: cfg.maxCyclesPerDay,
+                skipDuringDark: cfg.skipDuringDark,
+                pauseOnLowTank: cfg.pauseOnLowTank,
+                logToLogbook: cfg.logToLogbook,
+                autoAdvanceP1ToP2: cfg.autoAdvanceP1ToP2,
+                autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
+                haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
+                activeSteeringPhase: this._sm.tabs.steering.phase,
+            });
+        }
+        catch (e) {
+            console.error('Failed to save irrigation settings:', e);
+            this._showErrorToast('Failed to save irrigation settings');
+        }
     }
     async _fetchStageAnalytics() {
         if (!this.device?.deviceId || !this._dataService)
@@ -28997,6 +29228,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
         try {
             await runIrrigationCycle(this.device.deviceId);
+        }
+        catch (e) {
+            console.error('Failed to run irrigation cycle:', e);
+            this._showErrorToast('Failed to run irrigation cycle');
         }
         finally {
             this._sm = transition$4(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
@@ -29123,8 +29358,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             }
         }
         this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
-        await removeIrrigationTime(this.device.deviceId, originalTime);
-        await addIrrigationTime(this.device.deviceId, formatted, duration);
+        try {
+            await removeIrrigationTime(this.device.deviceId, originalTime);
+            await addIrrigationTime(this.device.deviceId, formatted, duration);
+        }
+        catch (e) {
+            console.error('Failed to save edited irrigation time:', e);
+            this._showErrorToast('Failed to save irrigation time');
+        }
     }
     async _saveEditedDrainTime() {
         const sub = this._sm.tabs.schedules.sub;
@@ -29140,8 +29381,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             }
         }
         this._sm = transition$4(this._sm, { type: 'CANCEL_INLINE' });
-        await removeDrainTime(this.device.deviceId, originalTime);
-        await addDrainTime(this.device.deviceId, formatted, duration);
+        try {
+            await removeDrainTime(this.device.deviceId, originalTime);
+            await addDrainTime(this.device.deviceId, formatted, duration);
+        }
+        catch (e) {
+            console.error('Failed to save edited drain time:', e);
+            this._showErrorToast('Failed to save drain time');
+        }
     }
     async _deleteIrrigationTimeFromEdit() {
         const sub = this._sm.tabs.schedules.sub;
@@ -33458,7 +33705,7 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         this._loading = true;
         this._error = null;
         try {
-            this._reportData = await this.store.actions.report.fetch(this.growspaceId);
+            this._reportData = await fetchGrowReport(this.growspaceId);
         }
         catch (err) {
             this._error = err?.message || 'Failed to load grow report';
@@ -33471,15 +33718,11 @@ let LogbookDialog = class LogbookDialog extends i$3 {
         if (this._exporting || !this.store)
             return;
         this._exporting = true;
-        try {
-            await this.store.actions.report.export(this.growspaceId, format);
-        }
-        catch {
-            // Toast is shown inside the action
-        }
-        finally {
-            this._exporting = false;
-        }
+        await withToast(() => exportGrowReport(this.growspaceId, format), {
+            success: 'Grow report exported',
+            errorPrefix: 'Failed to export report',
+        });
+        this._exporting = false;
     }
     _renderReportContent() {
         if (this._error) {
@@ -37751,7 +37994,7 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
             return;
         this._isLoading = true;
         try {
-            const response = await getSnapshots$1(this.dialogState.growspaceId);
+            const response = await getSnapshots(this.dialogState.growspaceId);
             this._snapshots = response.snapshots;
         }
         catch (err) {
@@ -37767,7 +38010,7 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
             return;
         this._isCapturing = true;
         try {
-            await captureSnapshot$1(this.dialogState.growspaceId);
+            await captureSnapshot(this.dialogState.growspaceId);
             await this._fetchSnapshots();
         }
         catch (err) {
@@ -37779,15 +38022,13 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _fetchVisionHistory() {
-        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
+        if (!this.dialogState?.growspaceId)
             return;
         this._isLoadingVision = true;
         try {
-            const response = await this.store.actions.snapshots.visionHistory(this.dialogState.growspaceId);
-            if (response) {
-                this._visionHistory = response.history || [];
-                this._selectedResult = this._visionHistory[0] ?? null;
-            }
+            const response = await getVisionHistory(this.dialogState.growspaceId);
+            this._visionHistory = response.history || [];
+            this._selectedResult = this._visionHistory[0] ?? null;
         }
         catch (err) {
             console.error('[SnapshotsDialog] Failed to fetch vision history:', err);
@@ -37798,20 +38039,16 @@ let SnapshotsDialog = class SnapshotsDialog extends i$3 {
         }
     }
     async _runVisionCheckup() {
-        if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots)
+        if (!this.dialogState?.growspaceId)
             return;
+        const growspaceId = this.dialogState.growspaceId;
         this._isRunningCheckup = true;
-        try {
-            await this.store.actions.snapshots.triggerCheckup(this.dialogState.growspaceId);
-            await this._fetchVisionHistory();
-        }
-        catch (err) {
-            console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
-            // Action handles error toast
-        }
-        finally {
-            this._isRunningCheckup = false;
-        }
+        await withToast(async () => {
+            await triggerVisionCheckup(growspaceId);
+            await this.store.refreshData();
+        }, { success: 'Vision checkup triggered', errorPrefix: 'Failed to trigger checkup' });
+        this._isRunningCheckup = false;
+        await this._fetchVisionHistory();
     }
     _close() {
         this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
@@ -50182,11 +50419,11 @@ let FeedAndWaterDialog = class FeedAndWaterDialog extends i$3 {
         const selectedId = this._sm.tabs.presets.selectedId;
         try {
             if (prevSub?.kind === 'confirm-delete') {
-                await removeNutrientPreset$1(prevSub.id);
+                await removeNutrientPreset(prevSub.id);
                 this._applyEvent({ type: 'PresetDeleteResolved' });
             }
             else {
-                await saveNutrientPreset$1({
+                await saveNutrientPreset({
                     preset_id: selectedId ?? undefined,
                     name: draft.name,
                     nutrients: draft.nutrients,
@@ -54869,7 +55106,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
             return x ``;
         const { store } = this;
         const { activeDialog: active, devices, selectedDevice: selectedDeviceId, strainLibrary, nutrientPresets, ipmPresets, nutrientInventory, } = this._dialogHostController.value;
-        console.log('[DialogHost] Rendering with active type:', active.type);
         if (active.type === 'NONE')
             return x ``;
         const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
@@ -54880,6 +55116,16 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         });
         // Resolve context-specific device data (from payload or global selection)
         const payloadGrowspaceId = active.payload?.growspaceId;
+        // activeDialog$ is a global singleton shared by every growspace-manager-card
+        // instance, each of which mounts its own dialog-host portal. The irrigation
+        // dialog is opened with an explicit growspaceId, so only the portal whose
+        // `devices` list owns that growspace should render it — otherwise every other
+        // portal renders a duplicate dialog stacked on top with no matching device.
+        if (active.type === 'IRRIGATION' &&
+            payloadGrowspaceId &&
+            !devices.some((d) => d.deviceId === payloadGrowspaceId)) {
+            return x ``;
+        }
         const effectiveDeviceData = (payloadGrowspaceId ? devices.find((d) => d.deviceId === payloadGrowspaceId) : null) ||
             selectedDeviceData;
         return x `
@@ -55293,7 +55539,14 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     async _handleUpdateBreeder(detail) {
         try {
-            await this.store?.actions.breeder.update(detail.oldName, detail.newName, detail.logo);
+            await withToast(async () => {
+                await updateBreeder(detail.oldName, detail.newName, detail.logo);
+                await this.store?.refreshData();
+            }, {
+                success: 'Breeder updated successfully!',
+                errorPrefix: 'Failed to update breeder',
+                rethrow: true,
+            });
             await this.store?.actions.library.fetchStrains(true);
         }
         catch (err) {
@@ -55305,7 +55558,14 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     async _handleDeleteBreeder(detail) {
         try {
-            await this.store?.actions.breeder.delete(detail.name);
+            await withToast(async () => {
+                await deleteBreeder(detail.name);
+                await this.store?.refreshData();
+            }, {
+                success: 'Breeder deleted successfully!',
+                errorPrefix: 'Failed to delete breeder',
+                rethrow: true,
+            });
             await this.store?.actions.library.fetchStrains(true);
         }
         catch (err) {
@@ -55430,7 +55690,10 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     async _handleVisionCheckupConfig(detail) {
         try {
-            await this.store?.actions.snapshots.updateCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+            await withToast(async () => {
+                await updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+                await this.store?.refreshData();
+            }, { success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true });
             this.store?.actions.ui.closeDialog();
         }
         catch (e) {
@@ -55626,7 +55889,22 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @apply-ipm=${(e) => this._handleApplyIPM(e, growspaceId, plantIds)}
         @save-preset=${async (e) => {
             try {
-                await this.store?.actions.ipm.savePreset(e.detail);
+                const preset = e.detail;
+                await withToast(async () => {
+                    await saveIPMPreset({
+                        preset_id: preset.preset_id ?? preset.id,
+                        name: preset.name,
+                        type: preset.type,
+                        items: preset.items,
+                        stage: preset.stage,
+                        min_days_in_stage: preset.min_days_in_stage,
+                    });
+                    await fetchIPMPresets$1();
+                }, {
+                    success: `Saved IPM preset: ${preset.name}`,
+                    errorPrefix: 'Failed to save IPM preset',
+                    rethrow: true,
+                });
                 await this._handleDataChanged();
             }
             catch (e) {
@@ -55635,7 +55913,10 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         }}
         @delete-preset=${async (e) => {
             try {
-                await this.store?.actions.ipm.removePreset(e.detail.presetId);
+                await withToast(async () => {
+                    await removeIPMPreset(e.detail.presetId);
+                    await fetchIPMPresets$1();
+                }, { success: 'Removed IPM preset', errorPrefix: 'Failed to remove IPM preset', rethrow: true });
                 await this._handleDataChanged();
             }
             catch (e) {
@@ -55647,18 +55928,21 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
     }
     async _handleApplyIPM(e, growspaceId, plantIds) {
         try {
-            await this.store?.actions.ipm.apply({
-                preset_id: e.detail.presetId,
-                growspace_id: growspaceId,
-                plant_ids: plantIds,
-                notes: e.detail.notes,
-            });
+            await withToast(async () => {
+                await applyIPM({
+                    preset_id: e.detail.presetId,
+                    growspace_id: growspaceId,
+                    plant_ids: plantIds,
+                    notes: e.detail.notes,
+                });
+                // IPM products often deduct from stock, so refresh inventory.
+                await fetchNutrientInventory$1();
+            }, { success: 'IPM treatment applied', errorPrefix: 'IPM failed', rethrow: true });
             this.store?.ui.closeDialog();
-            this.store?.actions.ui.showToast('IPM treatment applied', 'success');
             await this._handleDataChanged();
         }
         catch (err) {
-            this.store?.actions.ui.showToast(`IPM failed: ${err.message || err}`, 'error');
+            console.error('[DialogHost] Apply IPM failed:', err);
         }
     }
     _renderSnapshotsDialog(active, selectedDeviceData) {
@@ -64495,11 +64779,15 @@ class MetricsUtils {
                 }
             }
         }
+        const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
+        const isLightsOn = isLightsOnValue === true;
         let vpdStatus = overviewEntity?.attributes?.vpd_status;
-        const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
-        const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
-        const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
-        const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
+        const vpdAttrs = overviewEntity?.attributes || {};
+        const vpdPrefix = isLightsOn ? 'day' : 'night';
+        const vpdTargetMin = vpdAttrs[`${vpdPrefix}_vpd_target_min`] ?? vpdAttrs.vpd_target_min;
+        const vpdTargetMax = vpdAttrs[`${vpdPrefix}_vpd_target_max`] ?? vpdAttrs.vpd_target_max;
+        const vpdDangerMin = vpdAttrs[`${vpdPrefix}_vpd_danger_min`] ?? vpdAttrs.vpd_danger_min;
+        const vpdDangerMax = vpdAttrs[`${vpdPrefix}_vpd_danger_max`] ?? vpdAttrs.vpd_danger_max;
         if ((!vpdStatus || vpdStatus === EntityState.UNKNOWN) &&
             vpd !== undefined &&
             vpd !== null &&
@@ -64520,9 +64808,7 @@ class MetricsUtils {
         const isSpecialGrowspace = isCure || isDry;
         const co2Value = this._getAttributeValue(envEntity, 'co2');
         const co2 = isSpecialGrowspace || co2Value === undefined || co2Value === null ? undefined : co2Value;
-        const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
         const hasLightSensor = !isSpecialGrowspace && isLightsOnValue !== undefined && isLightsOnValue !== null;
-        const isLightsOn = isLightsOnValue === true;
         const getNextEvent = (times) => {
             if (!times || !times.length)
                 return undefined;
@@ -65511,20 +65797,25 @@ function _resolveSensors(single, multi, hassStates) {
 }
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(vpd, overviewEntity) {
-    // 1. Prefer the backend-computed status from the overview entity
-    const fromEntity = overviewEntity?.attributes?.vpd_status;
+    // VPD attributes are nested under attributes.metrics in the overview entity.
+    // Fall back to flat attributes for forward/backward compatibility.
+    const m = overviewEntity?.attributes?.metrics;
+    // 1. Prefer the backend-computed status (already stage+cycle-aware)
+    const fromEntity = m?.vpd_status ?? overviewEntity?.attributes?.vpd_status;
     if (fromEntity && fromEntity !== 'unknown') {
         const s = String(fromEntity);
         if (s === 'optimal' || s === 'warning' || s === 'danger')
             return s;
     }
     // 2. Derive from thresholds when vpd is known
+    // vpd_target_min/max and vpd_danger_min/max in metrics are already
+    // the current-period (day or night) values computed by the backend.
     if (vpd === null)
         return null;
-    const targetMin = overviewEntity?.attributes?.vpd_target_min;
-    const targetMax = overviewEntity?.attributes?.vpd_target_max;
-    const dangerMin = overviewEntity?.attributes?.vpd_danger_min;
-    const dangerMax = overviewEntity?.attributes?.vpd_danger_max;
+    const targetMin = m?.vpd_target_min ?? overviewEntity?.attributes?.vpd_target_min;
+    const targetMax = m?.vpd_target_max ?? overviewEntity?.attributes?.vpd_target_max;
+    const dangerMin = m?.vpd_danger_min ?? overviewEntity?.attributes?.vpd_danger_min;
+    const dangerMax = m?.vpd_danger_max ?? overviewEntity?.attributes?.vpd_danger_max;
     if (targetMin === undefined ||
         targetMax === undefined ||
         dangerMin === undefined ||
@@ -68133,7 +68424,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
                 break;
             case 'irrigation':
                 if (this.device?.deviceId)
-                    this.store.actions.ui.openIrrigationDialog();
+                    this.store.actions.ui.openIrrigationDialog({ growspaceId: this.device.deviceId });
                 break;
             case 'ai':
                 this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
@@ -68205,6 +68496,7 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         const { growspaceId, flowerStart } = e.detail;
         this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
         this.store?.actions.ui.openIrrigationDialog({
+            growspaceId,
             initialTab: 'steering',
             scrollToField: 'lightsOnTime',
         });
@@ -129590,131 +129882,96 @@ GrowspaceViewSwitcher = __decorate([
     t$2('growspace-view-switcher')
 ], GrowspaceViewSwitcher);
 
+/**
+ * Thin compatibility shim over the `slices/ui` source of truth.
+ *
+ * Every atom field below points at the *same* atom instance owned by
+ * `slices/ui` — there is no second atom and no second computed anywhere. The
+ * class exists only so legacy action-context consumers (`ctx.ui`) keep working;
+ * all state and behaviour live in the slice. Mutators delegate to the slice's
+ * mutator functions so there is a single definition of each operation.
+ *
+ * New code should import from `slices/ui` directly rather than reaching through
+ * this class.
+ */
 class GrowspaceUIStore {
     constructor() {
-        this.$viewMode = atom(ViewMode.STANDARD);
-        this.$isLoading = atom(true);
-        this.$activeDialog = atom({ type: 'NONE' });
-        this.$isEditMode = atom(false);
-        this.$selectedPlants = atom(new Set());
-        this.$focusedPlantIndex = atom(-1);
-        this.$menuOpen = atom(false);
+        // Atoms — re-exported instances from slices/ui (single source of truth).
+        this.$viewMode = viewMode$;
+        this.$isLoading = isLoading$;
+        this.$activeDialog = activeDialog$;
+        this.$isEditMode = isEditMode$;
+        this.$selectedPlants = selectedPlants$;
+        this.$focusedPlantIndex = focusedPlantIndex$;
+        this.$menuOpen = menuOpen$;
         this.$notification = notification$;
-        this.$error = atom(null);
-        this.$defaultApplied = atom(false);
-        this.$gridOverlayMode = atom(GridOverlayMode.NONE);
-        this.$language = atom('en');
-        this.$pendingDeepLinkPlantId = atom(null);
-        let initialDismissed = {};
-        try {
-            const raw = localStorage.getItem('growspace.flowerFlipDismissed');
-            if (raw)
-                initialDismissed = JSON.parse(raw);
-        }
-        catch {
-            // ignore
-        }
-        this.$flowerFlipDismissed = atom(initialDismissed);
-        this.$isCompactView = computed(this.$viewMode, (mode) => mode === ViewMode.COMPACT);
-        this.$cardViewState = computed([
-            this.$viewMode,
-            this.$isLoading,
-            this.$isEditMode,
-            this.$isCompactView,
-            this.$activeDialog,
-            this.$notification,
-            this.$focusedPlantIndex,
-            this.$selectedPlants,
-            this.$gridOverlayMode,
-        ], (viewMode, isLoading, isEditMode, isCompact, activeDialog, notification, focusedPlantIndex, selectedPlants, overlayMode) => ({
-            viewMode,
-            isLoading,
-            isEditMode,
-            isCompact,
-            activeDialog,
-            notification,
-            focusedPlantIndex,
-            selectedPlants,
-            overlayMode,
-        }));
+        this.$error = error$;
+        this.$defaultApplied = defaultApplied$;
+        this.$gridOverlayMode = gridOverlayMode$;
+        this.$language = language$;
+        this.$pendingDeepLinkPlantId = pendingDeepLinkPlantId$;
+        this.$flowerFlipDismissed = flowerFlipDismissed$;
+        // Computed — re-exported instances from slices/ui (no recomputation here).
+        this.$isCompactView = isCompactView$;
+        this.$cardViewState = cardViewState$;
     }
-    // Actions
+    // Actions — delegate to slice mutators (single definition of each operation).
     setViewMode(mode) {
-        this.$viewMode.set(mode);
+        setViewMode(mode);
     }
     setGridOverlayMode(mode) {
-        this.$gridOverlayMode.set(mode);
+        setGridOverlayMode(mode);
     }
     setIsLoading(loading) {
-        this.$isLoading.set(loading);
+        setIsLoading(loading);
     }
     setActiveDialog(dialog) {
-        this.$activeDialog.set(dialog);
+        openDialog(dialog);
     }
     closeDialog() {
-        this.$activeDialog.set({ type: 'NONE' });
+        closeDialog$1();
     }
     setEditMode(isEdit) {
-        this.$isEditMode.set(isEdit);
-        if (!isEdit) {
-            this.$selectedPlants.set(new Set());
-            cancel();
-        }
+        setEditMode(isEdit);
     }
     togglePlantSelection(plantId) {
-        const current = new Set(this.$selectedPlants.get());
-        if (current.has(plantId)) {
-            current.delete(plantId);
-        }
-        else {
-            current.add(plantId);
-        }
-        this.$selectedPlants.set(current);
+        togglePlantSelection$1(plantId);
     }
     selectAllPlants(plantIds) {
-        this.$selectedPlants.set(new Set(plantIds));
+        selectAllPlants$1(plantIds);
     }
     clearPlantSelection() {
-        this.$selectedPlants.set(new Set());
+        clearPlantSelection$1();
     }
     deselectPlants(plantIds) {
-        const current = new Set(this.$selectedPlants.get());
-        plantIds.forEach((id) => current.delete(id));
-        this.$selectedPlants.set(current);
+        deselectPlants(plantIds);
     }
     setFocusedPlantIndex(index) {
-        this.$focusedPlantIndex.set(index);
+        setFocusedPlantIndex(index);
     }
     setMenuOpen(isOpen) {
-        this.$menuOpen.set(isOpen);
+        setMenuOpen(isOpen);
     }
     showToast(message, type = 'info', action) {
-        this.$notification.set({ message, type, action });
+        showToast$1(message, type, action);
     }
     clearToast() {
-        this.$notification.set(null);
+        clearToast();
     }
     setDefaultApplied(applied) {
-        this.$defaultApplied.set(applied);
+        setDefaultApplied(applied);
     }
     setError(error) {
-        this.$error.set(error);
+        setError(error);
     }
     setLanguage(lang) {
-        this.$language.set(lang);
+        setLanguage(lang);
     }
     setPendingDeepLink(plantId) {
-        this.$pendingDeepLinkPlantId.set(plantId);
+        setPendingDeepLink(plantId);
     }
     dismissFlowerFlip(growspaceId, flowerStart) {
-        const updated = { ...this.$flowerFlipDismissed.get(), [growspaceId]: flowerStart };
-        this.$flowerFlipDismissed.set(updated);
-        try {
-            localStorage.setItem('growspace.flowerFlipDismissed', JSON.stringify(updated));
-        }
-        catch {
-            // ignore
-        }
+        dismissFlowerFlip(growspaceId, flowerStart);
     }
 }
 
@@ -130466,62 +130723,6 @@ async function removeECRampCurve(ctx, curveId) {
         await fetchECRampCurves(ctx, true);
     }, { success: 'Removed EC ramp curve', errorPrefix: 'Failed to remove EC ramp' });
 }
-async function saveNutrientPreset(ctx, preset) {
-    try {
-        await ctx.dataService.saveNutrientPreset(preset);
-        await fetchNutrientPresets(ctx, true);
-        ctx.ui.showToast(`Saved preset: ${preset.name}`, 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to save preset: ${error}`, 'error');
-        throw e;
-    }
-}
-async function saveIPMPreset(ctx, preset) {
-    const payload = {
-        preset_id: preset.preset_id ?? preset.id,
-        name: preset.name,
-        type: preset.type,
-        items: preset.items,
-        stage: preset.stage,
-        min_days_in_stage: preset.min_days_in_stage,
-    };
-    try {
-        await ctx.dataService.saveIPMPreset(payload);
-        await fetchIPMPresets(ctx, true);
-        ctx.ui.showToast(`Saved IPM preset: ${preset.name}`, 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to save IPM preset: ${error}`, 'error');
-        throw e;
-    }
-}
-async function removeNutrientPreset(ctx, presetId) {
-    try {
-        await ctx.dataService.removeNutrientPreset(presetId);
-        await fetchNutrientPresets(ctx, true);
-        ctx.ui.showToast('Removed nutrient preset', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to remove preset: ${error}`, 'error');
-        throw e;
-    }
-}
-async function removeIPMPreset(ctx, presetId) {
-    try {
-        await ctx.dataService.removeIPMPreset(presetId);
-        await fetchIPMPresets(ctx, true);
-        ctx.ui.showToast('Removed IPM preset', 'success');
-    }
-    catch (e) {
-        const error = e instanceof Error ? e.message : 'Unknown error';
-        ctx.ui.showToast(`Failed to remove IPM preset: ${error}`, 'error');
-        throw e;
-    }
-}
 
 /**
  * Plant Actions - Unified business logic for plant operations.
@@ -130602,22 +130803,29 @@ async function handleDeletePlant(ctx, plantId) {
     });
     const success = await _deletePlantsApi(ctx, ids);
     if (success) {
-        ctx.undoRedoManager.pushAction({
+        // The optimistic delete + backend call + failure rollback happen in
+        // _deletePlantsApi above (its rollback differs from undo: it merely clears
+        // the optimistic marker since the backend never committed). Once the delete
+        // has committed, register undo via mutate with a no-op apply so the undo's
+        // inverse re-adds the plants through the backend.
+        const growspaceId = plantsToRestore[0]?.growspace_id ?? '';
+        await mutate({
             type: ids.length > 1 ? 'batch-delete' : 'delete',
-            description: ids.length > 1
+            label: ids.length > 1
                 ? `Deleted ${ids.length} plants`
                 : `Deleted ${plantsToRestore[0]?.strain || 'plant'}`,
-            reverse: async () => {
-                for (const p of plantsToRestore) {
-                    // plantsToRestore contains required fields from the original plant - assert to API type
-                    await ctx.dataService.addPlant(p);
-                }
-                await ctx.refreshData();
+            optimistic: () => { },
+            apply: () => Promise.resolve(),
+            inverse: () => {
+                (async () => {
+                    for (const p of plantsToRestore) {
+                        // plantsToRestore contains required fields from the original plant.
+                        await ctx.dataService.addPlant(p);
+                    }
+                    await ctx.refreshData();
+                })().catch((err) => console.error('[Undo delete failed]', err));
             },
-            redo: async () => {
-                await handleDeletePlant(ctx, ids);
-            },
-        });
+        }, growspaceId);
         // UI Updates
         // Note: deselectPlants logic needs to be checked. UI store has toggle but not explicit deselect multiple?
         // ctx.ui.deselectPlants(ids) was in the original code, implying ui store has it.
@@ -130691,16 +130899,17 @@ async function movePlantToGrowspace(ctx, plant, targetGrowspace) {
         await new Promise((resolve) => setTimeout(resolve, 500));
         await ctx.refreshData();
         ctx.closeDialog();
-        ctx.undoRedoManager.pushAction({
+        // The move already committed inside withAction; register undo via mutate
+        // with a no-op apply. Undo's inverse moves the plant back to its origin.
+        await mutate({
             type: 'move',
-            description: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
-            reverse: async () => {
-                await movePlantToGrowspace(ctx, plant, originalGrowspace);
+            label: `Moved ${plant.attributes.strain || 'plant'} to ${targetGrowspace}`,
+            optimistic: () => { },
+            apply: () => Promise.resolve(),
+            inverse: () => {
+                movePlantToGrowspace(ctx, plant, originalGrowspace).catch((err) => console.error('[Undo move failed]', err));
             },
-            redo: async () => {
-                await movePlantToGrowspace(ctx, plant, targetGrowspace);
-            },
-        });
+        }, targetGrowspace);
         return true;
     }, { errorPrefix: 'Failed to move plant' });
     return ok !== undefined;
@@ -130808,43 +131017,33 @@ async function handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePla
     };
     try {
         if (targetPlant && growspaceId) {
-            // Use OptimisticManager
-            const actionId = await ctx.optimisticManager.applyOptimisticUpdate('swap', {
-                sourceId,
-                targetId: targetId,
-                growspaceId,
-                originalRow,
-                originalCol,
-                targetRow,
-                targetCol,
-            }, () => performOptimisticGridUpdate(false), // Apply
-            () => performOptimisticGridUpdate(true) // Revert
-            );
-            // Perform actual API call
-            await ctx.dataService.swapPlants(sourceId, targetId);
-            // Confirm update and add to history
-            ctx.optimisticManager.confirmUpdate(actionId, {
-                description: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
-                redo: async () => {
-                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
-                },
-            });
+            // Swap: optimistic local grid swap → backend swapPlants → undo reverts the
+            // local grid. The inverse doubles as the failure rollback.
+            await mutate({
+                type: 'swap',
+                label: `Swapped ${sourcePlant.attributes.strain || 'plant'} and ${targetPlant.attributes.strain || 'plant'}`,
+                optimistic: () => performOptimisticGridUpdate(false),
+                apply: () => ctx.dataService.swapPlants(sourceId, targetId),
+                inverse: () => performOptimisticGridUpdate(true),
+            }, growspaceId);
             return true;
         }
         else {
-            // Non-swap move (to empty) - keep existing logic for now or refactor later
-            await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
-            ctx.undoRedoManager.pushAction({
+            // Non-swap move (to empty): backend position update, undo moves it back.
+            await mutate({
                 type: 'move',
-                description: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
-                reverse: async () => {
-                    await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
-                    await ctx.refreshData();
+                label: `Moved ${sourcePlant.attributes.strain || 'plant'} to (${targetRow},${targetCol})`,
+                optimistic: () => { },
+                apply: async () => {
+                    await movePlantPosition(ctx, sourcePlant, targetRow, targetCol);
                 },
-                redo: async () => {
-                    await handlePlantDrop(ctx, targetRow, targetCol, targetPlant, sourcePlant);
+                inverse: () => {
+                    (async () => {
+                        await movePlantPosition(ctx, sourcePlant, originalRow, originalCol);
+                        await ctx.refreshData();
+                    })().catch((err) => console.error('[Undo move failed]', err));
                 },
-            });
+            }, growspaceId);
             await ctx.refreshData();
             return true;
         }
@@ -130946,17 +131145,20 @@ async function confirmAddPlants(ctx, detail) {
                 addedIds.push(id);
         }));
         if (addedIds.length > 0) {
-            ctx.undoRedoManager.pushAction({
+            // Plants already added inside withAction; register undo via mutate with
+            // a no-op apply. Undo's inverse deletes the freshly-added plants.
+            await mutate({
                 type: 'batch-delete',
-                description: `Added ${addedIds.length} plants`,
-                reverse: async () => {
-                    await _deletePlantsApi(ctx, addedIds);
-                    await ctx.refreshData();
+                label: `Added ${addedIds.length} plants`,
+                optimistic: () => { },
+                apply: () => Promise.resolve(),
+                inverse: () => {
+                    (async () => {
+                        await _deletePlantsApi(ctx, addedIds);
+                        await ctx.refreshData();
+                    })().catch((err) => console.error('[Undo add failed]', err));
                 },
-                redo: async () => {
-                    await confirmAddPlants(ctx, detail);
-                },
-            });
+            }, selectedDevice);
         }
         ctx.closeDialog();
     }, { success: 'Batch plants added successfully', errorPrefix: 'Failed to add plants' });
@@ -131494,87 +131696,6 @@ function openCropSteeringDialog(ctx, growspaceId) {
     });
 }
 
-/**
- * Snapshot & Vision Actions
- *
- * Write actions (capture, trigger, updateConfig) follow the standard
- * wrap-and-toast pattern.
- *
- * Read-only fetchers (getSnapshots, getVisionHistory) propagate errors
- * but do NOT toast on success — the caller (dialog) owns that UX decision.
- */
-/**
- * Fetch the snapshot list for a growspace (read-only, no toast).
- */
-async function getSnapshots(ctx, growspaceId) {
-    return ctx.dataService.getSnapshots(growspaceId);
-}
-/**
- * Capture a new snapshot for a growspace.
- */
-async function captureSnapshot(ctx, growspaceId) {
-    await withAction(ctx, () => ctx.dataService.captureSnapshot(growspaceId), {
-        success: 'Snapshot captured',
-        errorPrefix: 'Failed to capture snapshot',
-        rethrow: true,
-    });
-}
-/**
- * Fetch the vision AI history for a growspace (read-only, no toast).
- */
-async function getVisionHistory(ctx, growspaceId) {
-    return ctx.dataService.getVisionHistory(growspaceId);
-}
-/**
- * Trigger a vision checkup for a growspace.
- */
-async function triggerVisionCheckup(ctx, growspaceId) {
-    await withAction(ctx, async () => {
-        await ctx.dataService.triggerVisionCheckup(growspaceId);
-        await ctx.refreshData();
-    }, {
-        success: 'Vision checkup triggered',
-        errorPrefix: 'Failed to trigger checkup',
-        rethrow: true,
-    });
-}
-/**
- * Update the vision checkup configuration for a growspace.
- */
-async function updateVisionCheckupConfig(ctx, growspaceId, config) {
-    await withAction(ctx, async () => {
-        await ctx.dataService.updateVisionCheckupConfig(growspaceId, config);
-        await ctx.refreshData();
-    }, {
-        success: 'Vision config saved',
-        errorPrefix: 'Failed to save vision config',
-        rethrow: true,
-    });
-}
-
-/**
- * Grow Report Actions
- *
- * fetch is read-only (propagates errors, no toast).
- * export is a write action (toasts on success/error).
- */
-/**
- * Fetch the grow report data for a growspace (read-only, no toast).
- */
-async function fetchGrowReport(ctx, growspaceId) {
-    return ctx.dataService.fetchGrowReport(growspaceId);
-}
-/**
- * Export the grow report in a given format.
- */
-async function exportGrowReport(ctx, growspaceId, format) {
-    await withAction(ctx, () => ctx.dataService.exportGrowReport(growspaceId, format), {
-        success: 'Grow report exported',
-        errorPrefix: 'Failed to export report',
-        rethrow: true,
-    });
-}
-
 async function analyzeGrowspace(ctx, query, all) {
     const currentDialog = ctx.ui.$activeDialog.get();
     if (currentDialog.type === 'GROW_MASTER') {
@@ -131779,29 +131900,6 @@ async function removeGrowspace(ctx, growspaceId) {
     return ok !== undefined;
 }
 
-/** Update an existing breeder's name and optional logo */
-async function updateBreeder(ctx, oldName, newName, logo) {
-    await withAction(ctx, async () => {
-        await ctx.dataService.updateBreeder(oldName, newName, logo);
-        await ctx.refreshData();
-    }, {
-        success: 'Breeder updated successfully!',
-        errorPrefix: 'Failed to update breeder',
-        rethrow: true,
-    });
-}
-/** Delete a breeder by name */
-async function deleteBreeder(ctx, name) {
-    await withAction(ctx, async () => {
-        await ctx.dataService.deleteBreeder(name);
-        await ctx.refreshData();
-    }, {
-        success: 'Breeder deleted successfully!',
-        errorPrefix: 'Failed to delete breeder',
-        rethrow: true,
-    });
-}
-
 /**
  * Genetics Actions (Seed Batch + Pollination)
  *
@@ -131943,24 +132041,6 @@ async function getStrainLineageTree(ctx, strainName) {
 async function updateStrainLineageTree(ctx, strainName, parents) {
     return withAction(ctx, () => ctx.dataService.updateStrainLineageTree(strainName, parents), {
         errorPrefix: 'Failed to update strain lineage tree',
-        rethrow: true,
-    });
-}
-
-/**
- * IPM Actions - Unified business logic for Integrated Pest Management operations.
- */
-/**
- * Apply IPM treatment and refresh inventory if needed.
- */
-async function applyIPM(ctx, detail) {
-    await withAction(ctx, async () => {
-        await ctx.dataService.applyIPM(detail);
-        // Refresh nutrient inventory as IPM products often deduct from stock
-        await fetchNutrientInventory(ctx, true);
-    }, {
-        success: 'IPM treatment applied successfully',
-        errorPrefix: 'Failed to apply IPM',
         rethrow: true,
     });
 }
@@ -132131,12 +132211,6 @@ class ActionDispatcher {
             update: (data) => updateStrain(this.ctx, data),
             remove: (key) => removeStrain(this.ctx, key),
         };
-        this.history = {
-            undo: () => this.store.undo(),
-            redo: () => this.store.redo(),
-            canUndo: () => this.store.canUndo,
-            canRedo: () => this.store.canRedo,
-        };
         this.ui = {
             /** Toggle plant selection state */
             togglePlantSelection: (plantOrId) => togglePlantSelection(this.ctx, plantOrId),
@@ -132230,21 +132304,6 @@ class ActionDispatcher {
                 }
             },
         };
-        this.nutrient = {
-            savePreset: (preset) => saveNutrientPreset(this.ctx, preset),
-            removePreset: (id) => removeNutrientPreset(this.ctx, id),
-        };
-        this.snapshots = {
-            list: (growspaceId) => getSnapshots(this.ctx, growspaceId),
-            capture: (growspaceId) => captureSnapshot(this.ctx, growspaceId),
-            visionHistory: (growspaceId) => getVisionHistory(this.ctx, growspaceId),
-            triggerCheckup: (growspaceId) => triggerVisionCheckup(this.ctx, growspaceId),
-            updateCheckupConfig: (growspaceId, config) => updateVisionCheckupConfig(this.ctx, growspaceId, config),
-        };
-        this.report = {
-            fetch: (growspaceId) => fetchGrowReport(this.ctx, growspaceId),
-            export: (growspaceId, format) => exportGrowReport(this.ctx, growspaceId, format),
-        };
         this.ai = {
             /** Analyze all growspaces at once */
             analyzeAll: () => analyzeGrowspace(this.ctx, '', true),
@@ -132261,10 +132320,6 @@ class ActionDispatcher {
             waterPlant: (plantId, amount, nutrients, presetId) => waterPlant(this.ctx, plantId, amount, nutrients, presetId),
             waterGrowspace: (growspaceId, amount, nutrients, presetId) => waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
         };
-        this.breeder = {
-            update: (oldName, newName, logo) => updateBreeder(this.ctx, oldName, newName, logo),
-            delete: (name) => deleteBreeder(this.ctx, name),
-        };
         this.genetics = {
             addSeedBatch: (data) => addSeedBatch(this.ctx, data),
             updateSeedBatch: (data) => updateSeedBatch(this.ctx, data),
@@ -132280,11 +132335,6 @@ class ActionDispatcher {
             getLineageTree: (plantId) => getLineageTree(this.ctx, plantId),
             getStrainLineageTree: (strainName) => getStrainLineageTree(this.ctx, strainName),
             updateStrainLineageTree: (strainName, parents) => updateStrainLineageTree(this.ctx, strainName, parents),
-        };
-        this.ipm = {
-            apply: (detail) => applyIPM(this.ctx, detail),
-            savePreset: (preset) => saveIPMPreset(this.ctx, preset),
-            removePreset: (presetId) => removeIPMPreset(this.ctx, presetId),
         };
         this.irrigation = {
             fetchCropSteeringHistory: (growspaceId) => fetchCropSteeringHistory(growspaceId),
@@ -132623,153 +132673,6 @@ class SyncService {
     }
 }
 
-class UndoRedoManager {
-    constructor(showToast) {
-        this.showToast = showToast;
-        this._undoStack = [];
-        this._redoStack = [];
-        this.MAX_UNDO_ACTIONS = 3;
-    }
-    pushAction(action) {
-        this._undoStack.push(action);
-        if (this._undoStack.length > this.MAX_UNDO_ACTIONS) {
-            this._undoStack.shift(); // Remove oldest
-        }
-        this._redoStack = []; // Clear redo on new action
-        // Show toast with Undo button
-        this.showToast(action.description, 'success', {
-            label: 'Undo',
-            callback: () => this.undo(),
-        });
-    }
-    get canUndo() {
-        return this._undoStack.length > 0;
-    }
-    get canRedo() {
-        return this._redoStack.length > 0;
-    }
-    async undo() {
-        const action = this._undoStack.pop();
-        if (!action)
-            return;
-        try {
-            await action.reverse();
-            this._redoStack.push(action);
-            this.showToast(`Undone: ${action.description}`, 'info');
-        }
-        catch (err) {
-            console.error('[Undo failed]', err);
-            this.showToast('Undo failed', 'error');
-        }
-    }
-    async redo() {
-        const action = this._redoStack.pop();
-        if (!action)
-            return;
-        try {
-            await action.redo();
-            this._undoStack.push(action);
-            this.showToast(`Redone: ${action.description}`, 'info');
-        }
-        catch (err) {
-            console.error('[Redo failed]', err);
-            this.showToast('Redo failed', 'error');
-        }
-    }
-}
-
-class OptimisticManager {
-    constructor(undoRedoManager) {
-        this.undoRedoManager = undoRedoManager;
-        this._pendingActions = new Map();
-    }
-    /**
-     * Apply an optimistic update immediately.
-     * Returns the action ID to be used for confirmation or rollback.
-     */
-    async applyOptimisticUpdate(type, payload, applyFn, revertFn) {
-        const id = typeof crypto !== 'undefined' && crypto.randomUUID
-            ? crypto.randomUUID()
-            : Math.random().toString(36).substring(2) + Date.now().toString(36);
-        // 1. Store the action for potential rollback
-        this._pendingActions.set(id, {
-            id,
-            type,
-            payload,
-            revert: revertFn,
-            timestamp: Date.now(),
-        });
-        // 2. Execute the optimistic change immediately
-        try {
-            await applyFn(payload);
-        }
-        catch (e) {
-            console.error('Failed to apply optimistic update', e); // Assuming _LOGGER is console.error
-            this.rollbackUpdate(id);
-            throw e; // Rethrow so caller knows it failed
-        }
-        return id;
-    }
-    /**
-     * Mark an optimistic action as successfully committed to the backend.
-     * If `addToHistory` is true, we push a "reverse" action to the UndoRedoManager.
-     */
-    confirmUpdate(actionId, historyOptions) {
-        const action = this._pendingActions.get(actionId);
-        if (!action)
-            return; // Already cleared or handled
-        if (historyOptions) {
-            // Transform the Revert function into an Undo action
-            this.undoRedoManager.pushAction({
-                type: action.type,
-                description: historyOptions.description,
-                reverse: async () => {
-                    // When user clicks Undo, we execute the revert logic
-                    // Note: Revert logic usually re-applies the old state to API
-                    await action.revert();
-                },
-                redo: historyOptions.redo,
-            });
-        }
-        this._pendingActions.delete(actionId);
-    }
-    /**
-     * Rollback an optimistic action because the backend call failed.
-     */
-    async rollbackUpdate(actionId) {
-        const action = this._pendingActions.get(actionId);
-        if (!action)
-            return;
-        console.warn(`Rolling back optimistic action: ${action.type}`, action.payload);
-        try {
-            await action.revert();
-        }
-        catch (e) {
-            console.error('Critical: Failed to rollback optimistic update', e);
-        }
-        finally {
-            this._pendingActions.delete(actionId);
-        }
-    }
-    /**
-     * Check if there are pending actions for a specific entity ID (if payload has IDs)
-     * Helpful for UI loading states or disabling interactions
-     */
-    isEntityPending(entityId) {
-        for (const action of this._pendingActions.values()) {
-            const p = action.payload;
-            // Naive check for common ID fields
-            if (p?.plantId === entityId || p?.plant_id === entityId || p?.entity_id === entityId) {
-                return true;
-            }
-            if (Array.isArray(p?.plantIds) && p.plantIds.includes(entityId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-}
-
 /**
  * Event Bus - Centralized event system for cross-component communication
  *
@@ -132922,8 +132825,6 @@ class GrowspaceStore {
             dataService: this.dataService,
             ui: this.ui,
             grid: this.grid,
-            undoRedoManager: this.undoRedoManager,
-            optimisticManager: this.optimisticManager,
             closeDialog: () => this.ui.closeDialog(),
             refreshData: (force) => this.refreshData(force),
         };
@@ -132980,8 +132881,6 @@ class GrowspaceStore {
         this.$mainCardState = computed([this.grid.$gridViewState, this.ui.$cardViewState, strainLibrary$], (grid, ui, strainLibrary) => ({ grid, ui, strainLibrary }));
         // Initialize services
         this.syncService = new SyncService(this.dataService, this.ui, this.grid);
-        this.undoRedoManager = new UndoRedoManager((msg, type, action) => this.ui.showToast(msg, type, action));
-        this.optimisticManager = new OptimisticManager(this.undoRedoManager);
         // Initialize new infrastructure (Phase 1)
         this.eventBus = new EventBus();
         // Trigger a full refresh whenever the shared store signals stale data
@@ -132998,22 +132897,6 @@ class GrowspaceStore {
         this._staleUnsub?.();
         this.history.destroy();
         this.eventBus.clear();
-    }
-    // === Undo/Redo Methods ===
-    pushUndoAction(action) {
-        this.undoRedoManager.pushAction(action);
-    }
-    get canUndo() {
-        return this.undoRedoManager.canUndo;
-    }
-    get canRedo() {
-        return this.undoRedoManager.canRedo;
-    }
-    async undo() {
-        await this.undoRedoManager.undo();
-    }
-    async redo() {
-        await this.undoRedoManager.redo();
     }
     updateHass(hass) {
         this.hass = hass;
