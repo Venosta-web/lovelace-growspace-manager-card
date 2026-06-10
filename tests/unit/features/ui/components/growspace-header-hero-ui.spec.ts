@@ -444,5 +444,359 @@ describe('GrowspaceHeaderHeroUI', () => {
     `);
     expect(el.shadowRoot!.querySelector('.hero-label')?.textContent).toBe('co2');
   });
+
+  it('updates _deckIndex on scroll in mobile mode', async () => {
+    const chips = [
+      makeChip({ key: 'temperature' }),
+      makeChip({ key: 'humidity', label: 'Humidity' }),
+      makeChip({ key: 'co2', label: 'CO2' }),
+    ];
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui .chips=${chips} .isMobile=${true}></growspace-header-hero-ui>
+    `);
+
+    const deckScroll = el.shadowRoot!.querySelector('.deck-scroll') as HTMLElement;
+    expect(deckScroll).not.toBeNull();
+
+    // Stub offsetWidth of the first child
+    const firstItem = deckScroll.firstElementChild as HTMLElement;
+    Object.defineProperty(firstItem, 'offsetWidth', { value: 100, configurable: true });
+
+    // Mock scrollLeft directly on the scroll container to bypass layout limitations
+    Object.defineProperty(deckScroll, 'scrollLeft', { value: 112, configurable: true });
+
+    // Dispatch scroll event
+    deckScroll.dispatchEvent(new Event('scroll'));
+    await el.updateComplete;
+
+    // Verify the second dot becomes active
+    const dots = el.shadowRoot!.querySelectorAll('.deck-dot');
+    expect(dots[1].classList.contains('active')).toBe(true);
+  });
+
+  it('renders crop steering phase hero card when chip is steering_phase and irrigation strategy is enabled', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+      ></growspace-header-hero-ui>
+    `);
+
+    // Verify it renders the phase-hero-card class
+    const card = el.shadowRoot!.querySelector('.phase-hero-card');
+    expect(card).not.toBeNull();
+    
+    // Since historyCache is empty, it should not render a chart SVG
+    expect(el.shadowRoot!.querySelector('.phase-chart-svg')).toBeNull();
+  });
+
+  it('returns null chart and does not render SVG when historyCache is invalid or lacks enough data points', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+
+    // Case 1: Only 1 data point
+    const historyCache1 = {
+      soil_moisture: [
+        { last_changed: new Date().toISOString(), state: '55.5' }
+      ]
+    };
+    const el1 = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache1}
+      ></growspace-header-hero-ui>
+    `);
+    expect(el1.shadowRoot!.querySelector('.phase-chart-svg')).toBeNull();
+
+    // Case 2: Data points are 'unavailable' or 'unknown'
+    const historyCache2 = {
+      soil_moisture: [
+        { last_changed: new Date(Date.now() - 3600000).toISOString(), state: 'unavailable' },
+        { last_changed: new Date().toISOString(), state: 'unknown' }
+      ]
+    };
+    const el2 = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache2}
+      ></growspace-header-hero-ui>
+    `);
+    expect(el2.shadowRoot!.querySelector('.phase-chart-svg')).toBeNull();
+  });
+
+  it('renders SVG chart with target and trigger lines when valid history cache is provided', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const now = Date.now();
+    const historyCache = {
+      soil_moisture: [
+        { last_changed: new Date(now - 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
+        { last_changed: new Date(now - 12 * 60 * 60 * 1000).toISOString(), state: '62.0' },
+        { last_changed: new Date(now).toISOString(), state: '55.5' },
+      ]
+    };
+
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache}
+      ></growspace-header-hero-ui>
+    `);
+
+    // Verify VWC readout is rendered in header
+    const vwcReadout = el.shadowRoot!.querySelector('.phase-vwc-readout');
+    expect(vwcReadout?.textContent?.replace(/\s/g, '')).toBe('VWC55.5%');
+
+    // Verify SVG chart container and svg exist
+    expect(el.shadowRoot!.querySelector('.phase-chart-container')).not.toBeNull();
+    const svg = el.shadowRoot!.querySelector('.phase-chart-svg');
+    expect(svg).not.toBeNull();
+
+    // Verify SVG elements (lines, texts for Target VWC and P3 trigger VWC)
+    const texts = Array.from(svg!.querySelectorAll('text'));
+    expect(texts.some(t => t.textContent?.includes('Target 60%'))).toBe(true);
+    expect(texts.some(t => t.textContent?.includes('P3 trigger 45%'))).toBe(true);
+  });
+
+  it('handles mousemove and mouseleave on SVG chart for hover details', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const now = Date.now();
+    const historyCache = {
+      soil_moisture: [
+        { last_changed: new Date(now - 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
+        { last_changed: new Date(now - 12 * 60 * 60 * 1000).toISOString(), state: '62.0' },
+        { last_changed: new Date(now).toISOString(), state: '55.5' },
+      ]
+    };
+
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache}
+      ></growspace-header-hero-ui>
+    `);
+
+    const svg = el.shadowRoot!.querySelector('.phase-chart-svg') as SVGElement;
+    expect(svg).not.toBeNull();
+
+    // Stub getBoundingClientRect
+    vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+      left: 10,
+      top: 10,
+      width: 100,
+      height: 50,
+      right: 110,
+      bottom: 60,
+      x: 10,
+      y: 10,
+      toJSON: () => {},
+    });
+
+    // 1. Hover at 50% width
+    const moveEvent = new MouseEvent('mousemove', {
+      clientX: 60, // (60 - 10) / 100 = 0.5
+      clientY: 25,
+      bubbles: true,
+    });
+    svg.dispatchEvent(moveEvent);
+    await el.updateComplete;
+
+    // Verify hover tooltip is rendered
+    const tooltip = el.shadowRoot!.querySelector('.phase-tooltip') as HTMLElement;
+    expect(tooltip).not.toBeNull();
+    // It should render "left: 50%" approximately
+    expect(tooltip.style.left).toBe('50%');
+
+    // 2. Mouse leave should clear hover details
+    svg.dispatchEvent(new MouseEvent('mouseleave'));
+    await el.updateComplete;
+
+    // Verify tooltip is removed
+    expect(el.shadowRoot!.querySelector('.phase-tooltip')).toBeNull();
+  });
+
+  it('renders multi-day phase segments when timeRange is 7d', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const now = Date.now();
+    const historyCache = {
+      soil_moisture: [
+        { last_changed: new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString(), state: '50.0' },
+        { last_changed: new Date(now).toISOString(), state: '55.5' },
+      ]
+    };
+
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache}
+        .timeRange=${'7d'}
+      ></growspace-header-hero-ui>
+    `);
+
+    // Verify phase-bar-seg elements are rendered
+    const segments = el.shadowRoot!.querySelectorAll('.phase-bar-seg');
+    expect(segments.length).toBeGreaterThan(0);
+  });
+
+  it('dispatches drag and click events on phase-hero-card', async () => {
+    const toggleHandler = vi.fn();
+    const dragHandler = vi.fn();
+    const dropHandler = vi.fn();
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P2 · 12:30' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const now = Date.now();
+    const historyCache = {
+      soil_moisture: [
+        { last_changed: new Date(now - 3600000).toISOString(), state: '50.0' },
+        { last_changed: new Date(now).toISOString(), state: '55.5' },
+      ]
+    };
+
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache}
+        @toggle-graph=${toggleHandler}
+        @chip-drag-start=${dragHandler}
+        @chip-drop=${dropHandler}
+      ></growspace-header-hero-ui>
+    `);
+
+    const card = el.shadowRoot!.querySelector('.phase-hero-card') as HTMLElement;
+    expect(card).not.toBeNull();
+
+    // Trigger click
+    card.click();
+    expect(toggleHandler).toHaveBeenCalledOnce();
+    expect(toggleHandler.mock.calls[0][0].detail.metric).toBe('steering_phase');
+
+    // Trigger dragstart
+    const dragEvent = new DragEvent('dragstart', { bubbles: true, composed: true });
+    card.dispatchEvent(dragEvent);
+    expect(dragHandler).toHaveBeenCalledOnce();
+
+    // Trigger dragover
+    const dragOverEvent = new DragEvent('dragover', { bubbles: true, composed: true, cancelable: true });
+    vi.spyOn(dragOverEvent, 'preventDefault');
+    card.dispatchEvent(dragOverEvent);
+    expect(dragOverEvent.preventDefault).toHaveBeenCalled();
+
+    // Trigger drop
+    const dropEvent = new DragEvent('drop', { bubbles: true, composed: true, cancelable: true });
+    vi.spyOn(dropEvent, 'preventDefault');
+    card.dispatchEvent(dropEvent);
+    expect(dropEvent.preventDefault).toHaveBeenCalled();
+    expect(dropHandler).toHaveBeenCalledOnce();
+  });
+
+  it('renders P3 Dryback badge when current phase is P3', async () => {
+    const chips = [
+      makeChip({ key: 'steering_phase', label: 'Phase', value: 'P3 · 22:40' })
+    ];
+    const strategy = {
+      enabled: true,
+      targetVwcPercent: 60,
+      maintenanceDrybackPercent: 15,
+      lightsOnTime: '06:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+    };
+    const now = Date.now();
+    const historyCache = {
+      soil_moisture: [
+        { last_changed: new Date(now - 3600000).toISOString(), state: '50.0' },
+        { last_changed: new Date(now).toISOString(), state: '55.5' },
+      ]
+    };
+
+    const el = await fixture<GrowspaceHeaderHeroUI>(html`
+      <growspace-header-hero-ui
+        .chips=${chips}
+        .irrigationStrategy=${strategy}
+        .historyCache=${historyCache}
+      ></growspace-header-hero-ui>
+    `);
+
+    const badge = el.shadowRoot!.querySelector('.phase-badge--dryback');
+    expect(badge).not.toBeNull();
+    expect(badge?.textContent).toBe('Dryback');
+  });
+
+  it('handles hover calculation edge cases directly', () => {
+    const el = new GrowspaceHeaderHeroUI();
+    const now = Date.now();
+    const historyData = [
+      { last_changed: new Date(now - 3600000).toISOString(), state: '50.0' },
+      { last_changed: new Date(now).toISOString(), state: '60.0' },
+    ];
+    const chart = (el as any)._buildPhaseChart(historyData, 60, 45, 300, 68);
+    expect(chart).not.toBeNull();
+    // Pass t = 1.5 to trigger the fallback return currentVwc line (line 611)
+    expect(chart.hoverVwc(1.5)).toBe(60.0);
+  });
 });
 
