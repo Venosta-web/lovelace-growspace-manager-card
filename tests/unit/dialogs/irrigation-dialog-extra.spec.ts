@@ -48,6 +48,12 @@ const mocks = vi.hoisted(() => ({
 const sliceMocks = vi.hoisted(() => ({
     saveIrrigationSettings: vi.fn().mockResolvedValue(undefined),
     runIrrigationCycle: vi.fn().mockResolvedValue(undefined),
+    logDrainReading: vi.fn().mockResolvedValue(undefined),
+    configureDrainMonitoring: vi.fn().mockResolvedValue(undefined),
+    saveIrrigationStrategy: vi.fn().mockResolvedValue(undefined),
+    setEcTargetRanges: vi.fn().mockResolvedValue(undefined),
+    getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
+    resetWaterTracking: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
@@ -56,7 +62,19 @@ vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
         ...actual,
         saveIrrigationSettings: sliceMocks.saveIrrigationSettings,
         runIrrigationCycle: sliceMocks.runIrrigationCycle,
+        logDrainReading: sliceMocks.logDrainReading,
+        configureDrainMonitoring: sliceMocks.configureDrainMonitoring,
+        saveIrrigationStrategy: sliceMocks.saveIrrigationStrategy,
+        setEcTargetRanges: sliceMocks.setEcTargetRanges,
+        getIrrigationAnalytics: sliceMocks.getIrrigationAnalytics,
     };
+});
+
+// resetWaterTracking lives in the Growspace slice (used by the dialog's
+// _handleResetWaterTracking).
+vi.mock('../../../src/slices/growspace', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/growspace')>();
+    return { ...actual, resetWaterTracking: sliceMocks.resetWaterTracking };
 });
 
 vi.mock('../../../src/services/data-service', () => {
@@ -263,7 +281,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
             // Call method directly
             await (element as any)._logDrainReadingNow();
 
-            expect(mocks.logDrainReading).toHaveBeenCalledWith('gs1', {
+            expect(sliceMocks.logDrainReading).toHaveBeenCalledWith('gs1', {
                 feedEc: 2.0,
                 drainEc: 2.5,
                 feedVolumeMl: undefined,
@@ -291,14 +309,14 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
             await element.updateComplete;
 
-            expect(mocks.logDrainReading).not.toHaveBeenCalled();
+            expect(sliceMocks.logDrainReading).not.toHaveBeenCalled();
             // Should show error toast
             const toast = element.shadowRoot?.querySelector('.toast-notification.error');
             expect(toast).toBeTruthy();
         });
 
         it('should handle log error', async () => {
-            mocks.logDrainReading.mockRejectedValueOnce(new Error('Log Fail'));
+            sliceMocks.logDrainReading.mockRejectedValueOnce(new Error('Log Fail'));
             const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 
             (element as any)._sm = transition((element as any)._sm, { type: 'UPDATE_DRAIN_EC_DRAFT', partial: { logFeedEc: 2.0, logDrainEc: 2.5 } });
@@ -578,11 +596,11 @@ describe('IrrigationDialog - Extra Coverage', () => {
         it('saves drain config as part of save-all', async () => {
             (element as any)._saveAll();
             await runController(element);
-            expect(mocks.configureDrainMonitoring).toHaveBeenCalled();
+            expect(sliceMocks.configureDrainMonitoring).toHaveBeenCalled();
         });
 
         it('surfaces a save-all failure as an error toast', async () => {
-            mocks.configureDrainMonitoring.mockRejectedValueOnce(new Error('Test error'));
+            sliceMocks.configureDrainMonitoring.mockRejectedValueOnce(new Error('Test error'));
             (element as any)._saveAll();
             await runController(element);
 
@@ -594,7 +612,7 @@ describe('IrrigationDialog - Extra Coverage', () => {
 
     describe('Targeted Coverage - Edge Cases', () => {
         it('surfaces a strategy save failure (within save-all) as an error toast', async () => {
-            mocks.setIrrigationStrategy.mockRejectedValueOnce(new Error('Save Fail'));
+            sliceMocks.saveIrrigationStrategy.mockRejectedValueOnce(new Error('Save Fail'));
 
             (element as any)._saveAll();
             await runController(element);
@@ -696,21 +714,21 @@ describe('IrrigationDialog - Extra Coverage', () => {
             // _saveAll still dispatches, but the effect returns early without a deviceId.
             (element as any)._saveAll();
             await runController(element);
-            expect(mocks.configureDrainMonitoring).not.toHaveBeenCalled();
+            expect(sliceMocks.configureDrainMonitoring).not.toHaveBeenCalled();
             expect(sliceMocks.saveIrrigationSettings).not.toHaveBeenCalled();
         });
 
         it('should return early from _logDrainReadingNow when no device', async () => {
             (element as any).device = undefined;
             await (element as any)._logDrainReadingNow();
-            expect(mocks.logDrainReading).not.toHaveBeenCalled();
+            expect(sliceMocks.logDrainReading).not.toHaveBeenCalled();
         });
 
         it('should handle _handleResetWaterTracking when user confirms', async () => {
             vi.spyOn(window, 'confirm').mockReturnValue(true);
             const notifySpy = vi.spyOn(element as any, '_notifyDataChanged').mockImplementation(() => { });
             await (element as any)._handleResetWaterTracking();
-            expect(mocks.resetWaterTracking || true).toBeTruthy(); // resetWaterTracking may not be in mocks
+            expect(sliceMocks.resetWaterTracking || true).toBeTruthy(); // resetWaterTracking may not be in mocks
             notifySpy.mockRestore();
             vi.restoreAllMocks();
         });
@@ -894,12 +912,12 @@ describe('IrrigationDialog - Extra Coverage', () => {
         it('should return early when device is undefined', async () => {
             (element as any).device = undefined;
             await (element as any)._handleResetWaterTracking();
-            expect(mocks.resetWaterTracking).not.toHaveBeenCalled();
+            expect(sliceMocks.resetWaterTracking).not.toHaveBeenCalled();
         });
 
         it('should handle resetWaterTracking API error gracefully', async () => {
             vi.spyOn(window, 'confirm').mockReturnValue(true);
-            mocks.resetWaterTracking.mockRejectedValueOnce(new Error('Reset failed'));
+            sliceMocks.resetWaterTracking.mockRejectedValueOnce(new Error('Reset failed'));
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
             const toastSpy = vi.spyOn(element as any, '_showErrorToast').mockImplementation(() => { });
 

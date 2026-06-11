@@ -47,7 +47,6 @@ import {
   type DialogSM,
 } from './irrigation-dialog-sm';
 import { MutationRunController, type MutationRunEvent } from './mutation-run-controller';
-import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { ecRampCurves$ } from '../slices/nutrient';
@@ -60,7 +59,14 @@ import {
   removeDrainTime,
   saveIrrigationSettings,
   runIrrigationCycle,
+  saveIrrigationStrategy,
+  configureDrainMonitoring,
+  setEcTargetRanges,
+  getIrrigationAnalytics,
+  logDrainReading,
+  fetchCropSteeringHistory,
 } from '../slices/irrigation';
+import { resetWaterTracking, configureEnvironment } from '../slices/growspace';
 import type { IrrigationConfig } from '../services/types';
 import '../features/shared/ui';
 import '../features/shared/ui/md3-text-input';
@@ -169,7 +175,6 @@ export class IrrigationDialog extends LitElement {
   private _cropSteeringPoller?: PollingController;
   private _cropSteeringHistoryController?: StoreController<Map<string, CropSteeringHistory>>;
 
-  private _dataService?: DataService;
 
   /**
    * Owns the gesture->mutation seam (ADR-0015). Handlers stay synchronous and
@@ -1026,9 +1031,6 @@ export class IrrigationDialog extends LitElement {
         this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: this.initialTab });
       }
     }
-    if (this.hass && (changedProps.has('hass') || !this._dataService)) {
-      this._dataService = new DataService(this.hass);
-    }
     if (!this._visibleTabs.includes(this._sm.activeTab)) {
       this._sm = transition(this._sm, { type: 'SWITCH_TAB', tab: 'config' });
     }
@@ -1053,22 +1055,20 @@ export class IrrigationDialog extends LitElement {
 
       // Crop Steering History: lazy fetch + polling when Schedules tab is active.
       if (nextTab === 'schedules' && prevTab !== 'schedules') {
-        if (!this._cropSteeringHistoryFetched && this.store?.actions?.irrigation && this.device?.deviceId) {
+        if (!this._cropSteeringHistoryFetched && this.device?.deviceId) {
           this._cropSteeringHistoryFetched = true;
           if (!this._cropSteeringHistoryController) {
             this._cropSteeringHistoryController = new StoreController(this, cropSteeringHistory$);
           }
-          this.store.actions.irrigation
-            .fetchCropSteeringHistory(this.device.deviceId)
-            .catch(() => undefined);
+          fetchCropSteeringHistory(this.device.deviceId).catch(() => undefined);
         }
-        if (!this._cropSteeringPoller && this.store?.actions?.irrigation && this.device?.deviceId) {
+        if (!this._cropSteeringPoller && this.device?.deviceId) {
           this._cropSteeringPoller = new PollingController(
             this,
             () => {
               const deviceId = this.device?.deviceId;
               return deviceId
-                ? this.store!.actions.irrigation.fetchCropSteeringHistory(deviceId).catch(() => undefined)
+                ? fetchCropSteeringHistory(deviceId).catch(() => undefined)
                 : Promise.resolve(undefined);
             },
             { interval: 5 * 60 * 1000, autoStart: false }
@@ -1159,11 +1159,9 @@ export class IrrigationDialog extends LitElement {
     const id = this.device?.deviceId;
     if (!id) return;
     await saveIrrigationSettings(id, params.settings);
-    if (this._dataService) {
-      await this._dataService.setIrrigationStrategy(id, params.strategy);
-      await this._dataService.configureDrainMonitoring(id, params.drainConfig);
-      await this._dataService.setEcTargetRanges(id, params.ecTargetRanges);
-    }
+    await saveIrrigationStrategy(id, params.strategy);
+    await configureDrainMonitoring(id, params.drainConfig);
+    await setEcTargetRanges(id, params.ecTargetRanges);
   }
 
   /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
@@ -1182,8 +1180,8 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _fetchStageAnalytics() {
-    if (!this.device?.deviceId || !this._dataService) return;
-    const result = await this._dataService.getIrrigationAnalytics(this.device.deviceId);
+    if (!this.device?.deviceId) return;
+    const result = await getIrrigationAnalytics(this.device.deviceId);
     this._sm = transition(this._sm, {
       type: 'SET_STAGE_AGGREGATES',
       data: result?.stage_aggregates ?? null,
@@ -1415,13 +1413,13 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _handleResetWaterTracking() {
-    if (!this.device?.deviceId || !this._dataService) return;
+    if (!this.device?.deviceId) return;
     const confirmed = window.confirm(
       "Are you sure you want to reset all water tracking data for this growspace? This includes today's usage counters and volume history."
     );
     if (!confirmed) return;
     try {
-      await this._dataService.resetWaterTracking(this.device.deviceId);
+      await resetWaterTracking(this.device.deviceId);
       this._showErrorToast('Water tracking data reset successfully');
       this._notifyDataChanged();
     } catch (e) {
@@ -1431,7 +1429,7 @@ export class IrrigationDialog extends LitElement {
   }
 
   private async _logDrainReadingNow() {
-    if (!this.device?.deviceId || !this._dataService) return;
+    if (!this.device?.deviceId) return;
     const d = this._sm.tabs.drain_ec.draft;
     if (d.logFeedEc <= 0 || d.logDrainEc <= 0) {
       this._showErrorToast('Feed EC and Drain EC must be > 0');
@@ -1439,7 +1437,7 @@ export class IrrigationDialog extends LitElement {
     }
     this._sm = transition(this._sm, { type: 'SET_DRAIN_LOGGING', logging: true });
     try {
-      await this._dataService.logDrainReading(this.device.deviceId, {
+      await logDrainReading(this.device.deviceId, {
         feedEc: d.logFeedEc,
         drainEc: d.logDrainEc,
         feedVolumeMl: d.logFeedVolume || undefined,
@@ -4044,7 +4042,7 @@ export class IrrigationDialog extends LitElement {
       ...tanks[this._editingTankIndex],
       ...this._tankDraft,
     };
-    await this._dataService?.configureEnvironment({
+    await configureEnvironment({
       growspaceId: this.device.deviceId,
       irrigationTanks: tanks,
     });

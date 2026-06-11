@@ -4,7 +4,6 @@ import { openCropSteeringDialog } from '../../slices/ui';
 import * as libraryActions from '../plant/library-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
-import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
 import {
   PlantEntity,
   PlantOverviewDialogState,
@@ -181,10 +180,5 @@ export class ActionDispatcher {
         this.ctx.ui.showToast('Import failed: ' + error, 'error');
       }
     },
-  };
-
-  public readonly irrigation = {
-    fetchCropSteeringHistory: (growspaceId: string) =>
-      sliceFetchCropSteeringHistory(growspaceId),
   };
 }

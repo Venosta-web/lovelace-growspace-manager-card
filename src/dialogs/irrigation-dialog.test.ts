@@ -2,10 +2,46 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import { transition } from './irrigation-dialog-sm';
-import { cropSteeringHistory$, irrigationConfigs$ } from '../slices/irrigation';
+import {
+  cropSteeringHistory$,
+  irrigationConfigs$,
+  fetchCropSteeringHistory,
+} from '../slices/irrigation';
+import { configureEnvironment } from '../slices/growspace';
 import { createGrowspaceDevice } from '../services/types';
 import type { IrrigationDialog } from './irrigation-dialog';
 import './irrigation-dialog';
+
+// The dialog now calls these slice functions directly (no more DataService /
+// store.actions.irrigation). Spy on the network-touching ones so the lifecycle
+// and tank tests can assert on them; keep the atoms + pure helpers real.
+vi.mock('../slices/irrigation', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/irrigation')>();
+  return {
+    ...actual,
+    fetchCropSteeringHistory: vi.fn().mockResolvedValue(undefined),
+    getIrrigationAnalytics: vi.fn().mockResolvedValue(null),
+  };
+});
+vi.mock('../slices/growspace', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/growspace')>();
+  return {
+    ...actual,
+    configureEnvironment: vi.fn().mockResolvedValue(undefined),
+    resetWaterTracking: vi.fn().mockResolvedValue(undefined),
+  };
+});
+
+// Stub the day-chart: it self-fetches crop-steering history into the same atom,
+// which would pollute the dialog's own fetchCropSteeringHistory call counts in
+// the lifecycle tests. The chart's own behavior is covered by its own spec; the
+// dialog tests only assert on the host element + its self-rendered legend.
+vi.mock('../features/environment/components/crop-steering-day-chart', () => {
+  if (!customElements.get('crop-steering-day-chart')) {
+    customElements.define('crop-steering-day-chart', class extends HTMLElement {});
+  }
+  return {};
+});
 
 afterEach(() => {
   document.body.innerHTML = '';
@@ -724,6 +760,10 @@ function makeCropHistoryDevice() {
 }
 
 describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
+  // The dialog calls the module-level slice fetchCropSteeringHistory directly;
+  // it persists across tests, so clear it before each.
+  beforeEach(() => vi.mocked(fetchCropSteeringHistory).mockClear());
+
   it('does not fetch crop steering history before the Schedules tab is first activated', async () => {
     const fetchFn = vi.fn().mockResolvedValue(undefined);
     const store = makeCropHistoryStore(fetchFn);
@@ -739,7 +779,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
     `);
     await el.updateComplete;
 
-    expect(fetchFn).not.toHaveBeenCalled();
+    expect(vi.mocked(fetchCropSteeringHistory)).not.toHaveBeenCalled();
   });
 
   it('fetches crop steering history on first Schedules-tab activation', async () => {
@@ -756,15 +796,15 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-    expect(fetchFn).not.toHaveBeenCalled();
+    expect(vi.mocked(fetchCropSteeringHistory)).not.toHaveBeenCalled();
 
     const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
     schedulesNav.click();
     await el.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(fetchFn).toHaveBeenCalledOnce();
-    expect(fetchFn).toHaveBeenCalledWith('gs1');
+    expect(vi.mocked(fetchCropSteeringHistory)).toHaveBeenCalledOnce();
+    expect(vi.mocked(fetchCropSteeringHistory)).toHaveBeenCalledWith('gs1');
   });
 
   it('starts the PollingController when the Schedules tab activates', async () => {
@@ -828,7 +868,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
     `);
     await el.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(fetchFn).toHaveBeenCalledOnce();
+    expect(vi.mocked(fetchCropSteeringHistory)).toHaveBeenCalledOnce();
 
     // Navigate away then back
     const configNav = el.shadowRoot!.querySelector('[data-tab="config"]') as HTMLElement;
@@ -840,7 +880,7 @@ describe('IrrigationDialog – Crop Steering History: fetch lifecycle', () => {
     await el.updateComplete;
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(fetchFn).toHaveBeenCalledOnce();
+    expect(vi.mocked(fetchCropSteeringHistory)).toHaveBeenCalledOnce();
   });
 });
 
@@ -934,7 +974,7 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
 
   it('clicking Save calls configureEnvironment with the updated tank and closes the form', async () => {
     const device = makeTankDevice();
-    const configureEnvironment = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(configureEnvironment).mockClear();
 
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
@@ -945,9 +985,6 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
       ></irrigation-dialog>
     `);
     await el.updateComplete;
-
-    // Inject mock data service
-    (el as any)._dataService = { configureEnvironment };
 
     // Open edit for Tank A (index 0)
     (el.shadowRoot!.querySelector('button.tank-edit-btn') as HTMLButtonElement).click();
@@ -967,12 +1004,12 @@ describe('IrrigationDialog – Tanks tab inline edit', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await el.updateComplete;
 
-    expect(configureEnvironment).toHaveBeenCalledOnce();
-    const [call] = configureEnvironment.mock.calls;
-    expect(call[0].growspaceId).toBe('gs1');
-    expect(call[0].irrigationTanks[0].warningLevel).toBe(25);
+    expect(vi.mocked(configureEnvironment)).toHaveBeenCalledOnce();
+    const [call] = vi.mocked(configureEnvironment).mock.calls;
+    expect((call[0] as any).growspaceId).toBe('gs1');
+    expect((call[0] as any).irrigationTanks[0].warningLevel).toBe(25);
     // Other tank unchanged
-    expect(call[0].irrigationTanks[1].name).toBe('Tank B');
+    expect((call[0] as any).irrigationTanks[1].name).toBe('Tank B');
 
     // Form dismissed
     expect(el.shadowRoot!.querySelector('.tank-edit-form')).toBeNull();

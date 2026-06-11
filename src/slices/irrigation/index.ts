@@ -34,7 +34,13 @@
  */
 
 import { atom } from 'nanostores';
-import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
+import { z } from 'zod';
+import type {
+  IrrigationConfig,
+  IrrigationStrategy,
+  IrrigationTank,
+  ECTargetRange,
+} from '../../services/types';
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows } from './schema';
@@ -538,4 +544,89 @@ export async function fetchCropSteeringHistory(growspaceId: string): Promise<voi
   const updated = new Map(cropSteeringHistory$.get());
   updated.set(growspaceId, result);
   cropSteeringHistory$.set(updated);
+}
+
+/** Snake_case serialization of an IrrigationStrategy for the backend service. */
+function _serializeStrategy(strategy: Partial<IrrigationStrategy>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  if (strategy.enabled !== undefined) result.enabled = strategy.enabled;
+  if (strategy.lightsOnTime !== undefined) result.lights_on_time = strategy.lightsOnTime;
+  if (strategy.p0DurationMinutes !== undefined)
+    result.p0_duration_minutes = strategy.p0DurationMinutes;
+  if (strategy.p2StopBeforeLightsOffMinutes !== undefined)
+    result.p2_stop_before_lights_off_minutes = strategy.p2StopBeforeLightsOffMinutes;
+  if (strategy.targetVwcPercent !== undefined)
+    result.target_vwc_percent = strategy.targetVwcPercent;
+  if (strategy.maintenanceDrybackPercent !== undefined)
+    result.maintenance_dryback_percent = strategy.maintenanceDrybackPercent;
+  if (strategy.shotDurationSeconds !== undefined)
+    result.shot_duration_seconds = strategy.shotDurationSeconds;
+  if (strategy.shotIntervalMinutes !== undefined)
+    result.shot_interval_minutes = strategy.shotIntervalMinutes;
+  if (strategy.autoLightTracking !== undefined)
+    result.auto_light_tracking = strategy.autoLightTracking;
+  return result;
+}
+
+/**
+ * Persist a growspace's crop-steering strategy to the backend.
+ *
+ * Distinct from {@link setIrrigationStrategy}, which only mutates the local
+ * `irrigationStrategies$` atom. This calls the `set_irrigation_strategy`
+ * service. Fire-and-forget — re-throws on failure for the caller to surface.
+ */
+export async function saveIrrigationStrategy(
+  growspaceId: string,
+  strategy: Partial<IrrigationStrategy>
+): Promise<void> {
+  await callService('growspace_manager', 'set_irrigation_strategy', {
+    growspace_id: growspaceId,
+    ..._serializeStrategy(strategy),
+  });
+}
+
+/**
+ * Persist per-stage EC target ranges. The backend service takes one stage per
+ * call, so this fans out one `set_ec_target_range` call per range.
+ */
+export async function setEcTargetRanges(
+  growspaceId: string,
+  ranges: ECTargetRange[]
+): Promise<void> {
+  for (const r of ranges) {
+    await callService('growspace_manager', 'set_ec_target_range', {
+      growspace_id: growspaceId,
+      stage: r.stage,
+      feed_ec_min: r.minEc,
+      feed_ec_max: r.maxEc,
+    });
+  }
+}
+
+const IrrigationAnalyticsSchema = z.object({
+  growspace_id: z.string(),
+  stage_aggregates: z.record(z.string(), z.number()),
+});
+
+export type IrrigationAnalytics = z.infer<typeof IrrigationAnalyticsSchema>;
+
+/**
+ * Fetch per-stage irrigation analytics for a growspace.
+ *
+ * Mirrors the legacy `sendWebSocketSafe` behavior: returns `null` (rather than
+ * throwing) when the WS call fails, so callers can render a blank analytics view.
+ */
+export async function getIrrigationAnalytics(
+  growspaceId: string
+): Promise<IrrigationAnalytics | null> {
+  try {
+    return await hassCall(
+      'growspace_manager/irrigation_analytics',
+      { growspace_id: growspaceId },
+      IrrigationAnalyticsSchema
+    );
+  } catch (err) {
+    console.error('[irrigation] getIrrigationAnalytics failed:', err);
+    return null;
+  }
 }

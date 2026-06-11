@@ -211,16 +211,6 @@ describe('IrrigationDialog', () => {
             expect((element as any)._sm.tabs.schedules.draft.irrigationDuration).toBe(60);
         });
 
-        it('should create DataService if missing when hass changes', async () => {
-            document.body.appendChild(element); // Connect to DOM
-            // force dataService undefined
-            (element as any)._dataService = undefined;
-            element.hass = { ...element.hass }; // Trigger update
-            await element.updateComplete;
-
-            expect((element as any)._dataService).toBeDefined();
-        });
-
         it('should handle canceling add time dialog', async () => {
             element.open = true;
             document.body.appendChild(element);
