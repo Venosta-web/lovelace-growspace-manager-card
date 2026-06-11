@@ -2,7 +2,6 @@ import * as plantActions from '../plant/plant-actions';
 import { addStrain as sliceAddStrain, normalizeStrainFormData } from '../../slices/strain';
 import { openCropSteeringDialog } from '../../slices/ui';
 import * as libraryActions from '../plant/library-actions';
-import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
 import {
   PlantEntity,
@@ -75,15 +74,6 @@ export class ActionDispatcher {
 
     printLabel: (params: Parameters<typeof plantActions.printLabel>[1]) =>
       plantActions.printLabel(this.ctx, params),
-
-    logDryingWeight: (plantId: string, weightGrams: number, date?: string) =>
-      dryingActions.logDryingWeight(this.ctx, plantId, weightGrams, date),
-
-    logMoistureReading: (plantId: string, moisturePercent: number, date?: string) =>
-      dryingActions.logMoistureReading(this.ctx, plantId, moisturePercent, date),
-
-    setVisualTag: (plantId: string, visualTag: string | null) =>
-      dryingActions.setVisualTag(this.ctx, plantId, visualTag),
 
     confirmAdd: async (detail: AddPlantDialogState) => {
       if (!detail.strain) return;

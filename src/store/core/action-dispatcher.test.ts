@@ -390,23 +390,6 @@ describe('plant delegation smoke tests', () => {
     await expect(dispatcher.plant.printLabel({ plant_id: 'p1' } as never)).resolves.not.toThrow();
   });
 
-  it('logDryingWeight calls dataService.logDryingWeight', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.plant.logDryingWeight('p1', 150);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).logDryingWeight).toHaveBeenCalled();
-  });
-
-  it('logMoistureReading calls dataService.logMoistureReading', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.plant.logMoistureReading('p1', 45);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).logMoistureReading).toHaveBeenCalled();
-  });
-
-  it('setVisualTag calls dataService.setVisualTag', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.plant.setVisualTag('p1', 'red');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).setVisualTag).toHaveBeenCalled();
-  });
 });
 
 // ─── library delegation ───────────────────────────────────────────────────────

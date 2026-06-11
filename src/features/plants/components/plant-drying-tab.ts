@@ -5,6 +5,12 @@ import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import {
+  logDryingWeight,
+  logMoistureReading,
+  setVisualTag,
+} from '../../../slices/plant';
+import { withToast } from '../../../slices/ui';
 
 @customElement('plant-drying-tab')
 export class PlantDryingTab extends LitElement {
@@ -224,7 +230,11 @@ export class PlantDryingTab extends LitElement {
     this._savingTag = true;
     try {
       const tag = this._visualTagInput.trim() || null;
-      await this.store.actions.plant.setVisualTag(this._plantId(), tag);
+      await withToast(() => setVisualTag(this._plantId(), tag), {
+        success: 'Visual tag saved',
+        errorPrefix: 'Failed to save visual tag',
+        rethrow: true,
+      });
     } finally {
       this._savingTag = false;
     }
@@ -235,10 +245,9 @@ export class PlantDryingTab extends LitElement {
     if (isNaN(grams)) return;
     this._savingWeight = true;
     try {
-      await this.store.actions.plant.logDryingWeight(
-        this._plantId(),
-        grams,
-        this._weightDate || undefined
+      await withToast(
+        () => logDryingWeight(this._plantId(), grams, this._weightDate || undefined),
+        { success: 'Weight logged', errorPrefix: 'Failed to log weight', rethrow: true }
       );
       this._weightInput = '';
       this._weightDate = '';
@@ -252,10 +261,9 @@ export class PlantDryingTab extends LitElement {
     if (isNaN(pct)) return;
     this._savingMoisture = true;
     try {
-      await this.store.actions.plant.logMoistureReading(
-        this._plantId(),
-        pct,
-        this._moistureDate || undefined
+      await withToast(
+        () => logMoistureReading(this._plantId(), pct, this._moistureDate || undefined),
+        { success: 'Moisture logged', errorPrefix: 'Failed to log moisture', rethrow: true }
       );
       this._moistureInput = '';
       this._moistureDate = '';

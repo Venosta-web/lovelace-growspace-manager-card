@@ -2,6 +2,21 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { PlantDryingTab } from '../../../../../src/features/plants/components/plant-drying-tab';
 import type { PlantEntity } from '../../../../../src/types';
+import {
+  setVisualTag as sliceSetVisualTag,
+  logDryingWeight as sliceLogDryingWeight,
+  logMoistureReading as sliceLogMoistureReading,
+} from '../../../../../src/slices/plant';
+
+vi.mock('../../../../../src/slices/plant', () => ({
+  setVisualTag: vi.fn().mockResolvedValue(undefined),
+  logDryingWeight: vi.fn().mockResolvedValue(undefined),
+  logMoistureReading: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../../../src/slices/ui', () => ({
+  withToast: vi.fn((fn: () => Promise<unknown>) => fn()),
+}));
 
 if (!customElements.get('plant-drying-tab')) {
   customElements.define('plant-drying-tab', PlantDryingTab);
@@ -12,15 +27,10 @@ describe('plant-drying-tab', () => {
   let mockPlant: PlantEntity;
 
   beforeEach(() => {
-    mockStore = {
-      actions: {
-        plant: {
-          setVisualTag: vi.fn().mockResolvedValue(undefined),
-          logDryingWeight: vi.fn().mockResolvedValue(undefined),
-          logMoistureReading: vi.fn().mockResolvedValue(undefined),
-        },
-      },
-    };
+    vi.mocked(sliceSetVisualTag).mockReset().mockResolvedValue(undefined);
+    vi.mocked(sliceLogDryingWeight).mockReset().mockResolvedValue(undefined);
+    vi.mocked(sliceLogMoistureReading).mockReset().mockResolvedValue(undefined);
+    mockStore = {};
 
     mockPlant = {
       entity_id: 'plant.test',
@@ -173,7 +183,7 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
     await vi.waitFor(() => !el['_savingTag']);
 
-    expect(mockStore.actions.plant.setVisualTag).toHaveBeenCalledWith('p123', 'Orange Tape');
+    expect(sliceSetVisualTag).toHaveBeenCalledWith('p123', 'Orange Tape');
   });
 
   it('saves null visual tag when input is empty or whitespace only', async () => {
@@ -192,7 +202,7 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
     await vi.waitFor(() => !el['_savingTag']);
 
-    expect(mockStore.actions.plant.setVisualTag).toHaveBeenCalledWith('p123', null);
+    expect(sliceSetVisualTag).toHaveBeenCalledWith('p123', null);
   });
 
   it('updates weight input and date state on input', async () => {
@@ -241,7 +251,7 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
     await vi.waitFor(() => !el['_savingWeight']);
 
-    expect(mockStore.actions.plant.logDryingWeight).toHaveBeenCalledWith('p123', 35.6, '2026-05-20');
+    expect(sliceLogDryingWeight).toHaveBeenCalledWith('p123', 35.6, '2026-05-20');
     expect(el['_weightInput']).to.equal('');
     expect(el['_weightDate']).to.equal('');
   });
@@ -264,7 +274,7 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
     await vi.waitFor(() => !el['_savingWeight']);
 
-    expect(mockStore.actions.plant.logDryingWeight).toHaveBeenCalledWith('p123', 35.6, undefined);
+    expect(sliceLogDryingWeight).toHaveBeenCalledWith('p123', 35.6, undefined);
   });
 
   it('does not log weight if weight input is not a number', async () => {
@@ -279,7 +289,7 @@ describe('plant-drying-tab', () => {
 
     await (el as any)._logWeight();
 
-    expect(mockStore.actions.plant.logDryingWeight).not.toHaveBeenCalled();
+    expect(sliceLogDryingWeight).not.toHaveBeenCalled();
   });
 
   it('updates moisture input and moisture date state on input', async () => {
@@ -328,7 +338,7 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
     await vi.waitFor(() => !el['_savingMoisture']);
 
-    expect(mockStore.actions.plant.logMoistureReading).toHaveBeenCalledWith('p123', 55.8, '2026-05-21');
+    expect(sliceLogMoistureReading).toHaveBeenCalledWith('p123', 55.8, '2026-05-21');
     expect(el['_moistureInput']).to.equal('');
     expect(el['_moistureDate']).to.equal('');
   });
@@ -351,7 +361,7 @@ describe('plant-drying-tab', () => {
     await el.updateComplete;
     await vi.waitFor(() => !el['_savingMoisture']);
 
-    expect(mockStore.actions.plant.logMoistureReading).toHaveBeenCalledWith('p123', 55.8, undefined);
+    expect(sliceLogMoistureReading).toHaveBeenCalledWith('p123', 55.8, undefined);
   });
 
   it('does not log moisture if moisture input is not a number', async () => {
@@ -366,7 +376,7 @@ describe('plant-drying-tab', () => {
 
     await (el as any)._logMoisture();
 
-    expect(mockStore.actions.plant.logMoistureReading).not.toHaveBeenCalled();
+    expect(sliceLogMoistureReading).not.toHaveBeenCalled();
   });
 
   describe('_plantId extraction', () => {
