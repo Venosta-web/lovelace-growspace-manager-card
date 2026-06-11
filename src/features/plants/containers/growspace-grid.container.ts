@@ -27,10 +27,12 @@ import type {
 } from '../components/growspace-grid-ui';
 import { GrowspaceGridUI } from '../components/growspace-grid-ui';
 import { gridInteraction$, select } from '../../../slices/grid-interaction';
+import { handlePlantDrop as sliceHandlePlantDrop } from '../../../slices/plant';
 import {
   togglePlantSelection,
   openPlantOverviewDialog,
   openAddPlantDialog,
+  withToast,
 } from '../../../slices/ui';
 import '../components/growspace-grid-ui';
 import '../containers/plant-card.container';
@@ -196,8 +198,25 @@ export class GrowspaceGridContainer extends LitElement {
 
     // Regular internal drag-drop - use the dragged plant from the event
     if (draggedPlant) {
-      await this.store.actions.plant.drop(targetRow, targetCol, targetPlant, draggedPlant);
+      await this._dropPlant(targetRow, targetCol, targetPlant, draggedPlant);
     }
+  }
+
+  /**
+   * Persist a grid drop via the Plant slice and refresh the grid when something
+   * actually moved (the slice returns false for no-op drops).
+   */
+  private async _dropPlant(
+    targetRow: number,
+    targetCol: number,
+    targetPlant: PlantEntity | null,
+    sourcePlant: PlantEntity | null
+  ): Promise<void> {
+    const moved = await withToast(
+      () => sliceHandlePlantDrop(targetRow, targetCol, targetPlant, sourcePlant),
+      { errorPrefix: 'Failed to move plant' }
+    );
+    if (moved) await this.store.refreshData();
   }
 
   /**
@@ -229,7 +248,7 @@ export class GrowspaceGridContainer extends LitElement {
     }
 
     if (targetRow !== undefined && targetCol !== undefined) {
-      await this.store.actions.plant.drop(targetRow, targetCol, targetPlant, sourcePlant);
+      await this._dropPlant(targetRow, targetCol, targetPlant, sourcePlant);
     }
   }
 

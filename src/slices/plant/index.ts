@@ -374,6 +374,37 @@ export async function movePlantToNextStage(
 }
 
 /**
+ * Resolve a drag-and-drop between grid cells: swap two plants when the target
+ * cell is occupied, otherwise move the source plant to the empty cell. Each
+ * branch persists via the slice's own mutator (swapPlants / updatePlant), which
+ * register their optimistic update + undo. Returns false for no-op drops (same
+ * cell, missing source, or missing growspace) so callers can skip the refresh.
+ */
+export async function handlePlantDrop(
+  targetRow: number,
+  targetCol: number,
+  targetPlant: PlantEntity | null,
+  sourcePlant: PlantEntity | null
+): Promise<boolean> {
+  if (!sourcePlant?.attributes) return false;
+
+  const sourceId =
+    sourcePlant.attributes.plant_id || sourcePlant.entity_id?.replace('sensor.', '') || '';
+  const targetId =
+    targetPlant?.attributes.plant_id || targetPlant?.entity_id?.replace('sensor.', '') || '';
+
+  if (sourceId === targetId) return false;
+  if (!sourcePlant.attributes.growspace_id) return false;
+
+  if (targetPlant) {
+    await swapPlants(sourceId, targetId);
+  } else {
+    await updatePlant(sourceId, { row: targetRow, col: targetCol });
+  }
+  return true;
+}
+
+/**
  * Move or transplant a plant to a specific growspace.
  *
  * Uses move_clone for clone-stage plants; move_plant for all others.

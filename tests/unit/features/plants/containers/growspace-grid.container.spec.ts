@@ -22,6 +22,12 @@ vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
   };
 });
 
+vi.mock('../../../../../src/slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../../src/slices/plant')>();
+  return { ...actual, handlePlantDrop: vi.fn() };
+});
+import * as plantSlice from '../../../../../src/slices/plant';
+
 describe('GrowspaceGridContainer', () => {
   let element: GrowspaceGridContainer;
   let mockStore: any;
@@ -49,13 +55,11 @@ describe('GrowspaceGridContainer', () => {
       data: {
         $devices: atom([]),
       },
+      refreshData: vi.fn().mockResolvedValue(undefined),
       actions: {
         ui: {
           openPlantOverviewDialog: vi.fn(),
           openAddPlantDialog: vi.fn(),
-        },
-        plant: {
-          drop: vi.fn(),
         },
       },
     };
@@ -128,7 +132,7 @@ describe('GrowspaceGridContainer', () => {
       }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(1, 1, null, mockPlant);
   });
 
   it('recreates viewmodel when plants change', async () => {
@@ -186,7 +190,7 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 100, y: 100, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(2, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(2, 1, null, mockPlant);
   });
 
   it('focuses a plant card via focusPlant method', async () => {
@@ -231,7 +235,7 @@ describe('GrowspaceGridContainer', () => {
     }));
 
     // plant.drop should NOT be called since there's no dragged plant
-    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.handlePlantDrop)).not.toHaveBeenCalled();
   });
 
   it('handles grid-drop with originalEvent but no dataTransfer', async () => {
@@ -247,7 +251,7 @@ describe('GrowspaceGridContainer', () => {
     }));
 
     // Falls through to regular drop
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(1, 1, null, mockPlant);
   });
 
   it('handles grid-mobile-drop targeting a plant-card-container element', async () => {
@@ -269,7 +273,7 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 50, y: 50, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(2, 3, mockPlant, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(2, 3, mockPlant, mockPlant);
   });
 
   it('handles grid-mobile-drop when no target is found at coordinates', async () => {
@@ -281,7 +285,7 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 50, y: 50, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.handlePlantDrop)).not.toHaveBeenCalled();
   });
 
   it('handles grid-mobile-drop when closest returns null', async () => {
@@ -295,7 +299,7 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 50, y: 50, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.handlePlantDrop)).not.toHaveBeenCalled();
   });
 
   it('handles cell-click when cell has no plant (no-op)', async () => {
@@ -324,7 +328,7 @@ describe('GrowspaceGridContainer', () => {
       }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(1, 1, null, mockPlant);
   });
 
   it('handles grid-drop when transplantData has type other than transplant', async () => {
@@ -343,7 +347,7 @@ describe('GrowspaceGridContainer', () => {
       }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(1, 1, null, mockPlant);
   });
 
   it('handles grid-drop when transplantData is empty string', async () => {
@@ -362,7 +366,7 @@ describe('GrowspaceGridContainer', () => {
       }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(1, 1, null, mockPlant);
   });
 
   it('handles grid-mobile-drop when shadowRoot is undefined', async () => {
@@ -377,7 +381,7 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 50, y: 50, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.handlePlantDrop)).not.toHaveBeenCalled();
   });
 
   it('handles grid-mobile-drop targeting plant-card-empty with missing attributes', async () => {
@@ -394,7 +398,7 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 50, y: 50, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).toHaveBeenCalledWith(1, 1, null, mockPlant);
+    expect(vi.mocked(plantSlice.handlePlantDrop)).toHaveBeenCalledWith(1, 1, null, mockPlant);
   });
 
   it('handles grid-mobile-drop when dropTarget does not match expected types', async () => {
@@ -411,6 +415,6 @@ describe('GrowspaceGridContainer', () => {
       detail: { x: 50, y: 50, plant: mockPlant }
     }));
 
-    expect(mockStore.actions.plant.drop).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.handlePlantDrop)).not.toHaveBeenCalled();
   });
 });

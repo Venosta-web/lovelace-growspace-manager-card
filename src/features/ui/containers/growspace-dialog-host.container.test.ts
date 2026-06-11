@@ -26,6 +26,7 @@ vi.mock('../../../slices/plant', () => ({
   logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
   movePlantToGrowspace: vi.fn(),
   movePlantToNextStage: vi.fn().mockResolvedValue('dry'),
+  handlePlantDrop: vi.fn(),
 }));
 
 vi.mock('../../../slices/genetics', () => ({
