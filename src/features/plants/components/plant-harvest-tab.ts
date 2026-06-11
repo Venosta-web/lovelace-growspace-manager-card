@@ -5,6 +5,8 @@ import { storeContext } from '../../../context';
 import type { GrowspaceStore } from '../../../store/core/growspace-store';
 import type { PlantEntity } from '../../../types';
 import { dialogStyles } from '../../../styles/dialog.styles';
+import { saveHarvestMetrics, scorePlant } from '../../../slices/plant';
+import { withToast } from '../../../slices/ui';
 
 @customElement('plant-harvest-tab')
 export class PlantHarvestTab extends LitElement {
@@ -328,8 +330,30 @@ export class PlantHarvestTab extends LitElement {
     this._savingHarvest = true;
     try {
       const plantId = this.plant.attributes.plant_id as string;
-      await this.store.actions.plant.saveHarvestMetrics(plantId, this._harvestMetricsEdit);
-      await this.store.actions.plant.scorePhenotype(plantId, this._scoresEdit);
+      const hasMetrics = Object.keys(this._harvestMetricsEdit).length > 0;
+      const hasScores = Object.values(this._scoresEdit).some((v) => v !== null && v !== undefined);
+      if (hasMetrics) {
+        await withToast(
+          async () => {
+            await saveHarvestMetrics(plantId, this._harvestMetricsEdit);
+            await this.store.refreshData(true);
+          },
+          {
+            success: 'Harvest metrics saved',
+            errorPrefix: 'Failed to save harvest metrics',
+            rethrow: true,
+          }
+        );
+      }
+      if (hasScores) {
+        await withToast(
+          async () => {
+            await scorePlant(plantId, this._scoresEdit);
+            await this.store.refreshData(true);
+          },
+          { success: 'Scores saved', errorPrefix: 'Failed to save scores', rethrow: true }
+        );
+      }
       this.dispatchEvent(new CustomEvent('harvest-saved', { bubbles: true, composed: true }));
     } catch (e) {
       console.error('Failed to save harvest metrics', e);

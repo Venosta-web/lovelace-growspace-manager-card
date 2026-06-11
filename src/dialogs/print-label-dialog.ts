@@ -11,6 +11,8 @@ import type { PrintLabelDialogState, LabelFieldVisibility, LabelSizeId, PrintDen
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { activeDevices$ } from '../slices/grid';
+import { printLabel as slicePrintLabel } from '../slices/plant';
+import { withToast } from '../slices/ui';
 import { getPrinters } from '../features/shared/ui/printer-status-strip';
 
 const DEFAULT_FIELDS: LabelFieldVisibility = {
@@ -404,14 +406,22 @@ export class PrintLabelDialog extends LitElement {
 
     try {
       for (let i = 0; i < this._copies; i++) {
-        await this.store.actions.plant.printLabel({
-          plantId: this.dialogState.plantId,
-          fields: this._fields,
-          sizeId: this._sizeId,
-          density: this._density,
-          qrTarget: this._qrTarget,
-          deviceId: this._selectedDeviceId || undefined,
-        });
+        await withToast(
+          () =>
+            slicePrintLabel({
+              plantId: this.dialogState!.plantId,
+              fields: this._fields,
+              sizeId: this._sizeId,
+              density: this._density,
+              qrTarget: this._qrTarget,
+              deviceId: this._selectedDeviceId || undefined,
+            }),
+          {
+            success: 'Label printing command sent',
+            errorPrefix: 'Failed to print label',
+            rethrow: true,
+          }
+        );
         this._printProgress = Math.round(((i + 1) / this._copies) * 100);
       }
       this._printState = 'done';

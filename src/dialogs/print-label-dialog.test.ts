@@ -1,9 +1,26 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { PrintLabelDialog } from './print-label-dialog';
 import './print-label-dialog';
 import type { LabelFieldVisibility } from '../lib/types/dialog';
 import { setDevices } from '../slices/grid';
+import { printLabel as slicePrintLabel } from '../slices/plant';
+import { withToast } from '../slices/ui';
+
+vi.mock('../slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/plant')>();
+  return { ...actual, printLabel: vi.fn().mockResolvedValue(undefined) };
+});
+
+vi.mock('../slices/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/ui')>();
+  return { ...actual, withToast: vi.fn((fn: () => Promise<unknown>) => fn()) };
+});
+
+beforeEach(() => {
+  vi.mocked(slicePrintLabel).mockReset().mockResolvedValue(undefined);
+  vi.mocked(withToast).mockReset().mockImplementation((fn: () => Promise<unknown>) => fn());
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -199,17 +216,10 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
   it('sets _printState to printing during submit and done after', async () => {
     let statesDuringPrint: string[] = [];
-    const mockStore = makeMockStore({
-      actions: {
-        ui: { toast: vi.fn() },
-        plant: {
-          printLabel: vi.fn().mockImplementation(async () => {
-            statesDuringPrint.push((el as any)._printState);
-          }),
-        },
-      },
+    vi.mocked(slicePrintLabel).mockImplementation(async () => {
+      statesDuringPrint.push((el as any)._printState);
     });
-    const el = createElement(mockStore);
+    const el = createElement(makeMockStore());
     (el as any).dialogState = { plantId: 'p1' };
     (el as any)._copies = 1;
 
@@ -227,7 +237,7 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(3);
+    expect(slicePrintLabel).toHaveBeenCalledTimes(3);
   });
 
   it('passes fields, sizeId, density, qrTarget, deviceId to printLabel', async () => {
@@ -244,7 +254,7 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledWith({
+    expect(slicePrintLabel).toHaveBeenCalledWith({
       plantId: 'p1',
       fields,
       sizeId: '40x30',
@@ -263,18 +273,13 @@ describe('PrintLabelDialog – _submit print flow', () => {
 
     await (el as any)._submit();
 
-    const call = mockStore.actions.plant.printLabel.mock.calls[0][0];
+    const call = vi.mocked(slicePrintLabel).mock.calls[0][0];
     expect(call.deviceId).toBeUndefined();
   });
 
   it('sets _printState to error when printLabel rejects', async () => {
-    const mockStore = makeMockStore({
-      actions: {
-        ui: { toast: vi.fn() },
-        plant: { printLabel: vi.fn().mockRejectedValue(new Error('printer offline')) },
-      },
-    });
-    const el = createElement(mockStore);
+    vi.mocked(slicePrintLabel).mockRejectedValue(new Error('printer offline'));
+    const el = createElement(makeMockStore());
     (el as any).dialogState = { plantId: 'p1' };
     (el as any)._copies = 1;
 
@@ -310,7 +315,7 @@ describe('PrintLabelDialog – no preview backend call', () => {
 
     await (el as any)._submit();
 
-    const calls = mockStore.actions.plant.printLabel.mock.calls;
+    const calls = vi.mocked(slicePrintLabel).mock.calls;
     expect(calls.every((c: any[]) => !c[0].preview)).toBe(true);
   });
 });

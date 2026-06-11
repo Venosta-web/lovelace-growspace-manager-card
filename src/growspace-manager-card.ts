@@ -18,6 +18,7 @@ import {
   openBatchTrainingDialog,
   openBatchPrintLabelsDialog,
   openBatchCloneDialog,
+  deleteSelectedPlants,
 } from './slices/ui';
 
 import type { GrowspaceManagerCardConfig } from './lib/types/config';
@@ -305,7 +306,7 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
   }
 
   private _handleDeleteSelected = () => {
-    void this.store.actions.ui.deleteSelectedPlants();
+    void deleteSelectedPlants();
   };
 
   private _handleTransplantMode = () => {

@@ -6,6 +6,14 @@ import { hassContext, storeContext } from '../../../../../src/context';
 import '../../../../../src/features/plants/containers/plant-overview.container';
 import type { PlantOverviewContainer } from '../../../../../src/features/plants/containers/plant-overview.container';
 import type { PlantEntity } from '../../../../../src/types';
+import { deletePlant as sliceDeletePlant } from '../../../../../src/slices/plant';
+
+// Plant deletion now goes through the Plant slice; spy on it so it resolves
+// without a live hass.
+vi.mock('../../../../../src/slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../../src/slices/plant')>();
+  return { ...actual, deletePlant: vi.fn().mockResolvedValue(undefined) };
+});
 
 // Mock dependencies
 vi.mock('../../../../../src/features/plants/components/plant-dashboard-tab', () => ({ default: class { } }));
@@ -546,7 +554,7 @@ describe('PlantOverviewContainer', () => {
     const confirmBtn = element.shadowRoot!.querySelector('.delete-overlay button.danger') as HTMLButtonElement;
     confirmBtn.click();
 
-    expect(mockStore.actions.plant.delete).toHaveBeenCalledWith('plant_1');
+    expect(vi.mocked(sliceDeletePlant)).toHaveBeenCalledWith('plant_1');
     expect(mockStore.ui.closeDialog).toHaveBeenCalled();
   });
 });

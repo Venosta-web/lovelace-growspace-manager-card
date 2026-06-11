@@ -8,7 +8,8 @@ import type { BatchCloneDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import { activeDevices$ } from '../slices/grid';
-import { showToast } from '../slices/ui';
+import { takeClone as sliceTakeClone } from '../slices/plant';
+import { showToast, withToast } from '../slices/ui';
 
 @customElement('batch-clone-dialog')
 export class BatchCloneDialog extends LitElement {
@@ -114,10 +115,13 @@ export class BatchCloneDialog extends LitElement {
       }
 
       try {
-        await this.store.actions.plant.takeClone(
-          motherPlant,
-          this._numClones,
-          this._targetGrowspaceId
+        await withToast(
+          () => sliceTakeClone(motherPlant, this._numClones, this._targetGrowspaceId),
+          {
+            success: `Taking ${this._numClones} clone${this._numClones > 1 ? 's' : ''}...`,
+            errorPrefix: 'Failed to take clone',
+            rethrow: true,
+          }
         );
       } catch (_e) {
         errors.push(plantId);

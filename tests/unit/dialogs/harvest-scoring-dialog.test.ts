@@ -10,6 +10,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HarvestScoringDialog } from '../../../src/dialogs/harvest-scoring-dialog';
 import '../../../src/dialogs/harvest-scoring-dialog';
 import { aPlant, aHass } from '../../fixtures';
+import { scorePlant as sliceScorePlant } from '../../../src/slices/plant';
+
+// Phenotype scoring now goes through the Plant slice; harvest still routes via
+// the dispatcher. Spy on scorePlant so it resolves without a live hass.
+vi.mock('../../../src/slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/slices/plant')>();
+  return { ...actual, scorePlant: vi.fn().mockResolvedValue(undefined) };
+});
 
 if (!customElements.get('ha-dialog')) {
   class HaDialogMock extends HTMLElement {
@@ -178,7 +186,7 @@ describe('HarvestScoringDialog', () => {
     await new Promise((r) => setTimeout(r, 20));
 
     expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
-    expect(mockStore.actions.plant.scorePhenotype).not.toHaveBeenCalled();
+    expect(vi.mocked(sliceScorePlant)).not.toHaveBeenCalled();
   });
 
   it('shows error banner when harvest fails', async () => {
@@ -313,7 +321,7 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalled();
+    expect(vi.mocked(sliceScorePlant)).toHaveBeenCalled();
     expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
   });
 });

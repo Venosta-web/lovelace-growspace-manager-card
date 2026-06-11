@@ -17,6 +17,7 @@ vi.mock('../../src/slices/ui', async (importOriginal) => {
     openBatchWateringDialog: vi.fn(),
     openIPMDialog: vi.fn(),
     openBatchTrainingDialog: vi.fn(),
+    deleteSelectedPlants: vi.fn(),
   };
 });
 
@@ -117,7 +118,7 @@ describe('GrowspaceGridCard', () => {
       { event: 'water-selected', spy: vi.mocked(uiSlice.openBatchWateringDialog).mockClear() },
       { event: 'training-selected', spy: vi.mocked(uiSlice.openBatchTrainingDialog).mockClear() },
       { event: 'ipm-selected', spy: vi.mocked(uiSlice.openIPMDialog).mockClear() },
-      { event: 'delete-selected', spy: vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants') },
+      { event: 'delete-selected', spy: vi.mocked(uiSlice.deleteSelectedPlants).mockClear() },
     ];
 
     for (const { event, spy } of handlers) {
@@ -234,9 +235,7 @@ describe('GrowspaceGridCard', () => {
     const waterSpy = vi.mocked(uiSlice.openBatchWateringDialog).mockClear();
     const ipmSpy = vi.mocked(uiSlice.openIPMDialog).mockClear();
     const trainingSpy = vi.mocked(uiSlice.openBatchTrainingDialog).mockClear();
-    const deleteSpy = vi
-      .spyOn(element.store.actions.ui, 'deleteSelectedPlants')
-      .mockResolvedValue(undefined as any);
+    const deleteSpy = vi.mocked(uiSlice.deleteSelectedPlants).mockClear();
     const deviceChangeSpy = vi
       .spyOn(element.store, 'handleDeviceChange')
       .mockImplementation(() => {});

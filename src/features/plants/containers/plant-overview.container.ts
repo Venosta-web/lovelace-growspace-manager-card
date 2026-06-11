@@ -36,7 +36,8 @@ import {
 } from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
 import { strainLibrary$ } from '../../../slices/strain';
-import { openDialog } from '../../../slices/ui';
+import { deletePlant as sliceDeletePlant } from '../../../slices/plant';
+import { openDialog, withToast } from '../../../slices/ui';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -1005,7 +1006,7 @@ export class PlantOverviewContainer extends LitElement {
 
   private _confirmDelete(): void {
     const plantId = this.plant.attributes?.plant_id || this.plant.entity_id.replace('sensor.', '');
-    this.store.actions.plant.delete(plantId);
+    void withToast(() => sliceDeletePlant(plantId), { errorPrefix: 'Failed to delete plant' });
     this._handleClose();
   }
 

@@ -10,6 +10,16 @@ import {
   openBatchPrintLabelsDialog,
   notification$,
 } from '../slices/ui';
+import { printLabel as slicePrintLabel } from '../slices/plant';
+
+vi.mock('../slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/plant')>();
+  return { ...actual, printLabel: vi.fn().mockResolvedValue(undefined) };
+});
+
+beforeEach(() => {
+  vi.mocked(slicePrintLabel).mockReset().mockResolvedValue(undefined);
+});
 
 // ---------------------------------------------------------------------------
 // openBatchPrintLabelsDialog action
@@ -300,7 +310,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.printLabel).not.toHaveBeenCalled();
+    expect(slicePrintLabel).not.toHaveBeenCalled();
   });
 
   it('performs warm-up call with preview:true before batch', async () => {
@@ -311,7 +321,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.printLabel).toHaveBeenNthCalledWith(1, {
+    expect(slicePrintLabel).toHaveBeenNthCalledWith(1, {
       plantId: 'plant-1',
       deviceId: 'image.printer_a_last_label_made',
       preview: true,
@@ -319,24 +329,16 @@ describe('BatchPrintLabelDialog – _submit', () => {
   });
 
   it('continues batch even when warm-up fails', async () => {
-    const mockStore = makeMockStore({
-      actions: {
-        ui: { toast: vi.fn() },
-        plant: {
-          printLabel: vi
-            .fn()
-            .mockRejectedValueOnce(new Error('warm-up error'))
-            .mockResolvedValue(undefined),
-        },
-      },
-    });
-    const el = createElement(mockStore);
+    vi.mocked(slicePrintLabel)
+      .mockRejectedValueOnce(new Error('warm-up error'))
+      .mockResolvedValue(undefined);
+    const el = createElement(makeMockStore());
     (el as any).dialogState = { plantIds: ['plant-1'] };
 
     await (el as any)._submit();
 
     // warm-up + 1 batch call
-    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(2);
+    expect(slicePrintLabel).toHaveBeenCalledTimes(2);
     expect(notification$.get()).toEqual(
       expect.objectContaining({ message: expect.stringContaining('1 label'), type: 'success' })
     );
@@ -351,7 +353,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
     await (el as any)._submit();
 
     // 1 warm-up + 3 copies × 2 plants = 7 total calls
-    expect(mockStore.actions.plant.printLabel).toHaveBeenCalledTimes(7);
+    expect(slicePrintLabel).toHaveBeenCalledTimes(7);
   });
 
   it('shows success toast when all prints succeed', async () => {
@@ -369,20 +371,13 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
   it('shows error toast when some prints fail', async () => {
     let callCount = 0;
-    const mockStore = makeMockStore({
-      actions: {
-        ui: { toast: vi.fn() },
-        plant: {
-          printLabel: vi.fn().mockImplementation(() => {
-            callCount++;
-            // warm-up succeeds, first batch print fails
-            if (callCount === 2) return Promise.reject(new Error('print error'));
-            return Promise.resolve(undefined);
-          }),
-        },
-      },
+    vi.mocked(slicePrintLabel).mockImplementation(() => {
+      callCount++;
+      // warm-up succeeds, first batch print fails
+      if (callCount === 2) return Promise.reject(new Error('print error'));
+      return Promise.resolve(undefined);
     });
-    const el = createElement(mockStore);
+    const el = createElement(makeMockStore());
     (el as any).dialogState = { plantIds: ['p1', 'p2'] };
 
     await (el as any)._submit();
@@ -423,7 +418,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    const batchCall = mockStore.actions.plant.printLabel.mock.calls[1];
+    const batchCall = vi.mocked(slicePrintLabel).mock.calls[1];
     expect(batchCall[0].deviceId).toBeUndefined();
   });
 
@@ -437,8 +432,8 @@ describe('BatchPrintLabelDialog – _submit', () => {
     await (el as any)._submit();
 
     // calls[0] is warm-up (preview:true), calls[1] and [2] are batch
-    const batchCall1 = mockStore.actions.plant.printLabel.mock.calls[1][0];
-    const batchCall2 = mockStore.actions.plant.printLabel.mock.calls[2][0];
+    const batchCall1 = vi.mocked(slicePrintLabel).mock.calls[1][0];
+    const batchCall2 = vi.mocked(slicePrintLabel).mock.calls[2][0];
     expect(batchCall1.sizeId).toBe('40x30');
     expect(batchCall1.density).toBe('high');
     expect(batchCall2.sizeId).toBe('40x30');
@@ -454,7 +449,7 @@ describe('BatchPrintLabelDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    const warmUpCall = mockStore.actions.plant.printLabel.mock.calls[0][0];
+    const warmUpCall = vi.mocked(slicePrintLabel).mock.calls[0][0];
     expect(warmUpCall.preview).toBe(true);
     expect(warmUpCall.sizeId).toBeUndefined();
     expect(warmUpCall.density).toBeUndefined();

@@ -56,6 +56,7 @@ import type { ActiveDialogState } from '../../store/ui/dialog-types';
 import { cancel } from '../grid-interaction';
 import { WSError } from '../../services/base-api';
 import { devices$, optimisticDeletedPlantIds$, plantToDeviceMap$ } from '../grid';
+import { deletePlant } from '../plant';
 
 // ---------------------------------------------------------------------------
 // Atoms (public)
@@ -361,6 +362,24 @@ export function selectAllPlantsInDevice(selectedDeviceId: string | null): void {
   });
 
   selectAllPlants(allIds);
+}
+
+/**
+ * Delete every plant in the current selection.
+ *
+ * UI orchestration over the Plant slice's `deletePlant` mutator (each call
+ * registers its own optimistic delete + undo). Clears the selection and exits
+ * edit mode afterwards. No-op when nothing is selected.
+ */
+export async function deleteSelectedPlants(): Promise<void> {
+  const ids = Array.from(selectedPlants$.get());
+  if (!ids.length) return;
+  const result = await withToast(() => Promise.all(ids.map((id) => deletePlant(id))), {
+    errorPrefix: 'Failed to delete plant',
+  });
+  if (result === undefined) return;
+  deselectPlants(ids);
+  setEditMode(false);
 }
 
 /** Open the plant overview dialog for a single plant. */

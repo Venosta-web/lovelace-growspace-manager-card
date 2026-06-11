@@ -4,6 +4,8 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { mdiClose, mdiLeaf } from '@mdi/js';
 import type { GrowspaceStore } from '../store/core/growspace-store';
+import { scorePlant } from '../slices/plant';
+import { withToast } from '../slices/ui';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { HarvestScoringDialogState } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
@@ -333,9 +335,13 @@ export class HarvestScoringDialog extends LitElement {
     try {
       if (mode === 'save') {
         if (!isScoringEmpty(this._sm)) {
-          await this.store.actions.plant.scorePhenotype(
-            plantId,
-            this._sm.tabs.scoring.draft as unknown as Record<string, number | null>
+          await withToast(
+            () =>
+              scorePlant(
+                plantId,
+                this._sm.tabs.scoring.draft as unknown as Record<string, number | null>
+              ),
+            { success: 'Scores saved', errorPrefix: 'Failed to save scores', rethrow: true }
           );
         }
         const metrics = parseMetrics(this._sm.tabs.metrics.draft);

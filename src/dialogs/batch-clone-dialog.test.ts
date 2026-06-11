@@ -7,6 +7,16 @@ import { BatchCloneDialog } from './batch-clone-dialog';
 import './batch-clone-dialog';
 import { setDevices } from '../slices/grid';
 import { __resetUiSliceForTests, openBatchCloneDialog, notification$ } from '../slices/ui';
+import { takeClone as sliceTakeClone } from '../slices/plant';
+
+vi.mock('../slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../slices/plant')>();
+  return { ...actual, takeClone: vi.fn().mockResolvedValue(undefined) };
+});
+
+beforeEach(() => {
+  vi.mocked(sliceTakeClone).mockReset().mockResolvedValue(undefined);
+});
 
 // ---------------------------------------------------------------------------
 // openBatchCloneDialog action
@@ -236,7 +246,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
+    expect(sliceTakeClone).not.toHaveBeenCalled();
   });
 
   it('does nothing when no target growspace is set', async () => {
@@ -247,7 +257,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
+    expect(sliceTakeClone).not.toHaveBeenCalled();
   });
 
   it('calls handleTakeClone once per selected plant', async () => {
@@ -259,7 +269,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.takeClone).toHaveBeenCalledTimes(2);
+    expect(sliceTakeClone).toHaveBeenCalledTimes(2);
   });
 
   it('passes numClones and targetGrowspaceId to handleTakeClone', async () => {
@@ -271,7 +281,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.takeClone).toHaveBeenCalledWith(
+    expect(sliceTakeClone).toHaveBeenCalledWith(
       expect.objectContaining({ attributes: expect.objectContaining({ plant_id: 'plant-1' }) }),
       3,
       'gs-2'
@@ -294,9 +304,8 @@ describe('BatchCloneDialog – _submit', () => {
 
   it('shows error toast when some clones fail', async () => {
     const mockStore = makeMockStore(['plant-1', 'plant-2']);
-    mockStore.actions.plant.takeClone = vi
-      .fn()
-      .mockResolvedValueOnce(true)
+    vi.mocked(sliceTakeClone)
+      .mockResolvedValueOnce(undefined)
       .mockRejectedValueOnce(new Error('clone error'));
     const el = createElement(mockStore);
     (el as any).dialogState = { plantIds: ['plant-1', 'plant-2'] };
@@ -318,7 +327,7 @@ describe('BatchCloneDialog – _submit', () => {
 
     await (el as any)._submit();
 
-    expect(mockStore.actions.plant.takeClone).not.toHaveBeenCalled();
+    expect(sliceTakeClone).not.toHaveBeenCalled();
     expect(notification$.get()).toEqual(
       expect.objectContaining({ message: expect.stringContaining('1 error'), type: 'error' })
     );

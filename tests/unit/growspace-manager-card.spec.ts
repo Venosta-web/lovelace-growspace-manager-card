@@ -48,6 +48,7 @@ vi.mock('../../src/slices/ui', async (importOriginal) => {
         openBatchTrainingDialog: vi.fn(),
         openBatchPrintLabelsDialog: vi.fn(),
         openBatchCloneDialog: vi.fn(),
+        deleteSelectedPlants: vi.fn(),
     };
 });
 
@@ -492,9 +493,8 @@ describe('GrowspaceManagerCard', () => {
         });
 
         it('should handle delete selected', () => {
-            const spy = vi.spyOn(element.store.actions.ui, 'deleteSelectedPlants');
             (element as any)._handleDeleteSelected();
-            expect(spy).toHaveBeenCalled();
+            expect(uiSliceMocks.deleteSelectedPlants).toHaveBeenCalled();
         });
 
         it('should handle transplant mode', async () => {

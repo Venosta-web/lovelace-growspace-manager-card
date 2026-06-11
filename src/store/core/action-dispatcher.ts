@@ -121,11 +121,6 @@ export class ActionDispatcher {
   public readonly ui = {
     handleKeyboardNavigation: (key: string) =>
       keyboardActions.handleKeyboardNavigation(this.ctx, key),
-    deleteSelectedPlants: async () => {
-      const ids = Array.from(this.ctx.ui.$selectedPlants.get());
-      if (!ids.length) return;
-      await plantActions.handleDeletePlant(this.ctx, ids);
-    },
     toggleEnvGraph: (metric: string) => {
       if (metric === 'crop_steering') {
         const gsId = this.ctx.grid.$selectedDevice.get();

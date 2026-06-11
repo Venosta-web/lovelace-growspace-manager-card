@@ -29,6 +29,7 @@ import {
   openBatchWateringDialog,
   openIPMDialog,
   openBatchTrainingDialog,
+  deleteSelectedPlants,
 } from '../slices/ui';
 
 @customElement('growspace-grid-card')
@@ -150,7 +151,7 @@ export class GrowspaceGridCard extends LitElement implements LovelaceCard {
   private _handleTrainingSelected = () => openBatchTrainingDialog();
   private _handleBatchAddPlants = () =>
     this.store.ui.setActiveDialog({ type: 'ADD_PLANTS', payload: {} });
-  private _handleDeleteSelected = () => void this.store.actions.ui.deleteSelectedPlants();
+  private _handleDeleteSelected = () => void deleteSelectedPlants();
   private _handleTransplantMode = () => {
     if (gridInteraction$.get().status === 'transplanting') {
       completeTransplant();

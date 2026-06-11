@@ -5,6 +5,15 @@ import { storeContext } from '../../../../../src/context';
 import { PlantActionsTab } from '../../../../../src/features/plants/components/plant-actions-tab';
 import type { ActionConfig } from '../../../../../src/features/plants/viewmodels/plant-overview.viewmodel';
 import type { PlantEntity } from '../../../../../src/types';
+import { scorePlant as sliceScorePlant } from '../../../../../src/slices/plant';
+
+vi.mock('../../../../../src/slices/plant', () => ({
+  scorePlant: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../../../src/slices/ui', () => ({
+  withToast: vi.fn((fn: () => Promise<unknown>) => fn()),
+}));
 
 if (!customElements.get('plant-actions-tab')) {
   customElements.define('plant-actions-tab', PlantActionsTab);
@@ -32,12 +41,9 @@ describe('plant-actions-tab', () => {
   ];
 
   beforeEach(() => {
+    vi.mocked(sliceScorePlant).mockReset().mockResolvedValue(undefined);
     mockStore = {
-      actions: {
-        plant: {
-          scorePhenotype: vi.fn().mockResolvedValue(undefined),
-        },
-      },
+      refreshData: vi.fn().mockResolvedValue(undefined),
     };
 
     mockPlant = {
@@ -265,9 +271,9 @@ describe('plant-actions-tab', () => {
     // Since we can't easily await the click's internal promise, 
     // we can wait until _savingScore becomes false.
     await vi.waitFor(() => !(el as any)._savingScore);
-    
-    expect((el as any)._showScoringForm).to.be.false;
-    expect(mockStore.actions.plant.scorePhenotype).toHaveBeenCalledWith('p123', {
+    await el.updateComplete;
+    await vi.waitFor(() => (el as any)._showScoringForm === false);
+    expect(sliceScorePlant).toHaveBeenCalledWith('p123', {
       vigor: 5,
       structure: 3,
       aroma: null,
@@ -278,7 +284,7 @@ describe('plant-actions-tab', () => {
 
   it('handles error during score saving', async () => {
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockStore.actions.plant.scorePhenotype.mockRejectedValue(new Error('API Error'));
+    vi.mocked(sliceScorePlant).mockRejectedValue(new Error('API Error'));
 
     const el = await fixture<PlantActionsTab>(html`
       <plant-actions-tab .availableActions=${mockActions} .plant=${mockPlant}></plant-actions-tab>
@@ -302,7 +308,7 @@ describe('plant-actions-tab', () => {
     await el.updateComplete;
     
     await (el as any)._savePhenotypeScore();
-    expect(mockStore.actions.plant.scorePhenotype).not.toHaveBeenCalled();
+    expect(sliceScorePlant).not.toHaveBeenCalled();
   });
 
   it('initializes scores with null if scores attribute is missing', async () => {

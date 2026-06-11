@@ -9,7 +9,8 @@ import '../features/shared/ui/printer-status-strip';
 import type { BatchPrintLabelsDialogState, LabelSizeId, PrintDensity } from '../lib/types/dialog';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
-import { showToast } from '../slices/ui';
+import { showToast, withToast } from '../slices/ui';
+import { printLabel as slicePrintLabel } from '../slices/plant';
 
 const LABEL_SIZES: { id: LabelSizeId; label: string }[] = [
   { id: '50x30', label: '50×30' },
@@ -162,7 +163,7 @@ export class BatchPrintLabelDialog extends LitElement {
     // Warm up Niimbot before batch printing — the first service call initializes the
     // printer session; without it all labels come out blank.
     try {
-      await this.store.actions.plant.printLabel({
+      await slicePrintLabel({
         plantId: plantIds[0],
         deviceId: this._selectedDeviceId || undefined,
         preview: true,
@@ -178,13 +179,21 @@ export class BatchPrintLabelDialog extends LitElement {
     for (let copy = 0; copy < this._copies; copy++) {
       for (const plantId of plantIds) {
         try {
-          await this.store.actions.plant.printLabel({
-            plantId,
-            deviceId: this._selectedDeviceId || undefined,
-            sizeId: this._sizeId,
-            density: this._density,
-            preview: false,
-          });
+          await withToast(
+            () =>
+              slicePrintLabel({
+                plantId,
+                deviceId: this._selectedDeviceId || undefined,
+                sizeId: this._sizeId,
+                density: this._density,
+                preview: false,
+              }),
+            {
+              success: 'Label printing command sent',
+              errorPrefix: 'Failed to print label',
+              rethrow: true,
+            }
+          );
         } catch (_e) {
           errors.push(plantId);
         }

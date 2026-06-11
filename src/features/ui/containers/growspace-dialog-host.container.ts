@@ -5,6 +5,11 @@ import { hassContext, storeContext, configContext } from '../../../lib/context';
 import {
   waterPlant as sliceWaterPlant,
   waterGrowspace as sliceWaterGrowspace,
+  addPlant as sliceAddPlant,
+  addPlants as sliceAddPlants,
+  updatePlant as sliceUpdatePlant,
+  deletePlant as sliceDeletePlant,
+  takeClone as sliceTakeClone,
 } from '../../../slices/plant';
 import { askGrowAdvice, analyzeAllGrowspaces } from '../../../slices/ai-insight';
 import {
@@ -25,6 +30,7 @@ import {
   deleteBreeder,
   updateStrainMeta,
   removeStrain as sliceRemoveStrain,
+  addStrain as sliceAddStrain,
   fetchStrainLibrary,
   normalizeStrainFormData,
 } from '../../../slices/strain';
@@ -44,7 +50,12 @@ import {
   openTrainingDialog,
   exportStrainLibrary,
   openStrainRecommendationDialog,
+  isEditMode$,
+  clearPlantSelection,
+  setEditMode,
+  deselectPlants,
 } from '../../../slices/ui';
+import { PlantUtils } from '../../../utils/plant-utils';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -60,6 +71,7 @@ import {
   NutrientPreset,
   NutrientInventory,
   GrowspaceManagerCardConfig,
+  AddPlantsDialogState,
 } from '../../../types';
 import type {
   VisionCheckupConfigEventDetail,
@@ -323,7 +335,7 @@ export class GrowspaceDialogHost extends LitElement {
         .targetGrowspaceId=${targetGrowspaceId}
         .siblingPlants=${selectedDeviceData?.plants || []}
         @close=${() => this._closeDialogIfActive('ADD_PLANT')}
-        @add-plant-submit=${(e: CustomEvent) => store.actions.plant.confirmAdd(e.detail)}
+        @add-plant-submit=${(e: CustomEvent) => this._handleConfirmAddPlant(e.detail)}
         @transplant-plant-submit=${(e: CustomEvent) => this._handleTransplant(e.detail)}
         @create-new-strain=${(e: CustomEvent) => this._handleStrainCreatedAtSource(e)}
         @data-changed=${() => this._handleDataChanged()}
@@ -356,21 +368,166 @@ export class GrowspaceDialogHost extends LitElement {
     veg_start: string;
   }) {
     if (!this.store) return;
-    try {
-      // Update plant position and growspace using dispatcher
-      await this.store.actions.plant.update(detail.plant_id, {
-        row: detail.new_row,
-        col: detail.new_col,
-        growspace_id: detail.target_growspace_id,
-        veg_start: detail.veg_start,
-      });
+    await withToast(
+      async () => {
+        await sliceUpdatePlant(detail.plant_id, {
+          row: detail.new_row,
+          col: detail.new_col,
+          growspace_id: detail.target_growspace_id,
+          veg_start: detail.veg_start,
+        });
+        closeDialog();
+        await this._handleDataChanged();
+      },
+      { success: 'Plant updated', errorPrefix: 'Failed to update plant' }
+    );
+  }
 
-      this.store.ui.closeDialog();
-      await this._handleDataChanged();
-    } catch (e: any) {
-      console.error('[DialogHost] Transplant failed:', e);
-      // Toast handles in dispatcher or action
+  /** Bulk-update a plant (or the current selection) from the overview dialog. */
+  private async _handleUpdatePlantFromDialog(state: {
+    plant: PlantEntity;
+    editedAttributes: Record<string, unknown>;
+    selectedPlantIds?: string[];
+    activeTab?: string;
+  }): Promise<void> {
+    const { plant, editedAttributes, selectedPlantIds } = state;
+    const plantId = plant.attributes?.plant_id || plant.entity_id.replace('sensor.', '');
+    const targetIds =
+      selectedPlantIds && selectedPlantIds.length > 0 ? selectedPlantIds : [plantId];
+    const isBulkEdit = targetIds.length > 1;
+    const payloadTemplate = PlantUtils.mapDialogToApiPayload(editedAttributes, isBulkEdit);
+
+    await withToast(
+      async () => {
+        await Promise.all(targetIds.map((id) => sliceUpdatePlant(id, payloadTemplate)));
+        closeDialog();
+        await this._handleDataChanged();
+        if (isEditMode$.get()) {
+          clearPlantSelection();
+          setEditMode(false);
+        }
+      },
+      { errorPrefix: 'Failed to update plant(s)' }
+    );
+  }
+
+  /** Delete a plant (or array of plants) from the overview dialog. */
+  private async _handleDeletePlant(plantId: string | string[]): Promise<void> {
+    const ids = Array.isArray(plantId) ? plantId : [plantId];
+    const result = await withToast(
+      () => Promise.all(ids.map((id) => sliceDeletePlant(id))),
+      { errorPrefix: 'Failed to delete plant' }
+    );
+    if (result === undefined) return;
+    deselectPlants(ids);
+    closeDialog();
+    await this._handleDataChanged();
+  }
+
+  /** Add a single plant from the ADD_PLANT dialog, optionally adding the strain to the library. */
+  private async _handleConfirmAddPlant(detail: {
+    row: number;
+    col: number;
+    strain?: string;
+    phenotype?: string;
+    veg_start?: string;
+    flower_start?: string;
+    seedling_start?: string;
+    mother_start?: string;
+    clone_start?: string;
+    dry_start?: string;
+    cure_start?: string;
+    addToLibrary?: boolean;
+  }): Promise<void> {
+    if (!detail.strain) return;
+    const selectedDevice = this.store?.grid.$selectedDevice.get();
+    if (!selectedDevice) {
+      showToast('No growspace selected', 'error');
+      return;
     }
+
+    await withToast(
+      async () => {
+        if (detail.addToLibrary) {
+          try {
+            await sliceAddStrain(
+              normalizeStrainFormData({ strain: detail.strain, phenotype: detail.phenotype })
+            );
+            await fetchStrainLibrary();
+            showToast(`Added ${detail.strain} ${detail.phenotype} to library`, 'success');
+          } catch (e) {
+            console.error('Failed to add strain to library:', e);
+            showToast('Failed to add strain to library, conducting plant addition', 'info');
+          }
+        }
+        await sliceAddPlant({
+          growspace_id: selectedDevice,
+          row: detail.row,
+          col: detail.col,
+          strain: detail.strain!,
+          phenotype: detail.phenotype,
+          veg_start: detail.veg_start,
+          flower_start: detail.flower_start,
+          seedling_start: detail.seedling_start,
+          mother_start: detail.mother_start,
+          clone_start: detail.clone_start,
+          dry_start: detail.dry_start,
+          cure_start: detail.cure_start,
+        });
+        closeDialog();
+        await this._handleDataChanged();
+      },
+      { success: 'Plant added successfully', errorPrefix: 'Failed to add plant' }
+    );
+  }
+
+  /** Batch-add plants from the ADD_PLANTS dialog, optionally seeding strain variants into the library. */
+  private async _handleAddBatch(detail: AddPlantsDialogState): Promise<void> {
+    const selectedDevice = this.store?.grid.$selectedDevice.get();
+    if (!selectedDevice) {
+      showToast('No growspace selected', 'error');
+      return;
+    }
+
+    if (detail.addToLibrary) {
+      const amount = detail.amount || 1;
+      const startNumber = detail.start_number || 1;
+      const promises: Promise<unknown>[] = [];
+      for (let i = 0; i < amount; i++) {
+        const currentNumber = startNumber + i;
+        const phenoName = detail.phenotype
+          ? `${detail.phenotype} #${currentNumber}`
+          : `Strain #${currentNumber}`;
+        if (detail.strain) {
+          promises.push(
+            sliceAddStrain(normalizeStrainFormData({ strain: detail.strain, phenotype: phenoName }))
+          );
+        }
+      }
+      try {
+        await Promise.all(promises);
+        await fetchStrainLibrary();
+        showToast(`Added ${amount} strain variants to library`, 'success');
+      } catch (e) {
+        console.error('Failed to add strains to library:', e);
+        throw e instanceof Error ? e : new Error('Failed to add strains to library');
+      }
+    }
+
+    const { addToLibrary: _addToLibrary, ...apiPayload } = detail;
+    await withToast(
+      async () => {
+        await sliceAddPlants({
+          ...apiPayload,
+          growspace_id: selectedDevice,
+        } as Parameters<typeof sliceAddPlants>[0]);
+        closeDialog();
+        await this._handleDataChanged();
+      },
+      // rethrow so the @add-plants-submit handler's catch can surface the inline
+      // library error (_addPlantsLibraryError) and keep the dialog open.
+      { success: 'Batch plants added successfully', errorPrefix: 'Failed to add plants', rethrow: true }
+    );
   }
 
   private _handleOpenStrainEditor(e: CustomEvent) {
@@ -463,7 +620,7 @@ export class GrowspaceDialogHost extends LitElement {
         @add-plants-submit=${async (e: CustomEvent) => {
           this._addPlantsLibraryError = '';
           try {
-            await this.store?.actions.plant.addBatch(e.detail);
+            await this._handleAddBatch(e.detail);
           } catch (err) {
             this._addPlantsLibraryError = err instanceof Error ? err.message : 'Failed to add strains to library';
           }
@@ -499,13 +656,13 @@ export class GrowspaceDialogHost extends LitElement {
         .editedAttributes=${dialogState.editedAttributes}
         @close=${() => this._closeDialogIfActive('PLANT_OVERVIEW')}
         @update-plant=${(e: CustomEvent) =>
-        this.store?.actions.plant.updateFromDialog({
+        this._handleUpdatePlantFromDialog({
           plant: dialogState.plant,
           editedAttributes: e.detail,
           selectedPlantIds: dialogState.selectedPlantIds,
           activeTab: dialogState.activeTab || 'dashboard',
         })}
-        @delete-plant=${(e: CustomEvent) => this.store?.actions.plant.delete(e.detail.plantId)}
+        @delete-plant=${(e: CustomEvent) => this._handleDeletePlant(e.detail.plantId)}
         @harvest-plant=${(e: CustomEvent) => {
         openDialog({
           type: 'HARVEST_SCORING',
@@ -514,7 +671,10 @@ export class GrowspaceDialogHost extends LitElement {
       }}
         @finish-drying=${(e: CustomEvent) => this.store?.actions.plant.finishDrying(e.detail.plant)}
         @take-clone=${(e: CustomEvent) =>
-        this.store?.actions.plant.takeClone(e.detail.plant, e.detail.numClones)}
+        withToast(() => sliceTakeClone(e.detail.plant, e.detail.numClones), {
+          success: `Taking ${e.detail.numClones || 1} clone${(e.detail.numClones || 1) > 1 ? 's' : ''}...`,
+          errorPrefix: 'Failed to take clone',
+        })}
         @move-clone=${(e: CustomEvent) =>
         this.store?.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
         @open-watering=${(e: CustomEvent) =>
@@ -1362,15 +1522,17 @@ export class GrowspaceDialogHost extends LitElement {
         @take-clone-submit=${async (e: CustomEvent) => {
         const { numClones, targetGrowspaceId } = e.detail;
         try {
-          await this.store?.actions.plant.takeClone(
-            dialogState.sourcePlant,
-            numClones,
-            targetGrowspaceId
+          await withToast(
+            () => sliceTakeClone(dialogState.sourcePlant, numClones, targetGrowspaceId),
+            {
+              success: `Taking ${numClones || 1} clone${(numClones || 1) > 1 ? 's' : ''}...`,
+              errorPrefix: 'Failed to take clone',
+              rethrow: true,
+            }
           );
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] Take clone failed:', e);
-          showToast(`Error: ${e.message || e}`, 'error');
         }
       }}
         @close=${() => this._closeDialogIfActive('TAKE_CLONE')}

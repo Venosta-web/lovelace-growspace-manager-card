@@ -178,27 +178,6 @@ describe('plant.batchAction', () => {
   });
 });
 
-// ─── ui.deleteSelectedPlants ─────────────────────────────────────────────────
-
-describe('ui.deleteSelectedPlants', () => {
-  it('does nothing when selection is empty', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ui.deleteSelectedPlants();
-    // handleDeletePlant calls dataService.removePlant — should not happen with empty selection
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removePlant).not.toHaveBeenCalled();
-  });
-
-  it('calls handleDeletePlant with selected ids', async () => {
-    const { dispatcher, ui, dataService } = makeStore();
-    ui.$selectedPlants.set(new Set(['p1', 'p2']));
-    await dispatcher.ui.deleteSelectedPlants();
-    // handleDeletePlant calls dataService.removePlant for each id
-    const removePlant = (dataService as Record<string, ReturnType<typeof vi.fn>>).removePlant;
-    expect(removePlant).toHaveBeenCalledWith('p1');
-    expect(removePlant).toHaveBeenCalledWith('p2');
-  });
-});
-
 // ─── ui.toggleEnvGraph ───────────────────────────────────────────────────────
 
 describe('ui.toggleEnvGraph', () => {
