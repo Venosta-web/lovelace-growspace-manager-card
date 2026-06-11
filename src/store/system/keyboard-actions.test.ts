@@ -1,13 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { atom } from 'nanostores';
-import * as plantActions from '../plant/plant-actions';
+import * as plantSlice from '../../slices/plant';
+import * as uiSlice from '../../slices/ui';
 import { select } from '../../slices/grid-interaction';
 import type { ActionContext } from '../core/action-context';
-import { setDevices, devices$, optimisticDeletedPlantIds$ } from '../../slices/grid';
+import { setDevices, optimisticDeletedPlantIds$ } from '../../slices/grid';
 import { GrowspaceUIStore } from '../ui/ui-store';
 import type { PlantEntity } from '../../types';
 import { handleKeyboardNavigation } from './keyboard-actions';
-vi.mock('../plant/plant-actions', () => ({ handleDeletePlant: vi.fn() }));
+vi.mock('../../slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../slices/plant')>();
+  return { ...actual, deletePlant: vi.fn().mockResolvedValue(undefined) };
+});
+vi.mock('../../slices/ui', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../slices/ui')>();
+  return { ...actual, deleteSelectedPlants: vi.fn().mockResolvedValue(undefined) };
+});
 vi.mock('../../slices/grid-interaction', () => ({ select: vi.fn(), cancel: vi.fn() }));
 
 function makePlant(id: string): PlantEntity {
@@ -135,7 +143,7 @@ describe('handleKeyboardNavigation — Delete / Backspace', () => {
 
     handleKeyboardNavigation(ctx, 'Delete');
 
-    expect(plantActions.handleDeletePlant).toHaveBeenCalledWith(ctx, 'p1');
+    expect(vi.mocked(plantSlice.deletePlant)).toHaveBeenCalledWith('p1');
   });
 
   it('Backspace with a focused plant calls handleDeletePlant with that plant id', () => {
@@ -144,7 +152,7 @@ describe('handleKeyboardNavigation — Delete / Backspace', () => {
 
     handleKeyboardNavigation(ctx, 'Backspace');
 
-    expect(plantActions.handleDeletePlant).toHaveBeenCalledWith(ctx, 'p1');
+    expect(vi.mocked(plantSlice.deletePlant)).toHaveBeenCalledWith('p1');
   });
 
   it('Delete with selected plants and no focus deletes all selected ids', () => {
@@ -154,10 +162,7 @@ describe('handleKeyboardNavigation — Delete / Backspace', () => {
 
     handleKeyboardNavigation(ctx, 'Delete');
 
-    expect(plantActions.handleDeletePlant).toHaveBeenCalledWith(
-      ctx,
-      expect.arrayContaining(['p1', 'p2'])
-    );
+    expect(vi.mocked(uiSlice.deleteSelectedPlants)).toHaveBeenCalled();
   });
 });
 
@@ -172,7 +177,8 @@ describe('handleKeyboardNavigation — empty plant list', () => {
 
     expect(ctx.ui.$focusedPlantIndex.get()).toBe(-1);
     expect(select).not.toHaveBeenCalled();
-    expect(plantActions.handleDeletePlant).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.deletePlant)).not.toHaveBeenCalled();
+    expect(vi.mocked(uiSlice.deleteSelectedPlants)).not.toHaveBeenCalled();
   });
 });
 
@@ -232,7 +238,8 @@ describe('handleKeyboardNavigation — Delete guard branches', () => {
 
     handleKeyboardNavigation(ctx, 'Delete');
 
-    expect(plantActions.handleDeletePlant).not.toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.deletePlant)).not.toHaveBeenCalled();
+    expect(vi.mocked(uiSlice.deleteSelectedPlants)).not.toHaveBeenCalled();
   });
 
   it('Delete falls back to entity_id when focused plant has no plant_id', () => {
@@ -245,6 +252,6 @@ describe('handleKeyboardNavigation — Delete guard branches', () => {
 
     handleKeyboardNavigation(ctx, 'Delete');
 
-    expect(plantActions.handleDeletePlant).toHaveBeenCalledWith(ctx, 'sensor.fallback');
+    expect(vi.mocked(plantSlice.deletePlant)).toHaveBeenCalledWith('sensor.fallback');
   });
 });

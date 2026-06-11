@@ -5,8 +5,8 @@
 
 import { PlantEntity } from '../../types';
 import { ActionContext } from '../core/action-context';
-import { exitEditMode } from '../../slices/ui';
-import * as plantActions from '../plant/plant-actions';
+import { exitEditMode, deleteSelectedPlants, withToast } from '../../slices/ui';
+import { deletePlant as sliceDeletePlant } from '../../slices/plant';
 import { select } from '../../slices/grid-interaction';
 import { devices$, optimisticDeletedPlantIds$ } from '../../slices/grid';
 
@@ -66,19 +66,11 @@ export function handleKeyboardNavigation(ctx: ActionContext, key: string): void 
     case 'Backspace':
       if (currentIndex >= 0 && currentIndex < plants.length) {
         const focusedPlant = plants[currentIndex];
-
-        // logic in plant-actions implies we pass IDs.
-        // In plantActions.handleDeletePlant, it expects string or string[].
-        // But in original keyboard-actions it passed entity_id. Let's check plant type.
-        // Looking at getVisiblePlants above, plants are PlantEntity.
-        // PlantEntity has entity_id and attributes. attributes has plant_id.
-        // The handleDeletePlant in plant-actions checks for plant_id or entity_id.
-        // Let's pass the ID we can find.
         const idToDelete = focusedPlant.attributes.plant_id || focusedPlant.entity_id;
-        plantActions.handleDeletePlant(ctx, idToDelete);
+        void withToast(() => sliceDeletePlant(idToDelete), { errorPrefix: 'Failed to delete plant' });
       } else if (ctx.ui.$selectedPlants.get().size > 0) {
-        // If multiple plants are selected, delete them
-        plantActions.handleDeletePlant(ctx, Array.from(ctx.ui.$selectedPlants.get()));
+        // If multiple plants are selected, delete them all (clears selection + exits edit mode).
+        void deleteSelectedPlants();
       }
       break;
   }
