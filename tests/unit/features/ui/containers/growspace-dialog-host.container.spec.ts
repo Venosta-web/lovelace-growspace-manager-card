@@ -68,6 +68,7 @@ vi.mock('../../../../../src/slices/nutrient', async (importOriginal) => {
         fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
         fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
         fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+        updateNutrientStock: vi.fn().mockResolvedValue(true),
     };
 });
 
@@ -710,7 +711,7 @@ describe('GrowspaceDialogHostContainer', () => {
         dialog?.dispatchEvent(new CustomEvent('update-stock', {
             detail: { id: 'n1', name: 'Nitrogen', current_ml: 200, initial_ml: 500 }
         }));
-        expect(mockStore.actions.library.updateNutrientStock).toHaveBeenCalledWith('n1', 'Nitrogen', 200, 500);
+        expect(vi.mocked(nutrientSlice.updateNutrientStock)).toHaveBeenCalledWith('n1', 'Nitrogen', 200, 500);
     });
 
     it('should handle @add-stock on nutrient-inventory dialog', async () => {
@@ -722,7 +723,7 @@ describe('GrowspaceDialogHostContainer', () => {
         dialog?.dispatchEvent(new CustomEvent('add-stock', {
             detail: { id: '', name: 'NewNutrient', current_ml: 300, initial_ml: 1000 }
         }));
-        expect(mockStore.actions.library.updateNutrientStock).toHaveBeenCalledWith(
+        expect(vi.mocked(nutrientSlice.updateNutrientStock)).toHaveBeenCalledWith(
             expect.stringContaining('nutrient_'), 'NewNutrient', 300, 1000
         );
     });
