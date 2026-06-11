@@ -45,6 +45,7 @@ import {
   removeEnvironment as sliceRemoveEnvironment,
 } from '../../../slices/growspace';
 import {
+  activeDialog$,
   withToast,
   openDialog,
   closeDialog,
@@ -84,6 +85,7 @@ import {
   applyIPM,
   saveIPMPreset,
   removeIPMPreset,
+  fetchNutrientPresets,
   fetchIPMPresets,
   fetchNutrientInventory,
 } from '../../../slices/nutrient';
@@ -141,6 +143,8 @@ export class GrowspaceDialogHost extends LitElement {
   private _seedBatchesController!: StoreController<readonly SeedBatch[]>;
   private _pollinationEventsController!: StoreController<readonly PollinationEvent[]>;
   private _controllersInitialized = false;
+  private _dialogPrefetchUnsub?: () => void;
+  private _lastPrefetchedDialogType: ActiveDialogState['type'] = 'NONE';
   private _dataChangeTimeout?: any;
   private _geneticsLoaded = false;
   @state() private _addPlantsLibraryError = '';
@@ -150,6 +154,25 @@ export class GrowspaceDialogHost extends LitElement {
     if (this.store) {
       this._initControllers();
     }
+    this._subscribeDialogPrefetch();
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._dialogPrefetchUnsub?.();
+    this._dialogPrefetchUnsub = undefined;
+  }
+
+  /**
+   * Subscribe the lazy-on-open prefetch to the active-dialog atom. Idempotent —
+   * safe to call from both `_initControllers` (first mount) and
+   * `connectedCallback` (re-attach after a disconnect unsubscribed it).
+   */
+  private _subscribeDialogPrefetch(): void {
+    if (this._dialogPrefetchUnsub) return;
+    this._dialogPrefetchUnsub = activeDialog$.subscribe((dialog) =>
+      this._prefetchDialogData(dialog.type)
+    );
   }
 
   protected willUpdate(changed: PropertyValues): void {
@@ -173,7 +196,39 @@ export class GrowspaceDialogHost extends LitElement {
     this._dialogHostController = new StoreController(this, this.store.$dialogHostState);
     this._seedBatchesController = new StoreController(this, seedBatches$);
     this._pollinationEventsController = new StoreController(this, pollinationEvents$);
+
+    // Lazy-on-open chokepoint (ADR-0017): the dialog-host is the single
+    // subscriber/render point for every dialog, so fetching dialog-only data
+    // when the active dialog type changes catches all entry paths (header,
+    // plant-overview, batch openers) regardless of how the dialog was opened.
+    this._subscribeDialogPrefetch();
     this._controllersInitialized = true;
+  }
+
+  /**
+   * Fetch the data a dialog reads, on transition into that dialog. Atoms cache
+   * for the session; errors are swallowed so a failed fetch degrades the dialog
+   * to empty rather than surfacing a toast (matching the legacy fetch behavior).
+   */
+  private _prefetchDialogData(type: ActiveDialogState['type']): void {
+    if (type === this._lastPrefetchedDialogType) return;
+    this._lastPrefetchedDialogType = type;
+    switch (type) {
+      case 'NUTRIENTS':
+      case 'WATERING':
+        fetchNutrientPresets().catch(() => undefined);
+        fetchNutrientInventory().catch(() => undefined);
+        break;
+      case 'NUTRIENT_PRESETS':
+        fetchNutrientPresets().catch(() => undefined);
+        break;
+      case 'NUTRIENT_INVENTORY':
+        fetchNutrientInventory().catch(() => undefined);
+        break;
+      case 'IPM':
+        fetchIPMPresets().catch(() => undefined);
+        break;
+    }
   }
 
   render() {

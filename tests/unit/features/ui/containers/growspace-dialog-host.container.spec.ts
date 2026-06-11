@@ -41,6 +41,7 @@ import {
     harvestSeeds as sliceHarvestSeeds,
 } from '../../../../../src/slices/genetics';
 import * as uiSlice from '../../../../../src/slices/ui';
+import * as nutrientSlice from '../../../../../src/slices/nutrient';
 
 // The host now calls slices/ui orchestration mutators directly; mock those the
 // store-action assertions used to target, preserving the rest of the slice.
@@ -54,6 +55,19 @@ vi.mock('../../../../../src/slices/ui', async (importOriginal) => {
         openTrainingDialog: vi.fn(),
         exportStrainLibrary: vi.fn(),
         openStrainRecommendationDialog: vi.fn(),
+    };
+});
+
+// The host fetches dialog-only nutrient data lazily on dialog open (ADR-0017);
+// spy the fetchers, preserving the rest of the slice (full mock — the host also
+// imports applyIPM/saveIPMPreset/removeIPMPreset from here).
+vi.mock('../../../../../src/slices/nutrient', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../../../src/slices/nutrient')>();
+    return {
+        ...actual,
+        fetchNutrientPresets: vi.fn().mockResolvedValue(undefined),
+        fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
+        fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
     };
 });
 
@@ -2910,6 +2924,73 @@ describe('GrowspaceDialogHostContainer', () => {
                 await element._handleWateringSubmit(event, { mode: 'plant', plantIds: undefined, plant_id: undefined });
                 expect(sliceWaterGrowspace).not.toHaveBeenCalled();
             });
+        });
+    });
+
+    describe('lazy-on-open dialog prefetch (ADR-0017)', () => {
+        // The host subscribes to the global active-dialog atom; driving the
+        // transition handler directly keeps each assertion isolated from the
+        // other still-connected fixture instances that share that singleton.
+        const prefetch = (type: string) => (element as any)._prefetchDialogData(type);
+
+        beforeEach(() => {
+            (element as any)._lastPrefetchedDialogType = 'NONE';
+            vi.mocked(nutrientSlice.fetchNutrientPresets).mockClear();
+            vi.mocked(nutrientSlice.fetchIPMPresets).mockClear();
+            vi.mocked(nutrientSlice.fetchNutrientInventory).mockClear();
+        });
+
+        it('NUTRIENTS dialog fetches presets + inventory, not IPM', () => {
+            prefetch('NUTRIENTS');
+            expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalledOnce();
+            expect(nutrientSlice.fetchNutrientInventory).toHaveBeenCalledOnce();
+            expect(nutrientSlice.fetchIPMPresets).not.toHaveBeenCalled();
+        });
+
+        it('WATERING dialog fetches presets + inventory', () => {
+            prefetch('WATERING');
+            expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalledOnce();
+            expect(nutrientSlice.fetchNutrientInventory).toHaveBeenCalledOnce();
+        });
+
+        it('NUTRIENT_PRESETS dialog fetches only presets', () => {
+            prefetch('NUTRIENT_PRESETS');
+            expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalledOnce();
+            expect(nutrientSlice.fetchNutrientInventory).not.toHaveBeenCalled();
+        });
+
+        it('NUTRIENT_INVENTORY dialog fetches only inventory', () => {
+            prefetch('NUTRIENT_INVENTORY');
+            expect(nutrientSlice.fetchNutrientInventory).toHaveBeenCalledOnce();
+            expect(nutrientSlice.fetchNutrientPresets).not.toHaveBeenCalled();
+        });
+
+        it('IPM dialog fetches only IPM presets', () => {
+            prefetch('IPM');
+            expect(nutrientSlice.fetchIPMPresets).toHaveBeenCalledOnce();
+            expect(nutrientSlice.fetchNutrientPresets).not.toHaveBeenCalled();
+            expect(nutrientSlice.fetchNutrientInventory).not.toHaveBeenCalled();
+        });
+
+        it('an unrelated dialog triggers no nutrient fetch', () => {
+            prefetch('CONFIG');
+            expect(nutrientSlice.fetchNutrientPresets).not.toHaveBeenCalled();
+            expect(nutrientSlice.fetchNutrientInventory).not.toHaveBeenCalled();
+            expect(nutrientSlice.fetchIPMPresets).not.toHaveBeenCalled();
+        });
+
+        it('does not refetch when the same dialog type is re-entered', () => {
+            prefetch('NUTRIENTS');
+            prefetch('NUTRIENTS');
+            expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalledOnce();
+        });
+
+        it('setting the active-dialog atom drives the prefetch end to end', () => {
+            uiSlice.activeDialog$.set({ type: 'NONE' });
+            vi.mocked(nutrientSlice.fetchNutrientPresets).mockClear();
+            uiSlice.activeDialog$.set({ type: 'NUTRIENTS', payload: {} });
+            // Many fixture instances share the singleton; assert it fired, not how often.
+            expect(nutrientSlice.fetchNutrientPresets).toHaveBeenCalled();
         });
     });
 });

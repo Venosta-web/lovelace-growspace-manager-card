@@ -90,10 +90,10 @@ export class GrowspaceManagerCard extends LitElement implements LovelaceCard {
       fetchAiStatus();
     }
     this.store.initializeSelectedDevice(this._config);
+    // Strain library is consumed eagerly by the main grid, so it stays a boot
+    // fetch (ADR-0017). Nutrient presets, IPM presets, and nutrient inventory
+    // are dialog-only and now fetch lazily on dialog open (header container).
     this.store.actions.library.fetchStrains();
-    this.store.actions.library.fetchNutrientPresets();
-    this.store.actions.library.fetchIPMPresets();
-    this.store.actions.library.fetchNutrientInventory();
 
     // Check for deep link
     this._checkDeepLink();
