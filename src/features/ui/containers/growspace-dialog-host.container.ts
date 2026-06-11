@@ -10,6 +10,8 @@ import {
   updatePlant as sliceUpdatePlant,
   deletePlant as sliceDeletePlant,
   takeClone as sliceTakeClone,
+  movePlantToGrowspace as sliceMovePlantToGrowspace,
+  movePlantToNextStage as sliceMovePlantToNextStage,
 } from '../../../slices/plant';
 import { askGrowAdvice, analyzeAllGrowspaces } from '../../../slices/ai-insight';
 import {
@@ -424,6 +426,26 @@ export class GrowspaceDialogHost extends LitElement {
     await this._handleDataChanged();
   }
 
+  /** Advance a plant to its next lifecycle stage (finish-drying / harvest flow). */
+  private async _handleAdvancePlantStage(plant: PlantEntity): Promise<void> {
+    const target = await withToast(() => sliceMovePlantToNextStage(plant), {
+      errorPrefix: 'Failed to move plant',
+    });
+    if (target) {
+      showToast(`Plant moved to ${target}`, 'success');
+      closeDialog();
+      this._handleDataChanged();
+    }
+  }
+
+  /** Transplant a plant to a different growspace (move-clone event). */
+  private async _handleMovePlant(plant: PlantEntity, targetGrowspace: string): Promise<void> {
+    await withToast(() => sliceMovePlantToGrowspace(plant, targetGrowspace), {
+      errorPrefix: 'Failed to move plant',
+    });
+    this._handleDataChanged();
+  }
+
   /** Add a single plant from the ADD_PLANT dialog, optionally adding the strain to the library. */
   private async _handleConfirmAddPlant(detail: {
     row: number;
@@ -669,14 +691,14 @@ export class GrowspaceDialogHost extends LitElement {
           payload: { plant: e.detail.plant },
         });
       }}
-        @finish-drying=${(e: CustomEvent) => this.store?.actions.plant.finishDrying(e.detail.plant)}
+        @finish-drying=${(e: CustomEvent) => this._handleAdvancePlantStage(e.detail.plant)}
         @take-clone=${(e: CustomEvent) =>
         withToast(() => sliceTakeClone(e.detail.plant, e.detail.numClones), {
           success: `Taking ${e.detail.numClones || 1} clone${(e.detail.numClones || 1) > 1 ? 's' : ''}...`,
           errorPrefix: 'Failed to take clone',
         })}
         @move-clone=${(e: CustomEvent) =>
-        this.store?.actions.plant.move(e.detail.plant, e.detail.targetGrowspace)}
+        this._handleMovePlant(e.detail.plant, e.detail.targetGrowspace)}
         @open-watering=${(e: CustomEvent) =>
         openDialog({
           type: 'WATERING',

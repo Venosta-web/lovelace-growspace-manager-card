@@ -10,6 +10,8 @@ import {
     updatePlant as sliceUpdatePlant,
     deletePlant as sliceDeletePlant,
     takeClone as sliceTakeClone,
+    movePlantToGrowspace as sliceMovePlantToGrowspace,
+    movePlantToNextStage as sliceMovePlantToNextStage,
 } from '../../../../../src/slices/plant';
 import { hassCall, callService } from '../../../../../src/services/hass-call';
 import { notification$ } from '../../../../../src/slices/ui';
@@ -85,6 +87,7 @@ vi.mock('../../../../../src/slices/plant', () => ({
     printLabel: vi.fn(), scorePlant: vi.fn(), saveHarvestMetrics: vi.fn(),
     logDryingWeight: vi.fn(), logMoistureReading: vi.fn(), setVisualTag: vi.fn(),
     movePlantToGrowspace: vi.fn(),
+    movePlantToNextStage: vi.fn().mockResolvedValue('dry'),
 }));
 
 vi.mock('../../../../../src/slices/ai-insight', async (importOriginal) => {
@@ -2089,7 +2092,7 @@ describe('GrowspaceDialogHostContainer', () => {
             await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
             const dialog = element.shadowRoot?.querySelector('plant-overview-container');
             dialog?.dispatchEvent(new CustomEvent('finish-drying', { detail: { plant: { entity_id: 'p1' } } }));
-            expect(mockStore.actions.plant.finishDrying).toHaveBeenCalled();
+            expect(vi.mocked(sliceMovePlantToNextStage)).toHaveBeenCalled();
         });
 
         it('should handle @take-clone on PLANT_OVERVIEW dialog', async () => {
@@ -2103,7 +2106,7 @@ describe('GrowspaceDialogHostContainer', () => {
             await openDialog('PLANT_OVERVIEW', { plant: { entity_id: 'p1', attributes: {} }, editedAttributes: {} });
             const dialog = element.shadowRoot?.querySelector('plant-overview-container');
             dialog?.dispatchEvent(new CustomEvent('move-clone', { detail: { plant: { entity_id: 'p1' }, targetGrowspace: 'g2' } }));
-            expect(mockStore.actions.plant.move).toHaveBeenCalled();
+            expect(vi.mocked(sliceMovePlantToGrowspace)).toHaveBeenCalled();
         });
 
         it('should handle @open-watering on PLANT_OVERVIEW dialog', async () => {

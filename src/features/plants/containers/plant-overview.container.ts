@@ -36,8 +36,12 @@ import {
 } from '../../../types';
 import { fetchPlantEvents, fetchGrowspaceEvents } from '../../../slices/logbook';
 import { strainLibrary$ } from '../../../slices/strain';
-import { deletePlant as sliceDeletePlant } from '../../../slices/plant';
-import { openDialog, withToast } from '../../../slices/ui';
+import {
+  deletePlant as sliceDeletePlant,
+  movePlantToGrowspace as sliceMovePlantToGrowspace,
+  movePlantToNextStage as sliceMovePlantToNextStage,
+} from '../../../slices/plant';
+import { openDialog, showToast, withToast } from '../../../slices/ui';
 import { dialogStyles } from '../../../styles/dialog.styles';
 import {
   createStablePlantOverviewViewModel,
@@ -1050,12 +1054,27 @@ export class PlantOverviewContainer extends LitElement {
       // Close the overview when opening the scoring dialog to keep flow clean
       this._handleClose();
     } else {
-      this.store.actions.plant.harvest(this.plant);
+      void this._advancePlantStage();
     }
   }
 
   private _handleFinishDrying(): void {
-    this.store.actions.plant.finishDrying(this.plant);
+    void this._advancePlantStage();
+  }
+
+  /**
+   * Advance the plant to its next lifecycle stage via the Plant slice, surfacing
+   * the result as a toast and refreshing the grid behind the (now closed) dialog.
+   */
+  private async _advancePlantStage(): Promise<void> {
+    const target = await withToast(() => sliceMovePlantToNextStage(this.plant), {
+      errorPrefix: 'Failed to move plant',
+    });
+    if (target) {
+      showToast(`Plant moved to ${target}`, 'success');
+      this._handleClose();
+      void this.store.refreshData();
+    }
   }
 
   private _handleHarvestAdvance(e: CustomEvent): void {
@@ -1069,7 +1088,13 @@ export class PlantOverviewContainer extends LitElement {
   private _handleMovePlantEvent(e: CustomEvent): void {
     const { targetId } = e.detail;
     if (!targetId) return;
-    this.store.actions.plant.move(this.plant, targetId);
+    const plant = this.plant;
+    void (async () => {
+      await withToast(() => sliceMovePlantToGrowspace(plant, targetId), {
+        errorPrefix: 'Failed to move plant',
+      });
+      await this.store.refreshData();
+    })();
     this._handleClose();
   }
 

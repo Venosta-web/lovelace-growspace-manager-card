@@ -10,13 +10,20 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HarvestScoringDialog } from '../../../src/dialogs/harvest-scoring-dialog';
 import '../../../src/dialogs/harvest-scoring-dialog';
 import { aPlant, aHass } from '../../fixtures';
-import { scorePlant as sliceScorePlant } from '../../../src/slices/plant';
+import {
+  scorePlant as sliceScorePlant,
+  movePlantToNextStage as sliceMovePlantToNextStage,
+} from '../../../src/slices/plant';
 
 // Phenotype scoring now goes through the Plant slice; harvest still routes via
 // the dispatcher. Spy on scorePlant so it resolves without a live hass.
 vi.mock('../../../src/slices/plant', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/slices/plant')>();
-  return { ...actual, scorePlant: vi.fn().mockResolvedValue(undefined) };
+  return {
+    ...actual,
+    scorePlant: vi.fn().mockResolvedValue(undefined),
+    movePlantToNextStage: vi.fn().mockResolvedValue('dry'),
+  };
 });
 
 if (!customElements.get('ha-dialog')) {
@@ -35,9 +42,9 @@ function makeMockStore() {
     actions: {
       plant: {
         scorePhenotype: vi.fn().mockResolvedValue({}),
-        harvest: vi.fn().mockResolvedValue({}),
       },
     },
+    refreshData: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -166,7 +173,7 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+    expect(vi.mocked(sliceMovePlantToNextStage)).toHaveBeenCalled();
   });
 
   it('calls store harvest on confirmed skip flow', async () => {
@@ -185,12 +192,12 @@ describe('HarvestScoringDialog', () => {
     await element.updateComplete;
     await new Promise((r) => setTimeout(r, 20));
 
-    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+    expect(vi.mocked(sliceMovePlantToNextStage)).toHaveBeenCalled();
     expect(vi.mocked(sliceScorePlant)).not.toHaveBeenCalled();
   });
 
   it('shows error banner when harvest fails', async () => {
-    mockStore.actions.plant.harvest.mockRejectedValueOnce(new Error('Network error'));
+    vi.mocked(sliceMovePlantToNextStage).mockRejectedValueOnce(new Error('Network error'));
     element.dialogState = { plant: aPlant() };
     element.open = true;
     await element.updateComplete;
@@ -322,7 +329,7 @@ describe('HarvestScoringDialog', () => {
     await new Promise((r) => setTimeout(r, 20));
 
     expect(vi.mocked(sliceScorePlant)).toHaveBeenCalled();
-    expect(mockStore.actions.plant.harvest).toHaveBeenCalled();
+    expect(vi.mocked(sliceMovePlantToNextStage)).toHaveBeenCalled();
   });
 });
 

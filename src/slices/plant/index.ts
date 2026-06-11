@@ -343,6 +343,37 @@ export async function harvestPlant(
 }
 
 /**
+ * Advance a plant to its next lifecycle stage (flower→dry, dry→cure, mother→clone).
+ *
+ * The backend models a stage advance as a harvest_plant call into the target
+ * stage's canonical growspace — not move_plant — so this delegates to
+ * harvestPlant. Returns the target stage on success.
+ *
+ * @throws Error if the plant is not in a stage that can advance.
+ */
+export async function movePlantToNextStage(
+  plant: PlantEntity,
+  metrics?: Parameters<typeof harvestPlant>[2]
+): Promise<string> {
+  const stage = plant.attributes?.stage;
+  const targetByStage: Record<string, string> = {
+    flower: 'dry',
+    dry: 'cure',
+    mother: 'clone',
+  };
+  const target = stage ? targetByStage[stage] : undefined;
+  if (!target) {
+    throw new Error(
+      `Plant must be in flower, dry, or mother stage to advance (stage is ${stage ?? 'unknown'})`
+    );
+  }
+
+  const plantId = plant.attributes?.plant_id ?? plant.entity_id.replace('sensor.', '');
+  await harvestPlant(plantId, target, metrics);
+  return target;
+}
+
+/**
  * Move or transplant a plant to a specific growspace.
  *
  * Uses move_clone for clone-stage plants; move_plant for all others.

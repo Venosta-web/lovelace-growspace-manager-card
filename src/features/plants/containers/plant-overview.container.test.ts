@@ -18,6 +18,12 @@ vi.mock('../../../slices/logbook', async (importOriginal) => {
 });
 import * as logbookSlice from '../../../slices/logbook';
 
+vi.mock('../../../slices/plant', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../slices/plant')>();
+  return { ...actual, movePlantToNextStage: vi.fn(), movePlantToGrowspace: vi.fn() };
+});
+import * as plantSlice from '../../../slices/plant';
+
 // ---------------------------------------------------------------------------
 // Mock child elements expected by the container template
 // ---------------------------------------------------------------------------
@@ -211,15 +217,15 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   // ── _handleHarvest ────────────────────────────────────────────────────────
-  it('_handleHarvest calls store.actions.plant.harvest', () => {
+  it('_handleHarvest advances the plant stage via the slice', () => {
     (el as any)._handleHarvest();
-    expect(store.actions.plant.harvest).toHaveBeenCalledWith(plant);
+    expect(vi.mocked(plantSlice.movePlantToNextStage)).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleFinishDrying ───────────────────────────────────────────────────
-  it('_handleFinishDrying calls store.actions.plant.finishDrying', () => {
+  it('_handleFinishDrying advances the plant stage via the slice', () => {
     (el as any)._handleFinishDrying();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(plant);
+    expect(vi.mocked(plantSlice.movePlantToNextStage)).toHaveBeenCalledWith(plant);
   });
 
   // ── _handleMovePlantEvent ─────────────────────────────────────────────
@@ -227,7 +233,7 @@ describe('PlantOverviewContainer – private method logic', () => {
     (el as any)._handleMovePlantEvent(
       new CustomEvent('move-plant', { detail: { targetId: 'gs-2' } })
     );
-    expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
+    expect(vi.mocked(plantSlice.movePlantToGrowspace)).toHaveBeenCalledWith(plant, 'gs-2');
     expect(store.ui.closeDialog).toHaveBeenCalled();
   });
 
@@ -300,18 +306,18 @@ describe('PlantOverviewContainer – private method logic', () => {
   });
 
   // ── _handleHarvestAdvance ─────────────────────────────────────────────────
-  it('_handleHarvestAdvance calls finishDrying for finish-drying action', () => {
+  it('_handleHarvestAdvance advances stage for finish-drying action', () => {
     (el as any)._handleHarvestAdvance(
       new CustomEvent('harvest-advance', { detail: { action: 'finish-drying' } })
     );
-    expect(store.actions.plant.finishDrying).toHaveBeenCalledWith(el.plant);
+    expect(vi.mocked(plantSlice.movePlantToNextStage)).toHaveBeenCalledWith(el.plant);
   });
 
-  it('_handleHarvestAdvance calls harvest for harvest action', () => {
+  it('_handleHarvestAdvance advances stage for harvest action', () => {
     (el as any)._handleHarvestAdvance(
       new CustomEvent('harvest-advance', { detail: { action: 'harvest' } })
     );
-    expect(store.actions.plant.harvest).toHaveBeenCalledWith(el.plant);
+    expect(vi.mocked(plantSlice.movePlantToNextStage)).toHaveBeenCalledWith(el.plant);
   });
 
   // ── _fetchLogbookEvents success path ──────────────────────────────────────
@@ -400,7 +406,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       b.textContent?.includes('Finish Drying')
     ) as HTMLButtonElement | undefined;
     btn?.click();
-    expect(store.actions.plant.finishDrying).toHaveBeenCalled();
+    expect(vi.mocked(plantSlice.movePlantToNextStage)).toHaveBeenCalled();
   });
 
   // ── Harvest tab renders plant-harvest-tab component ─────────────────────
@@ -440,7 +446,7 @@ describe('PlantOverviewContainer – rendering branches', () => {
       })
     );
 
-    expect(store.actions.plant.move).toHaveBeenCalledWith(plant, 'gs-2');
+    expect(vi.mocked(plantSlice.movePlantToGrowspace)).toHaveBeenCalledWith(plant, 'gs-2');
   });
 
   // ── harvest-saved event from harvest tab switches to dashboard ───────────

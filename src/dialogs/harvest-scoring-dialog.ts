@@ -4,10 +4,11 @@ import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { mdiClose, mdiLeaf } from '@mdi/js';
 import type { GrowspaceStore } from '../store/core/growspace-store';
-import { scorePlant } from '../slices/plant';
-import { withToast } from '../slices/ui';
+import { movePlantToNextStage as sliceMovePlantToNextStage, scorePlant } from '../slices/plant';
+import { showToast, withToast } from '../slices/ui';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { HarvestScoringDialogState } from '../lib/types/dialog';
+import type { PlantEntity } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import '../features/shared/ui/gs-help-tooltip';
 import {
@@ -345,18 +346,35 @@ export class HarvestScoringDialog extends LitElement {
           );
         }
         const metrics = parseMetrics(this._sm.tabs.metrics.draft);
-        await this.store.actions.plant.harvest(
+        await this._advanceHarvest(
           plant,
-          Object.keys(metrics).length > 0 ? (metrics as Record<string, unknown>) : undefined
+          Object.keys(metrics).length > 0 ? metrics : undefined
         );
       } else {
-        await this.store.actions.plant.harvest(plant);
+        await this._advanceHarvest(plant);
       }
       this._transition({ type: 'SaveResolved' });
       this._dispatchClose();
     } catch (e) {
       this._transition({ type: 'SaveFailed', message: e instanceof Error ? e.message : 'Harvest failed' });
     }
+  }
+
+  /**
+   * Advance the plant to its next stage via the Plant slice. Rethrows on failure
+   * so the caller's try/catch surfaces the inline error banner (mirroring the
+   * sibling scorePlant call); on success shows a toast and refreshes the grid.
+   */
+  private async _advanceHarvest(
+    plant: PlantEntity,
+    metrics?: Parameters<typeof sliceMovePlantToNextStage>[1]
+  ): Promise<void> {
+    const target = await withToast(() => sliceMovePlantToNextStage(plant, metrics), {
+      errorPrefix: 'Failed to move plant',
+      rethrow: true,
+    });
+    showToast(`Plant moved to ${target}`, 'success');
+    await this.store.refreshData();
   }
 
   private _dispatchClose(): void {
