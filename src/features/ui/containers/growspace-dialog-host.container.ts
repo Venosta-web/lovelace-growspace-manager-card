@@ -88,6 +88,7 @@ import {
   fetchNutrientPresets,
   fetchIPMPresets,
   fetchNutrientInventory,
+  updateNutrientStock,
 } from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
@@ -1552,6 +1553,23 @@ export class GrowspaceDialogHost extends LitElement {
     `;
   }
 
+  private async _handleUpdateNutrientStock(
+    id: string,
+    name: string,
+    currentMl: number,
+    initialMl: number
+  ): Promise<void> {
+    const ok = await withToast(
+      async () => {
+        await updateNutrientStock(id, name, currentMl, initialMl);
+        await fetchNutrientInventory();
+        return true;
+      },
+      { errorPrefix: 'Failed to update stock' }
+    );
+    if (ok) showToast(`Updated stock: ${name}`, 'success');
+  }
+
   private _renderNutrientInventoryDialog(
     active: ActiveDialogState,
     nutrientInventory: NutrientInventory | null,
@@ -1564,14 +1582,14 @@ export class GrowspaceDialogHost extends LitElement {
         .inventory=${nutrientInventory}
         @close=${() => this._closeDialogIfActive('NUTRIENT_INVENTORY')}
         @update-stock=${(e: CustomEvent) =>
-        this.store?.actions.library.updateNutrientStock(
+        this._handleUpdateNutrientStock(
           e.detail.id,
           e.detail.name,
           e.detail.current_ml,
           e.detail.initial_ml
         )}
         @add-stock=${(e: CustomEvent) =>
-        this.store?.actions.library.updateNutrientStock(
+        this._handleUpdateNutrientStock(
           e.detail.id || `nutrient_${Date.now()}`,
           e.detail.name,
           e.detail.current_ml,
