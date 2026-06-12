@@ -2,14 +2,10 @@ import * as plantActions from '../plant/plant-actions';
 import * as strainActions from '../plant/strain-actions';
 import * as uiActions from '../ui/ui-actions';
 import * as libraryActions from '../plant/library-actions';
-import * as snapshotActions from '../plant/snapshot-actions';
-import * as reportActions from '../plant/report-actions';
 import * as aiActions from '../system/ai-actions';
 import * as environmentActions from '../growspace/environment-actions';
 import * as growspaceActions from '../growspace/growspace-actions';
-import * as breederActions from '../plant/breeder-actions';
 import * as geneticsActions from '../plant/genetics-actions';
-import * as ipmActions from '../plant/ipm-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
 import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
@@ -23,21 +19,16 @@ import {
 import { ActionContext } from './action-context';
 import { addOptimisticDeletedPlantId, removeOptimisticDeletedPlantId } from '../../slices/grid';
 import { ViewMode } from '../../constants';
-import type { VisionCheckupConfig } from '../../slices/camera';
 import type { GrowspaceHistoryStore } from '../history/history-store';
 
 interface IGrowspaceStore {
   context: ActionContext;
   history: GrowspaceHistoryStore;
-  undo(): Promise<void>;
-  redo(): Promise<void>;
   refreshData(): void;
-  canUndo: boolean;
-  canRedo: boolean;
 }
 
 export class ActionDispatcher {
-  constructor(private store: IGrowspaceStore) {}
+  constructor(private store: IGrowspaceStore) { }
 
   private get ctx(): ActionContext {
     return this.store.context;
@@ -171,13 +162,6 @@ export class ActionDispatcher {
     remove: (key: string) => strainActions.removeStrain(this.ctx, key),
   };
 
-  public readonly history = {
-    undo: () => this.store.undo(),
-    redo: () => this.store.redo(),
-    canUndo: () => this.store.canUndo,
-    canRedo: () => this.store.canRedo,
-  };
-
   public readonly ui = {
     /** Toggle plant selection state */
     togglePlantSelection: (plantOrId: string | PlantEntity) =>
@@ -226,7 +210,7 @@ export class ActionDispatcher {
     openConfigDialog: (device?: import('../../types').GrowspaceDevice) =>
       uiActions.openConfigDialog(this.ctx, device),
     openStrainLibraryDialog: () => uiActions.openStrainLibraryDialog(this.ctx),
-    openIrrigationDialog: (options?: { initialTab?: string; scrollToField?: string }) =>
+    openIrrigationDialog: (options?: { growspaceId?: string; initialTab?: string; scrollToField?: string }) =>
       uiActions.openIrrigationDialog(this.ctx, options),
     openGrowMasterDialog: (growspaceId: string) =>
       uiActions.openGrowMasterDialog(this.ctx, growspaceId),
@@ -303,28 +287,6 @@ export class ActionDispatcher {
     },
   };
 
-  public readonly nutrient = {
-    savePreset: (preset: Parameters<typeof libraryActions.saveNutrientPreset>[1]) =>
-      libraryActions.saveNutrientPreset(this.ctx, preset),
-    removePreset: (id: string) => libraryActions.removeNutrientPreset(this.ctx, id),
-  };
-
-  public readonly snapshots = {
-    list: (growspaceId: string) => snapshotActions.getSnapshots(this.ctx, growspaceId),
-    capture: (growspaceId: string) => snapshotActions.captureSnapshot(this.ctx, growspaceId),
-    visionHistory: (growspaceId: string) => snapshotActions.getVisionHistory(this.ctx, growspaceId),
-    triggerCheckup: (growspaceId: string) =>
-      snapshotActions.triggerVisionCheckup(this.ctx, growspaceId),
-    updateCheckupConfig: (growspaceId: string, config: VisionCheckupConfig) =>
-      snapshotActions.updateVisionCheckupConfig(this.ctx, growspaceId, config),
-  };
-
-  public readonly report = {
-    fetch: (growspaceId: string) => reportActions.fetchGrowReport(this.ctx, growspaceId),
-    export: (growspaceId: string, format: string) =>
-      reportActions.exportGrowReport(this.ctx, growspaceId, format),
-  };
-
   public readonly ai = {
     /** Analyze all growspaces at once */
     analyzeAll: () => aiActions.analyzeGrowspace(this.ctx, '', true),
@@ -357,12 +319,6 @@ export class ActionDispatcher {
     ) => environmentActions.waterGrowspace(this.ctx, growspaceId, amount, nutrients, presetId),
   };
 
-  public readonly breeder = {
-    update: (oldName: string, newName: string, logo?: string) =>
-      breederActions.updateBreeder(this.ctx, oldName, newName, logo),
-    delete: (name: string) => breederActions.deleteBreeder(this.ctx, name),
-  };
-
   public readonly genetics = {
     addSeedBatch: (data: Parameters<typeof geneticsActions.addSeedBatch>[1]) =>
       geneticsActions.addSeedBatch(this.ctx, data),
@@ -389,14 +345,6 @@ export class ActionDispatcher {
       strainName: string,
       parents: Array<{ name: string; source: 'library' | 'manual' }>
     ) => geneticsActions.updateStrainLineageTree(this.ctx, strainName, parents),
-  };
-
-  public readonly ipm = {
-    apply: (detail: Parameters<typeof ipmActions.applyIPM>[1]) =>
-      ipmActions.applyIPM(this.ctx, detail),
-    savePreset: (preset: Parameters<typeof libraryActions.saveIPMPreset>[1]) =>
-      libraryActions.saveIPMPreset(this.ctx, preset),
-    removePreset: (presetId: string) => libraryActions.removeIPMPreset(this.ctx, presetId),
   };
 
   public readonly irrigation = {

@@ -224,7 +224,8 @@ export class GrowspaceHeaderContainer extends LitElement {
         this.store.actions.ui.openStrainLibraryDialog();
         break;
       case 'irrigation':
-        if (this.device?.deviceId) this.store.actions.ui.openIrrigationDialog();
+        if (this.device?.deviceId)
+          this.store.actions.ui.openIrrigationDialog({ growspaceId: this.device.deviceId });
         break;
       case 'ai':
         this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
@@ -303,6 +304,7 @@ export class GrowspaceHeaderContainer extends LitElement {
     const { growspaceId, flowerStart } = e.detail;
     this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
     this.store?.actions.ui.openIrrigationDialog({
+      growspaceId,
       initialTab: 'steering',
       scrollToField: 'lightsOnTime',
     });

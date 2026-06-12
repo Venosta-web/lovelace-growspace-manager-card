@@ -757,16 +757,16 @@ export class CropSteeringDayChart extends LitElement {
     const rollingPhaseSegments =
       this.rollingWindow && this.range === '24h'
         ? this._buildRollingPhaseSegments(
-            strategy,
-            isFlower,
-            this.device?.irrigationConfig,
-            lightsOnMin,
-            lightsOffMin,
-            viewStart,
-            anchorMs,
-            nowMs,
-            nowMs
-          )
+          strategy,
+          isFlower,
+          this.device?.irrigationConfig,
+          lightsOnMin,
+          lightsOffMin,
+          viewStart,
+          anchorMs,
+          nowMs,
+          nowMs
+        )
         : [];
 
     return html`
@@ -774,14 +774,14 @@ export class CropSteeringDayChart extends LitElement {
         ? html`
             <div class="cs-phase-strip">
               ${this.rollingWindow
-                ? rollingPhaseSegments.map((s) =>
-                    s.dark
-                      ? html`
+            ? rollingPhaseSegments.map((s) =>
+              s.dark
+                ? html`
                           <div class="cs-phase-block dark" style="left:${s.leftPct}%;width:${s.widthPct}%;">
                             <div class="cs-phase-num">Dark</div>
                           </div>
                         `
-                      : html`
+                : html`
                           <div
                             class="cs-phase-block"
                             style="left:${s.leftPct}%;width:${s.widthPct}%;background:${s.phase!.color}22;border-left:1px solid ${s.phase!.color}88;"
@@ -794,8 +794,8 @@ export class CropSteeringDayChart extends LitElement {
                             </div>
                           </div>
                         `
-                  )
-                : html`
+            )
+            : html`
                     <div class="cs-phase-block dark" style="left:0%;width:${pctAt(lightsOnMin)}%;">
                       <div class="cs-phase-num">Dark</div>
                       <div class="cs-phase-meta">
@@ -803,11 +803,11 @@ export class CropSteeringDayChart extends LitElement {
                       </div>
                     </div>
                     ${phases.phases.map(
-                      (p) => html`
+              (p) => html`
                         <div
                           class="cs-phase-block"
                           style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-                            100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
+                100}%;background:${p.color}22;border-left:1px solid ${p.color}88;"
                         >
                           <div class="cs-phase-num" style="color:${p.color};">
                             ${p.label} <span class="cs-phase-nm">· ${p.name}</span>
@@ -817,7 +817,7 @@ export class CropSteeringDayChart extends LitElement {
                           </div>
                         </div>
                       `
-                    )}
+            )}
                     <div
                       class="cs-phase-block dark"
                       style="left:${pctAt(lightsOffMin)}%;width:${100 - pctAt(lightsOffMin)}%;"
@@ -836,54 +836,54 @@ export class CropSteeringDayChart extends LitElement {
               <div
                 class="cs-photoperiod"
                 style="left:${pctAt(lightsOnMin)}%;width:${((lightsOffMin - lightsOnMin) / day) *
-                  100}%;"
+          100}%;"
               ></div>
 
               ${phases.phases.map(
-                (p) => html`
+            (p) => html`
                   <div
                     class="cs-phase-bg"
                     style="left:${pctAt(p.start)}%;width:${((p.end - p.start) / day) *
-                      100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
+              100}%;background:${p.color}1a;border-left:1px dashed ${p.color}55;"
                   >
                     <span class="cs-phase-bg-lbl" style="color:${p.color}cc;">${p.label}</span>
                   </div>
                 `
-              )}
+          )}
               ${Array.from({ length: 24 }, (_, h) => h).map(
-                (h) => html`
+            (h) => html`
                   <div
                     class="grid-v ${h % 6 === 0 ? 'major' : ''}"
                     style="left:${pctAt(h * 60)}%;"
                   ></div>
                   ${h % 3 === 0
-                    ? html`
+                ? html`
                         <span class="x-label" style="left:${pctAt(h * 60)}%;"
                           >${h.toString().padStart(2, '0')}:00</span
                         >
                       `
-                    : nothing}
+                : nothing}
                 `
-              )}
+          )}
               ${shots.map((shot) => {
-                const [shh, smm] = shot.time.split(':').map(Number);
-                const startMin = shh * 60 + smm;
-                const leftPct = pctAt(startMin);
-                const widthPct = (shot.duration / 86400) * 100;
-                const isPast = startMin < nowMinutes;
-                const shotColor = '#2196F3';
-                return html`
+            const [shh, smm] = shot.time.split(':').map(Number);
+            const startMin = shh * 60 + smm;
+            const leftPct = pctAt(startMin);
+            const widthPct = (shot.duration / 86400) * 100;
+            const isPast = startMin < nowMinutes;
+            const shotColor = '#2196F3';
+            return html`
                   <div
                     class="cs-event ${isPast ? 'completed' : ''}"
                     style="left:${leftPct}%;width:max(${widthPct}%,4px);background:${shotColor};box-shadow:0 0 0 1px ${shotColor}99,0 2px 4px ${shotColor}55;"
                     title="${shot.time.substring(0, 5)} · ${shot.duration}s"
                   ></div>
                 `;
-              })}
+          })}
 
               ${!this.rollingWindow
-                ? html`<div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>`
-                : nothing}
+            ? html`<div class="cs-now-line" style="left:${pctAt(nowMinutes)}%;"></div>`
+            : nothing}
             </div>
           `
         : nothing}
@@ -938,17 +938,17 @@ export class CropSteeringDayChart extends LitElement {
         )}
           <!-- vertical gridlines -->
           ${(this.rollingWindow
-          ? [0, 0.25, 0.5, 0.75, 1].map((f) => f * day)
-          : [0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => h * 60)
-        ).map(
-          (offset) => svg`
+        ? [0, 0.25, 0.5, 0.75, 1].map((f) => f * day)
+        : [0, 3, 6, 9, 12, 15, 18, 21, 24].map((h) => h * 60)
+      ).map(
+        (offset) => svg`
               <line
                 x1="${xAt(offset)}" x2="${xAt(offset)}"
                 y1="${padT}" y2="${padT + iH}"
                 stroke="rgba(255,255,255,0.05)"
               />
             `
-        )}
+      )}
 
           <!-- Saturation Target guide line (VWC scale) -->
           <line
@@ -1033,7 +1033,7 @@ export class CropSteeringDayChart extends LitElement {
         <span class="cm-axis-cap right">mS/cm</span>
 
         <span class="cm-target" style="top:${targetY.toFixed(1)}px;color:${vwcColor};">Target ${target.toFixed(0)}%</span>
-        <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);">P3 trigger ${p2Trigger.toFixed(0)}%</span>
+        <span class="cm-target" style="top:${p2TriggerY.toFixed(1)}px;color:var(--warning, #ffa726);">P2 trigger ${p2Trigger.toFixed(0)}%</span>
         ${ecTargetMid !== null
         ? html`<span class="cm-target left" style="top:${ecTargetY.toFixed(1)}px;color:${poreEcColor};">Pore EC target ${ecTargetMid.toFixed(1)}</span>`
         : nothing}

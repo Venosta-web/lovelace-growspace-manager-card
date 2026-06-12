@@ -6,6 +6,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { waterPlant as mockWaterPlant } from '../../../slices/plant';
+import { applyIPM as mockApplyIPM } from '../../../slices/nutrient';
+import { notification$ } from '../../../slices/ui';
 import './growspace-dialog-host.container';
 import type { GrowspaceDialogHost } from './growspace-dialog-host.container';
 
@@ -28,6 +30,17 @@ vi.mock('../../../slices/genetics', () => ({
   deletePollinationEvent: vi.fn(), harvestSeeds: vi.fn(), sowSeed: vi.fn(),
   setPlantSex: vi.fn(), unlinkSeedBatch: vi.fn(), getLineageTree: vi.fn(),
   getStrainLineageTree: vi.fn(), updateStrainLineageTree: vi.fn(), importStrainLineageTree: vi.fn(),
+}));
+
+// Mock slices/nutrient so the IPM handler's slice calls don't hit the backend.
+// Spread the real module so every other consumer's imports stay intact.
+vi.mock('../../../slices/nutrient', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../slices/nutrient')>()),
+  applyIPM: vi.fn().mockResolvedValue(undefined),
+  fetchNutrientInventory: vi.fn().mockResolvedValue(undefined),
+  fetchIPMPresets: vi.fn().mockResolvedValue(undefined),
+  saveIPMPreset: vi.fn().mockResolvedValue(undefined),
+  removeIPMPreset: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
@@ -206,7 +219,7 @@ describe('GrowspaceDialogHost – _handleApplyIPM', () => {
 
     await (el as any)._handleApplyIPM(event, 'gs-1', ['plant-a', 'plant-b']);
 
-    expect(store.actions.ipm.apply).toHaveBeenCalledWith({
+    expect(mockApplyIPM).toHaveBeenCalledWith({
       preset_id: 'preset-1',
       growspace_id: 'gs-1',
       plant_ids: ['plant-a', 'plant-b'],
@@ -231,25 +244,30 @@ describe('GrowspaceDialogHost – _handleApplyIPM', () => {
 
     await (el as any)._handleApplyIPM(event, 'gs-1', []);
 
-    expect(store.actions.ui.showToast).toHaveBeenCalledWith('IPM treatment applied', 'success');
+    // withToast surfaces success through the real UI slice notification atom.
+    expect(notification$.get()).toEqual(
+      expect.objectContaining({ message: 'IPM treatment applied', type: 'success' })
+    );
   });
 
   it('shows an error toast when apply fails instead of only logging', async () => {
-    store.actions.ipm.apply = vi.fn().mockRejectedValue(new Error('API down'));
+    vi.mocked(mockApplyIPM).mockRejectedValueOnce(new Error('API down'));
     const event = new CustomEvent('apply-ipm', {
       detail: { presetId: 'preset-1', notes: '' },
     });
 
     await (el as any)._handleApplyIPM(event, 'gs-1', []);
 
-    expect(store.actions.ui.showToast).toHaveBeenCalledWith(
-      expect.stringContaining('API down'),
-      'error'
+    expect(notification$.get()).toEqual(
+      expect.objectContaining({
+        message: expect.stringContaining('API down'),
+        type: 'error',
+      })
     );
   });
 
   it('does not close the dialog when apply fails', async () => {
-    store.actions.ipm.apply = vi.fn().mockRejectedValue(new Error('Server error'));
+    vi.mocked(mockApplyIPM).mockRejectedValueOnce(new Error('Server error'));
     const event = new CustomEvent('apply-ipm', {
       detail: { presetId: 'preset-1', notes: '' },
     });
@@ -381,6 +399,68 @@ describe('GrowspaceDialogHost – _initControllers idempotency', () => {
     (el as any)._initControllers();
 
     expect((el as any)._dialogHostController).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// render() — multi-instance portal guard
+// ---------------------------------------------------------------------------
+
+describe('GrowspaceDialogHost – render() multi-instance portal guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders nothing when the active dialog targets a growspace not owned by this portal', async () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'IRRIGATION', payload: { growspaceId: 'other-growspace' } },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+
+    (el as any)._initControllers();
+    const result = (el as any).render();
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render(result, container);
+
+    expect(container.querySelector('error-boundary')).toBeNull();
+  });
+
+  it('renders the dialog when the active dialog targets a growspace owned by this portal', async () => {
+    const el = document.createElement('growspace-dialog-host') as GrowspaceDialogHost;
+    (el as any).store = {
+      $dialogHostState: {
+        subscribe: vi.fn(() => () => {}),
+        get: vi.fn().mockReturnValue({
+          activeDialog: { type: 'IRRIGATION', payload: { growspaceId: 'gs-1' } },
+          devices: [{ deviceId: 'gs-1', name: 'Tent 1' }],
+          selectedDevice: 'gs-1',
+          strainLibrary: [],
+          nutrientPresets: {},
+          ipmPresets: {},
+          nutrientInventory: null,
+        }),
+      },
+    };
+
+    (el as any)._initControllers();
+    const result = (el as any).render();
+    const container = document.createElement('div');
+    const { render } = await import('lit');
+    render(result, container);
+
+    expect(container.querySelector('irrigation-dialog')).not.toBeNull();
   });
 });
 

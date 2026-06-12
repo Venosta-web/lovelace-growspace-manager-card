@@ -192,20 +192,26 @@ function _resolveVpdStatus(
   vpd: number | null,
   overviewEntity: HassEntity | undefined
 ): EnvSnapshot['vpdStatus'] {
-  // 1. Prefer the backend-computed status from the overview entity
-  const fromEntity = overviewEntity?.attributes?.vpd_status;
+  // VPD attributes are nested under attributes.metrics in the overview entity.
+  // Fall back to flat attributes for forward/backward compatibility.
+  const m = overviewEntity?.attributes?.metrics as Record<string, unknown> | undefined;
+
+  // 1. Prefer the backend-computed status (already stage+cycle-aware)
+  const fromEntity = m?.vpd_status ?? overviewEntity?.attributes?.vpd_status;
   if (fromEntity && fromEntity !== 'unknown') {
     const s = String(fromEntity);
     if (s === 'optimal' || s === 'warning' || s === 'danger') return s;
   }
 
   // 2. Derive from thresholds when vpd is known
+  // vpd_target_min/max and vpd_danger_min/max in metrics are already
+  // the current-period (day or night) values computed by the backend.
   if (vpd === null) return null;
 
-  const targetMin = overviewEntity?.attributes?.vpd_target_min;
-  const targetMax = overviewEntity?.attributes?.vpd_target_max;
-  const dangerMin = overviewEntity?.attributes?.vpd_danger_min;
-  const dangerMax = overviewEntity?.attributes?.vpd_danger_max;
+  const targetMin = m?.vpd_target_min ?? overviewEntity?.attributes?.vpd_target_min;
+  const targetMax = m?.vpd_target_max ?? overviewEntity?.attributes?.vpd_target_max;
+  const dangerMin = m?.vpd_danger_min ?? overviewEntity?.attributes?.vpd_danger_min;
+  const dangerMax = m?.vpd_danger_max ?? overviewEntity?.attributes?.vpd_danger_max;
 
   if (
     targetMin === undefined ||

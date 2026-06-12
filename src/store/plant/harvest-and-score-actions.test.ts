@@ -17,8 +17,6 @@ function makeContext() {
     ui: { showToast } as unknown as ActionContext['ui'],
     refreshData: vi.fn().mockResolvedValue(undefined),
     closeDialog: vi.fn(),
-    undoRedoManager: {} as any,
-    optimisticManager: {} as any,
     grid: {} as any,
   } satisfies ActionContext;
 }

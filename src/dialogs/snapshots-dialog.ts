@@ -6,7 +6,14 @@ import { hassContext, storeContext } from '../context';
 import { SnapshotsDialogState } from '../types';
 import { dialogStyles } from '../styles/dialog.styles';
 import { mdiCamera, mdiRefresh } from '@mdi/js';
-import { type Snapshot, getSnapshots, captureSnapshot } from '../slices/camera';
+import {
+  type Snapshot,
+  getSnapshots,
+  captureSnapshot,
+  getVisionHistory,
+  triggerVisionCheckup,
+} from '../slices/camera';
+import { withToast } from '../slices/ui';
 import '../features/shared/ui';
 import type { GrowspaceStore } from '../store/core/growspace-store';
 import type { VisionCheckupResult } from '../lib/types/dialog';
@@ -141,16 +148,12 @@ export class SnapshotsDialog extends LitElement {
   }
 
   private async _fetchVisionHistory() {
-    if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
+    if (!this.dialogState?.growspaceId) return;
     this._isLoadingVision = true;
     try {
-      const response = await this.store.actions.snapshots.visionHistory(
-        this.dialogState.growspaceId
-      );
-      if (response) {
-        this._visionHistory = response.history || [];
-        this._selectedResult = this._visionHistory[0] ?? null;
-      }
+      const response = await getVisionHistory(this.dialogState.growspaceId);
+      this._visionHistory = response.history || [];
+      this._selectedResult = this._visionHistory[0] ?? null;
     } catch (err) {
       console.error('[SnapshotsDialog] Failed to fetch vision history:', err);
       this.store.ui.showToast('Failed to load vision history', 'error');
@@ -160,17 +163,18 @@ export class SnapshotsDialog extends LitElement {
   }
 
   private async _runVisionCheckup() {
-    if (!this.dialogState?.growspaceId || !this.store?.actions.snapshots) return;
+    if (!this.dialogState?.growspaceId) return;
+    const growspaceId = this.dialogState.growspaceId;
     this._isRunningCheckup = true;
-    try {
-      await this.store.actions.snapshots.triggerCheckup(this.dialogState.growspaceId);
-      await this._fetchVisionHistory();
-    } catch (err) {
-      console.error('[SnapshotsDialog] Failed to run vision checkup:', err);
-      // Action handles error toast
-    } finally {
-      this._isRunningCheckup = false;
-    }
+    await withToast(
+      async () => {
+        await triggerVisionCheckup(growspaceId);
+        await this.store.refreshData();
+      },
+      { success: 'Vision checkup triggered', errorPrefix: 'Failed to trigger checkup' }
+    );
+    this._isRunningCheckup = false;
+    await this._fetchVisionHistory();
   }
 
   private _close() {

@@ -50,8 +50,6 @@ function makeStore() {
     data,
     ui,
     grid,
-    undoRedoManager: { pushAction: vi.fn() } as never,
-    optimisticManager: {} as never,
     closeDialog,
     refreshData,
   };
@@ -59,11 +57,7 @@ function makeStore() {
   const store = {
     context,
     history,
-    undo: vi.fn().mockResolvedValue(undefined),
-    redo: vi.fn().mockResolvedValue(undefined),
     refreshData,
-    canUndo: false,
-    canRedo: false,
   };
 
   return { store, dispatcher: new ActionDispatcher(store as never), ui, data, grid, history, dataService };
@@ -294,30 +288,6 @@ describe('library.import', () => {
 // exercise the thin wiring via observable side-effects instead.
 
 describe('delegation smoke tests', () => {
-  it('history.undo delegates to store.undo', async () => {
-    const { dispatcher, store } = makeStore();
-    await dispatcher.history.undo();
-    expect(store.undo).toHaveBeenCalled();
-  });
-
-  it('history.redo delegates to store.redo', async () => {
-    const { dispatcher, store } = makeStore();
-    await dispatcher.history.redo();
-    expect(store.redo).toHaveBeenCalled();
-  });
-
-  it('history.canUndo reflects store.canUndo', () => {
-    const { store, dispatcher } = makeStore();
-    store.canUndo = true;
-    expect(dispatcher.history.canUndo()).toBe(true);
-  });
-
-  it('history.canRedo reflects store.canRedo', () => {
-    const { store, dispatcher } = makeStore();
-    store.canRedo = true;
-    expect(dispatcher.history.canRedo()).toBe(true);
-  });
-
   it('ui.refreshData delegates to store.refreshData', () => {
     const { dispatcher, store } = makeStore();
     dispatcher.ui.refreshData();
@@ -735,72 +705,6 @@ describe('library delegation', () => {
   });
 });
 
-// ─── nutrient delegation ──────────────────────────────────────────────────────
-
-describe('nutrient delegation', () => {
-  it('savePreset calls dataService.saveNutrientPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.nutrient.savePreset({ id: 'n1' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).saveNutrientPreset).toHaveBeenCalled();
-  });
-
-  it('removePreset calls dataService.removeNutrientPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.nutrient.removePreset('n1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeNutrientPreset).toHaveBeenCalledWith('n1');
-  });
-});
-
-// ─── snapshots delegation ─────────────────────────────────────────────────────
-
-describe('snapshots delegation', () => {
-  it('list calls dataService.getSnapshots', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.list('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).getSnapshots).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('capture calls dataService.captureSnapshot', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.capture('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).captureSnapshot).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('visionHistory calls dataService.getVisionHistory', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.visionHistory('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).getVisionHistory).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('triggerCheckup calls dataService.triggerVisionCheckup', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.triggerCheckup('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).triggerVisionCheckup).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('updateCheckupConfig calls dataService.updateVisionCheckupConfig', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.snapshots.updateCheckupConfig('gs-1', { enabled: true } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).updateVisionCheckupConfig).toHaveBeenCalledWith('gs-1', expect.objectContaining({ enabled: true }));
-  });
-});
-
-// ─── report delegation ────────────────────────────────────────────────────────
-
-describe('report delegation', () => {
-  it('fetch calls dataService.fetchGrowReport', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.report.fetch('gs-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).fetchGrowReport).toHaveBeenCalledWith('gs-1');
-  });
-
-  it('export calls dataService.exportGrowReport', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.report.export('gs-1', 'pdf');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).exportGrowReport).toHaveBeenCalledWith('gs-1', 'pdf');
-  });
-});
-
 // ─── ai delegation ────────────────────────────────────────────────────────────
 
 describe('ai delegation', () => {
@@ -855,22 +759,6 @@ describe('environment delegation', () => {
     const { dispatcher, dataService } = makeStore();
     await dispatcher.environment.waterGrowspace('gs-1', 2000);
     expect((dataService as Record<string, ReturnType<typeof vi.fn>>).waterGrowspace).toHaveBeenCalledWith('gs-1', 2000, undefined, undefined);
-  });
-});
-
-// ─── breeder delegation ───────────────────────────────────────────────────────
-
-describe('breeder delegation', () => {
-  it('update calls dataService.updateBreeder', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.breeder.update('OldName', 'NewName');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).updateBreeder).toHaveBeenCalledWith('OldName', 'NewName', undefined);
-  });
-
-  it('delete calls dataService.deleteBreeder', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.breeder.delete('SomeBreeder');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).deleteBreeder).toHaveBeenCalledWith('SomeBreeder');
   });
 });
 
@@ -963,24 +851,3 @@ describe('genetics delegation', () => {
   });
 });
 
-// ─── ipm delegation ───────────────────────────────────────────────────────────
-
-describe('ipm delegation', () => {
-  it('apply calls dataService.applyIPM', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ipm.apply({ growspaceId: 'gs-1' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).applyIPM).toHaveBeenCalled();
-  });
-
-  it('savePreset calls dataService.saveIPMPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ipm.savePreset({ name: 'Spider Mites Protocol' } as never);
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).saveIPMPreset).toHaveBeenCalled();
-  });
-
-  it('removePreset calls dataService.removeIPMPreset', async () => {
-    const { dispatcher, dataService } = makeStore();
-    await dispatcher.ipm.removePreset('preset-1');
-    expect((dataService as Record<string, ReturnType<typeof vi.fn>>).removeIPMPreset).toHaveBeenCalledWith('preset-1');
-  });
-});

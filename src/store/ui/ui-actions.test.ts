@@ -42,6 +42,7 @@ import {
 import type { ActionContext } from '../core/action-context';
 import type { PlantEntity, GrowspaceDevice } from '../../types';
 import { ViewMode } from '../../features/environment/constants';
+import { __resetUiSliceForTests } from '../../slices/ui';
 
 vi.mock('../plant/library-actions', () => ({
   fetchStrainLibrary: vi.fn(),
@@ -63,8 +64,6 @@ function makeCtx(overrides: Partial<ActionContext> = {}): ActionContext {
     ui,
     grid: { $selectedDevice } as unknown as ActionContext['grid'],
     dataService: {} as ActionContext['dataService'],
-    undoRedoManager: {} as ActionContext['undoRedoManager'],
-    optimisticManager: {} as ActionContext['optimisticManager'],
     closeDialog: vi.fn(),
     refreshData: vi.fn(),
     ...overrides,
@@ -73,6 +72,7 @@ function makeCtx(overrides: Partial<ActionContext> = {}): ActionContext {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __resetUiSliceForTests();
   clearOptimisticDeletedPlantIds();
   setDevices([]);
 });

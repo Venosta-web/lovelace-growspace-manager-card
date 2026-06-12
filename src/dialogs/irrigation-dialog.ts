@@ -46,6 +46,7 @@ import {
   discardAndSwitch,
   type DialogSM,
 } from './irrigation-dialog-sm';
+import { MutationRunController, type MutationRunEvent } from './mutation-run-controller';
 import { DataService } from '../services/data-service';
 import { dialogStyles } from '../styles/dialog.styles';
 import type { GrowspaceStore } from '../store/core/growspace-store';
@@ -89,6 +90,40 @@ interface NavDef {
   group: string;
   icon: string;
   badge?: number;
+}
+
+// ─── MutationRunController effect params (ADR-0015) ──────────────────────────
+// Built synchronously at dispatch time and carried in the `applying` status, so
+// effects never read sub-state that a handler has already cleared.
+
+interface SaveSettingsParams {
+  irrigationPumpEntity: string;
+  drainPumpEntity: string;
+  irrigationDuration: number;
+  drainDuration: number;
+  soilTriggerPercent: number | null;
+  dailyVolumeCapLiters: number | null;
+  maxCyclesPerDay: number | null;
+  skipDuringDark: boolean;
+  pauseOnLowTank: boolean;
+  logToLogbook: boolean;
+  autoAdvanceP1ToP2: boolean;
+  autoAdvanceP2ToP3: boolean;
+  haltOnRunoffEcThreshold: number | null;
+  activeSteeringPhase: 'p1' | 'p2' | 'p3';
+}
+
+interface SaveAllParams {
+  settings: SaveSettingsParams;
+  strategy: Partial<IrrigationStrategy>;
+  drainConfig: { enabled: boolean; maxEcDelta: number; targetRunoffPercent: number };
+  ecTargetRanges: import('../services/types').ECTargetRange[];
+}
+
+interface EditTimeParams {
+  originalTime: string;
+  formattedTime: string;
+  duration: number;
 }
 
 @customElement('irrigation-dialog')
@@ -135,6 +170,36 @@ export class IrrigationDialog extends LitElement {
   private _cropSteeringHistoryController?: StoreController<Map<string, CropSteeringHistory>>;
 
   private _dataService?: DataService;
+
+  /**
+   * Owns the gesture->mutation seam (ADR-0015). Handlers stay synchronous and
+   * only `dispatch({ type: 'SaveRequested', action, params })`; this controller
+   * runs the matching effect post-render and handles success/failure.
+   */
+  private _mutationRunner = new MutationRunController(this);
+
+  /** Apply a transition and trigger a re-render. Used by the controller + handlers. */
+  public dispatch(event: MutationRunEvent | Parameters<typeof transition>[1]): void {
+    this._sm = transition(this._sm, event as Parameters<typeof transition>[1]);
+  }
+
+  /** SM accessor for the controller (reads `status` to detect `applying`). */
+  public get sm(): DialogSM {
+    return this._sm;
+  }
+
+  /**
+   * Effects keyed by action. Run post-render by the MutationRunController with
+   * params carried in the `applying` status — they MUST read only `params`
+   * (+ stable `this.device.deviceId`), never `this._sm.tabs.*.sub`.
+   */
+  public readonly effects: Record<string, (params: unknown) => Promise<void>> = {
+    'save-all': (params) => this._effectSaveAll(params as SaveAllParams),
+    'save-settings': (params) => this._effectSaveSettings(params as SaveSettingsParams),
+    'run-now': () => this._effectRunNow(),
+    'edit-irrigation-time': (params) => this._effectEditIrrigationTime(params as EditTimeParams),
+    'edit-drain-time': (params) => this._effectEditDrainTime(params as EditTimeParams),
+  };
 
   static styles = [
     dialogStyles,
@@ -1037,34 +1102,11 @@ export class IrrigationDialog extends LitElement {
 
   // ─── Save actions ─────────────────────────────────────────────────────────
 
-  /** Single footer save — flushes all dirty state across tabs. */
-  private async _saveAll() {
-    const soilTrigger = this._sm.tabs.config.draft.soilTriggerPercent;
-    const targetVwc = this._sm.tabs.steering.draft.targetVwcPercent;
-    if (soilTrigger != null && targetVwc != null && soilTrigger > targetVwc) {
-      this._showErrorToast(
-        `P2 Direct Trigger (${soilTrigger}%) must not exceed Saturation Target (${targetVwc}%). ` +
-        `A trigger above the target causes irrigation to fire continuously in P2.`
-      );
-      return;
-    }
-
-    await this._saveSettings();
-    await this._saveStrategy();
-    await this._saveDrainConfig();
-    await this._saveEcTargetRanges();
-  }
-
-  private async _saveEcTargetRanges() {
-    if (!this.device?.deviceId || !this._dataService) return;
-    await this._dataService.setEcTargetRanges(this.device.deviceId, this._sm.tabs.ec_targets.draft);
-  }
-
-  private async _saveSettings() {
-    if (!this.device?.deviceId) return;
+  /** Build the settings payload from current SM state. */
+  private _buildSettingsParams(): SaveSettingsParams {
     const s = this._sm.tabs.schedules.draft;
     const cfg = this._sm.tabs.config.draft;
-    await saveIrrigationSettings(this.device.deviceId, {
+    return {
       irrigationPumpEntity: s.irrigationPumpEntity,
       drainPumpEntity: s.drainPumpEntity,
       irrigationDuration: s.irrigationDuration,
@@ -1079,7 +1121,64 @@ export class IrrigationDialog extends LitElement {
       autoAdvanceP2ToP3: cfg.autoAdvanceP2ToP3,
       haltOnRunoffEcThreshold: cfg.haltOnRunoffEcThreshold,
       activeSteeringPhase: this._sm.tabs.steering.phase,
+    };
+  }
+
+  /**
+   * Single footer save — flushes all dirty state across tabs.
+   * Synchronous: runs the P2 validation guard, then dispatches the intent.
+   * The controller runs the `save-all` effect post-render.
+   */
+  private _saveAll() {
+    const soilTrigger = this._sm.tabs.config.draft.soilTriggerPercent;
+    const targetVwc = this._sm.tabs.steering.draft.targetVwcPercent;
+    if (soilTrigger != null && targetVwc != null && soilTrigger > targetVwc) {
+      this._showErrorToast(
+        `P2 Direct Trigger (${soilTrigger}%) must not exceed Saturation Target (${targetVwc}%). ` +
+        `A trigger above the target causes irrigation to fire continuously in P2.`
+      );
+      return;
+    }
+
+    const d = this._sm.tabs.drain_ec.draft;
+    const params: SaveAllParams = {
+      settings: this._buildSettingsParams(),
+      strategy: this._sm.tabs.steering.draft,
+      drainConfig: {
+        enabled: d.enabled,
+        maxEcDelta: d.maxEcDelta,
+        targetRunoffPercent: d.targetRunoffPercent,
+      },
+      ecTargetRanges: this._sm.tabs.ec_targets.draft,
+    };
+    this.dispatch({ type: 'SaveRequested', action: 'save-all', params });
+  }
+
+  /** Effect: runs the four sub-saves sequentially. */
+  private async _effectSaveAll(params: SaveAllParams) {
+    const id = this.device?.deviceId;
+    if (!id) return;
+    await saveIrrigationSettings(id, params.settings);
+    if (this._dataService) {
+      await this._dataService.setIrrigationStrategy(id, params.strategy);
+      await this._dataService.configureDrainMonitoring(id, params.drainConfig);
+      await this._dataService.setEcTargetRanges(id, params.ecTargetRanges);
+    }
+  }
+
+  /** Save just the settings (used by phase-change confirm). Synchronous dispatcher. */
+  private _saveSettings() {
+    if (!this.device?.deviceId) return;
+    this.dispatch({
+      type: 'SaveRequested',
+      action: 'save-settings',
+      params: this._buildSettingsParams(),
     });
+  }
+
+  private async _effectSaveSettings(params: SaveSettingsParams) {
+    if (!this.device?.deviceId) return;
+    await saveIrrigationSettings(this.device.deviceId, params);
   }
 
   private async _fetchStageAnalytics() {
@@ -1091,43 +1190,20 @@ export class IrrigationDialog extends LitElement {
     });
   }
 
-  private async _handleRunNow() {
+  /** Run an irrigation cycle now. Synchronous dispatcher. */
+  private _handleRunNow() {
     if (!this.device?.deviceId) return;
-    this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: true });
-    try {
-      await runIrrigationCycle(this.device.deviceId);
-    } finally {
-      this._sm = transition(this._sm, { type: 'SET_RUN_NOW_SAVING', saving: false });
-    }
+    this.dispatch({ type: 'SaveRequested', action: 'run-now', params: null });
   }
 
-  private async _saveStrategy() {
-    if (!this.device?.deviceId || !this._dataService) return;
-    try {
-      await this._dataService.setIrrigationStrategy(
-        this.device.deviceId,
-        this._sm.tabs.steering.draft
-      );
-    } catch (e) {
-      console.error('Failed to save strategy:', e);
-    }
+  private async _effectRunNow() {
+    if (!this.device?.deviceId) return;
+    await runIrrigationCycle(this.device.deviceId);
   }
 
-  private async _saveDrainConfig() {
-    if (!this.device?.deviceId || !this._dataService) return;
-    this._sm = transition(this._sm, { type: 'SET_DRAIN_SAVING', saving: true });
-    const d = this._sm.tabs.drain_ec.draft;
-    try {
-      await this._dataService.configureDrainMonitoring(this.device.deviceId, {
-        enabled: d.enabled,
-        maxEcDelta: d.maxEcDelta,
-        targetRunoffPercent: d.targetRunoffPercent,
-      });
-    } catch (_e) {
-      this._showErrorToast('Failed to save drain config');
-    } finally {
-      this._sm = transition(this._sm, { type: 'SET_DRAIN_SAVING', saving: false });
-    }
+  /** True while a run-now request is in flight (disables the Run Now button). */
+  private get _isRunningNow(): boolean {
+    return this._sm.status.kind === 'applying' && this._sm.status.action === 'run-now';
   }
 
   // ─── Schedule mutations ───────────────────────────────────────────────────
@@ -1220,7 +1296,12 @@ export class IrrigationDialog extends LitElement {
     });
   }
 
-  private async _saveEditedIrrigationTime() {
+  /**
+   * Save an edited irrigation time. Synchronous: runs the duplicate-time guard,
+   * builds params from the inline sub-state, then dispatches. The effect reads
+   * only `params` — the inline sub-state is cleared by SaveRequested.
+   */
+  private _saveEditedIrrigationTime() {
     const sub = this._sm.tabs.schedules.sub;
     if (sub.kind !== 'editing-irrigation' || !this.device?.deviceId) return;
     const { originalTime, time, duration } = sub;
@@ -1232,12 +1313,17 @@ export class IrrigationDialog extends LitElement {
         return;
       }
     }
-    this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await removeIrrigationTime(this.device.deviceId, originalTime);
-    await addIrrigationTime(this.device.deviceId, formatted, duration);
+    const params: EditTimeParams = { originalTime, formattedTime: formatted, duration };
+    this.dispatch({ type: 'SaveRequested', action: 'edit-irrigation-time', params });
   }
 
-  private async _saveEditedDrainTime() {
+  private async _effectEditIrrigationTime(params: EditTimeParams) {
+    if (!this.device?.deviceId) return;
+    await removeIrrigationTime(this.device.deviceId, params.originalTime);
+    await addIrrigationTime(this.device.deviceId, params.formattedTime, params.duration);
+  }
+
+  private _saveEditedDrainTime() {
     const sub = this._sm.tabs.schedules.sub;
     if (sub.kind !== 'editing-drain' || !this.device?.deviceId) return;
     const { originalTime, time, duration } = sub;
@@ -1249,9 +1335,14 @@ export class IrrigationDialog extends LitElement {
         return;
       }
     }
-    this._sm = transition(this._sm, { type: 'CANCEL_INLINE' });
-    await removeDrainTime(this.device.deviceId, originalTime);
-    await addDrainTime(this.device.deviceId, formatted, duration);
+    const params: EditTimeParams = { originalTime, formattedTime: formatted, duration };
+    this.dispatch({ type: 'SaveRequested', action: 'edit-drain-time', params });
+  }
+
+  private async _effectEditDrainTime(params: EditTimeParams) {
+    if (!this.device?.deviceId) return;
+    await removeDrainTime(this.device.deviceId, params.originalTime);
+    await addDrainTime(this.device.deviceId, params.formattedTime, params.duration);
   }
 
   private async _deleteIrrigationTimeFromEdit() {
@@ -1495,16 +1586,17 @@ export class IrrigationDialog extends LitElement {
         ? html`
                     <button
                       class="md3-button tonal"
-                      ?disabled=${this._sm.status.kind === 'run-now-saving'}
+                      ?disabled=${this._sm.status.kind === 'applying'}
                       @click=${this._handleRunNow}
                     >
-                      ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : 'Run Now'}
+                      ${this._isRunningNow ? 'Starting…' : 'Run Now'}
                     </button>
                   `
         : nothing}
               <button
                 class="md3-button primary btn-save-all"
                 style="background: ${dialogColor};"
+                ?disabled=${this._sm.status.kind === 'applying'}
                 @click=${this._saveAll}
               >
                 Save Changes
@@ -2657,11 +2749,11 @@ export class IrrigationDialog extends LitElement {
         <h3 style="margin:0 0 14px;">Manual Override</h3>
         <div style="display:flex;align-items:center;gap:12px;">
           <button
-            class="action-btn${this._sm.status.kind === 'run-now-saving' ? ' saving' : ''}"
-            ?disabled=${this._sm.status.kind === 'run-now-saving'}
+            class="action-btn${this._isRunningNow ? ' saving' : ''}"
+            ?disabled=${this._sm.status.kind === 'applying'}
             @click=${this._handleRunNow}
           >
-            ${this._sm.status.kind === 'run-now-saving' ? 'Starting…' : '▶ Run Now'}
+            ${this._isRunningNow ? 'Starting…' : '▶ Run Now'}
           </button>
           <span style="font-size:12px;opacity:0.55;">
             Triggers one irrigation cycle immediately, bypassing the schedule.

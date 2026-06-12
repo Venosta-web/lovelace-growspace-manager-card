@@ -104,15 +104,6 @@ function makeMockStore(device: GrowspaceDevice) {
     context: {
       dataService: mocks,
       data: dataStore,
-      optimisticManager: {
-        applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
-          await applyFn(_payload);
-          return 'mock-id';
-        }),
-        confirmUpdate: vi.fn(),
-        rollbackUpdate: vi.fn(),
-      },
-      undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
       showToast: vi.fn(),
       closeDialog: vi.fn(),
       refreshData: vi.fn().mockResolvedValue(undefined),
