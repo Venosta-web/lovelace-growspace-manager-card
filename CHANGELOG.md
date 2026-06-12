@@ -1,3 +1,10 @@
+# [1.1.0-next.35](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.34...v1.1.0-next.35) (2026-06-12)
+
+
+### Features
+
+* **device-state:** adapter split + subareaDeviceSnapshots$; subarea device chips go atom-sourced ([c59483c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/c59483c6c6b377e1a0a724f1915c8e65d977745a)), closes [#267](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/267) [#265](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/265) [#266](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/266)
+
 # [1.1.0-next.34](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.33...v1.1.0-next.34) (2026-06-12)
 
 
