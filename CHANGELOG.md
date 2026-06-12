@@ -1,3 +1,19 @@
+# [1.1.0-next.33](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.32...v1.1.0-next.33) (2026-06-12)
+
+
+### Bug Fixes
+
+* **irrigation-dialog:** catch mutator failures in save/run handlers ([155b90e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/155b90ecc308959ac732861b118046cc55b4de7c))
+* **irrigation-dialog:** prevent duplicate dialog rendering across multiple card portals ([375eec4](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/375eec439ef72961d8f607717bbf1687b8ae7d48))
+
+
+### Features
+
+* **dialogs:** add MutationRunController and applying status contract ([56d7fc8](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/56d7fc83634e04de9b22157c572a709a7d00b1f7))
+* **dialogs:** add SaveRequested/Resolved/Failed events to irrigation SM ([eacdf8c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/eacdf8ce4a8a2fca46a2ad0e6f6dbc6a0d0a3181))
+* **header:** derive device chips from DeviceSnapshot in HeaderMetrics ([3da0647](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/3da064739581f2745bc2fa87e6d9aca49594c9db)), closes [#265](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/265)
+* implement comprehensive undo/redo support for plant actions and add unit test coverage for dialog components ([02ceee2](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/02ceee2b8f2ced37405fec8e76e0d93d3eaf2847))
+
 # [1.1.0-next.32](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.31...v1.1.0-next.32) (2026-06-09)
 
 
