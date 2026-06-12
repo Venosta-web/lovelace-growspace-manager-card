@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { GridApiSchema } from '../grid/schema';
+import { SubareaSchema } from '../subarea/schema';
 
 const IrrigationScheduleItemSchema = z
   .object({
@@ -182,6 +183,10 @@ export const GrowspaceAPIResponseSchema = z
       })
       .optional()
       .default({}),
+
+    // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
+    // don't include the key in the growspace payload.
+    subareas: z.array(SubareaSchema).optional(),
 
     irrigation: z
       .object({

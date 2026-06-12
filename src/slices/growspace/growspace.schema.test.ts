@@ -200,6 +200,52 @@ describe('Growspace Zod Schemas', () => {
       expect(withoutOverrides.environment.vpd_optimal_overrides).toEqual({});
     });
 
+    describe('subareas (top-level payload key)', () => {
+      it('parses subareas in the get_subareas wire shape', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          subareas: [
+            {
+              id: 'sa1',
+              name: 'Veg Shelf',
+              environment_config: {
+                temperature_sensors: ['sensor.shelf_temp'],
+                humidity_sensors: ['sensor.shelf_hum'],
+              },
+            },
+          ],
+        });
+
+        expect(parsed.subareas).toEqual([
+          {
+            id: 'sa1',
+            name: 'Veg Shelf',
+            environment_config: {
+              temperature_sensors: ['sensor.shelf_temp'],
+              humidity_sensors: ['sensor.shelf_hum'],
+            },
+          },
+        ]);
+      });
+
+      it('leaves subareas undefined when the key is absent (older backends)', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({});
+        expect(parsed.subareas).toBeUndefined();
+      });
+
+      it('parses an empty subareas list (new backend, no subareas configured)', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({ subareas: [] });
+        expect(parsed.subareas).toEqual([]);
+      });
+
+      it('rejects subarea entries missing required fields', () => {
+        expect(() =>
+          GrowspaceAPIResponseSchema.parse({
+            subareas: [{ id: 'sa1', environment_config: {} }],
+          }),
+        ).toThrow(ZodError);
+      });
+    });
+
     describe('IrrigationScheduleItemSchema & IrrigationConfigSchema', () => {
       it('should parse irrigation schedule items using time and duration', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({
