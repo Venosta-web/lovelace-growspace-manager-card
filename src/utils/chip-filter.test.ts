@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MetricKey } from '../features/environment/constants';
-import type { HeaderChip } from './metrics-utils';
+import type { HeaderChip } from '../slices/header-metrics';
 import { filterChips } from './chip-filter';
 
 function makeChip(key: MetricKey): HeaderChip {

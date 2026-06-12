@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HeaderChip } from '../../../utils/metrics-utils';
+import { HeaderChip } from '../../../slices/header-metrics';
 import { ViewMode } from '../../../constants';
 import { GrowspaceDevice } from '../../../types';
 import '../../shared/ui/scroll-container';

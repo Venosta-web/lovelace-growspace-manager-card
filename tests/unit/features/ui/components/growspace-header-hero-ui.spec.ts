@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceHeaderHeroUI } from '../../../../../src/features/ui/components/growspace-header-hero-ui';
-import type { HeaderChip } from '../../../../../src/utils/metrics-utils';
+import type { HeaderChip } from '../../../../../src/slices/header-metrics';
 import { ChartUtils } from '../../../../../src/utils/chart-utils';
 
 if (!customElements.get('growspace-header-hero-ui')) {

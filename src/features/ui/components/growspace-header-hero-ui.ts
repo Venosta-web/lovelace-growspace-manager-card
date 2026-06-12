@@ -3,7 +3,7 @@ import { repeat } from 'lit/directives/repeat.js';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { ChartUtils } from '../../../utils/chart-utils';
 import { GrowspaceDevice } from '../../../types';
-import { HeaderChip } from '../../../utils/metrics-utils';
+import { HeaderChip } from '../../../slices/header-metrics';
 import { sharedStyles } from '../../../styles/shared.styles';
 import { MetricKey } from '../../../features/environment/constants';
 import { computePhases } from '../../../features/environment/crop-steering-model';

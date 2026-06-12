@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceHeaderSecondaryUI } from '../../../../../src/features/ui/components/growspace-header-secondary-ui';
-import type { HeaderChip } from '../../../../../src/utils/metrics-utils';
+import type { HeaderChip } from '../../../../../src/slices/header-metrics';
 import type { NutrientInventory } from '../../../../../src/types';
 
 if (!customElements.get('growspace-header-secondary-ui')) {
