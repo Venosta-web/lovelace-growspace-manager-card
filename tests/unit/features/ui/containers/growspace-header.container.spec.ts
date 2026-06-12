@@ -3,8 +3,8 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { atom } from 'nanostores';
 import { ViewMode } from '../../../../../src/constants';
 import { MetricKey } from '../../../../../src/features/environment/constants';
-import { MetricsUtils } from '../../../../../src/utils/metrics-utils';
 import { envSnapshots$ } from '../../../../../src/slices/environment';
+import { deviceSnapshots$ } from '../../../../../src/slices/device-state';
 import { plants$ } from '../../../../../src/slices/plant';
 import { irrigationConfigs$, tankLevels$ } from '../../../../../src/slices/irrigation';
 import '../../../../../src/features/ui/containers/growspace-header.container';
@@ -23,17 +23,6 @@ vi.mock('../../../../../src/controllers/header-drag-controller', () => ({
         constructor() { }
         handleDragStart = vi.fn();
         handleDrop = vi.fn();
-    },
-}));
-
-// Mock MetricsUtils to avoid complex sensor computations
-vi.mock('../../../../../src/utils/metrics-utils', () => ({
-    MetricsUtils: {
-        computeHeaderMetrics: vi.fn().mockReturnValue({
-            mainChips: [],
-            deviceChips: [],
-            dominant: undefined,
-        }),
     },
 }));
 
@@ -102,6 +91,7 @@ describe('GrowspaceHeaderContainer', () => {
         plants$.set([]);
         irrigationConfigs$.set(new Map());
         tankLevels$.set(new Map());
+        deviceSnapshots$.set(new Map());
 
         element = await fixture<GrowspaceHeaderContainer>(html`<growspace-header></growspace-header>`);
         (element as any).store = mockStore;
@@ -207,7 +197,7 @@ describe('GrowspaceHeaderContainer', () => {
 
     // --- Metrics splitting ---
 
-    it('_metrics splits chips into hero (from slice atoms) and device chips (from MetricsUtils)', () => {
+    it('_metrics splits chips into hero (from slice atoms) and device chips (from deviceSnapshots$)', () => {
         // Seed env snapshot for the test growspace
         envSnapshots$.set(new Map([
             ['grow1', {
@@ -216,19 +206,23 @@ describe('GrowspaceHeaderContainer', () => {
                 vpd: 1.2,
                 vpdStatus: 'optimal',
                 co2: 800,
-                isLightsOn: true,
-                hasLightSensor: true,
+                isLightsOn: null,
+                hasLightSensor: false,
                 dli: null,
                 optimalConditions: null,
             }],
         ]));
 
-        // MetricsUtils still provides deviceChips
-        (MetricsUtils.computeHeaderMetrics as any).mockReturnValue({
-            mainChips: [],
-            deviceChips: [{ key: 'exhaust', value: 'on' }],
-            dominant: undefined,
-        });
+        // Device chips come from the DeviceState slice's snapshot atom
+        deviceSnapshots$.set(new Map([
+            ['grow1', {
+                lightSensors: null,
+                exhaustFans: { entityIds: ['switch.exhaust'], value: 'On', icon: 'mdi-fan' },
+                circulationFans: null,
+                humidifiers: null,
+                dehumidifiers: null,
+            }],
+        ]));
 
         const metrics = (element as any)._metrics;
 
@@ -240,9 +234,15 @@ describe('GrowspaceHeaderContainer', () => {
         expect(heroKeys).toContain(MetricKey.VPD);
         expect(heroKeys).toContain(MetricKey.CO2);
 
-        // deviceChips still come from MetricsUtils
+        // deviceChips derive from deviceSnapshots$
         expect(metrics.deviceChips).toHaveLength(1);
-        expect(metrics.deviceChips[0].key).toBe('exhaust');
+        expect(metrics.deviceChips[0].key).toBe(MetricKey.EXHAUST);
+        expect(metrics.deviceChips[0].value).toBe('On');
+    });
+
+    it('_metrics returns empty deviceChips when no device snapshot exists for the growspace', () => {
+        const metrics = (element as any)._metrics;
+        expect(metrics.deviceChips).toEqual([]);
     });
 
     it('_metrics returns empty state if device or hass is missing', () => {
