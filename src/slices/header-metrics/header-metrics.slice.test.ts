@@ -398,6 +398,98 @@ describe('Cycle 6 — tank level chips', () => {
 
     expect(chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL)).toBeUndefined();
   });
+
+  // Ported from the legacy metrics-utils.spec.ts tank-depletion cases (#269)
+
+  it('appends remaining time in hours to the value when below 48h', () => {
+    const tank = makeTank({ fillLevel: 60, hoursRemaining: 36, depletionStatus: 'depleting' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.value).toBe('60% 36h');
+  });
+
+  it('appends remaining time in days to the value when 48h or more', () => {
+    const tank = makeTank({ fillLevel: 90, hoursRemaining: 72, depletionStatus: 'depleting' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.value).toBe('90% 3d');
+  });
+
+  it('sets no status when depletionStatus is insufficient_data', () => {
+    const tank = makeTank({ fillLevel: 50, hoursRemaining: 6, depletionStatus: 'insufficient_data' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBeUndefined();
+  });
+
+  it('sets tank status to "optimal" when the tank is refilling', () => {
+    const tank = makeTank({ fillLevel: 30, depletionStatus: 'refilling' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBe('optimal');
+  });
+
+  it('sets no status in the 24-48h window', () => {
+    const tank = makeTank({ fillLevel: 50, hoursRemaining: 36, depletionStatus: 'depleting' });
+
+    const { chips } = computeHeaderMetrics(null, [], null, [tank], 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBeUndefined();
+  });
+
+  it('aggregates multi-tank status to the highest urgency ("warning" when no tank is in danger)', () => {
+    const tanks = [
+      makeTank({
+        sensorEntity: 'sensor.tank_1',
+        fillLevel: 80,
+        hoursRemaining: 72,
+        depletionStatus: 'depleting',
+      }),
+      makeTank({
+        sensorEntity: 'sensor.tank_2',
+        fillLevel: 40,
+        hoursRemaining: 18,
+        depletionStatus: 'depleting',
+      }),
+    ];
+
+    const { chips } = computeHeaderMetrics(null, [], null, tanks, 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBe('warning');
+  });
+
+  it('sets multi-tank status to "optimal" when all tanks have 48h or more remaining', () => {
+    const tanks = [
+      makeTank({
+        sensorEntity: 'sensor.tank_1',
+        fillLevel: 80,
+        hoursRemaining: 72,
+        depletionStatus: 'depleting',
+      }),
+      makeTank({
+        sensorEntity: 'sensor.tank_2',
+        fillLevel: 90,
+        hoursRemaining: 96,
+        depletionStatus: 'depleting',
+      }),
+    ];
+
+    const { chips } = computeHeaderMetrics(null, [], null, tanks, 'main');
+
+    const chip = chips.find((c) => c.key === MetricKey.IRRIGATION_TANK_LEVEL);
+    expect(chip!.status).toBe('optimal');
+    expect(chip!.multiValues).toEqual(['80% 3d', '90% 4d']);
+  });
 });
 
 // ---------------------------------------------------------------------------

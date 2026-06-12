@@ -1,5 +1,5 @@
 import { MetricKey } from '../features/environment/constants';
-import type { HeaderChip } from './metrics-utils';
+import type { HeaderChip } from '../slices/header-metrics';
 
 export function filterChips(
   chips: HeaderChip[],

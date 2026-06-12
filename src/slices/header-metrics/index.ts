@@ -8,8 +8,8 @@
  *                            slice data. No hass parameter — all data comes
  *                            from slice atoms.
  *
- * Re-exports HeaderChip and DominantStageInfo so callers don't need to import
- * from the legacy MetricsUtils.
+ * Canonical home of the HeaderChip and DominantStageInfo types (the legacy
+ * MetricsUtils duplicate was deleted in #269).
  */
 
 import {

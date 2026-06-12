@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HeaderChip } from '../../../utils/metrics-utils';
+import { HeaderChip } from '../../../slices/header-metrics';
 import { NutrientInventory } from '../../../types';
 import { MetricKey } from '../../environment/constants';
 import type { FlowerFlipInfo } from '../../../utils/flower-flip';

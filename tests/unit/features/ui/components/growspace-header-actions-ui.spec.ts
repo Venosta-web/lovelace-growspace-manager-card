@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceHeaderActionsUI } from '../../../../../src/features/ui/components/growspace-header-actions-ui';
-import type { HeaderChip } from '../../../../../src/utils/metrics-utils';
+import type { HeaderChip } from '../../../../../src/slices/header-metrics';
 import { ViewMode } from '../../../../../src/constants';
 
 if (!customElements.get('growspace-header-actions-ui')) {

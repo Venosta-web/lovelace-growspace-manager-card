@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { HomeAssistant } from 'custom-card-helpers';
 
 import { GrowspaceDevice, GrowspaceManagerCardConfig, NutrientInventory } from '../../../types';
-import { HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
+import { HeaderChip, DominantStageInfo } from '../../../slices/header-metrics';
 import type { IrrigationStrategy, IrrigationConfig } from '../../../services/types';
 import type { FlowerFlipInfo } from '../../../utils/flower-flip';
 import { ResizeController } from '../../../controllers/resize-controller';
