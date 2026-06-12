@@ -2,7 +2,6 @@ import {
     LitElement,
     html,
     css,
-    svg,
     CSSResultGroup,
     PropertyValues,
     TemplateResult,
@@ -10,13 +9,7 @@ import {
 } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { provide } from '@lit/context';
-import {
-    mdiCog,
-    mdiThermometer,
-    mdiWaterPercent,
-    mdiCloudOutline,
-    mdiWeatherCloudy,
-} from '@mdi/js';
+import { mdiCog } from '@mdi/js';
 
 import { hassContext, configContext, storeContext } from '../lib/context';
 import { DATA_STALE_EVENT } from '../features/shared/events';
@@ -25,10 +18,11 @@ import { HomeAssistant, LovelaceCard, LovelaceCardEditor } from 'custom-card-hel
 import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { getSubareas } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
+import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../slices/environment';
+import { computeHeaderMetrics } from '../slices/header-metrics';
 import { DataService } from '../services/data-service';
 import { ConfigTab } from '../features/environment/constants';
 import type { HistoryTimeRange } from '../features/environment/constants';
-import { ChartUtils } from '../utils/chart-utils';
 import { ResizeController } from '../controllers/resize-controller';
 import '../dialogs/config-dialog';
 
@@ -56,13 +50,6 @@ export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
     subarea_id: string;
 }
 
-const SENSOR_LABEL_TO_METRIC: Record<string, string> = {
-    Temperature: 'temperature',
-    Humidity: 'humidity',
-    VPD: 'vpd',
-    CO2: 'co2',
-};
-
 @customElement('growspace-subarea-card')
 export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     private _sharedStore = growspaceStoreRegistry.acquire();
@@ -71,6 +58,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     store = new GrowspaceStore(this._sharedStore);
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
+    protected _subareaEnvController = new StoreController(this, subareaEnvSnapshots$);
     private _resizeController = new ResizeController(this, () => { });
 
     private _dataService: DataService | null = null;
@@ -289,6 +277,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
             } else {
                 this._subarea = found;
+                this._seedEnvSnapshot(found);
                 this._loadHistory(found);
             }
         } catch (err) {
@@ -297,6 +286,26 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         } finally {
             this._loading = false;
         }
+    }
+
+    /**
+     * Bootstrap seed for subareaEnvSnapshots$ right after the subarea loads, so the
+     * first render has data. SyncService keeps the snapshot fresh afterwards
+     * (it iterates subareas$, which getSubareas just hydrated).
+     */
+    private _seedEnvSnapshot(subarea: Subarea): void {
+        if (!this.hass) return;
+        const devices = this._viewController.value?.grid?.devices ?? [];
+        const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
+        setSubareaEnvSnapshot(
+            subarea.id,
+            subarea,
+            {
+                growspaceId: this._config.growspace_id,
+                growspaceName: parent?.name || this._parentGrowspaceName || undefined,
+            },
+            this.hass.states
+        );
     }
 
     private _calculateHistoryStart(range: HistoryTimeRange): Date {
@@ -579,10 +588,22 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         ec: Subarea['environment_config'],
         parentDevice: any
     ): TemplateResult {
-        const metrics = MetricsUtils.computeSubareaMetrics(
+        const activeEnvGraphs = this._analyticsStateController?.value?.activeEnvGraphs ?? new Set();
+
+        // Hero + secondary chips are atom-sourced: the subarea EnvSnapshot is fed by
+        // SyncService (and seeded in _loadSubarea); empty plant/irrigation/tank inputs
+        // mean dominant-stage and irrigation chips correctly don't render.
+        const envSnapshot = this._subarea
+            ? (subareaEnvSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const { hero, chips } = computeHeaderMetrics(envSnapshot, [], null, [], 'subarea', activeEnvGraphs);
+
+        // Device chips stay on the legacy path until the DeviceState slice grows its
+        // subarea adapter (ADR-0018 P2, follow-up issue).
+        const legacyMetrics = MetricsUtils.computeSubareaMetrics(
             this.hass,
             ec,
-            this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(),
+            activeEnvGraphs,
             parentDevice?.deviceId,
             parentDevice?.name || this._parentGrowspaceName,
             this._subarea?.id,
@@ -590,9 +611,9 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         );
 
         const hidden = this._config?.hidden_chips;
-        const heroChips = filterChips(metrics.heroChips, hidden);
-        const secondaryChips = filterChips(metrics.secondaryChips, hidden);
-        const deviceChips = filterChips(metrics.deviceChips, hidden);
+        const heroChips = filterChips(hero, hidden);
+        const secondaryChips = filterChips(chips, hidden);
+        const deviceChips = filterChips(legacyMetrics.deviceChips, hidden);
 
         const hasAny =
             heroChips.length > 0 ||

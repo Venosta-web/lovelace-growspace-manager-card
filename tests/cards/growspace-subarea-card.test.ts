@@ -35,6 +35,7 @@ vi.mock('../../src/slices/subarea', () => ({
     updateSubarea: vi.fn().mockResolvedValue(undefined),
     setSubareas: vi.fn(),
     subareas$: { get: vi.fn().mockReturnValue([]), set: vi.fn(), subscribe: vi.fn() },
+    subareasGrowspaceId$: { get: vi.fn().mockReturnValue(null), set: vi.fn(), subscribe: vi.fn() },
 }));
 
 vi.mock('../../src/utils/chart-utils', () => ({
@@ -300,7 +301,8 @@ describe('GrowspaceSubareaCard', () => {
         const secondaryUI = element.shadowRoot?.querySelector('growspace-header-secondary-ui') as any;
         expect(secondaryUI?.chips?.length).toBe(5);
         const labels = secondaryUI?.chips.map((c: any) => c.label);
-        expect(labels).toContain('Substrate Temp');
+        // Canonical HeaderMetrics label — the legacy path said 'Substrate Temp'
+        expect(labels).toContain('Sub Temp');
         expect(labels).toContain('pH');
         expect(labels).toContain('Feed EC');
         expect(labels).toContain('Bulk EC');

@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { DateTime } from 'luxon';
-import type { EnvSnapshot } from '../environment';
+import type { EnvSnapshot, SensorReadings } from '../environment';
 import type { PlantEntity } from '../../features/plants/types';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
 import { MetricKey } from '../../features/environment/constants';
@@ -24,6 +24,10 @@ function makeEnvSnapshot(overrides: Partial<EnvSnapshot> = {}): EnvSnapshot {
     vpd: null,
     vpdStatus: null,
     co2: null,
+    temperatureReadings: null,
+    humidityReadings: null,
+    vpdReadings: null,
+    co2Readings: null,
     isLightsOn: null,
     hasLightSensor: false,
     dli: null,
@@ -947,5 +951,115 @@ describe('Cycle 11 — crop steering phase chip', () => {
     const drainChip = chips.find((c) => c.key === MetricKey.DRAIN);
     expect(drainChip).toBeDefined();
     expect(drainChip!.label).toBe('Next');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 11 — hero chips from per-sensor readings (subarea snapshots, ADR-0018)
+// ---------------------------------------------------------------------------
+
+function makeReadings(values: (number | null)[], entityIds?: string[]): SensorReadings {
+  const ids = entityIds ?? values.map((_, i) => `sensor.s${i + 1}`);
+  const defined = values.filter((v): v is number => v !== null);
+  const sum = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : null;
+  return { avg: sum !== null ? sum / defined.length : null, sum, perSensor: values, entityIds: ids };
+}
+
+describe('Cycle 11 — hero chips from per-sensor readings', () => {
+  it('renders a single-sensor reading with legacy formatting, label, and entityIds', () => {
+    const env = makeEnvSnapshot({
+      temperature: 23,
+      temperatureReadings: makeReadings([23], ['sensor.veg_temp']),
+    });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'subarea');
+
+    expect(hero).toHaveLength(1);
+    expect(hero[0].key).toBe(MetricKey.TEMPERATURE);
+    expect(hero[0].value).toBe('23.0 °C');
+    expect(hero[0].label).toBe('Temperature');
+    expect(hero[0].entityIds).toEqual(['sensor.veg_temp']);
+  });
+
+  it('prefers readings over the scalar when both are present', () => {
+    const env = makeEnvSnapshot({
+      humidity: 99,
+      humidityReadings: makeReadings([52], ['sensor.h']),
+    });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'subarea');
+
+    expect(hero[0].value).toBe('52.0 %');
+  });
+
+  it('renders "Multiple" with per-sensor formatted values for multi-sensor readings', () => {
+    const env = makeEnvSnapshot({
+      temperatureReadings: makeReadings([22, 24], ['sensor.t1', 'sensor.t2']),
+    });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'subarea');
+
+    expect(hero[0].value).toBe('Multiple');
+    expect(hero[0].multiValues).toEqual(['22.0 °C', '24.0 °C']);
+    expect(hero[0].entityIds).toEqual(['sensor.t1', 'sensor.t2']);
+  });
+
+  it('marks unavailable sensors with "-" inside multiValues', () => {
+    const env = makeEnvSnapshot({
+      humidityReadings: makeReadings([50, null], ['sensor.h1', 'sensor.h2']),
+    });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'subarea');
+
+    expect(hero[0].multiValues).toEqual(['50.0 %', '-']);
+  });
+
+  it('drops the chip when the only configured sensor is unavailable', () => {
+    const env = makeEnvSnapshot({
+      temperatureReadings: makeReadings([null], ['sensor.dead']),
+    });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'subarea');
+
+    expect(hero).toHaveLength(0);
+  });
+
+  it('renders VPD and CO2 readings with their legacy units and no VPD status when null', () => {
+    const env = makeEnvSnapshot({
+      vpdReadings: makeReadings([1.2], ['sensor.vpd']),
+      co2Readings: makeReadings([800], ['sensor.co2']),
+    });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'subarea');
+
+    expect(hero.map((c) => c.value)).toEqual(['1.2 kPa', '800.0 ppm']);
+    expect(hero[0].status).toBeUndefined();
+    expect(hero.map((c) => c.label)).toEqual(['VPD', 'CO2']);
+  });
+
+  it('marks a readings-based hero chip active when its key is in activeEnvGraphs', () => {
+    const env = makeEnvSnapshot({
+      temperatureReadings: makeReadings([23], ['sensor.t']),
+    });
+
+    const { hero } = computeHeaderMetrics(
+      env,
+      [],
+      null,
+      [],
+      'subarea',
+      new Set([MetricKey.TEMPERATURE])
+    );
+
+    expect(hero[0].active).toBe(true);
+  });
+
+  it('keeps the growspace scalar hero path unchanged when readings are null', () => {
+    const env = makeEnvSnapshot({ temperature: 24.5, humidity: 58 });
+
+    const { hero } = computeHeaderMetrics(env, [], null, [], 'main');
+
+    expect(hero.map((c) => c.value)).toEqual(['24.5°C', '58%']);
+    expect(hero[0].label).toBeUndefined();
   });
 });
