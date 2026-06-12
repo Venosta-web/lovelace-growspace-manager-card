@@ -3,22 +3,28 @@
  * for environmental sensors and exposes normalized EnvSnapshot atoms.
  *
  * Public API (atoms):
- *   envSnapshots$     — read: Map<growspaceId, EnvSnapshot> (one entry per growspace)
+ *   envSnapshots$        — read: Map<growspaceId, EnvSnapshot> (one entry per growspace)
+ *   subareaEnvSnapshots$ — read: Map<`${growspaceId}:${subareaId}`, EnvSnapshot>
+ *                          (one entry per subarea)
  *
  * Public API (bootstrap writes):
- *   setEnvSnapshot()  — compute + store snapshot for a growspace (called by SyncService
- *                       on every hass update)
+ *   setEnvSnapshot()        — compute + store snapshot for a growspace (called by
+ *                             SyncService on every hass update)
+ *   setSubareaEnvSnapshot() — compute + store snapshot for a subarea (called by
+ *                             SyncService in the same pass)
  *
  * Public API (pure computation):
- *   computeEnvSnapshot() — derive an EnvSnapshot from a device + hass states snapshot.
- *                          Exported so HeaderMetrics and tests can call it directly.
+ *   computeEnvSnapshot()        — derive an EnvSnapshot from a device + hass states snapshot.
+ *                                 Exported so HeaderMetrics and tests can call it directly.
+ *   computeSubareaEnvSnapshot() — derive an EnvSnapshot from a subarea's own
+ *                                 environment_config + hass states snapshot.
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  */
 
 import { atom } from 'nanostores';
 import type { HassEntity } from 'home-assistant-js-websocket';
-import type { GrowspaceDevice } from '../../services/types';
+import type { GrowspaceDevice, Subarea } from '../../services/types';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,36 +139,66 @@ function _resolveFromSensor(
   return null;
 }
 
-/** Resolve VPD using the three-tier fallback chain. */
+/**
+ * Resolve VPD using the three-tier fallback chain:
+ * env entity attribute → explicit VPD sensor → calculated-VPD candidate entity
+ * IDs (first available wins).
+ *
+ * Callers supply the calculated-VPD candidate IDs so the same chain serves both
+ * growspace-scoped (name-slug / device-UUID IDs) and subarea-scoped
+ * (growspace+subarea name-slug / UUID IDs) resolution.
+ */
 function _resolveVpd(
   envEntity: HassEntity | undefined,
-  device: GrowspaceDevice,
-  slug: string,
+  vpdSensorId: string | undefined,
+  calculatedVpdIds: string[],
   hassStates: HassStates
 ): number | null {
   // 1. From env entity attributes
   const fromAttrs = _numAttr(envEntity, 'vpd');
   if (fromAttrs !== null) return fromAttrs;
 
-  // 2. From envAttrs.vpdSensor
-  const vpdSensorId = device.environmentAttributes?.vpdSensor;
+  // 2. From the explicitly configured VPD sensor
   if (vpdSensorId) {
     const val = _parseState(hassStates[vpdSensorId]);
     if (val !== null) return val;
   }
 
-  // 3a. Calculated VPD — name-slug ID
-  const calcNameSlug = _slugify(`${device.name} Calculated VPD`);
-  const calcNameId = `sensor.${calcNameSlug}`;
-  const fromNameSlug = _parseState(hassStates[calcNameId]);
-  if (fromNameSlug !== null) return fromNameSlug;
-
-  // 3b. Calculated VPD — UUID-based legacy ID
-  const calcUuidId = `sensor.${device.deviceId}_calculated_vpd`;
-  const fromUuid = _parseState(hassStates[calcUuidId]);
-  if (fromUuid !== null) return fromUuid;
+  // 3. Calculated-VPD candidates, in priority order
+  for (const id of calculatedVpdIds) {
+    const val = _parseState(hassStates[id]);
+    if (val !== null) return val;
+  }
 
   return null;
+}
+
+/**
+ * Build the calculated-VPD candidate entity IDs for a subarea, mirroring the
+ * backend's naming: a friendly-name slug ID first, then the UUID-based legacy ID.
+ *
+ * pairIndex is non-null when the subarea has multiple temperature/humidity
+ * sensor pairs — each pair gets its own suffixed calculated-VPD entity
+ * (" 2" in the friendly name, "_1" in the UUID form for the second pair).
+ */
+function _subareaCalculatedVpdIds(
+  subarea: Subarea,
+  growspace: { id?: string; name?: string } | undefined,
+  pairIndex: number | null
+): string[] {
+  const nameSuffix = pairIndex !== null ? ` ${pairIndex + 1}` : '';
+  const uuidSuffix = pairIndex !== null ? `_${pairIndex}` : '';
+
+  const ids: string[] = [];
+  if (growspace?.name && subarea.name) {
+    ids.push(`sensor.${_slugify(`${growspace.name} ${subarea.name} Calculated VPD${nameSuffix}`)}`);
+  }
+  if (growspace?.id) {
+    ids.push(
+      `sensor.growspace_manager_${growspace.id}_subarea_${subarea.id}_calculated_vpd${uuidSuffix}`
+    );
+  }
+  return ids;
 }
 
 /**
@@ -259,7 +295,15 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
     envAttrs?.humiditySensor,
     hassStates
   );
-  const vpd = _resolveVpd(envEntity, device, slug, hassStates);
+  const vpd = _resolveVpd(
+    envEntity,
+    envAttrs?.vpdSensor,
+    [
+      `sensor.${_slugify(`${device.name} Calculated VPD`)}`,
+      `sensor.${device.deviceId}_calculated_vpd`,
+    ],
+    hassStates
+  );
   const vpdStatus = _resolveVpdStatus(vpd, overviewEntity);
 
   // co2 — absent for cure/dry spaces; falls back to co2Sensor when attribute is missing
@@ -330,12 +374,114 @@ export function computeEnvSnapshot(device: GrowspaceDevice, hassStates: HassStat
   };
 }
 
+/**
+ * Derive a normalized EnvSnapshot for a subarea from its own environment_config.
+ *
+ * Returns the same EnvSnapshot shape as computeEnvSnapshot so downstream
+ * chip-building code can treat growspace- and subarea-scoped snapshots
+ * uniformly. Fields with no subarea-scope equivalent (lights, DLI, optimal
+ * conditions, growspace-only sensor lists) resolve to null/false.
+ *
+ * VPD mirrors the legacy MetricsUtils.computeSubareaMetrics resolution: one
+ * reading per temperature/humidity sensor pair, where an explicitly configured
+ * (non-calculated) VPD sensor wins and calculated-VPD entities — resolved from
+ * the growspace/subarea names and IDs in `growspace` — fill the gaps.
+ *
+ * @param growspace - parent growspace identity used to resolve calculated-VPD
+ *                    entity IDs; without it only explicit VPD sensors resolve.
+ */
+export function computeSubareaEnvSnapshot(
+  subarea: Subarea,
+  hassStates: HassStates,
+  growspace?: { id?: string; name?: string }
+): EnvSnapshot {
+  const ec = subarea.environment_config;
+
+  const temperatureReadings = _resolveSensors(
+    ec.temperature_sensor ?? undefined,
+    ec.temperature_sensors,
+    hassStates
+  );
+  const humidityReadings = _resolveSensors(
+    ec.humidity_sensor ?? undefined,
+    ec.humidity_sensors,
+    hassStates
+  );
+  const temperature = temperatureReadings?.avg ?? null;
+  const humidity = humidityReadings?.avg ?? null;
+
+  // VPD — one reading per temperature/humidity sensor pair
+  const tempIds = temperatureReadings?.entityIds ?? [];
+  const humIds = humidityReadings?.entityIds ?? [];
+  const explicitVpdIds: string[] = [];
+  if (ec.vpd_sensors && ec.vpd_sensors.length > 0) explicitVpdIds.push(...ec.vpd_sensors);
+  else if (ec.vpd_sensor) explicitVpdIds.push(ec.vpd_sensor);
+
+  const numPairs = Math.min(tempIds.length, humIds.length);
+  let vpd: number | null = null;
+  if (numPairs > 0) {
+    const pairValues: number[] = [];
+    for (let i = 0; i < numPairs; i++) {
+      const explicit = explicitVpdIds[i];
+      // Stale calculated-VPD IDs stored in config are ignored and re-resolved
+      const value =
+        explicit && !explicit.includes('calculated_vpd')
+          ? _resolveVpd(undefined, explicit, [], hassStates)
+          : _resolveVpd(
+              undefined,
+              undefined,
+              _subareaCalculatedVpdIds(subarea, growspace, numPairs > 1 ? i : null),
+              hassStates
+            );
+      if (value !== null) pairValues.push(value);
+    }
+    vpd = pairValues.length > 0 ? pairValues.reduce((a, b) => a + b, 0) / pairValues.length : null;
+  } else {
+    vpd = _resolveSensors(ec.vpd_sensor ?? undefined, ec.vpd_sensors, hassStates)?.avg ?? null;
+  }
+
+  // No overview entity at subarea scope — thresholds are unavailable, so this
+  // resolves to null until the backend exposes subarea-level VPD targets.
+  const vpdStatus = _resolveVpdStatus(vpd, undefined);
+
+  const co2 = _resolveFromSensor(null, ec.co2_sensor ?? undefined, hassStates);
+
+  return {
+    temperature,
+    humidity,
+    vpd,
+    vpdStatus,
+    co2,
+    // Not applicable at subarea scope
+    isLightsOn: null,
+    hasLightSensor: false,
+    dli: null,
+    optimalConditions: null,
+    soilMoisture: null,
+    // Subarea-configured secondary sensors
+    substrateTemperature: _resolveSensors(undefined, ec.substrate_temperature_sensors, hassStates),
+    ph: _resolveSensors(undefined, ec.ph_sensors, hassStates),
+    feedEc: _resolveSensors(undefined, ec.feed_ec_sensors, hassStates),
+    bulkEc: _resolveSensors(undefined, ec.bulk_ec_sensors, hassStates),
+    poreEc: _resolveSensors(undefined, ec.pore_ec_sensors, hassStates),
+    // Not configurable per subarea
+    runoffEc: null,
+    drainVolume: null,
+    irrigationFlow: null,
+    power: null,
+    energy: null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Atoms (public)
 // ---------------------------------------------------------------------------
 
 /** Per-growspace env snapshots — keyed by growspaceId. */
 export const envSnapshots$ = atom<Map<string, EnvSnapshot>>(new Map());
+
+/** Per-subarea env snapshots — keyed by `${growspaceId}:${subareaId}`. */
+export const subareaEnvSnapshots$ = atom<Map<string, EnvSnapshot>>(new Map());
 
 // ---------------------------------------------------------------------------
 // Bootstrap write (public)
@@ -354,4 +500,26 @@ export function setEnvSnapshot(
   const updated = new Map(envSnapshots$.get());
   updated.set(growspaceId, snapshot);
   envSnapshots$.set(updated);
+}
+
+/**
+ * Compute and store the EnvSnapshot for a subarea.
+ * Called by SyncService in the same pass as setEnvSnapshot.
+ *
+ * @param growspaceName - parent growspace display name, needed to resolve
+ *                        friendly-name-based calculated-VPD entity IDs.
+ */
+export function setSubareaEnvSnapshot(
+  growspaceId: string,
+  subarea: Subarea,
+  hassStates: HassStates,
+  growspaceName?: string
+): void {
+  const snapshot = computeSubareaEnvSnapshot(subarea, hassStates, {
+    id: growspaceId,
+    name: growspaceName,
+  });
+  const updated = new Map(subareaEnvSnapshots$.get());
+  updated.set(`${growspaceId}:${subarea.id}`, snapshot);
+  subareaEnvSnapshots$.set(updated);
 }

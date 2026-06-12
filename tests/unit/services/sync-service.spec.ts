@@ -17,6 +17,7 @@ vi.mock('../../../src/slices/device-state', () => ({
 
 vi.mock('../../../src/slices/environment', () => ({
   setEnvSnapshot: vi.fn(),
+  setSubareaEnvSnapshot: vi.fn(),
 }));
 
 vi.mock('../../../src/slices/plant', () => ({

@@ -4,7 +4,7 @@ import { GrowspaceUIStore } from '../store/ui/ui-store';
 import type { GridSliceRef } from '../slices/grid';
 import { devices$, setDevices } from '../slices/grid';
 import { setDeviceSnapshot } from '../slices/device-state';
-import { setEnvSnapshot } from '../slices/environment';
+import { setEnvSnapshot, setSubareaEnvSnapshot } from '../slices/environment';
 import { setPlants } from '../slices/plant';
 import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../slices/irrigation';
 import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
@@ -124,6 +124,22 @@ export class SyncService {
 
       // Environment slice (hero chips: temperature, humidity, VPD, CO2)
       if (d.name) setEnvSnapshot(d.deviceId, d, hassStates);
+
+      // Subarea env snapshots — same pass so they are never stale relative to
+      // the growspace snapshot. Subarea sensors join the watched set so a
+      // change to one of them is not skipped by the deep optimization above.
+      (d.subareas ?? []).forEach((sa) => {
+        setSubareaEnvSnapshot(d.deviceId, sa, hassStates, d.name);
+        Object.values(sa.environment_config).forEach((val) => {
+          if (typeof val === 'string' && val.includes('.')) {
+            this._watchedEntities.add(val);
+          } else if (Array.isArray(val)) {
+            val.forEach((v) => {
+              if (typeof v === 'string' && v.includes('.')) this._watchedEntities.add(v);
+            });
+          }
+        });
+      });
 
       // Irrigation slice (tank level chip, next irrigation/drain chips, crop steering phase)
       if (d.irrigationConfig) {
