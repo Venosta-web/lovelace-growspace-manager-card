@@ -7,7 +7,9 @@
 
 import { describe, it, expect } from 'vitest';
 import { DateTime } from 'luxon';
+import { mdiFan, mdiLightbulbOn, mdiLightbulbOff } from '@mdi/js';
 import type { EnvSnapshot, SensorReadings } from '../environment';
+import type { DeviceEntry, DeviceSnapshot } from '../device-state';
 import type { PlantEntity } from '../../features/plants/types';
 import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../../services/types';
 import { MetricKey } from '../../features/environment/constants';
@@ -1081,5 +1083,535 @@ describe('Cycle 11 — hero chips from per-sensor readings', () => {
 
     expect(hero.map((c) => c.value)).toEqual(['24.5°C', '58%']);
     expect(hero[0].label).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 12 — device chips from DeviceSnapshot
+// (restored — these cases from #265 were lost in the #266 merge)
+// ---------------------------------------------------------------------------
+
+describe('Cycle 12 — device chips from DeviceSnapshot', () => {
+  it('returns empty deviceChips when deviceSnapshot is omitted (trailing optional default)', () => {
+    const result = computeHeaderMetrics(makeEnvSnapshot(), [], null, [], 'main');
+
+    expect(result.deviceChips).toEqual([]);
+  });
+
+  it('returns empty deviceChips when deviceSnapshot is null', () => {
+    const result = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      null
+    );
+
+    expect(result.deviceChips).toEqual([]);
+  });
+
+  it('builds a chip from a single-entity category with the legacy MetricKey and label', () => {
+    const snapshot = makeDeviceSnapshot({
+      exhaustFans: makeDeviceEntry({ entityIds: ['switch.tent_1_exhaust'], value: 'On' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips).toHaveLength(1);
+    const chip = deviceChips[0];
+    expect(chip.key).toBe(MetricKey.EXHAUST);
+    expect(chip.label).toBe('Exhaust');
+    expect(chip.value).toBe('On');
+    expect(chip.icon).toBe(mdiFan);
+    expect(chip.entityIds).toEqual(['switch.tent_1_exhaust']);
+    expect(chip.multiValues).toBeUndefined();
+  });
+
+  it('passes "Multiple" and multiValues through for a multi-entity category', () => {
+    const snapshot = makeDeviceSnapshot({
+      humidifiers: makeDeviceEntry({
+        entityIds: ['switch.hum_1', 'switch.hum_2'],
+        value: 'Multiple',
+        multiValues: ['On', 'Off'],
+      }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.HUMIDIFIER);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Humidifier');
+    expect(chip!.value).toBe('Multiple');
+    expect(chip!.multiValues).toEqual(['On', 'Off']);
+    expect(chip!.entityIds).toEqual(['switch.hum_1', 'switch.hum_2']);
+  });
+
+  it('omits chips for unconfigured (null) categories', () => {
+    const snapshot = makeDeviceSnapshot({
+      dehumidifiers: makeDeviceEntry({ value: 'Off' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const keys = deviceChips.map((c) => c.key);
+    expect(keys).toEqual([MetricKey.DEHUMIDIFIER]);
+    const chip = deviceChips[0];
+    expect(chip.label).toBe('Dehumidifier');
+    expect(chip.value).toBe('Off');
+  });
+
+  it('passes a fan percentage value through unchanged with the "Fan" label', () => {
+    const snapshot = makeDeviceSnapshot({
+      circulationFans: makeDeviceEntry({ entityIds: ['fan.tent_1_circ'], value: '70%' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.CIRCULATION_FAN);
+    expect(chip).toBeDefined();
+    expect(chip!.label).toBe('Fan');
+    expect(chip!.value).toBe('70%');
+  });
+
+  it('keeps the chip with a "-" placeholder when a configured entity is unavailable', () => {
+    const snapshot = makeDeviceSnapshot({
+      exhaustFans: makeDeviceEntry({ value: undefined }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.find((c) => c.key === MetricKey.EXHAUST)!.value).toBe('-');
+  });
+
+  it('emits device chips in the legacy order: light, exhaust, circulation fan, humidifier, dehumidifier', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['sensor.light'], value: '70%' }),
+      exhaustFans: makeDeviceEntry(),
+      circulationFans: makeDeviceEntry(),
+      humidifiers: makeDeviceEntry(),
+      dehumidifiers: makeDeviceEntry(),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.map((c) => c.key)).toEqual([
+      MetricKey.LIGHT,
+      MetricKey.EXHAUST,
+      MetricKey.CIRCULATION_FAN,
+      MetricKey.HUMIDIFIER,
+      MetricKey.DEHUMIDIFIER,
+    ]);
+  });
+
+  it('sets active true for a device chip whose key is in activeEnvGraphs', () => {
+    const snapshot = makeDeviceSnapshot({
+      exhaustFans: makeDeviceEntry(),
+      humidifiers: makeDeviceEntry(),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set([MetricKey.EXHAUST]),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.find((c) => c.key === MetricKey.EXHAUST)!.active).toBe(true);
+    expect(deviceChips.find((c) => c.key === MetricKey.HUMIDIFIER)!.active).toBe(false);
+  });
+
+  it('marks a device chip as linked with the correct groupIndex from linkedGraphGroups', () => {
+    const snapshot = makeDeviceSnapshot({
+      exhaustFans: makeDeviceEntry(),
+      circulationFans: makeDeviceEntry(),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [[MetricKey.TEMPERATURE], [MetricKey.EXHAUST, MetricKey.HUMIDITY]],
+      null,
+      snapshot
+    );
+
+    const exhaust = deviceChips.find((c) => c.key === MetricKey.EXHAUST)!;
+    expect(exhaust.linked).toBe(true);
+    expect(exhaust.groupIndex).toBe(1);
+
+    const circulation = deviceChips.find((c) => c.key === MetricKey.CIRCULATION_FAN)!;
+    expect(circulation.linked).toBe(false);
+    expect(circulation.groupIndex).toBe(-1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 13 — light chip icon/value (legacy MetricsUtils display parity)
+// (restored — these cases from #265 were lost in the #266 merge)
+// ---------------------------------------------------------------------------
+
+describe('Cycle 13 — light chip icon and value', () => {
+  it('shows a single numeric reading with the lit bulb icon when the value is positive', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['sensor.tent_1_light'], value: '70%' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('70%');
+    expect(chip.icon).toBe(mdiLightbulbOn);
+  });
+
+  it('shows the off bulb icon when the single numeric reading is zero', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['sensor.tent_1_light'], value: '0%' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      null,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('0%');
+    expect(chip.icon).toBe(mdiLightbulbOff);
+  });
+
+  it('falls back to envSnapshot.isLightsOn for the value when the reading is not numeric', () => {
+    const env = makeEnvSnapshot({ isLightsOn: true, hasLightSensor: true });
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['binary_sensor.tent_1_light'], value: 'On' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      env,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('On');
+    expect(chip.icon).toBe(mdiLightbulbOn);
+  });
+
+  it('shows the light chip from isLightsOn alone when no light entities are configured', () => {
+    const env = makeEnvSnapshot({ isLightsOn: false, hasLightSensor: true });
+
+    const { deviceChips } = computeHeaderMetrics(
+      env,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      makeDeviceSnapshot()
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('Off');
+    expect(chip.icon).toBe(mdiLightbulbOff);
+    expect(chip.entityIds).toEqual([]);
+  });
+
+  it('omits the light chip when there is no light sensor flag and no light entities', () => {
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      makeDeviceSnapshot()
+    );
+
+    expect(deviceChips.find((c) => c.key === MetricKey.LIGHT)).toBeUndefined();
+  });
+
+  it('carries multiValues for multiple light sensors with the isLightsOn fallback value', () => {
+    const env = makeEnvSnapshot({ isLightsOn: true, hasLightSensor: true });
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({
+        entityIds: ['sensor.light_1', 'sensor.light_2'],
+        value: 'Multiple',
+        multiValues: ['70%', '0%'],
+      }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      env,
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('On');
+    expect(chip.multiValues).toEqual(['70%', '0%']);
+    expect(chip.entityIds).toEqual(['sensor.light_1', 'sensor.light_2']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 14 — subarea device chips (legacy computeSubareaMetrics display parity)
+// ---------------------------------------------------------------------------
+
+describe('Cycle 14 — subarea device chips', () => {
+  it('labels the light chip "Lights" and shows the entry value when isLightsOn is absent', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['light.veg_light'], value: 'On' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'subarea',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.label).toBe('Lights');
+    expect(chip.value).toBe('On');
+    expect(chip.icon).toBe(mdiLightbulbOn);
+  });
+
+  it('omits the light chip in the main context for the same snapshot (no isLightsOn flag)', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['light.veg_light'], value: 'On' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'main',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.find((c) => c.key === MetricKey.LIGHT)).toBeUndefined();
+  });
+
+  it('drives the bulb icon from a single numeric light reading in the subarea context', () => {
+    const lit = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['sensor.light'], value: '70%' }),
+    });
+    const dark = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({ entityIds: ['sensor.light'], value: '0%' }),
+    });
+
+    const litChip = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'subarea',
+      new Set(),
+      [],
+      null,
+      lit
+    ).deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    const darkChip = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'subarea',
+      new Set(),
+      [],
+      null,
+      dark
+    ).deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+
+    expect(litChip.value).toBe('70%');
+    expect(litChip.icon).toBe(mdiLightbulbOn);
+    expect(darkChip.value).toBe('0%');
+    expect(darkChip.icon).toBe(mdiLightbulbOff);
+  });
+
+  it('shows "Multiple" with multiValues for multiple light sensors in the subarea context', () => {
+    const snapshot = makeDeviceSnapshot({
+      lightSensors: makeDeviceEntry({
+        entityIds: ['sensor.light_1', 'sensor.light_2'],
+        value: 'Multiple',
+        multiValues: ['70%', 'On'],
+      }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'subarea',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    const chip = deviceChips.find((c) => c.key === MetricKey.LIGHT)!;
+    expect(chip.value).toBe('Multiple');
+    expect(chip.multiValues).toEqual(['70%', 'On']);
+  });
+
+  it('emits the non-light device chips with legacy keys, labels, and order in the subarea context', () => {
+    const snapshot = makeDeviceSnapshot({
+      exhaustFans: makeDeviceEntry({ entityIds: ['fan.exhaust'], value: 'Off' }),
+      circulationFans: makeDeviceEntry({ entityIds: ['fan.circ'], value: '70%' }),
+      humidifiers: makeDeviceEntry({ entityIds: ['switch.hum'], value: 'On' }),
+      dehumidifiers: makeDeviceEntry({ entityIds: ['switch.dehum'], value: 'Off' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'subarea',
+      new Set(),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.map((c) => [c.key, c.label, c.value])).toEqual([
+      [MetricKey.EXHAUST, 'Exhaust', 'Off'],
+      [MetricKey.CIRCULATION_FAN, 'Fan', '70%'],
+      [MetricKey.HUMIDIFIER, 'Humidifier', 'On'],
+      [MetricKey.DEHUMIDIFIER, 'Dehumidifier', 'Off'],
+    ]);
+  });
+
+  it('marks a subarea device chip active when its key is in activeEnvGraphs', () => {
+    const snapshot = makeDeviceSnapshot({
+      exhaustFans: makeDeviceEntry({ entityIds: ['fan.exhaust'], value: 'On' }),
+    });
+
+    const { deviceChips } = computeHeaderMetrics(
+      makeEnvSnapshot(),
+      [],
+      null,
+      [],
+      'subarea',
+      new Set([MetricKey.EXHAUST]),
+      [],
+      null,
+      snapshot
+    );
+
+    expect(deviceChips.find((c) => c.key === MetricKey.EXHAUST)!.active).toBe(true);
   });
 });

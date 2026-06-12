@@ -3,7 +3,7 @@ import { SyncService } from '../../../src/services/sync-service';
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceUIStore } from '../../../src/store/ui/ui-store';
 import { GridSliceRef, devices$, setDevices } from '../../../src/slices/grid';
-import { setDeviceSnapshot } from '../../../src/slices/device-state';
+import { setDeviceSnapshot, setSubareaDeviceSnapshot } from '../../../src/slices/device-state';
 import { setEnvSnapshot, setSubareaEnvSnapshot } from '../../../src/slices/environment';
 import { subareas$, subareasGrowspaceId$ } from '../../../src/slices/subarea';
 import { setPlants } from '../../../src/slices/plant';
@@ -14,6 +14,9 @@ import { atom } from 'nanostores';
 
 vi.mock('../../../src/slices/device-state', () => ({
   setDeviceSnapshot: vi.fn(),
+  setSubareaDeviceSnapshot: vi.fn(),
+  subareaDeviceSnapshots$: { get: vi.fn(() => new Map()) },
+  deviceSnapshotEntityIds: vi.fn(() => []),
 }));
 
 vi.mock('../../../src/slices/environment', () => ({
@@ -401,6 +404,22 @@ describe('SyncService Unit Tests', () => {
       );
     });
 
+    it('feeds setSubareaDeviceSnapshot for each subarea in subareas$', () => {
+      const mockHassStates = { 'sensor.temp': {} as any };
+      dataService.hass = { states: mockHassStates } as any;
+
+      const parentDevice = { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} } as any;
+      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue([parentDevice]);
+
+      const subarea = { id: 'sa1', name: 'Veg Area', environment_config: {} } as any;
+      subareas$.set([subarea]);
+      subareasGrowspaceId$.set('gs1');
+
+      syncService.updateDevicesState();
+
+      expect(setSubareaDeviceSnapshot).toHaveBeenCalledWith('sa1', subarea, mockHassStates);
+    });
+
     it('skips subarea snapshots when subareas$ is empty', () => {
       const mockHassStates = { 'sensor.temp': {} as any };
       dataService.hass = { states: mockHassStates } as any;
@@ -409,6 +428,7 @@ describe('SyncService Unit Tests', () => {
       syncService.updateDevicesState();
 
       expect(setSubareaEnvSnapshot).not.toHaveBeenCalled();
+      expect(setSubareaDeviceSnapshot).not.toHaveBeenCalled();
     });
 
     it('skips setEnvSnapshot for each device without a name', () => {

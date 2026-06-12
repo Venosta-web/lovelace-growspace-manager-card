@@ -19,6 +19,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { getSubareas } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
 import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../slices/environment';
+import { setSubareaDeviceSnapshot, subareaDeviceSnapshots$ } from '../slices/device-state';
 import { computeHeaderMetrics } from '../slices/header-metrics';
 import { DataService } from '../services/data-service';
 import { ConfigTab } from '../features/environment/constants';
@@ -33,7 +34,6 @@ import '../features/ui/containers/growspace-analytics.container';
 import '../features/ui/components/growspace-header-hero-ui';
 import '../features/ui/components/growspace-header-secondary-ui';
 import '../features/shared/ui/growspace-chip';
-import { MetricsUtils } from '../utils/metrics-utils';
 import { filterChips } from '../utils/chip-filter';
 
 import { sharedStyles } from '../styles/shared.styles';
@@ -59,6 +59,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
 
     protected _viewController = new StoreController(this, this.store.$sharedCardViewState);
     protected _subareaEnvController = new StoreController(this, subareaEnvSnapshots$);
+    protected _subareaDeviceController = new StoreController(this, subareaDeviceSnapshots$);
     private _resizeController = new ResizeController(this, () => { });
 
     private _dataService: DataService | null = null;
@@ -277,7 +278,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                 this._error = `Subarea "${this._config.subarea_id}" not found in growspace "${this._config.growspace_id}".`;
             } else {
                 this._subarea = found;
-                this._seedEnvSnapshot(found);
+                this._seedSnapshots(found);
                 this._loadHistory(found);
             }
         } catch (err) {
@@ -289,11 +290,12 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     }
 
     /**
-     * Bootstrap seed for subareaEnvSnapshots$ right after the subarea loads, so the
-     * first render has data. SyncService keeps the snapshot fresh afterwards
-     * (it iterates subareas$, which getSubareas just hydrated).
+     * Bootstrap seed for subareaEnvSnapshots$ and subareaDeviceSnapshots$ right
+     * after the subarea loads, so the first render has data. SyncService keeps
+     * both snapshots fresh afterwards (it iterates subareas$, which getSubareas
+     * just hydrated).
      */
-    private _seedEnvSnapshot(subarea: Subarea): void {
+    private _seedSnapshots(subarea: Subarea): void {
         if (!this.hass) return;
         const devices = this._viewController.value?.grid?.devices ?? [];
         const parent = devices.find((d: any) => d.deviceId === this._config.growspace_id);
@@ -306,6 +308,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
             },
             this.hass.states
         );
+        setSubareaDeviceSnapshot(subarea.id, subarea, this.hass.states);
     }
 
     private _calculateHistoryStart(range: HistoryTimeRange): Date {
@@ -380,7 +383,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         let vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
 
         // When no explicit VPD sensor is configured, resolve the same calculated-VPD entity IDs
-        // that MetricsUtils.computeSubareaMetrics() uses, so the history cache keys match.
+        // that the environment slice's subarea adapter uses, so the history cache keys match.
         if (vpdIds.length === 0 && tempIds.length > 0 && humIds.length > 0) {
             vpdIds = this._resolveCalculatedVpdIds(subarea, tempIds, humIds);
         }
@@ -552,7 +555,7 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
                       </button>
                     </div>
 
-                    ${this._renderHeaderMetrics(this._subarea.environment_config, parentDevice)}
+                    ${this._renderHeaderMetrics(parentDevice)}
                     ${parentDevice
                             ? html`<growspace-analytics
                             .device=${parentDevice}
@@ -584,36 +587,38 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
     `;
     }
 
-    private _renderHeaderMetrics(
-        ec: Subarea['environment_config'],
-        parentDevice: any
-    ): TemplateResult {
+    private _renderHeaderMetrics(parentDevice: any): TemplateResult {
         const activeEnvGraphs = this._analyticsStateController?.value?.activeEnvGraphs ?? new Set();
 
-        // Hero + secondary chips are atom-sourced: the subarea EnvSnapshot is fed by
-        // SyncService (and seeded in _loadSubarea); empty plant/irrigation/tank inputs
-        // mean dominant-stage and irrigation chips correctly don't render.
+        // All chips are atom-sourced: the subarea EnvSnapshot and DeviceSnapshot are
+        // fed by SyncService (and seeded in _loadSubarea); empty plant/irrigation/tank
+        // inputs mean dominant-stage and irrigation chips correctly don't render.
         const envSnapshot = this._subarea
             ? (subareaEnvSnapshots$.get().get(this._subarea.id) ?? null)
             : null;
-        const { hero, chips } = computeHeaderMetrics(envSnapshot, [], null, [], 'subarea', activeEnvGraphs);
-
-        // Device chips stay on the legacy path until the DeviceState slice grows its
-        // subarea adapter (ADR-0018 P2, follow-up issue).
-        const legacyMetrics = MetricsUtils.computeSubareaMetrics(
-            this.hass,
-            ec,
+        const deviceSnapshot = this._subarea
+            ? (subareaDeviceSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const {
+            hero,
+            chips,
+            deviceChips: allDeviceChips,
+        } = computeHeaderMetrics(
+            envSnapshot,
+            [],
+            null,
+            [],
+            'subarea',
             activeEnvGraphs,
-            parentDevice?.deviceId,
-            parentDevice?.name || this._parentGrowspaceName,
-            this._subarea?.id,
-            this._subarea?.name
+            [],
+            null,
+            deviceSnapshot
         );
 
         const hidden = this._config?.hidden_chips;
         const heroChips = filterChips(hero, hidden);
         const secondaryChips = filterChips(chips, hidden);
-        const deviceChips = filterChips(legacyMetrics.deviceChips, hidden);
+        const deviceChips = filterChips(allDeviceChips, hidden);
 
         const hasAny =
             heroChips.length > 0 ||

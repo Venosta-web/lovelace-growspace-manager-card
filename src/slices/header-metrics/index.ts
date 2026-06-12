@@ -412,6 +412,19 @@ function _buildDeviceChip(
   );
 }
 
+/** Display options for the light chip — the subarea context diverges from main. */
+interface LightChipOpts {
+  /** Chip label — the legacy subarea path labelled the chip 'Lights'; main has none. */
+  label?: string;
+  /**
+   * Subarea display mode (legacy computeSubareaMetrics parity): subareas have
+   * no overview is_lights_on flag, so the chip value falls back to the
+   * DeviceEntry's normalized value ("On"/"Off"/"Multiple") and the default
+   * icon is the legacy lit bulb instead of the flag-driven one.
+   */
+  preferEntryValue?: boolean;
+}
+
 /**
  * Build the light chip, replicating the legacy MetricsUtils display:
  *  - Single numeric reading (e.g. "70%" or "450"): show the reading; bulb icon
@@ -422,14 +435,22 @@ function _buildDeviceChip(
  *    flag but no configured light entities.
  *  - Multiple sensors: "Multiple" handling comes from the DeviceEntry's
  *    multiValues, value falls back to the is_lights_on flag.
+ *  - Subarea (opts.preferEntryValue): the DeviceEntry value itself is the
+ *    fallback instead of the absent is_lights_on flag.
  */
 function _buildLightChip(
   entry: DeviceEntry | null,
   isLightsOn: boolean | null,
   activeEnvGraphs: Set<string>,
-  linkedGraphGroups: string[][]
+  linkedGraphGroups: string[][],
+  opts: LightChipOpts = {}
 ): HeaderChip | null {
-  let icon = isLightsOn === true ? mdiLightbulbOn : mdiLightbulbOff;
+  let icon: string;
+  if (opts.preferEntryValue) {
+    icon = mdiLightbulbOn;
+  } else {
+    icon = isLightsOn === true ? mdiLightbulbOn : mdiLightbulbOff;
+  }
   let value: string | undefined;
 
   if (entry !== null && entry.entityIds.length === 1 && entry.value !== undefined) {
@@ -438,6 +459,9 @@ function _buildLightChip(
       value = entry.value;
       icon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
     }
+  }
+  if (value === undefined && opts.preferEntryValue) {
+    value = entry?.value;
   }
   if (value === undefined && isLightsOn !== null) {
     value = isLightsOn ? 'On' : 'Off';
@@ -450,7 +474,7 @@ function _buildLightChip(
     MetricKey.LIGHT,
     icon,
     value ?? '',
-    { multiValues, entityIds: entry?.entityIds ?? [] },
+    { multiValues, entityIds: entry?.entityIds ?? [], label: opts.label },
     activeEnvGraphs,
     linkedGraphGroups
   );
@@ -854,7 +878,10 @@ export function computeHeaderMetrics(
         deviceSnapshot.lightSensors,
         envSnapshot?.isLightsOn ?? null,
         activeEnvGraphs,
-        linkedGraphGroups
+        linkedGraphGroups,
+        // The legacy subarea path labelled the chip and, lacking an
+        // is_lights_on flag, showed the entity state directly.
+        viewContext === 'subarea' ? { label: 'Lights', preferEntryValue: true } : {}
       ),
       _buildDeviceChip(
         MetricKey.EXHAUST,
