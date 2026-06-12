@@ -4,20 +4,33 @@
  *
  * Public API (atoms):
  *   deviceSnapshots$        — read: Map<growspaceId, DeviceSnapshot> (one entry per growspace)
+ *   subareaDeviceSnapshots$ — read: Map<subareaId, DeviceSnapshot> (one entry per subarea)
  *
  * Public API (bootstrap writes):
- *   setDeviceSnapshot()     — compute + store snapshot for a growspace (called by SyncService
- *                             on every hass update)
+ *   setDeviceSnapshot()        — compute + store snapshot for a growspace (called by
+ *                                SyncService on every hass update)
+ *   setSubareaDeviceSnapshot() — compute + store snapshot for a subarea (called by
+ *                                SyncService alongside the growspace snapshots)
  *
  * Public API (pure computation):
- *   computeDeviceSnapshot() — derive a DeviceSnapshot from a device + hass states snapshot.
- *                             Exported so HeaderMetrics and tests can call it directly.
+ *   computeDeviceSnapshot()        — derive a DeviceSnapshot from a device + hass states
+ *                                    snapshot. Exported so HeaderMetrics and tests can
+ *                                    call it directly.
+ *   computeSubareaDeviceSnapshot() — derive a DeviceSnapshot from a subarea's
+ *                                    environment_config device lists + hass states.
+ *
+ * Internally the two compute functions are thin entity-resolution adapters over a
+ * shared snapshot-building core (ADR-0018): the growspace adapter resolves entity
+ * IDs from the device's environmentAttributes (with the singular-field fallbacks),
+ * while the subarea adapter resolves directly from the subarea's environment_config
+ * device lists. Fan Entity Mode detection (ADR-0008) lives in the shared normalizers.
  */
 
 import { atom } from 'nanostores';
 import { mdiLightbulbOn, mdiFan, mdiAirHumidifier, mdiAirHumidifierOff } from '@mdi/js';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
+import type { Subarea } from '../subarea/schema';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -99,11 +112,11 @@ function _normalizeOnOff(entity: HassEntity | undefined): string | undefined {
  *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
  *   - Binary (switch / input_boolean): "On" / "Off"
  */
-function _normalizeFanDevice(entity: HassEntity | undefined): string | undefined {
+function _normalizeFanDevice(entity: HassEntity | undefined, entityId: string): string | undefined {
   if (!entity) return undefined;
   if (UNAVAILABLE_STATES.has(entity.state)) return undefined;
 
-  const isFanDomain = entity.entity_id.startsWith('fan.');
+  const isFanDomain = entityId.startsWith('fan.');
   if (isFanDomain) {
     if (entity.state === 'off') return 'Off';
     const pct = entity.attributes?.percentage;
@@ -112,7 +125,7 @@ function _normalizeFanDevice(entity: HassEntity | undefined): string | undefined
 
   const numVal = parseFloat(entity.state);
   if (!isNaN(numVal)) {
-    const domain = entity.entity_id.split('.')[0];
+    const domain = entityId.split('.')[0];
     const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
     if (!isBinaryDomain) return String(Math.round(numVal));
     return numVal > 0 ? 'On' : 'Off';
@@ -131,18 +144,18 @@ function _buildEntry(
   entityIds: string[],
   hassStates: HassStates,
   icon: string,
-  normalizer: (entity: HassEntity | undefined) => string | undefined
+  normalizer: (entity: HassEntity | undefined, entityId: string) => string | undefined
 ): DeviceEntry | null {
   if (entityIds.length === 0) return null;
 
   if (entityIds.length === 1) {
-    const value = normalizer(hassStates[entityIds[0]]);
+    const value = normalizer(hassStates[entityIds[0]], entityIds[0]);
     return { entityIds, value, icon };
   }
 
   // Multiple entities: collect individual values; surface "Multiple" as the aggregate.
   const multiValues = entityIds
-    .map((id) => normalizer(hassStates[id]))
+    .map((id) => normalizer(hassStates[id], id))
     .filter((v): v is string => v !== undefined);
 
   return {
@@ -153,12 +166,40 @@ function _buildEntry(
   };
 }
 
+/** Explicit per-category entity ID lists — the shared core's only input shape. */
+interface DeviceEntityIds {
+  lightIds: string[];
+  exhaustIds: string[];
+  circulationIds: string[];
+  humidifierIds: string[];
+  dehumidifierIds: string[];
+}
+
+/**
+ * Shared snapshot-building core (ADR-0018): explicit device entity ID lists →
+ * DeviceSnapshot. Both the growspace and subarea adapters resolve their own
+ * entity IDs and feed them through here.
+ */
+function _buildSnapshot(ids: DeviceEntityIds, hassStates: HassStates): DeviceSnapshot {
+  return {
+    lightSensors: _buildEntry(ids.lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
+    exhaustFans: _buildEntry(ids.exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
+    circulationFans: _buildEntry(ids.circulationIds, hassStates, mdiFan, _normalizeFanDevice),
+    humidifiers: _buildEntry(ids.humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
+    dehumidifiers: _buildEntry(ids.dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Pure computation (exported — used by HeaderMetrics and tests)
 // ---------------------------------------------------------------------------
 
 /**
  * Derive a normalized DeviceSnapshot for a growspace from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
+ * from the device's environmentAttributes, preferring the plural list fields
+ * with the legacy singular fields as fallback.
  *
  * This is the canonical place to read device-controlled entity states from hass.states.
  * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
@@ -170,22 +211,58 @@ export function computeDeviceSnapshot(
 ): DeviceSnapshot {
   const env = device.environmentAttributes ?? {};
 
-  const lightIds = env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []);
-  const exhaustIds = env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []);
-  const circulationIds =
-    env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []);
-  const humidifierIds =
-    env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []);
-  const dehumidifierIds =
-    env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
+  return _buildSnapshot(
+    {
+      lightIds: env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []),
+      exhaustIds: env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []),
+      circulationIds:
+        env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []),
+      humidifierIds: env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []),
+      dehumidifierIds:
+        env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []),
+    },
+    hassStates
+  );
+}
 
-  return {
-    lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
-    exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
-    circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeFanDevice),
-    humidifiers: _buildEntry(humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
-    dehumidifiers: _buildEntry(dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
-  };
+/**
+ * Derive a normalized DeviceSnapshot for a subarea from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
+ * directly from the subarea's environment_config device lists. Categories
+ * without configured entities are null, exactly like the growspace adapter.
+ */
+export function computeSubareaDeviceSnapshot(
+  subarea: Subarea,
+  hassStates: HassStates
+): DeviceSnapshot {
+  const ec = subarea.environment_config;
+
+  return _buildSnapshot(
+    {
+      lightIds: ec.light_sensors ?? [],
+      exhaustIds: ec.exhaust_fan_entities ?? [],
+      circulationIds: ec.circulation_fan_entities ?? [],
+      humidifierIds: ec.humidifier_entities ?? [],
+      dehumidifierIds: ec.dehumidifier_entities ?? [],
+    },
+    hassStates
+  );
+}
+
+/**
+ * All entity IDs referenced by a snapshot's DeviceEntry fields.
+ * Used by SyncService to register watched entities for subarea snapshots.
+ */
+export function deviceSnapshotEntityIds(snapshot: DeviceSnapshot): string[] {
+  const entries = [
+    snapshot.lightSensors,
+    snapshot.exhaustFans,
+    snapshot.circulationFans,
+    snapshot.humidifiers,
+    snapshot.dehumidifiers,
+  ];
+  return entries.flatMap((e) => e?.entityIds ?? []);
 }
 
 // ---------------------------------------------------------------------------
@@ -195,8 +272,11 @@ export function computeDeviceSnapshot(
 /** Per-growspace device state snapshots — keyed by growspaceId. */
 export const deviceSnapshots$ = atom<Map<string, DeviceSnapshot>>(new Map());
 
+/** Per-subarea device state snapshots — keyed by subareaId. */
+export const subareaDeviceSnapshots$ = atom<Map<string, DeviceSnapshot>>(new Map());
+
 // ---------------------------------------------------------------------------
-// Bootstrap write (public)
+// Bootstrap writes (public)
 // ---------------------------------------------------------------------------
 
 /**
@@ -212,4 +292,20 @@ export function setDeviceSnapshot(
   const updated = new Map(deviceSnapshots$.get());
   updated.set(growspaceId, snapshot);
   deviceSnapshots$.set(updated);
+}
+
+/**
+ * Compute and store the DeviceSnapshot for a subarea.
+ * Called by SyncService alongside the growspace snapshots, and by the subarea
+ * card once after it has loaded its subarea (bootstrap seed).
+ */
+export function setSubareaDeviceSnapshot(
+  subareaId: string,
+  subarea: Subarea,
+  hassStates: HassStates
+): void {
+  const snapshot = computeSubareaDeviceSnapshot(subarea, hassStates);
+  const updated = new Map(subareaDeviceSnapshots$.get());
+  updated.set(subareaId, snapshot);
+  subareaDeviceSnapshots$.set(updated);
 }

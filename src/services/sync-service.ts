@@ -3,7 +3,12 @@ import { DataService } from './data-service';
 import { GrowspaceUIStore } from '../store/ui/ui-store';
 import type { GridSliceRef } from '../slices/grid';
 import { devices$, setDevices } from '../slices/grid';
-import { setDeviceSnapshot } from '../slices/device-state';
+import {
+  deviceSnapshotEntityIds,
+  setDeviceSnapshot,
+  setSubareaDeviceSnapshot,
+  subareaDeviceSnapshots$,
+} from '../slices/device-state';
 import {
   envSnapshotEntityIds,
   setEnvSnapshot,
@@ -160,9 +165,9 @@ export class SyncService {
       }
     });
 
-    // Subarea env snapshots — subareas$ holds the most recently queried
-    // growspace's subareas (hydrated by the subarea card); its parent device
-    // supplies the naming context for calculated-VPD resolution.
+    // Subarea env + device snapshots — subareas$ holds the most recently
+    // queried growspace's subareas (hydrated by the subarea card); its parent
+    // device supplies the naming context for calculated-VPD resolution.
     const subareas = subareas$.get();
     if (subareas.length > 0) {
       const parentId = subareasGrowspaceId$.get();
@@ -177,6 +182,12 @@ export class SyncService {
         const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
         if (snapshot) {
           envSnapshotEntityIds(snapshot).forEach((id) => this._watchedEntities.add(id));
+        }
+
+        setSubareaDeviceSnapshot(subarea.id, subarea, hassStates);
+        const deviceSnapshot = subareaDeviceSnapshots$.get().get(subarea.id);
+        if (deviceSnapshot) {
+          deviceSnapshotEntityIds(deviceSnapshot).forEach((id) => this._watchedEntities.add(id));
         }
       });
     }

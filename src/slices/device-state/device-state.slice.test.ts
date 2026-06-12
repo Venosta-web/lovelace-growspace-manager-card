@@ -1,14 +1,26 @@
 /**
  * DeviceState slice unit tests.
  *
- * Covers: computeDeviceSnapshot (pure), deviceSnapshots$ atom, and setDeviceSnapshot bootstrap write.
+ * Covers: computeDeviceSnapshot + computeSubareaDeviceSnapshot (pure adapters
+ * over the shared core), deviceSnapshots$ / subareaDeviceSnapshots$ atoms,
+ * the setDeviceSnapshot / setSubareaDeviceSnapshot bootstrap writes, and
+ * deviceSnapshotEntityIds.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
 import { createGrowspaceDevice } from '../../services/types';
-import { computeDeviceSnapshot, deviceSnapshots$, setDeviceSnapshot } from './index';
+import type { Subarea } from '../subarea/schema';
+import {
+  computeDeviceSnapshot,
+  computeSubareaDeviceSnapshot,
+  deviceSnapshotEntityIds,
+  deviceSnapshots$,
+  setDeviceSnapshot,
+  setSubareaDeviceSnapshot,
+  subareaDeviceSnapshots$,
+} from './index';
 import type { DeviceSnapshot } from './index';
 
 // ---------------------------------------------------------------------------
@@ -37,12 +49,21 @@ function makeDevice(overrides: Partial<GrowspaceDevice> = {}): GrowspaceDevice {
   return createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1', ...overrides });
 }
 
+/** Build a minimal Subarea for tests. */
+function makeSubarea(
+  environmentConfig: Subarea['environment_config'] = {},
+  overrides: Partial<Omit<Subarea, 'environment_config'>> = {}
+): Subarea {
+  return { id: 'sa1', name: 'Veg Area', environment_config: environmentConfig, ...overrides };
+}
+
 // ---------------------------------------------------------------------------
 // State reset
 // ---------------------------------------------------------------------------
 
 beforeEach(() => {
   deviceSnapshots$.set(new Map());
+  subareaDeviceSnapshots$.set(new Map());
 });
 
 // ---------------------------------------------------------------------------
@@ -694,5 +715,202 @@ describe('computeDeviceSnapshot — speed sensor at boundary values', () => {
 
     expect(deviceSnapshots$.get().get('gs1')!.exhaustFans!.value).toBe('On');
     expect(deviceSnapshots$.get().get('gs2')!.exhaustFans!.value).toBe('Off');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 15 — subarea adapter (ADR-0018): computeSubareaDeviceSnapshot
+// ---------------------------------------------------------------------------
+
+describe('computeSubareaDeviceSnapshot — environment_config device lists', () => {
+  it.each([
+    ['lightSensors', 'light_sensors', 'light.veg_light'],
+    ['exhaustFans', 'exhaust_fan_entities', 'switch.veg_exhaust'],
+    ['circulationFans', 'circulation_fan_entities', 'switch.veg_circ'],
+    ['humidifiers', 'humidifier_entities', 'switch.veg_hum'],
+    ['dehumidifiers', 'dehumidifier_entities', 'switch.veg_dehum'],
+  ] as const)('%s: resolves entity IDs from environment_config.%s', (category, field, entityId) => {
+    const hassStates: HassStates = {
+      [entityId]: makeHassEntity(entityId, 'on', {}),
+    };
+
+    const snapshot = computeSubareaDeviceSnapshot(makeSubarea({ [field]: [entityId] }), hassStates);
+
+    expect(snapshot[category]).not.toBeNull();
+    expect(snapshot[category]!.value).toBe('On');
+    expect(snapshot[category]!.entityIds).toEqual([entityId]);
+  });
+
+  it('returns null for every category when environment_config has no device lists', () => {
+    const snapshot = computeSubareaDeviceSnapshot(makeSubarea(), {});
+
+    expect(snapshot.lightSensors).toBeNull();
+    expect(snapshot.exhaustFans).toBeNull();
+    expect(snapshot.circulationFans).toBeNull();
+    expect(snapshot.humidifiers).toBeNull();
+    expect(snapshot.dehumidifiers).toBeNull();
+  });
+
+  it('applies Fan Entity Mode detection (ADR-0008) to subarea fan entities', () => {
+    const hassStates: HassStates = {
+      'fan.veg_exhaust': makeHassEntity('fan.veg_exhaust', 'on', { percentage: 70 }),
+      'sensor.veg_circ_speed': makeHassEntity('sensor.veg_circ_speed', '5', {}),
+    };
+
+    const snapshot = computeSubareaDeviceSnapshot(
+      makeSubarea({
+        exhaust_fan_entities: ['fan.veg_exhaust'],
+        circulation_fan_entities: ['sensor.veg_circ_speed'],
+      }),
+      hassStates
+    );
+
+    expect(snapshot.exhaustFans!.value).toBe('70%');
+    expect(snapshot.circulationFans!.value).toBe('5');
+  });
+
+  it('rounds a percentage light sensor like the growspace adapter', () => {
+    const hassStates: HassStates = {
+      'sensor.veg_light': makeHassEntity('sensor.veg_light', '70.4', {
+        unit_of_measurement: '%',
+      }),
+    };
+
+    const snapshot = computeSubareaDeviceSnapshot(
+      makeSubarea({ light_sensors: ['sensor.veg_light'] }),
+      hassStates
+    );
+
+    expect(snapshot.lightSensors!.value).toBe('70%');
+  });
+
+  it('returns "Multiple" with multiValues for multi-entity categories', () => {
+    const hassStates: HassStates = {
+      'switch.hum_a': makeHassEntity('switch.hum_a', 'on', {}),
+      'switch.hum_b': makeHassEntity('switch.hum_b', 'off', {}),
+    };
+
+    const snapshot = computeSubareaDeviceSnapshot(
+      makeSubarea({ humidifier_entities: ['switch.hum_a', 'switch.hum_b'] }),
+      hassStates
+    );
+
+    expect(snapshot.humidifiers!.value).toBe('Multiple');
+    expect(snapshot.humidifiers!.multiValues).toEqual(['On', 'Off']);
+  });
+
+  it('produces the same snapshot as the growspace adapter for equivalent entity lists (shared core)', () => {
+    const hassStates: HassStates = {
+      'sensor.light': makeHassEntity('sensor.light', '80', { unit_of_measurement: '%' }),
+      'fan.exhaust': makeHassEntity('fan.exhaust', 'on', { percentage: 40 }),
+      'switch.hum': makeHassEntity('switch.hum', 'off', {}),
+    };
+
+    const fromSubarea = computeSubareaDeviceSnapshot(
+      makeSubarea({
+        light_sensors: ['sensor.light'],
+        exhaust_fan_entities: ['fan.exhaust'],
+        humidifier_entities: ['switch.hum'],
+      }),
+      hassStates
+    );
+    const fromGrowspace = computeDeviceSnapshot(
+      makeDevice({
+        environmentAttributes: {
+          lightSensors: ['sensor.light'],
+          exhaustFanEntities: ['fan.exhaust'],
+          humidifierEntities: ['switch.hum'],
+        },
+      }),
+      hassStates
+    );
+
+    expect(fromSubarea).toEqual(fromGrowspace);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 16 — subareaDeviceSnapshots$ atom and setSubareaDeviceSnapshot
+// ---------------------------------------------------------------------------
+
+describe('subareaDeviceSnapshots$ atom and setSubareaDeviceSnapshot', () => {
+  it('starts as an empty map', () => {
+    expect(subareaDeviceSnapshots$.get().size).toBe(0);
+  });
+
+  it('stores the computed snapshot keyed by subareaId', () => {
+    const hassStates: HassStates = {
+      'switch.veg_exhaust': makeHassEntity('switch.veg_exhaust', 'on', {}),
+    };
+
+    setSubareaDeviceSnapshot(
+      'sa1',
+      makeSubarea({ exhaust_fan_entities: ['switch.veg_exhaust'] }),
+      hassStates
+    );
+
+    const snapshot = subareaDeviceSnapshots$.get().get('sa1');
+    expect(snapshot).toBeDefined();
+    expect(snapshot!.exhaustFans!.value).toBe('On');
+  });
+
+  it('overwrites a previous snapshot for the same subareaId', () => {
+    const subarea = makeSubarea({ exhaust_fan_entities: ['switch.veg_exhaust'] });
+
+    setSubareaDeviceSnapshot('sa1', subarea, {
+      'switch.veg_exhaust': makeHassEntity('switch.veg_exhaust', 'on', {}),
+    });
+    setSubareaDeviceSnapshot('sa1', subarea, {
+      'switch.veg_exhaust': makeHassEntity('switch.veg_exhaust', 'off', {}),
+    });
+
+    expect(subareaDeviceSnapshots$.get().get('sa1')!.exhaustFans!.value).toBe('Off');
+  });
+
+  it('stores independent snapshots for different subareas without touching deviceSnapshots$', () => {
+    setSubareaDeviceSnapshot(
+      'sa1',
+      makeSubarea({ exhaust_fan_entities: ['switch.fan1'] }, { id: 'sa1' }),
+      { 'switch.fan1': makeHassEntity('switch.fan1', 'on', {}) }
+    );
+    setSubareaDeviceSnapshot(
+      'sa2',
+      makeSubarea({ exhaust_fan_entities: ['switch.fan2'] }, { id: 'sa2' }),
+      { 'switch.fan2': makeHassEntity('switch.fan2', 'off', {}) }
+    );
+
+    expect(subareaDeviceSnapshots$.get().get('sa1')!.exhaustFans!.value).toBe('On');
+    expect(subareaDeviceSnapshots$.get().get('sa2')!.exhaustFans!.value).toBe('Off');
+    expect(deviceSnapshots$.get().size).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle 17 — deviceSnapshotEntityIds
+// ---------------------------------------------------------------------------
+
+describe('deviceSnapshotEntityIds', () => {
+  it('collects entity IDs across all configured categories', () => {
+    const snapshot = computeSubareaDeviceSnapshot(
+      makeSubarea({
+        light_sensors: ['sensor.light'],
+        exhaust_fan_entities: ['fan.ex_a', 'fan.ex_b'],
+        humidifier_entities: ['switch.hum'],
+      }),
+      {}
+    );
+
+    expect(deviceSnapshotEntityIds(snapshot)).toEqual([
+      'sensor.light',
+      'fan.ex_a',
+      'fan.ex_b',
+      'switch.hum',
+    ]);
+  });
+
+  it('returns an empty array when no categories are configured', () => {
+    const snapshot = computeSubareaDeviceSnapshot(makeSubarea(), {});
+
+    expect(deviceSnapshotEntityIds(snapshot)).toEqual([]);
   });
 });

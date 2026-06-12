@@ -431,7 +431,7 @@ describe('GrowspaceSubareaCard', () => {
         expect(heroUI?.chips?.length ?? 0).toBe(0);
     });
 
-    test('device chip shows raw state value when entity has non-standard state', async () => {
+    test('device chip normalizes a non-standard fan state per Fan Entity Mode (ADR-0008)', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -446,11 +446,13 @@ describe('GrowspaceSubareaCard', () => {
 
         const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
         const exhaustChip = Array.from(chips ?? []).find((c: any) => c.label === 'Exhaust') as any;
-        // Non-on/off states are passed through as-is in .value
-        expect(exhaustChip?.value).toBe('standby');
+        // The DeviceState slice normalizes fan.* entities: any non-"off" state
+        // without a percentage attribute displays as "On" (the legacy subarea
+        // path passed the raw state through).
+        expect(exhaustChip?.value).toBe('On');
     });
 
-    test('device chip is not rendered when entity not in hass states', async () => {
+    test('device chip shows a "-" placeholder when entity not in hass states', async () => {
         mockDataService.getSubareas.mockResolvedValue([{
             id: 'sa1',
             name: 'Veg Area',
@@ -462,10 +464,12 @@ describe('GrowspaceSubareaCard', () => {
         await (element as any)._loadSubarea();
         await element.updateComplete;
 
-        // When an entity is missing from hass.states, computeSubareaMetrics filters the chip out
+        // Canonical HeaderMetrics display: a configured-but-unavailable device
+        // keeps its chip with a "-" placeholder, matching the main card (the
+        // legacy subarea path filtered the chip out).
         const chips = element.shadowRoot?.querySelectorAll('growspace-chip');
         const exhaustChip = Array.from(chips ?? []).find((c: any) => c.label === 'Exhaust') as any;
-        expect(exhaustChip).toBeUndefined();
+        expect(exhaustChip?.value).toBe('-');
     });
 
     test('secondary sensor chip is not rendered when entity not in hass states', async () => {
