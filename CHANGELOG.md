@@ -1,3 +1,10 @@
+# [1.1.0-next.37](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.36...v1.1.0-next.37) (2026-06-12)
+
+
+### Features
+
+* **subareas:** payload-driven subarea snapshots for all growspaces ([537e17c](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/537e17cfa2ee6bf3dbc07b32fec94fe9d2419ebe)), closes [Venosta-web/growspace_manager#441](https://github.com/Venosta-web/growspace_manager/issues/441)
+
 # [1.1.0-next.36](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.35...v1.1.0-next.36) (2026-06-12)
 
 
