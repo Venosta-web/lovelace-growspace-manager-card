@@ -3,8 +3,18 @@ import { SyncService } from '../../../src/services/sync-service';
 import { DataService } from '../../../src/services/data-service';
 import { GrowspaceUIStore } from '../../../src/store/ui/ui-store';
 import { GridSliceRef, devices$, setDevices } from '../../../src/slices/grid';
-import { setDeviceSnapshot, setSubareaDeviceSnapshot } from '../../../src/slices/device-state';
-import { setEnvSnapshot, setSubareaEnvSnapshot } from '../../../src/slices/environment';
+import {
+  deviceSnapshotEntityIds,
+  setDeviceSnapshot,
+  setSubareaDeviceSnapshot,
+  subareaDeviceSnapshots$,
+} from '../../../src/slices/device-state';
+import {
+  envSnapshotEntityIds,
+  setEnvSnapshot,
+  setSubareaEnvSnapshot,
+  subareaEnvSnapshots$,
+} from '../../../src/slices/environment';
 import { subareas$, subareasGrowspaceId$ } from '../../../src/slices/subarea';
 import { setPlants } from '../../../src/slices/plant';
 import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../../../src/slices/irrigation';
@@ -420,10 +430,155 @@ describe('SyncService Unit Tests', () => {
       expect(setSubareaDeviceSnapshot).toHaveBeenCalledWith('sa1', subarea, mockHassStates);
     });
 
-    it('skips subarea snapshots when subareas$ is empty', () => {
+    it('feeds subarea snapshots from each device payload without subareas$ ever being hydrated', () => {
       const mockHassStates = { 'sensor.temp': {} as any };
       dataService.hass = { states: mockHassStates } as any;
-      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue([]);
+
+      const subareaA = { id: 'sa_a', name: 'Shelf A', environment_config: {} } as any;
+      const subareaB = { id: 'sa_b', name: 'Shelf B', environment_config: {} } as any;
+      const devices = [
+        {
+          deviceId: 'gs1',
+          name: 'Tent 1',
+          environmentAttributes: {},
+          subareas: [subareaA],
+        } as any,
+        {
+          deviceId: 'gs2',
+          name: 'Tent 2',
+          environmentAttributes: {},
+          subareas: [subareaB],
+        } as any,
+      ];
+      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(devices);
+
+      syncService.updateDevicesState();
+
+      expect(setSubareaEnvSnapshot).toHaveBeenCalledWith(
+        'sa_a',
+        subareaA,
+        { growspaceId: 'gs1', growspaceName: 'Tent 1' },
+        mockHassStates
+      );
+      expect(setSubareaEnvSnapshot).toHaveBeenCalledWith(
+        'sa_b',
+        subareaB,
+        { growspaceId: 'gs2', growspaceName: 'Tent 2' },
+        mockHassStates
+      );
+      expect(setSubareaDeviceSnapshot).toHaveBeenCalledWith('sa_a', subareaA, mockHassStates);
+      expect(setSubareaDeviceSnapshot).toHaveBeenCalledWith('sa_b', subareaB, mockHassStates);
+    });
+
+    it('prefers the hydrated subareas$ list over the payload list for its growspace only', () => {
+      const mockHassStates = { 'sensor.temp': {} as any };
+      dataService.hass = { states: mockHassStates } as any;
+
+      const payloadSubarea = { id: 'sa_stale', name: 'Stale Shelf', environment_config: {} } as any;
+      const storeSubarea = { id: 'sa_fresh', name: 'Fresh Shelf', environment_config: {} } as any;
+      const otherSubarea = { id: 'sa_other', name: 'Other Shelf', environment_config: {} } as any;
+      const devices = [
+        {
+          deviceId: 'gs1',
+          name: 'Tent 1',
+          environmentAttributes: {},
+          subareas: [payloadSubarea],
+        } as any,
+        {
+          deviceId: 'gs2',
+          name: 'Tent 2',
+          environmentAttributes: {},
+          subareas: [otherSubarea],
+        } as any,
+      ];
+      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(devices);
+
+      // subareas$ hydrated for gs1 — fresher than the cached payload list
+      subareas$.set([storeSubarea]);
+      subareasGrowspaceId$.set('gs1');
+
+      syncService.updateDevicesState();
+
+      expect(setSubareaEnvSnapshot).toHaveBeenCalledWith(
+        'sa_fresh',
+        storeSubarea,
+        { growspaceId: 'gs1', growspaceName: 'Tent 1' },
+        mockHassStates
+      );
+      expect(setSubareaEnvSnapshot).not.toHaveBeenCalledWith(
+        'sa_stale',
+        expect.anything(),
+        expect.anything(),
+        expect.anything()
+      );
+      // gs2 is untouched by the hydrated list — still payload-sourced
+      expect(setSubareaEnvSnapshot).toHaveBeenCalledWith(
+        'sa_other',
+        otherSubarea,
+        { growspaceId: 'gs2', growspaceName: 'Tent 2' },
+        mockHassStates
+      );
+    });
+
+    it('treats a hydrated-but-empty subareas$ list as authoritative for its growspace', () => {
+      const mockHassStates = { 'sensor.temp': {} as any };
+      dataService.hass = { states: mockHassStates } as any;
+
+      const payloadSubarea = { id: 'sa_removed', name: 'Removed', environment_config: {} } as any;
+      const devices = [
+        {
+          deviceId: 'gs1',
+          name: 'Tent 1',
+          environmentAttributes: {},
+          subareas: [payloadSubarea],
+        } as any,
+      ];
+      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(devices);
+
+      // The last subarea was just removed via remove_subarea — the payload is stale
+      subareas$.set([]);
+      subareasGrowspaceId$.set('gs1');
+
+      syncService.updateDevicesState();
+
+      expect(setSubareaEnvSnapshot).not.toHaveBeenCalled();
+      expect(setSubareaDeviceSnapshot).not.toHaveBeenCalled();
+    });
+
+    it('adds subarea env + device snapshot entity IDs to watched entities', () => {
+      const mockHassStates = { 'sensor.temp': {} as any };
+      dataService.hass = { states: mockHassStates } as any;
+
+      const subarea = { id: 'sa1', name: 'Shelf', environment_config: {} } as any;
+      const devices = [
+        { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {}, subareas: [subarea] } as any,
+      ];
+      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue(devices);
+
+      const envSnapshot = { temperature: 21 } as any;
+      const deviceSnapshot = { lights: {} } as any;
+      vi.mocked(subareaEnvSnapshots$.get).mockReturnValueOnce(new Map([['sa1', envSnapshot]]));
+      vi.mocked(subareaDeviceSnapshots$.get).mockReturnValueOnce(
+        new Map([['sa1', deviceSnapshot]])
+      );
+      vi.mocked(envSnapshotEntityIds).mockReturnValueOnce(['sensor.sub_temp']);
+      vi.mocked(deviceSnapshotEntityIds).mockReturnValueOnce(['light.sub_light']);
+
+      syncService.updateDevicesState();
+
+      expect(envSnapshotEntityIds).toHaveBeenCalledWith(envSnapshot);
+      expect(deviceSnapshotEntityIds).toHaveBeenCalledWith(deviceSnapshot);
+      const watched = (syncService as any)._watchedEntities as Set<string>;
+      expect(watched.has('sensor.sub_temp')).toBe(true);
+      expect(watched.has('light.sub_light')).toBe(true);
+    });
+
+    it('skips subarea snapshots when devices carry no subareas and subareas$ is not hydrated', () => {
+      const mockHassStates = { 'sensor.temp': {} as any };
+      dataService.hass = { states: mockHassStates } as any;
+      vi.mocked(dataService.getGrowspaceDevices).mockReturnValue([
+        { deviceId: 'gs1', name: 'Tent 1', environmentAttributes: {} } as any,
+      ]);
 
       syncService.updateDevicesState();
 

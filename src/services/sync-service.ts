@@ -165,18 +165,21 @@ export class SyncService {
       }
     });
 
-    // Subarea env + device snapshots — subareas$ holds the most recently
-    // queried growspace's subareas (hydrated by the subarea card); its parent
-    // device supplies the naming context for calculated-VPD resolution.
-    const subareas = subareas$.get();
-    if (subareas.length > 0) {
-      const parentId = subareasGrowspaceId$.get();
-      const parentDevice = devices.find((d) => d.deviceId === parentId);
+    // Subarea env + device snapshots — every device carries its own
+    // payload-sourced subareas, so all growspaces get snapshots without the
+    // subarea card ever hydrating subareas$. When subareas$ IS hydrated for a
+    // growspace (subareasGrowspaceId$ matches), that list takes precedence:
+    // it is fresher after add/update/remove_subarea mutations than the
+    // backend's cached growspace payload.
+    const hydratedGrowspaceId = subareasGrowspaceId$.get();
+    devices.forEach((d) => {
+      const subareas =
+        hydratedGrowspaceId === d.deviceId ? subareas$.get() : (d.subareas ?? []);
       subareas.forEach((subarea) => {
         setSubareaEnvSnapshot(
           subarea.id,
           subarea,
-          { growspaceId: parentId ?? undefined, growspaceName: parentDevice?.name },
+          { growspaceId: d.deviceId, growspaceName: d.name },
           hassStates
         );
         const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
@@ -190,7 +193,7 @@ export class SyncService {
           deviceSnapshotEntityIds(deviceSnapshot).forEach((id) => this._watchedEntities.add(id));
         }
       });
-    }
+    });
 
     const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed

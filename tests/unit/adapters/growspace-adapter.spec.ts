@@ -580,4 +580,48 @@ describe('GrowspaceAdapter', () => {
       expect(result?.projectedShotWindow).toBeNull();
     });
   });
+
+  describe('subareas mapping', () => {
+    it('maps payload subareas into GrowspaceDevice.subareas', () => {
+      const ws = makeWsData({
+        subareas: [
+          {
+            id: 'sa1',
+            name: 'Veg Shelf',
+            environment_config: { temperature_sensors: ['sensor.shelf_temp'] },
+          },
+          {
+            id: 'sa2',
+            name: 'Flower Shelf',
+            environment_config: { humidity_sensors: ['sensor.shelf_hum'] },
+          },
+        ],
+      });
+
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, ws);
+
+      expect(result?.subareas).toEqual([
+        {
+          id: 'sa1',
+          name: 'Veg Shelf',
+          environment_config: { temperature_sensors: ['sensor.shelf_temp'] },
+        },
+        {
+          id: 'sa2',
+          name: 'Flower Shelf',
+          environment_config: { humidity_sensors: ['sensor.shelf_hum'] },
+        },
+      ]);
+    });
+
+    it('defaults subareas to [] when the payload key is absent (older backends)', () => {
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, makeWsData());
+      expect(result?.subareas).toEqual([]);
+    });
+
+    it('defaults subareas to [] in the loading-state skeleton', () => {
+      const result = GrowspaceAdapter.transformGrowspace(mockOverview, null);
+      expect(result?.subareas).toEqual([]);
+    });
+  });
 });

@@ -326,6 +326,8 @@ export interface GrowspaceAPIResponse {
     sensor_coordinates: Record<string, { x: number; y: number; z: number; rotation?: number }>;
     sensor_groups: SensorGroup[];
   };
+  /** Subareas in the get_subareas wire shape. Absent on older backends. */
+  subareas?: Subarea[];
   irrigation: {
     irrigation_config: SerializedIrrigationConfig;
     irrigation_strategy?: SerializedIrrigationStrategy | null;

@@ -39,6 +39,7 @@ export class GrowspaceAdapter {
         overviewEntityId: overview!.entity_id,
         name,
         lastUpdated: 'Loading...',
+        subareas: [],
       });
     }
 
@@ -313,6 +314,7 @@ export class GrowspaceAdapter {
       drainConfig,
       energyTracking,
       waterUsage,
+      subareas: wsData.subareas ?? [],
 
       // Irrigation cycle telemetry
       lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
