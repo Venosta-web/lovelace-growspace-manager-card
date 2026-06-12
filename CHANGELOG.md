@@ -1,3 +1,10 @@
+# [1.1.0-next.36](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.35...v1.1.0-next.36) (2026-06-12)
+
+
+### Features
+
+* **subarea-card:** derive history metricEntities from the EnvSnapshot entityIds ([bbc4bda](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/bbc4bda32898b218c2a9227ccb94d055a3cddcd6)), closes [#268](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/268)
+
 # [1.1.0-next.35](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.34...v1.1.0-next.35) (2026-06-12)
 
 
