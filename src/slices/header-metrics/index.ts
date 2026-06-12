@@ -190,6 +190,49 @@ function _makeSensorReadingChip(
   return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
 }
 
+/**
+ * Build a hero chip from a SensorReadings object (subarea snapshots — the
+ * growspace hero path uses backend-aggregated scalars instead).
+ *
+ * Mirrors the legacy MetricsUtils.computeSubareaMetrics display: values are
+ * `toFixed(1)` with a space before the unit ("23.5 °C"), a single unavailable
+ * sensor drops the chip, and multiple sensors show "Multiple" with per-sensor
+ * formatted values ("-" for unavailable ones).
+ */
+function _makeHeroReadingChip(
+  key: string,
+  icon: string,
+  readings: SensorReadings,
+  unit: string,
+  opts: Omit<ChipOpts, 'multiValues' | 'entityIds'>,
+  activeEnvGraphs: Set<string>,
+  linkedGraphGroups: string[][]
+): HeaderChip | null {
+  const { entityIds, perSensor } = readings;
+  const fmt = (v: number | null) => (v !== null ? `${v.toFixed(1)} ${unit}`.trim() : '-');
+
+  if (entityIds.length > 1) {
+    return _makeChip(
+      key,
+      icon,
+      'Multiple',
+      { ...opts, multiValues: perSensor.map(fmt), entityIds },
+      activeEnvGraphs,
+      linkedGraphGroups
+    );
+  }
+
+  if (perSensor[0] == null) return null;
+  return _makeChip(
+    key,
+    icon,
+    fmt(perSensor[0]),
+    { ...opts, entityIds },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+}
+
 /** Return the next upcoming HH:MM from a schedule list, wrapping to tomorrow if past. */
 function _getNextEvent(times: IrrigationScheduleItem[]): string | undefined {
   if (!times.length) return undefined;
@@ -453,42 +496,82 @@ export function computeHeaderMetrics(
   }
 
   // --- Hero chips (env metrics — empty for 'analytics') ---
+  // Each metric prefers per-sensor readings when the snapshot carries them
+  // (subarea adapter) and falls back to the backend-aggregated scalar
+  // (growspace adapter). The scalar path is unchanged.
   const hero: HeaderChip[] = [];
 
   if (viewContext !== 'analytics') {
-    if (envSnapshot?.temperature != null) {
+    const tempTooltip =
+      'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.';
+    if (envSnapshot?.temperatureReadings) {
+      const chip = _makeHeroReadingChip(
+        MetricKey.TEMPERATURE,
+        mdiThermometer,
+        envSnapshot.temperatureReadings,
+        '°C',
+        { label: 'Temperature', tooltip: tempTooltip },
+        activeEnvGraphs,
+        linkedGraphGroups
+      );
+      if (chip) hero.push(chip);
+    } else if (envSnapshot?.temperature != null) {
       hero.push(
         _makeChip(
           MetricKey.TEMPERATURE,
           mdiThermometer,
           `${envSnapshot.temperature}°C`,
-          {
-            tooltip:
-              'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.',
-          },
+          { tooltip: tempTooltip },
           activeEnvGraphs,
           linkedGraphGroups
         )
       );
     }
 
-    if (envSnapshot?.humidity != null) {
+    const humTooltip =
+      'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.';
+    if (envSnapshot?.humidityReadings) {
+      const chip = _makeHeroReadingChip(
+        MetricKey.HUMIDITY,
+        mdiWaterPercent,
+        envSnapshot.humidityReadings,
+        '%',
+        { label: 'Humidity', tooltip: humTooltip },
+        activeEnvGraphs,
+        linkedGraphGroups
+      );
+      if (chip) hero.push(chip);
+    } else if (envSnapshot?.humidity != null) {
       hero.push(
         _makeChip(
           MetricKey.HUMIDITY,
           mdiWaterPercent,
           `${envSnapshot.humidity}%`,
-          {
-            tooltip:
-              'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.',
-          },
+          { tooltip: humTooltip },
           activeEnvGraphs,
           linkedGraphGroups
         )
       );
     }
 
-    if (envSnapshot?.vpd != null) {
+    const vpdTooltip =
+      'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.';
+    if (envSnapshot?.vpdReadings) {
+      const chip = _makeHeroReadingChip(
+        MetricKey.VPD,
+        mdiCloudOutline,
+        envSnapshot.vpdReadings,
+        'kPa',
+        {
+          label: 'VPD',
+          status: envSnapshot.vpdStatus ?? undefined,
+          tooltip: vpdTooltip,
+        },
+        activeEnvGraphs,
+        linkedGraphGroups
+      );
+      if (chip) hero.push(chip);
+    } else if (envSnapshot?.vpd != null) {
       hero.push(
         _makeChip(
           MetricKey.VPD,
@@ -496,8 +579,7 @@ export function computeHeaderMetrics(
           `${envSnapshot.vpd} kPa`,
           {
             status: envSnapshot.vpdStatus ?? undefined,
-            tooltip:
-              'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.',
+            tooltip: vpdTooltip,
           },
           activeEnvGraphs,
           linkedGraphGroups
@@ -505,16 +587,26 @@ export function computeHeaderMetrics(
       );
     }
 
-    if (envSnapshot?.co2 != null) {
+    const co2Tooltip =
+      'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.';
+    if (envSnapshot?.co2Readings) {
+      const chip = _makeHeroReadingChip(
+        MetricKey.CO2,
+        mdiWeatherCloudy,
+        envSnapshot.co2Readings,
+        'ppm',
+        { label: 'CO2', tooltip: co2Tooltip },
+        activeEnvGraphs,
+        linkedGraphGroups
+      );
+      if (chip) hero.push(chip);
+    } else if (envSnapshot?.co2 != null) {
       hero.push(
         _makeChip(
           MetricKey.CO2,
           mdiWeatherCloudy,
           `${envSnapshot.co2} ppm`,
-          {
-            tooltip:
-              'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.',
-          },
+          { tooltip: co2Tooltip },
           activeEnvGraphs,
           linkedGraphGroups
         )

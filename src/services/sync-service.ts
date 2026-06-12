@@ -4,7 +4,13 @@ import { GrowspaceUIStore } from '../store/ui/ui-store';
 import type { GridSliceRef } from '../slices/grid';
 import { devices$, setDevices } from '../slices/grid';
 import { setDeviceSnapshot } from '../slices/device-state';
-import { setEnvSnapshot } from '../slices/environment';
+import {
+  envSnapshotEntityIds,
+  setEnvSnapshot,
+  setSubareaEnvSnapshot,
+  subareaEnvSnapshots$,
+} from '../slices/environment';
+import { subareas$, subareasGrowspaceId$ } from '../slices/subarea';
 import { setPlants } from '../slices/plant';
 import { setIrrigationConfig, setIrrigationStrategy, setTankLevels } from '../slices/irrigation';
 import { GrowspaceAPIResponse, GrowspaceDevice, GrowspaceManagerCardConfig } from '../types';
@@ -153,6 +159,27 @@ export class SyncService {
         });
       }
     });
+
+    // Subarea env snapshots — subareas$ holds the most recently queried
+    // growspace's subareas (hydrated by the subarea card); its parent device
+    // supplies the naming context for calculated-VPD resolution.
+    const subareas = subareas$.get();
+    if (subareas.length > 0) {
+      const parentId = subareasGrowspaceId$.get();
+      const parentDevice = devices.find((d) => d.deviceId === parentId);
+      subareas.forEach((subarea) => {
+        setSubareaEnvSnapshot(
+          subarea.id,
+          subarea,
+          { growspaceId: parentId ?? undefined, growspaceName: parentDevice?.name },
+          hassStates
+        );
+        const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
+        if (snapshot) {
+          envSnapshotEntityIds(snapshot).forEach((id) => this._watchedEntities.add(id));
+        }
+      });
+    }
 
     const selectedDevice = this.gridStore.$selectedDevice.get();
     // Auto-select if needed

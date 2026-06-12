@@ -33,6 +33,13 @@ export type { Subarea, EnvironmentConfig };
 
 export const subareas$ = atom<Subarea[]>([]);
 
+/**
+ * The growspace whose subareas are currently in subareas$ (last query wins).
+ * SyncService needs it to resolve the parent device when feeding
+ * subareaEnvSnapshots$ (calculated-VPD entity naming).
+ */
+export const subareasGrowspaceId$ = atom<string | null>(null);
+
 // ---------------------------------------------------------------------------
 // Bootstrap write (called by SyncService when fresh data arrives)
 // ---------------------------------------------------------------------------
@@ -60,6 +67,7 @@ export async function getSubareas(growspaceId: string): Promise<Subarea[]> {
     GetSubareasResponseSchema
   );
   subareas$.set(result);
+  subareasGrowspaceId$.set(growspaceId);
   return result;
 }
 

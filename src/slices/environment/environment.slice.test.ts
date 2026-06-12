@@ -8,8 +8,17 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { HassEntity } from 'home-assistant-js-websocket';
 import type { GrowspaceDevice } from '../../services/types';
 import { createGrowspaceDevice } from '../../services/types';
-import { computeEnvSnapshot, envSnapshots$, setEnvSnapshot } from './index';
+import {
+  computeEnvSnapshot,
+  computeSubareaEnvSnapshot,
+  envSnapshotEntityIds,
+  envSnapshots$,
+  setEnvSnapshot,
+  setSubareaEnvSnapshot,
+  subareaEnvSnapshots$,
+} from './index';
 import { EnvSnapshotSchema } from './schema';
+import type { Subarea } from '../subarea/schema';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -46,6 +55,7 @@ const ENV_ENTITY_ID = 'binary_sensor.tent_1_optimal_conditions';
 
 beforeEach(() => {
   envSnapshots$.set(new Map());
+  subareaEnvSnapshots$.set(new Map());
 });
 
 // ---------------------------------------------------------------------------
@@ -703,6 +713,10 @@ describe('computeEnvSnapshot — additional branch coverage', () => {
 });
 
 const NULL_SENSOR_FIELDS = {
+  temperatureReadings: null,
+  humidityReadings: null,
+  vpdReadings: null,
+  co2Readings: null,
   soilMoisture: null,
   substrateTemperature: null,
   ph: null,
@@ -912,5 +926,296 @@ describe('EnvSnapshotSchema', () => {
     };
     const result = EnvSnapshotSchema.safeParse(invalidPayload);
     expect(result.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cycle N+1 — subarea adapter (ADR-0018): computeSubareaEnvSnapshot,
+// subareaEnvSnapshots$ + setSubareaEnvSnapshot, envSnapshotEntityIds
+// ---------------------------------------------------------------------------
+
+function makeSubarea(
+  environmentConfig: Subarea['environment_config'] = {},
+  overrides: Partial<Omit<Subarea, 'environment_config'>> = {}
+): Subarea {
+  return { id: 'sa1', name: 'Veg Area', environment_config: environmentConfig, ...overrides };
+}
+
+const PARENT = { growspaceId: 'gs1', growspaceName: 'Tent 1' };
+
+describe('computeEnvSnapshot — growspace adapter leaves hero readings null', () => {
+  it('returns null for all four hero readings fields', () => {
+    const hassStates: HassStates = {
+      [ENV_ENTITY_ID]: makeHassEntity(ENV_ENTITY_ID, 'on', { temperature: 24.5, humidity: 58 }),
+    };
+
+    const snapshot = computeEnvSnapshot(makeDevice(), hassStates);
+
+    expect(snapshot.temperatureReadings).toBeNull();
+    expect(snapshot.humidityReadings).toBeNull();
+    expect(snapshot.vpdReadings).toBeNull();
+    expect(snapshot.co2Readings).toBeNull();
+  });
+});
+
+describe('computeSubareaEnvSnapshot — hero readings from environment_config', () => {
+  it('aggregates temperature_sensors into temperatureReadings and the scalar avg', () => {
+    const hassStates: HassStates = {
+      'sensor.t1': makeHassEntity('sensor.t1', '22.0'),
+      'sensor.t2': makeHassEntity('sensor.t2', '24.0'),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({ temperature_sensors: ['sensor.t1', 'sensor.t2'] }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.temperatureReadings).toEqual({
+      avg: 23,
+      sum: 46,
+      perSensor: [22, 24],
+      entityIds: ['sensor.t1', 'sensor.t2'],
+    });
+    expect(snapshot.temperature).toBe(23);
+  });
+
+  it('honours the legacy single-sensor fields (temperature_sensor, humidity_sensor, co2_sensor)', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '21.5'),
+      'sensor.h': makeHassEntity('sensor.h', '55'),
+      'sensor.c': makeHassEntity('sensor.c', '800'),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({
+        temperature_sensor: 'sensor.t',
+        humidity_sensor: 'sensor.h',
+        co2_sensor: 'sensor.c',
+      }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.temperatureReadings!.entityIds).toEqual(['sensor.t']);
+    expect(snapshot.humidity).toBe(55);
+    expect(snapshot.co2Readings!.entityIds).toEqual(['sensor.c']);
+    expect(snapshot.co2).toBe(800);
+  });
+
+  it('returns null readings and scalars for unconfigured metrics, with growspace-only fields null', () => {
+    const snapshot = computeSubareaEnvSnapshot(makeSubarea(), PARENT, {});
+
+    expect(snapshot.temperatureReadings).toBeNull();
+    expect(snapshot.temperature).toBeNull();
+    expect(snapshot.vpdStatus).toBeNull();
+    expect(snapshot.isLightsOn).toBeNull();
+    expect(snapshot.hasLightSensor).toBe(false);
+    expect(snapshot.dli).toBeNull();
+    expect(snapshot.optimalConditions).toBeNull();
+  });
+
+  it('aggregates monitoring sensors from the snake_case environment_config lists', () => {
+    const hassStates: HassStates = {
+      'sensor.ph': makeHassEntity('sensor.ph', '6.2'),
+      'sensor.st': makeHassEntity('sensor.st', '21.0'),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({
+        ph_sensors: ['sensor.ph'],
+        substrate_temperature_sensors: ['sensor.st'],
+      }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.ph!.avg).toBeCloseTo(6.2);
+    expect(snapshot.substrateTemperature!.avg).toBe(21);
+    expect(snapshot.feedEc).toBeNull();
+  });
+});
+
+describe('computeSubareaEnvSnapshot — calculated-VPD resolution', () => {
+  it('uses an explicitly configured non-calculated VPD sensor as-is', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '22'),
+      'sensor.h': makeHassEntity('sensor.h', '55'),
+      'sensor.real_vpd': makeHassEntity('sensor.real_vpd', '1.1'),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({
+        temperature_sensor: 'sensor.t',
+        humidity_sensor: 'sensor.h',
+        vpd_sensor: 'sensor.real_vpd',
+      }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.vpdReadings!.entityIds).toEqual(['sensor.real_vpd']);
+    expect(snapshot.vpd).toBeCloseTo(1.1);
+  });
+
+  it('resolves the name-based calculated-VPD entity for a temp/hum pair without a VPD sensor', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '22'),
+      'sensor.h': makeHassEntity('sensor.h', '55'),
+      'sensor.tent_1_veg_area_calculated_vpd': makeHassEntity(
+        'sensor.tent_1_veg_area_calculated_vpd',
+        '1.2'
+      ),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({ temperature_sensor: 'sensor.t', humidity_sensor: 'sensor.h' }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.vpdReadings!.entityIds).toEqual(['sensor.tent_1_veg_area_calculated_vpd']);
+    expect(snapshot.vpd).toBeCloseTo(1.2);
+  });
+
+  it('falls back to the UUID-based calculated-VPD entity when the name-based one is unavailable', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '22'),
+      'sensor.h': makeHassEntity('sensor.h', '55'),
+      'sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd': makeHassEntity(
+        'sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd',
+        '1.0'
+      ),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({ temperature_sensor: 'sensor.t', humidity_sensor: 'sensor.h' }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.vpdReadings!.entityIds).toEqual([
+      'sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd',
+    ]);
+    expect(snapshot.vpd).toBeCloseTo(1.0);
+  });
+
+  it('resolves one suffixed calculated-VPD entity per temp/hum pair', () => {
+    const hassStates: HassStates = {
+      'sensor.t1': makeHassEntity('sensor.t1', '22'),
+      'sensor.t2': makeHassEntity('sensor.t2', '24'),
+      'sensor.h1': makeHassEntity('sensor.h1', '50'),
+      'sensor.h2': makeHassEntity('sensor.h2', '60'),
+      'sensor.tent_1_veg_area_calculated_vpd_1': makeHassEntity(
+        'sensor.tent_1_veg_area_calculated_vpd_1',
+        '1.3'
+      ),
+      'sensor.tent_1_veg_area_calculated_vpd_2': makeHassEntity(
+        'sensor.tent_1_veg_area_calculated_vpd_2',
+        '1.5'
+      ),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({
+        temperature_sensors: ['sensor.t1', 'sensor.t2'],
+        humidity_sensors: ['sensor.h1', 'sensor.h2'],
+      }),
+      PARENT,
+      hassStates
+    );
+
+    expect(snapshot.vpdReadings!.entityIds).toEqual([
+      'sensor.tent_1_veg_area_calculated_vpd_1',
+      'sensor.tent_1_veg_area_calculated_vpd_2',
+    ]);
+    expect(snapshot.vpdReadings!.perSensor).toEqual([1.3, 1.5]);
+  });
+
+  it('keeps the constructible UUID-based ID with a null reading when neither entity is available', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '22'),
+      'sensor.h': makeHassEntity('sensor.h', '55'),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({ temperature_sensor: 'sensor.t', humidity_sensor: 'sensor.h' }),
+      { growspaceId: 'gs1' },
+      hassStates
+    );
+
+    expect(snapshot.vpdReadings!.entityIds).toEqual([
+      'sensor.growspace_manager_gs1_subarea_sa1_calculated_vpd',
+    ]);
+    expect(snapshot.vpdReadings!.perSensor).toEqual([null]);
+    expect(snapshot.vpd).toBeNull();
+  });
+});
+
+describe('subareaEnvSnapshots$ atom and setSubareaEnvSnapshot', () => {
+  it('starts as an empty map', () => {
+    expect(subareaEnvSnapshots$.get().size).toBe(0);
+  });
+
+  it('stores the computed snapshot keyed by subareaId', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '23.5'),
+    };
+
+    setSubareaEnvSnapshot('sa1', makeSubarea({ temperature_sensor: 'sensor.t' }), PARENT, hassStates);
+
+    expect(subareaEnvSnapshots$.get().get('sa1')!.temperature).toBe(23.5);
+  });
+
+  it('stores independent snapshots for different subareas without mutating the previous map', () => {
+    const hassStates: HassStates = {
+      'sensor.t1': makeHassEntity('sensor.t1', '20'),
+      'sensor.t2': makeHassEntity('sensor.t2', '26'),
+    };
+
+    setSubareaEnvSnapshot('sa1', makeSubarea({ temperature_sensor: 'sensor.t1' }), PARENT, hassStates);
+    const firstMap = subareaEnvSnapshots$.get();
+    setSubareaEnvSnapshot(
+      'sa2',
+      makeSubarea({ temperature_sensor: 'sensor.t2' }, { id: 'sa2', name: 'Flower Area' }),
+      PARENT,
+      hassStates
+    );
+
+    expect(subareaEnvSnapshots$.get()).not.toBe(firstMap);
+    expect(subareaEnvSnapshots$.get().get('sa1')!.temperature).toBe(20);
+    expect(subareaEnvSnapshots$.get().get('sa2')!.temperature).toBe(26);
+  });
+});
+
+describe('envSnapshotEntityIds', () => {
+  it('collects entity IDs across all SensorReadings fields, including resolved VPD IDs', () => {
+    const hassStates: HassStates = {
+      'sensor.t': makeHassEntity('sensor.t', '22'),
+      'sensor.h': makeHassEntity('sensor.h', '55'),
+      'sensor.ph': makeHassEntity('sensor.ph', '6.0'),
+    };
+
+    const snapshot = computeSubareaEnvSnapshot(
+      makeSubarea({
+        temperature_sensor: 'sensor.t',
+        humidity_sensor: 'sensor.h',
+        ph_sensors: ['sensor.ph'],
+      }),
+      PARENT,
+      hassStates
+    );
+
+    const ids = envSnapshotEntityIds(snapshot);
+    expect(ids).toContain('sensor.t');
+    expect(ids).toContain('sensor.h');
+    expect(ids).toContain('sensor.ph');
+    // Neither calculated-VPD entity exists — the name-based ID wins the
+    // constructible fallback (legacy `calculatedId || uuidId` priority).
+    expect(ids).toContain('sensor.tent_1_veg_area_calculated_vpd');
+  });
+
+  it('returns an empty array for a snapshot without configured sensors', () => {
+    expect(envSnapshotEntityIds(computeSubareaEnvSnapshot(makeSubarea(), PARENT, {}))).toEqual([]);
   });
 });
