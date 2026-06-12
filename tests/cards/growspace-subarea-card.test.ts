@@ -1,5 +1,6 @@
 import { expect, test, describe, aroundEach, vi } from 'vitest';
-import { GrowspaceSubareaCard } from '../../src/cards/growspace-subarea-card';
+import { GrowspaceSubareaCard, deriveSubareaMetricEntities } from '../../src/cards/growspace-subarea-card';
+import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../../src/slices/environment';
 import { DataService } from '../../src/services/data-service';
 import { ChartUtils } from '../../src/utils/chart-utils';
 import { ViewMode } from '../../src/features/environment/constants';
@@ -354,10 +355,22 @@ describe('GrowspaceSubareaCard', () => {
         consoleSpy.mockRestore();
     });
 
-    test('_loadHistory returns early when no entity IDs configured', async () => {
-        const emptySubarea = { id: 'sa1', name: 'Veg', environment_config: {} };
+    test('_loadHistory returns early when the seeded snapshot has no entity IDs', async () => {
+        const emptySubarea = { id: 'sa_empty', name: 'Veg', environment_config: {} };
+        setSubareaEnvSnapshot('sa_empty', emptySubarea as any, { growspaceId: 'gs1' }, {});
         mockDataService.getBatchHistory.mockClear();
         await (element as any)._loadHistory(emptySubarea);
+        expect(mockDataService.getBatchHistory).not.toHaveBeenCalled();
+    });
+
+    test('_loadHistory returns early when no snapshot exists for the subarea', async () => {
+        const unseededSubarea = {
+            id: 'sa_never_seeded',
+            name: 'Veg',
+            environment_config: { temperature_sensors: ['sensor.veg_temp'] }
+        };
+        mockDataService.getBatchHistory.mockClear();
+        await (element as any)._loadHistory(unseededSubarea);
         expect(mockDataService.getBatchHistory).not.toHaveBeenCalled();
     });
 
@@ -910,5 +923,100 @@ describe('GrowspaceSubareaCard', () => {
             // In compact mode the card renders without env graph expansion
             expect(element.store.ui.$viewMode.get()).toBe(ViewMode.COMPACT);
         });
+    });
+});
+
+describe('deriveSubareaMetricEntities', () => {
+    // Atoms/fixtures style: seed subareaEnvSnapshots$ via setSubareaEnvSnapshot
+    // (the same write SyncService and the card's bootstrap seed use) and derive
+    // from the snapshot the atom holds — no hass mocking.
+    const seedSnapshot = (
+        environmentConfig: Record<string, unknown>,
+        states: Record<string, { state: string; attributes: Record<string, unknown> }> = {},
+        parent: { growspaceId?: string; growspaceName?: string } = {
+            growspaceId: 'gs1',
+            growspaceName: 'Tent 1',
+        }
+    ) => {
+        const subarea = { id: 'sa_derive', name: 'Derive Area', environment_config: environmentConfig };
+        setSubareaEnvSnapshot('sa_derive', subarea as any, parent, states as any);
+        return subareaEnvSnapshots$.get().get('sa_derive')!;
+    };
+
+    test('derives metric→entityIds from a seeded snapshot atom, in chart order', () => {
+        const snapshot = seedSnapshot({
+            temperature_sensors: ['sensor.t1', 'sensor.t2'],
+            humidity_sensor: 'sensor.h1',
+            vpd_sensors: ['sensor.v1'],
+            co2_sensor: 'sensor.c1',
+        });
+
+        expect(deriveSubareaMetricEntities(snapshot)).toEqual([
+            { metric: 'temperature', entityIds: ['sensor.t1', 'sensor.t2'] },
+            { metric: 'humidity', entityIds: ['sensor.h1'] },
+            { metric: 'vpd', entityIds: ['sensor.v1'] },
+            { metric: 'co2', entityIds: ['sensor.c1'] },
+        ]);
+    });
+
+    test('omits metrics without configured sensors', () => {
+        const snapshot = seedSnapshot({ temperature_sensors: ['sensor.t1'] });
+
+        expect(deriveSubareaMetricEntities(snapshot)).toEqual([
+            { metric: 'temperature', entityIds: ['sensor.t1'] },
+        ]);
+    });
+
+    test('returns an empty list for a snapshot without any configured sensors', () => {
+        const snapshot = seedSnapshot({});
+
+        expect(deriveSubareaMetricEntities(snapshot)).toEqual([]);
+    });
+
+    test('keeps entity IDs even when the configured sensors are unavailable', () => {
+        // Entity IDs (and therefore history cache keys) are stable regardless of
+        // sensor availability — only the readings go null.
+        const snapshot = seedSnapshot(
+            { temperature_sensors: ['sensor.t1'] },
+            { 'sensor.t1': { state: 'unavailable', attributes: {} } }
+        );
+
+        expect(snapshot.temperatureReadings?.avg).toBeNull();
+        expect(deriveSubareaMetricEntities(snapshot)).toEqual([
+            { metric: 'temperature', entityIds: ['sensor.t1'] },
+        ]);
+    });
+
+    test('carries the snapshot-resolved UUID-based calculated-VPD entity ID (single temp/hum pair)', () => {
+        const uuidVpdId = 'sensor.growspace_manager_gs1_subarea_sa_derive_calculated_vpd';
+        const snapshot = seedSnapshot(
+            { temperature_sensor: 'sensor.t1', humidity_sensor: 'sensor.h1' },
+            { [uuidVpdId]: { state: '1.0', attributes: {} } }
+        );
+
+        const vpd = deriveSubareaMetricEntities(snapshot).find((m) => m.metric === 'vpd');
+        expect(vpd?.entityIds).toEqual([uuidVpdId]);
+        // Structural consistency: history fetches exactly the IDs the chips display.
+        expect(vpd?.entityIds).toEqual(snapshot.vpdReadings?.entityIds);
+    });
+
+    test('carries snapshot-resolved name-based calculated-VPD IDs per temp/hum pair (multi-sensor)', () => {
+        const snapshot = seedSnapshot(
+            {
+                temperature_sensors: ['sensor.t1', 'sensor.t2'],
+                humidity_sensors: ['sensor.h1', 'sensor.h2'],
+            },
+            {
+                'sensor.tent_1_derive_area_calculated_vpd_1': { state: '1.1', attributes: {} },
+                'sensor.tent_1_derive_area_calculated_vpd_2': { state: '1.2', attributes: {} },
+            }
+        );
+
+        const vpd = deriveSubareaMetricEntities(snapshot).find((m) => m.metric === 'vpd');
+        expect(vpd?.entityIds).toEqual([
+            'sensor.tent_1_derive_area_calculated_vpd_1',
+            'sensor.tent_1_derive_area_calculated_vpd_2',
+        ]);
+        expect(vpd?.entityIds).toEqual(snapshot.vpdReadings?.entityIds);
     });
 });

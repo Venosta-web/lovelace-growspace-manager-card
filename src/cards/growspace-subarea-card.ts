@@ -19,6 +19,7 @@ import type { GrowspaceManagerCardConfig } from '../lib/types/config';
 import { getSubareas } from '../slices/subarea';
 import type { Subarea } from '../slices/subarea';
 import { setSubareaEnvSnapshot, subareaEnvSnapshots$ } from '../slices/environment';
+import type { EnvSnapshot, SensorReadings } from '../slices/environment';
 import { setSubareaDeviceSnapshot, subareaDeviceSnapshots$ } from '../slices/device-state';
 import { computeHeaderMetrics } from '../slices/header-metrics';
 import { DataService } from '../services/data-service';
@@ -48,6 +49,31 @@ import { growspaceStoreRegistry } from '../store/core/growspace-store-registry';
 export interface GrowspaceSubareaCardConfig extends GrowspaceManagerCardConfig {
     growspace_id: string;
     subarea_id: string;
+}
+
+/**
+ * Metric → entity-ID lists for the subarea history fetch, derived from the
+ * subarea EnvSnapshot's SensorReadings (ADR-0018). The snapshot is the single
+ * source of resolved entity IDs, so the history cache keys structurally match
+ * what the chips display — both read the same snapshot field.
+ */
+export function deriveSubareaMetricEntities(
+    snapshot: EnvSnapshot
+): Array<{ metric: string; entityIds: string[] }> {
+    const readings: Array<[string, SensorReadings | null]> = [
+        ['temperature', snapshot.temperatureReadings],
+        ['humidity', snapshot.humidityReadings],
+        ['vpd', snapshot.vpdReadings],
+        ['co2', snapshot.co2Readings],
+    ];
+
+    const metricEntities: Array<{ metric: string; entityIds: string[] }> = [];
+    for (const [metric, reading] of readings) {
+        if (reading && reading.entityIds.length > 0) {
+            metricEntities.push({ metric, entityIds: [...reading.entityIds] });
+        }
+    }
+    return metricEntities;
 }
 
 @customElement('growspace-subarea-card')
@@ -325,75 +351,17 @@ export class GrowspaceSubareaCard extends LitElement implements LovelaceCard {
         }
     }
 
-    private _resolveCalculatedVpdIds(subarea: Subarea, tempIds: string[], humIds: string[]): string[] {
-        const slugify = (text: string) =>
-            text.toString().toLowerCase()
-                .replace(/\s+/g, '_')
-                .replace(/[^\w-]+/g, '')
-                .replace(/[_-]+/g, '_')
-                .replace(/^[_-]+/, '')
-                .replace(/[_-]+$/, '');
-
-        const growspaceId = this._config.growspace_id;
-        const subareaId = subarea.id;
-        const numPairs = Math.min(tempIds.length, humIds.length);
-        const resolved: string[] = [];
-
-        for (let i = 0; i < numPairs; i++) {
-            const nameSuffix = numPairs > 1 ? ` ${i + 1}` : '';
-            const uuidSuffix = numPairs > 1 ? `_${i}` : '';
-
-            const nameId = this._parentGrowspaceName && subarea.name
-                ? `sensor.${slugify(`${this._parentGrowspaceName} ${subarea.name} Calculated VPD${nameSuffix}`)}`
-                : '';
-            const uuidId = `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`;
-
-            if (nameId && this.hass?.states[nameId]) {
-                resolved.push(nameId);
-            } else if (this.hass?.states[uuidId]) {
-                resolved.push(uuidId);
-            } else {
-                resolved.push(nameId || uuidId);
-            }
-        }
-
-        return resolved;
-    }
-
     private async _loadHistory(subarea: Subarea, range?: HistoryTimeRange): Promise<void> {
         if (!this._dataService) return;
 
-        const ec = subarea.environment_config;
+        const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
+        if (!snapshot) return;
+
         const activeRange = range ?? this.store.history.getRange();
         const end = new Date();
         const start = this._calculateHistoryStart(activeRange);
 
-        const metricEntities: Array<{ metric: string; entityIds: string[] }> = [];
-
-        const tempIds = ec.temperature_sensors?.length
-            ? ec.temperature_sensors
-            : ec.temperature_sensor
-                ? [ec.temperature_sensor]
-                : [];
-        const humIds = ec.humidity_sensors?.length
-            ? ec.humidity_sensors
-            : ec.humidity_sensor
-                ? [ec.humidity_sensor]
-                : [];
-        let vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
-
-        // When no explicit VPD sensor is configured, resolve the same calculated-VPD entity IDs
-        // that the environment slice's subarea adapter uses, so the history cache keys match.
-        if (vpdIds.length === 0 && tempIds.length > 0 && humIds.length > 0) {
-            vpdIds = this._resolveCalculatedVpdIds(subarea, tempIds, humIds);
-        }
-
-        const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
-
-        if (tempIds.length) metricEntities.push({ metric: 'temperature', entityIds: tempIds });
-        if (humIds.length) metricEntities.push({ metric: 'humidity', entityIds: humIds });
-        if (vpdIds.length) metricEntities.push({ metric: 'vpd', entityIds: vpdIds });
-        if (co2Ids.length) metricEntities.push({ metric: 'co2', entityIds: co2Ids });
+        const metricEntities = deriveSubareaMetricEntities(snapshot);
 
         const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
         if (!allEntityIds.length) return;
