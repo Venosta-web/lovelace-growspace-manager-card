@@ -392,7 +392,7 @@ export function openStrainLibraryDialog(ctx: ActionContext, initialTab?: 'strain
 
 export function openIrrigationDialog(
   ctx: ActionContext,
-  options?: { initialTab?: string; scrollToField?: string }
+  options?: { growspaceId?: string; initialTab?: string; scrollToField?: string }
 ) {
   ctx.ui.setActiveDialog({ type: 'IRRIGATION', payload: options ?? {} });
 }

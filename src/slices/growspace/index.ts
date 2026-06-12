@@ -12,6 +12,8 @@ import {
 import type { SensorGroup } from '../../features/environment/types';
 import type { GrowspaceDevice, GrowspaceAPIResponse } from '../../services/types';
 
+export type { GrowReport } from './schema';
+
 export const growspaceDevices$ = atom<GrowspaceDevice[] | null>(null);
 
 export function getGrowspaceDevices(): GrowspaceDevice[] {

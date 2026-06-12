@@ -3,6 +3,8 @@ import { fixture, html } from '@open-wc/testing-helpers';
 import { GrowspaceDialogHost } from '../../../../../src/features/ui/containers/growspace-dialog-host.container';
 import { atom } from 'nanostores';
 import { waterPlant as sliceWaterPlant } from '../../../../../src/slices/plant';
+import { hassCall, callService } from '../../../../../src/services/hass-call';
+import { notification$ } from '../../../../../src/slices/ui';
 
 // Import side-effects for element registration
 import '../../../../../src/features/ui/containers/growspace-dialog-host.container';
@@ -748,7 +750,12 @@ describe('GrowspaceDialogHostContainer', () => {
         }));
 
         await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.breeder.update).toHaveBeenCalledWith('Old', 'New', '');
+        // Handler now calls the Strain slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/update_breeder',
+            expect.objectContaining({ original_name: 'Old', new_name: 'New', logo: '' }),
+            expect.anything()
+        );
     });
 
     it('should handle @save-breeder on strain-library-dialog (shows info toast)', async () => {
@@ -772,7 +779,12 @@ describe('GrowspaceDialogHostContainer', () => {
         dialog?.dispatchEvent(new CustomEvent('delete-breeder', { detail: { name: 'OldBreeder' } }));
 
         await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.breeder.delete).toHaveBeenCalledWith('OldBreeder');
+        // Handler now calls the Strain slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/delete_breeder',
+            expect.objectContaining({ breeder_name: 'OldBreeder' }),
+            expect.anything()
+        );
     });
 
     it('should handle @import-library on strain-library-dialog', async () => {
@@ -818,8 +830,13 @@ describe('GrowspaceDialogHostContainer', () => {
             detail: { growspaceId: 'g1', visionCheckupConfig: { enabled: true } }
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 0));
-        expect(mockStore.actions.snapshots.updateCheckupConfig).toHaveBeenCalledWith('g1', { enabled: true });
+        await new Promise(resolve => setTimeout(resolve, 10));
+        // Handler now calls the Camera slice directly, which persists via hassCall.
+        expect(hassCall).toHaveBeenCalledWith(
+            'growspace_manager/update_vision_checkup_config',
+            expect.objectContaining({ growspace_id: 'g1', enabled: true }),
+            expect.anything()
+        );
     });
 
     it('should handle @add-growspace-submit on config-dialog', async () => {
@@ -893,30 +910,24 @@ describe('GrowspaceDialogHostContainer', () => {
     });
 
     it('should handle _handleVisionCheckupConfig failure', async () => {
-        const error = new Error('Vision save failed');
-        mockStore.actions.snapshots.updateCheckupConfig.mockImplementation(async () => {
-            mockStore.actions.ui.showToast('Error: Vision save failed', 'error');
-            throw error;
-        });
+        (hassCall as any).mockRejectedValueOnce(new Error('Vision save failed'));
 
-        try {
-            await (element as any)._handleVisionCheckupConfig({
-                detail: {
-                    growspaceId: 'g1',
-                    visionCheckupConfig: {
-                        enabled: true,
-                        early_check_offset_minutes: 0,
-                        mid_check_hours: 0,
-                        late_check_offset_minutes: 0
-                    }
-                }
-            } as any);
-        } catch (e) {
-            // Expected
-        }
+        await (element as any)._handleVisionCheckupConfig({
+            growspaceId: 'g1',
+            visionCheckupConfig: {
+                enabled: true,
+                early_check_offset_minutes: 0,
+                mid_check_hours: 0,
+                late_check_offset_minutes: 0
+            }
+        } as any);
 
-        expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Vision save failed'), 'error'
+        // withToast surfaces the failure through the real UI slice notification atom.
+        expect(notification$.get()).toEqual(
+            expect.objectContaining({
+                message: expect.stringContaining('Vision save failed'),
+                type: 'error',
+            })
         );
     });
 
@@ -1396,6 +1407,7 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should render all remaining dialog types to maximize coverage', async () => {
+             mockStore.$devices.set([{ deviceId: 'g1', name: 'G1' }]);
              const dialogTypes = [
                 { type: 'CONFIG', selector: 'config-dialog' },
                 { type: 'STRAIN_RECOMMENDATION', selector: 'strain-recommendation-dialog' },
@@ -1608,33 +1620,35 @@ describe('GrowspaceDialogHostContainer', () => {
             });
             mockStore.actions.ui.showToast.mockClear();
 
-            // Test L625: _handleUpdateBreeder failure (Action handles toast)
-            mockStore.actions.breeder.update.mockImplementation(async () => {
-                mockStore.actions.ui.showToast('Failed to update breeder', 'error');
-                throw new Error('Update Failed');
-            });
+            // _handleUpdateBreeder failure — Strain slice (via hassCall) rejects;
+            // withToast surfaces it through the real UI slice notification atom.
+            (hassCall as any).mockRejectedValueOnce(new Error('Update Failed'));
             element.shadowRoot?.querySelector('strain-library-dialog')?.dispatchEvent(new CustomEvent('update-breeder', {
                 detail: { oldName: 'B1', newName: 'B2' },
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.breeder.update).toHaveBeenCalled();
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Failed to update breeder', 'error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to update breeder'),
+                        type: 'error',
+                    })
+                );
             });
-            mockStore.actions.ui.showToast.mockClear();
 
-            // Test L648: _handleDeleteBreeder failure (Action handles toast)
-            mockStore.actions.breeder.delete.mockImplementation(async () => {
-                mockStore.actions.ui.showToast('Failed to delete breeder', 'error');
-                throw new Error('Delete Failed');
-            });
+            // _handleDeleteBreeder failure — same path.
+            (hassCall as any).mockRejectedValueOnce(new Error('Delete Failed'));
             element.shadowRoot?.querySelector('strain-library-dialog')?.dispatchEvent(new CustomEvent('delete-breeder', {
                 detail: { name: 'B1' },
                 bubbles: true, composed: true
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.breeder.delete).toHaveBeenCalled();
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith('Failed to delete breeder', 'error');
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('Failed to delete breeder'),
+                        type: 'error',
+                    })
+                );
             });
             mockStore.actions.ui.showToast.mockClear();
 
@@ -2053,38 +2067,46 @@ describe('GrowspaceDialogHostContainer', () => {
                 detail: { presetId: 'pr1', notes: 'test' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.ipm.apply).toHaveBeenCalledWith(expect.objectContaining({
-                    preset_id: 'pr1',
-                }));
-            });
-        });
-
-        it('should show error toast on @apply-ipm failure', async () => {
-            mockStore.actions.ipm.apply.mockRejectedValue(new Error('IPM failed'));
-            await openDialog('IPM', { selectedPlantIds: ['p1'] });
-            const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
-            dialog?.dispatchEvent(new CustomEvent('apply-ipm', {
-                detail: { presetId: 'pr1', notes: '' }
-            }));
-            await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-                    expect.stringContaining('IPM failed'),
-                    'error'
+                // Handler now calls the Nutrient slice directly, which persists via callService.
+                expect(callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'apply_ipm',
+                    expect.objectContaining({ preset_id: 'pr1' })
                 );
             });
         });
 
-        it('should show error toast on @apply-ipm failure with string error', async () => {
-            mockStore.actions.ipm.apply.mockRejectedValue('IPM failed string');
+        it('should show error toast on @apply-ipm failure', async () => {
+            (callService as any).mockRejectedValueOnce(new Error('IPM failed'));
             await openDialog('IPM', { selectedPlantIds: ['p1'] });
             const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
             dialog?.dispatchEvent(new CustomEvent('apply-ipm', {
                 detail: { presetId: 'pr1', notes: '' }
             }));
             await vi.waitFor(() => {
-                expect(mockStore.actions.ui.showToast).toHaveBeenCalledWith(
-                    expect.stringContaining('IPM failed string'),
-                    'error'
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('IPM failed'),
+                        type: 'error',
+                    })
+                );
+            });
+        });
+
+        it('should show error toast on @apply-ipm failure with non-Error throw', async () => {
+            (callService as any).mockRejectedValueOnce('IPM failed string');
+            await openDialog('IPM', { selectedPlantIds: ['p1'] });
+            const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
+            dialog?.dispatchEvent(new CustomEvent('apply-ipm', {
+                detail: { presetId: 'pr1', notes: '' }
+            }));
+            await vi.waitFor(() => {
+                // withToast maps non-Error throws to a generic user message under the prefix.
+                expect(notification$.get()).toEqual(
+                    expect.objectContaining({
+                        message: expect.stringContaining('IPM failed'),
+                        type: 'error',
+                    })
                 );
             });
         });
@@ -2433,58 +2455,54 @@ describe('GrowspaceDialogHostContainer', () => {
         });
 
         it('should handle @save-preset and @delete-preset on IPM dialog (Lines 1009-1024)', async () => {
-            // Mock ipm.savePreset and ipm.removePreset
-            mockStore.actions.ipm.savePreset = vi.fn().mockResolvedValue(true);
-            mockStore.actions.ipm.removePreset = vi.fn().mockResolvedValue(true);
-
+            // Handlers now call the Nutrient slice directly, persisting via callService.
             await openDialog('IPM', { selectedPlantIds: ['p1', 'p2'] });
             const dialog = element.shadowRoot?.querySelector('growspace-ipm-dialog-ui');
             expect(dialog).toBeTruthy();
 
             // 1. Success path for save-preset
-            vi.useFakeTimers();
             dialog?.dispatchEvent(new CustomEvent('save-preset', {
                 detail: { name: 'IPM Preset' }
             }));
-            await element.updateComplete;
-            expect(mockStore.actions.ipm.savePreset).toHaveBeenCalledWith({ name: 'IPM Preset' });
-            
-            // Advance timers for _handleDataChanged debouncing
-            vi.advanceTimersByTime(500);
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
+            await vi.waitFor(() => {
+                expect(callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'save_ipm_preset',
+                    expect.objectContaining({ name: 'IPM Preset' })
+                );
+            });
 
             // 2. Failure path for save-preset (should catch error and log it)
             const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-            mockStore.actions.ipm.savePreset.mockRejectedValueOnce(new Error('Save Preset Failed'));
+            (callService as any).mockRejectedValueOnce(new Error('Save Preset Failed'));
             dialog?.dispatchEvent(new CustomEvent('save-preset', {
                 detail: { name: 'IPM Preset Fail' }
             }));
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 10)); // Allow promise microtask to resolve
-            expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] IPM preset save failed:', expect.any(Error));
+            await vi.waitFor(() => {
+                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] IPM preset save failed:', expect.any(Error));
+            });
 
             // 3. Success path for delete-preset
-            vi.useFakeTimers();
             dialog?.dispatchEvent(new CustomEvent('delete-preset', {
                 detail: { presetId: 'preset123' }
             }));
-            await element.updateComplete;
-            expect(mockStore.actions.ipm.removePreset).toHaveBeenCalledWith('preset123');
-            
-            vi.advanceTimersByTime(500);
-            expect(mockStore.actions.ui.refreshData).toHaveBeenCalled();
-            vi.useRealTimers();
+            await vi.waitFor(() => {
+                expect(callService).toHaveBeenCalledWith(
+                    'growspace_manager',
+                    'remove_ipm_preset',
+                    expect.objectContaining({ preset_id: 'preset123' })
+                );
+            });
 
             // 4. Failure path for delete-preset
-            mockStore.actions.ipm.removePreset.mockRejectedValueOnce(new Error('Delete Preset Failed'));
+            (callService as any).mockRejectedValueOnce(new Error('Delete Preset Failed'));
             dialog?.dispatchEvent(new CustomEvent('delete-preset', {
                 detail: { presetId: 'preset123' }
             }));
-            await element.updateComplete;
-            await new Promise(r => setTimeout(r, 10)); // Allow promise microtask to resolve
-            expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] IPM preset delete failed:', expect.any(Error));
-            
+            await vi.waitFor(() => {
+                expect(consoleSpy).toHaveBeenCalledWith('[DialogHost] IPM preset delete failed:', expect.any(Error));
+            });
+
             consoleSpy.mockRestore();
         });
 

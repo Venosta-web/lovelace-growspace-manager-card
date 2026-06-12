@@ -7,6 +7,7 @@ import { GrowspaceUIStore } from '../store/ui/ui-store';
 import { BatchCloneDialog } from './batch-clone-dialog';
 import './batch-clone-dialog';
 import { setDevices } from '../slices/grid';
+import { __resetUiSliceForTests } from '../slices/ui';
 
 // ---------------------------------------------------------------------------
 // openBatchCloneDialog action
@@ -17,6 +18,7 @@ describe('openBatchCloneDialog', () => {
   let ctx: { ui: GrowspaceUIStore };
 
   beforeEach(() => {
+    __resetUiSliceForTests();
     ui = new GrowspaceUIStore();
     ctx = { ui } as any;
   });
@@ -65,6 +67,7 @@ describe('GrowspaceStore.openBatchCloneDialog', () => {
   let store: GrowspaceStore;
 
   beforeEach(() => {
+    __resetUiSliceForTests();
     store = new GrowspaceStore(new GrowspaceSharedStore());
   });
 

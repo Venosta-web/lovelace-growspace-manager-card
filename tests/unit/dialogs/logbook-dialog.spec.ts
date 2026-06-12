@@ -11,8 +11,15 @@ vi.mock('../../../src/features/shared/ui/growspace-logbook', () => ({
     }
 }));
 
-const { mockAddGrowspaceNote } = vi.hoisted(() => ({
+const { mockAddGrowspaceNote, mockFetchGrowReport, mockExportGrowReport } = vi.hoisted(() => ({
     mockAddGrowspaceNote: vi.fn(),
+    mockFetchGrowReport: vi.fn(),
+    mockExportGrowReport: vi.fn(),
+}));
+
+vi.mock('../../../src/slices/growspace', () => ({
+    fetchGrowReport: mockFetchGrowReport,
+    exportGrowReport: mockExportGrowReport,
 }));
 
 vi.mock('../../../src/slices/logbook', () => ({
@@ -248,19 +255,12 @@ describe('LogbookDialog', () => {
     });
 
     describe('Report Tab', () => {
-        let mockReportActions: { fetch: any; export: any };
         let mockStore: any;
 
         beforeEach(async () => {
-            mockReportActions = {
-                fetch: vi.fn(),
-                export: vi.fn(),
-            };
-            mockStore = {
-                actions: {
-                    report: mockReportActions
-                }
-            };
+            mockFetchGrowReport.mockReset();
+            mockExportGrowReport.mockReset();
+            mockStore = {};
             element.store = mockStore as any;
             element.growspaceId = 'test-growspace';
             element.open = true;
@@ -273,7 +273,7 @@ describe('LogbookDialog', () => {
                 environment: { temperature_avg: 24.5, humidity_avg: 60.2, vpd_avg: 1.15 },
                 harvest: { total_wet_weight: 500, total_dry_weight: 120, total_trim_weight: 50 }
             };
-            mockReportActions.fetch.mockResolvedValue(mockReportData);
+            mockFetchGrowReport.mockResolvedValue(mockReportData);
 
             const tabs = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.tab')) : [];
             const reportTab = tabs.find(t => t.textContent?.includes('Report'));
@@ -291,7 +291,7 @@ describe('LogbookDialog', () => {
             await new Promise(resolve => setTimeout(resolve, 0));
             await element.updateComplete;
 
-            expect(mockReportActions.fetch).toHaveBeenCalledWith('test-growspace');
+            expect(mockFetchGrowReport).toHaveBeenCalledWith('test-growspace');
             expect((element as any)._reportData).toEqual(mockReportData);
 
             // Check rendered data
@@ -316,7 +316,7 @@ describe('LogbookDialog', () => {
         });
 
         it('should show error state and allow retry when fetching fails', async () => {
-            mockReportActions.fetch.mockRejectedValue(new Error('Network Error'));
+            mockFetchGrowReport.mockRejectedValue(new Error('Network Error'));
 
             // Click Report tab
             const tabs = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.tab')) : [];
@@ -342,7 +342,7 @@ describe('LogbookDialog', () => {
                 environment: {},
                 harvest: {}
             };
-            mockReportActions.fetch.mockResolvedValue(mockReportData);
+            mockFetchGrowReport.mockResolvedValue(mockReportData);
 
             (retryBtn as HTMLElement).click();
             await element.updateComplete;
@@ -350,7 +350,7 @@ describe('LogbookDialog', () => {
             await new Promise(resolve => setTimeout(resolve, 0));
             await element.updateComplete;
 
-            expect(mockReportActions.fetch).toHaveBeenCalledTimes(2);
+            expect(mockFetchGrowReport).toHaveBeenCalledTimes(2);
             expect((element as any)._error).toBeNull();
             expect((element as any)._reportData).toEqual(mockReportData);
         });
@@ -361,7 +361,7 @@ describe('LogbookDialog', () => {
                 environment: {},
                 harvest: {}
             };
-            mockReportActions.fetch.mockResolvedValue(mockReportData);
+            mockFetchGrowReport.mockResolvedValue(mockReportData);
 
             // Open report tab
             (element as any)._activeTab = 'report';
@@ -375,20 +375,20 @@ describe('LogbookDialog', () => {
 
             exportPdfBtn.click();
             await new Promise(resolve => setTimeout(resolve, 0));
-            expect(mockReportActions.export).toHaveBeenCalledWith('test-growspace', 'pdf');
+            expect(mockExportGrowReport).toHaveBeenCalledWith('test-growspace', 'pdf');
 
-            mockReportActions.export.mockClear();
+            mockExportGrowReport.mockClear();
 
             const exportJsonBtn = buttons.find(b => b.textContent?.includes('Export JSON')) as HTMLElement;
             expect(exportJsonBtn).toBeTruthy();
 
             exportJsonBtn.click();
             await new Promise(resolve => setTimeout(resolve, 0));
-            expect(mockReportActions.export).toHaveBeenCalledWith('test-growspace', 'json');
+            expect(mockExportGrowReport).toHaveBeenCalledWith('test-growspace', 'json');
         });
 
         it('should show "No report data available." when report fetch returns null', async () => {
-            mockReportActions.fetch.mockResolvedValue(null);
+            mockFetchGrowReport.mockResolvedValue(null);
 
             // Click Report tab
             const tabs = element.shadowRoot ? Array.from(element.shadowRoot.querySelectorAll('.tab')) : [];
@@ -406,7 +406,7 @@ describe('LogbookDialog', () => {
 
         it('should handle partial report data / missing sections', async () => {
             const mockReportData = {};
-            mockReportActions.fetch.mockResolvedValue(mockReportData);
+            mockFetchGrowReport.mockResolvedValue(mockReportData);
 
             // Open report tab
             (element as any)._activeTab = 'report';

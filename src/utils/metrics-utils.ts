@@ -202,11 +202,16 @@ export class MetricsUtils {
       }
     }
 
+    const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
+    const isLightsOn = isLightsOnValue === true;
+
     let vpdStatus = overviewEntity?.attributes?.vpd_status;
-    const vpdTargetMin = overviewEntity?.attributes?.vpd_target_min;
-    const vpdTargetMax = overviewEntity?.attributes?.vpd_target_max;
-    const vpdDangerMin = overviewEntity?.attributes?.vpd_danger_min;
-    const vpdDangerMax = overviewEntity?.attributes?.vpd_danger_max;
+    const vpdAttrs = overviewEntity?.attributes || {};
+    const vpdPrefix = isLightsOn ? 'day' : 'night';
+    const vpdTargetMin = vpdAttrs[`${vpdPrefix}_vpd_target_min`] ?? vpdAttrs.vpd_target_min;
+    const vpdTargetMax = vpdAttrs[`${vpdPrefix}_vpd_target_max`] ?? vpdAttrs.vpd_target_max;
+    const vpdDangerMin = vpdAttrs[`${vpdPrefix}_vpd_danger_min`] ?? vpdAttrs.vpd_danger_min;
+    const vpdDangerMax = vpdAttrs[`${vpdPrefix}_vpd_danger_max`] ?? vpdAttrs.vpd_danger_max;
 
     if (
       (!vpdStatus || vpdStatus === EntityState.UNKNOWN) &&
@@ -231,10 +236,8 @@ export class MetricsUtils {
     const co2 =
       isSpecialGrowspace || co2Value === undefined || co2Value === null ? undefined : co2Value;
 
-    const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
     const hasLightSensor =
       !isSpecialGrowspace && isLightsOnValue !== undefined && isLightsOnValue !== null;
-    const isLightsOn = isLightsOnValue === true;
 
     const getNextEvent = (times?: IrrigationTime[]): string | undefined => {
       if (!times || !times.length) return undefined;

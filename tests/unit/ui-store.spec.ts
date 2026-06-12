@@ -2,12 +2,13 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { GrowspaceUIStore } from '../../src/store/ui/ui-store';
 import { ViewMode, GridOverlayMode } from '../../src/constants';
 import { gridInteraction$, cancel } from '../../src/slices/grid-interaction';
-import { notification$ } from '../../src/slices/ui';
+import { notification$, __resetUiSliceForTests } from '../../src/slices/ui';
 
 describe('UI Store', () => {
     let store: GrowspaceUIStore;
 
     beforeEach(() => {
+        __resetUiSliceForTests();
         notification$.set(null);
         store = new GrowspaceUIStore();
     });

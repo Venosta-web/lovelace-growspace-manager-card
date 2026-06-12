@@ -18,8 +18,9 @@ import '../features/shared/ui/quick-note-input';
 import { consume } from '@lit/context';
 import { hassContext, storeContext } from '../context';
 import { addGrowspaceNote } from '../slices/logbook';
+import { fetchGrowReport, exportGrowReport, type GrowReport } from '../slices/growspace';
+import { withToast } from '../slices/ui';
 import { GrowspaceStore } from '../store/core/growspace-store';
-import { GrowReportData } from '../services/api/report-api';
 
 type LogbookTab = 'list' | 'timeline' | 'report';
 
@@ -37,7 +38,7 @@ export class LogbookDialog extends LitElement {
   @state() private _activeTab: LogbookTab = 'list';
   @state() private _loading = true;
   @state() private _error: string | null = null;
-  @state() private _reportData: GrowReportData | null = null;
+  @state() private _reportData: GrowReport | null = null;
   @state() private _exporting = false;
 
   static styles = [
@@ -221,7 +222,7 @@ export class LogbookDialog extends LitElement {
     this._loading = true;
     this._error = null;
     try {
-      this._reportData = await this.store.actions.report.fetch(this.growspaceId);
+      this._reportData = await fetchGrowReport(this.growspaceId);
     } catch (err: any) {
       this._error = err?.message || 'Failed to load grow report';
     } finally {
@@ -232,13 +233,11 @@ export class LogbookDialog extends LitElement {
   private async _exportReport(format: 'json' | 'pdf') {
     if (this._exporting || !this.store) return;
     this._exporting = true;
-    try {
-      await this.store.actions.report.export(this.growspaceId, format);
-    } catch {
-      // Toast is shown inside the action
-    } finally {
-      this._exporting = false;
-    }
+    await withToast(() => exportGrowReport(this.growspaceId, format), {
+      success: 'Grow report exported',
+      errorPrefix: 'Failed to export report',
+    });
+    this._exporting = false;
   }
 
   private _renderReportContent() {

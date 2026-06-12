@@ -8,10 +8,14 @@ import { hassContext, configContext, storeContext } from '../../../context';
 import { GrowspaceDevice, GrowspaceManagerCardConfig } from '../../../types';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { HeaderDragController } from '../../../controllers/header-drag-controller';
-import { MetricsUtils, HeaderChip, DominantStageInfo } from '../../../utils/metrics-utils';
-import { computeHeaderMetrics } from '../../../slices/header-metrics';
+import {
+  computeHeaderMetrics,
+  HeaderChip,
+  DominantStageInfo,
+} from '../../../slices/header-metrics';
 import { filterChips } from '../../../utils/chip-filter';
 import { envSnapshots$ } from '../../../slices/environment';
+import { deviceSnapshots$ } from '../../../slices/device-state';
 import { plants$ } from '../../../slices/plant';
 import { irrigationConfigs$, irrigationStrategies$, tankLevels$ } from '../../../slices/irrigation';
 import { getFlowerFlipInfo, FlowerFlipInfo } from '../../../utils/flower-flip';
@@ -44,6 +48,7 @@ export class GrowspaceHeaderContainer extends LitElement {
   private _irrigationConfigsController!: StoreController<any>;
   private _irrigationStrategiesController!: StoreController<any>;
   private _tankLevelsController!: StoreController<any>;
+  private _deviceSnapshotsController!: StoreController<any>;
   private _dragController = new HeaderDragController(this);
 
   get activeEnvGraphs() {
@@ -86,6 +91,9 @@ export class GrowspaceHeaderContainer extends LitElement {
     if (!this._tankLevelsController) {
       this._tankLevelsController = new StoreController(this, tankLevels$);
     }
+    if (!this._deviceSnapshotsController) {
+      this._deviceSnapshotsController = new StoreController(this, deviceSnapshots$);
+    }
   }
 
   connectedCallback() {
@@ -116,12 +124,14 @@ export class GrowspaceHeaderContainer extends LitElement {
     const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
     const irrigationStrategy = irrigationStrategies$.get().get(growspaceId) ?? null;
     const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
+    const deviceSnapshot = deviceSnapshots$.get().get(growspaceId) ?? null;
 
     const isFlower = PlantUtils.getDominantStage(growspacePlants)?.stage === 'flower';
 
     const {
       hero: heroChips,
       chips: secondaryChips,
+      deviceChips,
       dominant,
     } = computeHeaderMetrics(
       envSnapshot,
@@ -131,16 +141,8 @@ export class GrowspaceHeaderContainer extends LitElement {
       'main',
       activeEnvGraphs,
       linkedGraphGroups,
-      irrigationStrategy
-    );
-
-    // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
-    // MetricsUtils until the DeviceState slice is implemented (issue #144).
-    const { deviceChips } = MetricsUtils.computeHeaderMetrics(
-      this.hass,
-      this.device,
-      activeEnvGraphs,
-      linkedGraphGroups
+      irrigationStrategy,
+      deviceSnapshot
     );
 
     const hidden = this.config?.hidden_chips;
@@ -224,7 +226,8 @@ export class GrowspaceHeaderContainer extends LitElement {
         this.store.actions.ui.openStrainLibraryDialog();
         break;
       case 'irrigation':
-        if (this.device?.deviceId) this.store.actions.ui.openIrrigationDialog();
+        if (this.device?.deviceId)
+          this.store.actions.ui.openIrrigationDialog({ growspaceId: this.device.deviceId });
         break;
       case 'ai':
         this.store.actions.ui.openGrowMasterDialog(this.device?.deviceId || '');
@@ -303,6 +306,7 @@ export class GrowspaceHeaderContainer extends LitElement {
     const { growspaceId, flowerStart } = e.detail;
     this.store?.ui.dismissFlowerFlip(growspaceId, flowerStart);
     this.store?.actions.ui.openIrrigationDialog({
+      growspaceId,
       initialTab: 'steering',
       scrollToField: 'lightsOnTime',
     });

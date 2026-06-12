@@ -86,6 +86,26 @@ function makeTank(overrides: Partial<IrrigationTank> = {}): IrrigationTank {
   };
 }
 
+function makeDeviceEntry(overrides: Partial<DeviceEntry> = {}): DeviceEntry {
+  return {
+    entityIds: ['switch.tent_1_device'],
+    value: 'On',
+    icon: mdiFan,
+    ...overrides,
+  };
+}
+
+function makeDeviceSnapshot(overrides: Partial<DeviceSnapshot> = {}): DeviceSnapshot {
+  return {
+    lightSensors: null,
+    exhaustFans: null,
+    circulationFans: null,
+    humidifiers: null,
+    dehumidifiers: null,
+    ...overrides,
+  };
+}
+
 function makeIrrigationStrategy(overrides: Partial<IrrigationStrategy> = {}): IrrigationStrategy {
   return {
     enabled: true,

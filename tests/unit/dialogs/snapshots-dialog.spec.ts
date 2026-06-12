@@ -7,6 +7,8 @@ import '../../../src/dialogs/snapshots-dialog';
 vi.mock('../../../src/slices/camera', () => ({
   getSnapshots: vi.fn().mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 }),
   captureSnapshot: vi.fn().mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] }),
+  getVisionHistory: vi.fn().mockResolvedValue({ history: [], total: 0 }),
+  triggerVisionCheckup: vi.fn().mockResolvedValue(undefined),
   setSnapshots: vi.fn(),
   snapshots$: { get: vi.fn(() => []), set: vi.fn(), subscribe: vi.fn() },
 }));
@@ -260,7 +262,6 @@ describe('SnapshotsDialog', () => {
 describe('Vision Checkup tab', () => {
   let element: SnapshotsDialog;
   let mockStore: any;
-  let mockSnapshotsActions: any;
   let mockUi: any;
   let mockVisionHistory: VisionCheckupResult[];
 
@@ -268,19 +269,14 @@ describe('Vision Checkup tab', () => {
     vi.mocked(cameraSlice.getSnapshots).mockResolvedValue({ growspace_id: 'gs1', snapshots: [], total: 0 });
     vi.mocked(cameraSlice.captureSnapshot).mockResolvedValue({ growspace_id: 'gs1', timestamp: '', snapshots: [] });
 
-    mockSnapshotsActions = {
-      visionHistory: vi.fn(),
-      triggerCheckup: vi.fn()
-    };
-
     mockUi = {
       closeDialog: vi.fn(),
       showToast: vi.fn(),
     };
 
     mockStore = {
-      actions: { snapshots: mockSnapshotsActions },
       ui: mockUi,
+      refreshData: vi.fn().mockResolvedValue(undefined),
     };
 
     mockVisionHistory = [
@@ -303,8 +299,8 @@ describe('Vision Checkup tab', () => {
         snapshot_paths: [],
       },
     ];
-    mockSnapshotsActions.visionHistory = vi.fn().mockResolvedValue({ history: mockVisionHistory, total: 2 });
-    mockSnapshotsActions.triggerCheckup = vi.fn();
+    vi.mocked(cameraSlice.getVisionHistory).mockResolvedValue({ history: mockVisionHistory, total: 2 } as any);
+    vi.mocked(cameraSlice.triggerVisionCheckup).mockResolvedValue(undefined as any);
 
     element = new SnapshotsDialog();
     (element as any).store = mockStore;
@@ -352,7 +348,7 @@ describe('Vision Checkup tab', () => {
     (tabs?.[1] as HTMLElement).click();
     await element.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
-    expect(mockSnapshotsActions.visionHistory).toHaveBeenCalledWith('gs1');
+    expect(vi.mocked(cameraSlice.getVisionHistory)).toHaveBeenCalledWith('gs1');
   });
 
   it('renders latest result panel with severity chip and analysis', async () => {
@@ -433,7 +429,7 @@ describe('Vision Checkup tab', () => {
   });
 
   it('shows empty state when no vision history', async () => {
-    mockSnapshotsActions.visionHistory = vi.fn().mockResolvedValue({ history: [], total: 0 });
+    vi.mocked(cameraSlice.getVisionHistory).mockResolvedValue({ history: [], total: 0 } as any);
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
     await element.updateComplete;
@@ -449,7 +445,7 @@ describe('Vision Checkup tab', () => {
 
   it('Run Checkup Now button calls triggerVisionCheckup and refreshes', async () => {
     const mockResult = { ...mockVisionHistory[0] };
-    mockSnapshotsActions.triggerCheckup = vi.fn().mockResolvedValue(mockResult);
+    vi.mocked(cameraSlice.triggerVisionCheckup).mockResolvedValue(mockResult as any);
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;
     await element.updateComplete;
@@ -462,12 +458,12 @@ describe('Vision Checkup tab', () => {
     await element.updateComplete;
     await new Promise(resolve => setTimeout(resolve, 0));
 
-    expect(mockSnapshotsActions.triggerCheckup).toHaveBeenCalledWith('gs1');
-    expect(mockSnapshotsActions.visionHistory).toHaveBeenCalled();
+    expect(vi.mocked(cameraSlice.triggerVisionCheckup)).toHaveBeenCalledWith('gs1');
+    expect(vi.mocked(cameraSlice.getVisionHistory)).toHaveBeenCalled();
   });
 
   it('handles error from triggerVisionCheckup', async () => {
-    mockSnapshotsActions.triggerCheckup = vi.fn().mockRejectedValue(new Error('No cameras'));
+    vi.mocked(cameraSlice.triggerVisionCheckup).mockRejectedValue(new Error('No cameras'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     element.dialogState = { growspaceId: 'gs1' };
     element.open = true;

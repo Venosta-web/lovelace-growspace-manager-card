@@ -1,10 +1,12 @@
 /**
  * HeaderMetrics deep module — the single place in the codebase that computes
- * header chip arrays from the three slice atoms (environment, plant, irrigation).
+ * header chip arrays from the slice atoms (environment, plant, irrigation,
+ * device-state).
  *
  * Public API (pure computation):
- *   computeHeaderMetrics() — derive hero + chips + dominant from slice data.
- *                            No hass parameter — all data comes from slice atoms.
+ *   computeHeaderMetrics() — derive hero + chips + deviceChips + dominant from
+ *                            slice data. No hass parameter — all data comes
+ *                            from slice atoms.
  *
  * Re-exports HeaderChip and DominantStageInfo so callers don't need to import
  * from the legacy MetricsUtils.
@@ -25,9 +27,12 @@ import {
   mdiLightningBolt,
   mdiWaterPump,
   mdiFlash,
+  mdiLightbulbOn,
+  mdiLightbulbOff,
 } from '@mdi/js';
 import { DateTime } from 'luxon';
 import type { EnvSnapshot, SensorReadings } from '../environment';
+import type { DeviceEntry, DeviceSnapshot } from '../device-state';
 import type { PlantEntity } from '../../features/plants/types';
 import type {
   IrrigationConfig,
@@ -73,6 +78,8 @@ export interface HeaderMetricsResult {
   hero: HeaderChip[];
   /** Secondary row: tank levels, irrigation timing, DLI, etc. */
   chips: HeaderChip[];
+  /** Device row: light, exhaust, circulation fan, humidifier, dehumidifier. */
+  deviceChips: HeaderChip[];
   /** Dominant stage derived from the plants array. */
   dominant: DominantStageInfo | undefined;
 }
@@ -376,16 +383,92 @@ function _buildTankChip(
 }
 
 // ---------------------------------------------------------------------------
+// Device chip builders
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a device chip directly from a DeviceEntry (already chip-shaped:
+ * entityIds, aggregated value, multiValues, icon).
+ *
+ * Returns null when the category is not configured (entry === null). A
+ * configured entry whose value is undefined (all entities unavailable) keeps
+ * its chip with a "-" placeholder, matching the legacy MetricsUtils display.
+ */
+function _buildDeviceChip(
+  key: string,
+  label: string,
+  entry: DeviceEntry | null,
+  activeEnvGraphs: Set<string>,
+  linkedGraphGroups: string[][]
+): HeaderChip | null {
+  if (entry === null) return null;
+  return _makeChip(
+    key,
+    entry.icon,
+    entry.value ?? '-',
+    { multiValues: entry.multiValues, entityIds: entry.entityIds, label },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+}
+
+/**
+ * Build the light chip, replicating the legacy MetricsUtils display:
+ *  - Single numeric reading (e.g. "70%" or "450"): show the reading; bulb icon
+ *    follows reading > 0.
+ *  - Otherwise fall back to the overview entity's is_lights_on flag
+ *    (envSnapshot.isLightsOn — null means no light sensor): "On"/"Off" value
+ *    and matching bulb icon. The fallback also covers a growspace with the
+ *    flag but no configured light entities.
+ *  - Multiple sensors: "Multiple" handling comes from the DeviceEntry's
+ *    multiValues, value falls back to the is_lights_on flag.
+ */
+function _buildLightChip(
+  entry: DeviceEntry | null,
+  isLightsOn: boolean | null,
+  activeEnvGraphs: Set<string>,
+  linkedGraphGroups: string[][]
+): HeaderChip | null {
+  let icon = isLightsOn === true ? mdiLightbulbOn : mdiLightbulbOff;
+  let value: string | undefined;
+
+  if (entry !== null && entry.entityIds.length === 1 && entry.value !== undefined) {
+    const numVal = parseFloat(entry.value);
+    if (!isNaN(numVal)) {
+      value = entry.value;
+      icon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+    }
+  }
+  if (value === undefined && isLightsOn !== null) {
+    value = isLightsOn ? 'On' : 'Off';
+  }
+
+  const multiValues = entry?.multiValues;
+  if (value === undefined && (!multiValues || multiValues.length === 0)) return null;
+
+  return _makeChip(
+    MetricKey.LIGHT,
+    icon,
+    value ?? '',
+    { multiValues, entityIds: entry?.entityIds ?? [] },
+    activeEnvGraphs,
+    linkedGraphGroups
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
- * Derive header chips from the three slice data sources.
+ * Derive header chips from the slice data sources.
  *
  * Constraints:
  *  - Never imports or accesses hass / hass.states.
- *  - Device chips (exhaust, fan, humidifier, dehumidifier) are excluded — they
- *    require the future DeviceState slice (issue #144).
+ *  - Device chips derive from the DeviceState slice's DeviceSnapshot; Fan
+ *    Entity Mode detection (ADR-0008) stays in that slice's normalizers.
+ *    deviceChips is empty when deviceSnapshot is null (trailing optional so
+ *    existing call sites stay valid).
  */
 export function computeHeaderMetrics(
   envSnapshot: EnvSnapshot | null,
@@ -395,7 +478,8 @@ export function computeHeaderMetrics(
   viewContext: ViewContext,
   activeEnvGraphs: Set<string> = new Set(),
   linkedGraphGroups: string[][] = [],
-  irrigationStrategy: IrrigationStrategy | null = null
+  irrigationStrategy: IrrigationStrategy | null = null,
+  deviceSnapshot: DeviceSnapshot | null = null
 ): HeaderMetricsResult {
   // --- Dominant stage ---
   let dominant: DominantStageInfo | undefined;
@@ -759,5 +843,52 @@ export function computeHeaderMetrics(
   );
   if (energyChip) chips.push(energyChip);
 
-  return { hero, chips, dominant };
+  // --- Device chips (light, exhaust, circulation fan, humidifier, dehumidifier) ---
+  // Same MetricKeys and order as the legacy MetricsUtils path so hidden_chips
+  // configs and graph toggling are unaffected.
+  const deviceChips: HeaderChip[] = [];
+
+  if (deviceSnapshot !== null) {
+    const candidates = [
+      _buildLightChip(
+        deviceSnapshot.lightSensors,
+        envSnapshot?.isLightsOn ?? null,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+      _buildDeviceChip(
+        MetricKey.EXHAUST,
+        'Exhaust',
+        deviceSnapshot.exhaustFans,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+      _buildDeviceChip(
+        MetricKey.CIRCULATION_FAN,
+        'Fan',
+        deviceSnapshot.circulationFans,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+      _buildDeviceChip(
+        MetricKey.HUMIDIFIER,
+        'Humidifier',
+        deviceSnapshot.humidifiers,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+      _buildDeviceChip(
+        MetricKey.DEHUMIDIFIER,
+        'Dehumidifier',
+        deviceSnapshot.dehumidifiers,
+        activeEnvGraphs,
+        linkedGraphGroups
+      ),
+    ];
+    for (const chip of candidates) {
+      if (chip !== null) deviceChips.push(chip);
+    }
+  }
+
+  return { hero, chips, deviceChips, dominant };
 }

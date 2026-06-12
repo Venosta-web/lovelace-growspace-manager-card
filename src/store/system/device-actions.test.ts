@@ -8,8 +8,6 @@ function makeContext(overrides: Partial<ActionContext> = {}): ActionContext {
     grid: gridSlice,
     dataService: {} as ActionContext['dataService'],
     ui: {} as ActionContext['ui'],
-    undoRedoManager: {} as ActionContext['undoRedoManager'],
-    optimisticManager: {} as ActionContext['optimisticManager'],
     closeDialog: () => {},
     refreshData: async () => {},
     ...overrides,

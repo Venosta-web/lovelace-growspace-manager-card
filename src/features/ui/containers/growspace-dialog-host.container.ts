@@ -4,6 +4,9 @@ import { consume, provide } from '@lit/context';
 import { hassContext, storeContext, configContext } from '../../../lib/context';
 import { waterPlant as sliceWaterPlant } from '../../../slices/plant';
 import { seedBatches$, pollinationEvents$ } from '../../../slices/genetics';
+import { updateVisionCheckupConfig } from '../../../slices/camera';
+import { updateBreeder, deleteBreeder } from '../../../slices/strain';
+import { withToast } from '../../../slices/ui';
 import { setHass } from '../../../services/hass-call';
 import { GrowspaceStore } from '../../../store/core/growspace-store';
 import { StoreController } from '@nanostores/lit';
@@ -25,6 +28,13 @@ import type {
   StrainLibraryDialogState,
 } from '../../../lib/types/dialog';
 import type { NutrientPresetsResponse } from '../../../slices/nutrient';
+import {
+  applyIPM,
+  saveIPMPreset,
+  removeIPMPreset,
+  fetchIPMPresets,
+  fetchNutrientInventory,
+} from '../../../slices/nutrient';
 
 import './growspace-nutrient-presets-editor.container';
 import '../../../dialogs/add-plant-dialog';
@@ -128,7 +138,6 @@ export class GrowspaceDialogHost extends LitElement {
       nutrientInventory,
     } = this._dialogHostController.value;
 
-    console.log('[DialogHost] Rendering with active type:', active.type);
     if (active.type === 'NONE') return html``;
     const selectedDeviceData = devices.find((d) => d.deviceId === selectedDeviceId);
 
@@ -140,6 +149,20 @@ export class GrowspaceDialogHost extends LitElement {
 
     // Resolve context-specific device data (from payload or global selection)
     const payloadGrowspaceId = (active.payload as { growspaceId?: string })?.growspaceId;
+
+    // activeDialog$ is a global singleton shared by every growspace-manager-card
+    // instance, each of which mounts its own dialog-host portal. The irrigation
+    // dialog is opened with an explicit growspaceId, so only the portal whose
+    // `devices` list owns that growspace should render it — otherwise every other
+    // portal renders a duplicate dialog stacked on top with no matching device.
+    if (
+      active.type === 'IRRIGATION' &&
+      payloadGrowspaceId &&
+      !devices.some((d) => d.deviceId === payloadGrowspaceId)
+    ) {
+      return html``;
+    }
+
     const effectiveDeviceData =
       (payloadGrowspaceId ? devices.find((d) => d.deviceId === payloadGrowspaceId) : null) ||
       selectedDeviceData;
@@ -630,7 +653,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleUpdateBreeder(detail: { oldName: string; newName: string; logo: string }) {
     try {
-      await this.store?.actions.breeder.update(detail.oldName, detail.newName, detail.logo);
+      await withToast(
+        async () => {
+          await updateBreeder(detail.oldName, detail.newName, detail.logo);
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Breeder updated successfully!',
+          errorPrefix: 'Failed to update breeder',
+          rethrow: true,
+        }
+      );
       await this.store?.actions.library.fetchStrains(true);
     } catch (err) {
       console.error('[DialogHost] Update breeder failed:', err);
@@ -646,7 +679,17 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleDeleteBreeder(detail: { name: string }) {
     try {
-      await this.store?.actions.breeder.delete(detail.name);
+      await withToast(
+        async () => {
+          await deleteBreeder(detail.name);
+          await this.store?.refreshData();
+        },
+        {
+          success: 'Breeder deleted successfully!',
+          errorPrefix: 'Failed to delete breeder',
+          rethrow: true,
+        }
+      );
       await this.store?.actions.library.fetchStrains(true);
     } catch (err) {
       console.error('[DialogHost] Delete breeder failed:', err);
@@ -777,9 +820,12 @@ export class GrowspaceDialogHost extends LitElement {
 
   private async _handleVisionCheckupConfig(detail: VisionCheckupConfigEventDetail) {
     try {
-      await this.store?.actions.snapshots.updateCheckupConfig(
-        detail.growspaceId,
-        detail.visionCheckupConfig
+      await withToast(
+        async () => {
+          await updateVisionCheckupConfig(detail.growspaceId, detail.visionCheckupConfig);
+          await this.store?.refreshData();
+        },
+        { success: 'Vision config saved', errorPrefix: 'Failed to save vision config', rethrow: true }
       );
       this.store?.actions.ui.closeDialog();
     } catch (e: unknown) {
@@ -1021,7 +1067,25 @@ export class GrowspaceDialogHost extends LitElement {
         @apply-ipm=${(e: CustomEvent) => this._handleApplyIPM(e, growspaceId, plantIds)}
         @save-preset=${async (e: CustomEvent) => {
         try {
-          await this.store?.actions.ipm.savePreset(e.detail);
+          const preset = e.detail;
+          await withToast(
+            async () => {
+              await saveIPMPreset({
+                preset_id: preset.preset_id ?? preset.id,
+                name: preset.name,
+                type: preset.type,
+                items: preset.items,
+                stage: preset.stage,
+                min_days_in_stage: preset.min_days_in_stage,
+              });
+              await fetchIPMPresets();
+            },
+            {
+              success: `Saved IPM preset: ${preset.name}`,
+              errorPrefix: 'Failed to save IPM preset',
+              rethrow: true,
+            }
+          );
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] IPM preset save failed:', e);
@@ -1029,7 +1093,13 @@ export class GrowspaceDialogHost extends LitElement {
       }}
         @delete-preset=${async (e: CustomEvent) => {
         try {
-          await this.store?.actions.ipm.removePreset(e.detail.presetId);
+          await withToast(
+            async () => {
+              await removeIPMPreset(e.detail.presetId);
+              await fetchIPMPresets();
+            },
+            { success: 'Removed IPM preset', errorPrefix: 'Failed to remove IPM preset', rethrow: true }
+          );
           await this._handleDataChanged();
         } catch (e: any) {
           console.error('[DialogHost] IPM preset delete failed:', e);
@@ -1045,17 +1115,23 @@ export class GrowspaceDialogHost extends LitElement {
     plantIds: string[]
   ): Promise<void> {
     try {
-      await this.store?.actions.ipm.apply({
-        preset_id: e.detail.presetId,
-        growspace_id: growspaceId,
-        plant_ids: plantIds,
-        notes: e.detail.notes,
-      });
+      await withToast(
+        async () => {
+          await applyIPM({
+            preset_id: e.detail.presetId,
+            growspace_id: growspaceId,
+            plant_ids: plantIds,
+            notes: e.detail.notes,
+          });
+          // IPM products often deduct from stock, so refresh inventory.
+          await fetchNutrientInventory();
+        },
+        { success: 'IPM treatment applied', errorPrefix: 'IPM failed', rethrow: true }
+      );
       this.store?.ui.closeDialog();
-      this.store?.actions.ui.showToast('IPM treatment applied', 'success');
       await this._handleDataChanged();
     } catch (err: any) {
-      this.store?.actions.ui.showToast(`IPM failed: ${err.message || err}`, 'error');
+      console.error('[DialogHost] Apply IPM failed:', err);
     }
   }
 

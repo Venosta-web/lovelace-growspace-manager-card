@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
     configureDrainMonitoring: vi.fn().mockResolvedValue(true),
     fetchGrowspace: vi.fn(),
     setIrrigationStrategy: vi.fn().mockResolvedValue(true),
+    setEcTargetRanges: vi.fn().mockResolvedValue(true),
     saveSettings: vi.fn(),
     resetWaterTracking: vi.fn().mockResolvedValue(undefined),
     removeDrainTime: vi.fn().mockResolvedValue(true),
@@ -39,6 +40,24 @@ const mocks = vi.hoisted(() => ({
     addIrrigationTime: vi.fn().mockResolvedValue(true),
     getIrrigationAnalytics: vi.fn().mockResolvedValue({ growspace_id: 'gs1', stage_aggregates: { veg: 12.5, flower: 30.0 } }),
 }));
+
+// Slice mutators go through mutate()->callService, which has no hass in this
+// unit context and rejects. Spy on them so the MutationRunController seam
+// (ADR-0015) can be driven with controllable resolve/reject — while keeping the
+// real atoms (irrigationConfigs$, cropSteeringHistory$) the component subscribes to.
+const sliceMocks = vi.hoisted(() => ({
+    saveIrrigationSettings: vi.fn().mockResolvedValue(undefined),
+    runIrrigationCycle: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../../src/slices/irrigation', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../src/slices/irrigation')>();
+    return {
+        ...actual,
+        saveIrrigationSettings: sliceMocks.saveIrrigationSettings,
+        runIrrigationCycle: sliceMocks.runIrrigationCycle,
+    };
+});
 
 vi.mock('../../../src/services/data-service', () => {
     return {
@@ -49,6 +68,13 @@ vi.mock('../../../src/services/data-service', () => {
         }
     };
 });
+
+/** Drive the MutationRunController: applying -> effect -> resolved/failed. */
+async function runController(element: IrrigationDialog): Promise<void> {
+    await element.updateComplete;
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await element.updateComplete;
+}
 
 describe('IrrigationDialog - Extra Coverage', () => {
     let element: IrrigationDialog;
@@ -107,15 +133,6 @@ describe('IrrigationDialog - Extra Coverage', () => {
                         if (d) Object.assign(d.irrigationConfig, patch);
                     }),
                 },
-                optimisticManager: {
-                    applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
-                        await applyFn(_payload);
-                        return 'mock-id';
-                    }),
-                    confirmUpdate: vi.fn(),
-                    rollbackUpdate: vi.fn(),
-                },
-                undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
                 showToast: vi.fn(),
                 closeDialog: vi.fn(),
                 refreshData: vi.fn().mockResolvedValue(undefined),
@@ -340,6 +357,21 @@ describe('IrrigationDialog - Extra Coverage', () => {
             expect((element as any)._sm.tabs.schedules.sub.kind).toBe('idle');
         });
 
+        it('save/run handlers surface mutator failure as a toast, not an unhandled rejection', async () => {
+            // ADR-0015: handlers are synchronous dispatchers; the MutationRunController
+            // runs the effect post-render and owns failure handling. When the effect
+            // rejects, SaveFailed -> idle + a transient error toast (no unhandled rejection).
+            sliceMocks.saveIrrigationSettings.mockRejectedValueOnce(new Error('no hass'));
+            (element as any)._saveSettings();
+            await runController(element);
+            expect((element as any)._sm.toast).toBe('Failed to save irrigation settings');
+
+            sliceMocks.runIrrigationCycle.mockRejectedValueOnce(new Error('no hass'));
+            (element as any)._handleRunNow();
+            await runController(element);
+            expect((element as any)._sm.toast).toBe('Failed to run irrigation cycle');
+        });
+
         it('should delete irrigation time via edit dialog', async () => {
             // Open edit dialog
             const irrigationTimes = element.shadowRoot?.querySelectorAll('.irrigation-time-bar .timeline-event');
@@ -540,31 +572,34 @@ describe('IrrigationDialog - Extra Coverage', () => {
             await element.updateComplete;
         });
 
-        it('should save drain config successfully', async () => {
-            await (element as any)._saveDrainConfig();
+        // ADR-0015: drain config (and strategy + EC targets) no longer save in
+        // isolation — they run as part of the single `save-all` effect, after the
+        // settings save. Drive the seam via _saveAll() and the controller cycle.
+        it('saves drain config as part of save-all', async () => {
+            (element as any)._saveAll();
+            await runController(element);
             expect(mocks.configureDrainMonitoring).toHaveBeenCalled();
         });
 
-        it('should handle drain config save failure', async () => {
-            mocks.configureDrainMonitoring.mockRejectedValue(new Error('Test error'));
-            await (element as any)._saveDrainConfig();
-            await element.updateComplete;
+        it('surfaces a save-all failure as an error toast', async () => {
+            mocks.configureDrainMonitoring.mockRejectedValueOnce(new Error('Test error'));
+            (element as any)._saveAll();
+            await runController(element);
 
-            // Should show error toast
             const toast = element.shadowRoot?.querySelector('.toast-notification.error');
             expect(toast).toBeTruthy();
+            expect((element as any)._sm.toast).toBe('Failed to save irrigation settings');
         });
     });
 
     describe('Targeted Coverage - Edge Cases', () => {
-        it('should handle strategy save failure', async () => {
-            const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        it('surfaces a strategy save failure (within save-all) as an error toast', async () => {
             mocks.setIrrigationStrategy.mockRejectedValueOnce(new Error('Save Fail'));
 
-            await (element as any)._saveStrategy();
+            (element as any)._saveAll();
+            await runController(element);
 
-            expect(consoleSpy).toHaveBeenCalledWith('Failed to save strategy:', expect.any(Error));
-            consoleSpy.mockRestore();
+            expect((element as any)._sm.toast).toBe('Failed to save irrigation settings');
         });
 
     });
@@ -656,10 +691,13 @@ describe('IrrigationDialog - Extra Coverage', () => {
             expect(mocks.removeDrainTime).not.toHaveBeenCalled();
         });
 
-        it('should return early from _saveDrainConfig when no device', async () => {
+        it('save-all effect is a no-op when there is no device', async () => {
             (element as any).device = undefined;
-            await (element as any)._saveDrainConfig();
+            // _saveAll still dispatches, but the effect returns early without a deviceId.
+            (element as any)._saveAll();
+            await runController(element);
             expect(mocks.configureDrainMonitoring).not.toHaveBeenCalled();
+            expect(sliceMocks.saveIrrigationSettings).not.toHaveBeenCalled();
         });
 
         it('should return early from _logDrainReadingNow when no device', async () => {

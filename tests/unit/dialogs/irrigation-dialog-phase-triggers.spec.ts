@@ -98,15 +98,6 @@ function makeMockStore(device: GrowspaceDevice) {
                     if (d) Object.assign(d.irrigationConfig, patch);
                 }),
             },
-            optimisticManager: {
-                applyOptimisticUpdate: vi.fn().mockImplementation(async (_type: any, _payload: any, applyFn: any) => {
-                    await applyFn(_payload);
-                    return 'mock-id';
-                }),
-                confirmUpdate: vi.fn(),
-                rollbackUpdate: vi.fn(),
-            },
-            undoRedoManager: { pushAction: vi.fn(), canUndo: false, canRedo: false },
             showToast: vi.fn(),
             closeDialog: vi.fn(),
             refreshData: vi.fn().mockResolvedValue(undefined),

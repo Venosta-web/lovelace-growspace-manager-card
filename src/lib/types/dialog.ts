@@ -282,6 +282,7 @@ export interface BatchCloneDialogState {
 }
 
 export interface IrrigationDialogState {
+  growspaceId?: string;
   initialTab?: string;
   scrollToField?: string;
 }
