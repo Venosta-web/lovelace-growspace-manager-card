@@ -39,6 +39,14 @@ export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload.extend({
   p1_shot_volume_percent: z.number().optional(),
   p2_shot_volume_percent: z.number().optional(),
   shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
+  // Substrate Profile (#446): the backend accepts flat keys and folds them into
+  // the nested substrate_profile server-side (read side stays nested).
+  substrate_media_type: z.enum(['coco', 'rockwool', 'soil']).optional(),
+  substrate_liters_per_pot: z.number().optional(),
+  // Pore EC Target Band + EC Modulation (#447). null clears a band edge.
+  pore_ec_target_min: z.number().nullable().optional(),
+  pore_ec_target_max: z.number().nullable().optional(),
+  ec_modulation_enabled: z.boolean().optional(),
   auto_light_tracking: z.boolean().optional(),
 });
 

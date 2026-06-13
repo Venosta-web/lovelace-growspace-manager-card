@@ -391,6 +391,16 @@ export async function updateIrrigationStrategy(
   if (updates.p2ShotVolumePercent !== undefined)
     payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
   if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
+  // Substrate Profile serializes to the backend's flat keys (folded into the
+  // nested substrate_profile server-side); the read side stays nested.
+  if (updates.substrateProfile !== undefined) {
+    payload.substrate_media_type = updates.substrateProfile.mediaType;
+    payload.substrate_liters_per_pot = updates.substrateProfile.litersPerPot;
+  }
+  if (updates.poreEcTargetMin !== undefined) payload.pore_ec_target_min = updates.poreEcTargetMin;
+  if (updates.poreEcTargetMax !== undefined) payload.pore_ec_target_max = updates.poreEcTargetMax;
+  if (updates.ecModulationEnabled !== undefined)
+    payload.ec_modulation_enabled = updates.ecModulationEnabled;
   if (updates.autoLightTracking !== undefined)
     payload.auto_light_tracking = updates.autoLightTracking;
 
