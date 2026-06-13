@@ -264,6 +264,25 @@ The agreed target shape of the Crop Steering Dialog: the single owner of *all* s
 **Capability Unlock Hint**
 The gating UX rule for the [[Crop Steering Command Center]]: a feature whose sensor prerequisites are missing ([[Sensor-Gated Capability]] in the backend glossary) renders **visible but locked**, with a one-line prerequisite hint ("Add a pore EC sensor to enable") — never hidden, never editable-but-inert. Generalizes the existing [[Crop Steering Legend]] precedent of muted "not configured" chips.
 
+**Substrate Profile**
+The growing medium description on a growspace's [[Irrigation Strategy]]: a **media type** (`coco` | `rockwool` | `soil`) and **liters per pot**. Considered *configured* once liters-per-pot is positive. A configured profile is one of the two prerequisites for [[Volume Mode]] (the other is a positive pump flow rate). Edited on the [[Substrate & EC Tab]].
+
+**Shot Sizing Mode**
+Whether per-phase shot sizes are expressed in raw pump **Seconds** or as a percent of substrate volume (**Volume Mode**). The mode is a single growspace-level setting toggled on the [[Substrate & EC Tab]]; switching it relabels the P1/P2 shot-parameter fields on the **Steering** tab (seconds ↔ %). Seconds is the default and always available; see [[Volume Mode]] for the gate on the other option. Backend ADR-0011.
+
+**Volume Mode**
+The non-default [[Shot Sizing Mode]] in which shots are sized as a percent of total substrate volume. A [[Capability Unlock Hint]]–gated capability: selectable only when the backend reports `volume_mode_capable` (a configured [[Substrate Profile]] **and** a positive pump flow rate). When locked, the hint names the missing prerequisite — "Set liters per pot…" when the profile is unconfigured, otherwise "Set a pump flow rate…".
+
+**Pore EC Target Band**
+An explicit min/max pore-EC range (mS/cm) on the [[Irrigation Strategy]] that [[EC Modulation]] steers toward. **Deliberately distinct from the per-stage feed-EC ranges** (`ECTargetRange`): pore EC legitimately runs above feed EC when stacking, so the two are never conflated — the [[Substrate & EC Tab]] renders them as separate, visually-separated sections. Edited on the [[Substrate & EC Tab]].
+_Avoid_: feed EC band, EC target range (those are the feed-side ranges).
+
+**EC Modulation**
+An opt-in capability that nudges feed EC toward the [[Pore EC Target Band]]. A [[Capability Unlock Hint]]–gated capability: locked with a hint when the growspace has no pore-EC sensors configured. Inert (modulation factor exactly 1.0) whenever it is disabled, or the band is unset, or pore-EC sensors are absent — so enabling it without a band is harmless. Backend ADR for #447.
+
+**Substrate & EC Tab**
+The third tab of the [[Crop Steering Command Center]] (`substrate_ec`). Owns, top-to-bottom: [[Substrate Profile]], [[Shot Sizing Mode]] toggle, [[Pore EC Target Band]], [[EC Modulation]] toggle, and the existing per-stage feed-EC target ranges (kept at the bottom, visually separated from the pore-EC band). All gated controls follow the [[Capability Unlock Hint]] rule.
+
 **Irrigation Dialog SM**
 A single root state machine that owns the Irrigation Dialog's interaction state. Tab (`overview | steering | substrate_ec | schedules | config | ...`) is the top-level state; each tab has substates for editing rows and pending confirmations (e.g. Phase Window changes). Tab switches are guarded by per-tab "dirty" predicates. The dialog component renders the SM; data writes go through the Irrigation slice's mutators. Replaces the 35 sibling `@state()` flags in `irrigation-dialog.ts`. The same tab-keyed shape applies to the Config and Strain Library dialogs; both satisfy [[DialogStateMachine]]. The [[Strain Editor SM]] follows a different (tab-free) shape and does not satisfy `DialogStateMachine`. Strain Library and Strain Editor SMs land together because the library hosts the editor and their dirty predicates are coupled.
 
