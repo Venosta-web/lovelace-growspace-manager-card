@@ -600,6 +600,54 @@ function createGrowspaceDevice(params) {
     };
 }
 
+/**
+ * Lifecycle Timestamp seam (card side).
+ *
+ * The single owner of how a plant stage-start (`seedling_start … cure_start`) is
+ * converted between the backend wire format and the `datetime-local` input. See
+ * CONTEXT.md "Lifecycle Timestamp" and ADR-0018. Lifecycle timestamps are
+ * timezone-aware ISO 8601 datetimes end-to-end; date-only is only a legacy
+ * stored value the read path tolerates.
+ */
+const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
+/**
+ * Backend value → `datetime-local` input value (`YYYY-MM-DDTHH:MM`).
+ *
+ * A legacy date-only value is read as a LOCAL calendar date. `new Date('2026-01-15')`
+ * parses as UTC midnight, which renders the previous day in negative-offset
+ * timezones — so date-only is mapped straight to local midnight instead.
+ */
+function fromBackend(value) {
+    if (!value)
+        return '';
+    if (DATE_ONLY.test(value)) {
+        return `${value}T00:00`;
+    }
+    const dt = new Date(value);
+    if (isNaN(dt.getTime()))
+        return '';
+    const pad = (n) => n.toString().padStart(2, '0');
+    const yyyy = dt.getFullYear();
+    const mm = pad(dt.getMonth() + 1);
+    const dd = pad(dt.getDate());
+    const hh = pad(dt.getHours());
+    const min = pad(dt.getMinutes());
+    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+/**
+ * `datetime-local` input value → wire string, verbatim (no truncation), or `null`
+ * when empty. The backend parses the local datetime and stamps the timezone, so
+ * the card sends the wall-clock value as-is.
+ */
+function toWire(inputValue) {
+    if (inputValue === null || inputValue === undefined)
+        return null;
+    const val = String(inputValue).trim();
+    if (!val || val === 'null' || val === 'undefined')
+        return null;
+    return val;
+}
+
 [
     PlantStage.SEEDLING,
     PlantStage.MOTHER,
@@ -755,32 +803,6 @@ class PlantUtils {
         }
     }
     /**
-     * Extracts YYYY-MM-DD from a date string or datetime-local string
-     */
-    static formatDateForBackend(value) {
-        if (!value)
-            return undefined;
-        try {
-            // If it's already roughly ISO format, extracting the first part is safest
-            // if we assume the user entered local time in the datetime-local input.
-            const parts = value.split('T');
-            if (parts.length > 0 && parts[0].match(/^\d{4}-\d{2}-\d{2}$/)) {
-                return parts[0];
-            }
-            // Fallback to parsing if format is unexpected
-            const dt = new Date(value);
-            if (isNaN(dt.getTime()))
-                return undefined;
-            const yyyy = dt.getFullYear();
-            const mm = String(dt.getMonth() + 1).padStart(2, '0');
-            const dd = String(dt.getDate()).padStart(2, '0');
-            return `${yyyy}-${mm}-${dd}`;
-        }
-        catch {
-            return undefined;
-        }
-    }
-    /**
      * Maps dialog-edited attributes to API-ready payload.
      * Pure function - no side effects.
      * @param editedAttributes - Attributes from the plant overview dialog
@@ -795,16 +817,9 @@ class PlantUtils {
         fieldsToProcess.forEach((field) => {
             if (editedAttributes[field] !== undefined) {
                 if (this.DATE_FIELDS.includes(field)) {
-                    const val = String(editedAttributes[field] || '');
-                    if (!val || val === 'null' || val === 'undefined') {
-                        payload[field] = null;
-                    }
-                    else {
-                        const formattedDate = this.formatDateForBackend(val);
-                        if (formattedDate) {
-                            payload[field] = formattedDate;
-                        }
-                    }
+                    // Lifecycle Timestamp: send the datetime verbatim (no truncation), or
+                    // null to clear. See lifecycle-timestamp.ts / ADR-0018.
+                    payload[field] = toWire(editedAttributes[field]);
                 }
                 else {
                     if (editedAttributes[field] !== null) {
@@ -824,28 +839,6 @@ class PlantUtils {
         const now = new Date();
         const pad = (n) => n.toString().padStart(2, '0');
         return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}:00`;
-    }
-    /**
-     * Formats a date string (YYYY-MM-DD or ISO) to YYYY-MM-DDThh:mm for datetime-local inputs
-     */
-    static toDateTimeLocal(value) {
-        if (!value)
-            return '';
-        try {
-            const dt = new Date(value);
-            if (isNaN(dt.getTime()))
-                return '';
-            const pad = (n) => n.toString().padStart(2, '0');
-            const yyyy = dt.getFullYear();
-            const mm = pad(dt.getMonth() + 1);
-            const dd = pad(dt.getDate());
-            const hh = pad(dt.getHours());
-            const min = pad(dt.getMinutes());
-            return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-        }
-        catch {
-            return '';
-        }
     }
     static getDominantStage(plants) {
         if (!plants || plants.length === 0)
@@ -1103,6 +1096,9 @@ PlantUtils.DYNAMIC_ROW_TYPES = [
     GrowspaceType.MOTHER,
     GrowspaceType.CLONE,
 ];
+/**
+ * Extracts YYYY-MM-DD from a date string or datetime-local string
+ */
 /** Date fields used for plant lifecycle */
 PlantUtils.DATE_FIELDS = [
     'seedling_start',
@@ -13204,7 +13200,7 @@ let Md3DateInput = class Md3DateInput extends i$3 {
     render() {
         let formattedValue = this.value;
         if (this.time) {
-            formattedValue = PlantUtils.toDateTimeLocal(this.value);
+            formattedValue = fromBackend(this.value);
         }
         else {
             formattedValue = this.value ? this.value.split('T')[0] : '';
@@ -55448,23 +55444,9 @@ let PlantOverviewContainer = class PlantOverviewContainer extends i$3 {
     }
     _handleSave() {
         const attrs = this._editedAttributesAtom.get();
-        const lifecycleDateFields = [
-            'seedling_start',
-            'mother_start',
-            'clone_start',
-            'veg_start',
-            'flower_start',
-            'dry_start',
-            'cure_start',
-        ];
-        const hasIncomplete = lifecycleDateFields.some((field) => {
-            const val = attrs[field];
-            return typeof val === 'string' && val.length > 0 && !/T\d{2}:\d{2}/.test(val);
-        });
-        if (hasIncomplete) {
-            this.store.ui.showToast('Set both date and time for lifecycle dates before saving.', 'error');
-            return;
-        }
+        // No date/time completeness validation: the md3-date-input datetime-local
+        // picker cannot emit a partial value, and the Lifecycle Timestamp seam owns
+        // the format on the way out (toWire). See ADR-0018.
         this.dispatchEvent(new CustomEvent('update-plant', {
             detail: attrs,
             bubbles: true,
@@ -136901,7 +136883,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.40"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.41"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

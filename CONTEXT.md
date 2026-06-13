@@ -323,6 +323,10 @@ A Lit `ReactiveController` (`src/dialogs/mutation-run-controller.ts`) that owns 
 
 An opt-in sub-feature of Crop Steering (`IrrigationStrategy.autoLightTracking`). When enabled, the backend listens for the light sensor's off→on transition and records the time as `detectedLightsOnTime` on the strategy. The VWC coordinator resolves lights-on time as `detectedLightsOnTime ?? lightsOnTime`. The user's manually configured `lightsOnTime` is never overwritten. The toggle and the `detectedLightsOnTime` read-out live in the Steering tab of the Irrigation Dialog.
 
+## Lifecycle Timestamp
+
+A plant stage-start value (`seedling_start`, `mother_start`, `clone_start`, `veg_start`, `flower_start`, `dry_start`, `cure_start`) — the moment a plant entered a stage. Represented as a timezone-aware ISO 8601 datetime string (date *and* time), never date-only, across input, validation, and wire. The card owns this contract in one place: `lifecycle-timestamp.ts`, with `fromBackend(value)` (backend ISO → `datetime-local` input value, also tolerant of legacy date-only values without a UTC-midnight off-by-one) and `toWire(inputValue)` (input value → verbatim wire string, or `null` when empty). `md3-date-input` displays via `fromBackend`; `mapDialogToApiPayload` serialises via `toWire`. The seam guarantees the format, so there is no "set both date and time" save-time validation — `datetime-local` cannot emit a partial value. The backend stores and returns the same datetime string (growspace_manager ADR-0013). Distinct from drying-tab `date` inputs (`WeightEntry`/`MoistureEntry`), which stay date-only.
+
 ## Photoperiod Flip
 
 The event when a growspace's plants transition from veg (18h photoperiod) to flower (12h photoperiod), detected when `Plant.flower_start == today`. Triggers a HA notification and surfaces a **FlowerFlipChip** in the card header.
