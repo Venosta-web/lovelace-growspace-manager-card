@@ -258,6 +258,15 @@ export class GrowspaceAdapter {
           p1ShotVolumePercent: irrigationStrategyRaw.p1_shot_volume_percent,
           p2ShotVolumePercent: irrigationStrategyRaw.p2_shot_volume_percent,
           shotSizingMode: irrigationStrategyRaw.shot_sizing_mode ?? 'seconds',
+          substrateProfile: irrigationStrategyRaw.substrate_profile
+            ? {
+                mediaType: irrigationStrategyRaw.substrate_profile.media_type,
+                litersPerPot: irrigationStrategyRaw.substrate_profile.liters_per_pot,
+              }
+            : undefined,
+          poreEcTargetMin: irrigationStrategyRaw.pore_ec_target_min ?? null,
+          poreEcTargetMax: irrigationStrategyRaw.pore_ec_target_max ?? null,
+          ecModulationEnabled: irrigationStrategyRaw.ec_modulation_enabled ?? false,
           autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
           detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
           declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
@@ -354,6 +363,7 @@ export class GrowspaceAdapter {
       // Configs
       irrigationConfig,
       irrigationStrategy,
+      volumeModeCapable: irrigation?.volume_mode_capable ?? false,
       drainConfig,
       energyTracking,
       waterUsage,

@@ -26,6 +26,7 @@ import {
   mdiArrowDown,
   mdiMinus,
   mdiChartTimelineVariantShimmer,
+  mdiLockOutline,
   mdiWeatherNight,
   mdiCounter,
 } from '@mdi/js';
@@ -72,6 +73,8 @@ import {
 import type {
   IrrigationConfig,
   SteeringMode,
+  SubstrateProfile,
+  SubstrateMediaType,
   SteeringClassification,
   IntentDeviation,
 } from '../services/types';
@@ -672,6 +675,25 @@ export class IrrigationDialog extends LitElement {
         border-color: rgba(33, 150, 243, 0.5);
         background: rgba(33, 150, 243, 0.08);
       }
+      .seg-btn {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.15));
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--primary-text-color);
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .seg-btn.active {
+        border-color: rgba(33, 150, 243, 0.5);
+        background: rgba(33, 150, 243, 0.12);
+        font-weight: 600;
+      }
+      .seg-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
       .phase-card .phase-num {
         font-size: 10px;
         font-weight: 600;
@@ -1252,15 +1274,35 @@ export class IrrigationDialog extends LitElement {
     }
 
     const d = this._sm.tabs.drain_ec.draft;
+    const substrateEc = this._sm.tabs.substrate_ec.draft;
+    // Pore EC Target Band is buffered so an invalid pair never persists (ADR-0017):
+    // refuse the unified save when both edges are set and min ≥ max.
+    if (
+      substrateEc.poreEcMin != null &&
+      substrateEc.poreEcMax != null &&
+      substrateEc.poreEcMin >= substrateEc.poreEcMax
+    ) {
+      this._showErrorToast(
+        `Min pore EC (${substrateEc.poreEcMin}) must be below max pore EC (${substrateEc.poreEcMax}).`
+      );
+      return;
+    }
+
     const params: SaveAllParams = {
       settings: this._buildSettingsParams(),
-      strategy: this._sm.tabs.steering.draft,
+      // The pore-EC band is a strategy field buffered on the Substrate & EC tab
+      // (ADR-0017); merge it into the strategy save alongside the steering draft.
+      strategy: {
+        ...this._sm.tabs.steering.draft,
+        poreEcTargetMin: substrateEc.poreEcMin,
+        poreEcTargetMax: substrateEc.poreEcMax,
+      },
       drainConfig: {
         enabled: d.enabled,
         maxEcDelta: d.maxEcDelta,
         targetRunoffPercent: d.targetRunoffPercent,
       },
-      ecTargetRanges: this._sm.tabs.substrate_ec.draft,
+      ecTargetRanges: substrateEc.ecTargetRanges,
     };
     this.dispatch({ type: 'SaveRequested', action: 'save-all', params });
   }
@@ -1525,6 +1567,27 @@ export class IrrigationDialog extends LitElement {
 
   private _updateStrategyField(field: keyof IrrigationStrategy, value: string | number | boolean) {
     this._sm = transition(this._sm, { type: 'UPDATE_STEERING_DRAFT', partial: { [field]: value } });
+  }
+
+  /**
+   * Immediately persist a capability-affecting strategy field edited on the
+   * Substrate & EC tab (Shot Sizing Mode, Substrate Profile, EC Modulation).
+   * These are NOT buffered in the tab draft (ADR-0017) — the unified footer Save
+   * does not own them.
+   */
+  private _persistStrategyNow(updates: Partial<IrrigationStrategy>) {
+    const id = this.device?.deviceId;
+    if (!id) return;
+    void updateIrrigationStrategy(id, updates);
+  }
+
+  /** Merge a partial Substrate Profile change onto the live profile and persist. */
+  private _persistProfile(change: Partial<SubstrateProfile>) {
+    const current: SubstrateProfile = this.device?.irrigationStrategy?.substrateProfile ?? {
+      mediaType: 'coco',
+      litersPerPot: 0,
+    };
+    this._persistStrategyNow({ substrateProfile: { ...current, ...change } });
   }
 
   private async _handleResetWaterTracking() {
@@ -1815,7 +1878,7 @@ export class IrrigationDialog extends LitElement {
       case 'drain_ec':
         return this._renderDrainECTab();
       case 'substrate_ec':
-        return this._renderEcTargetsTab();
+        return this._renderSubstrateEcTab();
       case 'ec_ramp':
         return this._renderEcRampTab();
       default:
@@ -2437,7 +2500,9 @@ export class IrrigationDialog extends LitElement {
    */
   private _renderPhaseShotParams() {
     const draft = this._sm.tabs.steering.draft;
-    const isVolume = (draft.shotSizingMode ?? 'seconds') === 'volume';
+    // Sizing mode persists immediately on the Substrate & EC tab (ADR-0017), so
+    // the relabel reads the live strategy rather than a buffered draft field.
+    const isVolume = (this.device?.irrigationStrategy?.shotSizingMode ?? 'seconds') === 'volume';
     const phases: Array<{ id: 'p1' | 'p2'; label: string }> = [
       { id: 'p1', label: 'P1' },
       { id: 'p2', label: 'P2' },
@@ -4464,7 +4529,178 @@ export class IrrigationDialog extends LitElement {
 
   // ─── EC Targets tab (stub) ────────────────────────────────────────────────
 
-  private _renderEcTargetsTab() {
+  /** Capability Unlock Hint: a one-line locked-prerequisite note (never hidden). */
+  private _renderUnlockHint(text: string) {
+    return html`
+      <div
+        class="capability-unlock-hint"
+        style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--secondary-text-color);margin-top:6px;"
+      >
+        <ha-svg-icon .path=${mdiLockOutline} style="width:16px;height:16px;"></ha-svg-icon>
+        <span>${text}</span>
+      </div>
+    `;
+  }
+
+  /** Substrate & EC tab: profile, sizing mode, pore-EC band, modulation, feed-EC ranges. */
+  private _renderSubstrateEcTab() {
+    const strat = this.device?.irrigationStrategy;
+    const draft = this._sm.tabs.substrate_ec.draft;
+    const profile: SubstrateProfile = strat?.substrateProfile ?? {
+      mediaType: 'coco',
+      litersPerPot: 0,
+    };
+    const sizingMode = strat?.shotSizingMode ?? 'seconds';
+    const volumeCapable = this.device?.volumeModeCapable ?? false;
+    const hasPoreEcSensors = (this.device?.environmentAttributes?.poreEcSensors?.length ?? 0) > 0;
+
+    // Deduced Volume Mode lock hint (ADR-0017): the server bool is the gate; we
+    // only branch the hint text on liters-per-pot to name the missing prereq.
+    const volumeLockHint =
+      (profile.litersPerPot ?? 0) > 0
+        ? 'Set a pump flow rate to enable Volume Mode'
+        : 'Set liters per pot to enable Volume Mode';
+
+    const mediaOptions: Array<{ id: SubstrateMediaType; label: string }> = [
+      { id: 'coco', label: 'Coco' },
+      { id: 'rockwool', label: 'Rockwool' },
+      { id: 'soil', label: 'Soil' },
+    ];
+
+    return html`
+      <!-- Substrate Profile -->
+      <div class="detail-card">
+        <h3 style="margin:0 0 12px;">Substrate Profile</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:0.85rem;">
+            <span style="color:var(--secondary-text-color);">Media type</span>
+            <select
+              class="md3-input"
+              data-field="substrate_media_type"
+              .value=${profile.mediaType}
+              @change=${(e: Event) =>
+        this._persistProfile({
+          mediaType: (e.target as HTMLSelectElement).value as SubstrateMediaType,
+        })}
+            >
+              ${mediaOptions.map(
+          (o) => html`<option value=${o.id} ?selected=${profile.mediaType === o.id}>
+                  ${o.label}
+                </option>`
+        )}
+            </select>
+          </label>
+          <md3-number-input
+            data-field="substrate_liters_per_pot"
+            label="Liters per pot"
+            .value=${profile.litersPerPot ? String(profile.litersPerPot) : ''}
+            @change=${(e: CustomEvent) =>
+        this._persistProfile({ litersPerPot: parseFloat(e.detail) || 0 })}
+          ></md3-number-input>
+        </div>
+      </div>
+
+      <!-- Shot Sizing Mode -->
+      <div class="detail-card">
+        <h3 style="margin:0 0 8px;">Shot Sizing Mode</h3>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          How P1/P2 shot sizes are expressed. Volume Mode sizes shots as a percent of
+          substrate volume.
+        </p>
+        <div style="display:flex;gap:8px;">
+          <button
+            class="seg-btn ${sizingMode === 'seconds' ? 'active' : ''}"
+            data-sizing-mode="seconds"
+            @click=${() => sizingMode !== 'seconds' && this._persistStrategyNow({ shotSizingMode: 'seconds' })}
+          >
+            Seconds
+          </button>
+          <button
+            class="seg-btn ${sizingMode === 'volume' ? 'active' : ''}"
+            data-sizing-mode="volume"
+            ?disabled=${!volumeCapable}
+            @click=${() =>
+        volumeCapable &&
+        sizingMode !== 'volume' &&
+        this._persistStrategyNow({ shotSizingMode: 'volume' })}
+          >
+            Volume
+          </button>
+        </div>
+        ${!volumeCapable ? this._renderUnlockHint(volumeLockHint) : nothing}
+      </div>
+
+      <!-- Pore EC Target Band -->
+      <div class="detail-card">
+        <h3 style="margin:0 0 8px;">Pore EC Target Band</h3>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          The substrate (pore) EC range EC Modulation steers toward — distinct from the
+          per-stage feed-EC ranges below. Save with the footer button.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <md3-number-input
+            data-field="pore_ec_target_min"
+            label="Min pore EC (mS/cm)"
+            .value=${draft.poreEcMin != null ? String(draft.poreEcMin) : ''}
+            @change=${(e: CustomEvent) =>
+        (this._sm = transition(this._sm, {
+          type: 'UPDATE_PORE_EC_BAND',
+          min: e.detail === '' ? null : parseFloat(e.detail),
+          max: draft.poreEcMax,
+        }))}
+          ></md3-number-input>
+          <md3-number-input
+            data-field="pore_ec_target_max"
+            label="Max pore EC (mS/cm)"
+            .value=${draft.poreEcMax != null ? String(draft.poreEcMax) : ''}
+            @change=${(e: CustomEvent) =>
+        (this._sm = transition(this._sm, {
+          type: 'UPDATE_PORE_EC_BAND',
+          min: draft.poreEcMin,
+          max: e.detail === '' ? null : parseFloat(e.detail),
+        }))}
+          ></md3-number-input>
+        </div>
+        ${draft.poreEcMin != null && draft.poreEcMax != null && draft.poreEcMin >= draft.poreEcMax
+        ? html`<div
+              style="font-size:0.78rem;color:var(--error-color,#ef5350);margin-top:6px;"
+            >
+              Min must be below max.
+            </div>`
+        : nothing}
+      </div>
+
+      <!-- EC Modulation -->
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <h3 style="margin:0 0 4px;">EC Modulation</h3>
+            <p style="font-size:0.8rem;opacity:0.7;margin:0;">
+              Nudge feed EC toward the pore-EC band above.
+            </p>
+          </div>
+          <md3-switch
+            data-field="ec_modulation_enabled"
+            .checked=${!!strat?.ecModulationEnabled}
+            ?disabled=${!hasPoreEcSensors}
+            @change=${(e: Event) =>
+        hasPoreEcSensors &&
+        this._persistStrategyNow({
+          ecModulationEnabled: (e.target as HTMLInputElement).checked,
+        })}
+          ></md3-switch>
+        </div>
+        ${!hasPoreEcSensors
+        ? this._renderUnlockHint('Add a pore EC sensor to enable EC Modulation')
+        : nothing}
+      </div>
+
+      ${this._renderFeedEcRanges()}
+    `;
+  }
+
+  /** Per-stage feed-EC target ranges, kept visually separated from the pore-EC band. */
+  private _renderFeedEcRanges() {
     const stageLabels: Record<string, string> = {
       seedling: 'Seedling',
       veg: 'Veg',
@@ -4473,11 +4709,11 @@ export class IrrigationDialog extends LitElement {
       flower_late: 'Late Flower / Flush',
     };
     return html`
-      <div class="detail-card">
+      <div class="detail-card" style="border-top:2px solid var(--divider-color,rgba(255,255,255,0.12));">
         <div
           style="display:flex;align-items:center;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--divider-color,rgba(255,255,255,0.1));padding-bottom:8px;"
         >
-          <h3 style="margin:0;border:none;padding:0;">EC Targets per Stage</h3>
+          <h3 style="margin:0;border:none;padding:0;">Feed EC Targets per Stage</h3>
         </div>
         <p style="font-size:0.85rem;color:var(--secondary-text-color);margin:0 0 16px;">
           Set feed EC target ranges (min / max) per growth stage. Save with the footer button.
@@ -4503,7 +4739,7 @@ export class IrrigationDialog extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${this._sm.tabs.substrate_ec.draft.map(
+            ${this._sm.tabs.substrate_ec.draft.ecTargetRanges.map(
       (range, idx) => html`
                 <tr
                   class="ec-target-row"
@@ -4527,7 +4763,7 @@ export class IrrigationDialog extends LitElement {
           const val = parseFloat((e.target as HTMLInputElement).value) || 0;
           this._sm = transition(this._sm, {
             type: 'UPDATE_EC_TARGETS_DRAFT',
-            ranges: this._sm.tabs.substrate_ec.draft.map((r, i) =>
+            ranges: this._sm.tabs.substrate_ec.draft.ecTargetRanges.map((r, i) =>
               i === idx ? { ...r, minEc: val } : r
             ),
           });
@@ -4547,7 +4783,7 @@ export class IrrigationDialog extends LitElement {
           const val = parseFloat((e.target as HTMLInputElement).value) || 0;
           this._sm = transition(this._sm, {
             type: 'UPDATE_EC_TARGETS_DRAFT',
-            ranges: this._sm.tabs.substrate_ec.draft.map((r, i) =>
+            ranges: this._sm.tabs.substrate_ec.draft.ecTargetRanges.map((r, i) =>
               i === idx ? { ...r, maxEc: val } : r
             ),
           });
