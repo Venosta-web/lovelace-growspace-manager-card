@@ -20,14 +20,21 @@ import type { ECTargetRange } from '../services/types';
 export type Phase = 'p1' | 'p2' | 'p3';
 
 export type TabId =
+  | 'overview'
   | 'schedules'
   | 'steering'
   | 'config'
   | 'tanks'
   | 'water_analytics'
   | 'drain_ec'
-  | 'ec_targets'
+  | 'substrate_ec'
   | 'ec_ramp';
+
+// ─── Overview tab (read-only crop-steering diagnostics) ─────────────────────────
+
+export interface OverviewTabState {
+  sub: { kind: 'idle' };
+}
 
 // ─── Schedules tab ─────────────────────────────────────────────────────────────
 
@@ -123,9 +130,9 @@ export interface DrainEcTabState {
   sub: DrainEcSubState;
 }
 
-// ─── EC Targets tab ────────────────────────────────────────────────────────────
+// ─── Substrate & EC tab (per-stage feed-EC target ranges) ───────────────────────
 
-export interface EcTargetsTabState {
+export interface SubstrateEcTabState {
   draft: ECTargetRange[];
   sub: { kind: 'idle' };
 }
@@ -138,13 +145,14 @@ export type EcRampTabState = Record<string, never>;
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
 export interface TabStates {
+  overview: OverviewTabState;
   schedules: SchedulesTabState;
   steering: SteeringTabState;
   config: ConfigTabState;
   tanks: TanksTabState;
   water_analytics: WaterAnalyticsTabState;
   drain_ec: DrainEcTabState;
-  ec_targets: EcTargetsTabState;
+  substrate_ec: SubstrateEcTabState;
   ec_ramp: EcRampTabState;
 }
 
@@ -299,13 +307,14 @@ function defaultEcTargetsDraft(): ECTargetRange[] {
 
 function defaultTabs(): TabStates {
   return {
+    overview: { sub: { kind: 'idle' } },
     schedules: { draft: defaultSchedulesDraft(), sub: { kind: 'idle' } },
     steering: { draft: defaultSteeringDraft(), phase: 'p2', sub: { kind: 'idle' } },
     config: { draft: defaultConfigDraft(), sub: { kind: 'idle' } },
     tanks: { sub: { kind: 'idle' } },
     water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
     drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
-    ec_targets: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
+    substrate_ec: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
     ec_ramp: {},
   };
 }
@@ -391,7 +400,7 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
       steering: { ...sm.tabs.steering, draft: steeringDraft, phase },
       config: { ...sm.tabs.config, draft: configDraft },
       drain_ec: { ...sm.tabs.drain_ec, draft: drainEcDraft },
-      ec_targets: { ...sm.tabs.ec_targets, draft: ecTargetsDraft },
+      substrate_ec: { ...sm.tabs.substrate_ec, draft: ecTargetsDraft },
     },
   };
 }
@@ -458,9 +467,9 @@ export function isDrainEcDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
   );
 }
 
-/** True if the ec_targets tab has unsaved changes relative to the device. */
-export function isEcTargetsDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
-  const d = sm.tabs.ec_targets.draft;
+/** True if the substrate_ec tab has unsaved changes relative to the device. */
+export function isSubstrateEcDirty(sm: DialogSM, device: GrowspaceDevice): boolean {
+  const d = sm.tabs.substrate_ec.draft;
   const ranges = device.irrigationConfig?.ecTargetRanges ?? [];
   // When the device has no ranges, the SM initialises with all-zero defaults.
   // It is only dirty if the user has changed at least one value away from zero.
@@ -488,8 +497,8 @@ export function isActiveTabDirty(sm: DialogSM, device: GrowspaceDevice): boolean
       return isConfigDirty(sm, device);
     case 'drain_ec':
       return isDrainEcDirty(sm, device);
-    case 'ec_targets':
-      return isEcTargetsDirty(sm, device);
+    case 'substrate_ec':
+      return isSubstrateEcDirty(sm, device);
     default:
       return false;
   }
@@ -571,11 +580,11 @@ function resetActiveTabDraft(sm: DialogSM, device: GrowspaceDevice): TabStates {
           sub: { kind: 'idle' },
         },
       };
-    case 'ec_targets': {
+    case 'substrate_ec': {
       const ranges = config.ecTargetRanges;
       return {
         ...sm.tabs,
-        ec_targets: {
+        substrate_ec: {
           draft:
             ranges && ranges.length > 0
               ? EC_STAGES.map((stage) => {
@@ -931,8 +940,8 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
         ...sm,
         tabs: {
           ...sm.tabs,
-          ec_targets: {
-            ...sm.tabs.ec_targets,
+          substrate_ec: {
+            ...sm.tabs.substrate_ec,
             draft: event.ranges,
           },
         },

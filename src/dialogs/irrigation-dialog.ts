@@ -21,6 +21,12 @@ import {
   mdiArrowDownCircle,
   mdiBullseyeArrow,
   mdiTrendingUp,
+  mdiCompassOutline,
+  mdiWaterPercent,
+  mdiArrowUp,
+  mdiArrowDown,
+  mdiMinus,
+  mdiChartTimelineVariantShimmer,
 } from '@mdi/js';
 import type { ECRampCurve, ECRampPoint, CropSteeringHistory } from '../schemas/api-schema';
 import {
@@ -75,13 +81,14 @@ const MDI_INFO =
   'M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,17H13V11H11V17Z';
 
 type TabId =
+  | 'overview'
   | 'schedules'
   | 'steering'
   | 'config'
   | 'tanks'
   | 'water_analytics'
   | 'drain_ec'
-  | 'ec_targets'
+  | 'substrate_ec'
   | 'ec_ramp';
 
 interface NavDef {
@@ -204,6 +211,55 @@ export class IrrigationDialog extends LitElement {
   static styles = [
     dialogStyles,
     css`
+      /* ── Crop Steering Overview tab ── */
+      .cs-metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .cs-metric-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .cs-metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--primary-text-color);
+        margin: 8px 0;
+      }
+      .cs-metric-label {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .cs-mode-badge {
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: capitalize;
+        margin-top: 8px;
+        display: inline-block;
+      }
+      .cs-mode-vegetative {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+      .cs-mode-generative {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+      .cs-mode-balanced {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+      }
+
       /* ── Body layout ── */
       .glass-dialog-container {
         max-height: 90vh;
@@ -926,11 +982,13 @@ export class IrrigationDialog extends LitElement {
     const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
     const hasPump = this._hasPump;
 
-    if (hasPump) tabs.push('schedules');
-
+    // Crop Steering Command Center: Overview + Steering share one gate.
     if ((hasSoilMoisture || hasStrategy) && hasPump) {
+      tabs.push('overview');
       tabs.push('steering');
     }
+
+    if (hasPump) tabs.push('schedules');
 
     tabs.push('config');
 
@@ -950,7 +1008,7 @@ export class IrrigationDialog extends LitElement {
       (env?.phSensors?.length ?? 0) > 0;
     if (drainEnabled || hasDrainReadings || hasEcSensors) tabs.push('drain_ec');
 
-    if (hasEcSensors) tabs.push('ec_targets');
+    if (hasEcSensors) tabs.push('substrate_ec');
 
     // EC Ramp: visible when pump + at least one schedule + at least one EC sensor
     const hasEcSensorsForRamp =
@@ -1000,7 +1058,7 @@ export class IrrigationDialog extends LitElement {
         text: 'Configure EC/pH sensors or enable drain monitoring to track nutrient runoff.',
       });
     }
-    if (!visible.includes('ec_targets')) {
+    if (!visible.includes('substrate_ec')) {
       hints.push({
         icon: '🎯',
         text: 'Configure an EC sensor in Environment Settings to set EC targets per growth stage.',
@@ -1149,7 +1207,7 @@ export class IrrigationDialog extends LitElement {
         maxEcDelta: d.maxEcDelta,
         targetRunoffPercent: d.targetRunoffPercent,
       },
-      ecTargetRanges: this._sm.tabs.ec_targets.draft,
+      ecTargetRanges: this._sm.tabs.substrate_ec.draft,
     };
     this.dispatch({ type: 'SaveRequested', action: 'save-all', params });
   }
@@ -1504,13 +1562,14 @@ export class IrrigationDialog extends LitElement {
     const tankCount = this.device?.environmentAttributes?.irrigationTanks?.length ?? 0;
 
     const NAV: NavDef[] = [
+      { id: 'overview', label: 'Overview', group: 'Crop Steering', icon: mdiCompassOutline },
+      { id: 'steering', label: 'Steering', group: 'Crop Steering', icon: mdiLeaf },
+      { id: 'substrate_ec', label: 'Substrate & EC', group: 'Crop Steering', icon: mdiBullseyeArrow },
       { id: 'schedules', label: 'Schedules', group: 'Daily Cycle', icon: mdiCalendarClock },
-      { id: 'steering', label: 'Crop Steering', group: 'Daily Cycle', icon: mdiLeaf },
       { id: 'config', label: 'Configuration', group: 'Equipment', icon: mdiCog },
       { id: 'tanks', label: 'Tanks', group: 'Equipment', icon: mdiWater, badge: tankCount || undefined },
       { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
       { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
-      { id: 'ec_targets', label: 'EC Targets', group: 'Telemetry', icon: mdiBullseyeArrow },
       { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
     ];
     const visibleNav = NAV.filter((n) => visible.includes(n.id));
@@ -1686,6 +1745,8 @@ export class IrrigationDialog extends LitElement {
 
   private _renderActiveTab(color: string) {
     switch (this._sm.activeTab) {
+      case 'overview':
+        return this._renderOverviewTab();
       case 'schedules':
         return this._renderSchedulesTab(color);
       case 'steering':
@@ -1698,7 +1759,7 @@ export class IrrigationDialog extends LitElement {
         return this._renderWaterAnalyticsTab();
       case 'drain_ec':
         return this._renderDrainECTab();
-      case 'ec_targets':
+      case 'substrate_ec':
         return this._renderEcTargetsTab();
       case 'ec_ramp':
         return this._renderEcRampTab();
@@ -3917,6 +3978,143 @@ export class IrrigationDialog extends LitElement {
     `;
   }
 
+  // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
+
+  private _cropSteeringEntityId(): string | undefined {
+    if (!this.device) return undefined;
+    const slug = this.device.name
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^\w-]+/g, '')
+      .replace(/[_-]+/g, '_')
+      .replace(/^[_-]+/, '')
+      .replace(/[_-]+$/, '');
+    return `sensor.${slug}_crop_steering`;
+  }
+
+  private _renderOverviewMetricCard(
+    title: string,
+    value: string,
+    icon: string,
+    color: string,
+    help = ''
+  ) {
+    return html`
+      <div class="cs-metric-card">
+        <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
+        <div class="cs-metric-value">${value}</div>
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          ${title}
+          ${help
+        ? html`<gs-help-tooltip
+                .content=${help}
+                placement="bottom"
+                .label=${title}
+              ></gs-help-tooltip>`
+        : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderOverviewTab() {
+    const entityId = this._cropSteeringEntityId();
+    const stateObj = entityId && this.hass ? this.hass.states[entityId] : undefined;
+
+    const score = stateObj ? parseFloat(stateObj.state) : NaN;
+    const attrs = stateObj?.attributes || {};
+    const mode = attrs.steering_mode || 'unknown';
+
+    let trendIcon = mdiMinus;
+    let trendColor = 'var(--secondary-text-color)';
+    if (attrs.ec_trend === 'rising') {
+      trendIcon = mdiArrowUp;
+      trendColor = 'var(--error-color, #F44336)';
+    } else if (attrs.ec_trend === 'falling') {
+      trendIcon = mdiArrowDown;
+      trendColor = 'var(--success-color, #4CAF50)';
+    }
+
+    if (stateObj === undefined || isNaN(score)) {
+      return html`
+        <div style="text-align: center; padding: 40px; opacity: 0.7;">
+          <ha-svg-icon
+            .path=${mdiChartTimelineVariantShimmer}
+            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+          ></ha-svg-icon>
+          <p>Crop steering data is currently unavailable.</p>
+          <p style="font-size: 0.85rem;">
+            Ensure irrigation strategy is enabled and sensors are reporting data.
+          </p>
+        </div>
+      `;
+    }
+
+    return html`
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div
+          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
+        >
+          <div style="font-size: 36px; font-weight: bold;">
+            ${score > 0 ? '+' : ''}${score.toFixed(2)}
+          </div>
+          <gs-help-tooltip
+            content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
+            placement="right"
+            label="Crop Steering Score"
+          ></gs-help-tooltip>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+          <div class="cs-mode-badge cs-mode-${mode}">${mode.toUpperCase()} MODE</div>
+          <gs-help-tooltip
+            content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
+            placement="right"
+            label="Steering Mode"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+
+      <div class="cs-metric-grid">
+        ${this._renderOverviewMetricCard(
+          'Dry-back Event',
+          `${attrs.dryback_percent || 0}%`,
+          mdiWaterPercent,
+          'var(--primary-color)',
+          'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.'
+        )}
+        ${this._renderOverviewMetricCard(
+          'Peak VWC',
+          `${attrs.peak_vwc || 0}%`,
+          mdiWaterPercent,
+          'var(--success-color, #4CAF50)',
+          'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.'
+        )}
+        ${this._renderOverviewMetricCard(
+          'Trough VWC',
+          `${attrs.trough_vwc || 0}%`,
+          mdiWaterPercent,
+          'var(--warning-color, #FF9800)',
+          'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.'
+        )}
+        ${this._renderOverviewMetricCard(
+          'EC Trend',
+          (attrs.ec_trend || 'stable').toUpperCase(),
+          trendIcon,
+          trendColor,
+          'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.'
+        )}
+      </div>
+
+      <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
+        Vegetative steering drives growth with smaller, more frequent irrigations.
+        Generative steering promotes flowering and ripening through larger dry-backs.
+      </p>
+    `;
+  }
+
   // ─── EC Targets tab (stub) ────────────────────────────────────────────────
 
   private _renderEcTargetsTab() {
@@ -3958,7 +4156,7 @@ export class IrrigationDialog extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${this._sm.tabs.ec_targets.draft.map(
+            ${this._sm.tabs.substrate_ec.draft.map(
       (range, idx) => html`
                 <tr
                   class="ec-target-row"
@@ -3982,7 +4180,7 @@ export class IrrigationDialog extends LitElement {
           const val = parseFloat((e.target as HTMLInputElement).value) || 0;
           this._sm = transition(this._sm, {
             type: 'UPDATE_EC_TARGETS_DRAFT',
-            ranges: this._sm.tabs.ec_targets.draft.map((r, i) =>
+            ranges: this._sm.tabs.substrate_ec.draft.map((r, i) =>
               i === idx ? { ...r, minEc: val } : r
             ),
           });
@@ -4002,7 +4200,7 @@ export class IrrigationDialog extends LitElement {
           const val = parseFloat((e.target as HTMLInputElement).value) || 0;
           this._sm = transition(this._sm, {
             type: 'UPDATE_EC_TARGETS_DRAFT',
-            ranges: this._sm.tabs.ec_targets.draft.map((r, i) =>
+            ranges: this._sm.tabs.substrate_ec.draft.map((r, i) =>
               i === idx ? { ...r, maxEc: val } : r
             ),
           });

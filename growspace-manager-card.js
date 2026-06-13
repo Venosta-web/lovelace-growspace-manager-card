@@ -5121,6 +5121,84 @@ const GridApiSchema = objectType({
     .optional()
     .default({});
 
+/**
+ * Subarea slice — zod schemas for WebSocket response validation.
+ *
+ * Replaces the plain TypeScript interfaces that lived in
+ * `services/api/subarea-api.ts` and `services/types.ts`.
+ */
+// ---------------------------------------------------------------------------
+// SensorGroup
+// ---------------------------------------------------------------------------
+const SensorGroupSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    x: numberType(),
+    y: numberType(),
+    z: numberType(),
+    temperature_sensors: arrayType(stringType()),
+    humidity_sensors: arrayType(stringType()),
+    vpd_sensors: arrayType(stringType()),
+});
+// ---------------------------------------------------------------------------
+// EnvironmentConfig
+// ---------------------------------------------------------------------------
+const EnvironmentConfigSchema = objectType({
+    temperature_sensor: stringType().nullish(),
+    humidity_sensor: stringType().nullish(),
+    vpd_sensor: stringType().nullish(),
+    co2_sensor: stringType().nullish(),
+    soil_moisture_sensor: stringType().nullish(),
+    veg_day_hours: numberType().optional(),
+    flower_day_hours: numberType().optional(),
+    temperature_sensors: arrayType(stringType()).optional(),
+    humidity_sensors: arrayType(stringType()).optional(),
+    vpd_sensors: arrayType(stringType()).optional(),
+    light_sensors: arrayType(stringType()).optional(),
+    exhaust_fan_entities: arrayType(stringType()).optional(),
+    circulation_fan_entities: arrayType(stringType()).optional(),
+    humidifier_entities: arrayType(stringType()).optional(),
+    dehumidifier_entities: arrayType(stringType()).optional(),
+    sensor_coordinates: recordType(objectType({ x: numberType(), y: numberType(), z: numberType(), rotation: numberType().optional() }))
+        .optional(),
+    sensor_groups: arrayType(SensorGroupSchema).optional(),
+    substrate_temperature_sensors: arrayType(stringType()).optional(),
+    camera_entities: arrayType(stringType()).optional(),
+    lung_room_temp_sensors: arrayType(stringType()).optional(),
+    ph_sensors: arrayType(stringType()).optional(),
+    feed_ec_sensors: arrayType(stringType()).optional(),
+    bulk_ec_sensors: arrayType(stringType()).optional(),
+    pore_ec_sensors: arrayType(stringType()).optional(),
+    runoff_ec_sensors: arrayType(stringType()).optional(),
+    drain_volume_sensors: arrayType(stringType()).optional(),
+    irrigation_flow_sensors: arrayType(stringType()).optional(),
+    power_sensors: arrayType(stringType()).optional(),
+    energy_sensors: arrayType(stringType()).optional(),
+    electricity_cost_per_kwh: numberType().optional(),
+    dli_target_veg: numberType().optional(),
+    dli_target_flower: numberType().optional(),
+    control_dehumidifier: booleanType().optional(),
+    stress_threshold: numberType().optional(),
+    mold_threshold: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// Subarea
+// ---------------------------------------------------------------------------
+const SubareaSchema = objectType({
+    id: stringType(),
+    name: stringType(),
+    environment_config: EnvironmentConfigSchema,
+});
+// ---------------------------------------------------------------------------
+// Response schemas
+// ---------------------------------------------------------------------------
+/** get_subareas returns an array of Subarea objects. */
+const GetSubareasResponseSchema = arrayType(SubareaSchema);
+/** add_subarea and update_subarea return a single Subarea. */
+const SubareaResponseSchema = SubareaSchema;
+/** remove_subarea returns nothing meaningful. */
+const RemoveSubareaResponseSchema = unknownType();
+
 const IrrigationScheduleItemSchema = objectType({
     time: stringType().optional(),
     start_time: stringType().optional(),
@@ -5269,6 +5347,9 @@ const GrowspaceAPIResponseSchema = objectType({
     })
         .optional()
         .default({}),
+    // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
+    // don't include the key in the growspace payload.
+    subareas: arrayType(SubareaSchema).optional(),
     irrigation: objectType({
         irrigation_config: IrrigationConfigSchema,
         irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
@@ -5547,6 +5628,7 @@ class GrowspaceAdapter {
                 overviewEntityId: overview.entity_id,
                 name,
                 lastUpdated: 'Loading...',
+                subareas: [],
             });
         }
         // 2. Biological Metrics from metrics sub-object
@@ -5800,6 +5882,7 @@ class GrowspaceAdapter {
             drainConfig,
             energyTracking,
             waterUsage,
+            subareas: wsData.subareas ?? [],
             // Irrigation cycle telemetry
             lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
             nextScheduledCycle: irrigation?.next_scheduled_cycle ?? null,
@@ -13343,7 +13426,7 @@ function defaultAddDraft(row, col) {
 function defaultTransplantDraft(row, col) {
     return { selectedPlantId: null, row, col };
 }
-function createInitialSM$a({ row, col }) {
+function createInitialSM$9({ row, col }) {
     return {
         activeTab: 'add',
         tabs: {
@@ -13356,7 +13439,7 @@ function createInitialSM$a({ row, col }) {
     };
 }
 // ─── Transition ───────────────────────────────────────────────────────────────
-function transition$a(sm, event) {
+function transition$9(sm, event) {
     switch (event.type) {
         case 'TabSelected': {
             const addSub = event.tab === 'add' ? { kind: 'step-identity' } : sm.tabs.add.sub;
@@ -13554,22 +13637,22 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
         this.seedlingPlants = [];
         this.targetGrowspaceId = '';
         this.siblingPlants = [];
-        this._sm = createInitialSM$a({ row: 0, col: 0 });
+        this._sm = createInitialSM$9({ row: 0, col: 0 });
     }
     setInitialState(row, col, strain = '', phenotype = '') {
-        this._sm = createInitialSM$a({ row, col });
-        this._sm = transition$a(this._sm, {
+        this._sm = createInitialSM$9({ row, col });
+        this._sm = transition$9(this._sm, {
             type: 'DraftFieldChanged',
             tab: 'add',
             field: 'stage',
             value: deriveDefaultStage(this.growspaceName),
         });
         if (strain) {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
+            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: strain });
+            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: strain });
         }
         if (phenotype) {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
+            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: phenotype });
         }
     }
     _close() {
@@ -13617,7 +13700,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 cure_start: d.stage === 'cure' ? d.cureStart || today : '',
                 addToLibrary: d.addToLibrary,
             };
-            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$9(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('add-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
         else {
@@ -13637,7 +13720,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 new_col: tabDraft.col + 1,
                 veg_start: today,
             };
-            this._sm = transition$a(this._sm, { type: 'SaveRequested' });
+            this._sm = transition$9(this._sm, { type: 'SaveRequested' });
             this.dispatchEvent(new CustomEvent('transplant-plant-submit', { detail: payload, bubbles: true, composed: true }));
         }
     }
@@ -13712,7 +13795,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'add' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'add' });
+            this._sm = transition$9(this._sm, { type: 'TabSelected', tab: 'add' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -13721,7 +13804,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'clone' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'clone' });
+            this._sm = transition$9(this._sm, { type: 'TabSelected', tab: 'clone' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiContentCopy}"></path></svg>
@@ -13730,7 +13813,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             <button
               class="tab ${activeTab === 'seedling' ? 'active' : ''}"
               @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'TabSelected', tab: 'seedling' });
+            this._sm = transition$9(this._sm, { type: 'TabSelected', tab: 'seedling' });
         }}
             >
               <svg viewBox="0 0 24 24"><path d="${mdiSprout}"></path></svg>
@@ -13754,7 +13837,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                   <button
                     class="md3-button tonal"
                     @click=${addSub.kind === 'step-identity' ? this._close : () => {
-                this._sm = transition$a(this._sm, { type: 'WizardBacked' });
+                this._sm = transition$9(this._sm, { type: 'WizardBacked' });
             }}
                   >
                     ${addSub.kind === 'step-identity' ? 'Cancel' : 'Back'}
@@ -13764,7 +13847,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                         <button
                           class="md3-button primary"
                           @click=${() => {
-                    this._sm = transition$a(this._sm, { type: 'WizardAdvanced' });
+                    this._sm = transition$9(this._sm, { type: 'WizardAdvanced' });
                 }}
                           ?disabled=${addSub.kind === 'step-identity' && !addDraft.strain}
                         >
@@ -13862,9 +13945,9 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
             .value=${draft.strainQuery || draft.strain}
             placeholder="Search strain library…"
             @change=${(e) => {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
+            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: e.detail });
             if (e.detail !== draft.strain) {
-                this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
+                this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: '' });
             }
         }}
           ></md3-text-input>
@@ -13877,8 +13960,8 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       <div
                         class="strain-option"
                         @click=${() => {
-                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
-                    this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
+                    this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strain', value: s });
+                    this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'strainQuery', value: s });
                 }}
                       >
                         <span>${s}</span>
@@ -13899,7 +13982,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 label="Phenotype"
                 .value=${draft.phenotype}
                 .suggestions=${relevantPhenotypes}
-                @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
+                @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'phenotype', value: e.detail }))}
               ></md3-text-input>
             `
             : E}
@@ -13941,7 +14024,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           >
           <md3-switch
             .checked=${draft.addToLibrary}
-            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
+            @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'addToLibrary', value: e.target.checked }))}
             ?disabled=${!draft.strain}
           ></md3-switch>
         </div>
@@ -13970,15 +14053,15 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <button
             class="source-btn ${draft.sourceType === 'seed' ? 'active' : ''}"
             @click=${() => {
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
-            this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
+            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'seed' });
+            this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'siblingPlantId', value: null });
         }}
           >
             🌱 Seed
           </button>
           <button
             class="source-btn ${draft.sourceType === 'clone' ? 'active' : ''}"
-            @click=${() => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
+            @click=${() => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'sourceType', value: 'clone' }))}
             ?disabled=${clonable.length === 0}
           >
             ✂️ Clone
@@ -14002,7 +14085,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                       class="sibling-item ${isSelected ? 'selected' : ''}"
                       @click=${() => {
                     const today = new Date().toISOString().split('T')[0];
-                    this._sm = transition$a(this._sm, {
+                    this._sm = transition$9(this._sm, {
                         type: 'SiblingPlantSelected',
                         strain: p.attributes.strain || draft.strain,
                         phenotype: p.attributes.phenotype || draft.phenotype,
@@ -14050,12 +14133,12 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${draft.row + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'row', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
           <md3-number-input
             label="Col"
             .value=${draft.col + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
+            @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'col', value: parseInt(e.detail) - 1 }))}
           ></md3-number-input>
         </div>
       </div>
@@ -14073,13 +14156,13 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           label="Stage"
           .value=${draft.stage}
           .options=${STAGE_OPTIONS}
-          @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: e.detail }))}
+          @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: 'stage', value: e.detail }))}
         ></md3-select>
         ${dateField
             ? x `<md3-date-input
               label=${dateLabel}
               .value=${dateValue}
-              @change=${(e) => (this._sm = transition$a(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: dateField, value: e.detail }))}
+              @change=${(e) => (this._sm = transition$9(this._sm, { type: 'DraftFieldChanged', tab: 'add', field: dateField, value: e.detail }))}
             ></md3-date-input>`
             : E}
       </div>
@@ -14119,7 +14202,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
                 .value=${tabDraft.selectedPlantId || ''}
                 .options=${options}
                 @change=${(e) => {
-                this._sm = transition$a(this._sm, {
+                this._sm = transition$9(this._sm, {
                     type: 'DraftFieldChanged',
                     tab: stage,
                     field: 'selectedPlantId',
@@ -14163,7 +14246,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Row"
             .value=${tabDraft.row + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, {
+            @change=${(e) => (this._sm = transition$9(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'row',
@@ -14173,7 +14256,7 @@ let AddPlantDialog = class AddPlantDialog extends i$3 {
           <md3-number-input
             label="Col"
             .value=${tabDraft.col + 1}
-            @change=${(e) => (this._sm = transition$a(this._sm, {
+            @change=${(e) => (this._sm = transition$9(this._sm, {
             type: 'DraftFieldChanged',
             tab: stage,
             field: 'col',
@@ -17591,84 +17674,6 @@ SensorGroupDialog = __decorate([
 ], SensorGroupDialog);
 
 /**
- * Subarea slice — zod schemas for WebSocket response validation.
- *
- * Replaces the plain TypeScript interfaces that lived in
- * `services/api/subarea-api.ts` and `services/types.ts`.
- */
-// ---------------------------------------------------------------------------
-// SensorGroup
-// ---------------------------------------------------------------------------
-const SensorGroupSchema = objectType({
-    id: stringType(),
-    name: stringType(),
-    x: numberType(),
-    y: numberType(),
-    z: numberType(),
-    temperature_sensors: arrayType(stringType()),
-    humidity_sensors: arrayType(stringType()),
-    vpd_sensors: arrayType(stringType()),
-});
-// ---------------------------------------------------------------------------
-// EnvironmentConfig
-// ---------------------------------------------------------------------------
-const EnvironmentConfigSchema = objectType({
-    temperature_sensor: stringType().nullish(),
-    humidity_sensor: stringType().nullish(),
-    vpd_sensor: stringType().nullish(),
-    co2_sensor: stringType().nullish(),
-    soil_moisture_sensor: stringType().nullish(),
-    veg_day_hours: numberType().optional(),
-    flower_day_hours: numberType().optional(),
-    temperature_sensors: arrayType(stringType()).optional(),
-    humidity_sensors: arrayType(stringType()).optional(),
-    vpd_sensors: arrayType(stringType()).optional(),
-    light_sensors: arrayType(stringType()).optional(),
-    exhaust_fan_entities: arrayType(stringType()).optional(),
-    circulation_fan_entities: arrayType(stringType()).optional(),
-    humidifier_entities: arrayType(stringType()).optional(),
-    dehumidifier_entities: arrayType(stringType()).optional(),
-    sensor_coordinates: recordType(objectType({ x: numberType(), y: numberType(), z: numberType(), rotation: numberType().optional() }))
-        .optional(),
-    sensor_groups: arrayType(SensorGroupSchema).optional(),
-    substrate_temperature_sensors: arrayType(stringType()).optional(),
-    camera_entities: arrayType(stringType()).optional(),
-    lung_room_temp_sensors: arrayType(stringType()).optional(),
-    ph_sensors: arrayType(stringType()).optional(),
-    feed_ec_sensors: arrayType(stringType()).optional(),
-    bulk_ec_sensors: arrayType(stringType()).optional(),
-    pore_ec_sensors: arrayType(stringType()).optional(),
-    runoff_ec_sensors: arrayType(stringType()).optional(),
-    drain_volume_sensors: arrayType(stringType()).optional(),
-    irrigation_flow_sensors: arrayType(stringType()).optional(),
-    power_sensors: arrayType(stringType()).optional(),
-    energy_sensors: arrayType(stringType()).optional(),
-    electricity_cost_per_kwh: numberType().optional(),
-    dli_target_veg: numberType().optional(),
-    dli_target_flower: numberType().optional(),
-    control_dehumidifier: booleanType().optional(),
-    stress_threshold: numberType().optional(),
-    mold_threshold: numberType().optional(),
-});
-// ---------------------------------------------------------------------------
-// Subarea
-// ---------------------------------------------------------------------------
-const SubareaSchema = objectType({
-    id: stringType(),
-    name: stringType(),
-    environment_config: EnvironmentConfigSchema,
-});
-// ---------------------------------------------------------------------------
-// Response schemas
-// ---------------------------------------------------------------------------
-/** get_subareas returns an array of Subarea objects. */
-const GetSubareasResponseSchema = arrayType(SubareaSchema);
-/** add_subarea and update_subarea return a single Subarea. */
-const SubareaResponseSchema = SubareaSchema;
-/** remove_subarea returns nothing meaningful. */
-const RemoveSubareaResponseSchema = unknownType();
-
-/**
  * Subarea slice — atoms and mutators for Subarea domain data.
  *
  * Public API (atoms):
@@ -17687,6 +17692,12 @@ const RemoveSubareaResponseSchema = unknownType();
 // Atoms (public)
 // ---------------------------------------------------------------------------
 const subareas$ = atom([]);
+/**
+ * The growspace whose subareas are currently in subareas$ (last query wins).
+ * SyncService needs it to resolve the parent device when feeding
+ * subareaEnvSnapshots$ (calculated-VPD entity naming).
+ */
+const subareasGrowspaceId$ = atom(null);
 // ---------------------------------------------------------------------------
 // Mutators (public)
 // ---------------------------------------------------------------------------
@@ -17701,6 +17712,7 @@ const subareas$ = atom([]);
 async function getSubareas(growspaceId) {
     const result = await hassCall('growspace_manager/get_subareas', { growspace_id: growspaceId }, GetSubareasResponseSchema);
     subareas$.set(result);
+    subareasGrowspaceId$.set(growspaceId);
     return result;
 }
 /**
@@ -18447,7 +18459,7 @@ function defaultEnvironmentDraft() {
         vpdOptimalOverrides: {},
     };
 }
-function defaultTabs$2() {
+function defaultTabs$1() {
     return {
         growspaces: { sub: { kind: 'idle' } },
         notifications: defaultNotificationsTabState(),
@@ -18569,10 +18581,10 @@ function envDraftFromDevice(device) {
     };
 }
 /** Create the initial SM state, optionally seeded from a device. */
-function createInitialSM$9(device) {
+function createInitialSM$8(device) {
     const sm = {
         activeTab: 'sensors',
-        tabs: defaultTabs$2(),
+        tabs: defaultTabs$1(),
         status: { kind: 'idle' },
         toast: undefined,
         environmentDraft: defaultEnvironmentDraft(),
@@ -18580,7 +18592,7 @@ function createInitialSM$9(device) {
     return sm;
 }
 /** Rebuild environmentDraft and notifications tab from device data (used on open and after RESET_FROM_DEVICE). */
-function applyDeviceToSM$2(sm, device) {
+function applyDeviceToSM$1(sm, device) {
     return {
         ...sm,
         environmentDraft: envDraftFromDevice(device),
@@ -18589,7 +18601,7 @@ function applyDeviceToSM$2(sm, device) {
 }
 // ─── Transition function ──────────────────────────────────────────────────────
 /** Pure state machine transition. Returns a new SM without mutating the input. */
-function transition$9(sm, event) {
+function transition$8(sm, event) {
     switch (event.type) {
         // ── Navigation ────────────────────────────────────────────────────────────
         case 'REQUEST_TAB':
@@ -18915,7 +18927,7 @@ function transition$9(sm, event) {
         case 'SET_TOAST':
             return { ...sm, toast: event.message };
         case 'RESET_FROM_DEVICE':
-            return applyDeviceToSM$2(sm, event.device);
+            return applyDeviceToSM$1(sm, event.device);
         case 'SEED_NOTIFICATIONS_FROM_DEVICE':
             return {
                 ...sm,
@@ -18985,7 +18997,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
         this.devices = [];
         this.initialTab = ConfigTab.SENSORS;
         // ── Single SM ────────────────────────────────────────────────────────────
-        this._sm = createInitialSM$9();
+        this._sm = createInitialSM$8();
         // ── Async subarea state (outside SM — network dependent) ─────────────────
         this._subareas = [];
         this._subareasLoading = false;
@@ -18999,7 +19011,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     }
     /** Convenience: dispatch a SM transition and assign the result. */
     _t(event) {
-        this._sm = transition$9(this._sm, event);
+        this._sm = transition$8(this._sm, event);
     }
     get currentTab() {
         return this._sm.activeTab;
@@ -19012,7 +19024,7 @@ let ConfigDialog = class ConfigDialog extends i$3 {
     // through familiar names. The SM is the authoritative source of truth.
     get _d() { return this._sm.environmentDraft; }
     _setEnv(partial) {
-        this._sm = transition$9(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
+        this._sm = transition$8(this._sm, { type: 'UPDATE_ENV_DRAFT', partial });
     }
     get envSelectedId() { return this._d.selectedGrowspaceId; }
     set envSelectedId(v) { this._setEnv({ selectedGrowspaceId: v }); }
@@ -19343,9 +19355,9 @@ let ConfigDialog = class ConfigDialog extends i$3 {
             }
             : {};
         this._sm = {
-            ...createInitialSM$9(),
+            ...createInitialSM$8(),
             activeTab: currentTab,
-            environmentDraft: { ...createInitialSM$9().environmentDraft, ...envPartial },
+            environmentDraft: { ...createInitialSM$8().environmentDraft, ...envPartial },
         };
         this._dehumidifierControlEnabled = environmentData?.dehumidifierControlEnabled ?? false;
         this._humidifierControlEnabled = environmentData?.humidifierControlEnabled ?? false;
@@ -22052,504 +22064,6 @@ __decorate([
 ConfigDialog = __decorate([
     t$2('config-dialog')
 ], ConfigDialog);
-
-/**
- * Crop Steering Dialog State Machine
- *
- * Pure module — no Lit, no DOM. All interaction state for CropSteeringDialog lives here.
- * The component calls `transition(sm, event)` and replaces its single `@state() _sm`.
- *
- * Structure:
- *   DialogSM
- *     .activeTab          — 'diagnostics' (read-only) | 'settings' (draft + phase confirm)
- *     .status             — root-level tab-switch dirty guard
- *     .toast              — transient feedback message
- *     .tabs               — one typed state object per tab
- */
-// ─── Default EC ranges ────────────────────────────────────────────────────────
-const EC_STAGES$1 = ['seedling', 'veg', 'flower_early', 'flower_mid', 'flower_late'];
-function defaultEcTargetRanges() {
-    return EC_STAGES$1.map((stage) => ({ stage, minEc: 0, maxEc: 0 }));
-}
-function ecRangesFromDevice(device) {
-    const ranges = device.irrigationConfig?.ecTargetRanges;
-    if (!ranges || ranges.length === 0)
-        return defaultEcTargetRanges();
-    return EC_STAGES$1.map((stage) => {
-        const found = ranges.find((r) => r.stage === stage);
-        return found ?? { stage, minEc: 0, maxEc: 0 };
-    });
-}
-function defaultTabs$1() {
-    return {
-        diagnostics: { sub: { kind: 'idle' } },
-        settings: {
-            draft: { phase: 'p2', ecTargetRanges: defaultEcTargetRanges() },
-            sub: { kind: 'idle' },
-        },
-    };
-}
-// ─── Initial state ────────────────────────────────────────────────────────────
-function createInitialSM$8(device) {
-    const sm = {
-        activeTab: 'diagnostics',
-        tabs: defaultTabs$1(),
-        status: { kind: 'idle' },
-        toast: undefined,
-    };
-    if (device) {
-        return applyDeviceToSM$1(sm, device);
-    }
-    return sm;
-}
-function applyDeviceToSM$1(sm, device) {
-    const phase = device.irrigationConfig?.activeSteeringPhase ??
-        sm.tabs.settings.draft.phase;
-    const ecTargetRanges = ecRangesFromDevice(device);
-    return {
-        ...sm,
-        tabs: {
-            ...sm.tabs,
-            settings: {
-                ...sm.tabs.settings,
-                draft: { phase, ecTargetRanges },
-            },
-        },
-    };
-}
-// ─── Dirty predicates ─────────────────────────────────────────────────────────
-function isSettingsDirty(sm, device) {
-    const d = sm.tabs.settings.draft;
-    const devicePhase = device.irrigationConfig?.activeSteeringPhase ?? 'p2';
-    if (d.phase !== devicePhase)
-        return true;
-    const deviceRanges = device.irrigationConfig?.ecTargetRanges ?? [];
-    if (deviceRanges.length === 0) {
-        return d.ecTargetRanges.some((r) => r.minEc !== 0 || r.maxEc !== 0);
-    }
-    return d.ecTargetRanges.some((dr) => {
-        const deviceRange = deviceRanges.find((r) => r.stage === dr.stage);
-        return !deviceRange || deviceRange.minEc !== dr.minEc || deviceRange.maxEc !== dr.maxEc;
-    });
-}
-function isActiveTabDirty$1(sm, device) {
-    if (sm.activeTab === 'settings')
-        return isSettingsDirty(sm, device);
-    return false;
-}
-// ─── Draft reset helper ───────────────────────────────────────────────────────
-function resetSettingsDraft(sm, device) {
-    const phase = device.irrigationConfig?.activeSteeringPhase ??
-        sm.tabs.settings.draft.phase;
-    return {
-        ...sm.tabs,
-        settings: {
-            draft: { phase, ecTargetRanges: ecRangesFromDevice(device) },
-            sub: { kind: 'idle' },
-        },
-    };
-}
-// ─── Convenience wrappers ─────────────────────────────────────────────────────
-function requestTabSwitch$1(sm, tab, device) {
-    if (sm.activeTab === tab)
-        return sm;
-    if (isActiveTabDirty$1(sm, device)) {
-        return transition$8(sm, { type: 'REQUEST_TAB', tab });
-    }
-    return transition$8(sm, { type: 'SWITCH_TAB', tab });
-}
-function discardAndSwitch$1(sm, device) {
-    if (sm.status.kind !== 'confirm-discard')
-        return sm;
-    const tabs = resetSettingsDraft(sm, device);
-    return {
-        ...sm,
-        activeTab: sm.status.pendingTab,
-        status: { kind: 'idle' },
-        tabs,
-    };
-}
-// ─── Transition ───────────────────────────────────────────────────────────────
-function transition$8(sm, event) {
-    switch (event.type) {
-        // ── Navigation ──────────────────────────────────────────────────────────
-        case 'REQUEST_TAB':
-            return { ...sm, status: { kind: 'confirm-discard', pendingTab: event.tab } };
-        case 'SWITCH_TAB':
-            return { ...sm, activeTab: event.tab, status: { kind: 'idle' } };
-        case 'DISCARD_AND_SWITCH': {
-            if (sm.status.kind !== 'confirm-discard')
-                return sm;
-            return { ...sm, activeTab: sm.status.pendingTab, status: { kind: 'idle' } };
-        }
-        case 'CANCEL_TAB_SWITCH':
-            return { ...sm, status: { kind: 'idle' } };
-        // ── Phase ────────────────────────────────────────────────────────────────
-        case 'REQUEST_PHASE_CHANGE':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: {
-                        ...sm.tabs.settings,
-                        sub: { kind: 'confirm-phase', pending: event.phase },
-                    },
-                },
-            };
-        case 'CONFIRM_PHASE_CHANGE': {
-            const sub = sm.tabs.settings.sub;
-            if (sub.kind !== 'confirm-phase')
-                return sm;
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: {
-                        ...sm.tabs.settings,
-                        draft: { ...sm.tabs.settings.draft, phase: sub.pending },
-                        sub: { kind: 'phase-applying' },
-                    },
-                },
-            };
-        }
-        case 'CANCEL_PHASE_CHANGE':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: { ...sm.tabs.settings, sub: { kind: 'idle' } },
-                },
-            };
-        case 'PHASE_SAVE_RESOLVED':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: { ...sm.tabs.settings, sub: { kind: 'idle' } },
-                },
-            };
-        case 'PHASE_SAVE_FAILED':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: {
-                        ...sm.tabs.settings,
-                        sub: { kind: 'error', source: 'phase', message: event.message },
-                    },
-                },
-            };
-        // ── EC Targets ───────────────────────────────────────────────────────────
-        case 'UPDATE_EC_TARGETS_DRAFT':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: {
-                        ...sm.tabs.settings,
-                        draft: { ...sm.tabs.settings.draft, ecTargetRanges: event.ranges },
-                    },
-                },
-            };
-        case 'SET_EC_APPLYING':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: {
-                        ...sm.tabs.settings,
-                        sub: event.applying ? { kind: 'ec-applying' } : { kind: 'idle' },
-                    },
-                },
-            };
-        case 'EC_SAVE_RESOLVED':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: { ...sm.tabs.settings, sub: { kind: 'idle' } },
-                },
-            };
-        case 'EC_SAVE_FAILED':
-            return {
-                ...sm,
-                tabs: {
-                    ...sm.tabs,
-                    settings: {
-                        ...sm.tabs.settings,
-                        sub: { kind: 'error', source: 'ec', message: event.message },
-                    },
-                },
-            };
-        // ── Global ───────────────────────────────────────────────────────────────
-        case 'SET_TOAST':
-            return { ...sm, toast: event.message };
-        case 'RESET_FROM_DEVICE':
-            return applyDeviceToSM$1(sm, event.device);
-        default:
-            return sm;
-    }
-}
-
-let CropSteeringDialog = class CropSteeringDialog extends i$3 {
-    constructor() {
-        super(...arguments);
-        this.open = false;
-        this.growspaceName = '';
-        this._sm = createInitialSM$8();
-    }
-    _device() {
-        if (!this.dialogState?.growspaceId)
-            return undefined;
-        return activeDevices$
-            .get()
-            .find((d) => d.deviceId === this.dialogState?.growspaceId);
-    }
-    updated(changed) {
-        if (changed.has('open') && this.open) {
-            const device = this._device();
-            this._sm = createInitialSM$8(device);
-        }
-    }
-    _transition(event) {
-        this._sm = transition$8(this._sm, event);
-    }
-    _close() {
-        this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }));
-    }
-    _switchTab(tab) {
-        const device = this._device();
-        if (!device) {
-            this._transition({ type: 'SWITCH_TAB', tab });
-            return;
-        }
-        if (isActiveTabDirty$1(this._sm, device)) {
-            this._transition({ type: 'REQUEST_TAB', tab });
-        }
-        else {
-            this._transition({ type: 'SWITCH_TAB', tab });
-        }
-    }
-    _confirmDiscard() {
-        const device = this._device();
-        if (!device)
-            return;
-        this._sm = discardAndSwitch$1(this._sm, device);
-    }
-    _requestTabSwitch(tab) {
-        const device = this._device();
-        if (!device)
-            return;
-        this._sm = requestTabSwitch$1(this._sm, tab, device);
-    }
-    _getEntityId() {
-        if (!this.dialogState?.growspaceId)
-            return undefined;
-        const device = this._device();
-        if (!device)
-            return undefined;
-        const slug = device.name
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^\w-]+/g, '')
-            .replace(/[_-]+/g, '_')
-            .replace(/^[_-]+/, '')
-            .replace(/[_-]+$/, '');
-        return `sensor.${slug}_crop_steering`;
-    }
-    _renderMetricCard(title, value, icon, color, help = '') {
-        return x `
-      <div class="metric-card">
-        <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
-        <div class="metric-value">${value}</div>
-        <div
-          class="metric-label"
-          style="display:flex;align-items:center;gap:4px;justify-content:center;"
-        >
-          ${title}
-          ${help
-            ? x `<gs-help-tooltip
-                .content=${help}
-                placement="bottom"
-                .label=${title}
-              ></gs-help-tooltip>`
-            : ''}
-        </div>
-      </div>
-    `;
-    }
-    _renderDiagnosticsTab() {
-        const entityId = this._getEntityId();
-        const stateObj = entityId ? this.hass.states[entityId] : undefined;
-        const score = stateObj ? parseFloat(stateObj.state) : NaN;
-        const attrs = stateObj?.attributes || {};
-        const mode = attrs.steering_mode || 'unknown';
-        let trendIcon = mdiMinus;
-        let trendColor = 'var(--secondary-text-color)';
-        if (attrs.ec_trend === 'rising') {
-            trendIcon = mdiArrowUp;
-            trendColor = 'var(--error-color, #F44336)';
-        }
-        else if (attrs.ec_trend === 'falling') {
-            trendIcon = mdiArrowDown;
-            trendColor = 'var(--success-color, #4CAF50)';
-        }
-        if (stateObj === undefined || isNaN(score)) {
-            return x `
-        <div style="text-align: center; padding: 40px; opacity: 0.7;">
-          <ha-svg-icon
-            .path=${mdiChartTimelineVariantShimmer}
-            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
-          ></ha-svg-icon>
-          <p>Crop steering data is currently unavailable.</p>
-          <p style="font-size: 0.85rem;">
-            Ensure irrigation strategy is enabled and sensors are reporting data.
-          </p>
-        </div>
-      `;
-        }
-        return x `
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div
-          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
-        >
-          <div style="font-size: 36px; font-weight: bold;">
-            ${score > 0 ? '+' : ''}${score.toFixed(2)}
-          </div>
-          <gs-help-tooltip
-            content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
-            placement="right"
-            label="Crop Steering Score"
-          ></gs-help-tooltip>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-          <div class="mode-badge mode-${mode}">${mode.toUpperCase()} MODE</div>
-          <gs-help-tooltip
-            content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
-            placement="right"
-            label="Steering Mode"
-          ></gs-help-tooltip>
-        </div>
-      </div>
-
-      <div class="metric-grid">
-        ${this._renderMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
-        ${this._renderMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
-        ${this._renderMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
-        ${this._renderMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
-      </div>
-
-      <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
-        Vegetative steering drives growth with smaller, more frequent irrigations.
-        Generative steering promotes flowering and ripening through larger dry-backs.
-      </p>
-    `;
-    }
-    render() {
-        if (!this.open || !this.dialogState)
-            return E;
-        const sm = this._sm;
-        return x `
-      <gs-dialog
-        .open=${this.open}
-        heading="Crop Steering Diagnostics"
-        .subtitle=${this.growspaceName}
-        .iconPath=${mdiCompassOutline}
-        @close=${this._close}
-      >
-        <gs-help-tooltip
-          slot="header-extra"
-          content="Real-time analysis of your irrigation strategy. Monitoring EC trend, dry-back rate, and substrate salinity changes to guide steering decisions."
-          placement="bottom"
-          label="Crop Steering"
-        ></gs-help-tooltip>
-
-        <div class="dialog-content">
-          ${sm.activeTab === 'diagnostics'
-            ? this._renderDiagnosticsTab()
-            : E}
-        </div>
-      </gs-dialog>
-    `;
-    }
-};
-CropSteeringDialog.styles = [
-    dialogStyles,
-    i$6 `
-      .metric-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        margin-top: 16px;
-      }
-      .metric-card {
-        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
-        border-radius: 12px;
-        padding: 16px;
-        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-      }
-      .metric-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: var(--primary-text-color);
-        margin: 8px 0;
-      }
-      .metric-label {
-        font-size: 14px;
-        color: var(--secondary-text-color);
-      }
-      .mode-badge {
-        padding: 4px 12px;
-        border-radius: 16px;
-        font-size: 14px;
-        font-weight: bold;
-        text-transform: capitalize;
-        margin-top: 8px;
-        display: inline-block;
-      }
-      .mode-vegetative {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-      }
-      .mode-generative {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-      }
-      .mode-balanced {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-      }
-      .header-actions {
-        display: flex;
-        gap: 8px;
-      }
-    `,
-];
-__decorate([
-    c$2({ context: hassContext, subscribe: true })
-], CropSteeringDialog.prototype, "hass", void 0);
-__decorate([
-    c$2({ context: storeContext, subscribe: true })
-], CropSteeringDialog.prototype, "store", void 0);
-__decorate([
-    n$5({ type: Boolean })
-], CropSteeringDialog.prototype, "open", void 0);
-__decorate([
-    n$5({ attribute: false })
-], CropSteeringDialog.prototype, "dialogState", void 0);
-__decorate([
-    n$5({ type: String })
-], CropSteeringDialog.prototype, "growspaceName", void 0);
-__decorate([
-    r$3()
-], CropSteeringDialog.prototype, "_sm", void 0);
-CropSteeringDialog = __decorate([
-    t$2('crop-steering-dialog')
-], CropSteeringDialog);
 
 /**
  * Chat Panel State Machine
@@ -27186,13 +26700,14 @@ function defaultEcTargetsDraft() {
 }
 function defaultTabs() {
     return {
+        overview: { sub: { kind: 'idle' } },
         schedules: { draft: defaultSchedulesDraft(), sub: { kind: 'idle' } },
         steering: { draft: defaultSteeringDraft(), phase: 'p2', sub: { kind: 'idle' } },
         config: { draft: defaultConfigDraft(), sub: { kind: 'idle' } },
         tanks: { sub: { kind: 'idle' } },
         water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
         drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
-        ec_targets: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
+        substrate_ec: { draft: defaultEcTargetsDraft(), sub: { kind: 'idle' } },
         ec_ramp: {},
     };
 }
@@ -27265,7 +26780,7 @@ function applyDeviceToSM(sm, device) {
             steering: { ...sm.tabs.steering, draft: steeringDraft, phase },
             config: { ...sm.tabs.config, draft: configDraft },
             drain_ec: { ...sm.tabs.drain_ec, draft: drainEcDraft },
-            ec_targets: { ...sm.tabs.ec_targets, draft: ecTargetsDraft },
+            substrate_ec: { ...sm.tabs.substrate_ec, draft: ecTargetsDraft },
         },
     };
 }
@@ -27320,9 +26835,9 @@ function isDrainEcDirty(sm, device) {
         d.maxEcDelta !== dc.maxEcDelta ||
         d.targetRunoffPercent !== dc.targetRunoffPercent);
 }
-/** True if the ec_targets tab has unsaved changes relative to the device. */
-function isEcTargetsDirty(sm, device) {
-    const d = sm.tabs.ec_targets.draft;
+/** True if the substrate_ec tab has unsaved changes relative to the device. */
+function isSubstrateEcDirty(sm, device) {
+    const d = sm.tabs.substrate_ec.draft;
     const ranges = device.irrigationConfig?.ecTargetRanges ?? [];
     // When the device has no ranges, the SM initialises with all-zero defaults.
     // It is only dirty if the user has changed at least one value away from zero.
@@ -27350,8 +26865,8 @@ function isActiveTabDirty(sm, device) {
             return isConfigDirty(sm, device);
         case 'drain_ec':
             return isDrainEcDirty(sm, device);
-        case 'ec_targets':
-            return isEcTargetsDirty(sm, device);
+        case 'substrate_ec':
+            return isSubstrateEcDirty(sm, device);
         default:
             return false;
     }
@@ -27430,11 +26945,11 @@ function resetActiveTabDraft(sm, device) {
                     sub: { kind: 'idle' },
                 },
             };
-        case 'ec_targets': {
+        case 'substrate_ec': {
             const ranges = config.ecTargetRanges;
             return {
                 ...sm.tabs,
-                ec_targets: {
+                substrate_ec: {
                     draft: ranges && ranges.length > 0
                         ? EC_STAGES.map((stage) => {
                             const found = ranges.find((r) => r.stage === stage);
@@ -27761,8 +27276,8 @@ function transition$4(sm, event) {
                 ...sm,
                 tabs: {
                     ...sm.tabs,
-                    ec_targets: {
-                        ...sm.tabs.ec_targets,
+                    substrate_ec: {
+                        ...sm.tabs.substrate_ec,
                         draft: event.ranges,
                     },
                 },
@@ -29147,11 +28662,13 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const hasSoilMoisture = !!env?.soilMoistureSensor || (env?.soilMoistureSensors?.length ?? 0) > 0;
         const hasStrategy = !!this.device?.irrigationStrategy?.enabled;
         const hasPump = this._hasPump;
-        if (hasPump)
-            tabs.push('schedules');
+        // Crop Steering Command Center: Overview + Steering share one gate.
         if ((hasSoilMoisture || hasStrategy) && hasPump) {
+            tabs.push('overview');
             tabs.push('steering');
         }
+        if (hasPump)
+            tabs.push('schedules');
         tabs.push('config');
         const hasTanks = (env?.irrigationTanks?.length ?? 0) > 0;
         if (hasTanks)
@@ -29169,7 +28686,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (drainEnabled || hasDrainReadings || hasEcSensors)
             tabs.push('drain_ec');
         if (hasEcSensors)
-            tabs.push('ec_targets');
+            tabs.push('substrate_ec');
         // EC Ramp: visible when pump + at least one schedule + at least one EC sensor
         const hasEcSensorsForRamp = (env?.feedEcSensors?.length ?? 0) > 0 ||
             (env?.runoffEcSensors?.length ?? 0) > 0 ||
@@ -29216,7 +28733,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 text: 'Configure EC/pH sensors or enable drain monitoring to track nutrient runoff.',
             });
         }
-        if (!visible.includes('ec_targets')) {
+        if (!visible.includes('substrate_ec')) {
             hints.push({
                 icon: '🎯',
                 text: 'Configure an EC sensor in Environment Settings to set EC targets per growth stage.',
@@ -29349,7 +28866,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 maxEcDelta: d.maxEcDelta,
                 targetRunoffPercent: d.targetRunoffPercent,
             },
-            ecTargetRanges: this._sm.tabs.ec_targets.draft,
+            ecTargetRanges: this._sm.tabs.substrate_ec.draft,
         };
         this.dispatch({ type: 'SaveRequested', action: 'save-all', params });
     }
@@ -29673,13 +29190,14 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         const visible = this._visibleTabs;
         const tankCount = this.device?.environmentAttributes?.irrigationTanks?.length ?? 0;
         const NAV = [
+            { id: 'overview', label: 'Overview', group: 'Crop Steering', icon: mdiCompassOutline },
+            { id: 'steering', label: 'Steering', group: 'Crop Steering', icon: mdiLeaf },
+            { id: 'substrate_ec', label: 'Substrate & EC', group: 'Crop Steering', icon: mdiBullseyeArrow },
             { id: 'schedules', label: 'Schedules', group: 'Daily Cycle', icon: mdiCalendarClock },
-            { id: 'steering', label: 'Crop Steering', group: 'Daily Cycle', icon: mdiLeaf },
             { id: 'config', label: 'Configuration', group: 'Equipment', icon: mdiCog },
             { id: 'tanks', label: 'Tanks', group: 'Equipment', icon: mdiWater, badge: tankCount || undefined },
             { id: 'water_analytics', label: 'Water Analytics', group: 'Telemetry', icon: mdiChartBar },
             { id: 'drain_ec', label: 'Drain EC', group: 'Telemetry', icon: mdiArrowDownCircle },
-            { id: 'ec_targets', label: 'EC Targets', group: 'Telemetry', icon: mdiBullseyeArrow },
             { id: 'ec_ramp', label: 'EC Ramp', group: 'Telemetry', icon: mdiTrendingUp },
         ];
         const visibleNav = NAV.filter((n) => visible.includes(n.id));
@@ -29850,6 +29368,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     }
     _renderActiveTab(color) {
         switch (this._sm.activeTab) {
+            case 'overview':
+                return this._renderOverviewTab();
             case 'schedules':
                 return this._renderSchedulesTab(color);
             case 'steering':
@@ -29862,7 +29382,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
                 return this._renderWaterAnalyticsTab();
             case 'drain_ec':
                 return this._renderDrainECTab();
-            case 'ec_targets':
+            case 'substrate_ec':
                 return this._renderEcTargetsTab();
             case 'ec_ramp':
                 return this._renderEcRampTab();
@@ -31898,6 +31418,107 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
       </div>
     `;
     }
+    // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
+    _cropSteeringEntityId() {
+        if (!this.device)
+            return undefined;
+        const slug = this.device.name
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^\w-]+/g, '')
+            .replace(/[_-]+/g, '_')
+            .replace(/^[_-]+/, '')
+            .replace(/[_-]+$/, '');
+        return `sensor.${slug}_crop_steering`;
+    }
+    _renderOverviewMetricCard(title, value, icon, color, help = '') {
+        return x `
+      <div class="cs-metric-card">
+        <ha-svg-icon .path=${icon} style="color: ${color}; margin-bottom: 8px;"></ha-svg-icon>
+        <div class="cs-metric-value">${value}</div>
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          ${title}
+          ${help
+            ? x `<gs-help-tooltip
+                .content=${help}
+                placement="bottom"
+                .label=${title}
+              ></gs-help-tooltip>`
+            : ''}
+        </div>
+      </div>
+    `;
+    }
+    _renderOverviewTab() {
+        const entityId = this._cropSteeringEntityId();
+        const stateObj = entityId && this.hass ? this.hass.states[entityId] : undefined;
+        const score = stateObj ? parseFloat(stateObj.state) : NaN;
+        const attrs = stateObj?.attributes || {};
+        const mode = attrs.steering_mode || 'unknown';
+        let trendIcon = mdiMinus;
+        let trendColor = 'var(--secondary-text-color)';
+        if (attrs.ec_trend === 'rising') {
+            trendIcon = mdiArrowUp;
+            trendColor = 'var(--error-color, #F44336)';
+        }
+        else if (attrs.ec_trend === 'falling') {
+            trendIcon = mdiArrowDown;
+            trendColor = 'var(--success-color, #4CAF50)';
+        }
+        if (stateObj === undefined || isNaN(score)) {
+            return x `
+        <div style="text-align: center; padding: 40px; opacity: 0.7;">
+          <ha-svg-icon
+            .path=${mdiChartTimelineVariantShimmer}
+            style="width: 48px; height: 48px; margin-bottom: 16px; opacity: 0.5;"
+          ></ha-svg-icon>
+          <p>Crop steering data is currently unavailable.</p>
+          <p style="font-size: 0.85rem;">
+            Ensure irrigation strategy is enabled and sensors are reporting data.
+          </p>
+        </div>
+      `;
+        }
+        return x `
+      <div style="text-align: center; margin-bottom: 24px;">
+        <div
+          style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
+        >
+          <div style="font-size: 36px; font-weight: bold;">
+            ${score > 0 ? '+' : ''}${score.toFixed(2)}
+          </div>
+          <gs-help-tooltip
+            content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
+            placement="right"
+            label="Crop Steering Score"
+          ></gs-help-tooltip>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+          <div class="cs-mode-badge cs-mode-${mode}">${mode.toUpperCase()} MODE</div>
+          <gs-help-tooltip
+            content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
+            placement="right"
+            label="Steering Mode"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+
+      <div class="cs-metric-grid">
+        ${this._renderOverviewMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
+        ${this._renderOverviewMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
+        ${this._renderOverviewMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
+        ${this._renderOverviewMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
+      </div>
+
+      <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
+        Vegetative steering drives growth with smaller, more frequent irrigations.
+        Generative steering promotes flowering and ripening through larger dry-backs.
+      </p>
+    `;
+    }
     // ─── EC Targets tab (stub) ────────────────────────────────────────────────
     _renderEcTargetsTab() {
         const stageLabels = {
@@ -31938,7 +31559,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             </tr>
           </thead>
           <tbody>
-            ${this._sm.tabs.ec_targets.draft.map((range, idx) => x `
+            ${this._sm.tabs.substrate_ec.draft.map((range, idx) => x `
                 <tr
                   class="ec-target-row"
                   style="border-top:1px solid var(--divider-color,rgba(255,255,255,0.07));"
@@ -31961,7 +31582,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             const val = parseFloat(e.target.value) || 0;
             this._sm = transition$4(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
-                ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
+                ranges: this._sm.tabs.substrate_ec.draft.map((r, i) => i === idx ? { ...r, minEc: val } : r),
             });
         }}
                     />
@@ -31979,7 +31600,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             const val = parseFloat(e.target.value) || 0;
             this._sm = transition$4(this._sm, {
                 type: 'UPDATE_EC_TARGETS_DRAFT',
-                ranges: this._sm.tabs.ec_targets.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
+                ranges: this._sm.tabs.substrate_ec.draft.map((r, i) => i === idx ? { ...r, maxEc: val } : r),
             });
         }}
                     />
@@ -32273,6 +31894,55 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 IrrigationDialog.styles = [
     dialogStyles,
     i$6 `
+      /* ── Crop Steering Overview tab ── */
+      .cs-metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .cs-metric-card {
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.05));
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+      .cs-metric-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: var(--primary-text-color);
+        margin: 8px 0;
+      }
+      .cs-metric-label {
+        font-size: 14px;
+        color: var(--secondary-text-color);
+      }
+      .cs-mode-badge {
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: capitalize;
+        margin-top: 8px;
+        display: inline-block;
+      }
+      .cs-mode-vegetative {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+      }
+      .cs-mode-generative {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+      }
+      .cs-mode-balanced {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+      }
+
       /* ── Body layout ── */
       .glass-dialog-container {
         max-height: 90vh;
@@ -55318,8 +54988,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
                     return this._renderHarvestScoringDialog(active);
                 case 'SNAPSHOTS':
                     return this._renderSnapshotsDialog(active, effectiveDeviceData);
-                case 'CROP_STEERING':
-                    return this._renderCropSteeringDialog(active, effectiveDeviceData);
                 default:
                     return x ``;
             }
@@ -56098,19 +55766,6 @@ let GrowspaceDialogHost = class GrowspaceDialogHost extends i$3 {
         @close=${() => this._closeDialogIfActive('SNAPSHOTS')}
         @data-changed=${() => this._handleDataChanged()}
       ></snapshots-dialog>
-    `;
-    }
-    _renderCropSteeringDialog(active, selectedDeviceData) {
-        if (active.type !== 'CROP_STEERING')
-            return x ``;
-        return x `
-      <crop-steering-dialog
-        .open=${true}
-        .dialogState=${active.payload}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this._closeDialogIfActive('CROP_STEERING')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></crop-steering-dialog>
     `;
     }
     _renderNutrientInventoryDialog(active, nutrientInventory, _effectiveDeviceData) {
@@ -64804,682 +64459,18 @@ function friendlyDateTime(dateTimeish) {
   }
 }
 
-const STAGE_COLORS$1 = {
-    flower: 'var(--stage-flower, #ff9800)',
-    veg: 'var(--stage-veg, #4caf50)',
-    seedling: 'var(--stage-seedling, #8bc34a)',
-    clone: 'var(--stage-clone, #8bc34a)',
-    mother: 'var(--stage-mother, #e91e63)',
-    dry: 'var(--stage-dry, #9c27b0)',
-    cure: 'var(--stage-cure, #2196f3)',
-};
-class MetricsUtils {
-    static _getAttributeValue(ent, key) {
-        if (!ent || !ent.attributes)
-            return undefined;
-        if (ent.attributes[key] !== undefined)
-            return ent.attributes[key];
-        if (ent.attributes.observations && typeof ent.attributes.observations === 'object') {
-            return ent.attributes.observations[key];
-        }
-        return undefined;
-    }
-    static _isMetricLinked(metric, linkedGraphGroups) {
-        if (!linkedGraphGroups)
-            return { linked: false, groupIndex: -1 };
-        for (let i = 0; i < linkedGraphGroups.length; i++) {
-            if (linkedGraphGroups[i].includes(metric)) {
-                return { linked: true, groupIndex: i };
-            }
-        }
-        return { linked: false, groupIndex: -1 };
-    }
-    static computeHeaderMetrics(hass, device, activeEnvGraphs, linkedGraphGroups) {
-        if (!device || !hass)
-            return { mainChips: [], deviceChips: [], dominant: undefined, envAttrs: {} };
-        const dominantRaw = PlantUtils.getDominantStage(device.plants);
-        let dominant;
-        if (dominantRaw) {
-            const stageName = dominantRaw.stage.charAt(0).toUpperCase() + dominantRaw.stage.slice(1);
-            const weeks = Math.floor((dominantRaw.days - 1) / 7) + 1;
-            const icon = PlantUtils.getPlantStageIcon(dominantRaw.stage);
-            dominant = {
-                icon,
-                daysLabel: `${dominantRaw.days} Day${dominantRaw.days !== 1 ? 's' : ''} ${stageName}`,
-                weeksLabel: `${weeks} Week${weeks !== 1 ? 's' : ''} ${stageName}`,
-                color: STAGE_COLORS$1[dominantRaw.stage] ?? '#4caf50',
-            };
-        }
-        // Fetch Environmental Data
-        let slug = device.name.toLowerCase().replace(/\s+/g, '_');
-        if (device.overviewEntityId) {
-            slug = device.overviewEntityId.replace('sensor.', '').replace(/_overview$/, '');
-        }
-        let envEntityId = `binary_sensor.${slug}_optimal_conditions`;
-        const isCure = slug === 'cure';
-        const isDry = slug === 'dry';
-        if (isCure) {
-            envEntityId = `binary_sensor.cure_optimal_curing`;
-        }
-        else if (isDry) {
-            envEntityId = `binary_sensor.dry_optimal_drying`;
-        }
-        const envEntity = hass.states[envEntityId];
-        const overviewEntity = device.overviewEntityId
-            ? hass.states[device.overviewEntityId]
-            : undefined;
-        const envAttrs = device.environmentAttributes ||
-            overviewEntity?.attributes ||
-            {};
-        const temp = this._getAttributeValue(envEntity, 'temperature');
-        const hum = this._getAttributeValue(envEntity, 'humidity');
-        let vpd = this._getAttributeValue(envEntity, 'vpd');
-        // VPD Fallback Logic
-        if (vpd === undefined || vpd === null) {
-            if (envAttrs.vpdSensor) {
-                const vpdState = hass.states[envAttrs.vpdSensor];
-                if (vpdState &&
-                    vpdState.state !== EntityState.UNKNOWN &&
-                    vpdState.state !== EntityState.UNAVAILABLE) {
-                    const val = parseFloat(vpdState.state);
-                    if (!isNaN(val))
-                        vpd = val;
-                }
-            }
-            if (vpd === undefined || vpd === null) {
-                // Calculated VPD fallback
-                // 1. Try Name-based ID (New Standard)
-                const slugify = (text) => text
-                    .toString()
-                    .toLowerCase()
-                    .replace(/\s+/g, '_')
-                    .replace(/[^\w-]+/g, '')
-                    .replace(/[_-]+/g, '_')
-                    .replace(/^[_-]+/, '')
-                    .replace(/[_-]+$/, '');
-                const calcName = `${device.name} Calculated VPD`;
-                const calculatedId = `sensor.${slugify(calcName)}`;
-                let vpdState = hass.states[calculatedId];
-                // 2. Try UUID-based ID (Old Legacy)
-                if (!vpdState ||
-                    vpdState.state === EntityState.UNKNOWN ||
-                    vpdState.state === EntityState.UNAVAILABLE) {
-                    const oldId = `sensor.${device.deviceId}_calculated_vpd`;
-                    const oldState = hass.states[oldId];
-                    if (oldState &&
-                        oldState.state !== EntityState.UNKNOWN &&
-                        oldState.state !== EntityState.UNAVAILABLE) {
-                        vpdState = oldState;
-                    }
-                }
-                if (vpdState &&
-                    vpdState.state !== EntityState.UNKNOWN &&
-                    vpdState.state !== EntityState.UNAVAILABLE) {
-                    const val = parseFloat(vpdState.state);
-                    if (!isNaN(val))
-                        vpd = val;
-                }
-            }
-        }
-        const isLightsOnValue = this._getAttributeValue(envEntity, 'is_lights_on');
-        const isLightsOn = isLightsOnValue === true;
-        let vpdStatus = overviewEntity?.attributes?.vpd_status;
-        const vpdAttrs = overviewEntity?.attributes || {};
-        const vpdPrefix = isLightsOn ? 'day' : 'night';
-        const vpdTargetMin = vpdAttrs[`${vpdPrefix}_vpd_target_min`] ?? vpdAttrs.vpd_target_min;
-        const vpdTargetMax = vpdAttrs[`${vpdPrefix}_vpd_target_max`] ?? vpdAttrs.vpd_target_max;
-        const vpdDangerMin = vpdAttrs[`${vpdPrefix}_vpd_danger_min`] ?? vpdAttrs.vpd_danger_min;
-        const vpdDangerMax = vpdAttrs[`${vpdPrefix}_vpd_danger_max`] ?? vpdAttrs.vpd_danger_max;
-        if ((!vpdStatus || vpdStatus === EntityState.UNKNOWN) &&
-            vpd !== undefined &&
-            vpd !== null &&
-            vpdTargetMin !== undefined &&
-            vpdTargetMax !== undefined &&
-            vpdDangerMin !== undefined &&
-            vpdDangerMax !== undefined) {
-            if (vpd < vpdDangerMin || vpd > vpdDangerMax) {
-                vpdStatus = StatusLevel.DANGER;
-            }
-            else if (vpd < vpdTargetMin || vpd > vpdTargetMax) {
-                vpdStatus = StatusLevel.WARNING;
-            }
-            else {
-                vpdStatus = StatusLevel.OPTIMAL;
-            }
-        }
-        const isSpecialGrowspace = isCure || isDry;
-        const co2Value = this._getAttributeValue(envEntity, 'co2');
-        const co2 = isSpecialGrowspace || co2Value === undefined || co2Value === null ? undefined : co2Value;
-        const hasLightSensor = !isSpecialGrowspace && isLightsOnValue !== undefined && isLightsOnValue !== null;
-        const getNextEvent = (times) => {
-            if (!times || !times.length)
-                return undefined;
-            const now = DateTime.now();
-            const upcoming = times
-                .filter((t) => t && (t.time || t.start_time)) // Support both time and start_time
-                .map((t) => {
-                // Handle both 'time' and 'start_time' properties
-                const timeStr = (t.time || t.start_time); // Non-null assertion safe due to filter
-                // Handle both HH:MM and HH:MM:SS formats
-                const parts = timeStr.split(':');
-                const h = Number(parts[0]);
-                const m = Number(parts[1]);
-                let dt = now.set({ hour: h, minute: m, second: 0 });
-                if (dt < now)
-                    dt = dt.plus({ days: 1 });
-                return dt;
-            })
-                .sort((a, b) => a.toMillis() - b.toMillis())[0];
-            return upcoming?.toFormat('HH:mm');
-        };
-        const nextIrrigation = getNextEvent(device.irrigationConfig?.irrigationTimes);
-        const nextDrain = getNextEvent(device.irrigationConfig?.drainTimes);
-        // Aggregate core sensors
-        const getAggregateSensorState = (single, multi, unit, fallbackValue) => {
-            const ids = new Set();
-            if (multi && multi.length > 0)
-                multi.forEach((id) => ids.add(id));
-            else if (single)
-                ids.add(single);
-            if (ids.size === 0) {
-                if (fallbackValue !== undefined && fallbackValue !== null) {
-                    const sVal = String(fallbackValue);
-                    const fVal = parseFloat(sVal);
-                    const isValid = !isNaN(fVal) ||
-                        sVal === EntityState.UNKNOWN ||
-                        sVal === EntityState.UNAVAILABLE ||
-                        sVal === '';
-                    if (isValid) {
-                        return { value: fallbackValue + unit, entityIds: [] };
-                    }
-                }
-                return { value: undefined, entityIds: [] };
-            }
-            const states = [];
-            const entityIds = Array.from(ids);
-            ids.forEach((id) => {
-                const s = hass.states[id];
-                if (s &&
-                    s.state &&
-                    s.state !== EntityState.UNAVAILABLE &&
-                    s.state !== EntityState.UNKNOWN) {
-                    const fVal = parseFloat(s.state);
-                    if (!isNaN(fVal) || s.state === '') {
-                        states.push(s.state + unit);
-                    }
-                    else {
-                        states.push('-');
-                    }
-                }
-                else {
-                    states.push('-');
-                }
-            });
-            if (ids.size > 1) {
-                return { value: 'Multiple', multiValues: states, entityIds };
-            }
-            let singleValue = states[0] !== '-' ? states[0] : undefined;
-            if (singleValue === undefined && fallbackValue !== undefined && fallbackValue !== null) {
-                const sVal = String(fallbackValue);
-                const fVal = parseFloat(sVal);
-                const isValid = !isNaN(fVal) ||
-                    sVal === EntityState.UNKNOWN ||
-                    sVal === EntityState.UNAVAILABLE ||
-                    sVal === '';
-                if (isValid) {
-                    singleValue = sVal + unit;
-                }
-            }
-            return { value: singleValue, entityIds };
-        };
-        const tempAgg = getAggregateSensorState(envAttrs.temperatureSensor, envAttrs.temperatureSensors, '°C', temp);
-        const humAgg = getAggregateSensorState(envAttrs.humiditySensor, envAttrs.humiditySensors, '%', hum);
-        const vpdAgg = getAggregateSensorState(envAttrs.vpdSensor, envAttrs.vpdSensors, ' kPa', vpd);
-        const co2Agg = getAggregateSensorState(envAttrs.co2Sensor, envAttrs.co2Sensors, ' ppm', co2);
-        const soilAgg = getAggregateSensorState(envAttrs.soilMoistureSensor, envAttrs.soilMoistureSensors, '%', this._getAttributeValue(overviewEntity, 'soil_moisture_value'));
-        // Calculate aggregate irrigation tank level with depletion time
-        const tanks = envAttrs.irrigationTanks || [];
-        let tankLevelValue;
-        let tankEntityIds = [];
-        let tankMultiValues;
-        let tankStatus;
-        let tankTooltip;
-        // New metrics: DLI, Crop Steering, Substrate Temp, Energy, Water
-        const dliEntityId = `sensor.${slug}_dli`;
-        const dliState = hass.states[dliEntityId];
-        const dliValue = dliState &&
-            dliState.state !== EntityState.UNKNOWN &&
-            dliState.state !== EntityState.UNAVAILABLE
-            ? dliState.state
-            : undefined;
-        const cropSteeringEntityId = `sensor.${slug}_crop_steering`;
-        const cropSteeringState = hass.states[cropSteeringEntityId];
-        const cropSteeringValue = cropSteeringState &&
-            cropSteeringState.state !== EntityState.UNKNOWN &&
-            cropSteeringState.state !== EntityState.UNAVAILABLE
-            ? cropSteeringState.state
-            : undefined;
-        const energyValue = device.energyTracking?.dailyKwh != null
-            ? device.energyTracking.dailyKwh.toFixed(2)
-            : undefined;
-        const waterValue = device.waterUsage?.litersToday != null
-            ? `${device.waterUsage.litersToday.toFixed(1)} L/d`
-            : undefined;
-        const substrateTempAgg = getAggregateSensorState(undefined, envAttrs.substrateTemperatureSensors, '°C');
-        if (tanks.length > 0) {
-            tankEntityIds = tanks.map((t) => t.sensorEntity).filter(Boolean);
-            // Helper: Format hours remaining as "Xh" or "Xd"
-            const formatTimeRemaining = (hours) => {
-                if (hours === null || hours === undefined)
-                    return '';
-                if (hours >= 48) {
-                    const days = Math.floor(hours / 24);
-                    return ` ${days}d`;
-                }
-                return ` ${Math.round(hours)}h`;
-            };
-            // Helper: Determine status color based on hours remaining
-            const getTankDepletionStatus = (hoursRemaining, depletionStatus) => {
-                // No color if no data or not depleting
-                if (depletionStatus === 'insufficient_data' || depletionStatus === null)
-                    return undefined;
-                if (depletionStatus === 'static' || depletionStatus === 'refilling')
-                    return StatusLevel.OPTIMAL;
-                if (hoursRemaining === null || hoursRemaining === undefined)
-                    return undefined;
-                if (hoursRemaining < 12)
-                    return StatusLevel.DANGER;
-                if (hoursRemaining < 24)
-                    return StatusLevel.WARNING;
-                if (hoursRemaining >= 48)
-                    return StatusLevel.OPTIMAL;
-                return undefined; // 24-48 hours = no special color
-            };
-            if (tanks.length === 1) {
-                const tank = tanks[0];
-                if (tank.fillLevel !== null && tank.fillLevel !== undefined) {
-                    const fillPct = Math.round(tank.fillLevel);
-                    const timeStr = formatTimeRemaining(tank.hoursRemaining);
-                    tankLevelValue = `${fillPct}%${timeStr}`;
-                    tankStatus = getTankDepletionStatus(tank.hoursRemaining, tank.depletionStatus);
-                    // Build tooltip
-                    if (tank.hoursRemaining !== null && tank.hoursRemaining !== undefined) {
-                        tankTooltip = `${tank.name}: ${fillPct}% (${Math.round(tank.hoursRemaining)}h remaining)`;
-                    }
-                }
-            }
-            else {
-                // Multiple tanks - compute average and show individual values
-                const validLevels = tanks.filter((t) => t.fillLevel !== null && t.fillLevel !== undefined);
-                if (validLevels.length > 0) {
-                    tankMultiValues = validLevels.map((t) => {
-                        const fillPct = Math.round(t.fillLevel);
-                        const timeStr = formatTimeRemaining(t.hoursRemaining);
-                        return `${fillPct}%${timeStr}`;
-                    });
-                    const avg = validLevels.reduce((sum, t) => sum + t.fillLevel, 0) / validLevels.length;
-                    tankLevelValue = `${Math.round(avg)}%`;
-                    // Use most urgent status
-                    const statuses = tanks
-                        .map((t) => getTankDepletionStatus(t.hoursRemaining, t.depletionStatus))
-                        .filter(Boolean);
-                    if (statuses.includes(StatusLevel.DANGER)) {
-                        tankStatus = StatusLevel.DANGER;
-                    }
-                    else if (statuses.includes(StatusLevel.WARNING)) {
-                        tankStatus = StatusLevel.WARNING;
-                    }
-                    else if (statuses.includes(StatusLevel.OPTIMAL)) {
-                        tankStatus = StatusLevel.OPTIMAL;
-                    }
-                    tankTooltip = `${tanks.length} tanks`;
-                }
-            }
-        }
-        // Build Chips
-        const createChipData = (key, icon, value, multiValues, entityIds, label, status, tooltip) => {
-            if (value === undefined && (!multiValues || multiValues.length === 0))
-                return null;
-            const { linked, groupIndex } = this._isMetricLinked(key, linkedGraphGroups);
-            const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
-            const active = activeEnvGraphs.has(key) || hasCompositeActive;
-            return {
-                key,
-                icon,
-                value: value || '',
-                multiValues,
-                entityIds,
-                label,
-                status,
-                tooltip,
-                active,
-                linked,
-                groupIndex,
-            };
-        };
-        let optimalLabel = 'Optimal Conditions';
-        if (envEntity && envEntity.state !== EntityState.ON) {
-            const reasons = envEntity.attributes.reasons;
-            if (reasons && reasons.length > 0) {
-                const reasonText = Array.isArray(reasons) ? reasons.join(', ') : reasons;
-                optimalLabel = `Not Optimal: ${reasonText}`;
-            }
-            else {
-                optimalLabel = 'Not Optimal';
-            }
-        }
-        const mainChips = [
-            createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, undefined, undefined, 'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.'),
-            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds, undefined, undefined, 'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.'),
-            createChipData(MetricKey.VPD, mdiCloudOutline, vpdAgg.value, vpdAgg.multiValues, vpdAgg.entityIds, undefined, vpdStatus, vpdTargetMin !== undefined && vpdTargetMax !== undefined
-                ? `VPD: ${vpd} kPa (Target: ${vpdTargetMin}-${vpdTargetMax})`
-                : 'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.'),
-            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, undefined, undefined, 'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.'),
-            createChipData(MetricKey.IRRIGATION_TANK_LEVEL, mdiBarrel, tankLevelValue, tankMultiValues, tankEntityIds, 'Tank', tankStatus, tankTooltip),
-            createChipData(MetricKey.SOIL_MOISTURE, mdiWaterPercent, soilAgg.value, soilAgg.multiValues, soilAgg.entityIds, 'Moisture'),
-            createChipData(MetricKey.SUBSTRATE_TEMPERATURE, mdiThermometer, substrateTempAgg.value, substrateTempAgg.multiValues, substrateTempAgg.entityIds),
-            createChipData(MetricKey.IRRIGATION, mdiWater, nextIrrigation, undefined, undefined, 'Next'),
-            createChipData(MetricKey.DRAIN, mdiWaterMinus, nextDrain, undefined, undefined, 'Next'),
-            envEntity
-                ? createChipData(MetricKey.OPTIMAL, envEntity.state === EntityState.ON ? mdiRadioboxMarked : mdiRadioboxBlank, optimalLabel, undefined, undefined, undefined, envEntity.state === EntityState.ON ? StatusLevel.OPTIMAL : StatusLevel.WARNING)
-                : null,
-            createChipData(MetricKey.DLI, mdiWeatherSunny, dliValue, undefined, [dliEntityId], undefined, undefined, 'Daily Light Integral — total light energy received in a day (mol/m²/day). Veg: 20–40, flower: 40–65.'),
-            createChipData(MetricKey.CROP_STEERING, mdiSprout, cropSteeringValue, undefined, [cropSteeringEntityId], undefined, undefined, 'Crop steering score: positive = generative (flowering focus), negative = vegetative (growth focus).'),
-            createChipData(MetricKey.ENERGY, mdiFlash, energyValue, undefined, envAttrs.energySensors),
-            tanks.length > 0 &&
-                !(envAttrs.irrigationFlowSensors?.length) &&
-                !(envAttrs.drainVolumeSensors?.length)
-                ? createChipData(MetricKey.WATER, mdiWaterMinus, waterValue, undefined, undefined)
-                : null,
-        ].filter((c) => c !== null);
-        // Device Chips
-        const getAggregateState = (single, multi, sensor) => {
-            const ids = new Set();
-            // Optional: Filter by active graphs if needed in future
-            if (multi && multi.length > 0) {
-                multi.forEach((id) => ids.add(id));
-            }
-            else if (single) {
-                ids.add(single);
-            }
-            // Sensor overrides/augments? For simplicity, prefer controlled entities, but if nothing else, use sensor.
-            if (ids.size === 0 && sensor)
-                ids.add(sensor);
-            if (ids.size === 0)
-                return { value: undefined, entityIds: [] };
-            const states = [];
-            const entityIds = Array.from(ids);
-            ids.forEach((id) => {
-                const s = hass.states[id];
-                if (s &&
-                    s.state &&
-                    s.state !== EntityState.UNAVAILABLE &&
-                    s.state !== EntityState.UNKNOWN) {
-                    if (id.startsWith('fan.')) {
-                        if (s.state === 'off') {
-                            states.push('Off');
-                        }
-                        else {
-                            const pct = s.attributes?.percentage;
-                            states.push(pct != null ? `${Math.round(Number(pct))}%` : 'On');
-                        }
-                    }
-                    else {
-                        states.push(s.state);
-                    }
-                }
-                else {
-                    states.push('-');
-                }
-            });
-            if (ids.size > 1) {
-                return { value: 'Multiple', multiValues: states, entityIds };
-            }
-            // Single device logic
-            return { value: states[0], entityIds };
-        };
-        const exhaustState = getAggregateState(envAttrs.exhaustEntity, envAttrs.exhaustFanEntities, envAttrs.exhaustSensor);
-        const humidifierState = getAggregateState(envAttrs.humidifierEntity, envAttrs.humidifierEntities, envAttrs.humidifierSensor);
-        const dehumidifierState = getAggregateState(envAttrs.dehumidifierEntity, envAttrs.dehumidifierEntities, undefined);
-        const circulationFanState = getAggregateState(envAttrs.circulationFanEntity, envAttrs.circulationFanEntities, undefined);
-        const lightState = getAggregateState(envAttrs.lightSensor, envAttrs.lightSensors, undefined);
-        // Determine light chip value: prefer numeric sensor value over On/Off
-        let lightChipValue;
-        let lightChipIcon = isLightsOn ? mdiLightbulbOn : mdiLightbulbOff;
-        if (lightState.entityIds?.length === 1 && lightState.value !== undefined) {
-            const numVal = parseFloat(lightState.value);
-            if (!isNaN(numVal)) {
-                const lightEnt = hass.states[lightState.entityIds[0]];
-                const unit = lightEnt?.attributes?.unit_of_measurement;
-                lightChipValue = unit === '%' ? `${numVal}%` : lightState.value;
-                lightChipIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
-            }
-        }
-        if (!lightChipValue) {
-            lightChipValue = hasLightSensor ? (isLightsOn ? 'On' : 'Off') : undefined;
-        }
-        const deviceChips = [
-            // Moved light chip here per request
-            createChipData(MetricKey.LIGHT, lightChipIcon, lightChipValue, lightState.multiValues, lightState.entityIds),
-            createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
-            createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circulationFanState.value, circulationFanState.multiValues, circulationFanState.entityIds, 'Fan'),
-            createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humidifierState.value, humidifierState.multiValues, humidifierState.entityIds, 'Humidifier'),
-            createChipData(MetricKey.DEHUMIDIFIER, mdiAirHumidifierOff, dehumidifierState.value, dehumidifierState.multiValues, dehumidifierState.entityIds, 'Dehumidifier'),
-        ].filter((c) => c !== null);
-        return { mainChips, deviceChips, dominant, envAttrs };
-    }
-    static computeSubareaMetrics(hass, ec, activeEnvGraphs, growspaceId, growspaceName, subareaId, subareaName) {
-        const createChipData = (key, icon, value, multiValues, entityIds, label, status, tooltip) => {
-            if (value === undefined && (!multiValues || multiValues.length === 0))
-                return null;
-            const hasCompositeActive = Array.from(activeEnvGraphs).some((k) => k.startsWith(`${key}:`));
-            const active = activeEnvGraphs.has(key) || hasCompositeActive;
-            return {
-                key,
-                icon,
-                value: value || '',
-                multiValues,
-                entityIds,
-                label,
-                status,
-                tooltip,
-                active,
-                linked: false,
-                groupIndex: -1,
-            };
-        };
-        const getAggregateState = (single, multi, unit = '') => {
-            const ids = new Set();
-            if (multi && multi.length > 0)
-                multi.forEach((id) => ids.add(id));
-            else if (single)
-                ids.add(single);
-            if (ids.size === 0)
-                return { value: undefined, entityIds: [] };
-            const states = [];
-            const entityIds = Array.from(ids);
-            ids.forEach((id) => {
-                const s = hass.states[id];
-                if (s &&
-                    s.state &&
-                    s.state !== EntityState.UNAVAILABLE &&
-                    s.state !== EntityState.UNKNOWN) {
-                    const fVal = parseFloat(s.state);
-                    if (!isNaN(fVal) || s.state === '') {
-                        states.push(unit ? `${parseFloat(s.state).toFixed(1)} ${unit}`.trim() : s.state);
-                    }
-                    else {
-                        states.push('-');
-                    }
-                }
-                else {
-                    states.push('-');
-                }
-            });
-            if (ids.size > 1) {
-                return { value: 'Multiple', multiValues: states, entityIds };
-            }
-            return { value: states[0] !== '-' ? states[0] : undefined, entityIds };
-        };
-        const slugify = (text) => text
-            .toString()
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^\w-]+/g, '')
-            .replace(/[_-]+/g, '_')
-            .replace(/^[_-]+/, '')
-            .replace(/[_-]+$/, '');
-        const resolveCalculatedVpdSensor = (index) => {
-            const nameSuffix = index !== null ? ` ${index + 1}` : '';
-            const uuidSuffix = index !== null ? `_${index}` : '';
-            const calculatedId = growspaceName && subareaName
-                ? `sensor.${slugify(`${growspaceName} ${subareaName} Calculated VPD${nameSuffix}`)}`
-                : '';
-            const uuidId = growspaceId && subareaId
-                ? `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`
-                : '';
-            if (calculatedId && hass.states[calculatedId]) {
-                const s = hass.states[calculatedId];
-                if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
-                    return calculatedId;
-                }
-            }
-            if (uuidId && hass.states[uuidId]) {
-                const s = hass.states[uuidId];
-                if (s && s.state !== EntityState.UNKNOWN && s.state !== EntityState.UNAVAILABLE) {
-                    return uuidId;
-                }
-            }
-            return calculatedId || uuidId || '';
-        };
-        const tempSensors = [];
-        if (ec.temperature_sensors && ec.temperature_sensors.length > 0) {
-            tempSensors.push(...ec.temperature_sensors);
-        }
-        else if (ec.temperature_sensor) {
-            tempSensors.push(ec.temperature_sensor);
-        }
-        const humSensors = [];
-        if (ec.humidity_sensors && ec.humidity_sensors.length > 0) {
-            humSensors.push(...ec.humidity_sensors);
-        }
-        else if (ec.humidity_sensor) {
-            humSensors.push(ec.humidity_sensor);
-        }
-        const vpdSensors = [];
-        if (ec.vpd_sensors && ec.vpd_sensors.length > 0) {
-            vpdSensors.push(...ec.vpd_sensors);
-        }
-        else if (ec.vpd_sensor) {
-            vpdSensors.push(ec.vpd_sensor);
-        }
-        const resolvedVpdSensors = [];
-        const numPairs = Math.min(tempSensors.length, humSensors.length);
-        if (numPairs > 0) {
-            for (let i = 0; i < numPairs; i++) {
-                const existingVpd = vpdSensors[i];
-                if (existingVpd && !existingVpd.includes('calculated_vpd')) {
-                    resolvedVpdSensors.push(existingVpd);
-                }
-                else {
-                    const index = numPairs > 1 ? i : null;
-                    const fallbackId = resolveCalculatedVpdSensor(index);
-                    if (fallbackId) {
-                        resolvedVpdSensors.push(fallbackId);
-                    }
-                }
-            }
-        }
-        else {
-            resolvedVpdSensors.push(...vpdSensors);
-        }
-        const tempAgg = getAggregateState(ec.temperature_sensor, ec.temperature_sensors, '°C');
-        const humAgg = getAggregateState(ec.humidity_sensor, ec.humidity_sensors, '%');
-        const vpdAgg = getAggregateState(resolvedVpdSensors.length === 1 ? resolvedVpdSensors[0] : undefined, resolvedVpdSensors.length > 1 ? resolvedVpdSensors : undefined, 'kPa');
-        const co2Agg = getAggregateState(ec.co2_sensor, undefined, 'ppm');
-        const heroChips = [
-            createChipData(MetricKey.TEMPERATURE, mdiThermometer, tempAgg.value, tempAgg.multiValues, tempAgg.entityIds, 'Temperature'),
-            createChipData(MetricKey.HUMIDITY, mdiWaterPercent, humAgg.value, humAgg.multiValues, humAgg.entityIds, 'Humidity'),
-            createChipData(MetricKey.VPD, mdiCloudOutline, vpdAgg.value, vpdAgg.multiValues, vpdAgg.entityIds, 'VPD'),
-            createChipData(MetricKey.CO2, mdiWeatherCloudy, co2Agg.value, co2Agg.multiValues, co2Agg.entityIds, 'CO2'),
-        ].filter((c) => c !== null);
-        const subTempAgg = getAggregateState(undefined, ec.substrate_temperature_sensors, '°C');
-        const phAgg = getAggregateState(undefined, ec.ph_sensors, '');
-        const feedEcAgg = getAggregateState(undefined, ec.feed_ec_sensors, '');
-        const bulkEcAgg = getAggregateState(undefined, ec.bulk_ec_sensors, '');
-        const poreEcAgg = getAggregateState(undefined, ec.pore_ec_sensors, '');
-        const secondaryChips = [
-            createChipData(MetricKey.SUBSTRATE_TEMPERATURE, '', subTempAgg.value, subTempAgg.multiValues, subTempAgg.entityIds, 'Substrate Temp'),
-            createChipData('ph', '', phAgg.value, phAgg.multiValues, phAgg.entityIds, 'pH'),
-            createChipData('feed_ec', '', feedEcAgg.value, feedEcAgg.multiValues, feedEcAgg.entityIds, 'Feed EC'),
-            createChipData('bulk_ec', '', bulkEcAgg.value, bulkEcAgg.multiValues, bulkEcAgg.entityIds, 'Bulk EC'),
-            createChipData('pore_ec', '', poreEcAgg.value, poreEcAgg.multiValues, poreEcAgg.entityIds, 'Pore EC'),
-        ].filter((c) => c !== null);
-        const getAggregateDeviceState = (entities) => {
-            const ids = new Set();
-            if (entities && entities.length > 0)
-                entities.forEach((id) => ids.add(id));
-            if (ids.size === 0)
-                return { value: undefined, entityIds: [] };
-            const states = [];
-            const entityIds = Array.from(ids);
-            ids.forEach((id) => {
-                const s = hass.states[id];
-                states.push(s && s.state && s.state !== EntityState.UNAVAILABLE && s.state !== EntityState.UNKNOWN
-                    ? s.state
-                    : '-');
-            });
-            if (ids.size > 1)
-                return { value: 'Multiple', multiValues: states, entityIds };
-            return {
-                value: states[0] !== '-'
-                    ? states[0] === 'on'
-                        ? 'On'
-                        : states[0] === 'off'
-                            ? 'Off'
-                            : states[0]
-                    : undefined,
-                entityIds,
-            };
-        };
-        const lightState = getAggregateDeviceState(ec.light_sensors);
-        const exhaustState = getAggregateDeviceState(ec.exhaust_fan_entities);
-        const circFanState = getAggregateDeviceState(ec.circulation_fan_entities);
-        const humState = getAggregateDeviceState(ec.humidifier_entities);
-        const dehumState = getAggregateDeviceState(ec.dehumidifier_entities);
-        // Format light sensor value with % for power_factor/% unit sensors
-        let subareaLightValue = lightState.value;
-        let subareaLightIcon = mdiLightbulbOn;
-        if (lightState.entityIds?.length === 1 && lightState.value !== undefined) {
-            const numVal = parseFloat(lightState.value);
-            if (!isNaN(numVal)) {
-                const lightEnt = hass.states[lightState.entityIds[0]];
-                const unit = lightEnt?.attributes?.unit_of_measurement;
-                subareaLightValue = unit === '%' ? `${numVal}%` : lightState.value;
-                subareaLightIcon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
-            }
-        }
-        const deviceChips = [
-            createChipData(MetricKey.LIGHT, subareaLightIcon, subareaLightValue, lightState.multiValues, lightState.entityIds, 'Lights'),
-            createChipData(MetricKey.EXHAUST, mdiFan, exhaustState.value, exhaustState.multiValues, exhaustState.entityIds, 'Exhaust'),
-            createChipData(MetricKey.CIRCULATION_FAN, mdiFan, circFanState.value, circFanState.multiValues, circFanState.entityIds, 'Fan'),
-            createChipData(MetricKey.HUMIDIFIER, mdiAirHumidifier, humState.value, humState.multiValues, humState.entityIds, 'Humidifier'),
-            createChipData(MetricKey.DEHUMIDIFIER, mdiAirHumidifierOff, dehumState.value, dehumState.multiValues, dehumState.entityIds, 'Dehumidifier'),
-        ].filter((c) => c !== null);
-        return { heroChips, secondaryChips, deviceChips };
-    }
-}
-
 /**
  * HeaderMetrics deep module — the single place in the codebase that computes
- * header chip arrays from the three slice atoms (environment, plant, irrigation).
+ * header chip arrays from the slice atoms (environment, plant, irrigation,
+ * device-state).
  *
  * Public API (pure computation):
- *   computeHeaderMetrics() — derive hero + chips + dominant from slice data.
- *                            No hass parameter — all data comes from slice atoms.
+ *   computeHeaderMetrics() — derive hero + chips + deviceChips + dominant from
+ *                            slice data. No hass parameter — all data comes
+ *                            from slice atoms.
  *
- * Re-exports HeaderChip and DominantStageInfo so callers don't need to import
- * from the legacy MetricsUtils.
+ * Canonical home of the HeaderChip and DominantStageInfo types (the legacy
+ * MetricsUtils duplicate was deleted in #269).
  */
 // ---------------------------------------------------------------------------
 // Internal constants
@@ -65551,6 +64542,25 @@ function _makeSensorReadingChip(key, icon, readings, unit, opts, activeEnvGraphs
     if (!value)
         return null;
     return _makeChip(key, icon, value, { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
+}
+/**
+ * Build a hero chip from a SensorReadings object (subarea snapshots — the
+ * growspace hero path uses backend-aggregated scalars instead).
+ *
+ * Mirrors the legacy MetricsUtils.computeSubareaMetrics display: values are
+ * `toFixed(1)` with a space before the unit ("23.5 °C"), a single unavailable
+ * sensor drops the chip, and multiple sensors show "Multiple" with per-sensor
+ * formatted values ("-" for unavailable ones).
+ */
+function _makeHeroReadingChip(key, icon, readings, unit, opts, activeEnvGraphs, linkedGraphGroups) {
+    const { entityIds, perSensor } = readings;
+    const fmt = (v) => (v !== null ? `${v.toFixed(1)} ${unit}`.trim() : '-');
+    if (entityIds.length > 1) {
+        return _makeChip(key, icon, 'Multiple', { ...opts, multiValues: perSensor.map(fmt), entityIds }, activeEnvGraphs, linkedGraphGroups);
+    }
+    if (perSensor[0] == null)
+        return null;
+    return _makeChip(key, icon, fmt(perSensor[0]), { ...opts, entityIds }, activeEnvGraphs, linkedGraphGroups);
 }
 /** Return the next upcoming HH:MM from a schedule list, wrapping to tomorrow if past. */
 function _getNextEvent(times) {
@@ -65668,17 +64678,75 @@ function _buildTankChip(tanks, activeEnvGraphs, linkedGraphGroups) {
     }, activeEnvGraphs, linkedGraphGroups);
 }
 // ---------------------------------------------------------------------------
+// Device chip builders
+// ---------------------------------------------------------------------------
+/**
+ * Build a device chip directly from a DeviceEntry (already chip-shaped:
+ * entityIds, aggregated value, multiValues, icon).
+ *
+ * Returns null when the category is not configured (entry === null). A
+ * configured entry whose value is undefined (all entities unavailable) keeps
+ * its chip with a "-" placeholder, matching the legacy MetricsUtils display.
+ */
+function _buildDeviceChip(key, label, entry, activeEnvGraphs, linkedGraphGroups) {
+    if (entry === null)
+        return null;
+    return _makeChip(key, entry.icon, entry.value ?? '-', { multiValues: entry.multiValues, entityIds: entry.entityIds, label }, activeEnvGraphs, linkedGraphGroups);
+}
+/**
+ * Build the light chip, replicating the legacy MetricsUtils display:
+ *  - Single numeric reading (e.g. "70%" or "450"): show the reading; bulb icon
+ *    follows reading > 0.
+ *  - Otherwise fall back to the overview entity's is_lights_on flag
+ *    (envSnapshot.isLightsOn — null means no light sensor): "On"/"Off" value
+ *    and matching bulb icon. The fallback also covers a growspace with the
+ *    flag but no configured light entities.
+ *  - Multiple sensors: "Multiple" handling comes from the DeviceEntry's
+ *    multiValues, value falls back to the is_lights_on flag.
+ *  - Subarea (opts.preferEntryValue): the DeviceEntry value itself is the
+ *    fallback instead of the absent is_lights_on flag.
+ */
+function _buildLightChip(entry, isLightsOn, activeEnvGraphs, linkedGraphGroups, opts = {}) {
+    let icon;
+    if (opts.preferEntryValue) {
+        icon = mdiLightbulbOn;
+    }
+    else {
+        icon = isLightsOn === true ? mdiLightbulbOn : mdiLightbulbOff;
+    }
+    let value;
+    if (entry !== null && entry.entityIds.length === 1 && entry.value !== undefined) {
+        const numVal = parseFloat(entry.value);
+        if (!isNaN(numVal)) {
+            value = entry.value;
+            icon = numVal > 0 ? mdiLightbulbOn : mdiLightbulbOff;
+        }
+    }
+    if (value === undefined && opts.preferEntryValue) {
+        value = entry?.value;
+    }
+    if (value === undefined && isLightsOn !== null) {
+        value = isLightsOn ? 'On' : 'Off';
+    }
+    const multiValues = entry?.multiValues;
+    if (value === undefined && (!multiValues || multiValues.length === 0))
+        return null;
+    return _makeChip(MetricKey.LIGHT, icon, value ?? '', { multiValues, entityIds: entry?.entityIds ?? [], label: opts.label }, activeEnvGraphs, linkedGraphGroups);
+}
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 /**
- * Derive header chips from the three slice data sources.
+ * Derive header chips from the slice data sources.
  *
  * Constraints:
  *  - Never imports or accesses hass / hass.states.
- *  - Device chips (exhaust, fan, humidifier, dehumidifier) are excluded — they
- *    require the future DeviceState slice (issue #144).
+ *  - Device chips derive from the DeviceState slice's DeviceSnapshot; Fan
+ *    Entity Mode detection (ADR-0008) stays in that slice's normalizers.
+ *    deviceChips is empty when deviceSnapshot is null (trailing optional so
+ *    existing call sites stay valid).
  */
-function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = [], irrigationStrategy = null) {
+function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels, viewContext, activeEnvGraphs = new Set(), linkedGraphGroups = [], irrigationStrategy = null, deviceSnapshot = null) {
     // --- Dominant stage ---
     let dominant;
     const dominantRaw = PlantUtils.getDominantStage(plants);
@@ -65693,28 +64761,53 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
         };
     }
     // --- Hero chips (env metrics — empty for 'analytics') ---
+    // Each metric prefers per-sensor readings when the snapshot carries them
+    // (subarea adapter) and falls back to the backend-aggregated scalar
+    // (growspace adapter). The scalar path is unchanged.
     const hero = [];
-    {
-        if (envSnapshot?.temperature != null) {
-            hero.push(_makeChip(MetricKey.TEMPERATURE, mdiThermometer, `${envSnapshot.temperature}°C`, {
-                tooltip: 'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.',
-            }, activeEnvGraphs, linkedGraphGroups));
+    if (viewContext !== 'analytics') {
+        const tempTooltip = 'Current air temperature in the grow space. Optimal range: 20–28°C (68–82°F) during lights-on.';
+        if (envSnapshot?.temperatureReadings) {
+            const chip = _makeHeroReadingChip(MetricKey.TEMPERATURE, mdiThermometer, envSnapshot.temperatureReadings, '°C', { label: 'Temperature', tooltip: tempTooltip }, activeEnvGraphs, linkedGraphGroups);
+            if (chip)
+                hero.push(chip);
         }
-        if (envSnapshot?.humidity != null) {
-            hero.push(_makeChip(MetricKey.HUMIDITY, mdiWaterPercent, `${envSnapshot.humidity}%`, {
-                tooltip: 'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.',
-            }, activeEnvGraphs, linkedGraphGroups));
+        else if (envSnapshot?.temperature != null) {
+            hero.push(_makeChip(MetricKey.TEMPERATURE, mdiThermometer, `${envSnapshot.temperature}°C`, { tooltip: tempTooltip }, activeEnvGraphs, linkedGraphGroups));
         }
-        if (envSnapshot?.vpd != null) {
+        const humTooltip = 'Relative humidity (RH). Target depends on growth stage — veg: 50–70%, flower: 40–55%, late flower: 35–45%.';
+        if (envSnapshot?.humidityReadings) {
+            const chip = _makeHeroReadingChip(MetricKey.HUMIDITY, mdiWaterPercent, envSnapshot.humidityReadings, '%', { label: 'Humidity', tooltip: humTooltip }, activeEnvGraphs, linkedGraphGroups);
+            if (chip)
+                hero.push(chip);
+        }
+        else if (envSnapshot?.humidity != null) {
+            hero.push(_makeChip(MetricKey.HUMIDITY, mdiWaterPercent, `${envSnapshot.humidity}%`, { tooltip: humTooltip }, activeEnvGraphs, linkedGraphGroups));
+        }
+        const vpdTooltip = 'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.';
+        if (envSnapshot?.vpdReadings) {
+            const chip = _makeHeroReadingChip(MetricKey.VPD, mdiCloudOutline, envSnapshot.vpdReadings, 'kPa', {
+                label: 'VPD',
+                status: envSnapshot.vpdStatus ?? undefined,
+                tooltip: vpdTooltip,
+            }, activeEnvGraphs, linkedGraphGroups);
+            if (chip)
+                hero.push(chip);
+        }
+        else if (envSnapshot?.vpd != null) {
             hero.push(_makeChip(MetricKey.VPD, mdiCloudOutline, `${envSnapshot.vpd} kPa`, {
                 status: envSnapshot.vpdStatus ?? undefined,
-                tooltip: 'Vapour Pressure Deficit — the balance between temperature and humidity. The key metric for transpiration. Veg: 0.8–1.2 kPa, flower: 1.0–1.6 kPa.',
+                tooltip: vpdTooltip,
             }, activeEnvGraphs, linkedGraphGroups));
         }
-        if (envSnapshot?.co2 != null) {
-            hero.push(_makeChip(MetricKey.CO2, mdiWeatherCloudy, `${envSnapshot.co2} ppm`, {
-                tooltip: 'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.',
-            }, activeEnvGraphs, linkedGraphGroups));
+        const co2Tooltip = 'CO₂ concentration. Ambient is ~400 ppm. Enriched grows target 800–1200 ppm with lights on for enhanced growth.';
+        if (envSnapshot?.co2Readings) {
+            const chip = _makeHeroReadingChip(MetricKey.CO2, mdiWeatherCloudy, envSnapshot.co2Readings, 'ppm', { label: 'CO2', tooltip: co2Tooltip }, activeEnvGraphs, linkedGraphGroups);
+            if (chip)
+                hero.push(chip);
+        }
+        else if (envSnapshot?.co2 != null) {
+            hero.push(_makeChip(MetricKey.CO2, mdiWeatherCloudy, `${envSnapshot.co2} ppm`, { tooltip: co2Tooltip }, activeEnvGraphs, linkedGraphGroups));
         }
     }
     // --- Secondary chips ---
@@ -65736,8 +64829,11 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
                 // Promoted to the hero deck when a hero exists (main/subarea) — its click opens
                 // the Substrate Model chart instead of the standard Env Graph (Custom Graph Routing).
                 // The analytics view has no hero, so it keeps the chip in the secondary strip.
-                {
+                if (viewContext !== 'analytics') {
                     hero.push(steeringChip);
+                }
+                else {
+                    chips.push(steeringChip);
                 }
             }
             // When phase is undefined (backend hasn't set it yet), omit the chip entirely rather
@@ -65805,7 +64901,27 @@ function computeHeaderMetrics(envSnapshot, plants, irrigationConfig, tankLevels,
     const energyChip = _makeSensorReadingChip(MetricKey.ENERGY, mdiFlash, envSnapshot?.energy ?? null, ' kWh', { label: 'Energy', tooltip: 'Energy consumed.' }, activeEnvGraphs, linkedGraphGroups, true);
     if (energyChip)
         chips.push(energyChip);
-    return { hero, chips, dominant };
+    // --- Device chips (light, exhaust, circulation fan, humidifier, dehumidifier) ---
+    // Same MetricKeys and order as the legacy MetricsUtils path so hidden_chips
+    // configs and graph toggling are unaffected.
+    const deviceChips = [];
+    if (deviceSnapshot !== null) {
+        const candidates = [
+            _buildLightChip(deviceSnapshot.lightSensors, envSnapshot?.isLightsOn ?? null, activeEnvGraphs, linkedGraphGroups, 
+            // The legacy subarea path labelled the chip and, lacking an
+            // is_lights_on flag, showed the entity state directly.
+            viewContext === 'subarea' ? { label: 'Lights', preferEntryValue: true } : {}),
+            _buildDeviceChip(MetricKey.EXHAUST, 'Exhaust', deviceSnapshot.exhaustFans, activeEnvGraphs, linkedGraphGroups),
+            _buildDeviceChip(MetricKey.CIRCULATION_FAN, 'Fan', deviceSnapshot.circulationFans, activeEnvGraphs, linkedGraphGroups),
+            _buildDeviceChip(MetricKey.HUMIDIFIER, 'Humidifier', deviceSnapshot.humidifiers, activeEnvGraphs, linkedGraphGroups),
+            _buildDeviceChip(MetricKey.DEHUMIDIFIER, 'Dehumidifier', deviceSnapshot.dehumidifiers, activeEnvGraphs, linkedGraphGroups),
+        ];
+        for (const chip of candidates) {
+            if (chip !== null)
+                deviceChips.push(chip);
+        }
+    }
+    return { hero, chips, deviceChips, dominant };
 }
 
 function filterChips(chips, hiddenKeys) {
@@ -65819,15 +64935,28 @@ function filterChips(chips, hiddenKeys) {
  * for environmental sensors and exposes normalized EnvSnapshot atoms.
  *
  * Public API (atoms):
- *   envSnapshots$     — read: Map<growspaceId, EnvSnapshot> (one entry per growspace)
+ *   envSnapshots$        — read: Map<growspaceId, EnvSnapshot> (one entry per growspace)
+ *   subareaEnvSnapshots$ — read: Map<subareaId, EnvSnapshot> (one entry per subarea)
  *
  * Public API (bootstrap writes):
- *   setEnvSnapshot()  — compute + store snapshot for a growspace (called by SyncService
- *                       on every hass update)
+ *   setEnvSnapshot()        — compute + store snapshot for a growspace (called by
+ *                             SyncService on every hass update)
+ *   setSubareaEnvSnapshot() — compute + store snapshot for a subarea (called by
+ *                             SyncService alongside the growspace snapshots)
  *
  * Public API (pure computation):
- *   computeEnvSnapshot() — derive an EnvSnapshot from a device + hass states snapshot.
- *                          Exported so HeaderMetrics and tests can call it directly.
+ *   computeEnvSnapshot()        — derive an EnvSnapshot from a device + hass states
+ *                                 snapshot. Exported so HeaderMetrics and tests can
+ *                                 call it directly.
+ *   computeSubareaEnvSnapshot() — derive an EnvSnapshot from a subarea's
+ *                                 environment_config + hass states snapshot.
+ *
+ * Internally the two compute functions are thin entity-resolution adapters over a
+ * shared read-and-aggregate core (ADR-0018): the growspace adapter resolves entity
+ * IDs from the device slug / overview entity (with the growspace calculated-VPD
+ * fallback chain), while the subarea adapter resolves directly from the subarea's
+ * environment_config sensor lists (with the per-temp/hum-pair subarea
+ * calculated-VPD resolution).
  *
  * Action type, payload shapes, and zod schemas are private to this module.
  */
@@ -65919,16 +65048,21 @@ function _resolveVpd(envEntity, device, slug, hassStates) {
         return fromUuid;
     return null;
 }
+/** Resolve a multi-or-single sensor config field into an explicit entity ID list. */
+function _idList(single, multi) {
+    if (multi && multi.length > 0)
+        return [...multi];
+    if (single)
+        return [single];
+    return [];
+}
 /**
- * Read a list of sensor entity IDs and return a SensorReadings object.
+ * Shared read-and-aggregate core (ADR-0018): explicit sensor entity IDs →
+ * SensorReadings. Both the growspace and subarea adapters resolve their own
+ * entity IDs and feed them through here.
  * Returns null when no IDs are configured (metric not set up by the user).
  */
-function _resolveSensors(single, multi, hassStates) {
-    const ids = [];
-    if (multi && multi.length > 0)
-        ids.push(...multi);
-    else if (single)
-        ids.push(single);
+function _aggregate(ids, hassStates) {
     if (ids.length === 0)
         return null;
     const perSensor = ids.map((id) => _parseState(hassStates[id]));
@@ -65936,6 +65070,13 @@ function _resolveSensors(single, multi, hassStates) {
     const total = defined.length > 0 ? defined.reduce((a, b) => a + b, 0) : null;
     const avg = total !== null ? total / defined.length : null;
     return { avg, sum: total, perSensor, entityIds: ids };
+}
+/**
+ * Read a multi-or-single sensor config field and return a SensorReadings object.
+ * Returns null when no IDs are configured (metric not set up by the user).
+ */
+function _resolveSensors(single, multi, hassStates) {
+    return _aggregate(_idList(single, multi), hassStates);
 }
 /** Derive VPD status from overview entity or threshold comparison. */
 function _resolveVpdStatus(vpd, overviewEntity) {
@@ -66028,6 +65169,12 @@ function computeEnvSnapshot(device, hassStates) {
         vpd,
         vpdStatus,
         co2,
+        // Growspace hero values are backend-aggregated scalars — no per-sensor
+        // readings to expose (the subarea adapter populates these).
+        temperatureReadings: null,
+        humidityReadings: null,
+        vpdReadings: null,
+        co2Readings: null,
         isLightsOn,
         hasLightSensor,
         dli,
@@ -66045,13 +65192,130 @@ function computeEnvSnapshot(device, hassStates) {
         energy,
     };
 }
+/**
+ * Resolve the VPD entity IDs for a subarea, one per temperature/humidity pair.
+ *
+ * For pair i: an explicitly configured VPD sensor wins unless it is itself a
+ * calculated_vpd entity; otherwise resolve the backend-created calculated-VPD
+ * sensor — name-based `sensor.{growspace} {subarea} calculated vpd[ i+1]`
+ * (slugified) preferred when available, UUID-based
+ * `sensor.growspace_manager_{gsId}_subarea_{subId}_calculated_vpd[_i]` as the
+ * legacy fallback. When neither entity is available the constructible ID is
+ * still returned so history fetching keys stay stable.
+ */
+function _resolveSubareaVpdIds(subarea, parent, tempIds, humIds, hassStates) {
+    const ec = subarea.environment_config;
+    const explicit = _idList(ec.vpd_sensor, ec.vpd_sensors);
+    const numPairs = Math.min(tempIds.length, humIds.length);
+    if (numPairs === 0)
+        return explicit;
+    const isAvailable = (id) => {
+        const entity = hassStates[id];
+        return entity !== undefined && !UNAVAILABLE_STATES$1.has(entity.state);
+    };
+    const resolved = [];
+    for (let i = 0; i < numPairs; i++) {
+        const existingVpd = explicit[i];
+        if (existingVpd && !existingVpd.includes('calculated_vpd')) {
+            resolved.push(existingVpd);
+            continue;
+        }
+        const index = numPairs > 1 ? i : null;
+        const nameSuffix = index !== null ? ` ${index + 1}` : '';
+        const uuidSuffix = index !== null ? `_${index}` : '';
+        const nameId = parent.growspaceName && subarea.name
+            ? `sensor.${_slugify(`${parent.growspaceName} ${subarea.name} Calculated VPD${nameSuffix}`)}`
+            : '';
+        const uuidId = parent.growspaceId && subarea.id
+            ? `sensor.growspace_manager_${parent.growspaceId}_subarea_${subarea.id}_calculated_vpd${uuidSuffix}`
+            : '';
+        if (nameId && isAvailable(nameId))
+            resolved.push(nameId);
+        else if (uuidId && isAvailable(uuidId))
+            resolved.push(uuidId);
+        else if (nameId || uuidId)
+            resolved.push(nameId || uuidId);
+    }
+    return resolved;
+}
+/**
+ * Derive a normalized EnvSnapshot for a subarea from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared aggregation core: entity IDs
+ * come directly from the subarea's environment_config sensor lists (plus the
+ * per-temp/hum-pair calculated-VPD resolution). Fields without configured
+ * sensors are null — including everything only a growspace has (lights, DLI,
+ * optimal conditions, VPD status from the overview entity).
+ */
+function computeSubareaEnvSnapshot(subarea, parent, hassStates) {
+    const ec = subarea.environment_config;
+    const tempIds = _idList(ec.temperature_sensor, ec.temperature_sensors);
+    const humIds = _idList(ec.humidity_sensor, ec.humidity_sensors);
+    const vpdIds = _resolveSubareaVpdIds(subarea, parent, tempIds, humIds, hassStates);
+    const temperatureReadings = _aggregate(tempIds, hassStates);
+    const humidityReadings = _aggregate(humIds, hassStates);
+    const vpdReadings = _aggregate(vpdIds, hassStates);
+    const co2Readings = _aggregate(_idList(ec.co2_sensor, undefined), hassStates);
+    return {
+        temperature: temperatureReadings?.avg ?? null,
+        humidity: humidityReadings?.avg ?? null,
+        vpd: vpdReadings?.avg ?? null,
+        vpdStatus: null,
+        co2: co2Readings?.avg ?? null,
+        temperatureReadings,
+        humidityReadings,
+        vpdReadings,
+        co2Readings,
+        isLightsOn: null,
+        hasLightSensor: false,
+        dli: null,
+        optimalConditions: null,
+        soilMoisture: _aggregate(_idList(ec.soil_moisture_sensor, undefined), hassStates),
+        substrateTemperature: _aggregate(ec.substrate_temperature_sensors ?? [], hassStates),
+        ph: _aggregate(ec.ph_sensors ?? [], hassStates),
+        feedEc: _aggregate(ec.feed_ec_sensors ?? [], hassStates),
+        bulkEc: _aggregate(ec.bulk_ec_sensors ?? [], hassStates),
+        poreEc: _aggregate(ec.pore_ec_sensors ?? [], hassStates),
+        runoffEc: _aggregate(ec.runoff_ec_sensors ?? [], hassStates),
+        drainVolume: _aggregate(ec.drain_volume_sensors ?? [], hassStates),
+        irrigationFlow: _aggregate(ec.irrigation_flow_sensors ?? [], hassStates),
+        power: _aggregate(ec.power_sensors ?? [], hassStates),
+        energy: _aggregate(ec.energy_sensors ?? [], hassStates),
+    };
+}
+/**
+ * All entity IDs referenced by a snapshot's SensorReadings fields.
+ * Used by SyncService to register watched entities for subarea snapshots.
+ */
+function envSnapshotEntityIds(snapshot) {
+    const readings = [
+        snapshot.temperatureReadings,
+        snapshot.humidityReadings,
+        snapshot.vpdReadings,
+        snapshot.co2Readings,
+        snapshot.soilMoisture,
+        snapshot.substrateTemperature,
+        snapshot.ph,
+        snapshot.feedEc,
+        snapshot.bulkEc,
+        snapshot.poreEc,
+        snapshot.runoffEc,
+        snapshot.drainVolume,
+        snapshot.irrigationFlow,
+        snapshot.power,
+        snapshot.energy,
+    ];
+    return readings.flatMap((r) => r?.entityIds ?? []);
+}
 // ---------------------------------------------------------------------------
 // Atoms (public)
 // ---------------------------------------------------------------------------
 /** Per-growspace env snapshots — keyed by growspaceId. */
 const envSnapshots$ = atom(new Map());
+/** Per-subarea env snapshots — keyed by subareaId. */
+const subareaEnvSnapshots$ = atom(new Map());
 // ---------------------------------------------------------------------------
-// Bootstrap write (public)
+// Bootstrap writes (public)
 // ---------------------------------------------------------------------------
 /**
  * Compute and store the EnvSnapshot for a growspace.
@@ -66062,6 +65326,247 @@ function setEnvSnapshot(growspaceId, device, hassStates) {
     const updated = new Map(envSnapshots$.get());
     updated.set(growspaceId, snapshot);
     envSnapshots$.set(updated);
+}
+/**
+ * Compute and store the EnvSnapshot for a subarea.
+ * Called by SyncService alongside the growspace snapshots, and by the subarea
+ * card once after it has loaded its subarea (bootstrap seed).
+ */
+function setSubareaEnvSnapshot(subareaId, subarea, parent, hassStates) {
+    const snapshot = computeSubareaEnvSnapshot(subarea, parent, hassStates);
+    const updated = new Map(subareaEnvSnapshots$.get());
+    updated.set(subareaId, snapshot);
+    subareaEnvSnapshots$.set(updated);
+}
+
+/**
+ * DeviceState slice — the single place in the codebase that reads hass.states
+ * for device-controlled entities and exposes normalized DeviceSnapshot atoms.
+ *
+ * Public API (atoms):
+ *   deviceSnapshots$        — read: Map<growspaceId, DeviceSnapshot> (one entry per growspace)
+ *   subareaDeviceSnapshots$ — read: Map<subareaId, DeviceSnapshot> (one entry per subarea)
+ *
+ * Public API (bootstrap writes):
+ *   setDeviceSnapshot()        — compute + store snapshot for a growspace (called by
+ *                                SyncService on every hass update)
+ *   setSubareaDeviceSnapshot() — compute + store snapshot for a subarea (called by
+ *                                SyncService alongside the growspace snapshots)
+ *
+ * Public API (pure computation):
+ *   computeDeviceSnapshot()        — derive a DeviceSnapshot from a device + hass states
+ *                                    snapshot. Exported so HeaderMetrics and tests can
+ *                                    call it directly.
+ *   computeSubareaDeviceSnapshot() — derive a DeviceSnapshot from a subarea's
+ *                                    environment_config device lists + hass states.
+ *
+ * Internally the two compute functions are thin entity-resolution adapters over a
+ * shared snapshot-building core (ADR-0018): the growspace adapter resolves entity
+ * IDs from the device's environmentAttributes (with the singular-field fallbacks),
+ * while the subarea adapter resolves directly from the subarea's environment_config
+ * device lists. Fan Entity Mode detection (ADR-0008) lives in the shared normalizers.
+ */
+// ---------------------------------------------------------------------------
+// Internal constants
+// ---------------------------------------------------------------------------
+const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+/**
+ * Normalize a light sensor entity state.
+ * - If `unit_of_measurement` is `%`: return a rounded percentage string.
+ * - Otherwise: return "On" / "Off" for binary states.
+ */
+function _normalizeLightSensor(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    const unit = entity.attributes?.unit_of_measurement;
+    if (unit === '%') {
+        const n = parseFloat(entity.state);
+        return isNaN(n) ? undefined : `${Math.round(n)}%`;
+    }
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return String(Math.round(n));
+    return undefined;
+}
+/** Normalize an on/off device entity state to "On", "Off", or undefined. */
+function _normalizeOnOff(entity) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    const n = parseFloat(entity.state);
+    if (!isNaN(n))
+        return n > 0 ? 'On' : 'Off';
+    return undefined;
+}
+/**
+ * Normalize a fan entity state for chip display.
+ *
+ * Three Fan Entity Modes (see ADR-0008):
+ *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
+ *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
+ *   - Binary (switch / input_boolean): "On" / "Off"
+ */
+function _normalizeFanDevice(entity, entityId) {
+    if (!entity)
+        return undefined;
+    if (UNAVAILABLE_STATES.has(entity.state))
+        return undefined;
+    const isFanDomain = entityId.startsWith('fan.');
+    if (isFanDomain) {
+        if (entity.state === 'off')
+            return 'Off';
+        const pct = entity.attributes?.percentage;
+        return pct != null ? `${Math.round(Number(pct))}%` : 'On';
+    }
+    const numVal = parseFloat(entity.state);
+    if (!isNaN(numVal)) {
+        const domain = entityId.split('.')[0];
+        const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
+        if (!isBinaryDomain)
+            return String(Math.round(numVal));
+        return numVal > 0 ? 'On' : 'Off';
+    }
+    if (entity.state === 'on')
+        return 'On';
+    if (entity.state === 'off')
+        return 'Off';
+    return undefined;
+}
+/**
+ * Build a DeviceEntry for a list of entity IDs using the given normalizer.
+ * Returns null when the entity list is empty (device category not configured).
+ */
+function _buildEntry(entityIds, hassStates, icon, normalizer) {
+    if (entityIds.length === 0)
+        return null;
+    if (entityIds.length === 1) {
+        const value = normalizer(hassStates[entityIds[0]], entityIds[0]);
+        return { entityIds, value, icon };
+    }
+    // Multiple entities: collect individual values; surface "Multiple" as the aggregate.
+    const multiValues = entityIds
+        .map((id) => normalizer(hassStates[id], id))
+        .filter((v) => v !== undefined);
+    return {
+        entityIds,
+        value: 'Multiple',
+        multiValues: multiValues.length > 0 ? multiValues : undefined,
+        icon,
+    };
+}
+/**
+ * Shared snapshot-building core (ADR-0018): explicit device entity ID lists →
+ * DeviceSnapshot. Both the growspace and subarea adapters resolve their own
+ * entity IDs and feed them through here.
+ */
+function _buildSnapshot(ids, hassStates) {
+    return {
+        lightSensors: _buildEntry(ids.lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
+        exhaustFans: _buildEntry(ids.exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
+        circulationFans: _buildEntry(ids.circulationIds, hassStates, mdiFan, _normalizeFanDevice),
+        humidifiers: _buildEntry(ids.humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
+        dehumidifiers: _buildEntry(ids.dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
+    };
+}
+// ---------------------------------------------------------------------------
+// Pure computation (exported — used by HeaderMetrics and tests)
+// ---------------------------------------------------------------------------
+/**
+ * Derive a normalized DeviceSnapshot for a growspace from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
+ * from the device's environmentAttributes, preferring the plural list fields
+ * with the legacy singular fields as fallback.
+ *
+ * This is the canonical place to read device-controlled entity states from hass.states.
+ * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
+ * instead of calling this directly.
+ */
+function computeDeviceSnapshot(device, hassStates) {
+    const env = device.environmentAttributes ?? {};
+    return _buildSnapshot({
+        lightIds: env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []),
+        exhaustIds: env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []),
+        circulationIds: env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []),
+        humidifierIds: env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []),
+        dehumidifierIds: env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []),
+    }, hassStates);
+}
+/**
+ * Derive a normalized DeviceSnapshot for a subarea from the current hass states.
+ *
+ * Thin entity-resolution adapter over the shared snapshot core: entity IDs come
+ * directly from the subarea's environment_config device lists. Categories
+ * without configured entities are null, exactly like the growspace adapter.
+ */
+function computeSubareaDeviceSnapshot(subarea, hassStates) {
+    const ec = subarea.environment_config;
+    return _buildSnapshot({
+        lightIds: ec.light_sensors ?? [],
+        exhaustIds: ec.exhaust_fan_entities ?? [],
+        circulationIds: ec.circulation_fan_entities ?? [],
+        humidifierIds: ec.humidifier_entities ?? [],
+        dehumidifierIds: ec.dehumidifier_entities ?? [],
+    }, hassStates);
+}
+/**
+ * All entity IDs referenced by a snapshot's DeviceEntry fields.
+ * Used by SyncService to register watched entities for subarea snapshots.
+ */
+function deviceSnapshotEntityIds(snapshot) {
+    const entries = [
+        snapshot.lightSensors,
+        snapshot.exhaustFans,
+        snapshot.circulationFans,
+        snapshot.humidifiers,
+        snapshot.dehumidifiers,
+    ];
+    return entries.flatMap((e) => e?.entityIds ?? []);
+}
+// ---------------------------------------------------------------------------
+// Atoms (public)
+// ---------------------------------------------------------------------------
+/** Per-growspace device state snapshots — keyed by growspaceId. */
+const deviceSnapshots$ = atom(new Map());
+/** Per-subarea device state snapshots — keyed by subareaId. */
+const subareaDeviceSnapshots$ = atom(new Map());
+// ---------------------------------------------------------------------------
+// Bootstrap writes (public)
+// ---------------------------------------------------------------------------
+/**
+ * Compute and store the DeviceSnapshot for a growspace.
+ * Called by SyncService after each hass update.
+ */
+function setDeviceSnapshot(growspaceId, device, hassStates) {
+    const snapshot = computeDeviceSnapshot(device, hassStates);
+    const updated = new Map(deviceSnapshots$.get());
+    updated.set(growspaceId, snapshot);
+    deviceSnapshots$.set(updated);
+}
+/**
+ * Compute and store the DeviceSnapshot for a subarea.
+ * Called by SyncService alongside the growspace snapshots, and by the subarea
+ * card once after it has loaded its subarea (bootstrap seed).
+ */
+function setSubareaDeviceSnapshot(subareaId, subarea, hassStates) {
+    const snapshot = computeSubareaDeviceSnapshot(subarea, hassStates);
+    const updated = new Map(subareaDeviceSnapshots$.get());
+    updated.set(subareaId, snapshot);
+    subareaDeviceSnapshots$.set(updated);
 }
 
 function toDateString(value) {
@@ -68463,6 +67968,9 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         if (!this._tankLevelsController) {
             this._tankLevelsController = new libExports.StoreController(this, tankLevels$);
         }
+        if (!this._deviceSnapshotsController) {
+            this._deviceSnapshotsController = new libExports.StoreController(this, deviceSnapshots$);
+        }
     }
     connectedCallback() {
         super.connectedCallback();
@@ -68489,11 +67997,9 @@ let GrowspaceHeaderContainer = class GrowspaceHeaderContainer extends i$3 {
         const irrigationConfig = irrigationConfigs$.get().get(growspaceId) ?? null;
         const irrigationStrategy = irrigationStrategies$.get().get(growspaceId) ?? null;
         const growspaceTanks = tankLevels$.get().get(growspaceId) ?? [];
+        const deviceSnapshot = deviceSnapshots$.get().get(growspaceId) ?? null;
         const isFlower = PlantUtils.getDominantStage(growspacePlants)?.stage === 'flower';
-        const { hero: heroChips, chips: secondaryChips, dominant, } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups, irrigationStrategy);
-        // Device chips (exhaust, fan, humidifier, dehumidifier) still use the legacy
-        // MetricsUtils until the DeviceState slice is implemented (issue #144).
-        const { deviceChips } = MetricsUtils.computeHeaderMetrics(this.hass, this.device, activeEnvGraphs, linkedGraphGroups);
+        const { hero: heroChips, chips: secondaryChips, deviceChips, dominant, } = computeHeaderMetrics(envSnapshot, growspacePlants, irrigationConfig, growspaceTanks, 'main', activeEnvGraphs, linkedGraphGroups, irrigationStrategy, deviceSnapshot);
         const hidden = this.config?.hidden_chips;
         return {
             heroChips: filterChips(heroChips, hidden),
@@ -132719,14 +132225,6 @@ function openSnapshotsDialog(ctx, growspaceId) {
         },
     });
 }
-function openCropSteeringDialog(ctx, growspaceId) {
-    ctx.ui.setActiveDialog({
-        type: 'CROP_STEERING',
-        payload: {
-            growspaceId: growspaceId || '',
-        },
-    });
-}
 
 async function analyzeGrowspace(ctx, query, all) {
     const currentDialog = ctx.ui.$activeDialog.get();
@@ -133277,7 +132775,6 @@ class ActionDispatcher {
             openTrainingDialog: (plantIds, growspaceId) => openTrainingDialog(this.ctx, plantIds, growspaceId),
             openNutrientsDialog: () => openNutrientsDialog(this.ctx),
             openSnapshotsDialog: (growspaceId) => openSnapshotsDialog(this.ctx, growspaceId),
-            openCropSteeringDialog: (growspaceId) => openCropSteeringDialog(this.ctx, growspaceId),
             openBatchWateringDialog: (growspaceId) => openBatchWateringDialog(this.ctx, growspaceId),
             openBatchTrainingDialog: (growspaceId) => openBatchTrainingDialog(this.ctx, growspaceId),
             openBatchCloneDialog: () => openBatchCloneDialog(this.ctx),
@@ -133295,8 +132792,9 @@ class ActionDispatcher {
             toggleEnvGraph: (metric) => {
                 if (metric === 'crop_steering') {
                     const gsId = this.ctx.grid.$selectedDevice.get();
-                    if (gsId)
-                        openCropSteeringDialog(this.ctx, gsId);
+                    if (gsId) {
+                        openIrrigationDialog(this.ctx, { growspaceId: gsId, initialTab: 'overview' });
+                    }
                     return;
                 }
                 if (!this.store.history)
@@ -133375,167 +132873,6 @@ class ActionDispatcher {
     get ctx() {
         return this.store.context;
     }
-}
-
-/**
- * DeviceState slice — the single place in the codebase that reads hass.states
- * for device-controlled entities and exposes normalized DeviceSnapshot atoms.
- *
- * Public API (atoms):
- *   deviceSnapshots$        — read: Map<growspaceId, DeviceSnapshot> (one entry per growspace)
- *
- * Public API (bootstrap writes):
- *   setDeviceSnapshot()     — compute + store snapshot for a growspace (called by SyncService
- *                             on every hass update)
- *
- * Public API (pure computation):
- *   computeDeviceSnapshot() — derive a DeviceSnapshot from a device + hass states snapshot.
- *                             Exported so HeaderMetrics and tests can call it directly.
- */
-// ---------------------------------------------------------------------------
-// Internal constants
-// ---------------------------------------------------------------------------
-const UNAVAILABLE_STATES = new Set(['unavailable', 'unknown']);
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-/**
- * Normalize a light sensor entity state.
- * - If `unit_of_measurement` is `%`: return a rounded percentage string.
- * - Otherwise: return "On" / "Off" for binary states.
- */
-function _normalizeLightSensor(entity) {
-    if (!entity)
-        return undefined;
-    if (UNAVAILABLE_STATES.has(entity.state))
-        return undefined;
-    const unit = entity.attributes?.unit_of_measurement;
-    if (unit === '%') {
-        const n = parseFloat(entity.state);
-        return isNaN(n) ? undefined : `${Math.round(n)}%`;
-    }
-    if (entity.state === 'on')
-        return 'On';
-    if (entity.state === 'off')
-        return 'Off';
-    const n = parseFloat(entity.state);
-    if (!isNaN(n))
-        return String(Math.round(n));
-    return undefined;
-}
-/** Normalize an on/off device entity state to "On", "Off", or undefined. */
-function _normalizeOnOff(entity) {
-    if (!entity)
-        return undefined;
-    if (UNAVAILABLE_STATES.has(entity.state))
-        return undefined;
-    if (entity.state === 'on')
-        return 'On';
-    if (entity.state === 'off')
-        return 'Off';
-    const n = parseFloat(entity.state);
-    if (!isNaN(n))
-        return n > 0 ? 'On' : 'Off';
-    return undefined;
-}
-/**
- * Normalize a fan entity state for chip display.
- *
- * Three Fan Entity Modes (see ADR-0008):
- *   - HA fan entity (fan.* domain): read attributes.percentage → "70%" or "Off"
- *   - Speed sensor (numeric state, non-fan domain): show raw integer string "5"
- *   - Binary (switch / input_boolean): "On" / "Off"
- */
-function _normalizeFanDevice(entity) {
-    if (!entity)
-        return undefined;
-    if (UNAVAILABLE_STATES.has(entity.state))
-        return undefined;
-    const isFanDomain = entity.entity_id.startsWith('fan.');
-    if (isFanDomain) {
-        if (entity.state === 'off')
-            return 'Off';
-        const pct = entity.attributes?.percentage;
-        return pct != null ? `${Math.round(Number(pct))}%` : 'On';
-    }
-    const numVal = parseFloat(entity.state);
-    if (!isNaN(numVal)) {
-        const domain = entity.entity_id.split('.')[0];
-        const isBinaryDomain = ['switch', 'input_boolean', 'binary_sensor'].includes(domain);
-        if (!isBinaryDomain)
-            return String(Math.round(numVal));
-        return numVal > 0 ? 'On' : 'Off';
-    }
-    if (entity.state === 'on')
-        return 'On';
-    if (entity.state === 'off')
-        return 'Off';
-    return undefined;
-}
-/**
- * Build a DeviceEntry for a list of entity IDs using the given normalizer.
- * Returns null when the entity list is empty (device category not configured).
- */
-function _buildEntry(entityIds, hassStates, icon, normalizer) {
-    if (entityIds.length === 0)
-        return null;
-    if (entityIds.length === 1) {
-        const value = normalizer(hassStates[entityIds[0]]);
-        return { entityIds, value, icon };
-    }
-    // Multiple entities: collect individual values; surface "Multiple" as the aggregate.
-    const multiValues = entityIds
-        .map((id) => normalizer(hassStates[id]))
-        .filter((v) => v !== undefined);
-    return {
-        entityIds,
-        value: 'Multiple',
-        multiValues: multiValues.length > 0 ? multiValues : undefined,
-        icon,
-    };
-}
-// ---------------------------------------------------------------------------
-// Pure computation (exported — used by HeaderMetrics and tests)
-// ---------------------------------------------------------------------------
-/**
- * Derive a normalized DeviceSnapshot for a growspace from the current hass states.
- *
- * This is the canonical place to read device-controlled entity states from hass.states.
- * All downstream consumers (HeaderMetrics, cards) should subscribe to the atom
- * instead of calling this directly.
- */
-function computeDeviceSnapshot(device, hassStates) {
-    const env = device.environmentAttributes ?? {};
-    const lightIds = env.lightSensors ?? (env.lightSensor ? [env.lightSensor] : []);
-    const exhaustIds = env.exhaustFanEntities ?? (env.exhaustEntity ? [env.exhaustEntity] : []);
-    const circulationIds = env.circulationFanEntities ?? (env.circulationFanEntity ? [env.circulationFanEntity] : []);
-    const humidifierIds = env.humidifierEntities ?? (env.humidifierEntity ? [env.humidifierEntity] : []);
-    const dehumidifierIds = env.dehumidifierEntities ?? (env.dehumidifierEntity ? [env.dehumidifierEntity] : []);
-    return {
-        lightSensors: _buildEntry(lightIds, hassStates, mdiLightbulbOn, _normalizeLightSensor),
-        exhaustFans: _buildEntry(exhaustIds, hassStates, mdiFan, _normalizeFanDevice),
-        circulationFans: _buildEntry(circulationIds, hassStates, mdiFan, _normalizeFanDevice),
-        humidifiers: _buildEntry(humidifierIds, hassStates, mdiAirHumidifier, _normalizeOnOff),
-        dehumidifiers: _buildEntry(dehumidifierIds, hassStates, mdiAirHumidifierOff, _normalizeOnOff),
-    };
-}
-// ---------------------------------------------------------------------------
-// Atoms (public)
-// ---------------------------------------------------------------------------
-/** Per-growspace device state snapshots — keyed by growspaceId. */
-const deviceSnapshots$ = atom(new Map());
-// ---------------------------------------------------------------------------
-// Bootstrap write (public)
-// ---------------------------------------------------------------------------
-/**
- * Compute and store the DeviceSnapshot for a growspace.
- * Called by SyncService after each hass update.
- */
-function setDeviceSnapshot(growspaceId, device, hassStates) {
-    const snapshot = computeDeviceSnapshot(device, hassStates);
-    const updated = new Map(deviceSnapshots$.get());
-    updated.set(growspaceId, snapshot);
-    deviceSnapshots$.set(updated);
 }
 
 /**
@@ -133669,6 +133006,28 @@ class SyncService {
                     }
                 });
             }
+        });
+        // Subarea env + device snapshots — every device carries its own
+        // payload-sourced subareas, so all growspaces get snapshots without the
+        // subarea card ever hydrating subareas$. When subareas$ IS hydrated for a
+        // growspace (subareasGrowspaceId$ matches), that list takes precedence:
+        // it is fresher after add/update/remove_subarea mutations than the
+        // backend's cached growspace payload.
+        const hydratedGrowspaceId = subareasGrowspaceId$.get();
+        devices.forEach((d) => {
+            const subareas = hydratedGrowspaceId === d.deviceId ? subareas$.get() : (d.subareas ?? []);
+            subareas.forEach((subarea) => {
+                setSubareaEnvSnapshot(subarea.id, subarea, { growspaceId: d.deviceId, growspaceName: d.name }, hassStates);
+                const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
+                if (snapshot) {
+                    envSnapshotEntityIds(snapshot).forEach((id) => this._watchedEntities.add(id));
+                }
+                setSubareaDeviceSnapshot(subarea.id, subarea, hassStates);
+                const deviceSnapshot = subareaDeviceSnapshots$.get().get(subarea.id);
+                if (deviceSnapshot) {
+                    deviceSnapshotEntityIds(deviceSnapshot).forEach((id) => this._watchedEntities.add(id));
+                }
+            });
         });
         const selectedDevice = this.gridStore.$selectedDevice.get();
         // Auto-select if needed
@@ -135589,12 +134948,35 @@ GrowspaceTankCard = __decorate([
     t$2('growspace-tank-card')
 ], GrowspaceTankCard);
 
+/**
+ * Metric → entity-ID lists for the subarea history fetch, derived from the
+ * subarea EnvSnapshot's SensorReadings (ADR-0018). The snapshot is the single
+ * source of resolved entity IDs, so the history cache keys structurally match
+ * what the chips display — both read the same snapshot field.
+ */
+function deriveSubareaMetricEntities(snapshot) {
+    const readings = [
+        ['temperature', snapshot.temperatureReadings],
+        ['humidity', snapshot.humidityReadings],
+        ['vpd', snapshot.vpdReadings],
+        ['co2', snapshot.co2Readings],
+    ];
+    const metricEntities = [];
+    for (const [metric, reading] of readings) {
+        if (reading && reading.entityIds.length > 0) {
+            metricEntities.push({ metric, entityIds: [...reading.entityIds] });
+        }
+    }
+    return metricEntities;
+}
 let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
     constructor() {
         super(...arguments);
         this._sharedStore = growspaceStoreRegistry.acquire();
         this.store = new GrowspaceStore(this._sharedStore);
         this._viewController = new libExports.StoreController(this, this.store.$sharedCardViewState);
+        this._subareaEnvController = new libExports.StoreController(this, subareaEnvSnapshots$);
+        this._subareaDeviceController = new libExports.StoreController(this, subareaDeviceSnapshots$);
         this._resizeController = new ResizeController(this, () => { });
         this._dataService = null;
         this._analyticsStateController = null;
@@ -135699,6 +135081,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
             }
             else {
                 this._subarea = found;
+                this._seedSnapshots(found);
                 this._loadHistory(found);
             }
         }
@@ -135709,6 +135092,23 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
         finally {
             this._loading = false;
         }
+    }
+    /**
+     * Bootstrap seed for subareaEnvSnapshots$ and subareaDeviceSnapshots$ right
+     * after the subarea loads, so the first render has data. SyncService keeps
+     * both snapshots fresh afterwards (it iterates subareas$, which getSubareas
+     * just hydrated).
+     */
+    _seedSnapshots(subarea) {
+        if (!this.hass)
+            return;
+        const devices = this._viewController.value?.grid?.devices ?? [];
+        const parent = devices.find((d) => d.deviceId === this._config.growspace_id);
+        setSubareaEnvSnapshot(subarea.id, subarea, {
+            growspaceId: this._config.growspace_id,
+            growspaceName: parent?.name || this._parentGrowspaceName || undefined,
+        }, this.hass.states);
+        setSubareaDeviceSnapshot(subarea.id, subarea, this.hass.states);
     }
     _calculateHistoryStart(range) {
         const now = new Date();
@@ -135723,69 +135123,16 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                 return new Date(now.getTime() - 24 * 60 * 60 * 1000);
         }
     }
-    _resolveCalculatedVpdIds(subarea, tempIds, humIds) {
-        const slugify = (text) => text.toString().toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^\w-]+/g, '')
-            .replace(/[_-]+/g, '_')
-            .replace(/^[_-]+/, '')
-            .replace(/[_-]+$/, '');
-        const growspaceId = this._config.growspace_id;
-        const subareaId = subarea.id;
-        const numPairs = Math.min(tempIds.length, humIds.length);
-        const resolved = [];
-        for (let i = 0; i < numPairs; i++) {
-            const nameSuffix = numPairs > 1 ? ` ${i + 1}` : '';
-            const uuidSuffix = numPairs > 1 ? `_${i}` : '';
-            const nameId = this._parentGrowspaceName && subarea.name
-                ? `sensor.${slugify(`${this._parentGrowspaceName} ${subarea.name} Calculated VPD${nameSuffix}`)}`
-                : '';
-            const uuidId = `sensor.growspace_manager_${growspaceId}_subarea_${subareaId}_calculated_vpd${uuidSuffix}`;
-            if (nameId && this.hass?.states[nameId]) {
-                resolved.push(nameId);
-            }
-            else if (this.hass?.states[uuidId]) {
-                resolved.push(uuidId);
-            }
-            else {
-                resolved.push(nameId || uuidId);
-            }
-        }
-        return resolved;
-    }
     async _loadHistory(subarea, range) {
         if (!this._dataService)
             return;
-        const ec = subarea.environment_config;
+        const snapshot = subareaEnvSnapshots$.get().get(subarea.id);
+        if (!snapshot)
+            return;
         const activeRange = range ?? this.store.history.getRange();
         const end = new Date();
         const start = this._calculateHistoryStart(activeRange);
-        const metricEntities = [];
-        const tempIds = ec.temperature_sensors?.length
-            ? ec.temperature_sensors
-            : ec.temperature_sensor
-                ? [ec.temperature_sensor]
-                : [];
-        const humIds = ec.humidity_sensors?.length
-            ? ec.humidity_sensors
-            : ec.humidity_sensor
-                ? [ec.humidity_sensor]
-                : [];
-        let vpdIds = ec.vpd_sensors?.length ? ec.vpd_sensors : ec.vpd_sensor ? [ec.vpd_sensor] : [];
-        // When no explicit VPD sensor is configured, resolve the same calculated-VPD entity IDs
-        // that MetricsUtils.computeSubareaMetrics() uses, so the history cache keys match.
-        if (vpdIds.length === 0 && tempIds.length > 0 && humIds.length > 0) {
-            vpdIds = this._resolveCalculatedVpdIds(subarea, tempIds, humIds);
-        }
-        const co2Ids = ec.co2_sensor ? [ec.co2_sensor] : [];
-        if (tempIds.length)
-            metricEntities.push({ metric: 'temperature', entityIds: tempIds });
-        if (humIds.length)
-            metricEntities.push({ metric: 'humidity', entityIds: humIds });
-        if (vpdIds.length)
-            metricEntities.push({ metric: 'vpd', entityIds: vpdIds });
-        if (co2Ids.length)
-            metricEntities.push({ metric: 'co2', entityIds: co2Ids });
+        const metricEntities = deriveSubareaMetricEntities(snapshot);
         const allEntityIds = [...new Set(metricEntities.flatMap((m) => m.entityIds))];
         if (!allEntityIds.length)
             return;
@@ -135934,7 +135281,7 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
                       </button>
                     </div>
 
-                    ${this._renderHeaderMetrics(this._subarea.environment_config, parentDevice)}
+                    ${this._renderHeaderMetrics(parentDevice)}
                     ${parentDevice
                         ? x `<growspace-analytics
                             .device=${parentDevice}
@@ -135965,12 +135312,22 @@ let GrowspaceSubareaCard = class GrowspaceSubareaCard extends i$3 {
       </error-boundary>
     `;
     }
-    _renderHeaderMetrics(ec, parentDevice) {
-        const metrics = MetricsUtils.computeSubareaMetrics(this.hass, ec, this._analyticsStateController?.value?.activeEnvGraphs ?? new Set(), parentDevice?.deviceId, parentDevice?.name || this._parentGrowspaceName, this._subarea?.id, this._subarea?.name);
+    _renderHeaderMetrics(parentDevice) {
+        const activeEnvGraphs = this._analyticsStateController?.value?.activeEnvGraphs ?? new Set();
+        // All chips are atom-sourced: the subarea EnvSnapshot and DeviceSnapshot are
+        // fed by SyncService (and seeded in _loadSubarea); empty plant/irrigation/tank
+        // inputs mean dominant-stage and irrigation chips correctly don't render.
+        const envSnapshot = this._subarea
+            ? (subareaEnvSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const deviceSnapshot = this._subarea
+            ? (subareaDeviceSnapshots$.get().get(this._subarea.id) ?? null)
+            : null;
+        const { hero, chips, deviceChips: allDeviceChips, } = computeHeaderMetrics(envSnapshot, [], null, [], 'subarea', activeEnvGraphs, [], null, deviceSnapshot);
         const hidden = this._config?.hidden_chips;
-        const heroChips = filterChips(metrics.heroChips, hidden);
-        const secondaryChips = filterChips(metrics.secondaryChips, hidden);
-        const deviceChips = filterChips(metrics.deviceChips, hidden);
+        const heroChips = filterChips(hero, hidden);
+        const secondaryChips = filterChips(chips, hidden);
+        const deviceChips = filterChips(allDeviceChips, hidden);
         const hasAny = heroChips.length > 0 ||
             secondaryChips.length > 0 ||
             deviceChips.length > 0;
@@ -136583,7 +135940,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.31"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.37"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

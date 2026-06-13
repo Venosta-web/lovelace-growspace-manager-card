@@ -339,6 +339,75 @@ function makeSteeringDevice(overrides: Partial<Parameters<typeof createGrowspace
   });
 }
 
+// ---------------------------------------------------------------------------
+// Overview tab (Crop Steering Command Center)
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () => {
+  it('opens on the Overview tab via initialTab when crop steering is available', async () => {
+    const device = makeSteeringDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect((el as any)._sm.activeTab).toBe('overview');
+  });
+
+  it('shows the data-unavailable placeholder when the crop steering sensor is missing', async () => {
+    const device = makeSteeringDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+    expect(normalize(el.shadowRoot!.textContent)).toContain(
+      'Crop steering data is currently unavailable'
+    );
+  });
+
+  it('renders the diagnostics metric grid from the crop steering sensor', async () => {
+    const device = makeSteeringDevice();
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    // Device name 'Tent 1' -> slug 'tent_1' -> sensor.tent_1_crop_steering
+    (el as any).hass = {
+      states: {
+        'sensor.tent_1_crop_steering': {
+          state: '1.25',
+          attributes: {
+            steering_mode: 'generative',
+            dryback_percent: 8,
+            peak_vwc: 60,
+            trough_vwc: 40,
+            ec_trend: 'rising',
+          },
+        },
+      },
+    };
+    (el as any).requestUpdate('hass');
+    await el.updateComplete;
+
+    const text = normalize(el.shadowRoot!.textContent);
+    expect(text).toContain('+1.25');
+    expect(text).toContain('GENERATIVE MODE');
+    const grid = el.shadowRoot!.querySelector('.cs-metric-grid');
+    expect(grid).not.toBeNull();
+    expect(grid!.querySelectorAll('.cs-metric-card').length).toBe(4);
+  });
+});
+
 describe('IrrigationDialog – Steering tab: auto light tracking', () => {
   it('does not show auto-track toggle when device has no light sensors', async () => {
     const device = makeSteeringDevice();
