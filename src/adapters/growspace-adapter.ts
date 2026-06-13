@@ -11,7 +11,7 @@ import {
   IrrigationConfig,
   IrrigationStrategy,
 } from '../types';
-import type { ECTargetStage } from '../services/types';
+import type { ECTargetStage, SteeringMetrics } from '../services/types';
 
 export class GrowspaceAdapter {
   static transformGrowspace(
@@ -288,6 +288,31 @@ export class GrowspaceAdapter {
         }
       : null;
 
+    const substrateRaw = irrigation?.substrate;
+    const overnightEventRaw = substrateRaw?.latest_overnight_event;
+    const steeringMetrics: SteeringMetrics | undefined = substrateRaw
+      ? {
+          overnightDryback: substrateRaw.overnight_dryback ?? null,
+          latestOvernightEvent: overnightEventRaw
+            ? {
+                peakVwc: overnightEventRaw.peak_vwc,
+                troughVwc: overnightEventRaw.trough_vwc,
+                dryback: overnightEventRaw.dryback,
+                peakTimestamp: overnightEventRaw.peak_timestamp ?? null,
+                troughTimestamp: overnightEventRaw.trough_timestamp ?? null,
+              }
+            : null,
+          incycleDrybackCount: substrateRaw.incycle_dryback_count ?? 0,
+          incycleDrybackAvg: substrateRaw.incycle_dryback_avg ?? null,
+          ecTrend: substrateRaw.ec_trend ?? null,
+          ecTrendAvailable: substrateRaw.ec_trend_available ?? false,
+          score: substrateRaw.score ?? null,
+          measuredClassification: substrateRaw.measured_classification ?? null,
+          intentDeviation: substrateRaw.intent_deviation ?? null,
+          shotComposition: substrateRaw.shot_composition ?? null,
+        }
+      : undefined;
+
     const waterUsageRaw = irrigation?.water_usage;
     const waterUsage = waterUsageRaw
       ? {
@@ -332,6 +357,7 @@ export class GrowspaceAdapter {
       drainConfig,
       energyTracking,
       waterUsage,
+      steeringMetrics,
       subareas: wsData.subareas ?? [],
 
       // Irrigation cycle telemetry

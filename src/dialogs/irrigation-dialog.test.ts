@@ -339,6 +339,40 @@ function makeSteeringDevice(overrides: Partial<Parameters<typeof createGrowspace
   });
 }
 
+function makeStrategy(
+  overrides: Partial<NonNullable<Parameters<typeof createGrowspaceDevice>[0]['irrigationStrategy']>> = {}
+) {
+  return {
+    enabled: true,
+    lightsOnTime: '06:00:00',
+    p0DurationMinutes: 60,
+    p2StopBeforeLightsOffMinutes: 120,
+    targetVwcPercent: 55,
+    maintenanceDrybackPercent: 2,
+    shotDurationSeconds: 10,
+    shotIntervalMinutes: 15,
+    ...overrides,
+  };
+}
+
+function makeMetrics(
+  overrides: Partial<NonNullable<Parameters<typeof createGrowspaceDevice>[0]['steeringMetrics']>> = {}
+) {
+  return {
+    overnightDryback: null,
+    latestOvernightEvent: null,
+    incycleDrybackCount: 0,
+    incycleDrybackAvg: null,
+    ecTrend: null,
+    ecTrendAvailable: false,
+    score: 0,
+    measuredClassification: 'balanced' as const,
+    intentDeviation: null,
+    shotComposition: null,
+    ...overrides,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Overview tab (Crop Steering Command Center)
 // ---------------------------------------------------------------------------
@@ -357,7 +391,7 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     expect((el as any)._sm.activeTab).toBe('overview');
   });
 
-  it('shows the data-unavailable placeholder when the crop steering sensor is missing', async () => {
+  it('shows the data-unavailable placeholder when no steering metrics are in the payload', async () => {
     const device = makeSteeringDevice();
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
@@ -372,8 +406,15 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
     );
   });
 
-  it('renders the diagnostics metric grid from the crop steering sensor', async () => {
-    const device = makeSteeringDevice();
+  it('renders the measured score, declared mode, and measured classification from the payload', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy({ declaredSteeringMode: 'generative' }),
+      steeringMetrics: makeMetrics({
+        score: 0.6,
+        measuredClassification: 'generative',
+        intentDeviation: 'on_target',
+      }),
+    });
     const el = await fixture<IrrigationDialog>(html`
       <irrigation-dialog
         .open=${true}
@@ -381,30 +422,261 @@ describe('IrrigationDialog – Overview tab (Crop Steering Command Center)', () 
         .initialTab=${'overview'}
       ></irrigation-dialog>
     `);
-    // Device name 'Tent 1' -> slug 'tent_1' -> sensor.tent_1_crop_steering
+    await el.updateComplete;
+
+    const text = normalize(el.shadowRoot!.textContent);
+    expect(text).toContain('+0.60');
+    expect(text).toContain('GENERATIVE');
+    // Measured classification surfaces alongside the declared intent.
+    expect(text.toLowerCase()).toContain('measured');
+  });
+
+  it('contrasts declared intent against the measured classification on deviation', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy({ declaredSteeringMode: 'generative' }),
+      steeringMetrics: makeMetrics({
+        score: -0.5,
+        measuredClassification: 'vegetative',
+        intentDeviation: 'more_vegetative',
+      }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const text = normalize(el.shadowRoot!.textContent).toLowerCase();
+    // The deviation banner names both the declared intent and what the substrate reads.
+    expect(text).toContain('generative');
+    expect(text).toContain('vegetative');
+    expect(text).toMatch(/intend|declared|reads/);
+  });
+
+  it('reads steering metrics from the payload, not hass.states', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy({ declaredSteeringMode: 'balanced' }),
+      steeringMetrics: makeMetrics({ score: 0.1, measuredClassification: 'balanced' }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    // A contradictory sensor state must be ignored — the payload is the source.
     (el as any).hass = {
-      states: {
-        'sensor.tent_1_crop_steering': {
-          state: '1.25',
-          attributes: {
-            steering_mode: 'generative',
-            dryback_percent: 8,
-            peak_vwc: 60,
-            trough_vwc: 40,
-            ec_trend: 'rising',
-          },
-        },
-      },
+      states: { 'sensor.tent_1_crop_steering': { state: '99', attributes: {} } },
     };
     (el as any).requestUpdate('hass');
     await el.updateComplete;
 
     const text = normalize(el.shadowRoot!.textContent);
-    expect(text).toContain('+1.25');
-    expect(text).toContain('GENERATIVE MODE');
-    const grid = el.shadowRoot!.querySelector('.cs-metric-grid');
-    expect(grid).not.toBeNull();
-    expect(grid!.querySelectorAll('.cs-metric-card').length).toBe(4);
+    expect(text).toContain('+0.10');
+    expect(text).not.toContain('99');
+  });
+
+  it('renders the overnight dryback in absolute VWC points with peak/trough context', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({
+        overnightDryback: 12.5,
+        latestOvernightEvent: {
+          peakVwc: 55.2,
+          troughVwc: 42.7,
+          dryback: 12.5,
+          peakTimestamp: '2026-06-13T06:00:00+00:00',
+          troughTimestamp: '2026-06-13T18:00:00+00:00',
+        },
+      }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const text = normalize(el.shadowRoot!.textContent);
+    expect(text.toLowerCase()).toContain('overnight');
+    // Absolute VWC points, not a percent-of-peak.
+    expect(text).toContain('12.5');
+    // Peak/trough context surfaces.
+    expect(text).toContain('55.2');
+    expect(text).toContain('42.7');
+  });
+
+  it('shows an em dash for overnight dryback when no window has completed', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ overnightDryback: null, latestOvernightEvent: null }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const card = el.shadowRoot!.querySelector('[data-metric="overnight-dryback"]');
+    expect(card).not.toBeNull();
+    expect(normalize(card!.textContent)).toContain('—');
+  });
+
+  it('summarises today’s in-cycle shot count and average P2 dryback', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ incycleDrybackCount: 6, incycleDrybackAvg: 3.4 }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const card = el.shadowRoot!.querySelector('[data-metric="incycle-dryback"]');
+    expect(card).not.toBeNull();
+    const text = normalize(card!.textContent);
+    expect(text).toContain('6');
+    expect(text).toContain('3.4');
+    expect(text.toLowerCase()).toContain('shot');
+  });
+
+  it('shows an em dash for the in-cycle average when no shots have fired today', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ incycleDrybackCount: 0, incycleDrybackAvg: null }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const card = el.shadowRoot!.querySelector('[data-metric="incycle-dryback"]');
+    expect(normalize(card!.textContent)).toContain('—');
+  });
+
+  it('renders the measured EC trend direction when pore-EC is available', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ ecTrend: 'rising', ecTrendAvailable: true }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const card = el.shadowRoot!.querySelector('[data-metric="ec-trend"]');
+    expect(card).not.toBeNull();
+    expect(card!.classList.contains('cs-metric-locked')).toBe(false);
+    expect(normalize(card!.textContent).toUpperCase()).toContain('RISING');
+  });
+
+  it('renders EC trend visible-but-locked with an unlock hint when no pore-EC sensors report', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ ecTrend: null, ecTrendAvailable: false }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const card = el.shadowRoot!.querySelector('[data-metric="ec-trend"]');
+    // Visible-but-locked: the card is present (never hidden), flagged locked,
+    // with a one-line hint pointing at the missing prerequisite.
+    expect(card).not.toBeNull();
+    expect(card!.classList.contains('cs-metric-locked')).toBe(true);
+    const text = normalize(card!.textContent).toLowerCase();
+    expect(text).toContain('pore');
+    expect(text).not.toContain('stable');
+  });
+
+  it('renders the current phase state and shot composition diagnostics', async () => {
+    const device = makeSteeringDevice({
+      irrigationConfig: {
+        irrigationPumpEntity: 'switch.pump',
+        irrigationTimes: [],
+        drainTimes: [],
+        activeSteeringPhase: 'p2',
+      },
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({
+        shotComposition: {
+          ec_modulation_enabled: true,
+          ec_modulation_available: true,
+          current_vwc_factor: 1.2,
+          last_shot: {
+            phase: 'p2',
+            base_seconds: 10,
+            vwc_factor: 1.2,
+            ec_factor: 0.9,
+            ec_modulation_available: true,
+            composed_seconds: 11,
+            effective_seconds: 11,
+            capped: false,
+            timestamp: '2026-06-13T12:00:00+00:00',
+          },
+        },
+      }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const panel = el.shadowRoot!.querySelector('[data-metric="shot-composition"]');
+    expect(panel).not.toBeNull();
+    const text = normalize(panel!.textContent);
+    // Current phase surfaces.
+    expect(text.toUpperCase()).toContain('P2');
+    // Composition factors surface so a shot is explainable.
+    expect(text).toContain('1.2');
+    expect(text).toContain('0.9');
+  });
+
+  it('omits the shot composition panel on time-based irrigation (no composition)', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: makeStrategy(),
+      steeringMetrics: makeMetrics({ shotComposition: null }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .initialTab=${'overview'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    expect(el.shadowRoot!.querySelector('[data-metric="shot-composition"]')).toBeNull();
   });
 });
 
