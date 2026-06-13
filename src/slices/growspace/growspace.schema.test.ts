@@ -417,6 +417,76 @@ describe('Growspace Zod Schemas', () => {
       });
     });
 
+    describe('SubstrateMetricsSchema (measured steering readout)', () => {
+      it('parses the full measured-metrics substrate block', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            substrate: {
+              overnight_dryback: 12.5,
+              latest_overnight_event: {
+                event_type: 'overnight',
+                peak_vwc: 55.2,
+                trough_vwc: 42.7,
+                dryback: 12.5,
+                peak_timestamp: '2026-06-13T06:00:00+00:00',
+                trough_timestamp: '2026-06-13T18:00:00+00:00',
+              },
+              incycle_dryback_count: 4,
+              incycle_dryback_avg: 3.1,
+              ec_trend: 'rising',
+              ec_trend_available: true,
+              score: 0.6,
+              measured_classification: 'generative',
+              intent_deviation: 'more_generative',
+              shot_composition: { ec_modulation_enabled: true, last_shot: null },
+            },
+          },
+        });
+
+        const substrate = parsed.irrigation.substrate;
+        expect(substrate?.overnight_dryback).toBe(12.5);
+        expect(substrate?.latest_overnight_event?.peak_vwc).toBe(55.2);
+        expect(substrate?.incycle_dryback_count).toBe(4);
+        expect(substrate?.ec_trend).toBe('rising');
+        expect(substrate?.ec_trend_available).toBe(true);
+        expect(substrate?.score).toBe(0.6);
+        expect(substrate?.measured_classification).toBe('generative');
+        expect(substrate?.intent_deviation).toBe('more_generative');
+        expect(substrate?.shot_composition).toEqual({
+          ec_modulation_enabled: true,
+          last_shot: null,
+        });
+      });
+
+      it('accepts null measured fields and defaults ec_trend_available to false', () => {
+        const parsed = GrowspaceAPIResponseSchema.parse({
+          irrigation: {
+            substrate: {
+              overnight_dryback: null,
+              ec_trend: null,
+              score: null,
+              measured_classification: null,
+              intent_deviation: null,
+            },
+          },
+        });
+
+        const substrate = parsed.irrigation.substrate;
+        expect(substrate?.overnight_dryback).toBeNull();
+        expect(substrate?.ec_trend_available).toBe(false);
+        expect(substrate?.score).toBeNull();
+        expect(substrate?.measured_classification).toBeNull();
+      });
+
+      it('rejects an out-of-vocabulary measured_classification', () => {
+        expect(() => {
+          GrowspaceAPIResponseSchema.parse({
+            irrigation: { substrate: { measured_classification: 'sideways' } },
+          });
+        }).toThrow(ZodError);
+      });
+    });
+
     describe('DrainConfigSchema', () => {
       it('should parse enabled config with readings', () => {
         const parsed = GrowspaceAPIResponseSchema.parse({

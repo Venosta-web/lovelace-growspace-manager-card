@@ -130,6 +130,7 @@ var mdiCompassOutline = "M7,17L10.2,10.2L17,7L13.8,13.8L7,17M12,11.1A0.9,0.9 0 0
 var mdiContentCopy = "M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z";
 var mdiContentCut = "M19,3L13,9L15,11L22,4V3M12,12.5A0.5,0.5 0 0,1 11.5,12A0.5,0.5 0 0,1 12,11.5A0.5,0.5 0 0,1 12.5,12A0.5,0.5 0 0,1 12,12.5M6,20A2,2 0 0,1 4,18C4,16.89 4.9,16 6,16A2,2 0 0,1 8,18C8,19.11 7.1,20 6,20M6,8A2,2 0 0,1 4,6C4,4.89 4.9,4 6,4A2,2 0 0,1 8,6C8,7.11 7.1,8 6,8M9.64,7.64C9.87,7.14 10,6.59 10,6A4,4 0 0,0 6,2A4,4 0 0,0 2,6A4,4 0 0,0 6,10C6.59,10 7.14,9.87 7.64,9.64L10,12L7.64,14.36C7.14,14.13 6.59,14 6,14A4,4 0 0,0 2,18A4,4 0 0,0 6,22A4,4 0 0,0 10,18C10,17.41 9.87,16.86 9.64,16.36L12,14L19,21H22V20L9.64,7.64Z";
 var mdiContentSave = "M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z";
+var mdiCounter = "M4,4H20A2,2 0 0,1 22,6V18A2,2 0 0,1 20,20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4M4,6V18H11V6H4M20,18V6H18.76C19,6.54 18.95,7.07 18.95,7.13C18.88,7.8 18.41,8.5 18.24,8.75L15.91,11.3L19.23,11.28L19.24,12.5L14.04,12.47L14,11.47C14,11.47 17.05,8.24 17.2,7.95C17.34,7.67 17.91,6 16.5,6C15.27,6.05 15.41,7.3 15.41,7.3L13.87,7.31C13.87,7.31 13.88,6.65 14.25,6H13V18H15.58L15.57,17.14L16.54,17.13C16.54,17.13 17.45,16.97 17.46,16.08C17.5,15.08 16.65,15.08 16.5,15.08C16.37,15.08 15.43,15.13 15.43,15.95H13.91C13.91,15.95 13.95,13.89 16.5,13.89C19.1,13.89 18.96,15.91 18.96,15.91C18.96,15.91 19,17.16 17.85,17.63L18.37,18H20M8.92,16H7.42V10.2L5.62,10.76V9.53L8.76,8.41H8.92V16Z";
 var mdiCube = "M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5M12,4.15L6.04,7.5L12,10.85L17.96,7.5L12,4.15Z";
 var mdiCupWater = "M18.32,8H5.67L5.23,4H18.77M12,19A3,3 0 0,1 9,16C9,14 12,10.6 12,10.6C12,10.6 15,14 15,16A3,3 0 0,1 12,19M3,2L5,20.23C5.13,21.23 5.97,22 7,22H17C18,22 18.87,21.23 19,20.23L21,2H3Z";
 var mdiDelete = "M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z";
@@ -5254,6 +5255,45 @@ const DrainConfigSchema = objectType({
 })
     .nullable()
     .optional();
+const DrybackEventSchema = objectType({
+    event_type: stringType().optional(),
+    peak_vwc: numberType(),
+    trough_vwc: numberType(),
+    dryback: numberType(),
+    peak_timestamp: stringType().nullable().optional(),
+    trough_timestamp: stringType().nullable().optional(),
+});
+// Measured steering readout (#444/#445/#448): tracker-derived dryback / EC
+// fields plus the injected score, Measured Classification, Intent Deviation,
+// and shot composition. Measured fields are nullable (no reading yet); a null
+// ec_trend with ec_trend_available=false drives the card's unlock hint.
+const SubstrateMetricsSchema = objectType({
+    overnight_dryback: numberType().nullable().optional(),
+    latest_overnight_event: DrybackEventSchema.nullable().optional(),
+    incycle_dryback_count: numberType().optional().default(0),
+    incycle_dryback_avg: numberType().nullable().optional(),
+    ec_trend: enumType(['rising', 'stable', 'falling']).nullable().optional(),
+    ec_trend_available: booleanType().optional().default(false),
+    ec_trend_detail: objectType({
+        trend: stringType(),
+        day_start_ec: numberType(),
+        current_ec: numberType(),
+        delta: numberType(),
+    })
+        .nullable()
+        .optional(),
+    score: numberType().nullable().optional(),
+    measured_classification: enumType(['vegetative', 'balanced', 'generative'])
+        .nullable()
+        .optional(),
+    intent_deviation: enumType(['on_target', 'more_generative', 'more_vegetative'])
+        .nullable()
+        .optional(),
+    shot_composition: recordType(unknownType()).nullable().optional(),
+})
+    .passthrough()
+    .nullable()
+    .optional();
 const CirculationFanConfigSchema = objectType({
     enabled: booleanType(),
     regulation_mode: enumType(['vpd', 'humidity', 'temperature']),
@@ -5354,6 +5394,7 @@ const GrowspaceAPIResponseSchema = objectType({
         irrigation_config: IrrigationConfigSchema,
         irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
         drain_config: DrainConfigSchema,
+        substrate: SubstrateMetricsSchema,
         water_usage: objectType({
             total_liters: numberType().optional().default(0),
             cycle_start_date: stringType().optional().default(''),
@@ -5856,6 +5897,30 @@ class GrowspaceAdapter {
                 cycleStartKwh: energyTrackingRaw.cycle_start_kwh,
             }
             : null;
+        const substrateRaw = irrigation?.substrate;
+        const overnightEventRaw = substrateRaw?.latest_overnight_event;
+        const steeringMetrics = substrateRaw
+            ? {
+                overnightDryback: substrateRaw.overnight_dryback ?? null,
+                latestOvernightEvent: overnightEventRaw
+                    ? {
+                        peakVwc: overnightEventRaw.peak_vwc,
+                        troughVwc: overnightEventRaw.trough_vwc,
+                        dryback: overnightEventRaw.dryback,
+                        peakTimestamp: overnightEventRaw.peak_timestamp ?? null,
+                        troughTimestamp: overnightEventRaw.trough_timestamp ?? null,
+                    }
+                    : null,
+                incycleDrybackCount: substrateRaw.incycle_dryback_count ?? 0,
+                incycleDrybackAvg: substrateRaw.incycle_dryback_avg ?? null,
+                ecTrend: substrateRaw.ec_trend ?? null,
+                ecTrendAvailable: substrateRaw.ec_trend_available ?? false,
+                score: substrateRaw.score ?? null,
+                measuredClassification: substrateRaw.measured_classification ?? null,
+                intentDeviation: substrateRaw.intent_deviation ?? null,
+                shotComposition: substrateRaw.shot_composition ?? null,
+            }
+            : undefined;
         const waterUsageRaw = irrigation?.water_usage;
         const waterUsage = waterUsageRaw
             ? {
@@ -5896,6 +5961,7 @@ class GrowspaceAdapter {
             drainConfig,
             energyTracking,
             waterUsage,
+            steeringMetrics,
             subareas: wsData.subareas ?? [],
             // Irrigation cycle telemetry
             lastCycleTimestamp: irrigation?.last_cycle_timestamp ?? null,
@@ -31812,18 +31878,9 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     `;
     }
     // ─── Overview tab (crop-steering diagnostics, read-only) ──────────────────
-    _cropSteeringEntityId() {
-        if (!this.device)
-            return undefined;
-        const slug = this.device.name
-            .toLowerCase()
-            .replace(/\s+/g, '_')
-            .replace(/[^\w-]+/g, '')
-            .replace(/[_-]+/g, '_')
-            .replace(/^[_-]+/, '')
-            .replace(/[_-]+$/, '');
-        return `sensor.${slug}_crop_steering`;
-    }
+    //
+    // All values come from the growspace payload (device.steeringMetrics), never
+    // hass.states — the backend surfaces the measured readout in irrigation.substrate.
     _renderOverviewMetricCard(title, value, icon, color, help = '') {
         return x `
       <div class="cs-metric-card">
@@ -31846,22 +31903,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     `;
     }
     _renderOverviewTab() {
-        const entityId = this._cropSteeringEntityId();
-        const stateObj = entityId && this.hass ? this.hass.states[entityId] : undefined;
-        const score = stateObj ? parseFloat(stateObj.state) : NaN;
-        const attrs = stateObj?.attributes || {};
-        const mode = attrs.steering_mode || 'unknown';
-        let trendIcon = mdiMinus;
-        let trendColor = 'var(--secondary-text-color)';
-        if (attrs.ec_trend === 'rising') {
-            trendIcon = mdiArrowUp;
-            trendColor = 'var(--error-color, #F44336)';
-        }
-        else if (attrs.ec_trend === 'falling') {
-            trendIcon = mdiArrowDown;
-            trendColor = 'var(--success-color, #4CAF50)';
-        }
-        if (stateObj === undefined || isNaN(score)) {
+        const metrics = this.device?.steeringMetrics;
+        if (!metrics) {
             return x `
         <div style="text-align: center; padding: 40px; opacity: 0.7;">
           <ha-svg-icon
@@ -31875,42 +31918,223 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         </div>
       `;
         }
+        const declared = this.device?.irrigationStrategy?.declaredSteeringMode ?? null;
+        return x `
+      ${this._renderSteeringScoreHeader(metrics, declared)}
+      <div class="cs-metric-grid">
+        ${this._renderOvernightDrybackCard(metrics)}
+        ${this._renderInCycleDrybackCard(metrics)}
+        ${this._renderEcTrendCard(metrics)}
+      </div>
+      ${this._renderShotCompositionPanel(metrics)}
+    `;
+    }
+    /**
+     * Phase state + shot composition diagnostics. Absent on time-based irrigation
+     * (no VWC coordinator → null composition). Explains the last fired shot as
+     * base × vwc_factor × ec_factor so any shot is end-to-end accountable.
+     */
+    _renderShotCompositionPanel(metrics) {
+        const composition = metrics.shotComposition;
+        if (!composition)
+            return E;
+        const phase = this.device?.irrigationConfig?.activeSteeringPhase;
+        const lastShot = composition.last_shot;
+        const fmt = (v) => (typeof v === 'number' ? String(v) : '—');
+        return x `
+      <div class="detail-card cs-shot-composition" data-metric="shot-composition">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <h3 style="margin:0;border:none;padding:0;">Shot Composition</h3>
+          ${phase
+            ? x `<span class="cs-phase-pill">Phase ${phase.toUpperCase()}</span>`
+            : E}
+        </div>
+        ${lastShot
+            ? x `
+              <div class="cs-shot-row">
+                <span>Base</span><span>${fmt(lastShot.base_seconds)}s</span>
+              </div>
+              <div class="cs-shot-row">
+                <span>VWC factor</span><span>×${fmt(lastShot.vwc_factor)}</span>
+              </div>
+              <div class="cs-shot-row">
+                <span>EC factor</span><span>×${fmt(lastShot.ec_factor)}</span>
+              </div>
+              <div class="cs-shot-row cs-shot-total">
+                <span>Effective</span><span>${fmt(lastShot.effective_seconds)}s</span>
+              </div>
+            `
+            : x `<p style="font-size:0.8rem;opacity:0.6;margin:0;">
+              No shot fired yet this session — modulation capability shown above.
+            </p>`}
+      </div>
+    `;
+    }
+    /**
+     * Measured pore-EC trend. Sensor-gated per the Capability Unlock Hint rule:
+     * when no pore-EC sensors report (ecTrendAvailable === false) the card stays
+     * visible but locked with a one-line hint, never silently shows "stable".
+     */
+    _renderEcTrendCard(metrics) {
+        if (!metrics.ecTrendAvailable) {
+            return x `
+        <div class="cs-metric-card cs-metric-locked" data-metric="ec-trend">
+          <ha-svg-icon
+            .path=${mdiMinus}
+            style="color: var(--secondary-text-color); margin-bottom: 8px;"
+          ></ha-svg-icon>
+          <div class="cs-metric-value">Locked</div>
+          <div class="cs-metric-sub">Add a pore-EC sensor in Environment Settings</div>
+          <div class="cs-metric-label">EC Trend</div>
+        </div>
+      `;
+        }
+        const trend = metrics.ecTrend ?? 'stable';
+        let trendIcon = mdiMinus;
+        let trendColor = 'var(--secondary-text-color)';
+        if (trend === 'rising') {
+            trendIcon = mdiArrowUp;
+            trendColor = 'var(--error-color, #F44336)';
+        }
+        else if (trend === 'falling') {
+            trendIcon = mdiArrowDown;
+            trendColor = 'var(--success-color, #4CAF50)';
+        }
+        return x `
+      <div class="cs-metric-card" data-metric="ec-trend">
+        <ha-svg-icon
+          .path=${trendIcon}
+          style="color: ${trendColor}; margin-bottom: 8px;"
+        ></ha-svg-icon>
+        <div class="cs-metric-value">${trend.toUpperCase()}</div>
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          EC Trend
+          <gs-help-tooltip
+            content="Whether measured pore EC (nutrient strength in the substrate) is rising, falling, or stable over the day. Rising EC may indicate under-irrigation or salt build-up."
+            placement="bottom"
+            label="EC Trend"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+    `;
+    }
+    /** Overnight dryback (absolute VWC points) with last-window peak/trough context. */
+    _renderOvernightDrybackCard(metrics) {
+        const dryback = metrics.overnightDryback;
+        const event = metrics.latestOvernightEvent;
+        const value = dryback === null ? '—' : `${dryback.toFixed(1)} pts`;
+        const context = event
+            ? x `<div class="cs-metric-sub">
+          peak ${event.peakVwc.toFixed(1)}% → trough ${event.troughVwc.toFixed(1)}%
+        </div>`
+            : E;
+        return x `
+      <div class="cs-metric-card" data-metric="overnight-dryback">
+        <ha-svg-icon
+          .path=${mdiWeatherNight}
+          style="color: var(--primary-color); margin-bottom: 8px;"
+        ></ha-svg-icon>
+        <div class="cs-metric-value">${value}</div>
+        ${context}
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          Overnight Dryback
+          <gs-help-tooltip
+            content="The absolute VWC drop (peak − trough, in percentage points) across the most recent completed overnight window. Larger overnight drybacks push the substrate generative."
+            placement="bottom"
+            label="Overnight Dryback"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+    `;
+    }
+    /** Today's in-cycle (P2) shot count and average P2 dryback. */
+    _renderInCycleDrybackCard(metrics) {
+        const avg = metrics.incycleDrybackAvg;
+        const value = avg === null ? '—' : `${avg.toFixed(1)} pts`;
+        return x `
+      <div class="cs-metric-card" data-metric="incycle-dryback">
+        <ha-svg-icon
+          .path=${mdiCounter}
+          style="color: var(--info-color, #03a9f4); margin-bottom: 8px;"
+        ></ha-svg-icon>
+        <div class="cs-metric-value">${value}</div>
+        <div class="cs-metric-sub">${metrics.incycleDrybackCount} shots today</div>
+        <div
+          class="cs-metric-label"
+          style="display:flex;align-items:center;gap:4px;justify-content:center;"
+        >
+          In-Cycle Dryback
+          <gs-help-tooltip
+            content="Average P2 shot-to-shot dryback (absolute VWC points) across today's in-cycle irrigations, with the day's shot count. Smaller, more frequent shots read vegetative."
+            placement="bottom"
+            label="In-Cycle Dryback"
+          ></gs-help-tooltip>
+        </div>
+      </div>
+    `;
+    }
+    /** Score readout + declared-intent vs measured-classification contrast. */
+    _renderSteeringScoreHeader(metrics, declared) {
+        const score = metrics.score;
+        const measured = metrics.measuredClassification;
+        const scoreText = score === null ? '—' : `${score > 0 ? '+' : ''}${score.toFixed(2)}`;
         return x `
       <div style="text-align: center; margin-bottom: 24px;">
         <div
           style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px;"
         >
-          <div style="font-size: 36px; font-weight: bold;">
-            ${score > 0 ? '+' : ''}${score.toFixed(2)}
-          </div>
+          <div style="font-size: 36px; font-weight: bold;">${scoreText}</div>
           <gs-help-tooltip
-            content="Crop steering score: positive values indicate generative conditions (promoting flowering), negative values indicate vegetative conditions (promoting growth). Aim for +0.5–+2.0 in late flower."
+            content="Measured crop steering score (−1…+1): positive = generative (promoting flowering), negative = vegetative (promoting growth). This is a measurement of how the substrate is actually behaving, not a setting."
             placement="right"
             label="Crop Steering Score"
           ></gs-help-tooltip>
         </div>
-        <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
-          <div class="cs-mode-badge cs-mode-${mode}">${mode.toUpperCase()} MODE</div>
-          <gs-help-tooltip
-            content="Vegetative mode drives leafy growth with smaller, more frequent irrigations. Generative mode promotes flowering and resin by allowing larger dry-backs between irrigations. Balanced is transitional."
-            placement="right"
-            label="Steering Mode"
-          ></gs-help-tooltip>
+        <div
+          style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;"
+        >
+          ${declared
+            ? x `<div class="cs-mode-badge cs-mode-${declared}">
+                Declared: ${declared.toUpperCase()}
+              </div>`
+            : x `<div class="cs-mode-badge">No declared mode</div>`}
+          ${measured
+            ? x `<div class="cs-mode-badge cs-mode-${measured}">
+                Measured: ${measured.toUpperCase()}
+              </div>`
+            : E}
         </div>
+        ${this._renderIntentDeviation(declared, measured, metrics.intentDeviation)}
       </div>
-
-      <div class="cs-metric-grid">
-        ${this._renderOverviewMetricCard('Dry-back Event', `${attrs.dryback_percent || 0}%`, mdiWaterPercent, 'var(--primary-color)', 'The % of substrate water content lost between the last irrigation and the trough (driest point). Higher dry-back = more generative stress. Veg: 3–5%. Flower: 5–10%.')}
-        ${this._renderOverviewMetricCard('Peak VWC', `${attrs.peak_vwc || 0}%`, mdiWaterPercent, 'var(--success-color, #4CAF50)', 'Volumetric Water Content (VWC) at the highest point after irrigation. Higher peak = more vegetative. Typical range: 50–70% depending on substrate.')}
-        ${this._renderOverviewMetricCard('Trough VWC', `${attrs.trough_vwc || 0}%`, mdiWaterPercent, 'var(--warning-color, #FF9800)', 'VWC at the driest point before the next irrigation fires. Lower trough = more generative stress. Typical range: 30–50%.')}
-        ${this._renderOverviewMetricCard('EC Trend', (attrs.ec_trend || 'stable').toUpperCase(), trendIcon, trendColor, 'Whether the electrical conductivity (nutrient strength) in the substrate is rising, falling, or stable. Rising EC may indicate under-irrigation or salt build-up.')}
-      </div>
-
-      <p style="font-size: 0.85rem; opacity: 0.7; margin-top: 24px; text-align: center;">
-        Vegetative steering drives growth with smaller, more frequent irrigations.
-        Generative steering promotes flowering and ripening through larger dry-backs.
-      </p>
     `;
+    }
+    /**
+     * Surfaces the backend's Intent Deviation: when the measured classification
+     * diverges from the declared mode, name both sides ("intended generative,
+     * substrate reads vegetative"). Silent when nothing is declared / no reading.
+     */
+    _renderIntentDeviation(declared, measured, deviation) {
+        if (deviation === 'on_target') {
+            return x `
+        <div class="cs-intent cs-intent-ontarget">
+          On target — substrate reads ${declared} as intended.
+        </div>
+      `;
+        }
+        if (deviation === 'more_generative' || deviation === 'more_vegetative') {
+            return x `
+        <div class="cs-intent cs-intent-deviation">
+          Intended ${declared} — substrate reads ${measured}.
+        </div>
+      `;
+        }
+        return E;
     }
     // ─── EC Targets tab (stub) ────────────────────────────────────────────────
     _renderEcTargetsTab() {
@@ -32314,6 +32538,40 @@ IrrigationDialog.styles = [
         font-size: 14px;
         color: var(--secondary-text-color);
       }
+      .cs-metric-sub {
+        font-size: 0.75rem;
+        color: var(--secondary-text-color);
+        margin-bottom: 6px;
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-metric-locked {
+        opacity: 0.55;
+        border-style: dashed;
+      }
+      .cs-shot-composition {
+        margin-top: 16px;
+      }
+      .cs-phase-pill {
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: var(--secondary-background-color, rgba(255, 255, 255, 0.08));
+        color: var(--secondary-text-color);
+      }
+      .cs-shot-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        padding: 4px 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .cs-shot-total {
+        border-top: 1px solid var(--divider-color, rgba(255, 255, 255, 0.1));
+        margin-top: 4px;
+        padding-top: 8px;
+        font-weight: 600;
+      }
       .cs-mode-badge {
         padding: 4px 12px;
         border-radius: 16px;
@@ -32334,6 +32592,18 @@ IrrigationDialog.styles = [
       .cs-mode-balanced {
         background: rgba(33, 150, 243, 0.2);
         color: #2196f3;
+      }
+      .cs-intent {
+        margin-top: 12px;
+        font-size: 0.85rem;
+        text-transform: capitalize;
+      }
+      .cs-intent-ontarget {
+        color: var(--success-color, #4caf50);
+      }
+      .cs-intent-deviation {
+        color: var(--warning-color, #ff9800);
+        font-weight: 500;
       }
 
       /* ── Body layout ── */
