@@ -7718,6 +7718,25 @@ function patchDeviceIrrigationConfig(growspaceId, patch) {
     devices$.set(current.map((d, i) => i === idx ? { ...d, irrigationConfig: { ...d.irrigationConfig, ...patch } } : d));
 }
 /**
+ * Patch a single device's irrigationStrategy in place, mirroring
+ * patchDeviceIrrigationConfig. Lets immediate-persist strategy writes (Shot
+ * Sizing Mode, Substrate Profile, EC Modulation — ADR-0017) reflect on the
+ * device the dialog reads, so the Steering tab relabel and the toggles update
+ * optimistically rather than waiting for a full device sync.
+ */
+function patchDeviceStrategy(growspaceId, patch) {
+    const current = devices$.get();
+    const idx = current.findIndex((d) => d.deviceId === growspaceId);
+    if (idx === -1)
+        return;
+    devices$.set(current.map((d, i) => i === idx
+        ? {
+            ...d,
+            irrigationStrategy: { ...(d.irrigationStrategy ?? {}), ...patch },
+        }
+        : d));
+}
+/**
  * Create a per-card GridSliceRef with an isolated $selectedDevice atom.
  *
  * Shared module atoms (devices$, optimisticDeletedPlantIds$) are the data
@@ -27887,8 +27906,17 @@ async function updateIrrigationStrategy(growspaceId, updates) {
         payload.auto_light_tracking = updates.autoLightTracking;
     await mutate({
         type: 'updateIrrigationStrategy',
-        optimistic: () => _patchStrategy(growspaceId, updates),
-        inverse: () => _patchStrategy(growspaceId, prev),
+        // Patch both the strategy read-model atom and the device the dialog reads,
+        // so immediate-persist controls (sizing mode, profile, modulation) reflect
+        // optimistically without waiting for a full device sync (ADR-0017).
+        optimistic: () => {
+            _patchStrategy(growspaceId, updates);
+            patchDeviceStrategy(growspaceId, updates);
+        },
+        inverse: () => {
+            _patchStrategy(growspaceId, prev);
+            patchDeviceStrategy(growspaceId, prev);
+        },
         apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
     }, growspaceId);
 }

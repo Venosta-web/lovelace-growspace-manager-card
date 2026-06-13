@@ -38,7 +38,7 @@ import type { IrrigationConfig, IrrigationStrategy, IrrigationTank } from '../..
 import { mutate } from '../../services/mutate';
 import { callService, hassCall } from '../../services/hass-call';
 import type { IrrigationMode, PhaseWindows } from './schema';
-import { patchDeviceIrrigationConfig } from '../grid';
+import { patchDeviceIrrigationConfig, patchDeviceStrategy } from '../grid';
 import {
   CropSteeringHistorySchema,
   type CropSteeringHistory,
@@ -407,8 +407,17 @@ export async function updateIrrigationStrategy(
   await mutate(
     {
       type: 'updateIrrigationStrategy',
-      optimistic: () => _patchStrategy(growspaceId, updates),
-      inverse: () => _patchStrategy(growspaceId, prev),
+      // Patch both the strategy read-model atom and the device the dialog reads,
+      // so immediate-persist controls (sizing mode, profile, modulation) reflect
+      // optimistically without waiting for a full device sync (ADR-0017).
+      optimistic: () => {
+        _patchStrategy(growspaceId, updates);
+        patchDeviceStrategy(growspaceId, updates);
+      },
+      inverse: () => {
+        _patchStrategy(growspaceId, prev);
+        patchDeviceStrategy(growspaceId, prev);
+      },
       apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
     },
     growspaceId
