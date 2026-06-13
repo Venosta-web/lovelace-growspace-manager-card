@@ -29,6 +29,23 @@ function makeDevice(overrides: Partial<Parameters<typeof createGrowspaceDevice>[
   return createGrowspaceDevice({ deviceId: 'gs1', name: 'Tent 1', ...overrides });
 }
 
+/** Build a complete IrrigationStrategy with sensible defaults, merging overrides. */
+function steeringStrategy(
+  overrides: Partial<import('../services/types').IrrigationStrategy> = {}
+): import('../services/types').IrrigationStrategy {
+  return {
+    enabled: true,
+    lightsOnTime: '06:00:00',
+    p0DurationMinutes: 60,
+    p2StopBeforeLightsOffMinutes: 120,
+    targetVwcPercent: 45,
+    maintenanceDrybackPercent: 3,
+    shotDurationSeconds: 15,
+    shotIntervalMinutes: 15,
+    ...overrides,
+  };
+}
+
 // ─── createInitialSM ─────────────────────────────────────────────────────────
 
 describe('createInitialSM', () => {
@@ -325,7 +342,7 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
 
     const next = discardAndSwitch(sm, device);
     expect(next.activeTab).toBe('schedules');
-    expect(next.tabs.substrate_ec.draft[0].minEc).toBe(1.0);
+    expect(next.tabs.substrate_ec.draft.ecTargetRanges[0].minEc).toBe(1.0);
   });
 
   it('resets substrate_ec draft to default values (when device has no ranges)', () => {
@@ -346,7 +363,7 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
 
     const next = discardAndSwitch(sm, device);
     expect(next.activeTab).toBe('schedules');
-    expect(next.tabs.substrate_ec.draft[0].minEc).toBe(0);
+    expect(next.tabs.substrate_ec.draft.ecTargetRanges[0].minEc).toBe(0);
   });
 
   it('resetActiveTabDraft returns current tabs when activeTab is unknown/default', () => {
@@ -839,7 +856,26 @@ describe('UPDATE_EC_TARGETS_DRAFT', () => {
       { stage: 'flower_late' as const, minEc: 1.4, maxEc: 2.0 },
     ];
     const next = transition(sm, { type: 'UPDATE_EC_TARGETS_DRAFT', ranges: newRanges });
-    expect(next.tabs.substrate_ec.draft).toEqual(newRanges);
+    expect(next.tabs.substrate_ec.draft.ecTargetRanges).toEqual(newRanges);
+  });
+});
+
+describe('UPDATE_PORE_EC_BAND', () => {
+  it('updates the pore-EC band without touching the feed-EC ranges', () => {
+    const sm = createInitialSM();
+    const before = sm.tabs.substrate_ec.draft.ecTargetRanges;
+    const next = transition(sm, { type: 'UPDATE_PORE_EC_BAND', min: 2.5, max: 4.0 });
+    expect(next.tabs.substrate_ec.draft.poreEcMin).toBe(2.5);
+    expect(next.tabs.substrate_ec.draft.poreEcMax).toBe(4.0);
+    expect(next.tabs.substrate_ec.draft.ecTargetRanges).toEqual(before);
+  });
+
+  it('clears a band edge when set to null', () => {
+    let sm = createInitialSM();
+    sm = transition(sm, { type: 'UPDATE_PORE_EC_BAND', min: 2.5, max: 4.0 });
+    sm = transition(sm, { type: 'UPDATE_PORE_EC_BAND', min: null, max: 4.0 });
+    expect(sm.tabs.substrate_ec.draft.poreEcMin).toBeNull();
+    expect(sm.tabs.substrate_ec.draft.poreEcMax).toBe(4.0);
   });
 });
 
@@ -1039,7 +1075,8 @@ describe('isSteeringDirty', () => {
       { partial: { p2ShotIntervalMinutes: 99 }, desc: 'p2ShotIntervalMinutes' },
       { partial: { p1ShotVolumePercent: 9 }, desc: 'p1ShotVolumePercent' },
       { partial: { p2ShotVolumePercent: 9 }, desc: 'p2ShotVolumePercent' },
-      { partial: { shotSizingMode: 'seconds' }, desc: 'shotSizingMode' },
+      // shotSizingMode is no longer buffered in the steering draft (ADR-0017) —
+      // it persists immediately and is excluded from isSteeringDirty.
     ];
 
     for (const { partial, desc } of fieldsToTest) {
@@ -1217,6 +1254,30 @@ describe('isSubstrateEcDirty', () => {
       ],
     });
     expect(isSubstrateEcDirty(sm2, device)).toBe(true);
+  });
+
+  it('returns true when the pore-EC band draft differs from the device strategy', () => {
+    const device = makeDevice({
+      irrigationStrategy: steeringStrategy({ poreEcTargetMin: 2.5, poreEcTargetMax: 4.0 }),
+    });
+    let sm = createInitialSM(device);
+    expect(isSubstrateEcDirty(sm, device)).toBe(false);
+    sm = transition(sm, { type: 'UPDATE_PORE_EC_BAND', min: 3.0, max: 4.0 });
+    expect(isSubstrateEcDirty(sm, device)).toBe(true);
+  });
+
+  it('ignores immediate-persist fields (sizing mode, profile, modulation) for dirtiness', () => {
+    const device = makeDevice({
+      irrigationStrategy: steeringStrategy({
+        shotSizingMode: 'volume',
+        ecModulationEnabled: true,
+        substrateProfile: { mediaType: 'coco', litersPerPot: 5 },
+      }),
+    });
+    const sm = createInitialSM(device);
+    // None of those fields are buffered on the substrate_ec tab, so a freshly
+    // hydrated SM is clean regardless of their values.
+    expect(isSubstrateEcDirty(sm, device)).toBe(false);
   });
 
   it('returns true when a stage range is missing in device or draft contains mismatching stage names', () => {

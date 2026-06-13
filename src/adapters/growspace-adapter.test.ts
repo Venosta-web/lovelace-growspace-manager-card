@@ -74,6 +74,45 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(strat?.shotSizingMode).toBe('seconds');
     expect(strat?.declaredSteeringMode ?? null).toBeNull();
   });
+
+  it('deserializes substrate profile, pore-EC band, and EC modulation', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithStrategy({
+        enabled: true,
+        substrate_profile: { media_type: 'rockwool', liters_per_pot: 6.5 },
+        pore_ec_target_min: 2.5,
+        pore_ec_target_max: 4.0,
+        ec_modulation_enabled: true,
+      })
+    );
+
+    const strat = device?.irrigationStrategy;
+    expect(strat?.substrateProfile).toEqual({ mediaType: 'rockwool', litersPerPot: 6.5 });
+    expect(strat?.poreEcTargetMin).toBe(2.5);
+    expect(strat?.poreEcTargetMax).toBe(4.0);
+    expect(strat?.ecModulationEnabled).toBe(true);
+  });
+
+  it('defaults band to null and modulation to false when absent', () => {
+    const device = GrowspaceAdapter.transformGrowspace(null, wsWithStrategy({ enabled: true }));
+    const strat = device?.irrigationStrategy;
+    expect(strat?.poreEcTargetMin ?? null).toBeNull();
+    expect(strat?.poreEcTargetMax ?? null).toBeNull();
+    expect(strat?.ecModulationEnabled).toBe(false);
+    expect(strat?.substrateProfile).toBeUndefined();
+  });
+
+  it('reads volume_mode_capable from the irrigation payload onto the device', () => {
+    const capable = GrowspaceAdapter.transformGrowspace(null, {
+      identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+      irrigation: { irrigation_strategy: { enabled: true }, volume_mode_capable: true },
+    } as unknown as GrowspaceAPIResponse);
+    expect(capable?.volumeModeCapable).toBe(true);
+
+    const notCapable = GrowspaceAdapter.transformGrowspace(null, wsWithStrategy({ enabled: true }));
+    expect(notCapable?.volumeModeCapable).toBe(false);
+  });
 });
 
 function wsWithSubstrate(substrate: Record<string, unknown>): GrowspaceAPIResponse {

@@ -672,6 +672,30 @@ describe('updateIrrigationStrategy', () => {
     );
   });
 
+  it('serializes substrate profile to flat keys and band/modulation fields', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', {
+      substrateProfile: { mediaType: 'rockwool', litersPerPot: 6.5 },
+      poreEcTargetMin: 2.5,
+      poreEcTargetMax: 4.0,
+      ecModulationEnabled: true,
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_strategy',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        substrate_media_type: 'rockwool',
+        substrate_liters_per_pot: 6.5,
+        pore_ec_target_min: 2.5,
+        pore_ec_target_max: 4.0,
+        ec_modulation_enabled: true,
+      })
+    );
+  });
+
   it('rolls back strategy on failure', async () => {
     setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
     vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
