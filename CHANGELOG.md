@@ -1,3 +1,17 @@
+# [1.1.0-next.40](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.39...v1.1.0-next.40) (2026-06-13)
+
+
+### Features
+
+* Command Center Overview tab — measured steering diagnostics ([#279](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/279)) ([6cd2707](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/6cd2707fc083757ef456a50fbde20ed358899efe))
+
+# [1.1.0-next.39](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.38...v1.1.0-next.39) (2026-06-13)
+
+
+### Features
+
+* Command Center Steering tab — mode selector + per-phase shot params ([#278](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/278)) ([7c5d484](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7c5d484d8976438fcc3c93634b22ea18d514fd80))
+
 # [1.1.0-next.38](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.37...v1.1.0-next.38) (2026-06-13)
 
 

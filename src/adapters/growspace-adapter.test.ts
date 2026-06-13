@@ -114,3 +114,81 @@ describe('GrowspaceAdapter irrigation strategy', () => {
     expect(notCapable?.volumeModeCapable).toBe(false);
   });
 });
+
+function wsWithSubstrate(substrate: Record<string, unknown>): GrowspaceAPIResponse {
+  return {
+    identity: { growspace_id: 'gs1', name: 'Tent', overview_entity_id: 'sensor.gs1' },
+    irrigation: { substrate },
+  } as unknown as GrowspaceAPIResponse;
+}
+
+describe('GrowspaceAdapter substrate steering metrics', () => {
+  it('deserializes the measured steering readout from the substrate payload', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithSubstrate({
+        overnight_dryback: 12.5,
+        latest_overnight_event: {
+          event_type: 'overnight',
+          peak_vwc: 55.2,
+          trough_vwc: 42.7,
+          dryback: 12.5,
+          peak_timestamp: '2026-06-13T06:00:00+00:00',
+          trough_timestamp: '2026-06-13T18:00:00+00:00',
+        },
+        incycle_dryback_count: 4,
+        incycle_dryback_avg: 3.1,
+        ec_trend: 'rising',
+        ec_trend_available: true,
+        score: 0.6,
+        measured_classification: 'generative',
+        intent_deviation: 'more_generative',
+        shot_composition: { ec_modulation_enabled: true, last_shot: null },
+      })
+    );
+
+    const metrics = device?.steeringMetrics;
+    expect(metrics?.overnightDryback).toBe(12.5);
+    expect(metrics?.latestOvernightEvent?.peakVwc).toBe(55.2);
+    expect(metrics?.latestOvernightEvent?.troughVwc).toBe(42.7);
+    expect(metrics?.incycleDrybackCount).toBe(4);
+    expect(metrics?.incycleDrybackAvg).toBe(3.1);
+    expect(metrics?.ecTrend).toBe('rising');
+    expect(metrics?.ecTrendAvailable).toBe(true);
+    expect(metrics?.score).toBe(0.6);
+    expect(metrics?.measuredClassification).toBe('generative');
+    expect(metrics?.intentDeviation).toBe('more_generative');
+    expect(metrics?.shotComposition).toEqual({
+      ec_modulation_enabled: true,
+      last_shot: null,
+    });
+  });
+
+  it('marks EC trend unavailable when the backend reports no pore-EC reading', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      wsWithSubstrate({
+        ec_trend: null,
+        ec_trend_available: false,
+        score: null,
+        measured_classification: null,
+        intent_deviation: null,
+      })
+    );
+
+    const metrics = device?.steeringMetrics;
+    expect(metrics?.ecTrend).toBeNull();
+    expect(metrics?.ecTrendAvailable).toBe(false);
+    expect(metrics?.score).toBeNull();
+    expect(metrics?.measuredClassification).toBeNull();
+    expect(metrics?.intentDeviation).toBeNull();
+  });
+
+  it('leaves steeringMetrics undefined when the payload omits substrate', () => {
+    const device = GrowspaceAdapter.transformGrowspace(
+      null,
+      { identity: { growspace_id: 'gs1', name: 'Tent' }, irrigation: {} } as unknown as GrowspaceAPIResponse
+    );
+    expect(device?.steeringMetrics).toBeUndefined();
+  });
+});

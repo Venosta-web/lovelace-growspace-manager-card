@@ -128,6 +128,47 @@ export interface SerializedIrrigationStrategy {
   declared_steering_mode?: SteeringMode | null;
 }
 
+/** Measured Classification bucket — the score-derived steering measurement. */
+export type SteeringClassification = 'vegetative' | 'balanced' | 'generative';
+
+/** Intent Deviation: how the substrate reads relative to the declared mode. */
+export type IntentDeviation = 'on_target' | 'more_generative' | 'more_vegetative';
+
+/** A committed dryback event (overnight or in-cycle) in the wire shape. */
+export interface SerializedDrybackEvent {
+  event_type?: string;
+  peak_vwc: number;
+  trough_vwc: number;
+  dryback: number;
+  peak_timestamp?: string | null;
+  trough_timestamp?: string | null;
+}
+
+/**
+ * Measured substrate steering metrics (#444/#445/#448), carried in the
+ * growspace payload's `irrigation.substrate` block. Tracker-derived dryback /
+ * EC fields plus the injected score, classification, deviation, and shot
+ * composition. The card renders these instead of reading the sensor entity.
+ */
+export interface SerializedSubstrateMetrics {
+  overnight_dryback?: number | null;
+  latest_overnight_event?: SerializedDrybackEvent | null;
+  incycle_dryback_count?: number;
+  incycle_dryback_avg?: number | null;
+  ec_trend?: 'rising' | 'stable' | 'falling' | null;
+  ec_trend_available?: boolean;
+  ec_trend_detail?: {
+    trend: string;
+    day_start_ec: number;
+    current_ec: number;
+    delta: number;
+  } | null;
+  score?: number | null;
+  measured_classification?: SteeringClassification | null;
+  intent_deviation?: IntentDeviation | null;
+  shot_composition?: Record<string, unknown> | null;
+}
+
 export interface SerializedIrrigationConfig {
   irrigation_pump_entity?: string | null;
   drain_pump_entity?: string | null;
@@ -386,6 +427,7 @@ export interface GrowspaceAPIResponse {
     volume_mode_capable?: boolean;
     drain_config?: SerializedDrainConfig | null;
     water_usage?: SerializedWaterUsage | null;
+    substrate?: SerializedSubstrateMetrics | null;
     last_cycle_timestamp?: string | null;
     next_scheduled_cycle?: string | null;
     projected_shot_window?: { start: string; end: string } | null;
@@ -534,6 +576,32 @@ export interface Subarea {
   environment_config: EnvironmentConfig;
 }
 
+/** A committed dryback event in the frontend (camelCase) shape. */
+export interface DrybackEvent {
+  peakVwc: number;
+  troughVwc: number;
+  dryback: number;
+  peakTimestamp?: string | null;
+  troughTimestamp?: string | null;
+}
+
+/** Measured crop-steering diagnostics, parsed from `irrigation.substrate`. */
+export interface SteeringMetrics {
+  /** Overnight dryback in absolute VWC points; null until a window completes. */
+  overnightDryback: number | null;
+  latestOvernightEvent: DrybackEvent | null;
+  incycleDrybackCount: number;
+  incycleDrybackAvg: number | null;
+  ecTrend: 'rising' | 'stable' | 'falling' | null;
+  /** False when no pore-EC sensors report — distinct from a measured "stable". */
+  ecTrendAvailable: boolean;
+  /** Measured steering score (−1…+1); null when no reading / strategy disabled. */
+  score: number | null;
+  measuredClassification: SteeringClassification | null;
+  intentDeviation: IntentDeviation | null;
+  shotComposition: Record<string, unknown> | null;
+}
+
 export interface GrowspaceDevice {
   deviceId: string;
   overviewEntityId?: string;
@@ -584,6 +652,9 @@ export interface GrowspaceDevice {
     day: number;
     growspaceIds: string[];
   }>;
+
+  /** Measured crop-steering diagnostics from the substrate payload (#444/#445/#448). */
+  steeringMetrics?: SteeringMetrics;
 
   // Irrigation cycle telemetry (injected by backend view model)
   lastCycleTimestamp?: string | null;
