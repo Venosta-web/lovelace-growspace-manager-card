@@ -69,6 +69,51 @@ const DrainConfigSchema = z
   .nullable()
   .optional();
 
+const DrybackEventSchema = z.object({
+  event_type: z.string().optional(),
+  peak_vwc: z.number(),
+  trough_vwc: z.number(),
+  dryback: z.number(),
+  peak_timestamp: z.string().nullable().optional(),
+  trough_timestamp: z.string().nullable().optional(),
+});
+
+// Measured steering readout (#444/#445/#448): tracker-derived dryback / EC
+// fields plus the injected score, Measured Classification, Intent Deviation,
+// and shot composition. Measured fields are nullable (no reading yet); a null
+// ec_trend with ec_trend_available=false drives the card's unlock hint.
+const SubstrateMetricsSchema = z
+  .object({
+    overnight_dryback: z.number().nullable().optional(),
+    latest_overnight_event: DrybackEventSchema.nullable().optional(),
+    incycle_dryback_count: z.number().optional().default(0),
+    incycle_dryback_avg: z.number().nullable().optional(),
+    ec_trend: z.enum(['rising', 'stable', 'falling']).nullable().optional(),
+    ec_trend_available: z.boolean().optional().default(false),
+    ec_trend_detail: z
+      .object({
+        trend: z.string(),
+        day_start_ec: z.number(),
+        current_ec: z.number(),
+        delta: z.number(),
+      })
+      .nullable()
+      .optional(),
+    score: z.number().nullable().optional(),
+    measured_classification: z
+      .enum(['vegetative', 'balanced', 'generative'])
+      .nullable()
+      .optional(),
+    intent_deviation: z
+      .enum(['on_target', 'more_generative', 'more_vegetative'])
+      .nullable()
+      .optional(),
+    shot_composition: z.record(z.unknown()).nullable().optional(),
+  })
+  .passthrough()
+  .nullable()
+  .optional();
+
 export const CirculationFanConfigSchema = z.object({
   enabled: z.boolean(),
   regulation_mode: z.enum(['vpd', 'humidity', 'temperature']),
@@ -193,6 +238,7 @@ export const GrowspaceAPIResponseSchema = z
         irrigation_config: IrrigationConfigSchema,
         irrigation_strategy: IrrigationStrategySchema.nullable().optional().default(null),
         drain_config: DrainConfigSchema,
+        substrate: SubstrateMetricsSchema,
         water_usage: z
           .object({
             total_liters: z.number().optional().default(0),
