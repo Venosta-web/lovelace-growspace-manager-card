@@ -800,6 +800,39 @@ describe('IrrigationDialog – Substrate & EC tab', () => {
     await el.updateComplete;
     expect((el as any)._sm.tabs.substrate_ec.draft.poreEcMin).toBe(2.5);
   });
+
+  it('blocks save and toasts when the pore-EC band is inverted (min >= max)', async () => {
+    const el = await mountSubstrateEc(makeSubstrateEcDevice());
+    (el as any)._sm = transition((el as any)._sm, {
+      type: 'UPDATE_PORE_EC_BAND',
+      min: 3.0,
+      max: 2.0,
+    });
+    await el.updateComplete;
+
+    (el as any)._saveAll();
+    await el.updateComplete;
+
+    expect((el as any)._sm.toast).toBeDefined();
+    expect((el as any)._sm.toast).toContain('pore EC');
+    // No save effect should have been requested.
+    expect((el as any)._sm.status.kind).not.toBe('applying');
+  });
+
+  it('allows save when the pore-EC band is valid (min < max)', async () => {
+    const el = await mountSubstrateEc(makeSubstrateEcDevice());
+    (el as any)._sm = transition((el as any)._sm, {
+      type: 'UPDATE_PORE_EC_BAND',
+      min: 2.0,
+      max: 3.0,
+    });
+    await el.updateComplete;
+
+    (el as any)._saveAll();
+    await el.updateComplete;
+
+    expect((el as any)._sm.toast ?? '').not.toContain('pore EC');
+  });
 });
 
 // ---------------------------------------------------------------------------

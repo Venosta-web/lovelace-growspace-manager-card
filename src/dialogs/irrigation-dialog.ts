@@ -1226,6 +1226,19 @@ export class IrrigationDialog extends LitElement {
 
     const d = this._sm.tabs.drain_ec.draft;
     const substrateEc = this._sm.tabs.substrate_ec.draft;
+    // Pore EC Target Band is buffered so an invalid pair never persists (ADR-0017):
+    // refuse the unified save when both edges are set and min ≥ max.
+    if (
+      substrateEc.poreEcMin != null &&
+      substrateEc.poreEcMax != null &&
+      substrateEc.poreEcMin >= substrateEc.poreEcMax
+    ) {
+      this._showErrorToast(
+        `Min pore EC (${substrateEc.poreEcMin}) must be below max pore EC (${substrateEc.poreEcMax}).`
+      );
+      return;
+    }
+
     const params: SaveAllParams = {
       settings: this._buildSettingsParams(),
       // The pore-EC band is a strategy field buffered on the Substrate & EC tab
