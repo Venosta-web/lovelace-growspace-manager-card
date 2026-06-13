@@ -28,6 +28,12 @@ export interface IrrigationScheduleItem {
 // Alias for legacy support
 export type IrrigationTime = IrrigationScheduleItem;
 
+/** Shot Sizing Mode (ADR-0011): raw pump seconds vs. percent of substrate volume. */
+export type ShotSizingMode = 'seconds' | 'volume';
+
+/** Steering Mode declared intent (ADR-0012). `null` means never stamped. */
+export type SteeringMode = 'vegetative' | 'balanced' | 'generative';
+
 export interface IrrigationStrategy {
   enabled: boolean;
   lightsOnTime: string;
@@ -35,10 +41,25 @@ export interface IrrigationStrategy {
   p2StopBeforeLightsOffMinutes: number;
   targetVwcPercent: number;
   maintenanceDrybackPercent: number;
+  /**
+   * Deprecated shared shot fields — mirror the P1 values for back-compat with
+   * older readers. New code reads the per-phase fields below.
+   */
   shotDurationSeconds: number;
   shotIntervalMinutes: number;
+  // Per-phase shot sizing (#443). P1 = ramp-up, P2 = maintenance.
+  p1ShotDurationSeconds?: number;
+  p1ShotIntervalMinutes?: number;
+  p2ShotDurationSeconds?: number;
+  p2ShotIntervalMinutes?: number;
+  // Per-phase shot sizes as a percent of substrate volume (Volume Mode).
+  p1ShotVolumePercent?: number;
+  p2ShotVolumePercent?: number;
+  shotSizingMode?: ShotSizingMode;
   autoLightTracking?: boolean;
   detectedLightsOnTime?: string | null;
+  // Declared Steering Mode intent (#448); null/undefined means never stamped.
+  declaredSteeringMode?: SteeringMode | null;
 }
 
 export interface IrrigationConfig {
@@ -72,8 +93,16 @@ export interface SerializedIrrigationStrategy {
   maintenance_dryback_percent: number;
   shot_duration_seconds: number;
   shot_interval_minutes: number;
+  p1_shot_duration_seconds?: number;
+  p1_shot_interval_minutes?: number;
+  p2_shot_duration_seconds?: number;
+  p2_shot_interval_minutes?: number;
+  p1_shot_volume_percent?: number;
+  p2_shot_volume_percent?: number;
+  shot_sizing_mode?: ShotSizingMode;
   auto_light_tracking?: boolean;
   detected_lights_on_time?: string | null;
+  declared_steering_mode?: SteeringMode | null;
 }
 
 export interface SerializedIrrigationConfig {

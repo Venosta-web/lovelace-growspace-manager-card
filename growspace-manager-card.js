@@ -5816,8 +5816,22 @@ class GrowspaceAdapter {
                 maintenanceDrybackPercent: irrigationStrategyRaw.maintenance_dryback_percent,
                 shotDurationSeconds: irrigationStrategyRaw.shot_duration_seconds,
                 shotIntervalMinutes: irrigationStrategyRaw.shot_interval_minutes,
+                // Per-phase shot fields fall back to the legacy shared values so
+                // strategies stored before the per-phase split still populate P1/P2.
+                p1ShotDurationSeconds: irrigationStrategyRaw.p1_shot_duration_seconds ??
+                    irrigationStrategyRaw.shot_duration_seconds,
+                p1ShotIntervalMinutes: irrigationStrategyRaw.p1_shot_interval_minutes ??
+                    irrigationStrategyRaw.shot_interval_minutes,
+                p2ShotDurationSeconds: irrigationStrategyRaw.p2_shot_duration_seconds ??
+                    irrigationStrategyRaw.shot_duration_seconds,
+                p2ShotIntervalMinutes: irrigationStrategyRaw.p2_shot_interval_minutes ??
+                    irrigationStrategyRaw.shot_interval_minutes,
+                p1ShotVolumePercent: irrigationStrategyRaw.p1_shot_volume_percent,
+                p2ShotVolumePercent: irrigationStrategyRaw.p2_shot_volume_percent,
+                shotSizingMode: irrigationStrategyRaw.shot_sizing_mode ?? 'seconds',
                 autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
                 detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
+                declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
             }
             : undefined;
         const drainConfigRaw = irrigation?.drain_config;
@@ -26667,8 +26681,16 @@ function defaultSteeringDraft() {
         maintenanceDrybackPercent: 3.0,
         shotDurationSeconds: 15,
         shotIntervalMinutes: 15,
+        p1ShotDurationSeconds: 15,
+        p1ShotIntervalMinutes: 15,
+        p2ShotDurationSeconds: 15,
+        p2ShotIntervalMinutes: 15,
+        p1ShotVolumePercent: 4.0,
+        p2ShotVolumePercent: 4.0,
+        shotSizingMode: 'seconds',
         autoLightTracking: false,
         detectedLightsOnTime: null,
+        declaredSteeringMode: null,
     };
 }
 function defaultConfigDraft() {
@@ -26741,8 +26763,16 @@ function applyDeviceToSM(sm, device) {
         maintenanceDrybackPercent: strat?.maintenanceDrybackPercent ?? 3.0,
         shotDurationSeconds: strat?.shotDurationSeconds ?? 15,
         shotIntervalMinutes: strat?.shotIntervalMinutes ?? 15,
+        p1ShotDurationSeconds: strat?.p1ShotDurationSeconds ?? strat?.shotDurationSeconds ?? 15,
+        p1ShotIntervalMinutes: strat?.p1ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
+        p2ShotDurationSeconds: strat?.p2ShotDurationSeconds ?? strat?.shotDurationSeconds ?? 15,
+        p2ShotIntervalMinutes: strat?.p2ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
+        p1ShotVolumePercent: strat?.p1ShotVolumePercent ?? 4.0,
+        p2ShotVolumePercent: strat?.p2ShotVolumePercent ?? 4.0,
+        shotSizingMode: strat?.shotSizingMode ?? 'seconds',
         autoLightTracking: strat?.autoLightTracking ?? false,
         detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
+        declaredSteeringMode: strat?.declaredSteeringMode ?? null,
     };
     const configDraft = {
         soilTriggerPercent: config.soilTriggerPercent ?? null,
@@ -26808,6 +26838,19 @@ function isSteeringDirty(sm, device) {
         d.maintenanceDrybackPercent !== s.maintenanceDrybackPercent ||
         d.shotDurationSeconds !== s.shotDurationSeconds ||
         d.shotIntervalMinutes !== s.shotIntervalMinutes ||
+        // Per-phase fields fall back to the legacy shared values, mirroring hydrate,
+        // so a device predating the per-phase split is not reported as dirty.
+        (d.p1ShotDurationSeconds ?? s.shotDurationSeconds) !==
+            (s.p1ShotDurationSeconds ?? s.shotDurationSeconds) ||
+        (d.p1ShotIntervalMinutes ?? s.shotIntervalMinutes) !==
+            (s.p1ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
+        (d.p2ShotDurationSeconds ?? s.shotDurationSeconds) !==
+            (s.p2ShotDurationSeconds ?? s.shotDurationSeconds) ||
+        (d.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) !==
+            (s.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
+        (d.p1ShotVolumePercent ?? 4.0) !== (s.p1ShotVolumePercent ?? 4.0) ||
+        (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
+        (d.shotSizingMode ?? 'seconds') !== (s.shotSizingMode ?? 'seconds') ||
         (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
         (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null));
 }
@@ -27213,6 +27256,25 @@ function transition$4(sm, event) {
                     steering: { ...sm.tabs.steering, sub: { kind: 'idle' } },
                 },
             };
+        case 'REQUEST_STEERING_MODE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    steering: {
+                        ...sm.tabs.steering,
+                        sub: { kind: 'confirm-mode', pending: event.mode },
+                    },
+                },
+            };
+        case 'CANCEL_STEERING_MODE':
+            return {
+                ...sm,
+                tabs: {
+                    ...sm.tabs,
+                    steering: { ...sm.tabs.steering, sub: { kind: 'idle' } },
+                },
+            };
         case 'UPDATE_STEERING_DRAFT':
             return {
                 ...sm,
@@ -27413,6 +27475,122 @@ class MutationRunController {
 }
 
 /**
+ * Irrigation slice — zod schemas for service call payloads.
+ *
+ * These schemas are the authoritative contracts for Irrigation-domain HA service
+ * calls. They replace the Irrigation-related schemas that lived in the monolithic
+ * `schemas/api-schema.ts` and the legacy IrrigationAPI class.
+ *
+ * All schemas are private to the Irrigation slice unless re-exported here.
+ */
+// ---------------------------------------------------------------------------
+// Shared primitives
+// ---------------------------------------------------------------------------
+const growspaceIdPayload = objectType({ growspace_id: stringType() });
+// ---------------------------------------------------------------------------
+// Mode / Strategy
+// ---------------------------------------------------------------------------
+enumType(['manual', 'crop_steering']);
+growspaceIdPayload.extend({
+    enabled: booleanType().optional(),
+    lights_on_time: stringType().optional(),
+    p0_duration_minutes: numberType().int().optional(),
+    p2_stop_before_lights_off_minutes: numberType().int().optional(),
+    target_vwc_percent: numberType().optional(),
+    maintenance_dryback_percent: numberType().optional(),
+    shot_duration_seconds: numberType().int().optional(),
+    shot_interval_minutes: numberType().int().optional(),
+    p1_shot_duration_seconds: numberType().int().optional(),
+    p1_shot_interval_minutes: numberType().int().optional(),
+    p2_shot_duration_seconds: numberType().int().optional(),
+    p2_shot_interval_minutes: numberType().int().optional(),
+    p1_shot_volume_percent: numberType().optional(),
+    p2_shot_volume_percent: numberType().optional(),
+    shot_sizing_mode: enumType(['seconds', 'volume']).optional(),
+    auto_light_tracking: booleanType().optional(),
+});
+const SteeringModeSchema = enumType(['vegetative', 'balanced', 'generative']);
+/** Result of the apply_steering_mode WS command (server stamps the preset). */
+const ApplySteeringModeResultSchema = objectType({
+    growspace_id: stringType(),
+    declared_steering_mode: SteeringModeSchema,
+});
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+growspaceIdPayload.extend({
+    irrigation_pump_entity: stringType(),
+    drain_pump_entity: stringType(),
+    irrigation_duration: numberType().int(),
+    drain_duration: numberType().int(),
+    soil_trigger_percent: numberType().nullable().optional(),
+    daily_volume_cap_liters: numberType().nullable().optional(),
+    max_cycles_per_day: numberType().int().nullable().optional(),
+    skip_during_dark: booleanType().optional(),
+    pause_on_low_tank: booleanType().optional(),
+    log_to_logbook: booleanType().optional(),
+    auto_advance_p1_to_p2: booleanType().optional(),
+    auto_advance_p2_to_p3: booleanType().optional(),
+    halt_on_runoff_ec_threshold: numberType().nullable().optional(),
+    active_steering_phase: enumType(['p1', 'p2', 'p3']).optional(),
+});
+// ---------------------------------------------------------------------------
+// Schedule
+// ---------------------------------------------------------------------------
+growspaceIdPayload.extend({
+    time: stringType(),
+    duration: numberType().int().optional(),
+});
+growspaceIdPayload.extend({
+    time: stringType(),
+});
+growspaceIdPayload.extend({
+    time: stringType(),
+    duration: numberType().int().optional(),
+});
+growspaceIdPayload.extend({
+    time: stringType(),
+});
+// ---------------------------------------------------------------------------
+// Drain monitoring
+// ---------------------------------------------------------------------------
+growspaceIdPayload.extend({
+    feed_ec: numberType(),
+    drain_ec: numberType(),
+    feed_volume_ml: numberType().optional(),
+    drain_volume_ml: numberType().optional(),
+});
+growspaceIdPayload.extend({
+    enabled: booleanType().optional(),
+    max_ec_delta: numberType().optional(),
+    target_runoff_percent: numberType().optional(),
+});
+// ---------------------------------------------------------------------------
+// Cycle
+// ---------------------------------------------------------------------------
+growspaceIdPayload.extend({
+    duration: numberType().int().optional(),
+});
+// ---------------------------------------------------------------------------
+// Phase windows (derived type — not a service payload)
+// ---------------------------------------------------------------------------
+const PhaseWindowSchema = objectType({
+    id: enumType(['p0', 'p1', 'p2', 'p3']),
+    label: stringType(),
+    name: stringType(),
+    start: numberType().int(),
+    end: numberType().int(),
+    color: stringType(),
+    target: stringType(),
+});
+objectType({
+    lightsOnMin: numberType().int(),
+    lightsOffMin: numberType().int(),
+    lightHours: numberType(),
+    phases: arrayType(PhaseWindowSchema),
+});
+
+/**
  * Irrigation slice — atoms and mutators for Irrigation domain data.
  *
  * Public API (atoms):
@@ -27477,10 +27655,27 @@ function setTankLevels(growspaceId, tanks) {
 function _getConfig(growspaceId) {
     return irrigationConfigs$.get().get(growspaceId) ?? { irrigationTimes: [], drainTimes: [] };
 }
+function _getStrategy(growspaceId) {
+    return (irrigationStrategies$.get().get(growspaceId) ?? {
+        enabled: false,
+        lightsOnTime: '06:00',
+        p0DurationMinutes: 60,
+        p2StopBeforeLightsOffMinutes: 120,
+        targetVwcPercent: 65,
+        maintenanceDrybackPercent: 3,
+        shotDurationSeconds: 30,
+        shotIntervalMinutes: 15,
+    });
+}
 function _patchConfig(growspaceId, patch) {
     const updated = new Map(irrigationConfigs$.get());
     updated.set(growspaceId, { ..._getConfig(growspaceId), ...patch });
     irrigationConfigs$.set(updated);
+}
+function _patchStrategy(growspaceId, patch) {
+    const updated = new Map(irrigationStrategies$.get());
+    updated.set(growspaceId, { ..._getStrategy(growspaceId), ...patch });
+    irrigationStrategies$.set(updated);
 }
 /** Sort schedule items by time string (HH:MM or HH:MM:SS). */
 function _sortByTime(items) {
@@ -27590,6 +27785,74 @@ async function removeDrainTime(growspaceId, time) {
             growspace_id: growspaceId,
             time,
         }),
+    }, growspaceId);
+}
+/**
+ * Merge partial strategy updates into the active irrigation strategy.
+ *
+ * Optimistic: patches irrigationStrategies$ with the provided fields.
+ * Apply: calls growspace_manager.set_irrigation_strategy with serialized payload.
+ * Inverse: restores the previous strategy on failure.
+ */
+async function updateIrrigationStrategy(growspaceId, updates) {
+    const prev = _getStrategy(growspaceId);
+    const payload = { growspace_id: growspaceId };
+    if (updates.enabled !== undefined)
+        payload.enabled = updates.enabled;
+    if (updates.lightsOnTime !== undefined)
+        payload.lights_on_time = updates.lightsOnTime;
+    if (updates.p0DurationMinutes !== undefined)
+        payload.p0_duration_minutes = updates.p0DurationMinutes;
+    if (updates.p2StopBeforeLightsOffMinutes !== undefined)
+        payload.p2_stop_before_lights_off_minutes = updates.p2StopBeforeLightsOffMinutes;
+    if (updates.targetVwcPercent !== undefined)
+        payload.target_vwc_percent = updates.targetVwcPercent;
+    if (updates.maintenanceDrybackPercent !== undefined)
+        payload.maintenance_dryback_percent = updates.maintenanceDrybackPercent;
+    if (updates.shotDurationSeconds !== undefined)
+        payload.shot_duration_seconds = updates.shotDurationSeconds;
+    if (updates.shotIntervalMinutes !== undefined)
+        payload.shot_interval_minutes = updates.shotIntervalMinutes;
+    if (updates.p1ShotDurationSeconds !== undefined)
+        payload.p1_shot_duration_seconds = updates.p1ShotDurationSeconds;
+    if (updates.p1ShotIntervalMinutes !== undefined)
+        payload.p1_shot_interval_minutes = updates.p1ShotIntervalMinutes;
+    if (updates.p2ShotDurationSeconds !== undefined)
+        payload.p2_shot_duration_seconds = updates.p2ShotDurationSeconds;
+    if (updates.p2ShotIntervalMinutes !== undefined)
+        payload.p2_shot_interval_minutes = updates.p2ShotIntervalMinutes;
+    if (updates.p1ShotVolumePercent !== undefined)
+        payload.p1_shot_volume_percent = updates.p1ShotVolumePercent;
+    if (updates.p2ShotVolumePercent !== undefined)
+        payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
+    if (updates.shotSizingMode !== undefined)
+        payload.shot_sizing_mode = updates.shotSizingMode;
+    if (updates.autoLightTracking !== undefined)
+        payload.auto_light_tracking = updates.autoLightTracking;
+    await mutate({
+        type: 'updateIrrigationStrategy',
+        optimistic: () => _patchStrategy(growspaceId, updates),
+        inverse: () => _patchStrategy(growspaceId, prev),
+        apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
+    }, growspaceId);
+}
+/**
+ * Stamp a Steering Mode's server-owned preset into the strategy (ADR-0012).
+ *
+ * The server owns the preset table and writes the new field values; the WS
+ * command returns only the declared mode. We optimistically reflect the
+ * selected mode so the selector highlights immediately — the stamped numeric
+ * field values arrive through the normal device sync.
+ */
+async function applySteeringMode(growspaceId, mode) {
+    const prev = _getStrategy(growspaceId);
+    await mutate({
+        type: 'applySteeringMode',
+        optimistic: () => _patchStrategy(growspaceId, { declaredSteeringMode: mode }),
+        inverse: () => _patchStrategy(growspaceId, prev),
+        apply: async () => {
+            await hassCall('growspace_manager/apply_steering_mode', { growspace_id: growspaceId, steering_mode: mode }, ApplySteeringModeResultSchema);
+        },
     }, growspaceId);
 }
 /**
@@ -28876,8 +29139,10 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
         if (!id)
             return;
         await saveIrrigationSettings(id, params.settings);
+        // Strategy writes go through the Irrigation slice mutator (ADR-0001 / CONTEXT
+        // data-flow layering); drain + EC ranges still use the legacy DataService path.
+        await updateIrrigationStrategy(id, params.strategy);
         if (this._dataService) {
-            await this._dataService.setIrrigationStrategy(id, params.strategy);
             await this._dataService.configureDrainMonitoring(id, params.drainConfig);
             await this._dataService.setEcTargetRanges(id, params.ecTargetRanges);
         }
@@ -29923,9 +30188,144 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
     _cancelPhaseChange() {
         this._sm = transition$4(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
     }
+    _handleSteeringModeClick(mode) {
+        this._sm = transition$4(this._sm, { type: 'REQUEST_STEERING_MODE', mode });
+    }
+    _cancelSteeringMode() {
+        this._sm = transition$4(this._sm, { type: 'CANCEL_STEERING_MODE' });
+    }
+    async _confirmSteeringMode() {
+        const sub = this._sm.tabs.steering.sub;
+        if (sub.kind !== 'confirm-mode')
+            return;
+        const id = this.device?.deviceId;
+        this._sm = transition$4(this._sm, { type: 'CANCEL_STEERING_MODE' });
+        if (!id)
+            return;
+        // The slice mutator (via the store action) is the canonical write path; the
+        // server stamps the preset and the new field values arrive via device sync.
+        await this.store?.actions.irrigation.applySteeringMode(id, sub.pending);
+    }
     // ─── Steering tab ─────────────────────────────────────────────────────────
+    /**
+     * Per-phase P1/P2 shot parameters. The edited field and its unit label follow
+     * the active Shot Sizing Mode (seconds vs. percent of substrate volume); the
+     * shot interval is always expressed in minutes.
+     */
+    _renderPhaseShotParams() {
+        const draft = this._sm.tabs.steering.draft;
+        const isVolume = (draft.shotSizingMode ?? 'seconds') === 'volume';
+        const phases = [
+            { id: 'p1', label: 'P1' },
+            { id: 'p2', label: 'P2' },
+        ];
+        return phases.map((p) => {
+            const sizeField = isVolume
+                ? `${p.id}ShotVolumePercent`
+                : `${p.id}ShotDurationSeconds`;
+            const sizeLabel = isVolume
+                ? `${p.label} Shot Size (%)`
+                : `${p.label} Shot Duration (sec)`;
+            const intervalField = `${p.id}ShotIntervalMinutes`;
+            return x `
+        <md3-number-input
+          data-field=${sizeField}
+          label=${sizeLabel}
+          .value=${String(draft[sizeField] ?? '')}
+          @change=${(e) => this._updateStrategyField(sizeField, isVolume ? parseFloat(e.detail) : parseInt(e.detail))}
+        ></md3-number-input>
+        <md3-number-input
+          data-field=${intervalField}
+          label="${p.label} Shot Interval (min)"
+          .value=${String(draft[intervalField] ?? '')}
+          @change=${(e) => this._updateStrategyField(intervalField, parseInt(e.detail))}
+        ></md3-number-input>
+      `;
+        });
+    }
+    /**
+     * Steering Mode selector (ADR-0012). Selecting a mode opens a confirm step;
+     * confirming stamps the server-owned preset into the editable fields. The
+     * declared mode renders as the active option.
+     */
+    _renderSteeringModeSelector() {
+        const declared = this._sm.tabs.steering.draft.declaredSteeringMode ?? null;
+        const modes = [
+            { id: 'vegetative', name: 'Vegetative', desc: 'Frequent shots, small dryback — vegetative push.' },
+            { id: 'balanced', name: 'Balanced', desc: 'Middle ground between vegetative and generative.' },
+            { id: 'generative', name: 'Generative', desc: 'Fewer, larger shots and deeper dryback — generative push.' },
+        ];
+        return x `
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <h3 style="margin:0;">Steering Mode</h3>
+          <gs-help-tooltip
+            content="Selecting a mode stamps recommended setpoints (dryback, P2-stop offset, pore-EC band, shot sizes) into the editable fields below. You can fine-tune afterwards."
+          ></gs-help-tooltip>
+        </div>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          ${declared
+            ? x `Declared intent: <strong>${declared}</strong>`
+            : 'No mode declared yet.'}
+        </p>
+        <div class="phase-grid">
+          ${modes.map((m) => x `
+              <div
+                class="phase-card ${declared === m.id ? 'active' : ''}"
+                data-steering-mode=${m.id}
+                @click=${() => this._handleSteeringModeClick(m.id)}
+              >
+                <div class="phase-nm">${m.name}</div>
+                <div class="phase-desc">${m.desc}</div>
+              </div>
+            `)}
+        </div>
+      </div>
+    `;
+    }
+    _renderSteeringModeConfirm() {
+        const sub = this._sm.tabs.steering.sub;
+        const pending = sub.kind === 'confirm-mode' ? sub.pending : '';
+        return x `
+      <gs-dialog
+        .open=${sub.kind === 'confirm-mode'}
+        heading="Apply Steering Mode"
+        .iconPath=${mdiAlert}
+        stageColor="var(--warning-color, #ff9800)"
+        @close=${this._cancelSteeringMode}
+      >
+        <div style="padding: 20px;">
+          <p style="margin: 0 0 12px 0;">
+            Apply the <strong>${pending}</strong> preset? This overwrites these fields with
+            recommended values:
+          </p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; opacity: 0.85; line-height: 1.5;">
+            <li>Maintenance Dryback</li>
+            <li>P2 Stop Buffer</li>
+            <li>Pore EC Target Band</li>
+            <li>Per-phase shot sizes</li>
+          </ul>
+        </div>
+        <div
+          class="button-group"
+          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
+        >
+          <button class="md3-button tonal" @click=${this._cancelSteeringMode}>Cancel</button>
+          <button
+            class="md3-button primary"
+            data-action="confirm-steering-mode"
+            @click=${this._confirmSteeringMode}
+          >
+            Apply
+          </button>
+        </div>
+      </gs-dialog>
+    `;
+    }
     _renderSteeringTab(_color) {
         return x `
+      ${this._renderSteeringModeSelector()}
+
       <!-- Phase cards -->
       <div class="detail-card">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
@@ -30078,16 +30478,7 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
 
-          <md3-number-input
-            label="Shot Duration (sec)"
-            .value=${this._sm.tabs.steering.draft.shotDurationSeconds}
-            @change=${(e) => this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Shot Interval (min)"
-            .value=${this._sm.tabs.steering.draft.shotIntervalMinutes}
-            @change=${(e) => this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
-          ></md3-number-input>
+          ${this._renderPhaseShotParams()}
         </div>
       </div>
 
@@ -30172,6 +30563,8 @@ let IrrigationDialog = class IrrigationDialog extends i$3 {
             : E}
         </div>
       </div>
+
+      ${this._renderSteeringModeConfirm()}
 
       <!-- Phase trigger confirmation dialog -->
       <gs-dialog
@@ -132868,6 +133261,7 @@ class ActionDispatcher {
         };
         this.irrigation = {
             fetchCropSteeringHistory: (growspaceId) => fetchCropSteeringHistory(growspaceId),
+            applySteeringMode: (growspaceId, mode) => applySteeringMode(growspaceId, mode),
         };
     }
     get ctx() {
@@ -135940,7 +136334,7 @@ GrowspaceCarouselCard = __decorate([
     t$2('growspace-carousel-card')
 ], GrowspaceCarouselCard);
 
-console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.37"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
+console.info(`%c GrowSpace Manager Card %c v${"1.1.0-next.38"} `, 'background:#1a7a1a;color:#fff;font-weight:700;padding:2px 4px;border-radius:3px 0 0 3px;', 'background:#333;color:#fff;font-weight:400;padding:2px 4px;border-radius:0 3px 3px 0;');
 window.customCards = window.customCards || [];
 window.customCards.push({
     type: 'growspace-manager-card',

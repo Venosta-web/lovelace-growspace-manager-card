@@ -1009,6 +1009,45 @@ describe('isSteeringDirty', () => {
       expect(isSteeringDirty(sm, device), `Expected dirty for field: ${desc}`).toBe(true);
     }
   });
+
+  it('returns true when per-phase shot or sizing-mode draft properties change', () => {
+    const strategy = {
+      enabled: true,
+      lightsOnTime: '06:00:00',
+      p0DurationMinutes: 60,
+      p2StopBeforeLightsOffMinutes: 120,
+      targetVwcPercent: 45.0,
+      maintenanceDrybackPercent: 3.0,
+      shotDurationSeconds: 15,
+      shotIntervalMinutes: 15,
+      p1ShotDurationSeconds: 12,
+      p1ShotIntervalMinutes: 20,
+      p2ShotDurationSeconds: 18,
+      p2ShotIntervalMinutes: 30,
+      p1ShotVolumePercent: 4,
+      p2ShotVolumePercent: 6,
+      shotSizingMode: 'volume' as 'seconds' | 'volume',
+      autoLightTracking: false,
+      detectedLightsOnTime: null,
+    };
+    const device = makeDevice({ irrigationStrategy: strategy });
+
+    const fieldsToTest: Array<{ partial: Partial<typeof strategy>; desc: string }> = [
+      { partial: { p1ShotDurationSeconds: 99 }, desc: 'p1ShotDurationSeconds' },
+      { partial: { p1ShotIntervalMinutes: 99 }, desc: 'p1ShotIntervalMinutes' },
+      { partial: { p2ShotDurationSeconds: 99 }, desc: 'p2ShotDurationSeconds' },
+      { partial: { p2ShotIntervalMinutes: 99 }, desc: 'p2ShotIntervalMinutes' },
+      { partial: { p1ShotVolumePercent: 9 }, desc: 'p1ShotVolumePercent' },
+      { partial: { p2ShotVolumePercent: 9 }, desc: 'p2ShotVolumePercent' },
+      { partial: { shotSizingMode: 'seconds' }, desc: 'shotSizingMode' },
+    ];
+
+    for (const { partial, desc } of fieldsToTest) {
+      let sm = createInitialSM(device);
+      sm = transition(sm, { type: 'UPDATE_STEERING_DRAFT', partial });
+      expect(isSteeringDirty(sm, device), `Expected dirty for field: ${desc}`).toBe(true);
+    }
+  });
 });
 
 describe('isConfigDirty', () => {

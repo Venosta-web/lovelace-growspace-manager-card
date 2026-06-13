@@ -13,7 +13,7 @@
  */
 
 import type { IrrigationStrategy, GrowspaceDevice } from '../types';
-import type { ECTargetRange } from '../services/types';
+import type { ECTargetRange, SteeringMode } from '../services/types';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -71,7 +71,10 @@ export interface SchedulesTabState {
 
 // ─── Steering tab ──────────────────────────────────────────────────────────────
 
-export type SteeringSubState = { kind: 'idle' } | { kind: 'confirm-phase'; pending: Phase };
+export type SteeringSubState =
+  | { kind: 'idle' }
+  | { kind: 'confirm-phase'; pending: Phase }
+  | { kind: 'confirm-mode'; pending: SteeringMode };
 
 export interface SteeringTabState {
   draft: Partial<IrrigationStrategy>;
@@ -215,6 +218,8 @@ export type DialogEvent =
   | { type: 'REQUEST_PHASE_CHANGE'; phase: Phase }
   | { type: 'CONFIRM_PHASE_CHANGE' }
   | { type: 'CANCEL_PHASE_CHANGE' }
+  | { type: 'REQUEST_STEERING_MODE'; mode: SteeringMode }
+  | { type: 'CANCEL_STEERING_MODE' }
   | { type: 'UPDATE_STEERING_DRAFT'; partial: Partial<IrrigationStrategy> }
 
   // ── Config ──
@@ -270,8 +275,16 @@ function defaultSteeringDraft(): Partial<IrrigationStrategy> {
     maintenanceDrybackPercent: 3.0,
     shotDurationSeconds: 15,
     shotIntervalMinutes: 15,
+    p1ShotDurationSeconds: 15,
+    p1ShotIntervalMinutes: 15,
+    p2ShotDurationSeconds: 15,
+    p2ShotIntervalMinutes: 15,
+    p1ShotVolumePercent: 4.0,
+    p2ShotVolumePercent: 4.0,
+    shotSizingMode: 'seconds',
     autoLightTracking: false,
     detectedLightsOnTime: null,
+    declaredSteeringMode: null,
   };
 }
 
@@ -355,8 +368,16 @@ function applyDeviceToSM(sm: DialogSM, device: GrowspaceDevice): DialogSM {
     maintenanceDrybackPercent: strat?.maintenanceDrybackPercent ?? 3.0,
     shotDurationSeconds: strat?.shotDurationSeconds ?? 15,
     shotIntervalMinutes: strat?.shotIntervalMinutes ?? 15,
+    p1ShotDurationSeconds: strat?.p1ShotDurationSeconds ?? strat?.shotDurationSeconds ?? 15,
+    p1ShotIntervalMinutes: strat?.p1ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
+    p2ShotDurationSeconds: strat?.p2ShotDurationSeconds ?? strat?.shotDurationSeconds ?? 15,
+    p2ShotIntervalMinutes: strat?.p2ShotIntervalMinutes ?? strat?.shotIntervalMinutes ?? 15,
+    p1ShotVolumePercent: strat?.p1ShotVolumePercent ?? 4.0,
+    p2ShotVolumePercent: strat?.p2ShotVolumePercent ?? 4.0,
+    shotSizingMode: strat?.shotSizingMode ?? 'seconds',
     autoLightTracking: strat?.autoLightTracking ?? false,
     detectedLightsOnTime: strat?.detectedLightsOnTime ?? null,
+    declaredSteeringMode: strat?.declaredSteeringMode ?? null,
   };
 
   const configDraft: ConfigDraft = {
@@ -433,6 +454,19 @@ export function isSteeringDirty(sm: DialogSM, device: GrowspaceDevice): boolean 
     d.maintenanceDrybackPercent !== s.maintenanceDrybackPercent ||
     d.shotDurationSeconds !== s.shotDurationSeconds ||
     d.shotIntervalMinutes !== s.shotIntervalMinutes ||
+    // Per-phase fields fall back to the legacy shared values, mirroring hydrate,
+    // so a device predating the per-phase split is not reported as dirty.
+    (d.p1ShotDurationSeconds ?? s.shotDurationSeconds) !==
+      (s.p1ShotDurationSeconds ?? s.shotDurationSeconds) ||
+    (d.p1ShotIntervalMinutes ?? s.shotIntervalMinutes) !==
+      (s.p1ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
+    (d.p2ShotDurationSeconds ?? s.shotDurationSeconds) !==
+      (s.p2ShotDurationSeconds ?? s.shotDurationSeconds) ||
+    (d.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) !==
+      (s.p2ShotIntervalMinutes ?? s.shotIntervalMinutes) ||
+    (d.p1ShotVolumePercent ?? 4.0) !== (s.p1ShotVolumePercent ?? 4.0) ||
+    (d.p2ShotVolumePercent ?? 4.0) !== (s.p2ShotVolumePercent ?? 4.0) ||
+    (d.shotSizingMode ?? 'seconds') !== (s.shotSizingMode ?? 'seconds') ||
     (d.autoLightTracking ?? false) !== (s.autoLightTracking ?? false) ||
     (d.detectedLightsOnTime ?? null) !== (s.detectedLightsOnTime ?? null)
   );
@@ -861,6 +895,27 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
     }
 
     case 'CANCEL_PHASE_CHANGE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          steering: { ...sm.tabs.steering, sub: { kind: 'idle' } },
+        },
+      };
+
+    case 'REQUEST_STEERING_MODE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          steering: {
+            ...sm.tabs.steering,
+            sub: { kind: 'confirm-mode', pending: event.mode },
+          },
+        },
+      };
+
+    case 'CANCEL_STEERING_MODE':
       return {
         ...sm,
         tabs: {
