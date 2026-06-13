@@ -241,8 +241,26 @@ export class GrowspaceAdapter {
           maintenanceDrybackPercent: irrigationStrategyRaw.maintenance_dryback_percent,
           shotDurationSeconds: irrigationStrategyRaw.shot_duration_seconds,
           shotIntervalMinutes: irrigationStrategyRaw.shot_interval_minutes,
+          // Per-phase shot fields fall back to the legacy shared values so
+          // strategies stored before the per-phase split still populate P1/P2.
+          p1ShotDurationSeconds:
+            irrigationStrategyRaw.p1_shot_duration_seconds ??
+            irrigationStrategyRaw.shot_duration_seconds,
+          p1ShotIntervalMinutes:
+            irrigationStrategyRaw.p1_shot_interval_minutes ??
+            irrigationStrategyRaw.shot_interval_minutes,
+          p2ShotDurationSeconds:
+            irrigationStrategyRaw.p2_shot_duration_seconds ??
+            irrigationStrategyRaw.shot_duration_seconds,
+          p2ShotIntervalMinutes:
+            irrigationStrategyRaw.p2_shot_interval_minutes ??
+            irrigationStrategyRaw.shot_interval_minutes,
+          p1ShotVolumePercent: irrigationStrategyRaw.p1_shot_volume_percent,
+          p2ShotVolumePercent: irrigationStrategyRaw.p2_shot_volume_percent,
+          shotSizingMode: irrigationStrategyRaw.shot_sizing_mode ?? 'seconds',
           autoLightTracking: irrigationStrategyRaw.auto_light_tracking,
           detectedLightsOnTime: irrigationStrategyRaw.detected_lights_on_time,
+          declaredSteeringMode: irrigationStrategyRaw.declared_steering_mode ?? null,
         }
       : undefined;
 

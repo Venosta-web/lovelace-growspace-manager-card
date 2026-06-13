@@ -32,10 +32,28 @@ export const SetIrrigationStrategyPayloadSchema = growspaceIdPayload.extend({
   maintenance_dryback_percent: z.number().optional(),
   shot_duration_seconds: z.number().int().optional(),
   shot_interval_minutes: z.number().int().optional(),
+  p1_shot_duration_seconds: z.number().int().optional(),
+  p1_shot_interval_minutes: z.number().int().optional(),
+  p2_shot_duration_seconds: z.number().int().optional(),
+  p2_shot_interval_minutes: z.number().int().optional(),
+  p1_shot_volume_percent: z.number().optional(),
+  p2_shot_volume_percent: z.number().optional(),
+  shot_sizing_mode: z.enum(['seconds', 'volume']).optional(),
   auto_light_tracking: z.boolean().optional(),
 });
 
 export type SetIrrigationStrategyPayload = z.infer<typeof SetIrrigationStrategyPayloadSchema>;
+
+export const SteeringModeSchema = z.enum(['vegetative', 'balanced', 'generative']);
+export type SteeringMode = z.infer<typeof SteeringModeSchema>;
+
+/** Result of the apply_steering_mode WS command (server stamps the preset). */
+export const ApplySteeringModeResultSchema = z.object({
+  growspace_id: z.string(),
+  declared_steering_mode: SteeringModeSchema,
+});
+
+export type ApplySteeringModeResult = z.infer<typeof ApplySteeringModeResultSchema>;
 
 // ---------------------------------------------------------------------------
 // Settings

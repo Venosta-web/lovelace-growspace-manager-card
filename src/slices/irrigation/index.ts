@@ -43,6 +43,7 @@ import {
   CropSteeringHistorySchema,
   type CropSteeringHistory,
 } from '../../schemas/api-schema';
+import { ApplySteeringModeResultSchema, type SteeringMode } from './schema';
 
 // ---------------------------------------------------------------------------
 // Atoms (public read)
@@ -377,6 +378,19 @@ export async function updateIrrigationStrategy(
     payload.shot_duration_seconds = updates.shotDurationSeconds;
   if (updates.shotIntervalMinutes !== undefined)
     payload.shot_interval_minutes = updates.shotIntervalMinutes;
+  if (updates.p1ShotDurationSeconds !== undefined)
+    payload.p1_shot_duration_seconds = updates.p1ShotDurationSeconds;
+  if (updates.p1ShotIntervalMinutes !== undefined)
+    payload.p1_shot_interval_minutes = updates.p1ShotIntervalMinutes;
+  if (updates.p2ShotDurationSeconds !== undefined)
+    payload.p2_shot_duration_seconds = updates.p2ShotDurationSeconds;
+  if (updates.p2ShotIntervalMinutes !== undefined)
+    payload.p2_shot_interval_minutes = updates.p2ShotIntervalMinutes;
+  if (updates.p1ShotVolumePercent !== undefined)
+    payload.p1_shot_volume_percent = updates.p1ShotVolumePercent;
+  if (updates.p2ShotVolumePercent !== undefined)
+    payload.p2_shot_volume_percent = updates.p2ShotVolumePercent;
+  if (updates.shotSizingMode !== undefined) payload.shot_sizing_mode = updates.shotSizingMode;
   if (updates.autoLightTracking !== undefined)
     payload.auto_light_tracking = updates.autoLightTracking;
 
@@ -386,6 +400,37 @@ export async function updateIrrigationStrategy(
       optimistic: () => _patchStrategy(growspaceId, updates),
       inverse: () => _patchStrategy(growspaceId, prev),
       apply: () => callService('growspace_manager', 'set_irrigation_strategy', payload),
+    },
+    growspaceId
+  );
+}
+
+/**
+ * Stamp a Steering Mode's server-owned preset into the strategy (ADR-0012).
+ *
+ * The server owns the preset table and writes the new field values; the WS
+ * command returns only the declared mode. We optimistically reflect the
+ * selected mode so the selector highlights immediately — the stamped numeric
+ * field values arrive through the normal device sync.
+ */
+export async function applySteeringMode(
+  growspaceId: string,
+  mode: SteeringMode
+): Promise<void> {
+  const prev = _getStrategy(growspaceId);
+
+  await mutate(
+    {
+      type: 'applySteeringMode',
+      optimistic: () => _patchStrategy(growspaceId, { declaredSteeringMode: mode }),
+      inverse: () => _patchStrategy(growspaceId, prev),
+      apply: async () => {
+        await hassCall(
+          'growspace_manager/apply_steering_mode',
+          { growspace_id: growspaceId, steering_mode: mode },
+          ApplySteeringModeResultSchema
+        );
+      },
     },
     growspaceId
   );

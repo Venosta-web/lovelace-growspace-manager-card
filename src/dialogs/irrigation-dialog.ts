@@ -65,9 +65,10 @@ import {
   addDrainTime,
   removeDrainTime,
   saveIrrigationSettings,
+  updateIrrigationStrategy,
   runIrrigationCycle,
 } from '../slices/irrigation';
-import type { IrrigationConfig } from '../services/types';
+import type { IrrigationConfig, SteeringMode } from '../services/types';
 import '../features/shared/ui';
 import '../features/shared/ui/md3-text-input';
 import '../features/shared/ui/md3-number-input';
@@ -1217,8 +1218,10 @@ export class IrrigationDialog extends LitElement {
     const id = this.device?.deviceId;
     if (!id) return;
     await saveIrrigationSettings(id, params.settings);
+    // Strategy writes go through the Irrigation slice mutator (ADR-0001 / CONTEXT
+    // data-flow layering); drain + EC ranges still use the legacy DataService path.
+    await updateIrrigationStrategy(id, params.strategy);
     if (this._dataService) {
-      await this._dataService.setIrrigationStrategy(id, params.strategy);
       await this._dataService.configureDrainMonitoring(id, params.drainConfig);
       await this._dataService.setEcTargetRanges(id, params.ecTargetRanges);
     }
@@ -2354,10 +2357,153 @@ export class IrrigationDialog extends LitElement {
     this._sm = transition(this._sm, { type: 'CANCEL_PHASE_CHANGE' });
   }
 
+  private _handleSteeringModeClick(mode: SteeringMode) {
+    this._sm = transition(this._sm, { type: 'REQUEST_STEERING_MODE', mode });
+  }
+
+  private _cancelSteeringMode() {
+    this._sm = transition(this._sm, { type: 'CANCEL_STEERING_MODE' });
+  }
+
+  private async _confirmSteeringMode() {
+    const sub = this._sm.tabs.steering.sub;
+    if (sub.kind !== 'confirm-mode') return;
+    const id = this.device?.deviceId;
+    this._sm = transition(this._sm, { type: 'CANCEL_STEERING_MODE' });
+    if (!id) return;
+    // The slice mutator (via the store action) is the canonical write path; the
+    // server stamps the preset and the new field values arrive via device sync.
+    await this.store?.actions.irrigation.applySteeringMode(id, sub.pending);
+  }
+
   // ─── Steering tab ─────────────────────────────────────────────────────────
+
+  /**
+   * Per-phase P1/P2 shot parameters. The edited field and its unit label follow
+   * the active Shot Sizing Mode (seconds vs. percent of substrate volume); the
+   * shot interval is always expressed in minutes.
+   */
+  private _renderPhaseShotParams() {
+    const draft = this._sm.tabs.steering.draft;
+    const isVolume = (draft.shotSizingMode ?? 'seconds') === 'volume';
+    const phases: Array<{ id: 'p1' | 'p2'; label: string }> = [
+      { id: 'p1', label: 'P1' },
+      { id: 'p2', label: 'P2' },
+    ];
+    return phases.map((p) => {
+      const sizeField = isVolume
+        ? (`${p.id}ShotVolumePercent` as const)
+        : (`${p.id}ShotDurationSeconds` as const);
+      const sizeLabel = isVolume
+        ? `${p.label} Shot Size (%)`
+        : `${p.label} Shot Duration (sec)`;
+      const intervalField = `${p.id}ShotIntervalMinutes` as const;
+      return html`
+        <md3-number-input
+          data-field=${sizeField}
+          label=${sizeLabel}
+          .value=${String(draft[sizeField] ?? '')}
+          @change=${(e: CustomEvent) =>
+        this._updateStrategyField(sizeField, isVolume ? parseFloat(e.detail) : parseInt(e.detail))}
+        ></md3-number-input>
+        <md3-number-input
+          data-field=${intervalField}
+          label="${p.label} Shot Interval (min)"
+          .value=${String(draft[intervalField] ?? '')}
+          @change=${(e: CustomEvent) =>
+        this._updateStrategyField(intervalField, parseInt(e.detail))}
+        ></md3-number-input>
+      `;
+    });
+  }
+
+  /**
+   * Steering Mode selector (ADR-0012). Selecting a mode opens a confirm step;
+   * confirming stamps the server-owned preset into the editable fields. The
+   * declared mode renders as the active option.
+   */
+  private _renderSteeringModeSelector() {
+    const declared = this._sm.tabs.steering.draft.declaredSteeringMode ?? null;
+    const modes: Array<{ id: SteeringMode; name: string; desc: string }> = [
+      { id: 'vegetative', name: 'Vegetative', desc: 'Frequent shots, small dryback — vegetative push.' },
+      { id: 'balanced', name: 'Balanced', desc: 'Middle ground between vegetative and generative.' },
+      { id: 'generative', name: 'Generative', desc: 'Fewer, larger shots and deeper dryback — generative push.' },
+    ];
+    return html`
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <h3 style="margin:0;">Steering Mode</h3>
+          <gs-help-tooltip
+            content="Selecting a mode stamps recommended setpoints (dryback, P2-stop offset, pore-EC band, shot sizes) into the editable fields below. You can fine-tune afterwards."
+          ></gs-help-tooltip>
+        </div>
+        <p style="font-size:0.8rem;opacity:0.7;margin:0 0 12px;">
+          ${declared
+        ? html`Declared intent: <strong>${declared}</strong>`
+        : 'No mode declared yet.'}
+        </p>
+        <div class="phase-grid">
+          ${modes.map(
+          (m) => html`
+              <div
+                class="phase-card ${declared === m.id ? 'active' : ''}"
+                data-steering-mode=${m.id}
+                @click=${() => this._handleSteeringModeClick(m.id)}
+              >
+                <div class="phase-nm">${m.name}</div>
+                <div class="phase-desc">${m.desc}</div>
+              </div>
+            `
+        )}
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderSteeringModeConfirm() {
+    const sub = this._sm.tabs.steering.sub;
+    const pending = sub.kind === 'confirm-mode' ? sub.pending : '';
+    return html`
+      <gs-dialog
+        .open=${sub.kind === 'confirm-mode'}
+        heading="Apply Steering Mode"
+        .iconPath=${mdiAlert}
+        stageColor="var(--warning-color, #ff9800)"
+        @close=${this._cancelSteeringMode}
+      >
+        <div style="padding: 20px;">
+          <p style="margin: 0 0 12px 0;">
+            Apply the <strong>${pending}</strong> preset? This overwrites these fields with
+            recommended values:
+          </p>
+          <ul style="margin: 0; padding-left: 20px; font-size: 0.9rem; opacity: 0.85; line-height: 1.5;">
+            <li>Maintenance Dryback</li>
+            <li>P2 Stop Buffer</li>
+            <li>Pore EC Target Band</li>
+            <li>Per-phase shot sizes</li>
+          </ul>
+        </div>
+        <div
+          class="button-group"
+          style="padding: 16px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid rgba(255,255,255,0.1);"
+        >
+          <button class="md3-button tonal" @click=${this._cancelSteeringMode}>Cancel</button>
+          <button
+            class="md3-button primary"
+            data-action="confirm-steering-mode"
+            @click=${this._confirmSteeringMode}
+          >
+            Apply
+          </button>
+        </div>
+      </gs-dialog>
+    `;
+  }
 
   private _renderSteeringTab(_color: string) {
     return html`
+      ${this._renderSteeringModeSelector()}
+
       <!-- Phase cards -->
       <div class="detail-card">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
@@ -2527,18 +2673,7 @@ export class IrrigationDialog extends LitElement {
 
           <h4 style="grid-column:span 2;margin:4px 0;margin-top:12px;">Dosing</h4>
 
-          <md3-number-input
-            label="Shot Duration (sec)"
-            .value=${this._sm.tabs.steering.draft.shotDurationSeconds}
-            @change=${(e: CustomEvent) =>
-        this._updateStrategyField('shotDurationSeconds', parseInt(e.detail))}
-          ></md3-number-input>
-          <md3-number-input
-            label="Shot Interval (min)"
-            .value=${this._sm.tabs.steering.draft.shotIntervalMinutes}
-            @change=${(e: CustomEvent) =>
-        this._updateStrategyField('shotIntervalMinutes', parseInt(e.detail))}
-          ></md3-number-input>
+          ${this._renderPhaseShotParams()}
         </div>
       </div>
 
@@ -2623,6 +2758,8 @@ export class IrrigationDialog extends LitElement {
         : nothing}
         </div>
       </div>
+
+      ${this._renderSteeringModeConfirm()}
 
       <!-- Phase trigger confirmation dialog -->
       <gs-dialog

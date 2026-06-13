@@ -8,7 +8,11 @@ import * as growspaceActions from '../growspace/growspace-actions';
 import * as geneticsActions from '../plant/genetics-actions';
 import * as dryingActions from '../plant/drying-actions';
 import * as keyboardActions from '../system/keyboard-actions';
-import { fetchCropSteeringHistory as sliceFetchCropSteeringHistory } from '../../slices/irrigation';
+import {
+  fetchCropSteeringHistory as sliceFetchCropSteeringHistory,
+  applySteeringMode as sliceApplySteeringMode,
+} from '../../slices/irrigation';
+import type { SteeringMode } from '../../services/types';
 import {
   PlantEntity,
   StrainEntry,
@@ -350,5 +354,7 @@ export class ActionDispatcher {
   public readonly irrigation = {
     fetchCropSteeringHistory: (growspaceId: string) =>
       sliceFetchCropSteeringHistory(growspaceId),
+    applySteeringMode: (growspaceId: string, mode: SteeringMode) =>
+      sliceApplySteeringMode(growspaceId, mode),
   };
 }

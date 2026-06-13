@@ -34,6 +34,7 @@ import {
   addDrainTime,
   removeDrainTime,
   updateIrrigationStrategy,
+  applySteeringMode,
   saveIrrigationSettings,
   logDrainReading,
   configureDrainMonitoring,
@@ -642,6 +643,35 @@ describe('updateIrrigationStrategy', () => {
     );
   });
 
+  it('serializes per-phase shot and sizing-mode fields to the payload', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await updateIrrigationStrategy('gs1', {
+      p1ShotDurationSeconds: 12,
+      p1ShotIntervalMinutes: 20,
+      p2ShotDurationSeconds: 18,
+      p2ShotIntervalMinutes: 30,
+      p1ShotVolumePercent: 3.5,
+      p2ShotVolumePercent: 5,
+      shotSizingMode: 'volume',
+    });
+
+    expect(hassCall.callService).toHaveBeenCalledWith(
+      'growspace_manager',
+      'set_irrigation_strategy',
+      expect.objectContaining({
+        growspace_id: 'gs1',
+        p1_shot_duration_seconds: 12,
+        p1_shot_interval_minutes: 20,
+        p2_shot_duration_seconds: 18,
+        p2_shot_interval_minutes: 30,
+        p1_shot_volume_percent: 3.5,
+        p2_shot_volume_percent: 5,
+        shot_sizing_mode: 'volume',
+      })
+    );
+  });
+
   it('rolls back strategy on failure', async () => {
     setIrrigationStrategy('gs1', makeStrategy({ lightsOnTime: '06:00' }));
     vi.mocked(hassCall.callService).mockRejectedValueOnce(new Error('fail'));
@@ -681,6 +711,41 @@ describe('updateIrrigationStrategy', () => {
       shotDurationSeconds: 30,
       shotIntervalMinutes: 15,
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applySteeringMode
+// ---------------------------------------------------------------------------
+
+describe('applySteeringMode', () => {
+  it('calls the apply_steering_mode WS command with the chosen mode', async () => {
+    setIrrigationStrategy('gs1', makeStrategy());
+
+    await applySteeringMode('gs1', 'generative');
+
+    expect(hassCall.hassCall).toHaveBeenCalledWith(
+      'growspace_manager/apply_steering_mode',
+      { growspace_id: 'gs1', steering_mode: 'generative' },
+      expect.anything()
+    );
+  });
+
+  it('reflects the selected mode optimistically', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: null }));
+
+    await applySteeringMode('gs1', 'vegetative');
+
+    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('vegetative');
+  });
+
+  it('rolls back the declared mode on failure', async () => {
+    setIrrigationStrategy('gs1', makeStrategy({ declaredSteeringMode: 'balanced' }));
+    vi.mocked(hassCall.hassCall).mockRejectedValueOnce(new Error('fail'));
+
+    await expect(applySteeringMode('gs1', 'generative')).rejects.toThrow();
+
+    expect(irrigationStrategies$.get().get('gs1')?.declaredSteeringMode).toBe('balanced');
   });
 });
 

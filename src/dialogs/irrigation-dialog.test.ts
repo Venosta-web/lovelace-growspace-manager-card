@@ -529,6 +529,174 @@ describe('IrrigationDialog – Steering tab: auto light tracking', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Steering tab – Steering Mode selector + stamp
+// ---------------------------------------------------------------------------
+
+function makeSteeringModeStore(applyFn = vi.fn().mockResolvedValue(undefined)) {
+  return {
+    context: {
+      dataService: {},
+      ui: { showToast: vi.fn() },
+      data: {},
+      grid: {},
+      closeDialog: vi.fn(),
+      refreshData: vi.fn().mockResolvedValue(undefined),
+    },
+    actions: {
+      irrigation: {
+        fetchCropSteeringHistory: vi.fn().mockResolvedValue(undefined),
+        applySteeringMode: applyFn,
+      },
+    },
+    data: {},
+    ui: { showToast: vi.fn() },
+  };
+}
+
+function steeringStrategy(overrides: Record<string, unknown> = {}) {
+  return {
+    enabled: true,
+    lightsOnTime: '06:00:00',
+    p0DurationMinutes: 30,
+    p2StopBeforeLightsOffMinutes: 60,
+    targetVwcPercent: 65,
+    maintenanceDrybackPercent: 3,
+    shotDurationSeconds: 30,
+    shotIntervalMinutes: 20,
+    ...overrides,
+  };
+}
+
+describe('IrrigationDialog – Steering tab: Steering Mode selector', () => {
+  it('renders the three steering-mode options', async () => {
+    const device = makeSteeringDevice({ irrigationStrategy: steeringStrategy() });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const modes = [...el.shadowRoot!.querySelectorAll('[data-steering-mode]')].map((n) =>
+      n.getAttribute('data-steering-mode')
+    );
+    expect(modes).toEqual(['vegetative', 'balanced', 'generative']);
+  });
+
+  it('marks the declared mode as active', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: steeringStrategy({ declaredSteeringMode: 'generative' }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const active = el.shadowRoot!.querySelector('[data-steering-mode].active');
+    expect(active?.getAttribute('data-steering-mode')).toBe('generative');
+  });
+
+  it('opens a confirm step before stamping (does not stamp immediately)', async () => {
+    const applyFn = vi.fn().mockResolvedValue(undefined);
+    const device = makeSteeringDevice({ irrigationStrategy: steeringStrategy() });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${makeSteeringModeStore(applyFn) as any}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const option = el.shadowRoot!.querySelector('[data-steering-mode="vegetative"]') as HTMLElement;
+    option.click();
+    await el.updateComplete;
+
+    expect(applyFn).not.toHaveBeenCalled();
+    expect((el as any)._sm.tabs.steering.sub).toEqual({
+      kind: 'confirm-mode',
+      pending: 'vegetative',
+    });
+  });
+
+  it('stamps the chosen mode through the slice action on confirm', async () => {
+    const applyFn = vi.fn().mockResolvedValue(undefined);
+    const device = makeSteeringDevice({ irrigationStrategy: steeringStrategy() });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog
+        .open=${true}
+        .device=${device}
+        .store=${makeSteeringModeStore(applyFn) as any}
+        .initialTab=${'steering'}
+      ></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    (el.shadowRoot!.querySelector('[data-steering-mode="generative"]') as HTMLElement).click();
+    await el.updateComplete;
+
+    const confirmBtn = el.shadowRoot!.querySelector('[data-action="confirm-steering-mode"]') as HTMLElement;
+    confirmBtn.click();
+    await el.updateComplete;
+
+    expect(applyFn).toHaveBeenCalledWith('gs1', 'generative');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Steering tab – per-phase shot params
+// ---------------------------------------------------------------------------
+
+describe('IrrigationDialog – Steering tab: per-phase shot params', () => {
+  it('labels P1/P2 shot sizes in seconds when sizing mode is seconds', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: steeringStrategy({ shotSizingMode: 'seconds' }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const p1 = el.shadowRoot!.querySelector('[data-field="p1ShotDurationSeconds"]');
+    const p2 = el.shadowRoot!.querySelector('[data-field="p2ShotDurationSeconds"]');
+    expect(p1?.getAttribute('label')).toContain('sec');
+    expect(p2?.getAttribute('label')).toContain('sec');
+    expect(el.shadowRoot!.querySelector('[data-field="p1ShotVolumePercent"]')).toBeNull();
+  });
+
+  it('labels P1/P2 shot sizes in percent when sizing mode is volume', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: steeringStrategy({ shotSizingMode: 'volume' }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const p1 = el.shadowRoot!.querySelector('[data-field="p1ShotVolumePercent"]');
+    const p2 = el.shadowRoot!.querySelector('[data-field="p2ShotVolumePercent"]');
+    expect(p1?.getAttribute('label')).toContain('%');
+    expect(p2?.getAttribute('label')).toContain('%');
+    expect(el.shadowRoot!.querySelector('[data-field="p1ShotDurationSeconds"]')).toBeNull();
+  });
+
+  it('edits a per-phase shot field into the steering draft', async () => {
+    const device = makeSteeringDevice({
+      irrigationStrategy: steeringStrategy({ shotSizingMode: 'seconds', p2ShotIntervalMinutes: 30 }),
+    });
+    const el = await fixture<IrrigationDialog>(html`
+      <irrigation-dialog .open=${true} .device=${device} .initialTab=${'steering'}></irrigation-dialog>
+    `);
+    await el.updateComplete;
+
+    const input = el.shadowRoot!.querySelector('[data-field="p2ShotIntervalMinutes"]') as any;
+    input.dispatchEvent(new CustomEvent('change', { detail: '45' }));
+    await el.updateComplete;
+
+    expect((el as any)._sm.tabs.steering.draft.p2ShotIntervalMinutes).toBe(45);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // EC Ramp tab
 // ---------------------------------------------------------------------------
 
