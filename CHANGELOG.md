@@ -1,3 +1,16 @@
+# [1.1.0-next.41](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.40...v1.1.0-next.41) (2026-06-13)
+
+
+### Bug Fixes
+
+* optimistic device-strategy bridge + Substrate & EC component tests ([677e86e](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/677e86e14adc07892824f2e1614438bf9bf29374))
+* validate pore-EC band on save in Substrate & EC tab ([#286](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/286)) ([63a7de7](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/63a7de746a6a3122a69079d841f5d8f79696f0c0))
+
+
+### Features
+
+* Command Center Substrate & EC tab ([#286](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/286)) ([2258907](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/22589078a7c70a40051e84af78c1baa8cfb4f38f))
+
 # [1.1.0-next.40](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.39...v1.1.0-next.40) (2026-06-13)
 
 
