@@ -16,7 +16,6 @@ import type {
   BatchCloneDialogState,
   HarvestScoringDialogState,
   SnapshotsDialogState,
-  CropSteeringDialogState,
   EnvironmentConfigDialogState,
   IrrigationDialogState,
 } from '../../lib/types/dialog';
@@ -45,5 +44,4 @@ export type ActiveDialogState =
   | { type: 'NUTRIENTS'; payload: Record<string, never> }
   | { type: 'HARVEST_SCORING'; payload: HarvestScoringDialogState }
   | { type: 'SNAPSHOTS'; payload: SnapshotsDialogState }
-  | { type: 'CROP_STEERING'; payload: CropSteeringDialogState }
   | { type: 'ENVIRONMENT_CONFIG'; payload: EnvironmentConfigDialogState };

@@ -15,7 +15,7 @@ import {
   isSteeringDirty,
   isConfigDirty,
   isDrainEcDirty,
-  isEcTargetsDirty,
+  isSubstrateEcDirty,
   isActiveTabDirty,
   actionErrorMessage,
   type DialogSM,
@@ -49,13 +49,14 @@ describe('createInitialSM', () => {
 
   it('creates SM with all tabs in idle sub-state', () => {
     const sm = createInitialSM();
+    expect(sm.tabs.overview.sub.kind).toBe('idle');
     expect(sm.tabs.schedules.sub.kind).toBe('idle');
     expect(sm.tabs.steering.sub.kind).toBe('idle');
     expect(sm.tabs.config.sub.kind).toBe('idle');
     expect(sm.tabs.tanks.sub.kind).toBe('idle');
     expect(sm.tabs.water_analytics.sub.kind).toBe('idle');
     expect(sm.tabs.drain_ec.sub.kind).toBe('idle');
-    expect(sm.tabs.ec_targets.sub.kind).toBe('idle');
+    expect(sm.tabs.substrate_ec.sub.kind).toBe('idle');
   });
 
   it('seeds schedules draft from device irrigationConfig', () => {
@@ -78,6 +79,43 @@ describe('createInitialSM', () => {
   it('seeds water_analytics stageAggregates as null', () => {
     const sm = createInitialSM();
     expect(sm.tabs.water_analytics.stageAggregates).toBeNull();
+  });
+});
+
+// ─── Crop Steering Command Center: Overview tab ────────────────────────────────
+
+describe('overview tab (Crop Steering Command Center)', () => {
+  it('is present in the initial SM with an idle sub-state', () => {
+    const sm = createInitialSM();
+    expect(sm.tabs.overview).toEqual({ sub: { kind: 'idle' } });
+  });
+
+  it('is never dirty — it is a read-only diagnostics view', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'overview' });
+    expect(sm.activeTab).toBe('overview');
+    expect(isActiveTabDirty(sm, device)).toBe(false);
+  });
+
+  it('switches away from overview without a discard prompt', () => {
+    const device = makeDevice();
+    let sm = createInitialSM(device);
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'overview' });
+    sm = requestTabSwitch(sm, 'steering', device);
+    expect(sm.activeTab).toBe('steering');
+    expect(sm.status.kind).toBe('idle');
+  });
+
+  it('exposes the DialogStateMachine tab-keyed shape (activeTab/tabs/status/toast)', () => {
+    const sm = createInitialSM();
+    // The read-only overview tab participates in the same tab-keyed shape the
+    // other Command Center tabs use (see [[DialogStateMachine]]).
+    expect(sm).toMatchObject({
+      activeTab: expect.any(String),
+      tabs: expect.objectContaining({ overview: { sub: { kind: 'idle' } } }),
+      status: expect.objectContaining({ kind: expect.any(String) }),
+    });
   });
 });
 
@@ -257,7 +295,7 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
     expect(next.tabs.drain_ec.draft.maxEcDelta).toBe(1.5);
   });
 
-  it('resets ec_targets draft to device values (when device has ranges)', () => {
+  it('resets substrate_ec draft to device values (when device has ranges)', () => {
     const device = makeDevice({
       irrigationConfig: {
         irrigationTimes: [],
@@ -272,7 +310,7 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
       },
     });
     let sm = createInitialSM(device);
-    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'substrate_ec' });
     sm = transition(sm, {
       type: 'UPDATE_EC_TARGETS_DRAFT',
       ranges: [
@@ -287,13 +325,13 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
 
     const next = discardAndSwitch(sm, device);
     expect(next.activeTab).toBe('schedules');
-    expect(next.tabs.ec_targets.draft[0].minEc).toBe(1.0);
+    expect(next.tabs.substrate_ec.draft[0].minEc).toBe(1.0);
   });
 
-  it('resets ec_targets draft to default values (when device has no ranges)', () => {
+  it('resets substrate_ec draft to default values (when device has no ranges)', () => {
     const device = makeDevice();
     let sm = createInitialSM(device);
-    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'substrate_ec' });
     sm = transition(sm, {
       type: 'UPDATE_EC_TARGETS_DRAFT',
       ranges: [
@@ -308,7 +346,7 @@ describe('DISCARD_AND_SWITCH (via discardAndSwitch helper)', () => {
 
     const next = discardAndSwitch(sm, device);
     expect(next.activeTab).toBe('schedules');
-    expect(next.tabs.ec_targets.draft[0].minEc).toBe(0);
+    expect(next.tabs.substrate_ec.draft[0].minEc).toBe(0);
   });
 
   it('resetActiveTabDraft returns current tabs when activeTab is unknown/default', () => {
@@ -791,7 +829,7 @@ describe('SET_DRAIN_LOGGING', () => {
 // ─── EC Targets transitions ───────────────────────────────────────────────────
 
 describe('UPDATE_EC_TARGETS_DRAFT', () => {
-  it('replaces the ec_targets draft', () => {
+  it('replaces the substrate_ec draft', () => {
     const sm = createInitialSM();
     const newRanges = [
       { stage: 'seedling' as const, minEc: 0.8, maxEc: 1.2 },
@@ -801,7 +839,7 @@ describe('UPDATE_EC_TARGETS_DRAFT', () => {
       { stage: 'flower_late' as const, minEc: 1.4, maxEc: 2.0 },
     ];
     const next = transition(sm, { type: 'UPDATE_EC_TARGETS_DRAFT', ranges: newRanges });
-    expect(next.tabs.ec_targets.draft).toEqual(newRanges);
+    expect(next.tabs.substrate_ec.draft).toEqual(newRanges);
   });
 });
 
@@ -865,7 +903,7 @@ describe('RESET_FROM_DEVICE', () => {
     expect(next.tabs.steering.draft).toBeDefined();
     expect(next.tabs.config.draft).toBeDefined();
     expect(next.tabs.drain_ec.draft).toBeDefined();
-    expect(next.tabs.ec_targets.draft).toBeDefined();
+    expect(next.tabs.substrate_ec.draft).toBeDefined();
   });
 
   it('preserves the active tab and status after reset', () => {
@@ -1047,11 +1085,11 @@ describe('isDrainEcDirty', () => {
   });
 });
 
-describe('isEcTargetsDirty', () => {
+describe('isSubstrateEcDirty', () => {
   it('returns false when device has no ecTargetRanges and draft has all-zero range values', () => {
     const device = makeDevice();
     const sm = createInitialSM(device);
-    expect(isEcTargetsDirty(sm, device)).toBe(false);
+    expect(isSubstrateEcDirty(sm, device)).toBe(false);
   });
 
   it('returns true when device has no ecTargetRanges, but draft has non-zero range values', () => {
@@ -1063,7 +1101,7 @@ describe('isEcTargetsDirty', () => {
         { stage: 'seedling', minEc: 1.0, maxEc: 1.5 },
       ],
     });
-    expect(isEcTargetsDirty(sm, device)).toBe(true);
+    expect(isSubstrateEcDirty(sm, device)).toBe(true);
   });
 
   it('returns false when draft matches device ranges exactly', () => {
@@ -1081,7 +1119,7 @@ describe('isEcTargetsDirty', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(isEcTargetsDirty(sm, device)).toBe(false);
+    expect(isSubstrateEcDirty(sm, device)).toBe(false);
   });
 
   it('returns true when ranges length differs', () => {
@@ -1095,7 +1133,7 @@ describe('isEcTargetsDirty', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(isEcTargetsDirty(sm, device)).toBe(true);
+    expect(isSubstrateEcDirty(sm, device)).toBe(true);
   });
 
   it('returns true when a draft stage range has modified minEc or maxEc value', () => {
@@ -1125,7 +1163,7 @@ describe('isEcTargetsDirty', () => {
         { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
       ],
     });
-    expect(isEcTargetsDirty(sm1, device)).toBe(true);
+    expect(isSubstrateEcDirty(sm1, device)).toBe(true);
 
     // Modified maxEc
     let sm2 = createInitialSM(device);
@@ -1139,7 +1177,7 @@ describe('isEcTargetsDirty', () => {
         { stage: 'flower_late', minEc: 2.0, maxEc: 2.5 },
       ],
     });
-    expect(isEcTargetsDirty(sm2, device)).toBe(true);
+    expect(isSubstrateEcDirty(sm2, device)).toBe(true);
   });
 
   it('returns true when a stage range is missing in device or draft contains mismatching stage names', () => {
@@ -1158,7 +1196,7 @@ describe('isEcTargetsDirty', () => {
       },
     });
     const sm = createInitialSM(device);
-    expect(isEcTargetsDirty(sm, device)).toBe(true);
+    expect(isSubstrateEcDirty(sm, device)).toBe(true);
   });
 });
 
@@ -1230,7 +1268,7 @@ describe('isActiveTabDirty', () => {
     expect(isActiveTabDirty(sm, device)).toBe(true);
   });
 
-  it('delegates to the active tab predicate (ec_targets)', () => {
+  it('delegates to the active tab predicate (substrate_ec)', () => {
     const device = makeDevice({
       irrigationConfig: {
         irrigationTimes: [],
@@ -1245,7 +1283,7 @@ describe('isActiveTabDirty', () => {
       },
     });
     let sm = createInitialSM(device);
-    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'substrate_ec' });
     expect(isActiveTabDirty(sm, device)).toBe(false);
     sm = transition(sm, {
       type: 'UPDATE_EC_TARGETS_DRAFT',
@@ -1289,8 +1327,8 @@ describe('ec_ramp tab slot', () => {
 
   it('SWITCH_TAB can navigate away from ec_ramp', () => {
     const sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'ec_ramp' });
-    const next = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_targets' });
-    expect(next.activeTab).toBe('ec_targets');
+    const next = transition(sm, { type: 'SWITCH_TAB', tab: 'substrate_ec' });
+    expect(next.activeTab).toBe('substrate_ec');
   });
 
   it('requestTabSwitch to ec_ramp switches directly (no dirty state)', () => {

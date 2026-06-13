@@ -41,7 +41,6 @@ import '../../../dialogs/add-plant-dialog';
 import '../../../dialogs/add-plants-dialog';
 import '../../../dialogs/clone-dialog';
 import '../../../dialogs/config-dialog';
-import '../../../dialogs/crop-steering-dialog';
 import '../../../dialogs/grow-master-dialog';
 import '../../../dialogs/harvest-scoring-dialog';
 import '../../../dialogs/irrigation-dialog';
@@ -224,8 +223,6 @@ export class GrowspaceDialogHost extends LitElement {
             return this._renderHarvestScoringDialog(active);
           case 'SNAPSHOTS':
             return this._renderSnapshotsDialog(active, effectiveDeviceData);
-          case 'CROP_STEERING':
-            return this._renderCropSteeringDialog(active, effectiveDeviceData);
           default:
             return html``;
         }
@@ -1151,21 +1148,6 @@ export class GrowspaceDialogHost extends LitElement {
     `;
   }
 
-  private _renderCropSteeringDialog(
-    active: ActiveDialogState,
-    selectedDeviceData?: GrowspaceDevice
-  ): TemplateResult {
-    if (active.type !== 'CROP_STEERING') return html``;
-    return html`
-      <crop-steering-dialog
-        .open=${true}
-        .dialogState=${active.payload}
-        .growspaceName=${selectedDeviceData?.name || ''}
-        @close=${() => this._closeDialogIfActive('CROP_STEERING')}
-        @data-changed=${() => this._handleDataChanged()}
-      ></crop-steering-dialog>
-    `;
-  }
 
   private _renderNutrientInventoryDialog(
     active: ActiveDialogState,

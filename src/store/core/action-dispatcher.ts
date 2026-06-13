@@ -224,8 +224,6 @@ export class ActionDispatcher {
     openNutrientsDialog: () => uiActions.openNutrientsDialog(this.ctx),
     openSnapshotsDialog: (growspaceId?: string) =>
       uiActions.openSnapshotsDialog(this.ctx, growspaceId),
-    openCropSteeringDialog: (growspaceId?: string) =>
-      uiActions.openCropSteeringDialog(this.ctx, growspaceId),
     openBatchWateringDialog: (growspaceId?: string) =>
       uiActions.openBatchWateringDialog(this.ctx, growspaceId),
     openBatchTrainingDialog: (growspaceId?: string) =>
@@ -245,7 +243,9 @@ export class ActionDispatcher {
     toggleEnvGraph: (metric: string) => {
       if (metric === 'crop_steering') {
         const gsId = this.ctx.grid.$selectedDevice.get();
-        if (gsId) uiActions.openCropSteeringDialog(this.ctx, gsId);
+        if (gsId) {
+          uiActions.openIrrigationDialog(this.ctx, { growspaceId: gsId, initialTab: 'overview' });
+        }
         return;
       }
       if (!this.store.history) return;

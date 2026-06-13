@@ -28,7 +28,6 @@ import {
   openTrainingDialog,
   openNutrientsDialog,
   openSnapshotsDialog,
-  openCropSteeringDialog,
 } from './ui-actions';
 import { GrowspaceUIStore } from './ui-store';
 import * as libraryActions from '../plant/library-actions';
@@ -869,31 +868,6 @@ describe('openSnapshotsDialog', () => {
     openSnapshotsDialog(ctx);
     const dialog = ctx.ui.$activeDialog.get();
     if (dialog.type === 'SNAPSHOTS') {
-      expect(dialog.payload.growspaceId).toBe('');
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// openCropSteeringDialog
-// ---------------------------------------------------------------------------
-
-describe('openCropSteeringDialog', () => {
-  it('opens CROP_STEERING dialog with growspaceId', () => {
-    const ctx = makeCtx();
-    openCropSteeringDialog(ctx, 'gs-1');
-    const dialog = ctx.ui.$activeDialog.get();
-    expect(dialog.type).toBe('CROP_STEERING');
-    if (dialog.type === 'CROP_STEERING') {
-      expect(dialog.payload.growspaceId).toBe('gs-1');
-    }
-  });
-
-  it('uses empty string when no growspaceId given', () => {
-    const ctx = makeCtx();
-    openCropSteeringDialog(ctx);
-    const dialog = ctx.ui.$activeDialog.get();
-    if (dialog.type === 'CROP_STEERING') {
       expect(dialog.payload.growspaceId).toBe('');
     }
   });

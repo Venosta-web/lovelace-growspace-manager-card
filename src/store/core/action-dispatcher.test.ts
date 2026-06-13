@@ -194,18 +194,19 @@ describe('ui.deleteSelectedPlants', () => {
 // ─── ui.toggleEnvGraph ───────────────────────────────────────────────────────
 
 describe('ui.toggleEnvGraph', () => {
-  it('opens crop steering dialog for crop_steering metric', () => {
+  it('opens the irrigation dialog on the overview tab for the crop_steering metric', () => {
     const { dispatcher, grid, ui } = makeStore();
     grid.$selectedDevice.set('gs-1');
     dispatcher.ui.toggleEnvGraph('crop_steering');
-    // openCropSteeringDialog calls ctx.ui.setActiveDialog
+    // The standalone crop-steering dialog was retired; the chip now opens the
+    // Irrigation Dialog's Crop Steering Command Center on the Overview tab.
     expect(ui.setActiveDialog).toHaveBeenCalledWith({
-      type: 'CROP_STEERING',
-      payload: { growspaceId: 'gs-1' },
+      type: 'IRRIGATION',
+      payload: { growspaceId: 'gs-1', initialTab: 'overview' },
     });
   });
 
-  it('does not open crop steering dialog when no device is selected', () => {
+  it('does not open the irrigation dialog when no device is selected', () => {
     const { dispatcher, ui } = makeStore();
     dispatcher.ui.toggleEnvGraph('crop_steering');
     expect(ui.setActiveDialog).not.toHaveBeenCalled();
@@ -429,14 +430,6 @@ describe('ui dialog delegation', () => {
     const { dispatcher, ui } = makeStore();
     dispatcher.ui.openIrrigationDialog();
     expect(ui.setActiveDialog).toHaveBeenCalledWith(expect.objectContaining({ type: 'IRRIGATION' }));
-  });
-
-  it('openCropSteeringDialog sets CROP_STEERING dialog', () => {
-    const { dispatcher, ui } = makeStore();
-    dispatcher.ui.openCropSteeringDialog('gs-1');
-    expect(ui.setActiveDialog).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'CROP_STEERING', payload: expect.objectContaining({ growspaceId: 'gs-1' }) })
-    );
   });
 
   it('openBatchWateringDialog sets WATERING dialog when growspaceId provided', () => {

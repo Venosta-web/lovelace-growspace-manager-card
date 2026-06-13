@@ -447,13 +447,4 @@ export function openSnapshotsDialog(ctx: ActionContext, growspaceId?: string) {
   });
 }
 
-export function openCropSteeringDialog(ctx: ActionContext, growspaceId?: string) {
-  ctx.ui.setActiveDialog({
-    type: 'CROP_STEERING',
-    payload: {
-      growspaceId: growspaceId || '',
-    },
-  });
-}
-
 
