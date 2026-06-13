@@ -1,3 +1,10 @@
+# [1.1.0-next.38](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.37...v1.1.0-next.38) (2026-06-13)
+
+
+### Features
+
+* Crop Steering Command Center in the Irrigation Dialog ([#277](https://github.com/Venosta-web/lovelace-growspace-manager-card/issues/277)) ([63da1b5](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/63da1b5dc5f2f627d34e8685d471e2e5857e5969))
+
 # [1.1.0-next.37](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.36...v1.1.0-next.37) (2026-06-12)
 
 
