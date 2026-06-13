@@ -1,3 +1,10 @@
+# [1.1.0-next.42](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.41...v1.1.0-next.42) (2026-06-13)
+
+
+### Bug Fixes
+
+* lifecycle dates are datetime through one card seam ([8144588](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/81445884c8b1572519b11dc63f5eab8a8c083143))
+
 # [1.1.0-next.41](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.40...v1.1.0-next.41) (2026-06-13)
 
 
