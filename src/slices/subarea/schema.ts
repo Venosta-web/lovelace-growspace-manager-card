@@ -44,6 +44,7 @@ export const EnvironmentConfigSchema = z.object({
   dehumidifier_entities: z.array(z.string()).optional(),
   sensor_coordinates: z
     .record(
+      z.string(),
       z.object({ x: z.number(), y: z.number(), z: z.number(), rotation: z.number().optional() })
     )
     .optional(),

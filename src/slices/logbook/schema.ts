@@ -29,7 +29,7 @@ export const LogbookEntrySchema = z.object({
   images: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
   plant_id: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   event_id: z.union([z.string(), z.number()]).optional(),
 });
 
@@ -43,7 +43,7 @@ export type LogbookEntry = z.infer<typeof LogbookEntrySchema>;
  * get_log and get_alerts both return Record<id, LogbookEntry[]>.
  * The key is either growspace_id or plant_id depending on the call.
  */
-export const LogResponseSchema = z.record(z.array(LogbookEntrySchema));
+export const LogResponseSchema = z.record(z.string(), z.array(LogbookEntrySchema));
 
 export type LogResponse = z.infer<typeof LogResponseSchema>;
 

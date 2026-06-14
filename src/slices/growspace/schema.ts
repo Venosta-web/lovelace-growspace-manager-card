@@ -46,7 +46,7 @@ const IrrigationConfigSchema = z
   })
   .passthrough()
   .optional()
-  .default({});
+  .prefault({});
 
 const DrainConfigSchema = z
   .object({
@@ -108,7 +108,7 @@ const SubstrateMetricsSchema = z
       .enum(['on_target', 'more_generative', 'more_vegetative'])
       .nullable()
       .optional(),
-    shot_composition: z.record(z.unknown()).nullable().optional(),
+    shot_composition: z.record(z.string(), z.unknown()).nullable().optional(),
   })
   .passthrough()
   .nullable()
@@ -203,11 +203,11 @@ export const GrowspaceAPIResponseSchema = z
         irrigation_tanks: z.array(z.unknown()).optional().default([]),
         irrigation_pump_state: z.string().nullable().optional(),
         drain_pump_state: z.string().nullable().optional(),
-        active_events: z.record(z.unknown()).optional().default({}),
+        active_events: z.record(z.string(), z.unknown()).optional().default({}),
       })
       .passthrough()
       .optional()
-      .default({}),
+      .prefault({}),
 
     sensors: z
       .object({
@@ -227,7 +227,7 @@ export const GrowspaceAPIResponseSchema = z
         sensor_groups: z.array(z.unknown()).optional().default([]),
       })
       .optional()
-      .default({}),
+      .prefault({}),
 
     // Same wire shape as get_subareas (SubareaSchema). Optional: older backends
     // don't include the key in the growspace payload.
@@ -257,7 +257,7 @@ export const GrowspaceAPIResponseSchema = z
         volume_dispensed_today: z.number().optional().default(0),
       })
       .optional()
-      .default({}),
+      .prefault({}),
 
     metrics: z
       .object({
@@ -289,7 +289,7 @@ export const GrowspaceAPIResponseSchema = z
       })
       .passthrough()
       .optional()
-      .default({}),
+      .prefault({}),
 
     _ts: z.number().optional(),
   })
@@ -304,7 +304,7 @@ export const GrowReportSchema = z.object({
   summary: z.object({
     plant_count: z.number(),
     strains: z.array(z.string()),
-    stages: z.record(z.unknown()),
+    stages: z.record(z.string(), z.unknown()),
   }),
   harvest: z.object({
     total_wet_weight: z.number(),

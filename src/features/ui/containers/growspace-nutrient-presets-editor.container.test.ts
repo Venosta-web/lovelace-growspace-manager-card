@@ -11,7 +11,16 @@ if (!customElements.get('growspace-nutrient-presets-editor-ui')) {
 
 function aPresets(): NutrientPresetsResponse {
   return {
-    p1: { id: 'p1', name: 'Veg Week 1', week: 1, nutrients: [] },
+    p1: {
+      id: 'p1',
+      name: 'Veg Week 1',
+      week: 1,
+      nutrients: [],
+      stage: undefined,
+      min_days_in_stage: undefined,
+      ec_target: undefined,
+      ph_target: undefined,
+    },
   };
 }
 

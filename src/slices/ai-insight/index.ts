@@ -470,6 +470,10 @@ export async function saveAiSettings(draft: AiSettingsDraft): Promise<void> {
  * pre-populate its draft when the settings tab is opened.
  */
 export async function fetchAiSettings(): Promise<AiSettingsDraft> {
-  const result = await hassCall('growspace_manager/get_ai_settings', {}, z.record(z.unknown()));
+  const result = await hassCall(
+    'growspace_manager/get_ai_settings',
+    {},
+    z.record(z.string(), z.unknown())
+  );
   return result as AiSettingsDraft;
 }

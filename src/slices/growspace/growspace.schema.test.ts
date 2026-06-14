@@ -358,7 +358,7 @@ describe('Growspace Zod Schemas', () => {
           });
         } catch (error) {
           const err = error as ZodError;
-          expect(err.errors[0].message).toBe('Time is required');
+          expect(err.issues[0].message).toBe('Time is required');
         }
       });
     });

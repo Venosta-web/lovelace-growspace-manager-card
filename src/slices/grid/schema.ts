@@ -80,7 +80,7 @@ export const GridApiSchema = z
       .transform((v) => v ?? {}),
   })
   .optional()
-  .default({});
+  .prefault({});
 
 export type PlantSlot = z.infer<typeof PlantSlotSchema>;
 export type GridApi = z.infer<typeof GridApiSchema>;

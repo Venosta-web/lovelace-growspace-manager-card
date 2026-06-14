@@ -87,7 +87,7 @@ export const StrainDataSchema = z
       })
       .passthrough()
       .optional()
-      .default({}),
+      .prefault({}),
     phenotypes: z.record(z.string(), StrainPhenotypeSchema).optional().default({}),
   })
   .passthrough();
@@ -131,7 +131,7 @@ export const HistoryPointSchema = z
     lu: z
       .union([z.string(), z.number()])
       .transform((v) => (typeof v === 'number' ? new Date(v * 1000).toISOString() : String(v))),
-    a: z.record(z.unknown()).optional().default({}), // Attributes
+    a: z.record(z.string(), z.unknown()).optional().default({}), // Attributes
   })
   .passthrough();
 
@@ -162,7 +162,7 @@ export function validateGrowspaceResponse(
   console.error('[API Validation Failed for Growspace]', result.error.flatten());
   return {
     success: false,
-    errors: result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+    errors: result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`),
   };
 }
 
@@ -179,7 +179,7 @@ export function validateGrowspaceCollection(
   console.error('[API Validation Failed for Collection (All Data)]', result.error.flatten());
   return {
     success: false,
-    errors: result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+    errors: result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`),
   };
 }
 
@@ -214,6 +214,6 @@ export function validateStrainLibrary(data: unknown): ValidationResult<StrainLib
   console.error('[API Validation Failed for Strain Library]', result.error.flatten());
   return {
     success: false,
-    errors: result.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+    errors: result.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`),
   };
 }
