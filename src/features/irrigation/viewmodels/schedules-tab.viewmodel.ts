@@ -27,11 +27,7 @@
  */
 
 import { computed, type ReadableAtom } from 'nanostores';
-import type {
-  GrowspaceDevice,
-  IrrigationStrategy,
-  IrrigationTime,
-} from '../../../services/types';
+import type { GrowspaceDevice, IrrigationStrategy, IrrigationTime } from '../../../services/types';
 import type { CropSteeringHistory } from '../../../schemas/api-schema';
 import type { DialogSM, SchedulesSubState } from '../../../dialogs/irrigation-dialog-sm';
 import {
@@ -133,11 +129,7 @@ function deriveCropSteeringPanel(
     strategy as IrrigationStrategy,
     isFlower
   );
-  const phases = computePhases(
-    strategy as IrrigationStrategy,
-    isFlower,
-    device?.irrigationConfig
-  );
+  const phases = computePhases(strategy as IrrigationStrategy, isFlower, device?.irrigationConfig);
 
   if (!phases) {
     return {

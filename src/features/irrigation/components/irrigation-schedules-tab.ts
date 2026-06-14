@@ -491,7 +491,7 @@ export class IrrigationSchedulesTab extends LitElement {
   }
 
   private _renderScheduleSection(section: ScheduleSectionVM): TemplateResult {
-    const { type, title, color, defaultDuration, times } = section;
+    const { type, title, color, times } = section;
     const nowMinutes = this._getNowMinutes();
     const sub = this.vm.sub;
     const addingTime =
