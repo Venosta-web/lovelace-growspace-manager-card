@@ -1,3 +1,10 @@
+# [1.1.0-next.43](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.42...v1.1.0-next.43) (2026-06-14)
+
+
+### Features
+
+* **strain-editor:** live in-app camera capture for gallery ([7e0c9be](https://github.com/Venosta-web/lovelace-growspace-manager-card/commit/7e0c9be68b5e597262d7dbdfbc6f9759b1898140))
+
 # [1.1.0-next.42](https://github.com/Venosta-web/lovelace-growspace-manager-card/compare/v1.1.0-next.41...v1.1.0-next.42) (2026-06-13)
 
 
