@@ -1448,10 +1448,10 @@ describe('isActiveTabDirty', () => {
 // ─── EC Ramp tab ──────────────────────────────────────────────────────────────
 
 describe('ec_ramp tab slot', () => {
-  it('createInitialSM initializes tabs.ec_ramp as an empty object', () => {
+  it('createInitialSM initializes tabs.ec_ramp in the list view', () => {
     const sm = createInitialSM();
     expect(sm.tabs.ec_ramp).toBeDefined();
-    expect(sm.tabs.ec_ramp).toEqual({});
+    expect(sm.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
   });
 
   it('SWITCH_TAB can navigate to ec_ramp', () => {
@@ -1487,7 +1487,104 @@ describe('ec_ramp tab slot', () => {
     let sm = createInitialSM();
     sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_ramp' });
     const next = transition(sm, { type: 'RESET_FROM_DEVICE', device });
-    expect(next.tabs.ec_ramp).toEqual({});
+    expect(next.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
+  });
+
+  // ── inline editor transitions (draft lives in the SM, ADR-0019) ──
+
+  it('EC_RAMP_START_NEW opens the editor seeded with one default point', () => {
+    const sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind).toBe('editing');
+    if (sub.kind === 'editing') {
+      expect(sub.draft.name).toBe('');
+      expect(sub.draft.points).toEqual([{ day: 1, target_ec: 1.0 }]);
+    }
+    expect(sm.tabs.ec_ramp.error).toBeNull();
+  });
+
+  it('EC_RAMP_EDIT_CURVE opens the editor with the provided draft', () => {
+    const draft = { id: 'c1', name: 'Veg', stage: 'veg', points: [{ day: 1, target_ec: 1.2 }] };
+    const sm = transition(createInitialSM(), { type: 'EC_RAMP_EDIT_CURVE', draft });
+    expect(sm.tabs.ec_ramp.sub).toEqual({ kind: 'editing', draft });
+  });
+
+  it('UPDATE_EC_RAMP_CURVE merges name/stage into the open draft', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'Bloom', stage: 'flower' } });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.name).toBe('Bloom');
+    expect(sub.kind === 'editing' && sub.draft.stage).toBe('flower');
+  });
+
+  it('UPDATE_EC_RAMP_CURVE is a no-op when not editing', () => {
+    const sm = transition(createInitialSM(), { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'x' } });
+    expect(sm.tabs.ec_ramp.sub.kind).toBe('list');
+  });
+
+  it('EC_RAMP_ADD_POINT appends a point stepped off the last one', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_ADD_POINT' });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points).toEqual([
+      { day: 1, target_ec: 1.0 },
+      { day: 8, target_ec: 1.2 },
+    ]);
+  });
+
+  it('EC_RAMP_UPDATE_POINT merges a partial into the point at index', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_UPDATE_POINT', index: 0, partial: { target_ec: 2.5 } });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points?.[0]).toEqual({ day: 1, target_ec: 2.5 });
+  });
+
+  it('EC_RAMP_UPDATE_POINT ignores out-of-range indices', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    const before = sm;
+    sm = transition(sm, { type: 'EC_RAMP_UPDATE_POINT', index: 9, partial: { day: 5 } });
+    expect(sm.tabs.ec_ramp).toEqual(before.tabs.ec_ramp);
+  });
+
+  it('EC_RAMP_REMOVE_POINT removes the point at index', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_ADD_POINT' });
+    sm = transition(sm, { type: 'EC_RAMP_REMOVE_POINT', index: 0 });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points).toEqual([{ day: 8, target_ec: 1.2 }]);
+  });
+
+  it('SET_EC_RAMP_ERROR sets and clears the validation error', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: 'Curve name is required' });
+    expect(sm.tabs.ec_ramp.error).toBe('Curve name is required');
+    sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: null });
+    expect(sm.tabs.ec_ramp.error).toBeNull();
+  });
+
+  it('EC_RAMP_CANCEL_EDIT returns to the list and clears error', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: 'x' });
+    sm = transition(sm, { type: 'EC_RAMP_CANCEL_EDIT' });
+    expect(sm.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
+  });
+
+  it('SWITCH_TAB away from ec_ramp resets a dirty editor to the list', () => {
+    let sm = transition(createInitialSM(), { type: 'SWITCH_TAB', tab: 'ec_ramp' });
+    sm = transition(sm, { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'wip' } });
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+    expect(sm.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
+  });
+
+  it('SaveRequested(save-ec-ramp-curve) carries the payload into applying status', () => {
+    const params = { name: 'Bloom', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] };
+    const sm = transition(createInitialSM(), {
+      type: 'SaveRequested',
+      action: 'save-ec-ramp-curve',
+      params,
+    });
+    expect(sm.status).toEqual({ kind: 'applying', action: 'save-ec-ramp-curve', params });
   });
 });
 
@@ -1653,5 +1750,118 @@ describe('tanks tab', () => {
       params,
     });
     expect(sm.status).toEqual({ kind: 'applying', action: 'save-tank', params });
+  });
+});
+
+// ─── EC Ramp tab (ADR-0019: draft + error live in the SM, not the component) ───
+
+describe('ec_ramp tab', () => {
+  it('starts in list view with no error', () => {
+    const sm = createInitialSM();
+    expect(sm.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
+  });
+
+  it('EC_RAMP_START_NEW opens the editor seeded with one default point', () => {
+    const sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    expect(sm.tabs.ec_ramp.sub).toEqual({
+      kind: 'editing',
+      draft: { name: '', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] },
+    });
+    expect(sm.tabs.ec_ramp.error).toBeNull();
+  });
+
+  it('EC_RAMP_EDIT_CURVE opens the editor with the provided draft', () => {
+    const draft = { id: 'c1', name: 'Veg', stage: 'veg', points: [{ day: 1, target_ec: 1.2 }] };
+    const sm = transition(createInitialSM(), { type: 'EC_RAMP_EDIT_CURVE', draft });
+    expect(sm.tabs.ec_ramp.sub).toEqual({ kind: 'editing', draft });
+  });
+
+  it('UPDATE_EC_RAMP_CURVE merges name/stage into the open draft', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'Bloom', stage: 'flower' } });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.name).toBe('Bloom');
+  });
+
+  it('UPDATE_EC_RAMP_CURVE is a no-op when not editing', () => {
+    const next = transition(createInitialSM(), { type: 'UPDATE_EC_RAMP_CURVE', partial: { name: 'x' } });
+    expect(next.tabs.ec_ramp.sub.kind).toBe('list');
+  });
+
+  it('EC_RAMP_ADD_POINT appends a point stepped off the last (day+7, ec+0.2)', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_ADD_POINT' });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points).toEqual([
+      { day: 1, target_ec: 1.0 },
+      { day: 8, target_ec: 1.2 },
+    ]);
+  });
+
+  it('EC_RAMP_ADD_POINT seeds a default point when the draft has none', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_EDIT_CURVE', draft: { name: 'X' } });
+    sm = transition(sm, { type: 'EC_RAMP_ADD_POINT' });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points).toEqual([{ day: 7, target_ec: 1.2 }]);
+  });
+
+  it('EC_RAMP_UPDATE_POINT merges a partial into the point at index', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_UPDATE_POINT', index: 0, partial: { day: 5 } });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points?.[0]).toEqual({ day: 5, target_ec: 1.0 });
+  });
+
+  it('EC_RAMP_UPDATE_POINT is a no-op for an out-of-range index', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_UPDATE_POINT', index: 9, partial: { day: 5 } });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points).toEqual([{ day: 1, target_ec: 1.0 }]);
+  });
+
+  it('EC_RAMP_REMOVE_POINT drops the point at index', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'EC_RAMP_ADD_POINT' });
+    sm = transition(sm, { type: 'EC_RAMP_REMOVE_POINT', index: 0 });
+    const sub = sm.tabs.ec_ramp.sub;
+    expect(sub.kind === 'editing' && sub.draft.points).toEqual([{ day: 8, target_ec: 1.2 }]);
+  });
+
+  it('SET_EC_RAMP_ERROR sets and clears the validation error', () => {
+    let sm = transition(createInitialSM(), { type: 'SET_EC_RAMP_ERROR', error: 'Curve name is required' });
+    expect(sm.tabs.ec_ramp.error).toBe('Curve name is required');
+    sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: null });
+    expect(sm.tabs.ec_ramp.error).toBeNull();
+  });
+
+  it('EC_RAMP_CANCEL_EDIT returns to the list and clears the error', () => {
+    let sm = transition(createInitialSM(), { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: 'oops' });
+    sm = transition(sm, { type: 'EC_RAMP_CANCEL_EDIT' });
+    expect(sm.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
+  });
+
+  it('SWITCH_TAB away from ec_ramp resets it back to the list view', () => {
+    let sm = createInitialSM();
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'ec_ramp' });
+    sm = transition(sm, { type: 'EC_RAMP_START_NEW' });
+    sm = transition(sm, { type: 'SET_EC_RAMP_ERROR', error: 'oops' });
+    sm = transition(sm, { type: 'SWITCH_TAB', tab: 'config' });
+    expect(sm.tabs.ec_ramp).toEqual({ sub: { kind: 'list' }, error: null });
+  });
+
+  it('SaveRequested(save-ec-ramp-curve) carries the payload into applying status', () => {
+    const params = { curve_id: 'c1', name: 'Veg', stage: 'veg', points: [{ day: 1, target_ec: 1.2 }] };
+    const sm = transition(createInitialSM(), {
+      type: 'SaveRequested',
+      action: 'save-ec-ramp-curve',
+      params,
+    });
+    expect(sm.status).toEqual({ kind: 'applying', action: 'save-ec-ramp-curve', params });
+  });
+
+  it('maps the save/remove failure actions to user-facing toast copy', () => {
+    expect(actionErrorMessage('save-ec-ramp-curve')).toBe('Failed to save EC ramp curve');
+    expect(actionErrorMessage('remove-ec-ramp-curve')).toBe('Failed to delete EC ramp curve');
   });
 });

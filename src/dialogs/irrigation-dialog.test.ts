@@ -1301,8 +1301,12 @@ describe('IrrigationDialog – EC Ramp tab content', () => {
     `);
     await el.updateComplete;
 
-    const content = el.shadowRoot!.querySelector('.v1-content');
-    expect(content?.textContent).toMatch(/no ec ramp curves/i);
+    // ADR-0019: the EC Ramp tab renders in the decomposed child; pierce its shadow.
+    const tab = el.shadowRoot!.querySelector('irrigation-ec-ramp-tab') as LitElement & {
+      shadowRoot: ShadowRoot;
+    };
+    await tab.updateComplete;
+    expect(tab.shadowRoot.textContent).toMatch(/no ec ramp curves/i);
   });
 
   it('lazily fetches curves on first navigation to ec_ramp tab', async () => {
@@ -1329,7 +1333,7 @@ describe('IrrigationDialog – EC Ramp tab content', () => {
     expect(fetchFn).toHaveBeenCalledOnce();
   });
 
-  it('resets view to LIST when navigating away and back to ec_ramp tab', async () => {
+  it('resets editor to the list view when navigating away and back (SM-owned)', async () => {
     const store = makeEcRampStore();
     const device = makeEcRampDevice();
     const el = await fixture<IrrigationDialog>(html`
@@ -1343,20 +1347,18 @@ describe('IrrigationDialog – EC Ramp tab content', () => {
     `);
     await el.updateComplete;
 
-    // Simulate entering EDIT view
-    (el as any)._ecRampView = 'EDIT';
+    // Enter the editor (ADR-0019: the draft lives in the SM, not a component flag)
+    (el as any).dispatch({ type: 'EC_RAMP_START_NEW' });
+    await el.updateComplete;
+    expect((el as any)._sm.tabs.ec_ramp.sub.kind).toBe('editing');
+
+    // Navigate away then back — SWITCH_TAB resets the tab to its list view.
+    (el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement).click();
+    await el.updateComplete;
+    (el.shadowRoot!.querySelector('[data-tab="ec_ramp"]') as HTMLElement).click();
     await el.updateComplete;
 
-    // Navigate away then back
-    const schedulesNav = el.shadowRoot!.querySelector('[data-tab="schedules"]') as HTMLElement;
-    schedulesNav.click();
-    await el.updateComplete;
-
-    const ecRampNav = el.shadowRoot!.querySelector('[data-tab="ec_ramp"]') as HTMLElement;
-    ecRampNav.click();
-    await el.updateComplete;
-
-    expect((el as any)._ecRampView).toBe('LIST');
+    expect((el as any)._sm.tabs.ec_ramp.sub.kind).toBe('list');
   });
 });
 

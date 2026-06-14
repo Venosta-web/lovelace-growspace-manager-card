@@ -14,6 +14,7 @@
 
 import type { IrrigationStrategy, GrowspaceDevice } from '../types';
 import type { ECTargetRange, SteeringMode } from '../services/types';
+import type { ECRampCurve, ECRampPoint } from '../slices/nutrient';
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -173,8 +174,29 @@ export interface SubstrateEcTabState {
 
 // ─── EC Ramp tab ───────────────────────────────────────────────────────────────
 
-/** EC Ramp changes save immediately per curve — no draft or sub-state needed. */
-export type EcRampTabState = Record<string, never>;
+/**
+ * The editable EC Ramp Curve draft — the partial curve open in the inline
+ * editor. `id` is present only when editing an existing curve (absent for a
+ * new one). Point edits operate on this `points` array.
+ */
+export type EcRampCurveDraft = Partial<ECRampCurve>;
+
+/**
+ * Transient inline-edit sub-state for the EC Ramp tab — mirrors the tanks
+ * `editing` shape but as a LIST/EDIT discriminated view. In `list` the tab shows
+ * the saved curves; in `editing` it shows the form bound to `draft`. `error`
+ * carries synchronous validation copy (name required, ≥1 valid point); save and
+ * remove *rejections* surface as a root toast instead (ADR-0015).
+ */
+export type EcRampSubState =
+  | { kind: 'list' }
+  | { kind: 'editing'; draft: EcRampCurveDraft };
+
+export interface EcRampTabState {
+  sub: EcRampSubState;
+  /** Synchronous validation error for the open editor, or null. */
+  error: string | null;
+}
 
 // ─── Root SM ───────────────────────────────────────────────────────────────────
 
@@ -263,6 +285,24 @@ export type DialogEvent =
   | { type: 'UPDATE_TANK_DRAFT'; partial: Partial<TankDraft> }
   /** Close the inline tank editor, discarding the draft. */
   | { type: 'CANCEL_TANK_EDIT' }
+
+  // ── EC Ramp ──
+  /** Open the editor for a brand-new curve (seeded with one default point). */
+  | { type: 'EC_RAMP_START_NEW' }
+  /** Open the editor seeded from an existing curve (deep-copied by the caller). */
+  | { type: 'EC_RAMP_EDIT_CURVE'; draft: EcRampCurveDraft }
+  /** Close the editor and return to the list. */
+  | { type: 'EC_RAMP_CANCEL_EDIT' }
+  /** Merge a field change (name/stage) into the open curve draft. */
+  | { type: 'UPDATE_EC_RAMP_CURVE'; partial: Partial<ECRampCurve> }
+  /** Append a point to the open curve draft (day/EC stepped off the last point). */
+  | { type: 'EC_RAMP_ADD_POINT' }
+  /** Remove the point at `index` from the open curve draft. */
+  | { type: 'EC_RAMP_REMOVE_POINT'; index: number }
+  /** Merge a partial into the point at `index` of the open curve draft. */
+  | { type: 'EC_RAMP_UPDATE_POINT'; index: number; partial: Partial<ECRampPoint> }
+  /** Set (or clear) the synchronous validation error for the open editor. */
+  | { type: 'SET_EC_RAMP_ERROR'; error: string | null }
 
   // ── Drain EC ──
   | { type: 'UPDATE_DRAIN_EC_DRAFT'; partial: Partial<DrainEcDraft> }
@@ -384,7 +424,7 @@ function defaultTabs(): TabStates {
     water_analytics: { stageAggregates: null, sub: { kind: 'idle' } },
     drain_ec: { draft: defaultDrainEcDraft(), sub: { kind: 'idle' } },
     substrate_ec: { draft: defaultSubstrateEcDraft(), sub: { kind: 'idle' } },
-    ec_ramp: {},
+    ec_ramp: { sub: { kind: 'list' }, error: null },
   };
 }
 
@@ -717,6 +757,8 @@ const ACTION_ERROR_MESSAGES: Record<string, string> = {
   'run-now': 'Failed to run irrigation cycle',
   'edit-irrigation-time': 'Failed to save irrigation time',
   'edit-drain-time': 'Failed to save drain time',
+  'save-ec-ramp-curve': 'Failed to save EC ramp curve',
+  'remove-ec-ramp-curve': 'Failed to delete EC ramp curve',
 };
 
 export function actionErrorMessage(action: string): string {
@@ -748,6 +790,12 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
             sm.activeTab === 'schedules'
               ? { ...sm.tabs.schedules, sub: { kind: 'idle' } }
               : sm.tabs.schedules,
+          // Reset the EC Ramp tab to its list view when leaving it, so re-entering
+          // never reopens a stale editor draft (replaces the old willUpdate reset).
+          ec_ramp:
+            sm.activeTab === 'ec_ramp'
+              ? { sub: { kind: 'list' }, error: null }
+              : sm.tabs.ec_ramp,
         },
       };
 
@@ -1046,6 +1094,109 @@ export function transition(sm: DialogSM, event: DialogEvent): DialogSM {
       return {
         ...sm,
         tabs: { ...sm.tabs, tanks: { sub: { kind: 'idle' } } },
+      };
+
+    // ── EC Ramp ──────────────────────────────────────────────────────────────
+
+    case 'EC_RAMP_START_NEW':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: {
+            sub: {
+              kind: 'editing',
+              draft: { name: '', stage: 'flower', points: [{ day: 1, target_ec: 1.0 }] },
+            },
+            error: null,
+          },
+        },
+      };
+
+    case 'EC_RAMP_EDIT_CURVE':
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: { sub: { kind: 'editing', draft: event.draft }, error: null },
+        },
+      };
+
+    case 'EC_RAMP_CANCEL_EDIT':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, ec_ramp: { sub: { kind: 'list' }, error: null } },
+      };
+
+    case 'UPDATE_EC_RAMP_CURVE': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: {
+            ...sm.tabs.ec_ramp,
+            sub: { ...sub, draft: { ...sub.draft, ...event.partial } },
+          },
+        },
+      };
+    }
+
+    case 'EC_RAMP_ADD_POINT': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      const points = [...(sub.draft.points ?? [])];
+      const lastDay = points.length > 0 ? points[points.length - 1].day : 0;
+      const lastEc = points.length > 0 ? points[points.length - 1].target_ec : 1.0;
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: {
+            ...sm.tabs.ec_ramp,
+            sub: {
+              ...sub,
+              draft: { ...sub.draft, points: [...points, { day: lastDay + 7, target_ec: lastEc + 0.2 }] },
+            },
+          },
+        },
+      };
+    }
+
+    case 'EC_RAMP_REMOVE_POINT': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      const points = [...(sub.draft.points ?? [])];
+      points.splice(event.index, 1);
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: { ...sm.tabs.ec_ramp, sub: { ...sub, draft: { ...sub.draft, points } } },
+        },
+      };
+    }
+
+    case 'EC_RAMP_UPDATE_POINT': {
+      const sub = sm.tabs.ec_ramp.sub;
+      if (sub.kind !== 'editing') return sm;
+      const points = [...(sub.draft.points ?? [])];
+      if (event.index < 0 || event.index >= points.length) return sm;
+      points[event.index] = { ...points[event.index], ...event.partial };
+      return {
+        ...sm,
+        tabs: {
+          ...sm.tabs,
+          ec_ramp: { ...sm.tabs.ec_ramp, sub: { ...sub, draft: { ...sub.draft, points } } },
+        },
+      };
+    }
+
+    case 'SET_EC_RAMP_ERROR':
+      return {
+        ...sm,
+        tabs: { ...sm.tabs, ec_ramp: { ...sm.tabs.ec_ramp, error: event.error } },
       };
 
     // ── Drain EC ─────────────────────────────────────────────────────────────
